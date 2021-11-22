@@ -1741,6 +1741,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/mocha@npm:^9.0.0":
+  version: 9.0.0
+  resolution: "@types/mocha@npm:9.0.0"
+  checksum: 73e6edaba045bc250b69085a770d5029edfed006ed8e75344435474a2cb8d38064acd7b34b6cc62756caa845a5cf335bde66db11e8c8c6565c62a790e933704a
+  languageName: node
+  linkType: hard
+
 "@types/mongodb@npm:3.6.12":
   version: 3.6.12
   resolution: "@types/mongodb@npm:3.6.12"
@@ -4969,6 +4976,7 @@ __metadata:
     "@nomiclabs/hardhat-waffle": ^2.0.1
     "@typechain/ethers-v5": 8.0.3
     "@typechain/hardhat": ^3.0.0
+    "@types/mocha": ^9.0.0
     bn.js: ^5.2.0
     chai: ^4.3.4
     csv-parse: ^4.16.3

@@ -2,14 +2,26 @@
   "extends": "../tsconfig",
   "compilerOptions": {
     "outDir": ".dist/esm",
-    "rootDir": "typechain-types",
     "types": [
       "node"
     ],
+    "baseUrl": "./",
+    "paths": {
+      "~/*": [
+        "src/*"
+      ]
+    },
     "module": "CommonJS",
     "declarationDir": ".dist/types",
     "lib": [
       "es2020"
     ],
-  }
+  },
+  "include": [
+    "./scripts",
+    "./test"
+  ],
+  "files": [
+    "./hardhat.config.ts"
+  ]
 }
