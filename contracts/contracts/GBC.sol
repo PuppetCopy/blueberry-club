@@ -2,13 +2,15 @@
 
 pragma solidity ^0.8.0;
 
-import "./ERC721.sol";
-import "./Ownable.sol";
-import "./ERC721Enumerable.sol";
-import "./ERC721Burnable.sol";
-import "./Context.sol";
-import "./Counters.sol";
-import "./IERC20.sol";
+
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
+import "@openzeppelin/contracts/utils/Context.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 
 contract GBC is
     Context,

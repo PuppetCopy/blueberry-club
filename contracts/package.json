@@ -15,11 +15,12 @@
     "compile": "yarn hardhat compile",
     "clean": "yarn hardhat clean",
     "deploy": "yarn hardhat run --network localhost scripts/deploy.ts",
+    "deploy-ropsten": "yarn hardhat run scripts/deploy.ts --network ropsten",
     "node": "yarn hardhat node",
     "typechain": "yarn hardhat typechain",
     "build:project": "yarn g:tsc:project",
     "build:cjs": "yarn g:tsc:cjs",
-    "build": "yarn typechain && yarn g:parallel 'yarn build:cjs' 'yarn build:project'"
+    "build": "yarn clean && yarn typechain && yarn g:parallel 'yarn build:cjs' 'yarn build:project'"
   },
   "author": "",
   "license": "ISC",
@@ -27,6 +28,7 @@
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-etherscan": "^2.1.7",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "@openzeppelin/contracts": "^4.3.3",
     "@typechain/ethers-v5": "8.0.3",
     "@typechain/hardhat": "^3.0.0",
     "@types/mocha": "^9.0.0",

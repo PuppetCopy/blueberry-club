@@ -5,7 +5,12 @@ import '@typechain/hardhat'
 import '@nomiclabs/hardhat-waffle'
 import { HardhatUserConfig } from "hardhat/config"
 
-const devkey = process.env['DEVNET_PRIVKEY']
+import dotenv from "dotenv"
+dotenv.config()
+
+const ROPSTEN_RPC_URL = process.env.ROPSTEN_RPC_URL
+
+const devkey = process.env.DEV_KEY
 const accounts = devkey ? [devkey] : []
 
 
@@ -19,10 +24,14 @@ const config: HardhatUserConfig = {
   networks: {
     arbitrumTestnet: {
       url: 'https://rinkeby.arbitrum.io/rpc',
-      gasPrice: 10000000000,
-      chainId: 421611,
+      // gasPrice: 10000000000,
+      // chainId: 421611,
       accounts
     },
+    ropsten: {
+      url: ROPSTEN_RPC_URL,
+      accounts
+    }
     //   arbitrumTestnet: {
     //     url: ARBITRUM_TESTNET_URL,
     //     gasPrice: 10000000000,
