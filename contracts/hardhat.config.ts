@@ -9,6 +9,7 @@ import dotenv from "dotenv"
 dotenv.config()
 
 const ROPSTEN_RPC_URL = process.env.ROPSTEN_RPC_URL
+const ETHERSCAN_APIKEY = process.env.ETHERSCAN_APIKEY
 
 const devkey = process.env.DEV_KEY
 const accounts = devkey ? [devkey] : []
@@ -67,6 +68,9 @@ const config: HardhatUserConfig = {
         runs: 1
       }
     }
+  },
+  etherscan: {
+    apiKey: ETHERSCAN_APIKEY
   }
 }
 
