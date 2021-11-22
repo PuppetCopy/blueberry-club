@@ -3,7 +3,13 @@
   "compilerOptions": {
     "outDir": ".dist/esm",
     "rootDir": "typechain-types",
-    "types": [],
-    "declarationDir": ".dist/types"
+    "types": [
+      "node"
+    ],
+    "module": "CommonJS",
+    "declarationDir": ".dist/types",
+    "lib": [
+      "es2020"
+    ],
   }
 }
