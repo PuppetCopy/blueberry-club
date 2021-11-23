@@ -5,23 +5,14 @@
     "types": [
       "node"
     ],
-    "baseUrl": "./",
-    "paths": {
-      "~/*": [
-        "src/*"
-      ]
-    },
     "module": "CommonJS",
     "declarationDir": ".dist/types",
-    "lib": [
-      "es2020"
-    ],
   },
   "include": [
     "./scripts",
-    "./test"
+    "./test",
   ],
   "files": [
-    "./hardhat.config.ts"
+    "./hardhat.config.ts",
   ]
 }

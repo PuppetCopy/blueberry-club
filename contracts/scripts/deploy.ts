@@ -1,12 +1,13 @@
 import { GBC__factory } from 'contracts'
 import { ethers } from "hardhat"
 
+
 // .env file (should be ignored from .gitignore)
 import dotEnv from 'dotenv'
 dotEnv.config()
 
 const main = async () => {
-  const signer = (await ethers.getSigners())[0]
+  const [signer] = (await ethers.getSigners())
 
   console.log('Your wallet address:', signer.address)
 
