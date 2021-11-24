@@ -49,10 +49,10 @@ contract GBC is
         return _contractURI;
     }
     
-    function adminMint(uint256 _mintAmount) public onlyOwner{
+    function adminMint(uint256 _mintAmount, address _to) public onlyOwner{
         for (uint256 i = 1; i <= _mintAmount; i++) {
             require(_tokenIdTracker.current() <= max, "Transaction exceeds max mint amount");
-            _mint(_msgSender(), _tokenIdTracker.current());
+            _mint(_to, _tokenIdTracker.current());
             _tokenIdTracker.increment();
         }
     }
