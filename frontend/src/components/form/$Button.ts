@@ -1,24 +1,26 @@
 import { O } from "@aelea/core"
 import { $element, style, stylePseudo } from "@aelea/dom"
-import { $row, IButton, layoutSheet } from "@aelea/ui-components"
+import { IButton, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { $Button } from "./$buttonCore"
 
 
-const secondaryButtonStyle = style({
-  backgroundImage: 'linear-gradient(45deg,  #8A5FCF 21%, #D298ED 100%)',
-  boxShadow: `2px 1000px 1px ${pallete.background} inset`,
-  backgroundOrigin: 'border-box',
-  backgroundClip: 'content-box, border-box',
-  border: '1px solid transparent',
-  borderRadius: '50px'
+export const buttonPrimaryStyle = style({
+  color: pallete.background, whiteSpace: 'nowrap', fill: 'white', borderRadius: '30px',
+  padding: '15px 24px', fontWeight: 'bold', borderWidth: '0px', backgroundColor: pallete.message,
 })
+
+export const secondaryButtonStyle = style({
+  color: 'white', whiteSpace: 'nowrap', fill: 'white', borderRadius: '30px',
+  padding: '15px 24px', fontWeight: 'bold', borderWidth: '1px', borderColor: pallete.message
+})
+
 
 export const $ButtonPrimary = (config: IButton) => {
   return $Button({
     ...config,
     buttonOp: O(
-      style({ color: 'white', whiteSpace: 'nowrap', fill: 'white', borderRadius: '30px', padding: '12px 24px', fontWeight: 'bold', borderWidth: '1px', borderColor: pallete.message }),
+      buttonPrimaryStyle,
       config.buttonOp || O()
     )
   })
@@ -27,7 +29,7 @@ export const $ButtonPrimary = (config: IButton) => {
 export const $ButtonSecondary = (config: IButton) => {
   return $Button({
     ...config,
-    buttonOp: O(secondaryButtonStyle, stylePseudo(':hover', { boxShadow: 'none', borderColor: 'transparent' }), style({ fontSize: '.85em' }), config.buttonOp || O())
+    buttonOp: O(secondaryButtonStyle, stylePseudo(':hover', { boxShadow: 'none', borderColor: pallete.primary }), style({ fontSize: '.85em' }), config.buttonOp || O())
   })
 }
 

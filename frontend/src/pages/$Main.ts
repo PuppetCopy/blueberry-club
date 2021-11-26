@@ -12,11 +12,11 @@ import { initWalletLink } from "@gambitdao/wallet-link"
 import { $logo } from '../common/$icons'
 import * as wallet from "../common/wallets"
 import { $MainMenu } from '../components/$MainMenu'
-import { $ButtonPrimary } from "../components/form/$Button"
 import { $anchor } from "../elements/$common"
 import { $bagOfCoins, $discord, $discount, $glp, $stackedCoins, $twitter } from "../elements/$icons"
 import { claimListQuery } from "../logic/claim"
 import { helloBackend } from '../logic/leaderboard'
+import { $Mint } from "../components/$Mint"
 
 
 function buildThresholdList(numSteps = 20) {
@@ -103,8 +103,8 @@ export default ({ baseRoute = '' }: Website) => component((
   const eyeStylePosition = (eyeContainerPerspective: Stream<ResizeObserverEntry[]>) => styleInline(
     snapshot(([resizeObserverEntry], bb) => {
       const { left, top, width, height } = resizeObserverEntry.target.getBoundingClientRect()
-      const x = (left) + (width / 2)
-      const y = (top) + (height / 2)
+      const x = left + (width / 2)
+      const y = top + (height / 2)
       const rad = Math.atan2(x - bb.x, y - bb.y)
       const rot = (rad * (180 / Math.PI) * -1) + 180
 
@@ -122,21 +122,22 @@ export default ({ baseRoute = '' }: Website) => component((
       $icon({ $content: $twitter, width: '21px', viewBox: `0 0 24 24` })
     )
   )
+
+
   return [
 
     mergeArray([
       switchLatest(map(() => empty(), spaceOddityTether()(majorTom))),
       $node(designSheet.main, style({ alignItems: 'center', overflowX: 'hidden',  placeContent: 'center' }))(
         router.match(rootRoute)(
-          $column(style({ minHeight: '100vh', position: 'relative', margin: '0 auto', maxWidth: '1256px' }), layoutSheet.spacingBig)(
+          $column(style({ minHeight: '100vh', margin: '0 auto', maxWidth: '1256px' }), layoutSheet.spacingBig)(
 
             $row(style({ width: '100%', padding: '30px 0 0', zIndex: 1000, borderRadius: '12px' }))(
               $row(layoutSheet.spacingBig, style({ alignItems: 'center', flex: 1 }))(
                 $RouterAnchor({ url: '/', route: rootRoute, $anchor: $element('a')($icon({ $content: $logo, width: '55px', viewBox: '0 0 32 32' })) })({
                   click: linkClickTether()
                 }),
-                $node(style({ flex: 1 }))(),
-                $MainMenu({ walletLink, claimMap, parentRoute: pagesRoute, showAccount: false })({
+                $MainMenu({ walletLink, claimMap, parentRoute: pagesRoute })({
                   routeChange: linkClickTether(),
                   walletChange: walletChangeTether()
                 }),
@@ -161,9 +162,9 @@ export default ({ baseRoute = '' }: Website) => component((
 
                 $node(),
 
-                $row(
-                  $ButtonPrimary({ buttonOp: style({ pointerEvents: 'none' }), $content: $row(layoutSheet.spacingSmall)($text(style({ fontWeight: 'normal' }))(`We're building...`), $text(`see you soon`)) })({})
-                )
+                $Mint({ walletLink })({
+                  walletChange: walletChangeTether()
+                })
               ),
 
               screenUtils.isDesktopScreen ? $row(

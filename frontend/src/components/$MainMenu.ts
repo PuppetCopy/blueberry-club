@@ -1,5 +1,5 @@
 import { Behavior, combineArray, O, Op } from "@aelea/core"
-import { $text, attr, component, IBranch, nodeEvent, style } from "@aelea/dom"
+import { $node, $text, attr, component, IBranch, nodeEvent, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
 import { $Button, $column, $icon, $Popover, $row, $seperator, layoutSheet } from '@aelea/ui-components'
 import { pallete } from "@aelea/ui-components-theme"
@@ -39,12 +39,23 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), claimMap
   const leaderboardRoute = parentRoute.create({ fragment: 'guide', title: 'Guide' })
  
   return [
-    $row(layoutSheet.spacingBig, style({ fontSize: '.9em', alignItems: 'center' }), containerOp)(
+    $row(layoutSheet.spacingBig, style({ fontSize: '.9em', flex: 1, alignItems: 'center', placeContent: 'flex-end' }), containerOp)(
 
-      // $Link({ $content: $text('Leaderboard'), url: '/p/leaderboard', route: leaderboardRoute })({
-      //   click: routeChangeTether()
-      // }),
-      attr({ target: '_blank' })($tradeGMX),
+
+      $row(layoutSheet.spacingSmall)(
+        $text('Treasury: '),
+        $text('GLP 0'),
+        $seperator,
+        $text('ETH 0'),
+      ),
+      
+
+      $node(style({ flex: 1 }))(),
+
+      $Link({ $content: $text('Leaderboard'), url: '/p/leaderboard', route: leaderboardRoute })({
+        click: routeChangeTether()
+      }),
+      // attr({ target: '_blank' })($tradeGMX),
       showAccount ? style({ height: '20px' }, $seperator) : empty(),
       showAccount
         ? $Popover({
@@ -103,9 +114,9 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), claimMap
         )({
         // overlayClick: clickPopoverClaimTether()
         })
-        : empty()
+        : empty(),
 
-      
+
 
      
     ),

@@ -1,14 +1,15 @@
 import { Behavior, combineArray, O } from "@aelea/core"
 import { $element, $Node, $text, attr, component, style, styleInline } from "@aelea/dom"
-import { $column, $row, layoutSheet } from "@aelea/ui-components"
+import { $column, $icon, $Popover, $row, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { awaitPromises, constant, empty, fromPromise, map, multicast, now, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
 import { IEthereumProvider } from "eip1193-provider"
 import { CHAIN, IWalletLink } from "@gambitdao/wallet-link"
-import { $icon, $walletConnectLogo } from "../common/$icons"
+import { $walletConnectLogo } from "../common/$icons"
 import * as wallet from "../common/wallets"
 import { $ButtonPrimary } from "./form/$Button"
+import { $caretDown } from "../elements/$icons"
 
 
 
@@ -18,7 +19,7 @@ export interface IIntermediateDisplay {
 }
 
 export const $IntermediateDisplay = (config: IIntermediateDisplay) => component((
-  // [connectedWalletSucceed, connectedWalletSucceedTether]: Behavior<any, T>,
+  [connectPopover, connectPopoverTether]: Behavior<any, any>,
   [switchNetwork, switchNetworkTether]: Behavior<PointerEvent, IEthereumProvider>,
   [walletChange, walletChangeTether]: Behavior<PointerEvent, IEthereumProvider | null>,
 ) => {
@@ -35,10 +36,14 @@ export const $IntermediateDisplay = (config: IIntermediateDisplay) => component(
             
             const $walletConnectBtn = $ButtonPrimary({
               $content: $row(layoutSheet.spacing)(
-                $icon({
-                  viewBox: '0 0 32 32',
-                  $content: $walletConnectLogo,
-                }),
+                $row(style({ margin: '1px', backgroundColor: '#3B99FC', padding: '2px', borderRadius: '6px' }))(
+                  $icon({
+                    viewBox: '0 0 32 32',
+                    width: '18px',
+                    fill: 'white',
+                    $content: $walletConnectLogo,
+                  })
+                ),
                 $text('Wallet-Connect'),
               ), buttonOp: style({})
             })({
@@ -49,8 +54,8 @@ export const $IntermediateDisplay = (config: IIntermediateDisplay) => component(
               )
             })
 
-            if (metamask) {
-              return $column(
+            const $connectButtonOptions = metamask
+              ? $column(layoutSheet.spacing)(
                 $ButtonPrimary({
                   $content: $row(layoutSheet.spacing)(
                     $element('img')(attr({ src: '/assets/metamask-fox.svg' }), style({ width: '24px' }))(),
@@ -65,28 +70,37 @@ export const $IntermediateDisplay = (config: IIntermediateDisplay) => component(
                 }),
                 $walletConnectBtn
               )
-            } else {  // no mm resolved, show wallet-connect only
-              return $walletConnectBtn
-            }
+              :$walletConnectBtn
+
+            return $Popover({
+              $$popContent: constant($connectButtonOptions, connectPopover)
+            })(
+              $ButtonPrimary({
+                $content: $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+                  $text('Connect Wallet'),
+                  $icon({ $content: $caretDown, width: '13px', fill: pallete.background, svgOps: style({ marginTop: '2px' }), viewBox: '0 0 7.84 3.81' }),
+                ), buttonOp: style({})
+              })({
+                click: connectPopoverTether(),
+              })
+            )({})
+    
           }
 
           return switchLatest(
             combineArray((chain) => {
 
-              if (chain !== CHAIN.ARBITRUM) {
+              if (
+                // chain !== CHAIN.ARBITRUM
+                chain !== 3 as any
+              ) {
                 return $ButtonPrimary({
-                  $content: $text('Switch to Arbitrum Network'),
-                  buttonOp: O(
-                    style({
-                      background: `transparent`, borderColor: pallete.negative,
-                      backgroundImage: `linear-gradient(0deg,#500af5,#2b76e0 35%,#079dfa 77%,#02cfcf)`,
-                      backgroundClip: 'text',
-                    }),
-                    styleInline(now({
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent'
-                    })),
-                  )
+                  $content: $text('Switch to Ropsten Network'),
+                  // $content: $text('Switch to Arbitrum Network'),
+                  // buttonOp: O(
+                    
+                    
+                  // )
                 })({
                   click: switchNetworkTether(
                     map(() => wallet.attemptToSwitchNetwork(walletLink.wallet, CHAIN.ARBITRUM)),
@@ -97,7 +111,7 @@ export const $IntermediateDisplay = (config: IIntermediateDisplay) => component(
               }
                 
               return config.$display
-            }, walletLink.network)
+            }, multicast(walletLink.network))
           )
         }, accountChange, config.walletLink, wallet.metamask, wallet.walletConnect))
       ),
