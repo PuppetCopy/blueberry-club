@@ -1,7 +1,5 @@
 import { GBC__factory } from 'contracts'
-import { ethers, run, network } from "hardhat"
-// import { NETWORK_METADATA, CHAIN } from "@gambitdao/wallet-link"
-
+import { ethers } from "hardhat"
 
 // .env file (should be ignored from .gitignore)
 import dotEnv from 'dotenv'
@@ -17,16 +15,6 @@ const main = async () => {
   await gbcContract.deployed()
   console.log(`🚀 contract is deployed to ${gbcContract.address} 🚀`)
 
-  if (network.name !== 'localhost') {
-    // const [explorer] = NETWORK_METADATA[network.config.chainId as CHAIN].blockExplorerUrls || []
-    // console.log(`Verifying contract on etherscan ${explorer}/address/${gbcContract.address}`)
-
-    const verificion = await run("verify:verify", {
-      address: gbcContract.address,
-      constructorArguments: [ 'GMX Blueberry Club', 'GBC', 'ipfs://hash/', ],
-    })
-    console.log(verificion)
-  }
 }
 
 main()

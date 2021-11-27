@@ -16,6 +16,7 @@
     "clean": "yarn hardhat clean && yarn g:tsc:clean",
     "deploy": "yarn hardhat run --network localhost scripts/deploy.ts",
     "deploy-ropsten": "yarn hardhat run scripts/deploy.ts --network ropsten",
+    "verify": "yarn hardhat verify --network ropsten 0xde681AC92E069F2f0b15e9DEd334E848e69363AF 'GMX Blueberry Club' 'GBC' ''ipfs://hash/''",
     "node": "yarn hardhat node",
     "typechain": "yarn hardhat typechain",
     "build:project": "tsc --project tsconfig.typechain.json",

@@ -63,7 +63,7 @@ export const $Mint = (config: IMint) => component((
 
 
   const contract = replayLatest(multicast(map(w3p => {
-    return GBC__factory.connect('0x69cfd944fEe381E373204B8b3a8AC721388dC6f5', w3p.getSigner())
+    return GBC__factory.connect('0xde681AC92E069F2f0b15e9DEd334E848e69363AF', w3p.getSigner())
   }, provider)))
 
 
