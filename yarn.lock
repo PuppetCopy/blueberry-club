@@ -5003,6 +5003,7 @@ __metadata:
     chai: ^4.3.4
     csv-parse: ^5.0.3
     ethereum-waffle: ^3.2.0
+    ethereumjs-abi: "https://github.com/ethereumjs/ethereumjs-abi.git#commit=ee3994657fa7a427238e6ba92a84d0b529bbcde0"
     ethers: ^5.5.1
     hardhat: 2.7.0
     hardhat-contract-sizer: ^2.1.1
@@ -6551,7 +6552,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ethereumjs-abi@git+https://github.com/ethereumjs/ethereumjs-abi.git":
+"ethereumjs-abi@git+https://github.com/ethereumjs/ethereumjs-abi.git, ethereumjs-abi@https://github.com/ethereumjs/ethereumjs-abi.git#commit=ee3994657fa7a427238e6ba92a84d0b529bbcde0":
   version: 0.6.8
   resolution: "ethereumjs-abi@https://github.com/ethereumjs/ethereumjs-abi.git#commit=ee3994657fa7a427238e6ba92a84d0b529bbcde0"
   dependencies:
