@@ -30,7 +30,7 @@ const config: HardhatUserConfig = {
       accounts
     },
     ropsten: {
-      url: ROPSTEN_RPC_URL,
+      url: ROPSTEN_RPC_URL || '',
       accounts
     }
     //   arbitrumTestnet: {
