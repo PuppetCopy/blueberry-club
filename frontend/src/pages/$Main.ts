@@ -149,7 +149,7 @@ export default ({ baseRoute = '' }: Website) => component((
             $node(),
             $node(),
 
-            $node(gutterSpacingStyle, style({ display: 'flex', gap: '36px', alignItems: 'center', placeContent: 'space-between', backgroundColor: pallete.background }))(
+            $node(gutterSpacingStyle, style({ display: 'flex', gap: '36px', placeContent: 'space-between', backgroundColor: pallete.background }))(
               $column(layoutSheet.spacingBig, style({ maxWidth: '620px' }))(
                 $column(style({ fontSize: screenUtils.isMobileScreen ? '1.7em' : '3.1em' }))(
                   $node(
@@ -168,7 +168,7 @@ export default ({ baseRoute = '' }: Website) => component((
               ),
 
               screenUtils.isDesktopScreen ? $row(
-                style({ maxWidth: '460px', width: '100%', height: '460px', borderRadius: '38px', transformStyle: 'preserve-3d', perspective: '100px', position: 'relative', placeContent: 'center', alignItems: 'flex-end', backgroundImage: `linear-gradient(162deg, #D0F893 21%, #5CC1D2 100%)` }),
+                style({ maxWidth: '460px', marginTop: '45px', width: '100%', height: '460px', borderRadius: '38px', transformStyle: 'preserve-3d', perspective: '100px', position: 'relative', placeContent: 'center', alignItems: 'flex-end', backgroundImage: `linear-gradient(162deg, #D0F893 21%, #5CC1D2 100%)` }),
               )(
                 $element('img')(style({}), attr({ width: '300px', src: '/assets/preview-tag.svg', }))(),
                 $row(style({ position: 'absolute', width: '125px', marginLeft: '58px', placeContent: 'space-between', top: '225px' }))(

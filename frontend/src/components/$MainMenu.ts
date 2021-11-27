@@ -13,7 +13,7 @@ import { dark, light } from '../common/theme'
 import { $Link } from './$Link'
 import { $moreDots } from "../elements/$icons"
 import { $AccountPreview } from "./$AccountProfile"
-import { $IntermediateDisplay } from "./$ConnectAccount"
+import { $IntermediateConnect } from "./$ConnectAccount"
 import { $Picker } from './$ThemePicker'
 
 
@@ -62,7 +62,7 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), claimMap
           dismiss: profileLinkClick,
           $$popContent: combineArray((_, cmap, wl) => {
             return $column(layoutSheet.spacingBig)(
-              $IntermediateDisplay({
+              $IntermediateConnect({
                 $display: $row(layoutSheet.spacing)(
                   switchLatest(
                     map(address => {

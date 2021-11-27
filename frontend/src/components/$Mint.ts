@@ -8,11 +8,12 @@ import { awaitPromises, constant, empty, map, merge, mergeArray, multicast, now,
 import { Stream } from "@most/types"
 import { IEthereumProvider } from "eip1193-provider"
 import { $gift } from "../elements/$icons"
-import { $IntermediateDisplay } from "./$ConnectAccount"
+import { $IntermediateConnect } from "./$ConnectAccount"
 import { $ButtonPrimary } from "./form/$Button"
 import { $Dropdown } from "./form/$Dropdown"
 import { GBC__factory } from "contracts"
 import { parseEther } from "@ethersproject/units"
+import { $spinner } from "../common/$IntermediateDisplay"
 
 
 export interface IMint {
@@ -62,14 +63,13 @@ export const $Mint = (config: IMint) => component((
 
 
   const contract = replayLatest(multicast(map(w3p => {
-    return GBC__factory.connect('0xDD35239C0bb6cAb5BeE02eE7914534BEB05d7CbC', w3p.getSigner())
+    return GBC__factory.connect('0x69cfd944fEe381E373204B8b3a8AC721388dC6f5', w3p.getSigner())
   }, provider)))
 
 
   return [
     $column(layoutSheet.spacing)(
       $row(layoutSheet.spacing)(
-
         $Dropdown({
           disabled: accountChange,
           $noneSelected: $text('Select Mint Amount'),
@@ -81,13 +81,11 @@ export const $Mint = (config: IMint) => component((
         })({
           select: selectMintAmountTether(multicast)
         }),
-        $IntermediateDisplay({
+        $IntermediateConnect({
           $display: $ButtonPrimary({
             disabled: startWith(true, map(x => !Number.isFinite(x), selectMintAmount)),
             $content: switchLatest(mergeArray([
               snapshot((contract, amount) => {
-
-                contract.isBlacklisted()
 
                 if (amount > 1) {
                   return $container(
@@ -123,7 +121,9 @@ export const $Mint = (config: IMint) => component((
           walletLink: config.walletLink
         })({
           walletChange: walletChangeTether()
-        })
+        }),
+        $spinner,
+
       // $ButtonPrimary({ buttonOp: style({ pointerEvents: 'none' }), $content: $row(layoutSheet.spacingSmall)($text(style({ fontWeight: 'normal' }))(`We're building...`), $text(`see you soon`)) })({})
       ),
 

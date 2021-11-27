@@ -2,11 +2,15 @@ import { O } from "@aelea/core"
 import { $element, style, stylePseudo } from "@aelea/dom"
 import { IButton, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
+import { $spinner } from "../../common/$IntermediateDisplay"
 import { $Button } from "./$buttonCore"
+
 
 
 export const buttonPrimaryStyle = style({
   color: pallete.background, whiteSpace: 'nowrap', fill: 'white', borderRadius: '30px',
+  boxShadow: `0px 0px 0px 0 ${pallete.primary} inset`, position: 'relative',
+  transition: 'ease-in',
   padding: '15px 24px', fontWeight: 'bold', borderWidth: '0px', backgroundColor: pallete.message,
 })
 
@@ -21,6 +25,8 @@ export const $ButtonPrimary = (config: IButton) => {
     ...config,
     buttonOp: O(
       buttonPrimaryStyle,
+      stylePseudo('::before', { boxShadow: `0px 0px 0px 2px ${pallete.primary} inset`, position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, content: '  ', opacity: '0', transition: 'opacity 500ms' }),
+      stylePseudo(':hover::before', { opacity: '1' }),
       config.buttonOp || O()
     )
   })
@@ -29,7 +35,7 @@ export const $ButtonPrimary = (config: IButton) => {
 export const $ButtonSecondary = (config: IButton) => {
   return $Button({
     ...config,
-    buttonOp: O(secondaryButtonStyle, stylePseudo(':hover', { boxShadow: 'none', borderColor: pallete.primary }), style({ fontSize: '.85em' }), config.buttonOp || O())
+    buttonOp: O(secondaryButtonStyle, stylePseudo(':hover', { borderColor: pallete.primary }), style({ fontSize: '.85em' }), config.buttonOp || O())
   })
 }
 

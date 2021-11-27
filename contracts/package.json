@@ -5,7 +5,7 @@
   "module": ".dist/esm/index.js",
   "main": ".dist/cjs/index.js",
   "private": true,
-  "sideEffects": true,
+  "sideEffects": false,
   "files": [
     ".dist"
   ],
@@ -13,35 +13,35 @@
   "scripts": {
     "test": "npx hardhat test",
     "compile": "yarn hardhat compile",
-    "clean": "yarn hardhat clean",
+    "clean": "yarn hardhat clean && yarn g:tsc:clean",
     "deploy": "yarn hardhat run --network localhost scripts/deploy.ts",
     "deploy-ropsten": "yarn hardhat run scripts/deploy.ts --network ropsten",
-    "verify": "yarn hardhat verify --network ropsten 0xDD35239C0bb6cAb5BeE02eE7914534BEB05d7CbC 'GMX Blueberry Club' 'GBC' ''ipfs://hash/''",
     "node": "yarn hardhat node",
     "typechain": "yarn hardhat typechain",
-    "build:project": "yarn g:tsc:project",
-    "build:cjs": "yarn g:tsc:cjs",
-    "build": "yarn clean && yarn typechain && yarn g:parallel 'yarn build:cjs' 'yarn build:project'"
+    "build:project": "tsc --project tsconfig.typechain.json",
+    "build:cjs": "tsc --project tsconfig.typechain.json  --outDir .dist/cjs --module CommonJS --declarationMap false --composite false --declaration false --declarationDir null",
+    "build": "yarn clean && yarn hardhat typechain && yarn build:project && yarn build:cjs && yarn typechain"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
-    "@nomiclabs/hardhat-etherscan": "^2.1.7",
+    "@nomiclabs/hardhat-etherscan": "^2.1.8",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
-    "@openzeppelin/contracts": "^4.3.3",
-    "@typechain/ethers-v5": "8.0.3",
+    "@openzeppelin/contracts": "^4.4.0",
+    "@typechain/ethers-v5": "8.0.5",
     "@typechain/hardhat": "^3.0.0",
     "@types/mocha": "^9.0.0",
     "chai": "^4.3.4",
     "ethereum-waffle": "^3.4.0",
     "ethers": "^5.5.1",
-    "hardhat": "^2.6.8",
+    "hardhat": "2.7.0",
     "hardhat-contract-sizer": "^2.1.1",
-    "typechain": "^6.0.3"
+    "typechain": "^6.0.4",
+    "typescript": "^4.5.2"
   },
   "dependencies": {
     "bn.js": "^5.2.0",
-    "csv-parse": "^4.16.3"
+    "csv-parse": "^5.0.3"
   }
 }

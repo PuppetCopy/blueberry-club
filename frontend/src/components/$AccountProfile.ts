@@ -13,7 +13,7 @@ import { getAccountExplorerUrl, IWalletLink } from "@gambitdao/wallet-link"
 import { $jazzicon } from "../common/avatar"
 import { $alert, $anchor, $labeledDivider } from "../elements/$common"
 import { $ethScan, $twitter } from "../elements/$icons"
-import { $IntermediateDisplay } from "./$ConnectAccount"
+import { $IntermediateConnect } from "./$ConnectAccount"
 import { $Link } from "./$Link"
 import { $ButtonPrimary, $ButtonSecondary } from "./form/$Button"
 
@@ -231,7 +231,7 @@ const $ClaimForm = (address: string, walletLink: Stream<IWalletLink | null>, cla
       switchLatest(
         mergeArray([
           now(
-            $IntermediateDisplay({
+            $IntermediateConnect({
               $display: switchLatest(
                 combineArray((wallet, claim) => {
 

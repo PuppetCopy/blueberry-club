@@ -1,14 +1,15 @@
 {
   "extends": "../tsconfig",
   "compilerOptions": {
-    "outDir": ".dist/esm",
+    "outDir": "artifacts/build",
     "types": [
       "node"
     ],
     "module": "CommonJS",
-    "declarationDir": ".dist/types",
+    "declarationDir": null,
   },
   "include": [
+    "./typechain-types",
     "./scripts",
     "./test",
   ],
