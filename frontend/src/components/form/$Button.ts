@@ -1,7 +1,7 @@
 import { O } from "@aelea/core"
 import { $element, style, stylePseudo } from "@aelea/dom"
 import { IButton, layoutSheet } from "@aelea/ui-components"
-import { pallete } from "@aelea/ui-components-theme"
+import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { $spinner } from "../../common/$IntermediateDisplay"
 import { $Button } from "./$buttonCore"
 
@@ -25,8 +25,7 @@ export const $ButtonPrimary = (config: IButton) => {
     ...config,
     buttonOp: O(
       buttonPrimaryStyle,
-      stylePseudo('::before', { boxShadow: `0px 0px 0px 2px ${pallete.primary} inset`, position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, content: '  ', opacity: '0', transition: 'opacity 500ms' }),
-      stylePseudo(':hover::before', { opacity: '1' }),
+      stylePseudo(':hover', { backgroundColor: colorAlpha(pallete.message, .75) }),
       config.buttonOp || O()
     )
   })

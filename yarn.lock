@@ -5002,7 +5002,7 @@ __metadata:
     bn.js: ^5.2.0
     chai: ^4.3.4
     csv-parse: ^5.0.3
-    ethereum-waffle: ^3.4.0
+    ethereum-waffle: ^3.2.0
     ethers: ^5.5.1
     hardhat: 2.7.0
     hardhat-contract-sizer: ^2.1.1
@@ -6536,7 +6536,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ethereum-waffle@npm:^3.4.0":
+"ethereum-waffle@npm:^3.2.0":
   version: 3.4.0
   resolution: "ethereum-waffle@npm:3.4.0"
   dependencies:
