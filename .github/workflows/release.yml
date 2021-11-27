@@ -23,11 +23,11 @@ jobs:
         if: contains(github.ref, 'master')
         run: yarn version check
 
-      - name: set checksum behavior
-        run: set -x YARN_CHECKSUM_BEHAVIOR update
+      # - name: set checksum behavior
+      #   run: set -x YARN_CHECKSUM_BEHAVIOR update
 
       - name: Install Dependencies
-        run: yarn install --immutable
+        run: yarn
 
       - name: Lint
         run: yarn eslint
