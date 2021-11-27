@@ -11,7 +11,7 @@
     "sideEffects": false,
     "types": ".dist/types/index.d.ts",
     "scripts": {
-        "start": "node -r .dist/cjs/server",
+        "start": "node dotenv/config -r .dist/cjs/server",
         "dev": "tsnd -r dotenv/config --respawn ./src/server.ts dotenv_config_path=../.env",
         "clean": "yarn g:tsc:clean",
         "build:project": "yarn g:tsc:project",
