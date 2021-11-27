@@ -4,6 +4,7 @@
   "workspaces": [
     "*"
   ],
+  "private": true,
   "scripts": {
     "build": "yarn workspaces foreach --verbose --topological --parallel run build",
     "clean": "yarn workspaces foreach --verbose --parallel run clean",
