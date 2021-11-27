@@ -1,21 +1,14 @@
-import { Behavior, combineArray, O, Op } from "@aelea/core"
-import { $node, $text, attr, component, IBranch, nodeEvent, style } from "@aelea/dom"
+import { Behavior, O, Op } from "@aelea/core"
+import { $node, $text, component, IBranch, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
-import { $Button, $column, $icon, $Popover, $row, $seperator, layoutSheet } from '@aelea/ui-components'
-import { pallete } from "@aelea/ui-components-theme"
-import { constant, empty, map, switchLatest, tap } from '@most/core'
+import { $row, $seperator, layoutSheet, screenUtils } from '@aelea/ui-components'
+import { chain, empty, map, switchLatest } from '@most/core'
 import { Stream } from "@most/types"
 import { IEthereumProvider } from "eip1193-provider"
 import { IClaim } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { $tradeGMX } from '../common/$tradeButton'
-import { dark, light } from '../common/theme'
-import { $Link } from './$Link'
-import { $moreDots } from "../elements/$icons"
 import { $AccountPreview } from "./$AccountProfile"
 import { $IntermediateConnect } from "./$ConnectAccount"
-import { $Picker } from './$ThemePicker'
-
 
 
 
@@ -32,89 +25,51 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), claimMap
   [routeChange, routeChangeTether]: Behavior<string, string>,
   [profileLinkClick, profileLinkClickTether]: Behavior<any, any>,
   [walletChange, walletChangeTether]: Behavior<any, IEthereumProvider | null>,
-  [clickPopoverClaim, clickPopoverClaimTether]: Behavior<any, any>,
 
 ) => {
 
-  const leaderboardRoute = parentRoute.create({ fragment: 'guide', title: 'Guide' })
  
   return [
     $row(layoutSheet.spacingBig, style({ fontSize: '.9em', flex: 1, alignItems: 'center', placeContent: 'flex-end' }), containerOp)(
 
 
-      $row(layoutSheet.spacingSmall)(
+      $node(layoutSheet.spacingSmall, style({ display: 'flex', flexDirection: screenUtils.isDesktopScreen ? 'row' : 'column' }))(
         $text('Treasury: '),
-        $text('GLP 0'),
-        $seperator,
-        $text('ETH 0'),
+        $row(layoutSheet.spacingSmall)(
+          $text('GLP 0'),
+          $seperator,
+          $text('ETH 0'),
+        )
       ),
       
 
       $node(style({ flex: 1 }))(),
 
-      $Link({ $content: $text('Leaderboard'), url: '/p/leaderboard', route: leaderboardRoute })({
-        click: routeChangeTether()
-      }),
+      // $Link({ disabled: now(true), $content: $text('Marketplace(WIP)'), url: '/p/leaderboard', route: leaderboardRoute })({
+      //   click: routeChangeTether()
+      // }),
       // attr({ target: '_blank' })($tradeGMX),
-      showAccount ? style({ height: '20px' }, $seperator) : empty(),
-      showAccount
-        ? $Popover({
-          dismiss: profileLinkClick,
-          $$popContent: combineArray((_, cmap, wl) => {
-            return $column(layoutSheet.spacingBig)(
-              $IntermediateConnect({
-                $display: $row(layoutSheet.spacing)(
-                  switchLatest(
-                    map(address => {
-                      return address ? 
-                        $AccountPreview({
-                          address: address,
-                          claim: cmap.get(String(address).toLocaleLowerCase()),
-                          parentRoute,
-                        })({ profileClick: O(profileLinkClickTether(), routeChangeTether()) })
-                        : empty()
-                    }, wl?.account || empty())
-                  ),
-                
-                  $seperator,
-                  $Button({
-                    $content: $text('Change')
-                  })({
-                    click: walletChangeTether(
-                      map(pe => {
-                        pe.preventDefault()
-                        pe.stopImmediatePropagation()
-                      }),
-                      // awaitPromises,
-                      constant(null)
-                    )
-                  })
-                ),
-                walletLink
-              })({
-                walletChange: walletChangeTether()
-              }),
-              $Picker([light, dark])({})
-            )
-          }, clickPopoverClaim, claimMap, walletLink),
-        })(
-          $row(clickPopoverClaimTether(nodeEvent('click')))(
-            $icon({
-              svgOps: style({
-                border: `1px solid ${pallete.foreground}`,
-                borderRadius: '50%',
-                padding: '6px',
-                cursor: 'pointer'
-              }),
-              width: '32px',
-              $content: $moreDots,
-              viewBox: '0 0 32 32'
-            })
+      // showAccount ? style({ height: '20px' }, $seperator) : empty(),
+      $IntermediateConnect({
+        $display: $row(layoutSheet.spacing)(
+          switchLatest(
+            map(wallet => {
+              if (wallet === null) {
+                return empty()
+              }
+              
+              return chain((wallet) => {
+                return $AccountPreview({
+                  address: wallet,
+                })({ profileClick: O(profileLinkClickTether(), routeChangeTether()) })
+              }, wallet.account)
+            }, walletLink)
           )
-        )({
-        // overlayClick: clickPopoverClaimTether()
-        })
-        : empty(),
+        ),
+        walletLink
+      })({
+        walletChange: walletChangeTether()
+      }),
 
 
 

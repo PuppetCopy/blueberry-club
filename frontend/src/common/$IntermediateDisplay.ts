@@ -1,6 +1,9 @@
-import { $node, component, style } from "@aelea/dom"
-import { constant, fromPromise, map, merge, multicast, now, recoverWith, switchLatest } from "@most/core"
+import { Op } from "@aelea/core"
+import { $Node, $node, $text, component, style } from "@aelea/dom"
+import { TransactionResponse } from "@ethersproject/providers"
+import { chain, constant, empty, fromPromise, map, merge, mergeArray, multicast, now, recoverWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
+import { $alert } from "../elements/$common"
 
 
 const styleEl = document.createElement('style')
@@ -27,28 +30,76 @@ export const $spinner = $node(style({
 }))()
 
 
-interface ISpinner {
-  query: Stream<Promise<any>>
+interface ISpinner<T> {
+  query: Stream<Promise<T>>
+  clean?: Stream<any>
+
+  $done: Op<T, $Node>
+  $fail?: Op<Error, $Node>
+
+  $loader?: $Node
 }
 
-enum DISPLAY {
-  NONE,
+enum STATUS {
   LOADING,
+  DONE,
   ERROR,
 }
 
-export const $IntermediateDisplay = (config: ISpinner) => component(() => {
+interface IIntermediateState<T> {
+  status: STATUS.DONE
+  data: T
+}
+interface IIntermediateLoading {
+  status: STATUS.LOADING
+  $loader: $Node
+}
+interface IIntermediateError {
+  status: STATUS.ERROR
+  error: Error
+}
 
-  const state = multicast(switchLatest(map(query => {
-    const settled = constant(DISPLAY.NONE, fromPromise(query))
-    const settledMaybeError = recoverWith(() => now(DISPLAY.ERROR), settled)
+export const $IntermediatePromise = <T>({
+  $loader = $spinner,
+  query,
+  $fail = map(res => $alert($text(res.message))),
+  $done,
+  clean = empty()
+}: ISpinner<T>) => component(() => {
+  const state: Stream<IIntermediateState<T> | IIntermediateLoading | IIntermediateError> = multicast(switchLatest(map(prom => {
+    const doneData: Stream<IIntermediateState<T>> = map(data => ({ status: STATUS.DONE, data }), fromPromise(prom))
+    const loading: Stream<IIntermediateLoading> = now({ status: STATUS.LOADING, $loader })
+    const settledOrError = recoverWith(error => now({ status: STATUS.ERROR, error } as IIntermediateError), doneData)
 
-    return merge(settledMaybeError, now(DISPLAY.LOADING))
-  }, config.query)))
+    return merge(settledOrError, loading)
+  }, query)))
 
   return [
-    $spinner,
+    switchLatest(mergeArray([
+      chain(state => {
+
+        if (state.status === STATUS.LOADING) {
+          return now($loader)
+        }
+
+        if (state.status === STATUS.ERROR) {
+          return $fail(now(state.error))
+        }
+
+        return $done(now(state.data))
+      }, state),
+      constant(empty(), clean)
+    ])),
 
     { state }
   ]
+})
+
+
+export const $IntermediateTx = <T extends TransactionResponse>({ $done, query, clean, $loader }: ISpinner<T>) => $IntermediatePromise({
+  query, clean, $done, $loader,
+  $fail: map(res => {
+    const newLocal: Error = (res as any).error
+    return $alert($text(newLocal.message))
+  }),
 })

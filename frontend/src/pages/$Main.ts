@@ -97,7 +97,7 @@ export default ({ baseRoute = '' }: Website) => component((
   const $eyeInner = $node(style({ borderRadius: '50%', width: '8px', height: '8px', display: 'block', background: 'black' }))
 
   const gutterSpacingStyle = style({
-    ...(screenUtils.isMobileScreen ? { flexDirection: 'column', padding: '0 15px' } : { flexDirection: 'row', padding: '0 55px' }),
+    ...(screenUtils.isMobileScreen ? { flexDirection: 'column' } : { flexDirection: 'row', padding: '0 55px' }),
   })
   
   const eyeStylePosition = (eyeContainerPerspective: Stream<ResizeObserverEntry[]>) => styleInline(
@@ -128,7 +128,7 @@ export default ({ baseRoute = '' }: Website) => component((
 
     mergeArray([
       switchLatest(map(() => empty(), spaceOddityTether()(majorTom))),
-      $node(designSheet.main, style({ alignItems: 'center', overflowX: 'hidden',  placeContent: 'center' }))(
+      $node(designSheet.main, style({ alignItems: 'center', overflowX: 'hidden',  placeContent: 'center', padding: screenUtils.isMobileScreen ? '0 15px': '' }))(
         router.match(rootRoute)(
           $column(style({ minHeight: '100vh', margin: '0 auto', maxWidth: '1256px' }), layoutSheet.spacingBig)(
 
@@ -151,7 +151,7 @@ export default ({ baseRoute = '' }: Website) => component((
 
             $node(gutterSpacingStyle, style({ display: 'flex', gap: '36px', placeContent: 'space-between', backgroundColor: pallete.background }))(
               $column(layoutSheet.spacingBig, style({ maxWidth: '620px' }))(
-                $column(style({ fontSize: screenUtils.isMobileScreen ? '1.7em' : '3.1em' }))(
+                $column(style({ fontSize: screenUtils.isMobileScreen ? '2.1em' : '3.1em' }))(
                   $node(
                     $text(style({}))(`Welcome to the `),
                     $text(style({ fontWeight: 'bold' }))(`GMX Bluberry Club`),
@@ -187,7 +187,7 @@ export default ({ baseRoute = '' }: Website) => component((
             $column(style({ alignItems: 'center' }))(
               $icon({ $content: $logo, width: '100px', viewBox: '0 0 32 32' }),
 
-              $text(style({ fontWeight: 'bold', fontSize: '2em', margin: '10px 0px 25px' }))('GMX Blueberry Club Launch'),
+              $text(style({ fontWeight: 'bold', fontSize: '2em', margin: '10px 0px 25px', textAlign: 'center' }))('GMX Blueberry Club Launch'),
               $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '878px' }))(
                 `
 The first goal of this collection is to reward GMX/GLP holders. That's why everyone with more than 1 Multiplier Point (Snapshot taken on ??/12/2021) will be able to mint 1 GBC for free. 
@@ -203,16 +203,16 @@ GMX platform and the GBC holders. (more informations below)
             ),
 
             $row(
-              style({ position: 'relative', height: '173px', margin: '100px 0' }),
+              style({ position: 'relative', height: '173px' }),
               styleInline(
                 map(([intersectionObserverEntry]) => {
-                  // console.log(intersectionObserverEntry.intersectionRatio)
-                  const transform = `translateX(-${25 + Math.abs(intersectionObserverEntry.intersectionRatio) * 8 }vw)`
+                  const translateX = 25 + Math.abs(intersectionObserverEntry.intersectionRatio) * (screenUtils.isDesktopScreen ? 8 : 85)
+                  const transform = `translateX(-${translateX }vw)`
                   return { transform }
                 }, intersectionObserver)
               )
             )(
-              $row(intersectionObserverTether(observer.intersection({ threshold: buildThresholdList(1000) })), style({ position: 'absolute', height: 'calc(100vh)', width: '1px', right: 0, top: 0 }))(),
+              $row(intersectionObserverTether(observer.intersection({ threshold: buildThresholdList(1000) })), style({ position: 'absolute', height: '100vh', width: '1px', right: 0, top: 0 }))(),
               $element('img')(
                 style({ position: 'absolute', top: 0, left: 0, width: '2398px', height: '173px' }),
                 attr({ src: `/assets/roulette-preview.png`, }),

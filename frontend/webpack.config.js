@@ -3,6 +3,7 @@ const webpack = require('webpack')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin')
 const CopyPlugin = require("copy-webpack-plugin")
+const Dotenv = require("dotenv-webpack")
 
 module.exports = {
   mode: "development",
@@ -52,6 +53,9 @@ module.exports = {
         { from: "assets", to: 'assets' }
       ]
     }),
+    new Dotenv({
+      path: path.join(__dirname, '../.env'), // Path to .env file (this is the default)
+    })
   ],
   // node: { crypto: true, stream: true },
   devServer: {

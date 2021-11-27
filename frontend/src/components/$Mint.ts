@@ -12,8 +12,10 @@ import { $IntermediateConnect } from "./$ConnectAccount"
 import { $ButtonPrimary } from "./form/$Button"
 import { $Dropdown } from "./form/$Dropdown"
 import { GBC__factory } from "contracts"
-import { parseEther } from "@ethersproject/units"
-import { $spinner } from "../common/$IntermediateDisplay"
+import { ContractTransaction } from "@ethersproject/contracts"
+import { $IntermediateTx } from "../common/$IntermediateDisplay"
+import { ETH_ADDRESS_REGEXP } from "@gambitdao/gmx-middleware"
+import { DEPLOYED_CONTRACT } from "../const"
 
 
 export interface IMint {
@@ -25,7 +27,7 @@ export interface IMint {
 export const $Mint = (config: IMint) => component((
   [selectMintAmount, selectMintAmountTether]: Behavior<number, number>,
   [walletChange, walletChangeTether]: Behavior<IEthereumProvider | null, IEthereumProvider | null>,
-  [clickClaim, clickClaimTether]: Behavior<PointerEvent, any>,
+  [clickClaim, clickClaimTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
 
 ) => {
 
@@ -34,14 +36,14 @@ export const $Mint = (config: IMint) => component((
       return now(true)
     }
 
-    const hasAccount = map(x => !x, wallet.account)
-    const supportedNetwork = map(x => x !== 3 as any, wallet.network)
+    const hasAccount = map(address => !ETH_ADDRESS_REGEXP.test(address), wallet.account)
+    const supportedNetwork = map(x => x !== CHAIN.ETH_ROPSTEN, wallet.network)
     // const supportedNetwork = map(x => CHAIN.ARBITRUM !== x, wallet.network)
 
     return merge(hasAccount, supportedNetwork)
   }, config.walletLink))
 
-  
+
 
   const $giftIcon = $icon({ $content: $gift, width: '18px', fill: pallete.background, svgOps: style({ marginTop: '2px' }), viewBox: '0 0 32 32' })
   const $container = $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))
@@ -63,16 +65,18 @@ export const $Mint = (config: IMint) => component((
 
 
   const contract = replayLatest(multicast(map(w3p => {
-    return GBC__factory.connect('0xde681AC92E069F2f0b15e9DEd334E848e69363AF', w3p.getSigner())
+    return GBC__factory.connect(DEPLOYED_CONTRACT, w3p.getSigner())
   }, provider)))
 
 
+  const hasPresaleStarted = awaitPromises(map(x => x.wlMintStarted(), contract))
+
   return [
     $column(layoutSheet.spacing)(
-      $row(layoutSheet.spacing)(
+      $row(layoutSheet.spacing, style({ flexWrap: 'wrap' }))(
         $Dropdown({
           disabled: accountChange,
-          $noneSelected: $text('Select Mint Amount'),
+          $noneSelected: $text('Mint Amount'),
           select: {
             list: [
               1, 2, 5, 10, 20
@@ -83,7 +87,9 @@ export const $Mint = (config: IMint) => component((
         }),
         $IntermediateConnect({
           $display: $ButtonPrimary({
-            disabled: startWith(true, map(x => !Number.isFinite(x), selectMintAmount)),
+            disabled: startWith(true, map(({ hasPresaleStarted, selectMintAmount }) =>
+              !hasPresaleStarted || !Number.isFinite(selectMintAmount)
+            , combineObject({ selectMintAmount, hasPresaleStarted }))),
             $content: switchLatest(mergeArray([
               snapshot((contract, amount) => {
 
@@ -100,35 +106,37 @@ export const $Mint = (config: IMint) => component((
             ])),
           })({
             click: clickClaimTether(
-              snapshot(async ({ contract, selectMintAmount }, click) => {
+              snapshot(async ({ contract, selectMintAmount, provider }, click) => {
 
                 const mintCost = 30000000000000000n
 
                 // const publicSaleStarted = await contract.publicSaleStarted()
                 // const saleTx = await contract.startPublicSale()
 
+                // const signer = provider.getSigner()
+                // const signature = await signer.signMessage('address')
+                // debugger
+                const ww = contract.whitelistMint(selectMintAmount, '0x0a', { value: BigInt(selectMintAmount) * mintCost })
 
-                const ww = await contract.mint(selectMintAmount, { value: BigInt(selectMintAmount) * mintCost })
+                return ww
 
-                console.log(ww)
-
-                return $text('333')
-
-              }, combineObject({ contract, selectMintAmount })),
-              awaitPromises
+              }, combineObject({ contract, selectMintAmount, provider })),
             )
           }),
           walletLink: config.walletLink
         })({
           walletChange: walletChangeTether()
         }),
-        $spinner,
+        $IntermediateTx({
+          query: clickClaim,
+          clean: merge(accountChange, selectMintAmount),
+          $done: map(res => $text('done')),
+        })({})
 
       // $ButtonPrimary({ buttonOp: style({ pointerEvents: 'none' }), $content: $row(layoutSheet.spacingSmall)($text(style({ fontWeight: 'normal' }))(`We're building...`), $text(`see you soon`)) })({})
       ),
 
       $row(layoutSheet.spacing, style({ minHeight: '54px', flexWrap: 'wrap' }))(
-        switchLatest(clickClaim),
         switchLatest(map(amount => mergeArray(Array(amount).fill($nftBox())), selectMintAmount))
       )
 

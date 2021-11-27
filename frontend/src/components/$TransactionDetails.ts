@@ -3,13 +3,14 @@
 // import { $element, $text, component, style } from "@aelea/dom"
 // import { $column, $NumberTicker, $row, layoutSheet } from "@aelea/ui-components"
 // import { pallete } from "@aelea/ui-components-theme"
-// import { TransactionReceipt } from "@ethersproject/providers"
+// import { TransactionReceipt, TransactionResponse } from "@ethersproject/providers"
 // import { filter, take } from "@most/core"
 // import { map, skipRepeats, startWith, switchLatest } from "@most/core"
 
 // import { shortenTxAddress } from "@gambitdao/gmx-middleware"
-// import walletLink from "../common/walletLink"
-// import { getTxExplorerUrl } from "@gambitdao/wallet-link"
+// import { getTxExplorerUrl, IWalletLink } from "@gambitdao/wallet-link"
+// import { Stream } from "@most/types"
+// import { IEthereumProvider } from "eip1193-provider"
 
 
 
@@ -30,11 +31,13 @@
 // const $failed = $status(style({ color: pallete.negative }))()
 
 
-// export const $Transaction = (transactionHash: string) => component((
-// ) => {
+// export const $Transaction = <T extends TransactionResponse>(
+//   tx: Stream<Promise<T>>,
+//   walletLink: IWalletLink<IEthereumProvider>
+// ) => component(() => {
 
-//   const txDetails = walletLink.transactionDetails(transactionHash)
-//   const confirmations = map(details => details?.confirmations ?? 0, txDetails)
+//   const txDetails = walletLink.provider.waitForTransaction(transactionHash)
+//   const confirmations = map(details => details?.confirmations ?? 0, tx)
 
 //   const $status = O(
 //     map((details: TransactionReceipt) => details?.status),
@@ -45,7 +48,7 @@
 //     }),
 //     startWith($pending),
 //     switchLatest
-//   )(txDetails)
+//   )(tx)
 
 //   const txSucceeded = take(1, filter(tx => typeof tx?.status == 'number' && tx.status === 1, txDetails))
 

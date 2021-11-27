@@ -4,9 +4,9 @@ import 'hardhat-contract-sizer'
 import '@typechain/hardhat'
 import '@nomiclabs/hardhat-waffle'
 import { HardhatUserConfig } from "hardhat/config"
-
 import dotenv from "dotenv"
-dotenv.config()
+dotenv.config({ path: '../.env' })
+
 
 const ROPSTEN_RPC_URL = process.env.ROPSTEN_RPC_URL
 const ETHERSCAN_APIKEY = process.env.ETHERSCAN_APIKEY
