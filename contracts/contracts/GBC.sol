@@ -39,6 +39,7 @@ contract GBC is
     constructor(string memory name, string memory symbol, string memory baseTokenURI) ERC721(name, symbol) {
         _baseTokenURI = baseTokenURI;
         _tokenIdTracker.increment();
+        wlSigner = address(this);
     }
 
     function _baseURI() internal view virtual override returns (string memory) {
@@ -97,6 +98,7 @@ contract GBC is
     }
     
     function setWLSigner(address signer) public onlyOwner {
+        require(signer != 0x0000000000000000000000000000000000000000, "Can't set WL signer as 0x00 address");
         wlSigner = signer;
     }
 
