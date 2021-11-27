@@ -1,8 +1,4 @@
 
 
-const contractEnv = process.env.DEPLOYED_CONTRACT
-if (!contractEnv) {
-  throw new Error('.env file is missing DEPLOYED_CONTRACT var')
-}
-export const DEPLOYED_CONTRACT = contractEnv
+export const DEPLOYED_CONTRACT = '0xB88f140238aBc2aEb5c86510A46d33608e5cD73d'
 
