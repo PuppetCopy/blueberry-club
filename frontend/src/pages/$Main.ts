@@ -131,7 +131,7 @@ export default ({ baseRoute = '' }: Website) => component((
 
     $node(designSheet.main, style({ alignItems: 'center', overflowX: 'hidden',  placeContent: 'center', padding: screenUtils.isMobileScreen ? '0 15px': '' }))(
       router.match(rootRoute)(
-        $column(style({ minHeight: '100vh', margin: '0 auto', maxWidth: '1256px', gap: `${screenUtils.isDesktopScreen ? '100px' : '55px'}  0`  }))(
+        $column(style({ minHeight: '100vh', margin: '0 auto', maxWidth: '1256px', gap: `${screenUtils.isDesktopScreen ? '125px' : '55px'}  0`  }))(
 
           $row(style({ width: '100%', padding: '30px 0 0', zIndex: 1000, borderRadius: '12px' }))(
             $row(layoutSheet.spacingBig, style({ alignItems: 'center', flex: 1 }))(
@@ -185,48 +185,51 @@ export default ({ baseRoute = '' }: Website) => component((
           $column(style({ alignItems: 'center' }))(
             $icon({ $content: $logo, width: '100px', viewBox: '0 0 32 32' }),
 
-            $text(style({ fontWeight: 'bold', fontSize: '2em', margin: '10px 0px 25px', textAlign: 'center' }))('GMX Blueberry Club Launch'),
+            $text(style({ fontWeight: 'bold', fontSize: '2.5em', margin: '25px 0px 30px', textAlign: 'center' }))('GMX Blueberry Club Launch'),
             $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '878px' }))(
-              `
-The first goal of this collection is to reward GMX/GLP holders. That's why everyone with more than 1 Multiplier Point (Snapshot taken on ??/12/2021) will be able to mint 1 GBC for free. 
+              `The first goal of this collection is to reward GMX holders. That's why everyone with  Multiplier Point
+(Snapshot taken on 19 Nov 2021) will be able to mint 1 GBC for free (minting early december)
 
-The second distrubtion will be a public sale which will take place on ??/12/2021.
+The second distribution will be a public sale which will take place early december.
 You will be able to mint GBC for 0,03 ETH each.
 
-After the public sale, a part of ETH will be used to create a treasury that will benefit the
-GMX platform and the GBC holders. (more informations below)
-                `.trim()
+After the public sale, a part of ETH will be used to create a treasury that will benefit the GMX platform.
+(more informations below)
+
+`.trim()
 
             ),
           ),
 
           $row(
-            style({ position: 'relative', height: '173px' }),
-            styleInline(
-              map(([intersectionObserverEntry]) => {
-                console.log(intersectionObserverEntry.intersectionRatio)
-                const translateX = Math.abs(Math.min(1, intersectionObserverEntry.intersectionRatio)) * (screenUtils.isDesktopScreen ? 8 : 85)
-                const transform = `translateX(-${translateX }vw)`
-                return { transform }
-              }, intersectionObserver)
-            )
+            style({ position: 'relative', height: '173px' })
           )(
-            $row(intersectionObserverTether(observer.intersection({ threshold: buildThresholdList(1000) })), style({ position: 'absolute', height: '100vh', width: '1px', right: 0, top: 0 }))(),
-            $element('img')(
-              style({ position: 'absolute', top: 0, left: 0, width: '2398px', height: '173px' }),
-              attr({ src: `/assets/roulette-preview.png`, }),
+            $row(intersectionObserverTether(observer.intersection({ threshold: buildThresholdList(1000) }), multicast),
+              style({ position: 'absolute', height: '100vh', width: '1px', right: 0, top: 0 })
             )(),
-            $element('img')(
-              style({ position: 'absolute', top: 0, left: 0, width: '2398px', height: '173px' }),
-              attr({ src: `/assets/roulette-preview.png`, }),
-            )()
+            $node(
+              styleInline(
+                map(([intersectionObserverEntry]) => {
+                  const ratio = intersectionObserverEntry.intersectionRect.top === 0
+                    ? Math.abs(intersectionObserverEntry.intersectionRatio - 1) + 1
+                    : intersectionObserverEntry.intersectionRatio
+
+                  const translateX = Math.abs(ratio) * (screenUtils.isDesktopScreen ? 8 : 85)
+                  const backgroundPositionX = `-${translateX}vw`
+                  return { backgroundPositionX }
+                }, intersectionObserver)
+              ),
+              style({ backgroundImage: `url(/assets/roulette-preview.png)`, backgroundRepeat: 'no-repeat', backgroundSize: '2398px 173px', position: 'absolute', left: '-25vw', top: 0, bottom: 0, width: '2398px', height: '173px' }),
+              
+            )(),
           ),
 
           $column(layoutSheet.spacingBig)(
-            $column(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
-              $text(style({ fontWeight: 'bold', fontSize: '2em' }))('How does it work ?'),
+            $column(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
+              $text(style({ fontWeight: 'bold', fontSize: '2.5em' }))('How does it work ?'),
               $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '878px' }))('The collection is based on a treasury that grows exponentially over time'),
             ),
+            $node(),
 
             $row(layoutSheet.spacingBig, style({ flexWrap: 'wrap' }), gutterSpacingStyle)(
               $card(style({ minWidth: '34%' }))(
@@ -272,12 +275,13 @@ GMX platform and the GBC holders. (more informations below)
             ),
           ),
 
-          $row(
-            $row(style({ flex: 1 }))(
-              $teamMember('xm92boi', 'Founder & Designer')
-            ),
-            $column(layoutSheet.spacingBig, style({ flex: 1 }))(
-              $text(style({ fontWeight: 'bold', fontSize: '2em' }))('Monthly esGMX Airdrop'),
+          $row(style({ gap: '150px', position: 'relative' }))(
+            $element('img')(
+              attr({ src: `/assets/esgmx.svg`, }),
+              style(screenUtils.isDesktopScreen ? { width: '435px' } : { position: 'absolute', right: 0, height: '108px' } )
+            )(),
+            $column(layoutSheet.spacingBig, style({ flex: 2, zIndex: 100 }))(
+              $text(style({ fontWeight: 'bold', fontSize: '2.5em' }))('Monthly esGMX Airdrop'),
               $text(`To support the project, the GMX team has decided to fully distribute 5,000 esGMX to the community at the end of each month!`),
               $element('ul')(layoutSheet.spacingBig, style({ display: 'flex', flexDirection: 'column', margin: 0 }))(
                 $element('li')(
@@ -293,7 +297,7 @@ GMX platform and the GBC holders. (more informations below)
 
 
           $column(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
-            $text(style({ fontWeight: 'bold', fontSize: '2em' }))('Team'),
+            $text(style({ fontWeight: 'bold', fontSize: '2.5em' }))('Team'),
             $row(layoutSheet.spacingBig, style({ alignSelf: 'stretch', placeContent: 'space-evenly', flexWrap: 'wrap' }))(
               $teamMember('xm92boi', 'Founder & Designer'),
               $teamMember('0xAppodial', 'Marketing'),
@@ -304,13 +308,13 @@ GMX platform and the GBC holders. (more informations below)
 
 
           $responsiveFlex(layoutSheet.spacingBig)(
-            $column(layoutSheet.spacing, style({ flex: .5 }))(
-              $text(style({ fontWeight: 'bold', fontSize: '2em' }))('Frequently asked  questions'),
+            $column(layoutSheet.spacingBig, style({ flex: .5 }))(
+              $text(style({ fontWeight: 'bold', fontSize: '2.5em' }))('Frequently asked  questions'),
               $text(style({ whiteSpace: 'pre-wrap', maxWidth: '878px' }))(`You can also contact us on our networks
 (Use the dedicated NFT channel on discord)`),
               $socialMediaLinks
             ),
-            $column(layoutSheet.spacingSmall, style({ flex: 1 }))(
+            $column(layoutSheet.spacingBig, style({ flex: 1 }))(
               $Breadcrumbs({
                 sections: [
                   {
@@ -336,6 +340,8 @@ Public sale : Early december`),
               })({}),
             ),
           ),
+
+          $node(),
 
 
         )
