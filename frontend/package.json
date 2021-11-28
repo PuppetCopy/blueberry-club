@@ -52,7 +52,6 @@
     "devDependencies": {
         "@types/dotenv-webpack": "^7",
         "copy-webpack-plugin": "10.0.0",
-        "dotenv-webpack": "^7.0.3",
         "fork-ts-checker-webpack-plugin": "6.4.2",
         "html-webpack-plugin": "5.5.0",
         "ts-loader": "9.2.6",

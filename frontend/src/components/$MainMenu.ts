@@ -50,7 +50,7 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), claimMap
       // }),
       // attr({ target: '_blank' })($tradeGMX),
       // showAccount ? style({ height: '20px' }, $seperator) : empty(),
-      $IntermediateConnect({
+      screenUtils.isDesktopScreen ? $IntermediateConnect({
         $display: $row(layoutSheet.spacing)(
           switchLatest(
             map(wallet => {
@@ -69,7 +69,7 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), claimMap
         walletLink
       })({
         walletChange: walletChangeTether()
-      }),
+      }) : empty(),
 
 
 

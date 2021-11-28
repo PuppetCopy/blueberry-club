@@ -1,6 +1,6 @@
 import { Behavior, combineObject, replayLatest } from "@aelea/core"
 import { $element, $text, attrBehavior, component, style } from "@aelea/dom"
-import { $column, $icon, $row, layoutSheet } from "@aelea/ui-components"
+import { $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { Web3Provider } from "@ethersproject/providers"
 import { CHAIN, IWalletLink } from "@gambitdao/wallet-link"
@@ -56,7 +56,7 @@ export const $Mint = (config: IMint) => component((
 
   const blueberriesPreviewList = ['/assets/blueberriesNFT/Green.png', '/assets/blueberriesNFT/Orange.png', '/assets/blueberriesNFT/Purple.png', '/assets/blueberriesNFT/Yellow.png']
 
-  const size = '54px'
+  const size = '44px'
   const $img = $element('img')(style({ width: size, height: size, borderRadius: '5px', border: `1px solid ${pallete.middleground}` }))
   const $nftBox = $img(attrBehavior(map(n => ({ src: blueberriesPreviewList[(n % blueberriesPreviewList.length)] }), counter)))
   const provider: Stream<Web3Provider> = switchLatest(map(x => {
@@ -72,8 +72,8 @@ export const $Mint = (config: IMint) => component((
   const hasPresaleStarted = awaitPromises(map(x => x.wlMintStarted(), contract))
 
   return [
-    $column(layoutSheet.spacing)(
-      $row(layoutSheet.spacing, style({ flexWrap: 'wrap' }))(
+    $column(layoutSheet.spacing, style({  }))(
+      $row(layoutSheet.spacing, style({ placeContent: screenUtils.isDesktopScreen ? '' : 'center', flexWrap: 'wrap' }))(
         $Dropdown({
           disabled: accountChange,
           $noneSelected: $text('Mint Amount'),
@@ -136,7 +136,7 @@ export const $Mint = (config: IMint) => component((
       // $ButtonPrimary({ buttonOp: style({ pointerEvents: 'none' }), $content: $row(layoutSheet.spacingSmall)($text(style({ fontWeight: 'normal' }))(`We're building...`), $text(`see you soon`)) })({})
       ),
 
-      $row(layoutSheet.spacing, style({ minHeight: '54px', flexWrap: 'wrap' }))(
+      $row(layoutSheet.spacingSmall, style({ minHeight: '54px', flexWrap: 'wrap' }))(
         switchLatest(map(amount => mergeArray(Array(amount).fill($nftBox())), selectMintAmount))
       )
 

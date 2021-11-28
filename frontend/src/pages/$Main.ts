@@ -4,7 +4,7 @@ import * as router from '@aelea/router'
 import { $RouterAnchor } from '@aelea/router'
 import { $column, $icon, $row, designSheet, layoutSheet, observer, screenUtils } from '@aelea/ui-components'
 import { pallete } from '@aelea/ui-components-theme'
-import { at, empty, map, merge, mergeArray, multicast, now, snapshot, switchLatest } from '@most/core'
+import { empty, map, merge, multicast, now, snapshot } from '@most/core'
 import { Stream } from "@most/types"
 import { IEthereumProvider } from "eip1193-provider"
 import { groupByMap } from '@gambitdao/gmx-middleware'
@@ -17,6 +17,7 @@ import { $bagOfCoins, $discord, $discount, $glp, $stackedCoins, $twitter } from 
 import { claimListQuery } from "../logic/claim"
 import { helloBackend } from '../logic/leaderboard'
 import { $Mint } from "../components/$Mint"
+import { $Breadcrumbs } from "../components/$Breadcrumbs"
 
 
 function buildThresholdList(numSteps = 20) {
@@ -51,7 +52,6 @@ export default ({ baseRoute = '' }: Website) => component((
   [intersectionObserver, intersectionObserverTether]: Behavior<INode, IntersectionObserverEntry[]>,
 
   // websocket communication
-  [spaceOddity, spaceOddityTether]: Behavior<string, string>,
   [walletChange, walletChangeTether]: Behavior<IEthereumProvider | null, IEthereumProvider | null>,
 ) => {
 
@@ -73,9 +73,10 @@ export default ({ baseRoute = '' }: Website) => component((
     map(list => groupByMap(list, item => item.account.toLowerCase()), claimListQuery())
   )
 
+  const $responsiveFlex = screenUtils.isDesktopScreen ? $row : $column
+
   const clientApi = helloBackend({
 
-    spaceOddity
   })
 
   const walletLink = initWalletLink({
@@ -83,13 +84,6 @@ export default ({ baseRoute = '' }: Website) => component((
   }, walletChange)
 
 
-  const msgToGc = 'major tom to ground control'
-  const majorTom = merge(
-    now(msgToGc),
-    switchLatest(map(() => at(10000, msgToGc), clientApi.spaceOddity))
-  )
-
-  
   const windowMouseMove = multicast(eventElementTarget('pointermove', window))
 
 
@@ -124,72 +118,76 @@ export default ({ baseRoute = '' }: Website) => component((
   )
 
 
+  const $teamMember = (name: string, title: string) => $column(layoutSheet.spacing, style({ alignItems: 'center', fontSize: screenUtils.isDesktopScreen ? '' : '65%' }))(
+    $element('img')(style({ width: screenUtils.isDesktopScreen ? '209px' : '150px', borderRadius: '22px' }), attr({ src: `/assets/team/${name}.svg`, }))(),
+    $column(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
+      $text(style({ fontWeight: 900, fontSize: '1.5em' }))(`@${name}`),
+      $text(style({ fontSize: '.75em' }))(title),
+    )
+  )
+
+
   return [
 
-    mergeArray([
-      switchLatest(map(() => empty(), spaceOddityTether()(majorTom))),
-      $node(designSheet.main, style({ alignItems: 'center', overflowX: 'hidden',  placeContent: 'center', padding: screenUtils.isMobileScreen ? '0 15px': '' }))(
-        router.match(rootRoute)(
-          $column(style({ minHeight: '100vh', margin: '0 auto', maxWidth: '1256px' }), layoutSheet.spacingBig)(
+    $node(designSheet.main, style({ alignItems: 'center', overflowX: 'hidden',  placeContent: 'center', padding: screenUtils.isMobileScreen ? '0 15px': '' }))(
+      router.match(rootRoute)(
+        $column(style({ minHeight: '100vh', margin: '0 auto', maxWidth: '1256px', gap: `${screenUtils.isDesktopScreen ? '100px' : '55px'}  0`  }))(
 
-            $row(style({ width: '100%', padding: '30px 0 0', zIndex: 1000, borderRadius: '12px' }))(
-              $row(layoutSheet.spacingBig, style({ alignItems: 'center', flex: 1 }))(
-                $RouterAnchor({ url: '/', route: rootRoute, $anchor: $element('a')($icon({ $content: $logo, width: '55px', viewBox: '0 0 32 32' })) })({
-                  click: linkClickTether()
-                }),
-                $MainMenu({ walletLink, claimMap, parentRoute: pagesRoute })({
-                  routeChange: linkClickTether(),
-                  walletChange: walletChangeTether()
-                }),
+          $row(style({ width: '100%', padding: '30px 0 0', zIndex: 1000, borderRadius: '12px' }))(
+            $row(layoutSheet.spacingBig, style({ alignItems: 'center', flex: 1 }))(
+              $RouterAnchor({ url: '/', route: rootRoute, $anchor: $element('a')($icon({ $content: $logo, width: '55px', viewBox: '0 0 32 32' })) })({
+                click: linkClickTether()
+              }),
+              $MainMenu({ walletLink, claimMap, parentRoute: pagesRoute })({
+                routeChange: linkClickTether(),
+                walletChange: walletChangeTether()
+              }),
                 
-                $socialMediaLinks
-              ),
+              $socialMediaLinks
             ),
+          ),
 
-            $node(),
-            $node(),
 
-            $node(gutterSpacingStyle, style({ display: 'flex', gap: '36px', placeContent: 'space-between', backgroundColor: pallete.background }))(
-              $column(layoutSheet.spacingBig, style({ maxWidth: '620px' }))(
-                $column(style({ fontSize: screenUtils.isMobileScreen ? '2.1em' : '3.1em' }))(
-                  $node(
-                    $text(style({}))(`Welcome to the `),
-                    $text(style({ fontWeight: 'bold' }))(`GMX Bluberry Club`),
-                  ),
+          $node(gutterSpacingStyle, style({ display: 'flex', gap: '36px', placeContent: 'space-between', backgroundColor: pallete.background }))(
+            $column(layoutSheet.spacingBig, style({ maxWidth: '620px' }))(
+              $column(style({ fontSize: screenUtils.isMobileScreen ? '2.1em' : '3.1em' }))(
+                $node(
+                  $text(style({}))(`Welcome to the `),
+                  $text(style({ fontWeight: 'bold' }))(`GMX Bluberry Club`),
                 ),
-
-                $text(style({ lineHeight: '1.5em' }))(`GBC is a generative 10,000 Blueberry's NFT Collection on Arbitrum dedicated to the GMX Decentralized Exchange and its amazing community. Each GBC is unique and algorithmically generated from 130+ hand drawn traits.`),
-
-                $node(),
-
-                $Mint({ walletLink })({
-                  walletChange: walletChangeTether()
-                })
               ),
 
-              screenUtils.isDesktopScreen ? $row(
-                style({ maxWidth: '460px', marginTop: '45px', width: '100%', height: '460px', borderRadius: '38px', transformStyle: 'preserve-3d', perspective: '100px', position: 'relative', placeContent: 'center', alignItems: 'flex-end', backgroundImage: `linear-gradient(162deg, #D0F893 21%, #5CC1D2 100%)` }),
-              )(
-                $element('img')(style({}), attr({ width: '300px', src: '/assets/preview-tag.svg', }))(),
-                $row(style({ position: 'absolute', width: '125px', marginLeft: '58px', placeContent: 'space-between', top: '225px' }))(
-                  $eyeBall(leftEyeContainerPerspectiveTether(observer.resize()), eyeStylePosition(leftEyeContainerPerspective))(
-                    $eyeInner()
-                  ),
-                  $eyeBall(rightEyeContainerPerspectiveTether(observer.resize()), eyeStylePosition(rightEyeContainerPerspective))(
-                    $eyeInner()
-                  ),
-                )
-              ) : empty()
+              $text(style({ lineHeight: '1.5em' }))(`GBC is a generative 10,000 Blueberry's NFT Collection on Arbitrum dedicated to the GMX Decentralized Exchange and its amazing community. Each GBC is unique and algorithmically generated from 130+ hand drawn traits.`),
+
+              $node(),
+
+              $Mint({ walletLink })({
+                walletChange: walletChangeTether()
+              })
             ),
 
-            $node(),
+            screenUtils.isDesktopScreen ? $row(
+              style({ maxWidth: '460px', marginTop: '45px', width: '100%', height: '460px', borderRadius: '38px', transformStyle: 'preserve-3d', perspective: '100px', position: 'relative', placeContent: 'center', alignItems: 'flex-end', backgroundImage: `linear-gradient(162deg, #D0F893 21%, #5CC1D2 100%)` }),
+            )(
+              $element('img')(style({}), attr({ width: '300px', src: '/assets/preview-tag.svg', }))(),
+              $row(style({ position: 'absolute', width: '125px', marginLeft: '58px', placeContent: 'space-between', top: '225px' }))(
+                $eyeBall(leftEyeContainerPerspectiveTether(observer.resize()), eyeStylePosition(leftEyeContainerPerspective))(
+                  $eyeInner()
+                ),
+                $eyeBall(rightEyeContainerPerspectiveTether(observer.resize()), eyeStylePosition(rightEyeContainerPerspective))(
+                  $eyeInner()
+                ),
+              )
+            ) : empty()
+          ),
 
-            $column(style({ alignItems: 'center' }))(
-              $icon({ $content: $logo, width: '100px', viewBox: '0 0 32 32' }),
 
-              $text(style({ fontWeight: 'bold', fontSize: '2em', margin: '10px 0px 25px', textAlign: 'center' }))('GMX Blueberry Club Launch'),
-              $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '878px' }))(
-                `
+          $column(style({ alignItems: 'center' }))(
+            $icon({ $content: $logo, width: '100px', viewBox: '0 0 32 32' }),
+
+            $text(style({ fontWeight: 'bold', fontSize: '2em', margin: '10px 0px 25px', textAlign: 'center' }))('GMX Blueberry Club Launch'),
+            $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '878px' }))(
+              `
 The first goal of this collection is to reward GMX/GLP holders. That's why everyone with more than 1 Multiplier Point (Snapshot taken on ??/12/2021) will be able to mint 1 GBC for free. 
 
 The second distrubtion will be a public sale which will take place on ??/12/2021.
@@ -199,39 +197,39 @@ After the public sale, a part of ETH will be used to create a treasury that will
 GMX platform and the GBC holders. (more informations below)
                 `.trim()
 
-              ),
             ),
+          ),
 
-            $row(
-              style({ position: 'relative', height: '173px', margin: `${screenUtils.isDesktopScreen ? '70px' : '55px'}  0` }),
-              styleInline(
-                map(([intersectionObserverEntry]) => {
-                  const translateX = 25 + Math.abs(intersectionObserverEntry.intersectionRatio) * (screenUtils.isDesktopScreen ? 8 : 85)
-                  const transform = `translateX(-${translateX }vw)`
-                  return { transform }
-                }, intersectionObserver)
-              )
-            )(
-              $row(intersectionObserverTether(observer.intersection({ threshold: buildThresholdList(1000) })), style({ position: 'absolute', height: '100vh', width: '1px', right: 0, top: 0 }))(),
-              $element('img')(
-                style({ position: 'absolute', top: 0, left: 0, width: '2398px', height: '173px' }),
-                attr({ src: `/assets/roulette-preview.png`, }),
-              )(),
-              $element('img')(
-                style({ position: 'absolute', top: 0, left: 0, width: '2398px', height: '173px' }),
-                attr({ src: `/assets/roulette-preview.png`, }),
-              )()
-            ),
+          $row(
+            style({ position: 'relative', height: '173px' }),
+            styleInline(
+              map(([intersectionObserverEntry]) => {
+                console.log(intersectionObserverEntry.intersectionRatio)
+                const translateX = Math.abs(Math.min(1, intersectionObserverEntry.intersectionRatio)) * (screenUtils.isDesktopScreen ? 8 : 85)
+                const transform = `translateX(-${translateX }vw)`
+                return { transform }
+              }, intersectionObserver)
+            )
+          )(
+            $row(intersectionObserverTether(observer.intersection({ threshold: buildThresholdList(1000) })), style({ position: 'absolute', height: '100vh', width: '1px', right: 0, top: 0 }))(),
+            $element('img')(
+              style({ position: 'absolute', top: 0, left: 0, width: '2398px', height: '173px' }),
+              attr({ src: `/assets/roulette-preview.png`, }),
+            )(),
+            $element('img')(
+              style({ position: 'absolute', top: 0, left: 0, width: '2398px', height: '173px' }),
+              attr({ src: `/assets/roulette-preview.png`, }),
+            )()
+          ),
 
+          $column(layoutSheet.spacingBig)(
             $column(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
               $text(style({ fontWeight: 'bold', fontSize: '2em' }))('How does it work ?'),
               $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '878px' }))('The collection is based on a treasury that grows exponentially over time'),
             ),
 
-            $node(),
-
-            $row(layoutSheet.spacingBig, gutterSpacingStyle)(
-              $card(
+            $row(layoutSheet.spacingBig, style({ flexWrap: 'wrap' }), gutterSpacingStyle)(
+              $card(style({ minWidth: '34%' }))(
                 $icon({ $content: $glp, width: '42px', viewBox: '0 0 32 32' }),
                 $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))('$GLP'),
                 $column(
@@ -239,16 +237,14 @@ GMX platform and the GBC holders. (more informations below)
                   $text('GLP token earn Escrowed GMX rewards and 50% of platform fees distributed in ETH.'),
                 )
               ),
-              $card(
+              $card(style({ minWidth: '34%' }))(
                 $icon({ $content: $bagOfCoins, width: '42px', viewBox: '0 0 32 32' }),
                 $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))('Treasury'),
                 $column(
                   $text('75% of the public sales will be used to create a GLP treasury which will provide benefits to GBC Holders and GMX platform. The remaining 25% will be used for marketing and for the marketplace development.'),
                 )
               ),
-            ),
-            $row(layoutSheet.spacingBig, gutterSpacingStyle)(
-              $card(
+              $card(style({ minWidth: '34%' }))(
                 $icon({ $content: $discount, width: '42px', viewBox: '0 0 32 32' }),
                 $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))('Royalties'),
 
@@ -261,7 +257,7 @@ GMX platform and the GBC holders. (more informations below)
                   
                 )
               ),
-              $card(
+              $card(style({ minWidth: '34%' }))(
                 $icon({ $content: $stackedCoins, width: '42px', viewBox: '0 0 32 32' }),
                 $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))('GBC Rewards'),
                 $text('The GLPs are stacked on the GMX platform.'),
@@ -274,50 +270,94 @@ GMX platform and the GBC holders. (more informations below)
                 )
               )
             ),
+          ),
 
-            $node(),
-            $node(),
-            $node(),
-
-            $row(
-              $column(layoutSheet.spacing, style({ flex: .5 }))(
-                $text(style({ fontWeight: 'bold', fontSize: '2em' }))('Frequently asked  questions'),
-                $text(style({ whiteSpace: 'pre-wrap', maxWidth: '878px' }))('You can also contact us on our networks'),
-                $socialMediaLinks
-              ),
-              $node(),
-              $column(layoutSheet.spacingSmall, style({ flex: 1 }))(
-                // $text(style({ fontWeight: 'bold', fontSize: '2em' }))('Frequently asked  questions'),
-                // $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '878px' }))('The collection is based on a treasury that grows exponentially over time'),
-              ),
+          $row(
+            $row(style({ flex: 1 }))(
+              $teamMember('xm92boi', 'Founder & Designer')
             ),
+            $column(layoutSheet.spacingBig, style({ flex: 1 }))(
+              $text(style({ fontWeight: 'bold', fontSize: '2em' }))('Monthly esGMX Airdrop'),
+              $text(`To support the project, the GMX team has decided to fully distribute 5,000 esGMX to the community at the end of each month!`),
+              $element('ul')(layoutSheet.spacingBig, style({ display: 'flex', flexDirection: 'column', margin: 0 }))(
+                $element('li')(
+                  $text('Every week a snapshot is taken of each user’s GMX tokens as well as Blueberry NFT holdings'),
+                ),
+                $element('li')(
+                  $text('At the end of the month, if a user held the same Blueberry NFT for 4 weeks, they would share from the reward pool based on the number of GMX tokens they held during the snapshots'),
+                )
+              ),
+              $text('Big thanks to the GMX team for this feature which will allow to strengthen and unite the GMX community'),
+            ),
+          ),
 
-            $node(),
-            $node(),
-            $node(),
 
-          )
-        ),
+          $column(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
+            $text(style({ fontWeight: 'bold', fontSize: '2em' }))('Team'),
+            $row(layoutSheet.spacingBig, style({ alignSelf: 'stretch', placeContent: 'space-evenly', flexWrap: 'wrap' }))(
+              $teamMember('xm92boi', 'Founder & Designer'),
+              $teamMember('0xAppodial', 'Marketing'),
+              $teamMember('itburnzz', 'Web3 Dev'),
+              $teamMember('destructioneth', 'Contract Dev'),
+            )
+          ),
 
-        // router.contains(pagesRoute)(
-        //   $column(layoutSheet.spacingBig, style({ maxWidth: '1080px', width: '100%', margin: '0 auto', paddingBottom: '45px' }))(
-        //     $row(layoutSheet.spacing, style({ padding: screenUtils.isDesktopScreen ? '34px 15px' : '18px 12px 0', zIndex: 30, alignItems: 'center' }))(
-        //       screenUtils.isDesktopScreen
-        //         ? $RouterAnchor({ $anchor: $element('a')($icon({ $content: $logo, fill: pallete.message, width: '46px', height: '46px', viewBox: '0 0 32 32' })), url: '/', route: rootRoute })({
-        //           click: linkClickTether()
-        //         })
-        //         : empty(),
-        //       screenUtils.isDesktopScreen ? $node(layoutSheet.flex)() : empty(),
-        //       $MainMenu({ walletLink, claimMap, parentRoute: pagesRoute, containerOp: style({ padding: '34px, 20px' }) })({
-        //         routeChange: linkClickTether(),
-        //         walletChange: walletChangeTether()
-        //       })
-        //     ),
-        //   )
-        // ),
+
+          $responsiveFlex(layoutSheet.spacingBig)(
+            $column(layoutSheet.spacing, style({ flex: .5 }))(
+              $text(style({ fontWeight: 'bold', fontSize: '2em' }))('Frequently asked  questions'),
+              $text(style({ whiteSpace: 'pre-wrap', maxWidth: '878px' }))(`You can also contact us on our networks
+(Use the dedicated NFT channel on discord)`),
+              $socialMediaLinks
+            ),
+            $column(layoutSheet.spacingSmall, style({ flex: 1 }))(
+              $Breadcrumbs({
+                sections: [
+                  {
+                    $title: $text('What is the GMX Bluebery Club?'),
+                    $content: $text(`GBC is a generative 10,000 Blueberry’s NFT Collection dedicated
+to GMX.io and its amazing community. Each GBC is unique and algorithmically generated from over 130+ hand drawn traits. 
+`),
+                  },
+                  {
+                    $title: $text('What blockchain are GBC minted on?'),
+                    $content: $text('GBC will be minted on Arbitrum.'),
+                  },
+                  {
+                    $title: $text('How much will it cost to mint?'),
+                    $content: $text('A GBC will cost 0.03 ETH during the public sale'),
+                  },
+                  {
+                    $title: $text('When will minting be available?'),
+                    $content: $text(`Free mint for whitelisted users : Early december
+Public sale : Early december`),
+                  },
+                ]
+              })({}),
+            ),
+          ),
+
+
+        )
       ),
 
-    ])
+      // router.contains(pagesRoute)(
+      //   $column(layoutSheet.spacingBig, style({ maxWidth: '1080px', width: '100%', margin: '0 auto', paddingBottom: '45px' }))(
+      //     $row(layoutSheet.spacing, style({ padding: screenUtils.isDesktopScreen ? '34px 15px' : '18px 12px 0', zIndex: 30, alignItems: 'center' }))(
+      //       screenUtils.isDesktopScreen
+      //         ? $RouterAnchor({ $anchor: $element('a')($icon({ $content: $logo, fill: pallete.message, width: '46px', height: '46px', viewBox: '0 0 32 32' })), url: '/', route: rootRoute })({
+      //           click: linkClickTether()
+      //         })
+      //         : empty(),
+      //       screenUtils.isDesktopScreen ? $node(layoutSheet.flex)() : empty(),
+      //       $MainMenu({ walletLink, claimMap, parentRoute: pagesRoute, containerOp: style({ padding: '34px, 20px' }) })({
+      //         routeChange: linkClickTether(),
+      //         walletChange: walletChangeTether()
+      //       })
+      //     ),
+      //   )
+      // ),
+    )
   ]
 })
 
