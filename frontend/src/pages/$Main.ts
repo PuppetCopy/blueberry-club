@@ -203,7 +203,7 @@ GMX platform and the GBC holders. (more informations below)
             ),
 
             $row(
-              style({ position: 'relative', height: '173px' }),
+              style({ position: 'relative', height: '173px', margin: `${screenUtils.isDesktopScreen ? '70px' : '55px'}  0` }),
               styleInline(
                 map(([intersectionObserverEntry]) => {
                   const translateX = 25 + Math.abs(intersectionObserverEntry.intersectionRatio) * (screenUtils.isDesktopScreen ? 8 : 85)
