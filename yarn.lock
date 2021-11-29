@@ -951,9 +951,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@gambitdao/wallet-link@npm:0.1.0":
-  version: 0.1.0
-  resolution: "@gambitdao/wallet-link@npm:0.1.0"
+"@gambitdao/wallet-link@workspace:*, @gambitdao/wallet-link@workspace:wallet-link":
+  version: 0.0.0-use.local
+  resolution: "@gambitdao/wallet-link@workspace:wallet-link"
   dependencies:
     "@aelea/core": 1.3.0
     "@ethersproject/providers": 5.5.0
@@ -963,9 +963,8 @@ __metadata:
     "@most/scheduler": 1.3.0
     "@most/types": 1.1.0
     eip1193-provider: 1.0.1
-  checksum: 61af60503ea9e05b7bde01d69e0983db1717382d2da2555445302d7b05ba9736ee2225f6b1804a9fb2e55980cff1b7ae2358997efdd2ddc14d9ac71d82d1e75b
-  languageName: node
-  linkType: hard
+  languageName: unknown
+  linkType: soft
 
 "@gar/promisify@npm:^1.0.1":
   version: 1.1.2
@@ -15364,7 +15363,7 @@ __metadata:
     "@ethersproject/units": ^5.5.0
     "@ethersproject/wallet": ^5.5.0
     "@gambitdao/gmx-middleware": 0.2.0
-    "@gambitdao/wallet-link": 0.1.0
+    "@gambitdao/wallet-link": "workspace:*"
     "@metamask/detect-provider": ^1.2.0
     "@most/core": 1.6.1
     "@most/disposable": 1.3.0

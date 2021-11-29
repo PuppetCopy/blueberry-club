@@ -1,5 +1,5 @@
 import { $Branch, $element, $Node, $text, style, styleInline, stylePseudo } from "@aelea/dom"
-import { $ButtonIcon, $column, $icon, $row, layoutSheet, $seperator as $uiSeperator } from "@aelea/ui-components"
+import { $ButtonIcon, $column, $icon, $row, layoutSheet, $seperator as $uiSeperator, screenUtils } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { empty, map } from "@most/core"
 import { Stream } from "@most/types"
@@ -15,6 +15,7 @@ export const $card = $column(layoutSheet.spacingBig, style({
 }))
 
 export const $seperator = $text(style({ color: pallete.foreground, pointerEvents: 'none' }))('|')
+export const $responsiveFlex = screenUtils.isDesktopScreen ? $row : $column
 
 export const $alert = ($contnet: $Branch) => $row(layoutSheet.spacingSmall, style({ borderRadius: '100px', alignItems: 'center', fontSize: '75%', border: `1px solid ${pallete.negative}`, padding: '10px 14px' }))(
   $icon({ $content: $alertIcon, viewBox: '0 0 24 24', width: '18px', svgOps: style({ minWidth: '18px' }) }),

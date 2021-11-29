@@ -58,9 +58,9 @@ contract GBC is
         }
     }
     function whitelistMint(uint256 _mintAmount, bytes memory sig) public payable {
-        require(wlMintStarted == true, "WL Mint not started yet");
+        require(wlMintStarted == true, "Whitelist Mint has not started yet");
         require(_mintAmount <= maxMintPerTx, "Exceeds max amount per transaction allowed");
-        require(checkSignature(sig, _msgSender()) == true, "Signature not valid");
+        require(checkSignature(sig, _msgSender()) == true, "Signature is not valid");
         require(blacklist[_msgSender()] == false, "This whitelisted address was already used");
         require(msg.value >= cost * (_mintAmount - 1), "Not enough ether provided");
         for (uint256 i = 1; i <= _mintAmount; i++) {

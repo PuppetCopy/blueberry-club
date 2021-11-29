@@ -1,9 +1,8 @@
 import { Behavior, combineArray } from "@aelea/core"
 import { $element, $Node, $text, attr, component, style } from "@aelea/dom"
-import { $column, $icon, $Popover, $row, layoutSheet } from "@aelea/ui-components"
+import { $column, $icon, $Popover, $row, layoutSheet, state } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { awaitPromises, constant, empty, map, multicast, now, switchLatest } from "@most/core"
-import { Stream } from "@most/types"
+import { awaitPromises, constant, empty, fromPromise, map, multicast, skipRepeats, snapshot, switchLatest, tap } from "@most/core"
 import { IEthereumProvider } from "eip1193-provider"
 import { CHAIN, IWalletLink, attemptToSwitchNetwork } from "@gambitdao/wallet-link"
 import { $walletConnectLogo } from "../common/$icons"
@@ -15,24 +14,25 @@ import { $caretDown } from "../elements/$icons"
 
 export interface IIntermediateDisplay {
   $display: $Node
-  walletLink: Stream<IWalletLink | null>
+  walletLink: IWalletLink
+  walletStore: state.BrowserStore<"metamask" | "walletConnect" | null, "walletStore">
 }
 
 export const $IntermediateConnect = (config: IIntermediateDisplay) => component((
   [connectPopover, connectPopoverTether]: Behavior<any, any>,
-  [switchNetwork, switchNetworkTether]: Behavior<PointerEvent, IEthereumProvider>,
+  [switchNetwork, switchNetworkTether]: Behavior<PointerEvent, any>,
   [walletChange, walletChangeTether]: Behavior<PointerEvent, IEthereumProvider | null>,
 ) => {
 
-  const accountChange = switchLatest(map(wallet => wallet ? wallet.account : now(null), config.walletLink))
+  const noAccount = skipRepeats(map(x => x === null || x === undefined, tap(console.log, config.walletLink.account)))
 
   return [
-    $column(
+    $row(
       switchLatest(
-        awaitPromises(combineArray(async (account, walletLink, metamask, walletConnect) => {
+        combineArray((metamask, walletProvider, noAccount) => {
 
           // no wallet connected, show connection flow
-          if (!account || walletLink === null) {
+          if (noAccount || walletProvider === null) {
             
             const $walletConnectBtn = $ButtonPrimary({
               $content: $row(layoutSheet.spacing)(
@@ -48,9 +48,13 @@ export const $IntermediateConnect = (config: IIntermediateDisplay) => component(
               ), buttonOp: style({})
             })({
               click: walletChangeTether(
-                map(async () => walletConnect.enable()),
+                map(async () => {
+                  await wallet.walletConnect.enable()
+
+                  return wallet.walletConnect
+                }),
                 awaitPromises,
-                constant(walletConnect)
+                src => config.walletStore.store(src, constant('walletConnect')),
               )
             })
 
@@ -63,14 +67,24 @@ export const $IntermediateConnect = (config: IIntermediateDisplay) => component(
                   ), buttonOp: style({})
                 })({
                   click: walletChangeTether(
-                    map(async () => metamask.enable()),
+                    map(async () => {
+                      const metamaskProivder = await wallet.metamaskQuery
+
+                      if (metamaskProivder) {
+                        await metamaskProivder.request({ method: 'eth_requestAccounts' })
+
+                        return metamaskProivder
+                      }
+
+                      throw new Error('Could not find metmask')
+                    }),
                     awaitPromises,
-                    constant(metamask),
+                    src => config.walletStore.store(src, constant('metamask')),
                   ),
                 }),
                 $walletConnectBtn
               )
-              :$walletConnectBtn
+              : $walletConnectBtn
 
             return $Popover({
               $$popContent: constant($connectButtonOptions, connectPopover)
@@ -87,34 +101,29 @@ export const $IntermediateConnect = (config: IIntermediateDisplay) => component(
     
           }
 
-          return switchLatest(
-            combineArray((chain) => {
+          return $column(
+            switchLatest(
+              map((chain) => {
 
-              if (
+                if (
                 // chain !== CHAIN.ARBITRUM
-                chain !== CHAIN.ETH_ROPSTEN
-              ) {
-                return $ButtonPrimary({
-                  $content: $text('Switch to Ropsten TestNet'),
+                  chain !== CHAIN.ETH_ROPSTEN
+                ) {
+                  return $ButtonPrimary({
+                    $content: $text('Switch to Ropsten TestNet'),
                   // $content: $text('Switch to Arbitrum Network'),
-                  // buttonOp: O(
-                    
-                    
-                  // )
-                })({
-                  click: switchNetworkTether(
-                    map(() => attemptToSwitchNetwork(walletLink.wallet, CHAIN.ETH_ROPSTEN)),
-                    // map(() => attemptToSwitchNetwork(walletLink.wallet, CHAIN.ARBITRUM)),
-                    awaitPromises,
-                    constant(walletLink.wallet)
-                  )
-                })
-              }
+                  })({
+                    click: switchNetworkTether(
+                      snapshot(wallet => wallet ? attemptToSwitchNetwork(wallet, CHAIN.ETH_ROPSTEN) : null, config.walletLink.wallet),
+                    )
+                  })
+                }
                 
-              return config.$display
-            }, multicast(walletLink.network))
+                return config.$display
+              }, config.walletLink.network)
+            )
           )
-        }, accountChange, config.walletLink, wallet.metamask, wallet.walletConnect))
+        }, fromPromise(wallet.metamaskQuery), config.walletLink.provider, noAccount)
       ),
       
       switchLatest(map(empty, switchNetwork))

@@ -2,18 +2,18 @@ import { Behavior, replayLatest } from "@aelea/core"
 import { $element, $node, $text, attr, component, eventElementTarget, INode, style, styleInline } from "@aelea/dom"
 import * as router from '@aelea/router'
 import { $RouterAnchor } from '@aelea/router'
-import { $column, $icon, $row, designSheet, layoutSheet, observer, screenUtils } from '@aelea/ui-components'
+import { $column, $icon, $row, designSheet, layoutSheet, observer, screenUtils, state } from '@aelea/ui-components'
 import { pallete } from '@aelea/ui-components-theme'
-import { empty, map, merge, multicast, now, snapshot } from '@most/core'
+import { awaitPromises, empty, map, merge, multicast, now, periodic, skipRepeats, snapshot, switchLatest } from '@most/core'
 import { Stream } from "@most/types"
 import { IEthereumProvider } from "eip1193-provider"
 import { groupByMap } from '@gambitdao/gmx-middleware'
 import { initWalletLink } from "@gambitdao/wallet-link"
 import { $logo } from '../common/$icons'
 import * as wallet from "../common/wallets"
-import { $MainMenu } from '../components/$MainMenu'
-import { $anchor } from "../elements/$common"
-import { $bagOfCoins, $discord, $discount, $glp, $stackedCoins, $twitter } from "../elements/$icons"
+import { $MainMenu, $socialMediaLinks } from '../components/$MainMenu'
+import { $responsiveFlex } from "../elements/$common"
+import { $bagOfCoins, $discount, $glp, $stackedCoins } from "../elements/$icons"
 import { claimListQuery } from "../logic/claim"
 import { helloBackend } from '../logic/leaderboard'
 import { $Mint } from "../components/$Mint"
@@ -45,6 +45,8 @@ interface Website {
   baseRoute?: string
 }
 
+
+
 export default ({ baseRoute = '' }: Website) => component((
   [routeChanges, linkClickTether]: Behavior<any, string>,
   [leftEyeContainerPerspective, leftEyeContainerPerspectiveTether]: Behavior<INode, ResizeObserverEntry[]>,
@@ -73,15 +75,35 @@ export default ({ baseRoute = '' }: Website) => component((
     map(list => groupByMap(list, item => item.account.toLowerCase()), claimListQuery())
   )
 
-  const $responsiveFlex = screenUtils.isDesktopScreen ? $row : $column
 
   const clientApi = helloBackend({
 
   })
 
-  const walletLink = initWalletLink({
-    walletProviders: [wallet.metamask, wallet.walletConnect]
-  }, walletChange)
+  // localstorage
+  const rootStore = state.createLocalStorageChain('ROOT')
+  const walletStore = rootStore<'metamask' | 'walletConnect' | null, 'walletStore'>('walletStore', null)
+
+  const chosenWalletName = now(walletStore.state)
+  const defaultWalletProvider: Stream<IEthereumProvider | null> = awaitPromises(map(async name => {
+    const provider = name === 'walletConnect' ? wallet.walletConnect : await wallet.metamaskQuery
+    if (name && provider) {
+      const [mainAccount]: string[] = await provider.request({ method: 'eth_accounts' }) as any
+      if (mainAccount) {
+        return provider
+      }
+
+    }
+
+    return null
+  }, chosenWalletName))
+
+
+  const walletLink = initWalletLink(
+    merge(defaultWalletProvider, walletChange)
+  )
+
+
 
 
   const windowMouseMove = multicast(eventElementTarget('pointermove', window))
@@ -108,15 +130,6 @@ export default ({ baseRoute = '' }: Website) => component((
     }, eyeContainerPerspective, windowMouseMove)
   )
   const $card = $column(layoutSheet.spacing, style({ backgroundColor: pallete.horizon, padding: '30px', borderRadius: '20px', flex: 1 }))
-  const $socialMediaLinks = $row(layoutSheet.spacingBig)(
-    $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `1px solid ${pallete.message}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://discord.com/invite/cxjZYR4gQK' }))(
-      $icon({ $content: $discord, width: '22px', viewBox: `0 0 32 32` })
-    ),
-    $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `1px solid ${pallete.message}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://twitter.com/GBlueberryClub' }))(
-      $icon({ $content: $twitter, width: '21px', viewBox: `0 0 24 24` })
-    )
-  )
-
 
   const $teamMember = (name: string, title: string) => $column(layoutSheet.spacing, style({ alignItems: 'center', fontSize: screenUtils.isDesktopScreen ? '' : '65%' }))(
     $element('img')(style({ width: screenUtils.isDesktopScreen ? '209px' : '150px', borderRadius: '22px' }), attr({ src: `/assets/team/${name}.svg`, }))(),
@@ -126,24 +139,62 @@ export default ({ baseRoute = '' }: Website) => component((
     )
   )
 
+  // const MINT_START = Date.UTC(2021, 11, 1, 18, 0, 0)
+  const MINT_START = Date.now() + 3000
+  const MINT_END = Infinity
+
+  const secondsCountdown = map(Date.now, periodic(1000))
+
+  const competitionCountdown = (startDate: number) => map(now => {
+    const distance = startDate - now
+
+    const days = Math.floor(distance / (1000 * 60 * 60 * 24))
+    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))
+    const seconds = Math.floor((distance % (1000 * 60)) / 1000)
+      
+    return `${days ? days + "d " : ''} ${hours ? hours + "h " : '' } ${ minutes ? minutes + "m " : ''} ${seconds ? seconds + "s " : ''}`
+  }, secondsCountdown)
+
+
+  const competitionStartSignal = skipRepeats(map(now => MINT_START > now, secondsCountdown))
+
+  const $details = (start: number) => {
+
+    return $row(layoutSheet.spacingSmall)(
+      switchLatest(
+        map(stated => {
+
+          return stated
+            ? $row(layoutSheet.spacingSmall, style({ fontSize: '1.65em' }))(
+              $text(`Minting is starting in! `),
+              $text(style({ fontWeight: 'bold' }))(competitionCountdown(start)),
+            )
+            : $Mint({ walletLink, walletStore })({
+              walletChange: walletChangeTether()
+            })
+        }, competitionStartSignal)
+      )
+        
+    )
+  }
+
 
   return [
 
     $node(designSheet.main, style({ alignItems: 'center', overflowX: 'hidden',  placeContent: 'center', padding: screenUtils.isMobileScreen ? '0 15px': '' }))(
       router.match(rootRoute)(
-        $column(style({ minHeight: '100vh', margin: '0 auto', maxWidth: '1256px', gap: `${screenUtils.isDesktopScreen ? '125px' : '55px'}  0`  }))(
+        $column(style({ minHeight: '100vh', margin: '0 auto', maxWidth: '1256px', gap: '125px'  }))(
 
           $row(style({ width: '100%', padding: '30px 0 0', zIndex: 1000, borderRadius: '12px' }))(
             $row(layoutSheet.spacingBig, style({ alignItems: 'center', flex: 1 }))(
               $RouterAnchor({ url: '/', route: rootRoute, $anchor: $element('a')($icon({ $content: $logo, width: '55px', viewBox: '0 0 32 32' })) })({
                 click: linkClickTether()
               }),
-              $MainMenu({ walletLink, claimMap, parentRoute: pagesRoute })({
+              $MainMenu({ walletLink, claimMap, parentRoute: pagesRoute, walletStore })({
                 routeChange: linkClickTether(),
                 walletChange: walletChangeTether()
               }),
-                
-              $socialMediaLinks
             ),
           ),
 
@@ -161,9 +212,7 @@ export default ({ baseRoute = '' }: Website) => component((
 
               $node(),
 
-              $Mint({ walletLink })({
-                walletChange: walletChangeTether()
-              })
+              $details(MINT_START)
             ),
 
             screenUtils.isDesktopScreen ? $row(
