@@ -20,8 +20,8 @@ const main = async () => {
   const contract = GBC__factory.connect(DEPLOYED_CONTRACT, signer)
   
   await contract.deployed()
-  await contract.startWLMint()
-  console.log(`🚀 Whitelist sale started 🚀`)
+  await Promise.all([contract.startPublicSale(), contract.startWLMint()])
+  console.log(`🚀 Sale started 🚀`)
 
 }
 

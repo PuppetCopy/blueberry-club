@@ -11,7 +11,7 @@ const styleEl = document.createElement('style')
 const spinnerId = (Math.random() + 1).toString(36).substring(7)
 
 const keyFrames = `
-@keyframes ${spinnerId} {
+@keyframes id${spinnerId} {
   0% { transform:rotate(0deg);}
   100% {transform:rotate(360deg)}   
 }
@@ -20,13 +20,13 @@ styleEl.innerHTML = keyFrames.replace(/A_DYNAMIC_VALUE/g, "180deg")
 document.getElementsByTagName('head')[0].appendChild(styleEl)
 
 export const $spinner = $node(style({
-  width: '55px',
-  height: '55px',
+  width: '45px',
+  height: '45px',
   borderRadius: '50%',
   border: '4px #fff dashed',
   boxShadow: 'inset 0px 0px 0px 3px #fff',
   backgroundColor: 'transparent',
-  animation: `${spinnerId} 5s linear infinite`,
+  animation: `id${spinnerId} 5s linear infinite`,
 }))()
 
 
@@ -99,7 +99,7 @@ export const $IntermediatePromise = <T>({
 export const $IntermediateTx = <T extends TransactionResponse>({ $done, query, clean, $loader }: ISpinner<T>) => $IntermediatePromise({
   query, clean, $done, $loader,
   $fail: map(res => {
-    const newLocal: Error = (res as any).error
+    const newLocal: Error = 'error' in res ? (res as any).error : res
     return $alert($text(newLocal.message))
   }),
 })

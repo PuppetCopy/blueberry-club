@@ -16,7 +16,7 @@
     "clean": "yarn hardhat clean && yarn g:tsc:clean",
     "deploy": "yarn hardhat run --network localhost scripts/deploy.ts",
     "deploy-ropsten": "yarn hardhat run scripts/deploy.ts --network ropsten",
-    "startWhitelistSale": "yarn hardhat run scripts/startPresale.ts --network ropsten",
+    "startSale": "yarn hardhat run scripts/startPresale.ts --network ropsten",
     "verify": "yarn hardhat verify --network ropsten process.env.DEPLOYED_CONTRACT 'GMX Blueberry Club' 'GBC' ''ipfs://hash/''",
     "node": "yarn hardhat node",
     "typechain": "yarn hardhat typechain",

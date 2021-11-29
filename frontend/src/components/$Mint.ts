@@ -3,7 +3,7 @@ import { $element, $text, attrBehavior, component, style } from "@aelea/dom"
 import { $column, $icon, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { CHAIN, IWalletLink } from "@gambitdao/wallet-link"
-import { awaitPromises, constant, map, merge, mergeArray, multicast, now, periodic, scan, snapshot, startWith, switchLatest, tap } from "@most/core"
+import { awaitPromises, constant, empty, map, merge, mergeArray, multicast, now, periodic, scan, snapshot, startWith, switchLatest, tap } from "@most/core"
 import { IEthereumProvider } from "eip1193-provider"
 import { $gift } from "../elements/$icons"
 import { $IntermediateConnect } from "./$ConnectAccount"
@@ -82,7 +82,7 @@ export const $Mint = (config: IMint) => component((
 
   return [
     $column(layoutSheet.spacing, style({  }))(
-      $row(layoutSheet.spacing, style({ placeContent: screenUtils.isDesktopScreen ? '' : 'center', flexWrap: 'wrap' }))(
+      $row(layoutSheet.spacing, style({ placeContent: screenUtils.isDesktopScreen ? '' : 'center', flexWrap: 'wrap', alignItems: 'center' }))(
         $Dropdown({
           disabled: accountChange,
           $noneSelected: $text('Mint Amount'),
@@ -105,7 +105,7 @@ export const $Mint = (config: IMint) => component((
  
                 if (!canClaim || amount > 1) {
                   return $container(
-                    $giftIcon,
+                    canClaim ? $giftIcon : empty(),
                     $text(canClaim ? `${amount - 1} + 1 free (${(amount - 1) * .03}ETH)` : `${amount} (${amount * .03}ETH)`),
                   )
                 }
@@ -118,18 +118,21 @@ export const $Mint = (config: IMint) => component((
             ),
           })({
             click: clickClaimTether(
-              snapshot(async ({ canClaim, selectMintAmount, contract }, click) => {
-
-                if (contract === null) {
+              snapshot(async ({ canClaim, selectMintAmount, contract, account }, click) => {
+                if (contract === null || !account) {
                   return
                 }
 
                 const MINT_PRICE = 30000000000000000n
-                const ww = contract.whitelistMint(selectMintAmount, '0x0a', { value: BigInt(selectMintAmount - (canClaim ? 1 : 0)) * MINT_PRICE })
 
-                return ww
+                const contractAction = canClaim
+                  ? contract.whitelistMint(selectMintAmount, WHITELIST[account.toLocaleLowerCase()], { value: BigInt(selectMintAmount - 1) * MINT_PRICE })
+                  : contract.mint(selectMintAmount, { value: BigInt(selectMintAmount) * MINT_PRICE })
 
-              }, combineObject({ canClaim, selectMintAmount, contract })),
+
+                return contractAction.then(recp => recp.wait())
+
+              }, combineObject({ canClaim, selectMintAmount, contract, account: config.walletLink.account })),
             )
           }),
           walletLink: config.walletLink
