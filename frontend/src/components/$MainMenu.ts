@@ -60,6 +60,9 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
 
       $node(style({ flex: 1 }))(),
 
+      screenUtils.isDesktopScreen ? $socialMediaLinks : empty(),
+
+
       // $Link({ disabled: now(true), $content: $text('Marketplace(WIP)'), url: '/p/leaderboard', route: leaderboardRoute })({
       //   click: routeChangeTether()
       // }),
@@ -67,31 +70,33 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
       // showAccount ? style({ height: '20px' }, $seperator) : empty(),
       
 
-      $Popover({
-        dismiss: profileLinkClick,
-        $$popContent: combineArray((_) => {
-          return $column(layoutSheet.spacingBig)(
-            $treasury,
-            $socialMediaLinks
+      screenUtils.isMobileScreen
+        ? $Popover({
+          dismiss: profileLinkClick,
+          $$popContent: combineArray((_) => {
+            return $column(layoutSheet.spacingBig)(
+              $treasury,
+              $socialMediaLinks
+            )
+          }, clickPopoverClaim),
+        })(
+          $row(clickPopoverClaimTether(nodeEvent('click')))(
+            $icon({
+              svgOps: style({
+                border: `1px solid ${pallete.foreground}`,
+                borderRadius: '50%',
+                padding: '6px',
+                cursor: 'pointer'
+              }),
+              width: '32px',
+              $content: $moreDots,
+              viewBox: '0 0 32 32'
+            })
           )
-        }, clickPopoverClaim),
-      })(
-        $row(clickPopoverClaimTether(nodeEvent('click')))(
-          $icon({
-            svgOps: style({
-              border: `1px solid ${pallete.foreground}`,
-              borderRadius: '50%',
-              padding: '6px',
-              cursor: 'pointer'
-            }),
-            width: '32px',
-            $content: $moreDots,
-            viewBox: '0 0 32 32'
-          })
-        )
-      )({
+        )({
         // overlayClick: clickPopoverClaimTether()
-      }),
+        })
+        : empty(),
 
       $IntermediateConnect({
         walletStore,
@@ -110,9 +115,6 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
       })({
         walletChange: walletChangeTether()
       }),
-
-      // 
-
 
      
     ),

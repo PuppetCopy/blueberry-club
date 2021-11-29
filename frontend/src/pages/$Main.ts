@@ -293,33 +293,20 @@ After the public sale, a part of ETH will be used to create a treasury that will
                 $icon({ $content: $bagOfCoins, width: '42px', viewBox: '0 0 32 32' }),
                 $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))('Treasury'),
                 $column(
-                  $text('75% of the public sales will be used to create a GLP treasury which will provide benefits to GBC Holders and GMX platform. The remaining 25% will be used for marketing and for the marketplace development.'),
+                  $text('The public sales will be used to create a GLP treasury which will provide benefits to the GMX platform and to the Blueberry Club. What will this treasury be used for? It will be up to the community to decide. '),
                 )
               ),
               $card(style({ minWidth: '34%' }))(
                 $icon({ $content: $discount, width: '42px', viewBox: '0 0 32 32' }),
                 $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))('Royalties'),
 
-                $text('There is a 5% tax on all GBC transactions.'),
-                $column(
-                  $column(
-                    $text('- 3% goes directly to the GLP treasury'),
-                    $text('- 2% goes to the creator'),
-                  )
-                  
-                )
+                $text('There is a tax on all GBC transactions. These fees are transferred directly to the GLP treasury. Platforms can apply additional fees, that is why we will create our own marketplace.'),
               ),
               $card(style({ minWidth: '34%' }))(
                 $icon({ $content: $stackedCoins, width: '42px', viewBox: '0 0 32 32' }),
                 $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))('GBC Rewards'),
-                $text('The GLPs are stacked on the GMX platform.'),
-                $column(
-                  $column(
-                    $text('- 50% are automatically compounded every week'),
-                    $text('- 50% are distributed to GBC holders every week'),
-                  )
-                  
-                )
+                $text('Stacked GLPs on GMX receive rewards.'),
+                $text('Most of the rewards will be compounded every week and another part will be used for marketing and development.'),
               )
             ),
           ),
