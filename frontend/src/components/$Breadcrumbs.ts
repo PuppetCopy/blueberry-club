@@ -41,9 +41,9 @@ export const $Breadcrumbs = ({ sections, index, $contentOp = O(), $titleOp = O()
         const isLast = idx === sections.length - 1
 
         return $column(
-          $headline(style({ fontWeight: 900, placeContent: 'space-between', borderBottom: isLast ? '' : `1px solid ${pallete.foreground}` }), selectSectionBehavior, $titleOp)(
+          $headline(style({ fontWeight: 900, placeContent: 'space-between', alignItems: 'center', borderBottom: isLast ? '' : `1px solid ${pallete.foreground}` }), selectSectionBehavior, $titleOp)(
             row.$title,
-            $icon({ $content: $caretDown, viewBox: '0 0 7.84 3.81' })
+            $icon({ $content: $caretDown, width: '14px', viewBox: '0 0 7.84 3.81' })
           ),
           switchLatest(map(selectedIndex => selectedIndex === idx ? $content($contentOp)(row.$content) : empty(), selection)),
         )
