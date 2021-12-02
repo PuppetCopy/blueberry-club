@@ -143,8 +143,7 @@ export default ({ baseRoute = '' }: Website) => component((
   )
 
   // const MINT_START = Date.UTC(2021, 11, 1, 18, 0, 0)
-  const MINT_START = Date.now() // + 3000
-  const MINT_END = Infinity
+  const MINT_START = Date.now() + 3000
 
   const secondsCountdown = map(Date.now, periodic(1000))
 
@@ -239,7 +238,7 @@ export default ({ baseRoute = '' }: Website) => component((
 
             $text(style({ fontWeight: 'bold', fontSize: '2.5em', margin: '25px 0px 30px', textAlign: 'center' }))('GMX Blueberry Club Launch'),
             $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '878px' }))(
-              `The first goal of this collection is to reward GMX holders. That's why everyone with  Multiplier Point
+              `The first goal of this collection is to reward GMX holders. That's why everyone with  Multiplier Points
 (Snapshot taken on 19 Nov 2021) will be able to mint 1 GBC for free (minting December 5 - 10PM CET)
 
 The second distribution will be a public sale which will take place December 10~ - 10PM CET.

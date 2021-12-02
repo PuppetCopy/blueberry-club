@@ -1,19 +1,20 @@
 import { Behavior, combineArray, combineObject, replayLatest } from "@aelea/core"
-import { $element, $text, attr, attrBehavior, component, INode, nodeEvent, style, styleInline, stylePseudo } from "@aelea/dom"
-import { $column, $icon, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
+import { $element, $node, $text, attr, attrBehavior, component, INode, nodeEvent, style, styleInline, stylePseudo } from "@aelea/dom"
+import { $column, $icon, $NumberTicker, $row, $seperator, layoutSheet, screenUtils, state } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { CHAIN, IWalletLink } from "@gambitdao/wallet-link"
-import { awaitPromises, constant, empty, map, merge, mergeArray, multicast, periodic, scan, snapshot, startWith, switchLatest, tap } from "@most/core"
+import { CHAIN, getTxExplorerUrl, IWalletLink } from "@gambitdao/wallet-link"
+import { awaitPromises, chain, constant, continueWith, empty, fromPromise, map, merge, mergeArray, multicast, now, periodic, scan, skipRepeats, snapshot, startWith, switchLatest, takeWhile, tap } from "@most/core"
 import { IEthereumProvider } from "eip1193-provider"
 import { $caretDown, $gift } from "../elements/$icons"
 import { $IntermediateConnect } from "./$ConnectAccount"
 import { $ButtonPrimary } from "./form/$Button"
 import { $Dropdown } from "./form/$Dropdown"
 import { GBC__factory } from "contracts"
-import { ContractTransaction } from "@ethersproject/contracts"
-import { $IntermediateTx } from "../common/$IntermediateDisplay"
-import { ETH_ADDRESS_REGEXP } from "@gambitdao/gmx-middleware"
-import { DEPLOYED_CONTRACT } from "../const"
+import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
+import { $IntermediateTx, $spinner } from "../common/$IntermediateDisplay"
+import { ETH_ADDRESS_REGEXP, shortenTxAddress } from "@gambitdao/gmx-middleware"
+import { DEPLOYED_CONTRACT, MINT_MAX_AMOUNT } from "../const"
+import { $anchor } from "../elements/$common"
 
 
 export interface IMint {
@@ -22,10 +23,16 @@ export interface IMint {
 }
 
 
+interface IMintEvent {
+  amount: number
+  contractReceipt: Promise<ContractReceipt>
+  contractAction: Promise<ContractTransaction>
+}
+
 export const $Mint = (config: IMint) => component((
   [selectMintAmount, selectMintAmountTether]: Behavior<number, number>,
   [walletChange, walletChangeTether]: Behavior<IEthereumProvider | null, IEthereumProvider | null>,
-  [clickClaim, clickClaimTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
+  [clickClaim, clickClaimTether]: Behavior<PointerEvent, IMintEvent>,
   [customNftAmount, customNftAmountTether]: Behavior<INode, number>,
 
 ) => {
@@ -47,7 +54,7 @@ export const $Mint = (config: IMint) => component((
   const $nftBox = $img(attrBehavior(map(n => ({ src: blueberriesPreviewList[(n % blueberriesPreviewList.length)] }), counter)))
 
 
-  const contract = map(w3p => {
+  const contract = replayLatest(multicast(map(w3p => {
     if (w3p === null) {
       return null
     }
@@ -55,12 +62,30 @@ export const $Mint = (config: IMint) => component((
     const contract = GBC__factory.connect(DEPLOYED_CONTRACT, w3p.getSigner())
 
     return contract
-  }, config.walletLink.provider)
+  }, config.walletLink.provider)))
 
 
   const hasPresaleStarted = awaitPromises(map(contract => {
     return contract ? contract.wlMintStarted() : false
   }, contract))
+
+
+  const totalMinted = awaitPromises(map(async contract => {
+    if (contract) {
+      return (await contract.totalSupply()).toNumber()
+    }
+
+    return 0
+  }, contract))
+
+
+  const totalMintedChangeInterval = switchLatest(constant(totalMinted, periodic(1000)))
+
+  const totalMintedChange = continueWith(() => now(MINT_MAX_AMOUNT), takeWhile(res => res < MINT_MAX_AMOUNT, totalMintedChangeInterval))
+  const hasMintEnded = skipRepeats(map(amount => {
+    return amount === MINT_MAX_AMOUNT
+  }, totalMintedChange))
+
 
   const canClaim = awaitPromises(combineArray(async (contract, account) => {
     if (contract && account && WHITELIST[account.toLocaleLowerCase()]) {
@@ -83,130 +108,182 @@ export const $Mint = (config: IMint) => component((
   
 
   return [
-    $column(layoutSheet.spacing, style({  }))(
-      $row(layoutSheet.spacing, style({ placeContent: screenUtils.isDesktopScreen ? '' : 'center', flexWrap: 'wrap', alignItems: 'center' }))(
-        $Dropdown({
-          value: startWith(null, customNftAmount),
-          // disabled: accountChange,
-          // $noneSelected: $text('Choose Amount'),
-          openMenuOp: tap(event => {
-            const sel = window.getSelection()
-            const range = document.createRange()
-            const target = event.target
-
-            if (sel && target instanceof HTMLElement) {
-              range.selectNodeContents(target)
-              
-              sel.removeAllRanges()
-              sel.addRange(range)
-            }
+    $column(layoutSheet.spacing, style({ flex: 1 }))(
+      
+      $row(layoutSheet.spacing, style({ fontSize: '1.5em' }))(
+        switchLatest(map(hasEnded => {
+          return hasEnded
+            ? $text(style({ fontSize: '1.25em', fontWeight: 'bold' }))('Sale has ended!')
+            : $text(style({ color: pallete.indeterminate }))(`Minting is Live!`)
+        }, hasMintEnded)),
+        $row(layoutSheet.spacingTiny)(
+          $NumberTicker({
+            value$: totalMintedChange,
+            decrementColor: pallete.primary,
+            incrementColor: pallete.primary,
           }),
-          $selection: map(amount => 
-            $row(
-              layoutSheet.spacingSmall, style({ alignItems: 'center', borderBottom: `2px solid ${pallete.message}` }),
-              styleInline(map(isDisabled => isDisabled ? { opacity: ".15", pointerEvents: 'none' } : { opacity: "1", pointerEvents: 'all' }, accountChange))
-            )(
-              $text(
-                attr({ contenteditable: 'true', placeholder: 'Set Amount' }), style({ padding: '15px 0 15px 10px', minWidth: '100px', backgroundColor: 'transparent', cursor: 'text', outline: '0' }),
-                stylePseudo(':empty:before', {
-                  content: 'attr(placeholder)',
-                  color: pallete.foreground
-                }),
-                customNftAmountTether(
-                  nodeEvent('blur'),
-                  snapshot((state, event) => {
-                    const target = event.target
-
-
-                    if (target instanceof HTMLElement) {
-                      const val = Number(target.innerText)
-
-                      return target.innerText !== '' && isFinite(val) && val <= 20 ? val : state
-                    }
-
-                    if (state === null) {
-                      return ''
-                    }
-
-                    return state
-                  }, startWith(null, selectMintAmount)),
-                  multicast
-                )
-              )(
-                amount === null ? '' : String(amount)
-              ),
-              $icon({ $content: $caretDown, width: '13px', svgOps: style({ marginTop: '2px', marginRight: '10px' }), viewBox: '0 0 7.84 3.81' })
-            )
-          ),
-          select: {
-            $container: $column,
-            $option: map(option => $text(String(option))),
-            options: [ 1, 2, 3, 5, 10, 20 ],
-          }
-        })({
-          select: selectMintAmountTether()
-        }),
-        $IntermediateConnect({
-          walletStore: config.walletStore,
-          $display: $ButtonPrimary({
-            disabled: buttonState,
-            $content: switchLatest(
-              map(({ canClaim, mintAmount }) => {
-
-                if (mintAmount === null) {
-                  return $text('Select Amount')
-                }
- 
-                if (!canClaim || mintAmount > 1) {
-                  return $container(
-                    canClaim ? $giftIcon : empty(),
-                    $text(canClaim ? `Mint ${mintAmount - 1} + 1 free (${(mintAmount - 1) * .03}ETH)` : `Mint ${mintAmount} (${mintAmount * .03}ETH)`),
-                  )
-                }
-
-                return $container(
-                  $giftIcon,
-                  $text('Mint (Free)')
-                )
-              }, formState)
-            ),
-          })({
-            click: clickClaimTether(
-              snapshot(async ({ canClaim, mintAmount, contract, account }, click) => {
-                if (contract === null || !account) {
-                  return
-                }
-
-                const MINT_PRICE = 30000000000000000n
-
-                const contractAction = canClaim
-                  ? contract.whitelistMint(mintAmount, WHITELIST[account.toLocaleLowerCase()], { value: BigInt(mintAmount - 1) * MINT_PRICE })
-                  : contract.mint(mintAmount, { value: BigInt(mintAmount) * MINT_PRICE })
-
-
-                return contractAction.then(recp => recp.wait())
-
-              }, combineObject({ canClaim, mintAmount, contract, account: config.walletLink.account })),
-            )
-          }),
-          walletLink: config.walletLink
-        })({
-          walletChange: walletChangeTether()
-        }),
-        $IntermediateTx({
-          query: clickClaim,
-          clean: merge(accountChange, selectMintAmount),
-          $done: map(res => $text('done')),
-        })({})
-
-      // $ButtonPrimary({ buttonOp: style({ pointerEvents: 'none' }), $content: $row(layoutSheet.spacingSmall)($text(style({ fontWeight: 'normal' }))(`We're building...`), $text(`see you soon`)) })({})
+          $text(style({ color: pallete.foreground }))('/'),
+          $text(`10,000`)
+        ),
       ),
+
+      $node(),
+
+      $IntermediateConnect({
+        walletStore: config.walletStore,
+        containerOp: style({ flex: 1 }),
+        $display:  switchLatest(map(hasEnded => {
+          // const isSaleFinished = mam === MINT_MAX_AMOUNT
+          return hasEnded ? empty() : $row(layoutSheet.spacing, style({ flexWrap: 'wrap', alignItems: 'center' }))(
+            $Dropdown({
+              value: startWith(null, customNftAmount),
+              // disabled: accountChange,
+              // $noneSelected: $text('Choose Amount'),
+              openMenuOp: tap(event => {
+                const sel = window.getSelection()
+                const range = document.createRange()
+                const target = event.target
+
+                if (sel && target instanceof HTMLElement) {
+                  range.selectNodeContents(target)
+              
+                  sel.removeAllRanges()
+                  sel.addRange(range)
+                }
+              }),
+              $selection: map(amount => 
+                $row(
+                  layoutSheet.spacingSmall, style({ alignItems: 'center', borderBottom: `2px solid ${pallete.message}` }),
+                  styleInline(map(isDisabled => isDisabled ? { opacity: ".15", pointerEvents: 'none' } : { opacity: "1", pointerEvents: 'all' }, accountChange))
+                )(
+                  $text(
+                    attr({ contenteditable: 'true', placeholder: 'Set Amount' }), style({ padding: '15px 0 15px 10px', minWidth: '50px', backgroundColor: 'transparent', cursor: 'text', outline: '0' }),
+                    stylePseudo(':empty:before', {
+                      content: 'attr(placeholder)',
+                      color: pallete.foreground
+                    }),
+                    customNftAmountTether(
+                      nodeEvent('blur'),
+                      snapshot((state, event) => {
+                        const target = event.target
+
+
+                        if (target instanceof HTMLElement) {
+                          const val = Number(target.innerText)
+
+                          return target.innerText !== '' && isFinite(val) && val > 0 && val <= 20 ? val : state
+                        }
+
+                        if (state === null) {
+                          return ''
+                        }
+
+                        return state
+                      }, startWith(null, selectMintAmount)),
+                      multicast
+                    )
+                  )(
+                    amount === null ? '' : String(amount)
+                  ),
+                  $icon({ $content: $caretDown, width: '13px', svgOps: style({ marginTop: '2px', marginRight: '10px' }), viewBox: '0 0 7.84 3.81' })
+                )
+              ),
+              select: {
+                $container: $column,
+                $option: map(option => $text(String(option))),
+                options: [ 1, 2, 3, 5, 10, 20 ],
+              }
+            })({
+              select: selectMintAmountTether()
+            }),
+            $ButtonPrimary({
+              disabled: buttonState,
+              $content: switchLatest(
+                map(({ canClaim, mintAmount }) => {
+
+                  if (mintAmount === null) {
+                    return $text('Select Amount')
+                  }
+ 
+                  if (!canClaim || mintAmount > 1) {
+                    return $container(
+                      canClaim ? $giftIcon : empty(),
+                      $text(canClaim ? `Mint ${mintAmount - 1} + 1 free (${(mintAmount - 1) * .03}ETH)` : `Mint ${mintAmount} (${mintAmount * .03}ETH)`),
+                    )
+                  }
+
+                  return $container(
+                    $giftIcon,
+                    $text('Mint (Free)')
+                  )
+                }, formState)
+              ),
+            })({
+              click: clickClaimTether(
+                snapshot(({ canClaim, mintAmount, contract, account }, click): IMintEvent => {
+                  if (contract === null || !account) {
+                    throw new Error(`Unable to resolve contract`)
+                  }
+
+                  const MINT_PRICE = 30000000000000000n
+
+                  const contractAction = canClaim
+                    ? contract.whitelistMint(mintAmount, WHITELIST[account.toLocaleLowerCase()], { value: BigInt(mintAmount - 1) * MINT_PRICE })
+                    : contract.mint(mintAmount, { value: BigInt(mintAmount) * MINT_PRICE })
+                
+                
+                  const contractReceipt = contractAction.then(recp => recp.wait())
+
+
+                  return {
+                    amount: mintAmount,
+                    contractReceipt,
+                    contractAction,
+                  }
+
+                }, combineObject({ canClaim, mintAmount, contract, account: config.walletLink.account })),
+              )
+            })
+        
+          )
+        }, hasMintEnded)),
+        
+        walletLink: config.walletLink
+      })({
+        walletChange: walletChangeTether()
+      }),
 
       $row(layoutSheet.spacingSmall, style({ minHeight: '54px', flexWrap: 'wrap' }))(
         switchLatest(map(amount => mergeArray(Array(amount).fill($nftBox())), selectMintAmount))
-      )
+      ),
+
+      chain(tx => {
+        return $column(layoutSheet.spacing)(
+          $seperator,
+          $row(layoutSheet.spacingSmall, style({ alignItems: 'center', placeContent: 'space-between' }))(
+            $IntermediateTx({
+              query: now(tx.contractReceipt),
+              $loader: $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+                $spinner,
+                $text(startWith('Awaiting Approval', map(() => 'Minting...', fromPromise(tx.contractAction)))),
+              ),
+              $done: map(res => {
+                return $row(
+                  $text(style({ color: pallete.positive }))(`Successfully minted ${tx.amount} Berries`)
+                )
+              }),
+            })({}),
+            switchLatest(map(contractTx => {
+              const href = getTxExplorerUrl(CHAIN.ETH_ROPSTEN, contractTx.hash)
+              return $anchor(attr({ href, target: '_blank' }))($text(shortenTxAddress(contractTx.hash)))
+            }, fromPromise(tx.contractAction)))
+          )
+        )
+      }, clickClaim),
+
 
     ),
+    
     { walletChange }
   ]
 })

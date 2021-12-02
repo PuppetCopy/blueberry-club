@@ -2,3 +2,5 @@
 
 export const DEPLOYED_CONTRACT = '0xB88f140238aBc2aEb5c86510A46d33608e5cD73d'
 
+export const MINT_MAX_AMOUNT = 10000
+

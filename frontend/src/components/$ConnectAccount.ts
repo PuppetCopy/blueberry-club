@@ -1,5 +1,5 @@
-import { Behavior, combineArray } from "@aelea/core"
-import { $element, $Node, $text, attr, component, style } from "@aelea/dom"
+import { Behavior, combineArray, O, Op } from "@aelea/core"
+import { $element, $Node, $text, attr, component, INode, style } from "@aelea/dom"
 import { $column, $icon, $Popover, $row, layoutSheet, state } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { awaitPromises, constant, empty, fromPromise, map, multicast, skipRepeats, snapshot, switchLatest, tap } from "@most/core"
@@ -16,6 +16,8 @@ export interface IIntermediateDisplay {
   $display: $Node
   walletLink: IWalletLink
   walletStore: state.BrowserStore<"metamask" | "walletConnect" | null, "walletStore">
+
+  containerOp?: Op<INode, INode>
 }
 
 export const $IntermediateConnect = (config: IIntermediateDisplay) => component((
@@ -27,7 +29,7 @@ export const $IntermediateConnect = (config: IIntermediateDisplay) => component(
   const noAccount = skipRepeats(map(x => x === null || x === undefined, config.walletLink.account))
 
   return [
-    $row(
+    $row(config.containerOp || O())(
       switchLatest(combineArray((metamask, walletProvider, noAccount) => {
 
         // no wallet connected, show connection flow

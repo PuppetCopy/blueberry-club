@@ -96,7 +96,7 @@ export const $IntermediatePromise = <T>({
 })
 
 
-export const $IntermediateTx = <T extends TransactionResponse>({ $done, query, clean, $loader }: ISpinner<T>) => $IntermediatePromise({
+export const $IntermediateTx = <T>({ $done, query, clean, $loader }: ISpinner<T>) => $IntermediatePromise({
   query, clean, $done, $loader,
   $fail: map(res => {
     const newLocal: Error = 'error' in res ? (res as any).error : res
