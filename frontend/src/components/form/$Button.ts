@@ -2,7 +2,6 @@ import { O } from "@aelea/core"
 import { $element, style, stylePseudo } from "@aelea/dom"
 import { IButton, layoutSheet } from "@aelea/ui-components"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
-import { $spinner } from "../../common/$IntermediateDisplay"
 import { $Button } from "./$buttonCore"
 
 
@@ -15,7 +14,7 @@ export const buttonPrimaryStyle = style({
 })
 
 export const secondaryButtonStyle = style({
-  color: 'white', whiteSpace: 'nowrap', fill: 'white', borderRadius: '30px',
+  color: 'white', whiteSpace: 'nowrap', fill: 'white', borderRadius: '30px', borderStyle: 'solid',
   padding: '15px 24px', fontWeight: 'bold', borderWidth: '1px', borderColor: pallete.message
 })
 

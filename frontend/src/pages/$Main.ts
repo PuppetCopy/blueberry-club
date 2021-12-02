@@ -4,7 +4,7 @@ import * as router from '@aelea/router'
 import { $RouterAnchor } from '@aelea/router'
 import { $column, $icon, $row, designSheet, layoutSheet, observer, screenUtils, state } from '@aelea/ui-components'
 import { pallete } from '@aelea/ui-components-theme'
-import { awaitPromises, empty, map, merge, multicast, now, periodic, skipRepeats, snapshot, switchLatest } from '@most/core'
+import { awaitPromises, empty, map, merge, mergeArray, multicast, now, periodic, skipRepeats, snapshot, switchLatest } from '@most/core'
 import { Stream } from "@most/types"
 import { IEthereumProvider } from "eip1193-provider"
 import { groupByMap } from '@gambitdao/gmx-middleware'
@@ -85,10 +85,12 @@ export default ({ baseRoute = '' }: Website) => component((
   const walletStore = rootStore<'metamask' | 'walletConnect' | null, 'walletStore'>('walletStore', null)
 
   const chosenWalletName = now(walletStore.state)
-  const defaultWalletProvider: Stream<IEthereumProvider | null> = awaitPromises(map(async name => {
+  const defaultWalletProvider: Stream<IEthereumProvider | null> =  awaitPromises(map(async name => {
     const provider = name === 'walletConnect' ? wallet.walletConnect : await wallet.metamaskQuery
+
     if (name && provider) {
       const [mainAccount]: string[] = await provider.request({ method: 'eth_accounts' }) as any
+
       if (mainAccount) {
         return provider
       }
@@ -99,8 +101,9 @@ export default ({ baseRoute = '' }: Website) => component((
   }, chosenWalletName))
 
 
+
   const walletLink = initWalletLink(
-    merge(defaultWalletProvider, walletChange)
+    mergeArray([defaultWalletProvider, walletChange])
   )
 
 
@@ -140,7 +143,7 @@ export default ({ baseRoute = '' }: Website) => component((
   )
 
   // const MINT_START = Date.UTC(2021, 11, 1, 18, 0, 0)
-  const MINT_START = Date.now() + 3000
+  const MINT_START = Date.now() // + 3000
   const MINT_END = Infinity
 
   const secondsCountdown = map(Date.now, periodic(1000))
@@ -237,9 +240,9 @@ export default ({ baseRoute = '' }: Website) => component((
             $text(style({ fontWeight: 'bold', fontSize: '2.5em', margin: '25px 0px 30px', textAlign: 'center' }))('GMX Blueberry Club Launch'),
             $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '878px' }))(
               `The first goal of this collection is to reward GMX holders. That's why everyone with  Multiplier Point
-(Snapshot taken on 19 Nov 2021) will be able to mint 1 GBC for free (minting early december)
+(Snapshot taken on 19 Nov 2021) will be able to mint 1 GBC for free (minting December 5 - 10PM CET)
 
-The second distribution will be a public sale which will take place early december.
+The second distribution will be a public sale which will take place December 10~ - 10PM CET.
 You will be able to mint GBC for 0,03 ETH each.
 
 After the public sale, a part of ETH will be used to create a treasury that will benefit the GMX platform.
@@ -305,7 +308,7 @@ After the public sale, a part of ETH will be used to create a treasury that will
               $card(style({ minWidth: '34%' }))(
                 $icon({ $content: $stackedCoins, width: '42px', viewBox: '0 0 32 32' }),
                 $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))('GBC Rewards'),
-                $text('Stacked GLPs on GMX receive rewards.'),
+                $text('Stacked esGMX on GMX receive rewards.'),
                 $text('Most of the rewards will be compounded every week and another part will be used for marketing and development.'),
               )
             ),
@@ -369,8 +372,8 @@ to GMX.io and its amazing community. Each GBC is unique and algorithmically gene
                   },
                   {
                     $title: $text('When will minting be available?'),
-                    $content: $text(`Free mint for whitelisted users : Early december
-Public sale : Early december`),
+                    $content: $text(`Free mint for whitelisted users : December 5 - 10PM CET
+Public sale : December 5 - 10PM CET`),
                   },
                 ]
               })({}),

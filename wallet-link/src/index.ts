@@ -1,5 +1,5 @@
 import { BaseProvider, TransactionReceipt, Web3Provider } from "@ethersproject/providers"
-import { awaitPromises, map, merge, snapshot } from "@most/core"
+import { awaitPromises, constant, map, merge, mergeArray, snapshot, tap } from "@most/core"
 import { Stream } from "@most/types"
 import { EIP1193Provider, ProviderInfo, ProviderRpcError } from "eip1193-provider"
 import { eip1193ProviderEvent, getAccountExplorerUrl, getTxExplorerUrl, providerAction } from "./common"
@@ -55,7 +55,7 @@ export function initWalletLink<T extends EIP1193Provider>(walletChange: Stream<T
 
 
   const account = merge(accountChange, currentAccount)
-  const provider = merge(ethersWeb3Wrapper, proivderChange)
+  const provider = mergeArray([ethersWeb3Wrapper, proivderChange, constant(null, disconnect)])
 
   const network = awaitPromises(map(async net => {
     if (net) {

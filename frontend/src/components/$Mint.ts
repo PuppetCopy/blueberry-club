@@ -1,11 +1,11 @@
 import { Behavior, combineArray, combineObject, replayLatest } from "@aelea/core"
-import { $element, $text, attrBehavior, component, style } from "@aelea/dom"
+import { $element, $text, attr, attrBehavior, component, INode, nodeEvent, style, styleInline, stylePseudo } from "@aelea/dom"
 import { $column, $icon, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { CHAIN, IWalletLink } from "@gambitdao/wallet-link"
-import { awaitPromises, constant, empty, map, merge, mergeArray, multicast, now, periodic, scan, snapshot, startWith, switchLatest, tap } from "@most/core"
+import { awaitPromises, constant, empty, map, merge, mergeArray, multicast, periodic, scan, snapshot, startWith, switchLatest, tap } from "@most/core"
 import { IEthereumProvider } from "eip1193-provider"
-import { $gift } from "../elements/$icons"
+import { $caretDown, $gift } from "../elements/$icons"
 import { $IntermediateConnect } from "./$ConnectAccount"
 import { $ButtonPrimary } from "./form/$Button"
 import { $Dropdown } from "./form/$Dropdown"
@@ -26,6 +26,7 @@ export const $Mint = (config: IMint) => component((
   [selectMintAmount, selectMintAmountTether]: Behavior<number, number>,
   [walletChange, walletChangeTether]: Behavior<IEthereumProvider | null, IEthereumProvider | null>,
   [clickClaim, clickClaimTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
+  [customNftAmount, customNftAmountTether]: Behavior<INode, number>,
 
 ) => {
 
@@ -61,64 +62,117 @@ export const $Mint = (config: IMint) => component((
     return contract ? contract.wlMintStarted() : false
   }, contract))
 
-  const canClaim = tap(console.log, awaitPromises(combineArray(async (contract, account) => {
+  const canClaim = awaitPromises(combineArray(async (contract, account) => {
     if (contract && account && WHITELIST[account.toLocaleLowerCase()]) {
       return (await contract.isBlacklisted(account)) === false
     }
     return false
-  }, contract, config.walletLink.account)))
+  }, contract, config.walletLink.account))
 
   const accountChange = merge(hasAccount, supportedNetwork)
-
+  const mintAmount = merge(customNftAmount, selectMintAmount)
 
   const buttonState = replayLatest(
-    multicast(map(({ hasPresaleStarted, selectMintAmount }) => {
-      return !hasPresaleStarted || selectMintAmount === null
-    }, combineObject({ selectMintAmount, hasPresaleStarted }))),
+    multicast(map(({ hasPresaleStarted, mintAmount }) => {
+      return !hasPresaleStarted || mintAmount === null
+    }, combineObject({ mintAmount, hasPresaleStarted }))),
     true
   )
 
-  const formState = replayLatest(multicast(combineObject({ canClaim, amount: selectMintAmount })), { canClaim: false, amount: 0 })
+  const formState = replayLatest(multicast(combineObject({ canClaim, mintAmount })), { canClaim: false, mintAmount: 0 })
+  
 
   return [
     $column(layoutSheet.spacing, style({  }))(
       $row(layoutSheet.spacing, style({ placeContent: screenUtils.isDesktopScreen ? '' : 'center', flexWrap: 'wrap', alignItems: 'center' }))(
         $Dropdown({
-          disabled: accountChange,
-          $noneSelected: $text('Mint Amount'),
+          value: startWith(null, customNftAmount),
+          // disabled: accountChange,
+          // $noneSelected: $text('Choose Amount'),
+          openMenuOp: tap(event => {
+            const sel = window.getSelection()
+            const range = document.createRange()
+            const target = event.target
+
+            if (sel && target instanceof HTMLElement) {
+              range.selectNodeContents(target)
+              
+              sel.removeAllRanges()
+              sel.addRange(range)
+            }
+          }),
+          $selection: map(amount => 
+            $row(
+              layoutSheet.spacingSmall, style({ alignItems: 'center', borderBottom: `2px solid ${pallete.message}` }),
+              styleInline(map(isDisabled => isDisabled ? { opacity: ".15", pointerEvents: 'none' } : { opacity: "1", pointerEvents: 'all' }, accountChange))
+            )(
+              $text(
+                attr({ contenteditable: 'true', placeholder: 'Set Amount' }), style({ padding: '15px 0 15px 10px', minWidth: '100px', backgroundColor: 'transparent', cursor: 'text', outline: '0' }),
+                stylePseudo(':empty:before', {
+                  content: 'attr(placeholder)',
+                  color: pallete.foreground
+                }),
+                customNftAmountTether(
+                  nodeEvent('blur'),
+                  snapshot((state, event) => {
+                    const target = event.target
+
+
+                    if (target instanceof HTMLElement) {
+                      const val = Number(target.innerText)
+
+                      return target.innerText !== '' && isFinite(val) && val <= 20 ? val : state
+                    }
+
+                    if (state === null) {
+                      return ''
+                    }
+
+                    return state
+                  }, startWith(null, selectMintAmount)),
+                  multicast
+                )
+              )(
+                amount === null ? '' : String(amount)
+              ),
+              $icon({ $content: $caretDown, width: '13px', svgOps: style({ marginTop: '2px', marginRight: '10px' }), viewBox: '0 0 7.84 3.81' })
+            )
+          ),
           select: {
-            list: [ 1, 2, 5, 10, 20 ],
+            $container: $column,
+            $option: map(option => $text(String(option))),
+            options: [ 1, 2, 3, 5, 10, 20 ],
           }
         })({
-          select: selectMintAmountTether(multicast)
+          select: selectMintAmountTether()
         }),
         $IntermediateConnect({
           walletStore: config.walletStore,
           $display: $ButtonPrimary({
             disabled: buttonState,
             $content: switchLatest(
-              map(({ canClaim, amount }) => {
+              map(({ canClaim, mintAmount }) => {
 
-                if (amount === null) {
+                if (mintAmount === null) {
                   return $text('Select Amount')
                 }
  
-                if (!canClaim || amount > 1) {
+                if (!canClaim || mintAmount > 1) {
                   return $container(
                     canClaim ? $giftIcon : empty(),
-                    $text(canClaim ? `${amount - 1} + 1 free (${(amount - 1) * .03}ETH)` : `${amount} (${amount * .03}ETH)`),
+                    $text(canClaim ? `Mint ${mintAmount - 1} + 1 free (${(mintAmount - 1) * .03}ETH)` : `Mint ${mintAmount} (${mintAmount * .03}ETH)`),
                   )
                 }
 
                 return $container(
                   $giftIcon,
-                  $text('Claim (Free)')
+                  $text('Mint (Free)')
                 )
               }, formState)
             ),
           })({
             click: clickClaimTether(
-              snapshot(async ({ canClaim, selectMintAmount, contract, account }, click) => {
+              snapshot(async ({ canClaim, mintAmount, contract, account }, click) => {
                 if (contract === null || !account) {
                   return
                 }
@@ -126,13 +180,13 @@ export const $Mint = (config: IMint) => component((
                 const MINT_PRICE = 30000000000000000n
 
                 const contractAction = canClaim
-                  ? contract.whitelistMint(selectMintAmount, WHITELIST[account.toLocaleLowerCase()], { value: BigInt(selectMintAmount - 1) * MINT_PRICE })
-                  : contract.mint(selectMintAmount, { value: BigInt(selectMintAmount) * MINT_PRICE })
+                  ? contract.whitelistMint(mintAmount, WHITELIST[account.toLocaleLowerCase()], { value: BigInt(mintAmount - 1) * MINT_PRICE })
+                  : contract.mint(mintAmount, { value: BigInt(mintAmount) * MINT_PRICE })
 
 
                 return contractAction.then(recp => recp.wait())
 
-              }, combineObject({ canClaim, selectMintAmount, contract, account: config.walletLink.account })),
+              }, combineObject({ canClaim, mintAmount, contract, account: config.walletLink.account })),
             )
           }),
           walletLink: config.walletLink

@@ -1,11 +1,10 @@
 import { Behavior, O, Op } from "@aelea/core"
-import { $Node, $text, component, eventElementTarget, IBranch, nodeEvent, style, styleBehavior, styleInline, stylePseudo } from "@aelea/dom"
+import { $Node, $text, component, eventElementTarget, IBranch, INode, NodeComposeFn, nodeEvent, style, styleBehavior, stylePseudo } from "@aelea/dom"
 import { $column, $icon, $row, Input, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { constant, empty, map, mergeArray, multicast, now, skip, snapshot, startWith, switchLatest } from "@most/core"
+import { constant, map, merge, mergeArray, multicast, now, skip, startWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
 import { $caretDown } from "../../elements/$icons"
-import { $ButtonSecondary } from "./$Button"
 
 
 export const buttonPrimaryStyle = style({
@@ -23,34 +22,35 @@ export const secondaryButtonStyle = style({
 })
 
 export interface ISelect<T> {
-  list: T[]
+  options: T[]
 
-  $value: Op<T, $Node>
+  $container: NodeComposeFn<$Node>
+  $option: Op<T, $Node>
+
+  optionOp?: Op<INode, INode>
   $changeSelect?: Stream<T>
 }
 
 
 
-
-export const $Select = <T>({ list, $value }: ISelect<T>) => component((
+export const $Select = <T>({ options, optionOp = O(), $option, $container }: ISelect<T>) => component((
   [select, selectTether]: Behavior<IBranch, T>
 ) => {
 
   return [
-    mergeArray(
-      list.map(item => {
+    $container(
+      ...options.map(item => {
 
         const selectBehavior = selectTether(
           nodeEvent('click'),
           constant(item)
         )
 
+        const $opt = switchLatest($option(now(item)))
+        const $val = optionOp($opt)
 
-        const $val = $value(now(item))
-        return selectBehavior(
-          switchLatest($val)
-        )
-      }).reverse()
+        return selectBehavior($val)
+      })
     ),
 
     {
@@ -59,16 +59,19 @@ export const $Select = <T>({ list, $value }: ISelect<T>) => component((
   ]
 })
 
-export interface IDropdown<T> extends Partial<Input<T>> {
-  select: Omit<ISelect<T>, '$value'>
 
-  $noneSelected?: $Node
+
+export interface IDropdown<T> extends Input<T> {
+  select: Omit<ISelect<T>, '$value'>
+  $selection: Op<T, $Node>
+
+  openMenuOp?: Op<MouseEvent, MouseEvent>
 }
 
 
-export const $Dropdown = <T>(config: IDropdown<T>) => component((
-  [select, selectTether]: Behavior<T, T>,
-  [openMenu, openMenuTether]: Behavior<PointerEvent, boolean>,
+export const $Dropdown = <T>({ value, disabled, validation, $selection, select, openMenuOp = O() }: IDropdown<T>) => component((
+  [pick, pickTether]: Behavior<T, T>,
+  [openMenu, openMenuTether]: Behavior<INode, any>,
 ) => {
 
   const isOpenState = multicast(switchLatest(map(isOpen => {
@@ -76,57 +79,53 @@ export const $Dropdown = <T>(config: IDropdown<T>) => component((
       return startWith(true, skip(1, constant(false, eventElementTarget('click', window))))
     }
     return now(false)
-  }, mergeArray([constant(false, select), openMenu]))))
+  }, mergeArray([constant(false, pick), openMenu]))))
 
   const $option = $row(layoutSheet.spacingSmall, style({ alignItems: 'center', padding: '15px 25px' }))
   const $selectableOption = $option(style({ cursor: 'pointer' }), stylePseudo(':hover', { backgroundColor: pallete.background }))
 
   const $caretDownIcon = $icon({ $content: $caretDown, width: '13px', svgOps: style({ marginTop: '2px' }), viewBox: '0 0 7.84 3.81' })
-  const $selection = switchLatest(
-    mergeArray([
-      map(val =>
-        $option(
-          $text(String(val)),
-          $caretDownIcon,
-        )
-      , mergeArray([select, config.value ?? empty()])),
-      config.$noneSelected ? now($option(config.$noneSelected, $caretDownIcon)) : empty()
-    ])
+
+  
+  // const disabledBehavior: Op<IBranch, IBranch> = disabled ? styleInline(map(isDisabled => isDisabled ? { opacity: ".15", pointerEvents: 'none' } : { opacity: "1", pointerEvents: 'all' }, config.disabled)) : O()
+
+
+  const containerOp = O(
+    style({
+      overflow: 'hidden', backgroundColor: pallete.horizon,
+      border: `1px solid ${pallete.middleground}`, borderRadius: '20px', position: 'absolute', top: 'calc(100% + 5px)', display: 'none', left: 0
+    }),
+    styleBehavior(
+      map(state => ({ display: state ? 'flex' : 'none' }), isOpenState)
+    )
+  )
+
+  const openMenuBehavior = openMenuTether(
+    nodeEvent('click'),
+    openMenuOp
   )
   
-  const disabledBehavior: Op<IBranch, IBranch> = config.disabled ? styleInline(map(isDisabled => isDisabled ? { opacity: ".15", pointerEvents: 'none' } : { opacity: "1", pointerEvents: 'all' }, config.disabled)) : O()
-
-  
   return [
-    $column(disabledBehavior, style({ position: 'relative' }))(
-      $ButtonSecondary({
-        $content: $selection,
-        buttonOp: O(style({ padding: '0px' }), styleInline(map(isOpen => (isOpen ? { borderColor: pallete.primary } : { borderColor: '' }), isOpenState)))
-      })({
-        click: openMenuTether(
-          snapshot((ss) => {
-            return !ss
-          }, startWith(false, isOpenState))
-        )
-      }),
+    $column(style({ position: 'relative' }))(
+      // switchLatest(map(val => $option(
+      //   $text(String(val)),
+      //   $caretDownIcon,
+      // ), pick)),
+      openMenuBehavior(switchLatest(
+        $selection(merge(pick, value))
+      )),
 
-      $column(
-        style({ overflow: 'hidden', backgroundColor: pallete.horizon, border: `1px solid ${pallete.middleground}`, borderRadius: '20px', position: 'absolute', top: 'calc(100% + 5px)', display: 'none', left: 0 }),
-        styleBehavior(
-          map(state => ({ display: state ? 'flex' : 'none' }), isOpenState)
-        )
-      )(
-        $Select({
-          ...config.select,
-          $value: map(x => $selectableOption($text(String(x))))
-        })({
-          select: selectTether()
-        })
-      )
+      $Select({
+        ...select,
+        $container: $column(containerOp),
+        $option: map(x => $selectableOption($text(String(x))))
+      })({
+        select: pickTether()
+      })
     ),
 
     {
-      select
+      select: pick
     }
   ]
 })
