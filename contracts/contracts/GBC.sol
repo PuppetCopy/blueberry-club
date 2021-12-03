@@ -6,7 +6,6 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -15,8 +14,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract GBC is
     Context,
     Ownable,
-    ERC721Enumerable,
-    ERC721Burnable
+    ERC721Enumerable
 {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIdTracker;
@@ -50,23 +48,37 @@ contract GBC is
         return _contractURI;
     }
     
-    function adminMint(uint256 _mintAmount, address _to) public onlyOwner{
+    function adminMint(uint256 _mintAmount, address _to) external onlyOwner{
         for (uint256 i = 1; i <= _mintAmount; i++) {
             require(_tokenIdTracker.current() <= max, "Transaction exceeds max mint amount");
             _mint(_to, _tokenIdTracker.current());
             _tokenIdTracker.increment();
         }
     }
-    function whitelistMint(bytes memory sig) public{
+    function claim(bytes memory sig) external {
         require(wlMintStarted == true, "WL Mint not started yet");
         require(checkSignature(sig, _msgSender()) == true, "Signature not valid");
-        require(blacklist[_msgSender()] == false, "This whitelisted address was already used");
+        require(blacklist[_msgSender()] == false, "This address was already used");
         require(_tokenIdTracker.current() <= max, "Transaction exceeds max mint amount");
         _mint(_msgSender(), _tokenIdTracker.current());
         _tokenIdTracker.increment();
         blacklist[_msgSender()] = true;
     }
-    function mint(uint256 _mintAmount) public payable {
+    function whitelistMint(uint256 _mintAmount, bytes memory sig) external payable {
+        require(publicSaleStarted == true, "Public Sale not started yet");
+        require(wlMintStarted == true, "WL Mint not started yet");
+        require(_mintAmount <= maxMintPerTx, "Exceeds max amount per transaction allowed");
+        require(checkSignature(sig, _msgSender()) == true, "Signature is not valid");
+        require(blacklist[_msgSender()] == false, "This whitelisted address was already used");
+        require(msg.value >= cost * (_mintAmount - 1), "Not enough ether provided");
+        for (uint256 i = 1; i <= _mintAmount; i++) {
+            require(_tokenIdTracker.current() <= max, "Transaction exceeds max mint amount");
+            _mint(_msgSender(), _tokenIdTracker.current());
+            _tokenIdTracker.increment();
+        }
+        blacklist[_msgSender()] = true;
+    }
+    function mint(uint256 _mintAmount) external payable {
         require(publicSaleStarted == true, "Public Sale not started yet");
         require(_mintAmount <= maxMintPerTx, "Exceeds max amount per transaction allowed");
         require(msg.value >= cost * _mintAmount, "Not enough ether provided");
@@ -76,7 +88,7 @@ contract GBC is
             _tokenIdTracker.increment();
         }
     }
-    function withdraw(address token, uint256 amount) public onlyOwner {
+    function withdraw(address token, uint256 amount) external onlyOwner {
         if(token == address(0)) { 
             payable(_msgSender()).transfer(amount);
         } else {
@@ -84,32 +96,32 @@ contract GBC is
         }
     }
     
-    function setContractURI(string memory uri) public onlyOwner {
+    function setContractURI(string memory uri) external onlyOwner {
         require(tokenURIFrozen == false, "Token URIs are frozen");
         _contractURI = uri;
     }
-    function setBaseTokenURI(string memory uri) public onlyOwner {
+    function setBaseTokenURI(string memory uri) external onlyOwner {
         require(tokenURIFrozen == false, "Token URIs are frozen");
         _baseTokenURI = uri;
     }
     
-    function setWLSigner(address signer) public onlyOwner {
+    function setWLSigner(address signer) external onlyOwner {
         require(signer != 0x0000000000000000000000000000000000000000, "Can't set WL signer as 0x00 address");
         wlSigner = signer;
     }
 
-    function setCost(uint256 price) public onlyOwner {
+    function setCost(uint256 price) external onlyOwner {
         cost = price;
     }
     
-    function freezeBaseURI() public onlyOwner {
+    function freezeBaseURI() external onlyOwner {
         tokenURIFrozen = true;
     }
     
-    function startPublicSale() public onlyOwner {
+    function startPublicSale() external onlyOwner {
         publicSaleStarted = true;
     }
-    function startWLMint() public onlyOwner {
+    function startWLMint() external onlyOwner {
         wlMintStarted = true;
     }
 
@@ -121,7 +133,7 @@ contract GBC is
         }
         return tokenIds;
     }
-    function isBlacklisted(address _address) public view returns (bool) {
+    function isBlacklisted(address _address) external view returns (bool) {
         return blacklist[_address];
     }
 
@@ -129,7 +141,7 @@ contract GBC is
         address from,
         address to,
         uint256 tokenId
-    ) internal virtual override(ERC721, ERC721Enumerable) {
+    ) internal virtual override(ERC721Enumerable) {
         super._beforeTokenTransfer(from, to, tokenId);
     }
 
@@ -140,7 +152,7 @@ contract GBC is
         public
         view
         virtual
-        override(ERC721, ERC721Enumerable)
+        override(ERC721Enumerable)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
@@ -151,7 +163,7 @@ contract GBC is
         address signer = recover(hash, sig);
         return(wlSigner == signer);
     }
-
+    
     function recover(bytes32 hash, bytes memory sig) private pure returns (address) {
         bytes32 r;
         bytes32 s;
