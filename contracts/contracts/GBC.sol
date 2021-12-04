@@ -19,8 +19,7 @@ contract GBC is
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIdTracker;
 
-    string private _baseTokenURI;
-    string private _contractURI;
+    string public _baseTokenURI;
     uint256 public max = 10000;
     uint256 public maxMintPerTx = 20;
 
@@ -42,10 +41,6 @@ contract GBC is
 
     function _baseURI() internal view virtual override returns (string memory) {
         return _baseTokenURI;
-    }
-    
-    function contractURI() public view returns (string memory) {
-        return _contractURI;
     }
     
     function adminMint(uint256 _mintAmount, address _to) external onlyOwner{
@@ -96,10 +91,6 @@ contract GBC is
         }
     }
     
-    function setContractURI(string memory uri) external onlyOwner {
-        require(tokenURIFrozen == false, "Token URIs are frozen");
-        _contractURI = uri;
-    }
     function setBaseTokenURI(string memory uri) external onlyOwner {
         require(tokenURIFrozen == false, "Token URIs are frozen");
         _baseTokenURI = uri;
