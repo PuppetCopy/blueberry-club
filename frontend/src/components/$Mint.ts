@@ -4,9 +4,9 @@ import { $column, $icon, $NumberTicker, $row, $seperator, layoutSheet, state } f
 import { pallete } from "@aelea/ui-components-theme"
 import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
 import { DEPLOYED_CONTRACT, MINT_MAX_SUPPLY, MINT_PRICE, USE_CHAIN, WHITELIST } from "@gambitdao/gbc-middleware"
-import { ETH_ADDRESS_REGEXP, getGatewayUrl, shortenTxAddress } from "@gambitdao/gmx-middleware"
+import { ETH_ADDRESS_REGEXP, getGatewayUrl, groupByMapMany, shortenTxAddress } from "@gambitdao/gmx-middleware"
 import { getTxExplorerUrl, IWalletLink } from "@gambitdao/wallet-link"
-import { awaitPromises, chain, combineArray as combineArrayMost, constant, continueWith, empty, fromPromise, map, merge, multicast, now, periodic, scan, skipRepeats, snapshot, startWith, switchLatest, takeWhile, tap } from "@most/core"
+import { awaitPromises, chain, combineArray as combineArrayMost, constant, continueWith, empty, fromPromise, join, map, merge, mergeArray, multicast, now, periodic, scan, skipRepeats, snapshot, startWith, switchLatest, takeWhile, tap } from "@most/core"
 import { Stream } from "@most/types"
 import { GBC, GBC__factory } from "contracts"
 import { IEthereumProvider } from "eip1193-provider"
@@ -17,6 +17,7 @@ import { $IntermediateConnect } from "./$ConnectAccount"
 import { $ButtonPrimary } from "./form/$Button"
 import { $Dropdown } from "./form/$Dropdown"
 import { ClientOptions, createClient, gql, TypedDocumentNode } from "@urql/core"
+import { BaseProvider, TransactionReceipt } from "@ethersproject/providers"
 
 
 // export type ITransfer = ExtractAndParseEventType<GBC, 'Transfer'>
@@ -25,9 +26,20 @@ interface IToken {
   id: string
   account: string
   uri: string
+
+  transfers: ITransfer[]
+}
+
+interface ITransfer {
+  id: string
+  token: IToken
+  from: Owner
+  to: Owner
+  transactionHash: string
 }
 
 interface Owner {
+  id: string
   ownedTokens: IToken[]
   balance: bigint
 }
@@ -64,6 +76,27 @@ query ($account: Int) {
   }
 }
 
+`
+
+export const mintSnapshot: TypedDocumentNode<{owner: Owner}, QueryAccountOwnerNfts> = gql`
+${schemaFragments}
+
+query ($account: String) {
+  owner(id: $account) {
+    ownedTokens {
+      transfers {
+        transactionHash
+        id
+        from {
+          id
+        }
+      }
+      uri
+      id
+    }
+    balance
+  }
+}
 `
 
 interface Owner {
@@ -112,7 +145,7 @@ interface IFormState {
 interface IMintEvent {
   amount: number
   contractReceipt: Promise<ContractReceipt>
-  contractAction: Promise<ContractTransaction>
+  txHash: Promise<string>
 }
 
 type StreamInput<T> = {
@@ -138,6 +171,23 @@ export function replayState<A, K extends keyof A = keyof A>(state: StreamInput<A
 
 const queryOwnedNfts = async (account: string) => {
   return (await vaultClient(accountOwnedNfts, { account })).owner
+}
+
+const $queryOwnerTrasnferNfts = async (contract: GBC, provider: BaseProvider, account: string) => {
+  const owner = (await vaultClient(mintSnapshot, { account: account.toLowerCase() })).owner
+  const groupedByTxHash = Object.entries(groupByMapMany(owner.ownedTokens, token => token.transfers[0].transactionHash))
+  const mints = groupedByTxHash.map(async ([hash, token]) => {
+    const tx = provider.getTransactionReceipt(hash)
+
+    const mintAction: IMintEvent = {
+      amount: token.length,
+      txHash: Promise.resolve(hash),
+      contractReceipt: tx
+    }
+
+    return getMintTx(contract, Promise.resolve(mintAction))
+  })
+  return Promise.all(mints)
 }
 
 export const $Mint = (config: IMint) => component((
@@ -207,7 +257,6 @@ export const $Mint = (config: IMint) => component((
   const buttonState = multicast(map(({ hasWhitelistSaleStarted, hasPublicSaleStarted, formState: { mintAmount } }) => {
     return !hasWhitelistSaleStarted || hasPublicSaleStarted && mintAmount === null
   }, combineObject({ formState, hasWhitelistSaleStarted, hasPublicSaleStarted })))
-
 
   return [
     $column(layoutSheet.spacing, style({ flex: 1 }))(
@@ -365,7 +414,7 @@ export const $Mint = (config: IMint) => component((
                   return {
                     amount: mintAmount || 1,
                     contractReceipt,
-                    contractAction,
+                    txHash: contractAction.then(t => t.hash),
                   }
 
                 }, combineObject({ formState, contract, account: config.walletLink.account })),
@@ -380,63 +429,28 @@ export const $Mint = (config: IMint) => component((
         walletChange: walletChangeTether()
       }),
 
-      chain(mintAction => {
-        const contractAction = mintAction.then(me => me.contractAction)
-        const contractReceipt = mintAction.then(me => me.contractReceipt)
-        const berriesAmount = mintAction.then(me => me.amount)
+      $node(),
+      $node(),
 
-        return $column(layoutSheet.spacing)(
-          $seperator,
-          $row(layoutSheet.spacingSmall, style({ alignItems: 'center', placeContent: 'space-between' }))(
-            $IntermediateTx({
-              query: now(contractReceipt),
-              $loader: $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
-                $spinner,
-                $text(startWith('Awaiting Approval', map(() => 'Minting...', now(contractAction)))),
-              ),
-              $done: snapshot((contract, res) => {
+      join(snapshot(({ contract, provider, account }, minev) => {
 
-                const events = res.events && res.events
+        if (contract === null || provider === null) {
+          return empty()
+        }
 
 
-                if (contract && events) {
+        return getMintTx(contract, minev)
+      }, combineObject({ contract, provider: config.walletLink.provider, account: config.walletLink.account }), clickClaim)),
 
-                  const $ownedList = events.map(log => {
-                    const payload = contract.interface.parseLog(log).args
-                    const tokenId = payload.tokenId
-                    const metadata = fromPromise(getTokenIdMetadata(contract, tokenId).catch(() => null))
+      join(awaitPromises(map(async ({ contract, provider, account }) => {
 
-                    return $column(
-                      switchLatest(map(metadata => {
-                        return metadata?.image === '' ? $img(attr({ src: metadata.image }))() : $nftBox()
-                      }, metadata)),
-                      $text(style({ textAlign: 'center', fontSize: '.75em' }))(String(tokenId))
-                    )
-                  })
+        if (contract === null || provider === null || account === null) {
+          return empty()
+        }
+        const mintHistory = await $queryOwnerTrasnferNfts(contract, provider, account)
 
-                  return $column(layoutSheet.spacingSmall)(
-                    $text(style({ color: pallete.positive }))(
-                      map(amount => `Successfully minted ${amount} Berries`, fromPromise(berriesAmount)),
-                    ),
-                    $row(...$ownedList)
-                  )
-                }
-
-                
-                
-
-                      
-                return empty()
-              }, contract),
-            })({}),
-            switchLatest(map(contractTx => {
-              const href = getTxExplorerUrl(USE_CHAIN, contractTx.hash)
-              return $anchor(attr({ href, target: '_blank' }))($text(shortenTxAddress(contractTx.hash)))
-            }, fromPromise(mintAction.then(me => me.contractAction))))
-          )
-        )
-      }, clickClaim),
-
+        return mergeArray(mintHistory)
+      }, combineObject({ contract, provider: config.walletLink.provider, account: config.walletLink.account })))),
 
     ),
     
@@ -463,6 +477,57 @@ const $freeClaimBtn = $container(
 )
 
 
+function getMintTx(contract: GBC, mintAction: Promise<IMintEvent>) {
+  const contractAction = mintAction.then(me => me.txHash)
+  const contractReceipt = mintAction.then(me => me.contractReceipt)
+  const berriesAmount = mintAction.then(me => me.amount)
+
+  return $column(layoutSheet.spacing)(
+    $row(layoutSheet.spacingSmall, style({ alignItems: 'center', placeContent: 'space-between' }))(
+      $IntermediateTx({
+        query: now(contractReceipt),
+        $loader: $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+          $spinner,
+          $text(startWith('Awaiting Approval', map(() => 'Minting...', now(contractAction))))
+        ),
+        $done: map(tx => $mintTx(contract, tx, berriesAmount)),
+      })({}),
+      switchLatest(map(txHash => {
+        const href = getTxExplorerUrl(USE_CHAIN, txHash)
+        return $anchor(attr({ href, target: '_blank' }))($text(shortenTxAddress(txHash)))
+      }, fromPromise(mintAction.then(me => me.txHash))))
+    ),
+    $seperator,
+  )
+}
+
+function $mintTx(contract: GBC, contractReceipt: TransactionReceipt, berriesAmount: Promise<number>) {
+  const logs = contractReceipt.logs
+
+  if (contract && logs) {
+    const $ownedList = logs.map(log => {
+      const payload = contract.interface.parseLog(log).args
+      const tokenId = payload.tokenId
+      const metadata = fromPromise(getTokenIdMetadata(contract, tokenId).catch(() => null))
+
+      return $column(
+        switchLatest(map(metadata => {
+          return metadata?.image ? $img(attr({ src: getGatewayUrl(metadata.image) }))() : $nftBox()
+        }, metadata)),
+        $text(style({ textAlign: 'center', fontSize: '.75em' }))(String(tokenId))
+      )
+    })
+
+    return $column(layoutSheet.spacingSmall)(
+      $text(style({ color: pallete.positive }))(
+        map(amount => `Minted ${amount} Berries`, fromPromise(berriesAmount))
+      ),
+      $row(layoutSheet.spacingSmall, style({ flexWrap: 'wrap' }))(...$ownedList)
+    )
+  }
+
+  return empty()
+}
 
 async function getTokenIdMetadata(contract: GBC, tokenId: number) {
   const tokenUri = await contract.tokenURI(tokenId)

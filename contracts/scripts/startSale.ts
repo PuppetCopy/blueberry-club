@@ -11,24 +11,20 @@ dotEnv.config()
 const main = async () => {
   const [signer] = (await ethers.getSigners())
 
-  console.log('Your wallet address:', signer.address)
+  console.log('Deployer address:', signer.address)
+  console.log('Contract address:', DEPLOYED_CONTRACT)
 
   const contract = GBC__factory.connect(DEPLOYED_CONTRACT, signer)
   
   await contract.deployed()
   console.log(`✅ contract is deployed`)
 
-  // withdraw(0x0000000000000000000000000000000000000000, <amount in wei>)
 
-  // const balance = await contract.balanceOf(ADDRESS_ZERO)
-
-  // console.log(balance)
-
-  await (await contract.withdraw(ADDRESS_ZERO, 0n, {})).wait()
+  // await (await contract.withdraw(ADDRESS_ZERO, 0n, {})).wait()
   // await (await contract.startWLMint()).wait()
   // console.log(`✅ whitelist sale started`)
 
-  // await (await contract.startPublicSale()).wait()
+  await (await contract.startPublicSale()).wait()
   console.log(`✅ public sale started`)
   // await wlMintQuery
 

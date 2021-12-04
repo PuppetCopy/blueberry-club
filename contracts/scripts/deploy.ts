@@ -4,7 +4,7 @@ import { ethers, run } from "hardhat"
 const main = async () => {
   const [signer] = (await ethers.getSigners())
 
-  console.log('Your wallet address:', signer.address)
+  console.log('Deployer address:', signer.address)
 
   const contractFactory = new GBC__factory(signer)
   const name = 'GMX Blueberry Club'
