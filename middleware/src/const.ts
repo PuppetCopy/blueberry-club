@@ -1,10 +1,10 @@
 import { CHAIN } from "@gambitdao/wallet-link"
 
 
-export const USE_CHAIN = CHAIN.ETH_ROPSTEN
-export const DEPLOYED_CONTRACT = '0x9250936D907d7B636ca4d344ad5e40381143a90a'
-// export  const MINT_WHITELIST_START = Date.UTC(2021, 11, 5, 21, 0, 0)
-export const MINT_WHITELIST_START = Date.now() + 3000
+export const USE_CHAIN = CHAIN.ARBITRUM
+export const DEPLOYED_CONTRACT = '0x17f4BAa9D35Ee54fFbCb2608e20786473c7aa49f'
+
+export  const MINT_WHITELIST_START = Date.UTC(2021, 11, 5, 21, 0, 0)
 export const MINT_PUBLIC_START = Date.UTC(2021, 11, 7, 21, 0, 0)
 export const ADDRESS_ZERO = "0x0000000000000000000000000000000000000000"
 
@@ -12,7 +12,7 @@ export const ADDRESS_ZERO = "0x0000000000000000000000000000000000000000"
 export const PROJECT = {
   NAME: 'Blueberry Club',
   SYMBOL: 'GBC',
-  ipfs: 'GBC',
+  BASE_URI: '',
 }
 
 

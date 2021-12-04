@@ -1,7 +1,7 @@
 import { Behavior, combineArray, combineObject, replayLatest } from "@aelea/core"
 import { $element, $node, $text, attr, attrBehavior, component, INode, nodeEvent, style, styleInline, stylePseudo } from "@aelea/dom"
 import { $column, $icon, $NumberTicker, $row, $seperator, layoutSheet, state } from "@aelea/ui-components"
-import { pallete } from "@aelea/ui-components-theme"
+import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
 import { DEPLOYED_CONTRACT, MINT_MAX_SUPPLY, MINT_PRICE, USE_CHAIN, WHITELIST } from "@gambitdao/gbc-middleware"
 import { ETH_ADDRESS_REGEXP, getGatewayUrl, groupByMapMany, shortenTxAddress } from "@gambitdao/gmx-middleware"
@@ -11,7 +11,7 @@ import { Stream } from "@most/types"
 import { GBC, GBC__factory } from "contracts"
 import { IEthereumProvider } from "eip1193-provider"
 import { $IntermediateTx, $spinner } from "../common/$IntermediateDisplay"
-import { $anchor, $responsiveFlex } from "../elements/$common"
+import { $alert, $anchor, $responsiveFlex } from "../elements/$common"
 import { $caretDown, $gift } from "../elements/$icons"
 import { $IntermediateConnect } from "./$ConnectAccount"
 import { $ButtonPrimary } from "./form/$Button"
@@ -175,6 +175,11 @@ const queryOwnedNfts = async (account: string) => {
 
 const $queryOwnerTrasnferNfts = async (contract: GBC, provider: BaseProvider, account: string) => {
   const owner = (await vaultClient(mintSnapshot, { account: account.toLowerCase() })).owner
+
+  if (owner === null) {
+    return []
+  }
+
   const groupedByTxHash = Object.entries(groupByMapMany(owner.ownedTokens, token => token.transfers[0].transactionHash))
   const mints = groupedByTxHash.map(async ([hash, token]) => {
     const tx = provider.getTransactionReceipt(hash)
@@ -185,7 +190,7 @@ const $queryOwnerTrasnferNfts = async (contract: GBC, provider: BaseProvider, ac
       contractReceipt: tx
     }
 
-    return getMintTx(contract, Promise.resolve(mintAction))
+    return $mintAction(contract, Promise.resolve(mintAction))
   })
   return Promise.all(mints)
 }
@@ -362,6 +367,10 @@ export const $Mint = (config: IMint) => component((
                 map(({ canClaim, mintAmount, hasPublicSaleStarted, hasWhitelistSaleStarted }) => {
 
                   if (!hasPublicSaleStarted) {
+                    if (!hasWhitelistSaleStarted) {
+                      return $text('Awaiting Contract Approval...')
+                    }
+
                     return $freeClaimBtn
                   }
 
@@ -439,10 +448,10 @@ export const $Mint = (config: IMint) => component((
         }
 
 
-        return getMintTx(contract, minev)
+        return $mintAction(contract, minev)
       }, combineObject({ contract, provider: config.walletLink.provider, account: config.walletLink.account }), clickClaim)),
 
-      join(awaitPromises(map(async ({ contract, provider, account }) => {
+      switchLatest(awaitPromises(map(async ({ contract, provider, account }) => {
 
         if (contract === null || provider === null || account === null) {
           return empty()
@@ -477,32 +486,29 @@ const $freeClaimBtn = $container(
 )
 
 
-function getMintTx(contract: GBC, mintAction: Promise<IMintEvent>) {
+function $mintAction(contract: GBC, mintAction: Promise<IMintEvent>) {
   const contractAction = mintAction.then(me => me.txHash)
   const contractReceipt = mintAction.then(me => me.contractReceipt)
   const berriesAmount = mintAction.then(me => me.amount)
 
+
   return $column(layoutSheet.spacing)(
-    $row(layoutSheet.spacingSmall, style({ alignItems: 'center', placeContent: 'space-between' }))(
-      $IntermediateTx({
-        query: now(contractReceipt),
-        $loader: $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
-          $spinner,
-          $text(startWith('Awaiting Approval', map(() => 'Minting...', now(contractAction))))
-        ),
-        $done: map(tx => $mintTx(contract, tx, berriesAmount)),
-      })({}),
-      switchLatest(map(txHash => {
-        const href = getTxExplorerUrl(USE_CHAIN, txHash)
-        return $anchor(attr({ href, target: '_blank' }))($text(shortenTxAddress(txHash)))
-      }, fromPromise(mintAction.then(me => me.txHash))))
-    ),
-    $seperator,
+    $IntermediateTx({
+      query: now(contractReceipt),
+      $loader: $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+        $spinner,
+        $text(startWith('Awaiting Approval', map(() => 'Minting...', fromPromise(contractAction)))),
+        $node(style({ flex: 1 }))(),
+        switchLatest(map(txHash => $txHashLink(txHash), fromPromise(contractAction)))
+      ),
+      $done: map(tx => $mintDetails(contract, tx, berriesAmount)),
+    })({}),
+    style({ backgroundColor: colorAlpha(pallete.foreground, .15) }, $seperator),
   )
 }
 
-function $mintTx(contract: GBC, contractReceipt: TransactionReceipt, berriesAmount: Promise<number>) {
-  const logs = contractReceipt.logs
+function $mintDetails(contract: GBC, contractReceipt: TransactionReceipt, berriesAmount: Promise<number>) {
+  const logs = contractReceipt?.logs
 
   if (contract && logs) {
     const $ownedList = logs.map(log => {
@@ -518,15 +524,25 @@ function $mintTx(contract: GBC, contractReceipt: TransactionReceipt, berriesAmou
       )
     })
 
-    return $column(layoutSheet.spacingSmall)(
-      $text(style({ color: pallete.positive }))(
-        map(amount => `Minted ${amount} Berries`, fromPromise(berriesAmount))
+   
+    return $column(layoutSheet.spacing)(
+      $row(style({ placeContent: 'space-between' }))(
+        $text(style({ color: pallete.positive }))(
+          map(amount => `Minted ${amount} Berries`, fromPromise(berriesAmount))
+        ),
+        $txHashLink(contractReceipt.transactionHash)
       ),
       $row(layoutSheet.spacingSmall, style({ flexWrap: 'wrap' }))(...$ownedList)
     )
   }
 
-  return empty()
+  return $alert($text('Unable to reach subgraph'))
+}
+
+const $txHashLink = (txHash: string) => {
+  const href = getTxExplorerUrl(USE_CHAIN, txHash)
+
+  return $anchor(attr({ href, target: '_blank' }))($text(shortenTxAddress(txHash)))
 }
 
 async function getTokenIdMetadata(contract: GBC, tokenId: number) {

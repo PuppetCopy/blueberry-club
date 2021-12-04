@@ -6,11 +6,11 @@ schema:
 dataSources:
   - kind: ethereum/contract
     name: bluberry-club
-    network: ropsten
+    network: arbitrum-one
     source:
-      address: '0x9250936D907d7B636ca4d344ad5e40381143a90a'
+      address: '0x17f4BAa9D35Ee54fFbCb2608e20786473c7aa49f'
       abi: ERC721
-      startBlock: 11546063
+      startBlock: 3572694
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5

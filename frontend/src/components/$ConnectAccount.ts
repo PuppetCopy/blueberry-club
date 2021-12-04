@@ -106,8 +106,7 @@ export const $IntermediateConnect = (config: IIntermediateDisplay) => component(
 
             if (chain !== USE_CHAIN) {
               return $ButtonPrimary({
-                $content: $text('Switch to Ropsten TestNet'),
-                // $content: $text('Switch to Arbitrum Network'),
+                $content: $text('Switch to Arbitrum Network'),
               })({
                 click: switchNetworkTether(
                   snapshot(wallet => {

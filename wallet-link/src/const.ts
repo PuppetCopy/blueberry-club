@@ -45,7 +45,7 @@ export const EXPLORER_URL = {
   [CHAIN.BSC_TESTNET]: "https://testnet.bscscan.com/",
 
   [CHAIN.ARBITRUM]: "https://arbiscan.io/",
-  [CHAIN.ARBITRUM_RINKBY]: "https://rinkeby-explorer.arbitrum.io/",
+  [CHAIN.ARBITRUM_RINKBY]: "https://testnet.arbiscan.io/",
 }
 
 interface AddEthereumChainParameter {
@@ -105,7 +105,7 @@ export const NETWORK_METADATA: {[k: string]: AddEthereumChainParameter} = {
       decimals: 18
     },
     rpcUrls: ["https://rinkeby.arbitrum.io/rpc"],
-    blockExplorerUrls: ["https://rinkeby-explorer.arbitrum.io/"],
+    blockExplorerUrls: [EXPLORER_URL[CHAIN.ARBITRUM_RINKBY]],
   },
   [CHAIN.ARBITRUM]: {
     chainName: 'Arbitrum',

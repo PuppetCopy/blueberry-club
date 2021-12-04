@@ -32,19 +32,13 @@ const config: HardhatUserConfig = {
     ropsten: {
       url: ROPSTEN_RPC_URL || '',
       accounts
-    }
-    //   arbitrumTestnet: {
-    //     url: ARBITRUM_TESTNET_URL,
-    //     gasPrice: 10000000000,
-    //     chainId: 421611,
-    //     accounts: [ARBITRUM_TESTNET_DEPLOY_KEY]
-    //   },
-    //   arbitrum: {
-    //     url: ARBITRUM_URL,
-    //     gasPrice: 30000000000,
-    //     chainId: 42161,
-    //     accounts: [ARBITRUM_DEPLOY_KEY]
-    //   },
+    },
+    arbitrum: {
+      url: "https://arb1.arbitrum.io/rpc",
+      gasPrice: 30000000000,
+      chainId: 42161,
+      accounts: accounts
+    },
     //   polygon: {
     //     url: POLYGON_URL,
     //     gasPrice: 100000000000,

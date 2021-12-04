@@ -1,3 +1,4 @@
+import { PROJECT } from '@gambitdao/gbc-middleware'
 import { GBC__factory } from 'contracts'
 import { ethers, run } from "hardhat"
 
@@ -7,28 +8,17 @@ const main = async () => {
   console.log('Deployer address:', signer.address)
 
   const contractFactory = new GBC__factory(signer)
-  const name = 'GMX Blueberry Club'
-  const symbol = 'GBC'
-  const ipfs = 'ipfs://QmeSjSinHpPnmXmspMjwiXyN6zS4E9zccariGR3jxcaWtq/'
   
-  const gbcContract = await contractFactory.deploy(name, symbol, ipfs)
+  const gbcContract = await contractFactory.deploy(PROJECT.NAME, PROJECT.SYMBOL, PROJECT.BASE_URI)
   await gbcContract.deployed()
   console.log(`✅ contract is deployed to ${gbcContract.address}`)
 
   await run("verify:verify", {
     address: gbcContract.address,
-    constructorArguments: [ name, symbol, ipfs, ],
+    constructorArguments: [ PROJECT.NAME, PROJECT.SYMBOL, PROJECT.BASE_URI ],
   })
-    .catch(err => console.error(err))
+
   console.log(`✅ Contract ${gbcContract.address} has been verified`)
-
-
-  await gbcContract.setWLSigner('0xe660664CF2Ee9f6fEBc80Dc0b03c2757f420d539'.toLocaleLowerCase())
-  console.log(`✅ set Signer`)
-  await (await gbcContract.adminMint(50, '0x04d52e150E49c1bbc9Ddde258060A3bF28D9fD70')).wait()
-  await (await gbcContract.adminMint(50, '0x04d52e150E49c1bbc9Ddde258060A3bF28D9fD70')).wait()
-  console.log(`✅ admin mint`)
-
   console.log(`🚀 All done!`)
 
 }
