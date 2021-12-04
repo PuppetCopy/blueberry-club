@@ -2,7 +2,7 @@ import { isStream, O, Op } from "@aelea/core"
 import { $text, component, INode, style, styleBehavior } from "@aelea/dom"
 import { $column, $icon, $row, $seperator, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { filter, map, multicast, now } from "@most/core"
+import { filter, map, multicast, now, periodic } from "@most/core"
 import { Stream } from "@most/types"
 import { ARBITRUM_TRADEABLE_ADDRESS, calculatePositionDelta, formatReadableUSD, getLiquidationPriceFromDelta, IAggregatedAccountSummary, IAggregatedOpenPositionSummary, IAggregatedSettledTradeSummary, IAggregatedTradeSummary, liquidationWeight, parseFixed } from "@gambitdao/gmx-middleware"
 import { klineWS, PRICE_EVENT_TICKER_MAP, WSBTCPriceEvent } from "../binance-api"
@@ -18,7 +18,18 @@ export const filterByIndexToken = (pos: ARBITRUM_TRADEABLE_ADDRESS) => filter((d
   return token === data.s
 })
 
+export const secondsCountdown = map(Date.now, periodic(1000))
 
+export const countdown = (startDate: number) => map(now => {
+  const distance = startDate - now
+
+  const days = Math.floor(distance / (1000 * 60 * 60 * 24))
+  const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+  const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))
+  const seconds = Math.floor((distance % (1000 * 60)) / 1000)
+      
+  return `${days ? days + "d " : ''} ${hours ? hours + "h " : '' } ${ minutes ? minutes + "m " : ''} ${seconds ? seconds + "s " : ''}`
+}, secondsCountdown)
 
 
 const intervals = [

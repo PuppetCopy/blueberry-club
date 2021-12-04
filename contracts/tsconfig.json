@@ -15,5 +15,10 @@
   ],
   "files": [
     "./hardhat.config.ts",
+  ],
+  "references": [
+    {
+      "path": "../middleware"
+    }
   ]
 }

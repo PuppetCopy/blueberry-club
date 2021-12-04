@@ -9,7 +9,7 @@ const main = async () => {
   const contractFactory = new GBC__factory(signer)
   const name = 'GMX Blueberry Club'
   const symbol = 'GBC'
-  const ipfs = 'ipfs://hash/'
+  const ipfs = 'ipfs://QmeSjSinHpPnmXmspMjwiXyN6zS4E9zccariGR3jxcaWtq/'
   
   const gbcContract = await contractFactory.deploy(name, symbol, ipfs)
   await gbcContract.deployed()
@@ -23,10 +23,10 @@ const main = async () => {
   console.log(`✅ Contract ${gbcContract.address} has been verified`)
 
 
-  await gbcContract.setWLSigner('0xe660664CF2Ee9f6fEBc80Dc0b03c2757f420d539')
+  await gbcContract.setWLSigner('0xe660664CF2Ee9f6fEBc80Dc0b03c2757f420d539'.toLocaleLowerCase())
   console.log(`✅ set Signer`)
-  await gbcContract.adminMint(50, '0x04d52e150E49c1bbc9Ddde258060A3bF28D9fD70')
-  await gbcContract.adminMint(50, '0x04d52e150E49c1bbc9Ddde258060A3bF28D9fD70')
+  await (await gbcContract.adminMint(50, '0x04d52e150E49c1bbc9Ddde258060A3bF28D9fD70')).wait()
+  await (await gbcContract.adminMint(50, '0x04d52e150E49c1bbc9Ddde258060A3bF28D9fD70')).wait()
   console.log(`✅ admin mint`)
 
   console.log(`🚀 All done!`)

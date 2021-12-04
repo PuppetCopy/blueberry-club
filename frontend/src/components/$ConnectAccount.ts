@@ -4,11 +4,12 @@ import { $column, $icon, $Popover, $row, layoutSheet, state } from "@aelea/ui-co
 import { pallete } from "@aelea/ui-components-theme"
 import { awaitPromises, constant, empty, fromPromise, map, multicast, skipRepeats, snapshot, switchLatest, tap } from "@most/core"
 import { IEthereumProvider } from "eip1193-provider"
-import { CHAIN, IWalletLink, attemptToSwitchNetwork } from "@gambitdao/wallet-link"
+import { IWalletLink, attemptToSwitchNetwork } from "@gambitdao/wallet-link"
 import { $walletConnectLogo } from "../common/$icons"
 import * as wallet from "../common/wallets"
 import { $ButtonPrimary } from "./form/$Button"
 import { $caretDown } from "../elements/$icons"
+import { USE_CHAIN } from "@gambitdao/gbc-middleware"
 
 
 
@@ -103,17 +104,14 @@ export const $IntermediateConnect = (config: IIntermediateDisplay) => component(
         return $column(
           switchLatest(map((chain) => {
 
-            if (
-            // chain !== CHAIN.ARBITRUM
-              chain !== CHAIN.ETH_ROPSTEN
-            ) {
+            if (chain !== USE_CHAIN) {
               return $ButtonPrimary({
                 $content: $text('Switch to Ropsten TestNet'),
                 // $content: $text('Switch to Arbitrum Network'),
               })({
                 click: switchNetworkTether(
                   snapshot(wallet => {
-                    return wallet ? attemptToSwitchNetwork(wallet, CHAIN.ETH_ROPSTEN) : null
+                    return wallet ? attemptToSwitchNetwork(wallet, USE_CHAIN) : null
                   }, config.walletLink.wallet),
                 )
               })

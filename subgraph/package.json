@@ -1,0 +1,18 @@
+{
+  "name": "subgraph",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "codegen": "graph codegen",
+    "contracts-typecain": "yarn workspace contracts run typechain",
+    "build": "graph build",
+    "build-pre-deploy": "yarn run contracts-typecain && yarn run codegen && yarn run build",
+    "deploy": "yarn run build-pre-deploy && graph deploy --product hosted-service nissoh/bluberry-club",
+    "create-local": "graph create --node http://localhost:8020/ gmx-vault",
+    "remove-local": "graph remove --node http://localhost:8020/ gmx-vault",
+    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 blueberry-club"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-ts": "0.24.1"
+  }
+}

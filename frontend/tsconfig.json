@@ -11,5 +11,13 @@
       "DOM",
       "ESNext"
     ]
-  }
+  },
+  "references": [
+    {
+      "path": "../middleware"
+    },
+    {
+      "path": "../contracts"
+    }
+  ]
 }

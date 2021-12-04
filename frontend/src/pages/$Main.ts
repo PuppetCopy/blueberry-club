@@ -18,6 +18,8 @@ import { claimListQuery } from "../logic/claim"
 import { helloBackend } from '../logic/leaderboard'
 import { $Mint } from "../components/$Mint"
 import { $Breadcrumbs } from "../components/$Breadcrumbs"
+import { countdown, secondsCountdown } from "./common"
+import { MINT_WHITELIST_START } from "@gambitdao/gbc-middleware"
 
 
 function buildThresholdList(numSteps = 20) {
@@ -142,24 +144,8 @@ export default ({ baseRoute = '' }: Website) => component((
     )
   )
 
-  // const MINT_START = Date.UTC(2021, 11, 1, 18, 0, 0)
-  const MINT_START = Date.now() + 3000
 
-  const secondsCountdown = map(Date.now, periodic(1000))
-
-  const competitionCountdown = (startDate: number) => map(now => {
-    const distance = startDate - now
-
-    const days = Math.floor(distance / (1000 * 60 * 60 * 24))
-    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))
-    const seconds = Math.floor((distance % (1000 * 60)) / 1000)
-      
-    return `${days ? days + "d " : ''} ${hours ? hours + "h " : '' } ${ minutes ? minutes + "m " : ''} ${seconds ? seconds + "s " : ''}`
-  }, secondsCountdown)
-
-
-  const competitionStartSignal = skipRepeats(map(now => MINT_START > now, secondsCountdown))
+  const competitionStartSignal = skipRepeats(map(now => MINT_WHITELIST_START > now, secondsCountdown))
 
   const $details = (start: number) => {
 
@@ -169,8 +155,8 @@ export default ({ baseRoute = '' }: Website) => component((
 
           return stated
             ? $row(layoutSheet.spacingSmall, style({ fontSize: '1.65em' }))(
-              $text(`Minting is starting in! `),
-              $text(style({ fontWeight: 'bold' }))(competitionCountdown(start)),
+              $text(`Whitelist Minting is starting in! `),
+              $text(style({ fontWeight: 'bold' }))(countdown(start)),
             )
             : $Mint({ walletLink, walletStore })({
               walletChange: walletChangeTether()
@@ -214,7 +200,7 @@ export default ({ baseRoute = '' }: Website) => component((
 
               $node(),
 
-              $details(MINT_START)
+              $details(MINT_WHITELIST_START)
             ),
 
             screenUtils.isDesktopScreen ? $row(
@@ -239,9 +225,9 @@ export default ({ baseRoute = '' }: Website) => component((
             $text(style({ fontWeight: 'bold', fontSize: '2.5em', margin: '25px 0px 30px', textAlign: 'center' }))('GMX Blueberry Club Launch'),
             $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '878px' }))(
               `The first goal of this collection is to reward GMX holders. That's why everyone with  Multiplier Points
-(Snapshot taken on 19 Nov 2021) will be able to mint 1 GBC for free (minting December 5 - 10PM CET)
+(Snapshot taken on 19 Nov 2021) will be able to mint 1 GBC for free (minting December 5 - 10PM CET, 21 UTC)
 
-The second distribution will be a public sale which will take place December 10~ - 10PM CET.
+The second distribution will be a public sale which will take place on Dec 7 - 10PM CET, 21 UTC
 You will be able to mint GBC for 0,03 ETH each.
 
 After the public sale, a part of ETH will be used to create a treasury that will benefit the GMX platform.
@@ -306,8 +292,8 @@ After the public sale, a part of ETH will be used to create a treasury that will
               ),
               $card(style({ minWidth: '34%' }))(
                 $icon({ $content: $stackedCoins, width: '42px', viewBox: '0 0 32 32' }),
-                $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))('GBC Rewards'),
-                $text('Stacked esGMX on GMX receive rewards.'),
+                $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))('Treasury Rewards'),
+                $text('GLP token held in the GLP treasury earn rewards (esGMX and ETH) from GMX platform.'),
                 $text('Most of the rewards will be compounded every week and another part will be used for marketing and development.'),
               )
             ),

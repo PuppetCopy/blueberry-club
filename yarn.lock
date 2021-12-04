@@ -745,6 +745,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@gambitdao/gbc-middleware@workspace:*, @gambitdao/gbc-middleware@workspace:middleware":
+  version: 0.0.0-use.local
+  resolution: "@gambitdao/gbc-middleware@workspace:middleware"
+  dependencies:
+    "@aelea/core": 1.3.0
+    "@ethersproject/providers": 5.5.0
+    "@most/core": 1.6.1
+    "@most/disposable": 1.3.0
+    "@most/prelude": 1.8.0
+    "@most/scheduler": 1.3.0
+    "@most/types": 1.1.0
+    eip1193-provider: 1.0.1
+  languageName: unknown
+  linkType: soft
+
 "@gambitdao/gmx-middleware@npm:0.2.0":
   version: 0.2.0
   resolution: "@gambitdao/gmx-middleware@npm:0.2.0"
@@ -787,6 +802,15 @@ __metadata:
   version: 1.1.2
   resolution: "@gar/promisify@npm:1.1.2"
   checksum: d05081e0887a49c178b75ee3067bd6ee086f73c154d121b854fb2e044e8a89cb1cbb6de3a0dd93a519b80f0531fda68b099dd7256205f7fbb3490324342f2217
+  languageName: node
+  linkType: hard
+
+"@graphprotocol/graph-ts@npm:0.24.1":
+  version: 0.24.1
+  resolution: "@graphprotocol/graph-ts@npm:0.24.1"
+  dependencies:
+    assemblyscript: 0.19.10
+  checksum: ad88167a4ffe1c2d61be493fc43674cacffe42f6a51de52d357125cbb152484a8a9d9835f42d65114f19fd12a073b862afad0500d8528103ee0db2b7bd92e6bc
   languageName: node
   linkType: hard
 
@@ -2778,6 +2802,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"assemblyscript@npm:0.19.10":
+  version: 0.19.10
+  resolution: "assemblyscript@npm:0.19.10"
+  dependencies:
+    binaryen: 101.0.0-nightly.20210723
+    long: ^4.0.0
+  bin:
+    asc: bin/asc
+    asinit: bin/asinit
+  checksum: d4087bcbae402eb0e972a78d8dfee607b2b51f4b29fcee5359f4db3052912ec12492a8714916bed8424f7f495f9357c7c6ab2482ba1d4ea4a44c55a86df5a67c
+  languageName: node
+  linkType: hard
+
 "assert-plus@npm:1.0.0, assert-plus@npm:^1.0.0":
   version: 1.0.0
   resolution: "assert-plus@npm:1.0.0"
@@ -3643,6 +3680,15 @@ __metadata:
   version: 2.2.0
   resolution: "binary-extensions@npm:2.2.0"
   checksum: ccd267956c58d2315f5d3ea6757cf09863c5fc703e50fbeb13a7dc849b812ef76e3cf9ca8f35a0c48498776a7478d7b4a0418e1e2b8cb9cb9731f2922aaad7f8
+  languageName: node
+  linkType: hard
+
+"binaryen@npm:101.0.0-nightly.20210723":
+  version: 101.0.0-nightly.20210723
+  resolution: "binaryen@npm:101.0.0-nightly.20210723"
+  bin:
+    wasm-opt: bin/wasm-opt
+  checksum: b1f7cc8e9fb4f1530e9454b5ea6deba17e2d863cea4efc6d0ba1b2af2325e9080c29df0ffeaf9708d455705a629a6a4fbef0ac29ed789a4e316b4c1437879f57
   languageName: node
   linkType: hard
 
@@ -4718,6 +4764,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "contracts@workspace:contracts"
   dependencies:
+    "@gambitdao/gbc-middleware": "workspace:*"
     "@nomiclabs/hardhat-ethers": ^2.0.2
     "@nomiclabs/hardhat-etherscan": ^2.1.8
     "@nomiclabs/hardhat-waffle": ^2.0.1
@@ -6190,7 +6237,7 @@ __metadata:
   dependencies:
     bn.js: ^4.11.8
     ethereumjs-util: ^6.0.0
-  checksum: ae074be0bb012857ab5d3ae644d1163b908a48dd724b7d2567cfde309dc72222d460438f2411936a70dc949dc604ce1ef7118f7273bd525815579143c907e336
+  checksum: 03127d09960e5f8a44167463faf25b2894db2f746376dbb8195b789ed11762f93db9c574eaa7c498c400063508e9dfc1c80de2edf5f0e1406b25c87d860ff2f1
   languageName: node
   linkType: hard
 
@@ -9476,6 +9523,13 @@ __metadata:
   dependencies:
     chalk: ^2.4.2
   checksum: f2322e1452d819050b11aad247660e1494f8b2219d40a964af91d5f9af1a90636f1b3d93f2952090e42af07cc5550aecabf6c1d8ec1181207e95cb66ba112361
+  languageName: node
+  linkType: hard
+
+"long@npm:^4.0.0":
+  version: 4.0.0
+  resolution: "long@npm:4.0.0"
+  checksum: 16afbe8f749c7c849db1f4de4e2e6a31ac6e617cead3bdc4f9605cb703cd20e1e9fc1a7baba674ffcca57d660a6e5b53a9e236d7b25a295d3855cca79cc06744
   languageName: node
   linkType: hard
 
@@ -13028,6 +13082,14 @@ __metadata:
   languageName: node
   linkType: hard
 
+"subgraph@workspace:subgraph":
+  version: 0.0.0-use.local
+  resolution: "subgraph@workspace:subgraph"
+  dependencies:
+    "@graphprotocol/graph-ts": 0.24.1
+  languageName: unknown
+  linkType: soft
+
 "supports-color@npm:6.0.0":
   version: 6.0.0
   resolution: "supports-color@npm:6.0.0"
@@ -14888,6 +14950,7 @@ __metadata:
     "@ethersproject/strings": 5.5.0
     "@ethersproject/units": ^5.5.0
     "@ethersproject/wallet": ^5.5.0
+    "@gambitdao/gbc-middleware": "workspace:*"
     "@gambitdao/gmx-middleware": 0.2.0
     "@gambitdao/wallet-link": "workspace:*"
     "@metamask/detect-provider": ^1.2.0

@@ -1,15 +1,11 @@
 import { GBC__factory } from 'contracts'
 import { ethers } from "hardhat"
+import { ADDRESS_ZERO, DEPLOYED_CONTRACT } from "@gambitdao/gbc-middleware"
 
-const DEPLOYED_CONTRACT = process.env.DEPLOYED_CONTRACT
-
-if (DEPLOYED_CONTRACT === undefined) {
-  throw new Error('.env file is missing DEPLOYED_CONTRACT adress')
-}
-
-
+ 
 // .env file (should be ignored from .gitignore)
 import dotEnv from 'dotenv'
+import { parseEther } from 'ethers/lib/utils'
 dotEnv.config()
 
 const main = async () => {
@@ -20,13 +16,21 @@ const main = async () => {
   const contract = GBC__factory.connect(DEPLOYED_CONTRACT, signer)
   
   await contract.deployed()
-  const publicSaleQuery = contract.startPublicSale()
-  const wlMintQuery = contract.startWLMint()
+  console.log(`✅ contract is deployed`)
 
-  await publicSaleQuery
+  // withdraw(0x0000000000000000000000000000000000000000, <amount in wei>)
+
+  // const balance = await contract.balanceOf(ADDRESS_ZERO)
+
+  // console.log(balance)
+
+  await (await contract.withdraw(ADDRESS_ZERO, 0n, {})).wait()
+  // await (await contract.startWLMint()).wait()
+  // console.log(`✅ whitelist sale started`)
+
+  // await (await contract.startPublicSale()).wait()
   console.log(`✅ public sale started`)
-  await wlMintQuery
-  console.log(`✅ whitelist sale started`)
+  // await wlMintQuery
 
   console.log(`🚀 Sale started 🚀`)
 }
