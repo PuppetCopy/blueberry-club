@@ -4,7 +4,8 @@ import * as router from '@aelea/router'
 import { $RouterAnchor } from '@aelea/router'
 import { $column, $icon, $row, designSheet, layoutSheet, observer, screenUtils, state } from '@aelea/ui-components'
 import { pallete } from '@aelea/ui-components-theme'
-import { awaitPromises, empty, map, merge, mergeArray, multicast, now, periodic, skipRepeats, snapshot, switchLatest } from '@most/core'
+import { awaitPromises, empty, map, merge, mergeArray, multicast, now, 
+  skipRepeats, snapshot, switchLatest } from '@most/core'
 import { Stream } from "@most/types"
 import { IEthereumProvider } from "eip1193-provider"
 import { groupByMap } from '@gambitdao/gmx-middleware'
@@ -12,7 +13,7 @@ import { initWalletLink } from "@gambitdao/wallet-link"
 import { $logo } from '../common/$icons'
 import * as wallet from "../common/wallets"
 import { $MainMenu, $socialMediaLinks } from '../components/$MainMenu'
-import { $responsiveFlex } from "../elements/$common"
+import { $anchor, $responsiveFlex } from "../elements/$common"
 import { $bagOfCoins, $discount, $glp, $stackedCoins } from "../elements/$icons"
 import { claimListQuery } from "../logic/claim"
 import { helloBackend } from '../logic/leaderboard'
@@ -139,7 +140,7 @@ export default ({ baseRoute = '' }: Website) => component((
   const $teamMember = (name: string, title: string) => $column(layoutSheet.spacing, style({ alignItems: 'center', fontSize: screenUtils.isDesktopScreen ? '' : '65%' }))(
     $element('img')(style({ width: screenUtils.isDesktopScreen ? '209px' : '150px', borderRadius: '22px' }), attr({ src: `/assets/team/${name}.svg`, }))(),
     $column(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
-      $text(style({ fontWeight: 900, fontSize: '1.5em' }))(`@${name}`),
+      $anchor(attr(({ href: `https://twitter.com/${name}` })), style({ fontWeight: 900, textDecoration: 'none', fontSize: '1.5em' }))($text(`@${name}`)),
       $text(style({ fontSize: '.75em' }))(title),
     )
   )
@@ -154,7 +155,7 @@ export default ({ baseRoute = '' }: Website) => component((
         map(stated => {
 
           return stated
-            ? $row(layoutSheet.spacingSmall, style({ fontSize: '1.65em' }))(
+            ? $responsiveFlex(layoutSheet.spacingSmall, style({ fontSize: '1.65em', textAlign: 'center' }))(
               $text(`Whitelist Minting is starting in! `),
               $text(style({ fontWeight: 'bold' }))(countdown(start)),
             )
