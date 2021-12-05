@@ -486,7 +486,7 @@ const $freeClaimBtn = $container(
 
 
 function getWhitelistSignature(account: any) {
-  return typeof account === 'string' ? WHITELIST[account.toLocaleLowerCase()] : ''
+  return typeof account === 'string' ? WHITELIST[account] || WHITELIST[account.toLocaleLowerCase()] || WHITELIST[account.toUpperCase()] : ''
 }
 
 function $mintAction(contract: GBC, mintAction: Promise<IMintEvent>) {
