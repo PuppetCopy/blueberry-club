@@ -138,6 +138,7 @@ interface IFormState {
   hasPublicSaleStarted: boolean
   hasWhitelistSaleStarted: boolean
   mintAmount: null | number
+  account: string | null
 }
 
 
@@ -172,26 +173,14 @@ const queryOwnedNfts = async (account: string) => {
   return (await vaultClient(accountOwnedNfts, { account })).owner
 }
 
-const $queryOwnerTrasnferNfts = async (contract: GBC, provider: BaseProvider, account: string) => {
+const queryOwnerTrasnferNfts = async (contract: GBC, provider: BaseProvider, account: string) => {
   const owner = (await vaultClient(mintSnapshot, { account: account.toLowerCase() })).owner
 
   if (owner === null) {
     return []
   }
 
-  const groupedByTxHash = Object.entries(groupByMapMany(owner.ownedTokens, token => token.transfers[0].transactionHash))
-  const mints = groupedByTxHash.map(async ([hash, token]) => {
-    const tx = provider.getTransactionReceipt(hash)
-
-    const mintAction: IMintEvent = {
-      amount: token.length,
-      txHash: Promise.resolve(hash),
-      contractReceipt: tx
-    }
-
-    return $mintAction(contract, Promise.resolve(mintAction))
-  })
-  return Promise.all(mints)
+  return Object.entries(groupByMapMany(owner.ownedTokens, token => token.transfers[0].transactionHash))
 }
 
 export const $Mint = (config: IMint) => component((
@@ -199,7 +188,6 @@ export const $Mint = (config: IMint) => component((
   [walletChange, walletChangeTether]: Behavior<IEthereumProvider | null, IEthereumProvider | null>,
   [clickClaim, clickClaimTether]: Behavior<PointerEvent, Promise<IMintEvent>>,
   [customNftAmount, customNftAmountTether]: Behavior<INode, number>,
-
 ) => {
 
   const hasAccount = map(address => address && !ETH_ADDRESS_REGEXP.test(address), config.walletLink.account)
@@ -250,7 +238,7 @@ export const $Mint = (config: IMint) => component((
 
 
   const canClaim = awaitPromises(combineArray(async (contract, account) => {
-    if (contract && account && WHITELIST[account.toLocaleLowerCase()]) {
+    if (contract && account && getWhitelistSignature(account)) {
       return (await contract.isBlacklisted(account)) === false
     }
     return false
@@ -260,37 +248,46 @@ export const $Mint = (config: IMint) => component((
   const mintAmount = merge(customNftAmount, selectMintAmount)
 
 
-  const formState = replayState({ canClaim, mintAmount, hasPublicSaleStarted, hasWhitelistSaleStarted }, { canClaim: false, mintAmount: null, hasWhitelistSaleStarted: false,  hasPublicSaleStarted: false } as IFormState)
+  const formState = replayState({ canClaim, mintAmount, hasPublicSaleStarted, hasWhitelistSaleStarted, account: config.walletLink.account }, {
+    canClaim: false, mintAmount: null, hasWhitelistSaleStarted: false, hasPublicSaleStarted: false, account: null
+  } as IFormState)
   
-  const buttonState = multicast(map(({ hasWhitelistSaleStarted, hasPublicSaleStarted, formState: { mintAmount } }) => {
+  const buttonState = multicast(map(({ hasWhitelistSaleStarted, hasPublicSaleStarted, formState: { canClaim, account, mintAmount } }) => {
+    if (!hasPublicSaleStarted && hasWhitelistSaleStarted) {
+      return hasWhitelistSaleStarted && !canClaim
+    }
+
     return !hasWhitelistSaleStarted || hasPublicSaleStarted && mintAmount === null
   }, combineObject({ formState, hasWhitelistSaleStarted, hasPublicSaleStarted })))
 
   return [
     $column(layoutSheet.spacing, style({ flex: 1 }))(
       
-      $responsiveFlex(layoutSheet.spacing, style({ fontSize: '1.5em' }))(
-        switchLatest(map(hasEnded => {
-          return hasEnded
-            ? $text(style({ fontSize: '1.25em', fontWeight: 'bold' }))('Sale has ended!')
-            : $text(style({ color: pallete.indeterminate }))(`Whitelist Minting is Live!`)
-        }, hasMintEnded)),
-        switchLatest(map(provider => {
+      $column(layoutSheet.spacingTiny)(
+        $responsiveFlex(layoutSheet.spacing, style({ fontSize: '1.5em' }))(
+          switchLatest(map(hasEnded => {
+            return hasEnded
+              ? $text(style({ fontSize: '1.25em', fontWeight: 'bold' }))('Sale has ended!')
+              : $text(style({ color: pallete.indeterminate }))(`Whitelist Minting is Live!`)
+          }, hasMintEnded)),
+          switchLatest(map(provider => {
 
-          if (provider === null) {
-            return empty()
-          }
+            if (provider === null) {
+              return empty()
+            }
 
-          return $row(layoutSheet.spacingTiny)(
-            $NumberTicker({
-              value$: totalMintedChange,
-              decrementColor: pallete.primary,
-              incrementColor: pallete.primary,
-            }),
-            $text(style({ color: pallete.foreground }))('/'),
-            $text(`10,000`)
-          )
-        }, contract)),
+            return $row(layoutSheet.spacingTiny)(
+              $NumberTicker({
+                value$: totalMintedChange,
+                decrementColor: pallete.primary,
+                incrementColor: pallete.primary,
+              }),
+              $text(style({ color: pallete.foreground }))('/'),
+              $text(`10,000`)
+            )
+          }, contract)),
+        ),
+        $text(style({ fontSize: '.75em' }))('Reveals will occur per 2k berries minted. Stay tuned and hit the refresh (:'),
       ),
 
       $node(),
@@ -300,7 +297,7 @@ export const $Mint = (config: IMint) => component((
         containerOp: style({ flex: 1 }),
         $display: switchLatest(map(hasEnded => {
           return hasEnded ? empty() : $row(layoutSheet.spacing, style({ flexWrap: 'wrap', alignItems: 'center' }))(
-            switchLatest(map(hasPublicSaleStarted => {
+            switchLatest(map((hasPublicSaleStarted) => {
               return hasPublicSaleStarted ? $Dropdown({
                 value: startWith(null, customNftAmount),
                 // disabled: accountChange,
@@ -367,29 +364,28 @@ export const $Mint = (config: IMint) => component((
             $ButtonPrimary({
               disabled: buttonState,
               $content: switchLatest(
-                map(({ canClaim, mintAmount, hasPublicSaleStarted, hasWhitelistSaleStarted }) => {
+                map(({ canClaim, mintAmount, hasPublicSaleStarted, hasWhitelistSaleStarted, account }) => {
 
-                  if (!hasPublicSaleStarted) {
-                    if (!hasWhitelistSaleStarted) {
-                      return $text('Awaiting Contract Approval...')
+                  if (!hasPublicSaleStarted && hasWhitelistSaleStarted) {
+                    const signature = getWhitelistSignature(account)
+                    return signature ? $freeClaimBtn : $container($giftIcon, $text('Connected Account is not eligible'))
+                  }
+
+                  if (hasPublicSaleStarted) {
+                    if (mintAmount === null) {
+                      return $text('Select Amount')
                     }
 
-                    return $freeClaimBtn
+                    if ((!canClaim || mintAmount > 1)) {
+                      return $container(
+                        canClaim ? $giftIcon : empty(),
+                        $text(canClaim ? `Mint ${mintAmount - 1} + 1 free (${(mintAmount - 1) * .03}ETH)` : `Mint ${mintAmount} (${mintAmount * .03}ETH)`),
+                      )
+                    }
                   }
+   
 
-                  if (mintAmount === null) {
-                    return $text('Select Amount')
-                  }
-
- 
-                  if ((!canClaim || mintAmount > 1) && hasPublicSaleStarted) {
-                    return $container(
-                      canClaim ? $giftIcon : empty(),
-                      $text(canClaim ? `Mint ${mintAmount - 1} + 1 free (${(mintAmount - 1) * .03}ETH)` : `Mint ${mintAmount} (${mintAmount * .03}ETH)`),
-                    )
-                  }
-
-                  return $freeClaimBtn
+                  return $text('Awaiting Contract Approval...')
                 }, formState)
               ),
             })({
@@ -402,7 +398,7 @@ export const $Mint = (config: IMint) => component((
                   let contractAction: Promise<ContractTransaction>
 
                   if (hasWhitelistSaleStarted && !hasPublicSaleStarted) {
-                    const signature = WHITELIST[account.toLocaleLowerCase()]
+                    const signature = getWhitelistSignature(account)
 
                     if (!signature) {
                       throw Error('Connected Account is not eligible')
@@ -414,7 +410,7 @@ export const $Mint = (config: IMint) => component((
                     }
                     
                     contractAction = canClaim
-                      ? contract.whitelistMint(mintAmount, WHITELIST[account.toLocaleLowerCase()], { value: BigInt(mintAmount - 1) * MINT_PRICE })
+                      ? contract.whitelistMint(mintAmount, getWhitelistSignature(account), { value: BigInt(mintAmount - 1) * MINT_PRICE })
                       : contract.mint(mintAmount, { value: BigInt(mintAmount) * MINT_PRICE })
                   }
    
@@ -457,9 +453,11 @@ export const $Mint = (config: IMint) => component((
         if (contract === null || provider === null || account === null) {
           return empty()
         }
-        const mintHistory = await $queryOwnerTrasnferNfts(contract, provider, account)
+        const mintHistory = await queryOwnerTrasnferNfts(contract, provider, account)
 
-        return mergeArray(mintHistory)
+        return mergeArray(mintHistory.map(([txHash, tokenList]) => {
+          return $mintDetails(txHash, tokenList.length, tokenList)
+        }))
       }, combineObject({ contract, provider: config.walletLink.provider, account: config.walletLink.account })))),
 
     ),
@@ -487,10 +485,13 @@ const $freeClaimBtn = $container(
 )
 
 
+function getWhitelistSignature(account: any) {
+  return typeof account === 'string' ? WHITELIST[account.toLocaleLowerCase()] : ''
+}
+
 function $mintAction(contract: GBC, mintAction: Promise<IMintEvent>) {
   const contractAction = mintAction.then(me => me.txHash)
   const contractReceipt = mintAction.then(me => me.contractReceipt)
-  const berriesAmount = mintAction.then(me => me.amount)
 
 
   return $column(layoutSheet.spacing)(
@@ -502,42 +503,48 @@ function $mintAction(contract: GBC, mintAction: Promise<IMintEvent>) {
         $node(style({ flex: 1 }))(),
         switchLatest(map(txHash => $txHashLink(txHash), fromPromise(contractAction)))
       ),
-      $done: map(tx => $mintDetails(contract, tx, berriesAmount)),
+      $done: map((tx) => {
+        const tokenIds = tx?.logs.map(log => contract.interface.parseLog(log).args.tokenId)
+        if (contract && tokenIds && tokenIds.length) {
+          const tokenList: Promise<IToken[]> = Promise.all(tokenIds.map(async t => {
+            const uri = await contract.tokenURI(t)
+
+            return {
+              account: '',
+              id: t,
+              uri,
+              transfers: []
+            } as IToken
+          }))
+          return chain(tokL => $mintDetails(tx.transactionHash, tokenIds.length, tokL), fromPromise(tokenList))
+        }
+
+        return $alert($text('Unable to reach subgraph'))
+      }),
     })({}),
     style({ backgroundColor: colorAlpha(pallete.foreground, .15) }, $seperator),
   )
 }
 
-function $mintDetails(contract: GBC, contractReceipt: TransactionReceipt, berriesAmount: Promise<number>) {
-  const logs = contractReceipt?.logs
-
-  if (contract && logs) {
-    const $ownedList = logs.map(log => {
-      const payload = contract.interface.parseLog(log).args
-      const tokenId = payload.tokenId
-      const metadata = fromPromise(getTokenIdMetadata(contract, tokenId).catch(() => null))
+function $mintDetails(txHash: string, berriesAmount: number, ids: IToken[]) {
+  return $column(layoutSheet.spacing)(
+    $row(style({ placeContent: 'space-between' }))(
+      $text(style({ color: pallete.positive }))(`Minted ${berriesAmount} Berries`),
+      $txHashLink(txHash)
+    ),
+    $row(layoutSheet.spacingSmall, style({ flexWrap: 'wrap' }))(...ids.map(token => {
+      const metadataUrl = getGatewayUrl(token.uri)
+      const queryMetadata = fetch(metadataUrl).then(res => res.json())
 
       return $column(
         switchLatest(map(metadata => {
-          return metadata?.image ? $img(attr({ src: getGatewayUrl(metadata.image) }))() : $nftBox()
-        }, metadata)),
-        $text(style({ textAlign: 'center', fontSize: '.75em' }))(String(tokenId))
+          const imgRef = getGatewayUrl(metadata.image)
+          return $anchor(attr({ href: imgRef }))($img(attr({ src: imgRef }))())
+        }, fromPromise(queryMetadata))),
+        $text(style({ textAlign: 'center', fontSize: '.75em' }))(String(BigInt(token.id)))
       )
-    })
-
-   
-    return $column(layoutSheet.spacing)(
-      $row(style({ placeContent: 'space-between' }))(
-        $text(style({ color: pallete.positive }))(
-          map(amount => `Minted ${amount} Berries`, fromPromise(berriesAmount))
-        ),
-        $txHashLink(contractReceipt.transactionHash)
-      ),
-      $row(layoutSheet.spacingSmall, style({ flexWrap: 'wrap' }))(...$ownedList)
-    )
-  }
-
-  return $alert($text('Unable to reach subgraph'))
+    }))
+  )
 }
 
 const $txHashLink = (txHash: string) => {
@@ -546,11 +553,5 @@ const $txHashLink = (txHash: string) => {
   return $anchor(attr({ href, target: '_blank' }))($text(shortenTxAddress(txHash)))
 }
 
-async function getTokenIdMetadata(contract: GBC, tokenId: number) {
-  const tokenUri = await contract.tokenURI(tokenId)
-  const gateway = getGatewayUrl(tokenUri, BigInt(tokenId).toString(16))
-  const metadata = await (await fetch(gateway)).json()
 
-  return metadata
-}
 
