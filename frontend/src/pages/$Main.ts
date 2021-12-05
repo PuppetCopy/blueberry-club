@@ -193,7 +193,7 @@ export default ({ baseRoute = '' }: Website) => component((
               $column(style({ fontSize: screenUtils.isMobileScreen ? '2.1em' : '3.1em' }))(
                 $node(
                   $text(style({}))(`Welcome to the `),
-                  $text(style({ fontWeight: 'bold' }))(`GMX Bluberry Club`),
+                  $text(style({ fontWeight: 'bold' }))(`GMX Blueberry Club`),
                 ),
               ),
 
