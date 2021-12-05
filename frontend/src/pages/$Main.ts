@@ -5,7 +5,7 @@ import { $RouterAnchor } from '@aelea/router'
 import { $column, $icon, $row, designSheet, layoutSheet, observer, screenUtils, state } from '@aelea/ui-components'
 import { pallete } from '@aelea/ui-components-theme'
 import { awaitPromises, empty, map, merge, mergeArray, multicast, now, 
-  skipRepeats, snapshot, switchLatest } from '@most/core'
+  snapshot } from '@most/core'
 import { Stream } from "@most/types"
 import { IEthereumProvider } from "eip1193-provider"
 import { groupByMap } from '@gambitdao/gmx-middleware'
@@ -19,8 +19,6 @@ import { claimListQuery } from "../logic/claim"
 import { helloBackend } from '../logic/leaderboard'
 import { $Mint } from "../components/$Mint"
 import { $Breadcrumbs } from "../components/$Breadcrumbs"
-import { countdown, secondsCountdown } from "./common"
-import { MINT_WHITELIST_START } from "@gambitdao/gbc-middleware"
 
 
 function buildThresholdList(numSteps = 20) {
@@ -146,29 +144,6 @@ export default ({ baseRoute = '' }: Website) => component((
   )
 
 
-  const competitionStartSignal = skipRepeats(map(now => MINT_WHITELIST_START > now, secondsCountdown))
-
-  const $details = (start: number) => {
-
-    return $row(layoutSheet.spacingSmall)(
-      switchLatest(
-        map(stated => {
-
-          return stated
-            ? $responsiveFlex(layoutSheet.spacingSmall, style({ fontSize: '1.65em', textAlign: 'center' }))(
-              $text(`Whitelist Minting is starting in! `),
-              $text(style({ fontWeight: 'bold' }))(countdown(start)),
-            )
-            : $Mint({ walletLink, walletStore })({
-              walletChange: walletChangeTether()
-            })
-        }, competitionStartSignal)
-      )
-        
-    )
-  }
-
-
   return [
 
     $node(designSheet.main, style({ alignItems: 'center', overflowX: 'hidden',  placeContent: 'center', padding: screenUtils.isMobileScreen ? '0 15px': '' }))(
@@ -201,7 +176,10 @@ export default ({ baseRoute = '' }: Website) => component((
 
               $node(),
 
-              $details(MINT_WHITELIST_START)
+              $Mint({ walletLink, walletStore })({
+                walletChange: walletChangeTether()
+              })
+
             ),
 
             screenUtils.isDesktopScreen ? $row(
@@ -226,9 +204,9 @@ export default ({ baseRoute = '' }: Website) => component((
             $text(style({ fontWeight: 'bold', fontSize: '2.5em', margin: '25px 0px 30px', textAlign: 'center' }))('GMX Blueberry Club Launch'),
             $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '878px' }))(
               `The first goal of this collection is to reward GMX holders. That's why everyone with  Multiplier Points
-(Snapshot taken on 19 Nov 2021) will be able to mint 1 GBC for free (minting December 5 - 11PM CET to UTC)
+(Snapshot taken on 19 Nov 2021) will be able to mint 1 GBC for free (minting December 5 - 11PM CET, UTC 22)
 
-The second distribution will be a public sale which will take place on Dec 7 - 11PM CET to UTC
+The second distribution will be a public sale which will take place on December 7 - 11PM CET, UTC 22
 You will be able to mint GBC for 0,03 ETH each.
 
 After the public sale, a part of ETH will be used to create a treasury that will benefit the GMX platform.
@@ -358,8 +336,8 @@ to GMX.io and its amazing community. Each GBC is unique and algorithmically gene
                   },
                   {
                     $title: $text('When will minting be available?'),
-                    $content: $text(`Free mint for whitelisted users : December 5 - 11PM CET to UTC
-Public sale : December 7 - 11PM CET to UTC`),
+                    $content: $text(`Free mint for whitelisted users : December 5 - 11PM CET, UTC 22
+Public sale : December 7 - 11PM CET, UTC 22`),
                   },
                 ]
               })({}),

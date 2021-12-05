@@ -3,7 +3,7 @@ import { $element, $node, $text, attr, attrBehavior, component, INode, nodeEvent
 import { $column, $icon, $NumberTicker, $row, $seperator, layoutSheet, state } from "@aelea/ui-components"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
-import { DEPLOYED_CONTRACT, MINT_MAX_SUPPLY, MINT_PRICE, USE_CHAIN, WHITELIST } from "@gambitdao/gbc-middleware"
+import { DEPLOYED_CONTRACT, MINT_MAX_SUPPLY, MINT_PRICE, MINT_PUBLIC_START, USE_CHAIN, WHITELIST } from "@gambitdao/gbc-middleware"
 import { ETH_ADDRESS_REGEXP, getGatewayUrl, groupByMapMany, shortenTxAddress } from "@gambitdao/gmx-middleware"
 import { getTxExplorerUrl, IWalletLink } from "@gambitdao/wallet-link"
 import { awaitPromises, chain, combineArray as combineArrayMost, constant, continueWith, empty, fromPromise, join, map, merge, mergeArray, multicast, now, periodic, scan, skipRepeats, snapshot, startWith, switchLatest, takeWhile, tap } from "@most/core"
@@ -17,7 +17,8 @@ import { $IntermediateConnect } from "./$ConnectAccount"
 import { $ButtonPrimary } from "./form/$Button"
 import { $Dropdown } from "./form/$Dropdown"
 import { ClientOptions, createClient, gql, TypedDocumentNode } from "@urql/core"
-import { BaseProvider, TransactionReceipt } from "@ethersproject/providers"
+import { BaseProvider } from "@ethersproject/providers"
+import { countdown, secondsCountdown } from "../pages/common"
 
 
 // export type ITransfer = ExtractAndParseEventType<GBC, 'Transfer'>
@@ -183,6 +184,26 @@ const queryOwnerTrasnferNfts = async (contract: GBC, provider: BaseProvider, acc
   return Object.entries(groupByMapMany(owner.ownedTokens, token => token.transfers[0].transactionHash))
 }
 
+
+const $details = (start: number) => {
+  
+
+  return $row(layoutSheet.spacingSmall)(
+    switchLatest(
+      map(stated => {
+
+        return stated
+          ? $responsiveFlex(layoutSheet.spacingSmall, style({ fontSize: '1.65em', textAlign: 'center' }))(
+            $text(`Public Minting is starting in! `),
+            $text(style({ fontWeight: 'bold' }))(countdown(start)),
+          )
+          : empty()
+      }, skipRepeats(map(now => start > now, secondsCountdown)))
+    )
+        
+  )
+}
+
 export const $Mint = (config: IMint) => component((
   [selectMintAmount, selectMintAmountTether]: Behavior<number, number>,
   [walletChange, walletChangeTether]: Behavior<IEthereumProvider | null, IEthereumProvider | null>,
@@ -264,12 +285,15 @@ export const $Mint = (config: IMint) => component((
     $column(layoutSheet.spacing, style({ flex: 1 }))(
       
       $column(layoutSheet.spacingTiny)(
+        $details(MINT_PUBLIC_START),
+        $seperator,
         $responsiveFlex(layoutSheet.spacing, style({ fontSize: '1.5em' }))(
           switchLatest(map(hasEnded => {
             return hasEnded
               ? $text(style({ fontSize: '1.25em', fontWeight: 'bold' }))('Sale has ended!')
               : $text(style({ color: pallete.indeterminate }))(`Whitelist Minting is Live!`)
           }, hasMintEnded)),
+
           switchLatest(map(provider => {
 
             if (provider === null) {
