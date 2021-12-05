@@ -226,9 +226,9 @@ export default ({ baseRoute = '' }: Website) => component((
             $text(style({ fontWeight: 'bold', fontSize: '2.5em', margin: '25px 0px 30px', textAlign: 'center' }))('GMX Blueberry Club Launch'),
             $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '878px' }))(
               `The first goal of this collection is to reward GMX holders. That's why everyone with  Multiplier Points
-(Snapshot taken on 19 Nov 2021) will be able to mint 1 GBC for free (minting December 5 - 10PM CET, 21 UTC)
+(Snapshot taken on 19 Nov 2021) will be able to mint 1 GBC for free (minting December 5 - 11PM CET to UTC)
 
-The second distribution will be a public sale which will take place on Dec 7 - 10PM CET, 21 UTC
+The second distribution will be a public sale which will take place on Dec 7 - 11PM CET to UTC
 You will be able to mint GBC for 0,03 ETH each.
 
 After the public sale, a part of ETH will be used to create a treasury that will benefit the GMX platform.
@@ -358,8 +358,8 @@ to GMX.io and its amazing community. Each GBC is unique and algorithmically gene
                   },
                   {
                     $title: $text('When will minting be available?'),
-                    $content: $text(`Free mint for whitelisted users : December 5 - 10PM CET, 21 UTC
-Public sale : December 7 - 10PM CET, 21 UTC`),
+                    $content: $text(`Free mint for whitelisted users : December 5 - 11PM CET to UTC
+Public sale : December 7 - 11PM CET to UTC`),
                   },
                 ]
               })({}),

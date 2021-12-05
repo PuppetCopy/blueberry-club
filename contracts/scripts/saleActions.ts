@@ -31,12 +31,21 @@ const main = async () => {
   // await (await contract.startWLMint()).wait()
   // console.log(`🚀 whitelist sale started`)
 
-  // .4 Start Public Sale
+  // .4 Allow whitelist free claim for 48hrs
+  // await (await contract.transferOwnership('0xDe2DBb7f1C893Cc5E2f51CbFd2A73C8a016183a0')).wait()
+  // console.log(`✅ Tranfer ownership`)
+
+  // .5 Start Public Sale
   // await (await contract.startPublicSale()).wait()
   // console.log(`🚀 public sale started`)
 
-  // .5 Send public mint funds into treasury
+  // .6 Send public mint funds into treasury
   // await (await contract.withdraw(ADDRESS_ZERO, 1000000000000000000n)).wait()
+
+
+  // .~ Change metadata
+  await (await contract.setBaseTokenURI('ipfs://Qmdk3qxoJAfd8MreTbx1GiZLztueogjFQRh7WYAdguSaBm/')).wait()
+  // console.log(`✅ Tranfer ownership`)
 
 }
 
