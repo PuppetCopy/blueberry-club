@@ -358,8 +358,8 @@ to GMX.io and its amazing community. Each GBC is unique and algorithmically gene
                   },
                   {
                     $title: $text('When will minting be available?'),
-                    $content: $text(`Free mint for whitelisted users : December 5 - 10PM CET
-Public sale : December 5 - 10PM CET`),
+                    $content: $text(`Free mint for whitelisted users : December 5 - 10PM CET, 21 UTC
+Public sale : December 7 - 10PM CET, 21 UTC`),
                   },
                 ]
               })({}),

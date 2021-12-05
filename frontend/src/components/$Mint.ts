@@ -216,7 +216,11 @@ export const $Mint = (config: IMint) => component((
 
     const contract = GBC__factory.connect(DEPLOYED_CONTRACT, w3p.getSigner())
 
-    return contract
+    if (await contract.deployed()) {
+      return contract
+    }
+
+    return null
   }, config.walletLink.provider)))))
 
 
@@ -442,11 +446,9 @@ export const $Mint = (config: IMint) => component((
       $node(),
 
       join(snapshot(({ contract, provider, account }, minev) => {
-
         if (contract === null || provider === null) {
           return empty()
         }
-
 
         return $mintAction(contract, minev)
       }, combineObject({ contract, provider: config.walletLink.provider, account: config.walletLink.account }), clickClaim)),
