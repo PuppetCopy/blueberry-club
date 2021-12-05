@@ -9,7 +9,7 @@ type Token @entity {
 type Owner @entity {
   id: ID!
   ownedTokens: [Token!]! @derivedFrom(field: "owner")
-  balance: BigInt
+  balance: BigInt!
 }
 
 type Contract @entity {

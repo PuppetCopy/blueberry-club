@@ -121,7 +121,7 @@ export const prepareClient = (opts: ClientOptions) => {
 
 export const vaultClient = prepareClient({
   fetch: fetch as any,
-  url: 'https://api.thegraph.com/subgraphs/name/nissoh/bluberry-club',
+  url: 'https://api.thegraph.com/subgraphs/name/nissoh/blueberry-club',
 })
 
 
