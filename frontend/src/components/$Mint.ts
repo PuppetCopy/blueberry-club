@@ -1,6 +1,6 @@
 import { Behavior, combineArray, combineObject, replayLatest } from "@aelea/core"
 import { $element, $node, $text, attr, attrBehavior, component, INode, nodeEvent, style, styleInline, stylePseudo } from "@aelea/dom"
-import { $column, $icon, $NumberTicker, $row, $seperator, layoutSheet, state } from "@aelea/ui-components"
+import { $column, $icon, $NumberTicker, $row, $seperator, http, layoutSheet, state } from "@aelea/ui-components"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
 import { DEPLOYED_CONTRACT, MINT_MAX_SUPPLY, MINT_PRICE, MINT_PUBLIC_START, USE_CHAIN, WHITELIST } from "@gambitdao/gbc-middleware"
@@ -10,7 +10,7 @@ import { awaitPromises, chain, combineArray as combineArrayMost, constant, conti
 import { Stream } from "@most/types"
 import { GBC, GBC__factory } from "contracts"
 import { IEthereumProvider } from "eip1193-provider"
-import { $IntermediateTx, $spinner } from "../common/$IntermediateDisplay"
+import { $IntermediatePromise, $IntermediateTx, $spinner } from "../common/$IntermediateDisplay"
 import { $alert, $anchor, $responsiveFlex } from "../elements/$common"
 import { $caretDown, $gift } from "../elements/$icons"
 import { $IntermediateConnect } from "./$ConnectAccount"
@@ -480,7 +480,7 @@ export const $Mint = (config: IMint) => component((
         const mintHistory = await queryOwnerTrasnferNfts(contract, provider, account)
 
         return mergeArray(mintHistory.map(([txHash, tokenList]) => {
-          return $mintDetails(txHash, tokenList.length, tokenList)
+          return $mintDetails(contract, txHash, tokenList.length, tokenList)
         }))
       }, combineObject({ contract, provider: config.walletLink.provider, account: config.walletLink.account })))),
 
@@ -500,8 +500,7 @@ const counter = scan((seed, n: number) => seed + n, 0, constant(1, periodic(2000
 const blueberriesPreviewList = ['/assets/blueberriesNFT/Green.png', '/assets/blueberriesNFT/Orange.png', '/assets/blueberriesNFT/Purple.png', '/assets/blueberriesNFT/Yellow.png']
 
 const size = '44px'
-const $img = $element('img')(style({ width: size, height: size, borderRadius: '5px', border: `1px solid ${pallete.middleground}` }))
-const $nftBox = $img(attrBehavior(map(n => ({ src: blueberriesPreviewList[(n % blueberriesPreviewList.length)] }), counter)))
+const $img = $element('img')(style({ width: size, height: size, borderRadius: '5px' }))
 
 const $freeClaimBtn = $container(
   $giftIcon,
@@ -540,7 +539,7 @@ function $mintAction(contract: GBC, mintAction: Promise<IMintEvent>) {
               transfers: []
             } as IToken
           }))
-          return chain(tokL => $mintDetails(tx.transactionHash, tokenIds.length, tokL), fromPromise(tokenList))
+          return chain(tokL => $mintDetails(contract, tx.transactionHash, tokenIds.length, tokL), fromPromise(tokenList))
         }
 
         return $alert($text('Unable to reach subgraph'))
@@ -550,21 +549,42 @@ function $mintAction(contract: GBC, mintAction: Promise<IMintEvent>) {
   )
 }
 
-function $mintDetails(txHash: string, berriesAmount: number, ids: IToken[]) {
+function $mintDetails(contract: GBC, txHash: string, berriesAmount: number, ids: IToken[]) {
   return $column(layoutSheet.spacing)(
     $row(style({ placeContent: 'space-between' }))(
       $text(style({ color: pallete.positive }))(`Minted ${berriesAmount} Berries`),
       $txHashLink(txHash)
     ),
     $row(layoutSheet.spacingSmall, style({ flexWrap: 'wrap' }))(...ids.map(token => {
-      const metadataUrl = getGatewayUrl(token.uri)
-      const queryMetadata = fetch(metadataUrl).then(res => res.json())
+      const metadataQuery = contract.tokenURI(token.id)
+        .then(async uri => {
+          const gwUrl = getGatewayUrl(uri)
+          const newLocal = await http.fetchJson(gwUrl) as any
+          const imageUrl = getGatewayUrl(newLocal.image)
+          const imageBlob = await (await fetch(imageUrl, {  method: 'GET', mode: 'cors', cache: 'default', })).blob()
+
+          const imageObjectURL = URL.createObjectURL(imageBlob)
+          return imageObjectURL
+        })
+        .catch(async err => {
+          const uri = await contract._baseTokenURI() + BigInt(token.id).toString()
+          const gwUrl = getGatewayUrl(uri)
+          const newLocal = await http.fetchJson(gwUrl) as any
+          const imageUrl = getGatewayUrl(newLocal.image)
+          const imageBlob = await (await fetch(imageUrl, { method: 'GET', mode: 'cors', cache: 'default', })).blob()
+
+          const imageObjectURL = URL.createObjectURL(imageBlob)
+          return imageObjectURL
+        })
+      
 
       return $column(
-        switchLatest(map(metadata => {
-          const imgRef = getGatewayUrl(metadata.image)
-          return $anchor(attr({ href: imgRef }))($img(attr({ src: imgRef }))())
-        }, fromPromise(queryMetadata))),
+        $IntermediatePromise({
+          $done: map(res => {
+            return $anchor(attr({ href: res }))($img(attr({ src: res }))())
+          }),
+          query: now(metadataQuery)
+        })({}),
         $text(style({ textAlign: 'center', fontSize: '.75em' }))(String(BigInt(token.id)))
       )
     }))
