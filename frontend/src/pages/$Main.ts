@@ -260,14 +260,14 @@ After the public sale, a part of ETH will be used to create a treasury that will
                 $icon({ $content: $bagOfCoins, width: '42px', viewBox: '0 0 32 32' }),
                 $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))('Treasury'),
                 $column(
-                  $text('The public sales will be used to create a GLP treasury which will provide benefits to the GMX platform and to the Blueberry Club. What will this treasury be used for? It will be up to the community to decide. '),
+                  $text('Fees from public sale minting will be used to create a GLP treasury which will provide benefits to the GMX platform and to the Blueberry Club. What will this treasury be used for? It will be up to the community to decide. '),
                 )
               ),
               $card(style({ minWidth: '34%' }))(
                 $icon({ $content: $discount, width: '42px', viewBox: '0 0 32 32' }),
                 $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))('Royalties'),
 
-                $text('There is a tax on all GBC transactions. These fees are transferred directly to the GLP treasury. Platforms can apply additional fees, that is why we will create our own marketplace.'),
+                $text('There is a transaction fee on all GBC transactions. These fees are transferred directly to the GLP treasury. Platforms can apply additional fees, that is why we will create our own marketplace.'),
               ),
               $card(style({ minWidth: '34%' }))(
                 $icon({ $content: $stackedCoins, width: '42px', viewBox: '0 0 32 32' }),
@@ -291,10 +291,10 @@ After the public sale, a part of ETH will be used to create a treasury that will
                   $text('Every week a snapshot is taken of each user’s GMX tokens as well as Blueberry NFT holdings'),
                 ),
                 $element('li')(
-                  $text('At the end of the month, if a user held the same Blueberry NFT for 4 weeks, they would share from the reward pool based on the number of GMX tokens they held during the snapshots'),
+                  $text('At the end of the month, if a user has held the same Blueberry NFT for 4 weeks, they will recieve rewards from the reward pool based on the number of GMX tokens they have held during the snapshots'),
                 )
               ),
-              $text('Big thanks to the GMX team for this feature which will allow to strengthen and unite the GMX community'),
+              $text('Big shout out to the GMX team for providing this reward which will strengthen and unite the GMX community!'),
             ),
           ),
 
@@ -322,21 +322,21 @@ After the public sale, a part of ETH will be used to create a treasury that will
                 sections: [
                   {
                     $title: $text('What is the GMX Bluebery Club?'),
-                    $content: $text(`GBC is a generative 10,000 Blueberry’s NFT Collection dedicated
-to GMX.io and its amazing community. Each GBC is unique and algorithmically generated from over 130+ hand drawn traits. 
+                    $content: $text(`The GBC is a generative 10,000 Blueberry’s NFT Collection dedicated
+to GMX.io and its amazing community. Each GBC NFT is unique and algorithmically generated from over 130+ hand drawn traits. 
 `),
                   },
                   {
-                    $title: $text('What blockchain are GBC minted on?'),
-                    $content: $text('GBC will be minted on Arbitrum.'),
+                    $title: $text('What blockchain will GBC be minted on?'),
+                    $content: $text('Users will be able to mint GBC NFTs on Arbitrum.'),
                   },
                   {
                     $title: $text('How much will it cost to mint?'),
-                    $content: $text('A GBC will cost 0.03 ETH during the public sale'),
+                    $content: $text('Minting a GBC will cost 0.03 ETH during the public sale'),
                   },
                   {
-                    $title: $text('When will minting be available?'),
-                    $content: $text(`Free mint for whitelisted users : December 5 - 11PM CET, UTC 22
+                    $title: $text('When will minting be begin?'),
+                    $content: $text(`Whitelisted users can mint for free from: December 5 - 11PM CET, UTC 22
 Public sale : December 7 - 11PM CET, UTC 22`),
                   },
                 ]
