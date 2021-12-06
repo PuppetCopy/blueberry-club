@@ -556,7 +556,9 @@ function $mintDetails(contract: GBC, txHash: string, berriesAmount: number, ids:
       $txHashLink(txHash)
     ),
     $row(layoutSheet.spacingSmall, style({ flexWrap: 'wrap' }))(...ids.map(token => {
-      const metadataQuery = contract.tokenURI(token.id)
+      const tokenId = token.id
+      // const tokenId = token.id
+      const metadataQuery = contract.tokenURI(tokenId)
         .then(async uri => {
           const gwUrl = getGatewayUrl(uri)
           const newLocal = await http.fetchJson(gwUrl) as any
@@ -567,7 +569,7 @@ function $mintDetails(contract: GBC, txHash: string, berriesAmount: number, ids:
           return imageObjectURL
         })
         .catch(async err => {
-          const uri = await contract._baseTokenURI() + BigInt(token.id).toString()
+          const uri = await contract._baseTokenURI() + BigInt(tokenId).toString()
           const gwUrl = getGatewayUrl(uri)
           const newLocal = await http.fetchJson(gwUrl) as any
           const imageUrl = getGatewayUrl(newLocal.image)
@@ -581,7 +583,7 @@ function $mintDetails(contract: GBC, txHash: string, berriesAmount: number, ids:
       return $column(
         $IntermediatePromise({
           $done: map(res => {
-            return $anchor(attr({ href: res }))($img(attr({ src: res }))())
+            return $anchor(attr({ href: res, target: '_blank' }))($img(attr({ src: res }))())
           }),
           query: now(metadataQuery)
         })({}),
