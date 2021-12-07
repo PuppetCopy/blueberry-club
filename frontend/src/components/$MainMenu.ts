@@ -4,7 +4,7 @@ import { Route } from '@aelea/router'
 import { $column, $icon, $Popover, $row, $seperator, layoutSheet, screenUtils, state } from '@aelea/ui-components'
 import { pallete } from "@aelea/ui-components-theme"
 import { DEPLOYED_CONTRACT, TREASURY } from "@gambitdao/gbc-middleware"
-import { formatFixed, IClaim } from "@gambitdao/gmx-middleware"
+import { formatFixed, IClaim, shortenAddress } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import {  awaitPromises, empty, map, now, switchLatest } from '@most/core'
 import { Stream } from "@most/types"
@@ -45,28 +45,39 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
 
  
   const $treasury = $node(layoutSheet.spacingSmall, style({ display: 'flex', flexDirection: screenUtils.isDesktopScreen ? 'row' : 'column' }))(
-    $text('Treasury: '),
-    $row(layoutSheet.spacingSmall)(
-      $row(layoutSheet.spacingTiny, style({ alignItems: 'baseline' }))(
-        $icon({ $content: $glp, viewBox: '0 0 32 32', width: '14px' }),
-        $text('0'),
+    $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
+      $column(
+        $text('Treasury: '),
+        $anchor(attr({ href: 'https://arbiscan.io/address/0xDe2DBb7f1C893Cc5E2f51CbFd2A73C8a016183a0' }), style({ fontSize: '.65em' }))(
+          $text(shortenAddress('0xDe2DBb7f1C893Cc5E2f51CbFd2A73C8a016183a0'))
+        )
       ),
-      $seperator,
-      $row(layoutSheet.spacingTiny, style({ alignItems: 'baseline' }))(
-        $icon({ $content: $eth, viewBox: '0 0 32 32', width: '14px' }),
-        $text(awaitPromises(map(async (p) => {
-          if (p) {
-            const tq = p.getBalance(TREASURY)
-            const dq = p.getBalance(DEPLOYED_CONTRACT)
+    
+      $row(layoutSheet.spacingSmall)(
+        $row(layoutSheet.spacingTiny, style({ alignItems: 'baseline' }))(
+          $icon({ $content: $glp, viewBox: '0 0 32 32', width: '14px' }),
+          $text('0'),
+        ),
+        $seperator,
+        $row(layoutSheet.spacingTiny, style({ alignItems: 'baseline' }))(
+          $icon({ $content: $eth, viewBox: '0 0 32 32', width: '14px' }),
 
-            const tb = (await tq).toBigInt()
-            const cb = (await dq).toBigInt()
-            return String(formatFixed(cb + tb, 18))
-          }
+          $text(awaitPromises(map(async (p) => {
+            if (p) {
+              const tq = p.getBalance(TREASURY)
+              const dq = p.getBalance(DEPLOYED_CONTRACT)
 
-          return '0'
-        }, now(w3p)))),
-      ),
+              const tb = (await tq).toBigInt()
+              const cb = (await dq).toBigInt()
+              return String(formatFixed(cb + tb, 18))
+            }
+
+            return '0'
+          }, now(w3p)))),
+        
+        
+        ),
+      )
     )
   )
 
