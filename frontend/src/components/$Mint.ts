@@ -545,12 +545,12 @@ function $mintAction(contract: GBC, mintAction: Promise<IMintEvent>) {
         return $alert($text('Unable to reach subgraph'))
       }),
     })({}),
-    style({ backgroundColor: colorAlpha(pallete.foreground, .15) }, $seperator),
   )
 }
 
 function $mintDetails(contract: GBC, txHash: string, berriesAmount: number, ids: IToken[]) {
   return $column(layoutSheet.spacing)(
+    style({ backgroundColor: colorAlpha(pallete.foreground, .15) }, $seperator),
     $row(style({ placeContent: 'space-between' }))(
       $text(style({ color: pallete.positive }))(`Minted ${berriesAmount} Berries`),
       $txHashLink(txHash)
@@ -589,7 +589,7 @@ function $mintDetails(contract: GBC, txHash: string, berriesAmount: number, ids:
         })({}),
         $text(style({ textAlign: 'center', fontSize: '.75em' }))(String(BigInt(token.id)))
       )
-    }))
+    })),
   )
 }
 
