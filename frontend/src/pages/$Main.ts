@@ -172,7 +172,7 @@ export default ({ baseRoute = '' }: Website) => component((
                 ),
               ),
 
-              $text(style({ lineHeight: '1.5em' }))(`GBC is a generative 10,000 Blueberry's NFT Collection on Arbitrum dedicated to the GMX Decentralized Exchange and its amazing community. Each GBC is unique and algorithmically generated from 130+ hand drawn traits.`),
+              $text(style({ lineHeight: '1.5em' }))(`GBC is a generative NFT Collection of 10,000 Blueberries on Arbitrum dedicated to the GMX Decentralized Exchange and its amazing community. Each GBC is unique and algorithmically generated from 130+ hand drawn traits.`),
 
               $node(),
 
