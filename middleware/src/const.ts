@@ -3,6 +3,7 @@ import { CHAIN } from "@gambitdao/wallet-link"
 
 export const USE_CHAIN = CHAIN.ARBITRUM
 export const DEPLOYED_CONTRACT = '0x17f4BAa9D35Ee54fFbCb2608e20786473c7aa49f'
+export const TREASURY = '0xDe2DBb7f1C893Cc5E2f51CbFd2A73C8a016183a0'
 
 export const MINT_WHITELIST_START = Date.UTC(2021, 11, 5, 22, 0, 0)
 export const MINT_PUBLIC_START = Date.UTC(2021, 11, 7, 22, 0, 0)

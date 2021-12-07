@@ -3,8 +3,8 @@ import { $element, $node, $text, attr, attrBehavior, component, INode, nodeEvent
 import { $column, $icon, $NumberTicker, $row, $seperator, http, layoutSheet, state } from "@aelea/ui-components"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
-import { DEPLOYED_CONTRACT, MINT_MAX_SUPPLY, MINT_PRICE, MINT_PUBLIC_START, USE_CHAIN, WHITELIST } from "@gambitdao/gbc-middleware"
-import { ETH_ADDRESS_REGEXP, getGatewayUrl, groupByMapMany, shortenTxAddress } from "@gambitdao/gmx-middleware"
+import { DEPLOYED_CONTRACT, MINT_MAX_SUPPLY, MINT_PRICE, MINT_PUBLIC_START, TREASURY, USE_CHAIN, WHITELIST } from "@gambitdao/gbc-middleware"
+import { ETH_ADDRESS_REGEXP, formatFixed, formatReadableUSD, getGatewayUrl, groupByMapMany, readableNumber, shortenTxAddress } from "@gambitdao/gmx-middleware"
 import { getTxExplorerUrl, IWalletLink } from "@gambitdao/wallet-link"
 import { awaitPromises, chain, combineArray as combineArrayMost, constant, continueWith, empty, fromPromise, join, map, merge, mergeArray, multicast, now, periodic, scan, skipRepeats, snapshot, startWith, switchLatest, takeWhile, tap } from "@most/core"
 import { Stream } from "@most/types"
@@ -19,6 +19,7 @@ import { $Dropdown } from "./form/$Dropdown"
 import { ClientOptions, createClient, gql, TypedDocumentNode } from "@urql/core"
 import { BaseProvider } from "@ethersproject/providers"
 import { countdown, secondsCountdown } from "../pages/common"
+import { $eth } from "../common/$icons"
 
 
 // export type ITransfer = ExtractAndParseEventType<GBC, 'Transfer'>
@@ -285,13 +286,11 @@ export const $Mint = (config: IMint) => component((
     $column(layoutSheet.spacing, style({ flex: 1 }))(
       
       $column(layoutSheet.spacingTiny)(
-        $details(MINT_PUBLIC_START),
-        $seperator,
         $responsiveFlex(layoutSheet.spacing, style({ fontSize: '1.5em' }))(
           switchLatest(map(hasEnded => {
             return hasEnded
               ? $text(style({ fontSize: '1.25em', fontWeight: 'bold' }))('Sale has ended!')
-              : $text(style({ color: pallete.indeterminate }))(`Whitelist Minting is Live!`)
+              : $text(style({ color: pallete.indeterminate }))(`Minting is Live!`)
           }, hasMintEnded)),
 
           switchLatest(map(provider => {

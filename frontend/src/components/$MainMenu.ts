@@ -3,13 +3,15 @@ import { $node, $text, attr, component, IBranch, nodeEvent, style } from "@aelea
 import { Route } from '@aelea/router'
 import { $column, $icon, $Popover, $row, $seperator, layoutSheet, screenUtils, state } from '@aelea/ui-components'
 import { pallete } from "@aelea/ui-components-theme"
-import { IClaim } from "@gambitdao/gmx-middleware"
+import { DEPLOYED_CONTRACT, TREASURY } from "@gambitdao/gbc-middleware"
+import { formatFixed, IClaim } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
-import {  empty, map, switchLatest } from '@most/core'
+import {  awaitPromises, empty, map, switchLatest } from '@most/core'
 import { Stream } from "@most/types"
 import { IEthereumProvider } from "eip1193-provider"
+import { $eth } from "../common/$icons"
 import { $anchor } from "../elements/$common"
-import { $discord, $moreDots, $twitter } from "../elements/$icons"
+import { $discord, $glp, $moreDots, $twitter } from "../elements/$icons"
 import { $AccountPreview } from "./$AccountProfile"
 import { $IntermediateConnect } from "./$ConnectAccount"
 
@@ -44,9 +46,28 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
   const $treasury = $node(layoutSheet.spacingSmall, style({ display: 'flex', flexDirection: screenUtils.isDesktopScreen ? 'row' : 'column' }))(
     $text('Treasury: '),
     $row(layoutSheet.spacingSmall)(
-      $text('GLP 0'),
+      $row(layoutSheet.spacingTiny, style({ alignItems: 'baseline' }))(
+        $icon({ $content: $glp, viewBox: '0 0 32 32', width: '14px' }),
+        $text(awaitPromises(map(async (p) => {
+          return '0'
+        }, walletLink.provider))),
+      ),
       $seperator,
-      $text('ETH 0')
+      $row(layoutSheet.spacingTiny, style({ alignItems: 'baseline' }))(
+        $icon({ $content: $eth, viewBox: '0 0 32 32', width: '14px' }),
+        $text(awaitPromises(map(async (p) => {
+          if (p) {
+            const tq = p.getBalance(TREASURY)
+            const dq = p.getBalance(DEPLOYED_CONTRACT)
+
+            const tb = (await tq).toBigInt()
+            const cb = (await dq).toBigInt()
+            return String(formatFixed(cb + tb, 18))
+          }
+
+          return '0'
+        }, walletLink.provider))),
+      ),
     )
   )
 
