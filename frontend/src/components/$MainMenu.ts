@@ -6,10 +6,11 @@ import { pallete } from "@aelea/ui-components-theme"
 import { DEPLOYED_CONTRACT, TREASURY } from "@gambitdao/gbc-middleware"
 import { formatFixed, IClaim } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
-import {  awaitPromises, empty, map, switchLatest } from '@most/core'
+import {  awaitPromises, empty, map, now, switchLatest } from '@most/core'
 import { Stream } from "@most/types"
 import { IEthereumProvider } from "eip1193-provider"
 import { $eth } from "../common/$icons"
+import { w3p } from "../common/provider"
 import { $anchor } from "../elements/$common"
 import { $discord, $glp, $moreDots, $twitter } from "../elements/$icons"
 import { $AccountPreview } from "./$AccountProfile"
@@ -48,9 +49,7 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
     $row(layoutSheet.spacingSmall)(
       $row(layoutSheet.spacingTiny, style({ alignItems: 'baseline' }))(
         $icon({ $content: $glp, viewBox: '0 0 32 32', width: '14px' }),
-        $text(awaitPromises(map(async (p) => {
-          return '0'
-        }, walletLink.provider))),
+        $text('0'),
       ),
       $seperator,
       $row(layoutSheet.spacingTiny, style({ alignItems: 'baseline' }))(
@@ -66,7 +65,7 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
           }
 
           return '0'
-        }, walletLink.provider))),
+        }, now(w3p)))),
       ),
     )
   )

@@ -11,7 +11,7 @@ import { IEthereumProvider } from "eip1193-provider"
 import { groupByMap } from '@gambitdao/gmx-middleware'
 import { initWalletLink } from "@gambitdao/wallet-link"
 import { $logo } from '../common/$icons'
-import * as wallet from "../common/wallets"
+import * as wallet from "../common/provider"
 import { $MainMenu, $socialMediaLinks } from '../components/$MainMenu'
 import { $anchor, $responsiveFlex } from "../elements/$common"
 import { $bagOfCoins, $discount, $glp, $stackedCoins } from "../elements/$icons"
