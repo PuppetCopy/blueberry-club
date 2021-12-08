@@ -33,9 +33,11 @@ export function parseError(data: any): Error {
     return resolveError((data as any).error)
   } else if ('data' in data) {
     return resolveError((data as any).data)
+  } else if ('message' in data) {
+    return new Error(data.message)
   }
   
-  throw new Error('Unknown error')
+  return new Error('Unknown error')
 }
 
 export const resolveWalletProvider = <T extends ExternalProvider>(provider: Stream<T | null>): Stream<T> => {
