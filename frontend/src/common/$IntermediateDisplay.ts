@@ -1,6 +1,7 @@
 import { Op } from "@aelea/core"
 import { $Node, $node, $text, component, style } from "@aelea/dom"
 import { TransactionResponse } from "@ethersproject/providers"
+import { parseError } from "@gambitdao/wallet-link/.dist/types/common"
 import { chain, constant, empty, fromPromise, map, merge, mergeArray, multicast, now, recoverWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
 import { $alert } from "../elements/$common"
@@ -99,22 +100,8 @@ export const $IntermediatePromise = <T>({
 export const $IntermediateTx = <T>({ $done, query, clean, $loader }: ISpinner<T>) => $IntermediatePromise({
   query, clean, $done, $loader,
   $fail: map(res => {
-    let message: string = res?.message as any
+    const error = parseError(res)
 
-    if (typeof res === 'string') {
-      message = res
-    } else {
-      if ('error' in res) {
-        message = (res as any).error
-      }
-
-      if ('data' in res) {
-        message = (res as any).data
-      }
-    }
-
-
-
-    return $alert($text(message))
+    return $alert($text(error.message))
   }),
 })

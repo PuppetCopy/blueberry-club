@@ -1,8 +1,8 @@
 import { BaseProvider, TransactionReceipt, Web3Provider } from "@ethersproject/providers"
-import { awaitPromises, constant, map, merge, mergeArray, snapshot, tap } from "@most/core"
+import { awaitPromises, constant, map, merge, mergeArray, snapshot } from "@most/core"
 import { Stream } from "@most/types"
 import { EIP1193Provider, ProviderInfo, ProviderRpcError } from "eip1193-provider"
-import { eip1193ProviderEvent, getAccountExplorerUrl, getTxExplorerUrl, providerAction } from "./common"
+import { eip1193ProviderEvent, getAccountExplorerUrl, getTxExplorerUrl, parseError, providerAction } from "./common"
 import { CHAIN, NETWORK_METADATA } from "./const"
 
 
@@ -93,13 +93,17 @@ export async function attemptToSwitchNetwork(metamask: EIP1193Provider, chain: C
             NETWORK_METADATA[chain]
           ],
         })
-      } catch (addError) {
+      } catch (addError: any) {
+        alert(addError.message)
         console.error(addError)
       }
     }
+
+    alert(error instanceof error.message)
+
     console.error(error)
   }
 }
 
-export { NETWORK_METADATA, CHAIN, getAccountExplorerUrl, getTxExplorerUrl }
+export { NETWORK_METADATA, CHAIN, getAccountExplorerUrl, getTxExplorerUrl, parseError }
  

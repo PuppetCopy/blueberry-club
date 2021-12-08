@@ -3,10 +3,36 @@ import type { BaseProvider, EventType, ExternalProvider } from "@ethersproject/p
 import { at, awaitPromises, chain, continueWith, empty, filter, map, recoverWith, switchLatest, take } from "@most/core"
 import { disposeWith } from "@most/disposable"
 import { Stream } from "@most/types"
-import type { EIP1193Provider, IEthereumProvider, ProviderAccounts, ProviderChainId, ProviderInfo, ProviderMessage, ProviderRpcError } from "eip1193-provider"
+import type { EIP1193Provider, ProviderAccounts, ProviderChainId, ProviderInfo, ProviderMessage, ProviderRpcError } from "eip1193-provider"
 import { CHAIN, EXPLORER_URL } from "./const"
 
+function resolveError(error: any) {
+  if (error instanceof Error) {
+    return error
+  }
 
+  if (typeof error === 'string') {
+    return new Error(error)
+  } else if ('message' in error && typeof error.message === 'string') {
+    return new Error(error.message)
+  }
+
+  throw new Error('Unable to resolve error message')
+}
+
+export function parseError(data: any): Error {
+  if (typeof data === 'string') {
+    return resolveError(data)
+  }
+  
+  if ('error' in data && data instanceof Error) {
+    return resolveError((data as any).error)
+  } else if ('data' in data && data instanceof Error) {
+    return resolveError((data as any).data)
+  }
+  
+  throw new Error('Unknown error')
+}
 
 export const resolveWalletProvider = <T extends ExternalProvider>(provider: Stream<T | null>): Stream<T> => {
   const validProvider = filter(provider => provider !== null, provider)
