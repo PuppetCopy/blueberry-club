@@ -1,7 +1,7 @@
 import { Op } from "@aelea/core"
 import { $Node, $node, $text, component, style } from "@aelea/dom"
 import { TransactionResponse } from "@ethersproject/providers"
-import { parseError } from "@gambitdao/wallet-link/.dist/types/common"
+import { parseError } from "@gambitdao/wallet-link"
 import { chain, constant, empty, fromPromise, map, merge, mergeArray, multicast, now, recoverWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
 import { $alert } from "../elements/$common"
