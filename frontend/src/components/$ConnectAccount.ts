@@ -23,7 +23,7 @@ export interface IIntermediateDisplay {
 
 export const $IntermediateConnect = (config: IIntermediateDisplay) => component((
   [connectPopover, connectPopoverTether]: Behavior<any, any>,
-  [switchNetwork, switchNetworkTether]: Behavior<PointerEvent, any>,
+  [switchNetwork, switchNetworkTether]: Behavior<PointerEvent, Promise<any>>,
   [walletChange, walletChangeTether]: Behavior<PointerEvent, IEthereumProvider | null>,
 ) => {
 
@@ -109,8 +109,12 @@ export const $IntermediateConnect = (config: IIntermediateDisplay) => component(
                 $content: $text('Switch to Arbitrum Network'),
               })({
                 click: switchNetworkTether(
-                  snapshot(wallet => {
-                    return wallet ? attemptToSwitchNetwork(wallet, USE_CHAIN) : null
+                  snapshot(async wallet => {
+                    return wallet ? attemptToSwitchNetwork(wallet, USE_CHAIN).catch(error => {
+                      alert(error.message)
+                      console.error(error)
+                      return error
+                    }) : null
                   }, config.walletLink.wallet),
                 )
               })

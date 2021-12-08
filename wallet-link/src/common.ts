@@ -21,6 +21,10 @@ function resolveError(error: any) {
 }
 
 export function parseError(data: any): Error {
+  if (data instanceof Error) {
+    return data
+  }
+
   if (typeof data === 'string') {
     return resolveError(data)
   }

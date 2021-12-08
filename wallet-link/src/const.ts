@@ -30,9 +30,6 @@ const BSC_RPC_PROVIDERS = [
   "https://bsc-dataseed4.binance.org"
 ]
 
-const ARBITRUM_RPC_PROVIDERS = [
-  "https://arb1.arbitrum.io/rpc"
-]
 
 export const EXPLORER_URL = {
   [CHAIN.ETH]: "https://etherscan.io/",
@@ -72,7 +69,7 @@ export const NETWORK_METADATA: {[k: string]: AddEthereumChainParameter} = {
       decimals: 18
     },
     blockExplorerUrls: [EXPLORER_URL[CHAIN.ETH]],
-    rpcUrls: ["https://api.infura.io/v1/jsonrpc/mainnet"],
+    rpcUrls: ["https://mainnet.infura.io/v3/78577f8136324f42b21cdf478a8ba820"],
   },
   [CHAIN.BSC]: {
     chainId: '0x' + CHAIN.BSC.toString(16),
@@ -115,7 +112,7 @@ export const NETWORK_METADATA: {[k: string]: AddEthereumChainParameter} = {
       symbol: 'ETH',
       decimals: 18
     },
+    rpcUrls: ["https://arb1.arbitrum.io/rpc"],
     blockExplorerUrls: [EXPLORER_URL[CHAIN.ARBITRUM]],
-    rpcUrls: ARBITRUM_RPC_PROVIDERS,
   },
 }

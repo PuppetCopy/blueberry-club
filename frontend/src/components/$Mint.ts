@@ -196,7 +196,7 @@ export const $Mint = (config: IMint) => component((
 
 
   const contract = replayLatest(multicast(skipRepeats(awaitPromises(map(async w3p => {
-    if (w3p === null || (await w3p.getNetwork()).chainId !== USE_CHAIN) {
+    if (w3p === null || w3p?.network?.chainId !== USE_CHAIN) {
       return null
     }
 

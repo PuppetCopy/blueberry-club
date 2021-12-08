@@ -29,7 +29,15 @@ export const getTxDetails = (provider: Stream<BaseProvider>) => (txHash: string)
 // walletconnect chaining chain issue https://github.com/WalletConnect/walletconnect-monorepo/issues/612
 // attempting to manage wallet connection and event flow
 export function initWalletLink<T extends EIP1193Provider>(walletChange: Stream<T | null>): IWalletLink<T> {
-  const ethersWeb3Wrapper = map(wallet => wallet ? new Web3Provider(wallet): wallet, walletChange)
+  const ethersWeb3Wrapper = awaitPromises(map(async wallet => {
+    if (wallet) {
+      const w3p = new Web3Provider(wallet)
+      await w3p.getNetwork()
+      return w3p
+    }
+
+    return null
+  }, walletChange))
 
   const walletEvent = eip1193ProviderEvent(walletChange)
 
@@ -38,19 +46,25 @@ export function initWalletLink<T extends EIP1193Provider>(walletChange: Stream<T
   
   const networkChange = map(Number, walletEvent('chainChanged'))
   const accountChange = map(list => list[0], walletEvent('accountsChanged'))
-  const proivderChange = snapshot((walletProvider, net) => {
+  const proivderChange = awaitPromises(snapshot(async (walletProvider, net) => {
     if (walletProvider === null) {
       return null
     }
-    return new Web3Provider(walletProvider)
-  }, walletChange, networkChange)
+
+    const w3p = new Web3Provider(walletProvider)
+    await w3p.getNetwork()
+
+    return w3p
+  }, walletChange, networkChange))
 
 
   const currentAccount = awaitPromises(map(async (provi) => {
-    if (provi) {
-      return (await provi.listAccounts())[0]
+    if (provi === null) {
+      return null
     }
-    return null
+
+    await provi.getNetwork()
+    return (await provi.listAccounts())[0]
   }, ethersWeb3Wrapper))
 
 
@@ -94,16 +108,11 @@ export async function attemptToSwitchNetwork(metamask: EIP1193Provider, chain: C
           ],
         })
       } catch (addError: any) {
-        const parsedError = parseError(addError)
-        alert(parsedError.message)
-        console.error(parsedError)
+        throw parseError(addError)
       }
     }
 
-    const parsedError = parseError(error)
-    alert(parsedError.message)
-
-    console.error(error)
+    throw parseError(parseError(error))
   }
 }
 
