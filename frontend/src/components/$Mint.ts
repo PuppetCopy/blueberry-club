@@ -6,7 +6,7 @@ import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
 import { DEPLOYED_CONTRACT, MINT_MAX_SUPPLY, MINT_PRICE, USE_CHAIN, WHITELIST } from "@gambitdao/gbc-middleware"
 import { ETH_ADDRESS_REGEXP, getGatewayUrl, groupByMapMany, shortenTxAddress } from "@gambitdao/gmx-middleware"
 import { getTxExplorerUrl, IWalletLink } from "@gambitdao/wallet-link"
-import { awaitPromises, chain, combineArray as combineArrayMost, constant, continueWith, empty, fromPromise, join, map, merge, mergeArray, multicast, now, periodic, skipRepeats, snapshot, startWith, switchLatest, takeWhile, tap } from "@most/core"
+import { awaitPromises, chain, combineArray as combineArrayMost, constant, continueWith, empty, filter, fromPromise, join, map, merge, mergeArray, multicast, now, periodic, skipRepeats, snapshot, startWith, switchLatest, takeWhile, tap } from "@most/core"
 import { Stream } from "@most/types"
 import { GBC, GBC__factory } from "contracts"
 import { IEthereumProvider } from "eip1193-provider"
@@ -18,6 +18,7 @@ import { $ButtonPrimary } from "./form/$Button"
 import { $Dropdown } from "./form/$Dropdown"
 import { ClientOptions, createClient, gql, TypedDocumentNode } from "@urql/core"
 import { BaseProvider } from "@ethersproject/providers"
+import { gbc } from "../logic/contract"
 
 
 // export type ITransfer = ExtractAndParseEventType<GBC, 'Transfer'>
@@ -219,18 +220,10 @@ export const $Mint = (config: IMint) => component((
   }, contract))
 
 
-  const totalMinted = awaitPromises(map(async contract => {
-    if (contract) {
-      return (await contract.totalSupply()).toNumber()
-    }
-
-    return 0
-  }, contract))
-
-
-  const totalMintedChangeInterval = multicast(switchLatest(constant(totalMinted, periodic(5000))))
+  const totalMintedChangeInterval = multicast(awaitPromises(map(async () => (await gbc.totalSupply()).toNumber(), periodic(5000))))
 
   const totalMintedChange = continueWith(() => now(MINT_MAX_SUPPLY), takeWhile(res => res < MINT_MAX_SUPPLY, totalMintedChangeInterval))
+
   const hasMintEnded = skipRepeats(map(amount => {
     return amount === MINT_MAX_SUPPLY
   }, totalMintedChange))
@@ -270,22 +263,15 @@ export const $Mint = (config: IMint) => component((
               : $text(style({ color: pallete.indeterminate }))(`Minting is Live!`)
           }, hasMintEnded)),
 
-          switchLatest(map(provider => {
-
-            if (provider === null) {
-              return empty()
-            }
-
-            return $row(layoutSheet.spacingTiny)(
-              $NumberTicker({
-                value$: totalMintedChange,
-                decrementColor: pallete.primary,
-                incrementColor: pallete.primary,
-              }),
-              $text(style({ color: pallete.foreground }))('/'),
-              $text(`10,000`)
-            )
-          }, contract)),
+          $row(layoutSheet.spacingTiny)(
+            $NumberTicker({
+              value$: totalMintedChange,
+              decrementColor: pallete.primary,
+              incrementColor: pallete.primary,
+            }),
+            $text(style({ color: pallete.foreground }))('/'),
+            $text(`10,000`)
+          ),
         ),
         $text(style({ fontSize: '.75em' }))('Reveals will occur per 2k berries minted. Stay tuned and hit the refresh (:'),
       ),

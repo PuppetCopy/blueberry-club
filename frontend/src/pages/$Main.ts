@@ -11,12 +11,12 @@ import { IEthereumProvider } from "eip1193-provider"
 import { groupByMap } from '@gambitdao/gmx-middleware'
 import { initWalletLink } from "@gambitdao/wallet-link"
 import { $logo } from '../common/$icons'
-import * as wallet from "../common/provider"
+import * as wallet from "../logic/gbc"
 import { $MainMenu, $socialMediaLinks } from '../components/$MainMenu'
 import { $anchor, $responsiveFlex } from "../elements/$common"
 import { $bagOfCoins, $discount, $glp, $stackedCoins } from "../elements/$icons"
 import { claimListQuery } from "../logic/claim"
-import { helloBackend } from '../logic/leaderboard'
+import { helloBackend } from '../logic/websocket'
 import { $Mint } from "../components/$Mint"
 import { $Breadcrumbs } from "../components/$Breadcrumbs"
 

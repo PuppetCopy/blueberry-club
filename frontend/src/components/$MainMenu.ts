@@ -10,7 +10,7 @@ import {  awaitPromises, empty, map, now, switchLatest } from '@most/core'
 import { Stream } from "@most/types"
 import { IEthereumProvider } from "eip1193-provider"
 import { $eth } from "../common/$icons"
-import { w3p } from "../common/provider"
+import { w3p } from "../logic/gbc"
 import { $anchor } from "../elements/$common"
 import { $discord, $glp, $moreDots, $twitter } from "../elements/$icons"
 import { $AccountPreview } from "./$AccountProfile"
