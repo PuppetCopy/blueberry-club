@@ -72,9 +72,9 @@ export function initWalletLink<T extends EIP1193Provider>(walletChange: Stream<T
   const onDisconnect = constant(null, disconnect)
   const provider = mergeArray([ethersWeb3Wrapper, proivderChange, onDisconnect])
 
-  const network = awaitPromises(map(async net => {
-    if (net) {
-      return (await net.getNetwork()).chainId
+  const network = awaitPromises(map(async w3p => {
+    if (w3p) {
+      return (await w3p.getNetwork()).chainId
     }
 
     return null
