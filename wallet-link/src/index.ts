@@ -74,6 +74,7 @@ export function initWalletLink<T extends EIP1193Provider>(walletChange: Stream<T
 
   const network = awaitPromises(map(async w3p => {
     if (w3p) {
+      // @ts-ignore
       const newLocal = w3p.getNetwork()
       return (await newLocal).chainId
     }
