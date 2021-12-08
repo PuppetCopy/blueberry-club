@@ -170,7 +170,7 @@ export function replayState<A, K extends keyof A = keyof A>(state: StreamInput<A
 }
 
 
-const queryOwnerTrasnferNfts = async (contract: GBC, provider: BaseProvider, account: string) => {
+const queryOwnerTrasnferNfts = async (account: string) => {
   const owner = (await vaultClient(mintSnapshot, { account: account.toLowerCase() })).owner
 
   if (owner === null) {
@@ -449,11 +449,10 @@ export const $Mint = (config: IMint) => component((
       }, combineObject({ contract, provider: config.walletLink.provider, account: config.walletLink.account }), clickClaim)),
 
       switchLatest(awaitPromises(map(async ({ contract, provider, account }) => {
-
         if (contract === null || provider === null || account === null) {
           return empty()
         }
-        const mintHistory = await queryOwnerTrasnferNfts(contract, provider, account)
+        const mintHistory = await queryOwnerTrasnferNfts(account)
 
         return mergeArray(mintHistory.map(([txHash, tokenList]) => {
           return $column(layoutSheet.spacing)(

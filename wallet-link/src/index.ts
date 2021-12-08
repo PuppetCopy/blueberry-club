@@ -1,5 +1,5 @@
 import { BaseProvider, TransactionReceipt, Web3Provider } from "@ethersproject/providers"
-import { awaitPromises, constant, map, merge, mergeArray, snapshot } from "@most/core"
+import { awaitPromises, constant, map, merge, mergeArray, snapshot, tap } from "@most/core"
 import { Stream } from "@most/types"
 import { EIP1193Provider, ProviderInfo, ProviderRpcError } from "eip1193-provider"
 import { eip1193ProviderEvent, getAccountExplorerUrl, getTxExplorerUrl, parseError, providerAction } from "./common"
@@ -64,12 +64,13 @@ export function initWalletLink<T extends EIP1193Provider>(walletChange: Stream<T
     }
 
     await provi.getNetwork()
-    return (await provi.listAccounts())[0]
+    return (await provi.listAccounts())[0] || null
   }, ethersWeb3Wrapper))
 
 
   const account = merge(accountChange, currentAccount)
-  const provider = mergeArray([ethersWeb3Wrapper, proivderChange, constant(null, disconnect)])
+  const onDisconnect = constant(null, disconnect)
+  const provider = mergeArray([ethersWeb3Wrapper, proivderChange, onDisconnect])
 
   const network = awaitPromises(map(async net => {
     if (net) {

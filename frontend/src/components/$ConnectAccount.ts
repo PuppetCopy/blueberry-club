@@ -27,14 +27,16 @@ export const $IntermediateConnect = (config: IIntermediateDisplay) => component(
   [walletChange, walletChangeTether]: Behavior<PointerEvent, IEthereumProvider | null>,
 ) => {
 
-  const noAccount = skipRepeats(map(x => x === null || x === undefined, config.walletLink.account))
+  const noAccount = skipRepeats(config.walletLink.account)
 
   return [
     $row(config.containerOp || O())(
-      switchLatest(combineArray((metamask, walletProvider, noAccount) => {
+      switchLatest(combineArray((metamask, walletProvider, account) => {
+
+        console.log(account)
 
         // no wallet connected, show connection flow
-        if (noAccount || walletProvider === null) {
+        if (!account || walletProvider === null) {
           const $walletConnectBtn = $ButtonPrimary({
             $content: $row(layoutSheet.spacing)(
               $row(style({ margin: '1px', backgroundColor: '#3B99FC', padding: '2px', borderRadius: '6px' }))(
