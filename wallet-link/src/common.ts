@@ -29,9 +29,9 @@ export function parseError(data: any): Error {
     return resolveError(data)
   }
   
-  if ('error' in data && data instanceof Error) {
+  if ('error' in data) {
     return resolveError((data as any).error)
-  } else if ('data' in data && data instanceof Error) {
+  } else if ('data' in data) {
     return resolveError((data as any).data)
   }
   
