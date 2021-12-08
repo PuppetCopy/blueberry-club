@@ -94,12 +94,14 @@ export async function attemptToSwitchNetwork(metamask: EIP1193Provider, chain: C
           ],
         })
       } catch (addError: any) {
-        alert(addError.message)
-        console.error(addError)
+        const parsedError = parseError(addError)
+        alert(parsedError.message)
+        console.error(parsedError)
       }
     }
 
-    alert(error instanceof error.message)
+    const parsedError = parseError(error)
+    alert(parsedError.message)
 
     console.error(error)
   }
