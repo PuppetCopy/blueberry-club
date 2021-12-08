@@ -13,4 +13,4 @@ export const walletConnect = new WalletConnectProvider({
 
 export const metamaskQuery = detectEthereumProvider({ mustBeMetaMask: true, silent: true }) as Promise<IEthereumProvider & { selectedAddress: string } | null>
 
-export const w3p = new WebSocketProvider('wss://arb-mainnet.g.alchemy.com/v2/RBsflxWv6IhITsLxAWcQlhCqSuxV7Low')
+export const w3p = new WebSocketProvider('wss://arb1.arbitrum.io/ws')

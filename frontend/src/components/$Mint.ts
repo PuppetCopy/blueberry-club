@@ -228,7 +228,7 @@ export const $Mint = (config: IMint) => component((
   }, contract))
 
 
-  const totalMintedChangeInterval = switchLatest(constant(totalMinted, periodic(1000)))
+  const totalMintedChangeInterval = multicast(switchLatest(constant(totalMinted, periodic(5000))))
 
   const totalMintedChange = continueWith(() => now(MINT_MAX_SUPPLY), takeWhile(res => res < MINT_MAX_SUPPLY, totalMintedChangeInterval))
   const hasMintEnded = skipRepeats(map(amount => {
