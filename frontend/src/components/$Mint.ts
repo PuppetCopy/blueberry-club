@@ -1,12 +1,12 @@
 import { Behavior, combineArray, combineObject, replayLatest } from "@aelea/core"
-import { $element, $node, $text, attr, attrBehavior, component, INode, nodeEvent, style, styleInline, stylePseudo } from "@aelea/dom"
+import { $element, $node, $text, attr, component, INode, nodeEvent, style, styleInline, stylePseudo } from "@aelea/dom"
 import { $column, $icon, $NumberTicker, $row, $seperator, http, layoutSheet, state } from "@aelea/ui-components"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
-import { DEPLOYED_CONTRACT, MINT_MAX_SUPPLY, MINT_PRICE, MINT_PUBLIC_START, TREASURY, USE_CHAIN, WHITELIST } from "@gambitdao/gbc-middleware"
-import { ETH_ADDRESS_REGEXP, formatFixed, formatReadableUSD, getGatewayUrl, groupByMapMany, readableNumber, shortenTxAddress } from "@gambitdao/gmx-middleware"
+import { DEPLOYED_CONTRACT, MINT_MAX_SUPPLY, MINT_PRICE, USE_CHAIN, WHITELIST } from "@gambitdao/gbc-middleware"
+import { ETH_ADDRESS_REGEXP, getGatewayUrl, groupByMapMany, shortenTxAddress } from "@gambitdao/gmx-middleware"
 import { getTxExplorerUrl, IWalletLink } from "@gambitdao/wallet-link"
-import { awaitPromises, chain, combineArray as combineArrayMost, constant, continueWith, empty, fromPromise, join, map, merge, mergeArray, multicast, now, periodic, scan, skipRepeats, snapshot, startWith, switchLatest, takeWhile, tap } from "@most/core"
+import { awaitPromises, chain, combineArray as combineArrayMost, constant, continueWith, empty, fromPromise, join, map, merge, mergeArray, multicast, now, periodic, skipRepeats, snapshot, startWith, switchLatest, takeWhile, tap } from "@most/core"
 import { Stream } from "@most/types"
 import { GBC, GBC__factory } from "contracts"
 import { IEthereumProvider } from "eip1193-provider"
@@ -18,8 +18,6 @@ import { $ButtonPrimary } from "./form/$Button"
 import { $Dropdown } from "./form/$Dropdown"
 import { ClientOptions, createClient, gql, TypedDocumentNode } from "@urql/core"
 import { BaseProvider } from "@ethersproject/providers"
-import { countdown, secondsCountdown } from "../pages/common"
-import { $eth } from "../common/$icons"
 
 
 // export type ITransfer = ExtractAndParseEventType<GBC, 'Transfer'>
@@ -171,9 +169,6 @@ export function replayState<A, K extends keyof A = keyof A>(state: StreamInput<A
   return combinedWithInitial
 }
 
-const queryOwnedNfts = async (account: string) => {
-  return (await vaultClient(accountOwnedNfts, { account })).owner
-}
 
 const queryOwnerTrasnferNfts = async (contract: GBC, provider: BaseProvider, account: string) => {
   const owner = (await vaultClient(mintSnapshot, { account: account.toLowerCase() })).owner
@@ -186,24 +181,6 @@ const queryOwnerTrasnferNfts = async (contract: GBC, provider: BaseProvider, acc
 }
 
 
-const $details = (start: number) => {
-  
-
-  return $row(layoutSheet.spacingSmall)(
-    switchLatest(
-      map(stated => {
-
-        return stated
-          ? $responsiveFlex(layoutSheet.spacingSmall, style({ fontSize: '1.65em', textAlign: 'center' }))(
-            $text(`Public Minting is starting in! `),
-            $text(style({ fontWeight: 'bold' }))(countdown(start)),
-          )
-          : empty()
-      }, skipRepeats(map(now => start > now, secondsCountdown)))
-    )
-        
-  )
-}
 
 export const $Mint = (config: IMint) => component((
   [selectMintAmount, selectMintAmountTether]: Behavior<number, number>,
@@ -274,7 +251,7 @@ export const $Mint = (config: IMint) => component((
     canClaim: false, mintAmount: null, hasWhitelistSaleStarted: false, hasPublicSaleStarted: false, account: null
   } as IFormState)
   
-  const buttonState = multicast(map(({ hasWhitelistSaleStarted, hasPublicSaleStarted, formState: { canClaim, account, mintAmount } }) => {
+  const buttonState = multicast(map(({ hasWhitelistSaleStarted, hasPublicSaleStarted, formState: { canClaim, mintAmount } }) => {
     if (!hasPublicSaleStarted && hasWhitelistSaleStarted) {
       return hasWhitelistSaleStarted && !canClaim
     }
@@ -413,7 +390,7 @@ export const $Mint = (config: IMint) => component((
               ),
             })({
               click: clickClaimTether(
-                snapshot(async ({ formState: { canClaim, mintAmount, hasPublicSaleStarted, hasWhitelistSaleStarted }, contract, account }, click): Promise<IMintEvent> => {
+                snapshot(async ({ formState: { canClaim, mintAmount, hasPublicSaleStarted, hasWhitelistSaleStarted }, contract, account }): Promise<IMintEvent> => {
                   if (contract === null || !account) {
                     throw new Error(`Unable to resolve contract`)
                   }
@@ -463,7 +440,7 @@ export const $Mint = (config: IMint) => component((
       $node(),
       $node(),
 
-      join(snapshot(({ contract, provider, account }, minev) => {
+      join(snapshot(({ contract, provider }, minev) => {
         if (contract === null || provider === null) {
           return empty()
         }
@@ -479,7 +456,10 @@ export const $Mint = (config: IMint) => component((
         const mintHistory = await queryOwnerTrasnferNfts(contract, provider, account)
 
         return mergeArray(mintHistory.map(([txHash, tokenList]) => {
-          return $mintDetails(contract, txHash, tokenList.length, tokenList)
+          return $column(layoutSheet.spacing)(
+            style({ backgroundColor: colorAlpha(pallete.foreground, .15) }, $seperator),
+            $mintDetails(contract, txHash, tokenList.length, tokenList)
+          )
         }))
       }, combineObject({ contract, provider: config.walletLink.provider, account: config.walletLink.account })))),
 
@@ -493,10 +473,6 @@ export const $Mint = (config: IMint) => component((
 const $giftIcon = $icon({ $content: $gift, width: '18px', fill: pallete.background, svgOps: style({ marginTop: '2px' }), viewBox: '0 0 32 32' })
 const $container = $row(layoutSheet.spacingSmall)
 
-
-const counter = scan((seed, n: number) => seed + n, 0, constant(1, periodic(2000)))
-
-const blueberriesPreviewList = ['/assets/blueberriesNFT/Green.png', '/assets/blueberriesNFT/Orange.png', '/assets/blueberriesNFT/Purple.png', '/assets/blueberriesNFT/Yellow.png']
 
 const size = '44px'
 const $img = $element('img')(style({ width: size, height: size, borderRadius: '5px' }))
@@ -517,6 +493,8 @@ function $mintAction(contract: GBC, mintAction: Promise<IMintEvent>) {
 
 
   return $column(layoutSheet.spacing)(
+    style({ backgroundColor: colorAlpha(pallete.foreground, .15) }, $seperator),
+
     $IntermediateTx({
       query: now(contractReceipt),
       $loader: $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
@@ -549,7 +527,6 @@ function $mintAction(contract: GBC, mintAction: Promise<IMintEvent>) {
 
 function $mintDetails(contract: GBC, txHash: string, berriesAmount: number, ids: IToken[]) {
   return $column(layoutSheet.spacing)(
-    style({ backgroundColor: colorAlpha(pallete.foreground, .15) }, $seperator),
     $row(style({ placeContent: 'space-between' }))(
       $text(style({ color: pallete.positive }))(`Minted ${berriesAmount} Berries`),
       $txHashLink(txHash)
@@ -567,7 +544,8 @@ function $mintDetails(contract: GBC, txHash: string, berriesAmount: number, ids:
           const imageObjectURL = URL.createObjectURL(imageBlob)
           return imageObjectURL
         })
-        .catch(async err => {
+        .catch(async () => {
+
           const uri = await contract._baseTokenURI() + BigInt(tokenId).toString()
           const gwUrl = getGatewayUrl(uri)
           const newLocal = await http.fetchJson(gwUrl) as any
@@ -576,6 +554,9 @@ function $mintDetails(contract: GBC, txHash: string, berriesAmount: number, ids:
 
           const imageObjectURL = URL.createObjectURL(imageBlob)
           return imageObjectURL
+        })
+        .catch(() => {
+          throw new Error('IPFS Query Failed')
         })
       
 
