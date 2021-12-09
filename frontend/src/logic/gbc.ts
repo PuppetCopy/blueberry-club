@@ -42,6 +42,6 @@ export async function getBerryPhotoFromMetadata(metadata: any) {
 
 
 export async function getBerryJpegUrl(id: string) {
-  const metadata = getBerryMetadata(id)
+  const metadata = await getBerryMetadata(id)
   return getBerryPhotoFromMetadata(metadata)  
 }

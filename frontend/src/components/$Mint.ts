@@ -403,14 +403,16 @@ function $mintDetails(contract: GBC, txHash: string, berriesAmount: number, ids:
       $txHashRef(txHash)
     ),
     $row(layoutSheet.spacingSmall, style({ flexWrap: 'wrap' }))(...ids.map(token => {
+      const tokenId = Number(BigInt(token.id))
+
       return $column(
         $IntermediatePromise({
           $done: map(res => {
-            return $anchor(attr({ href: '/p/berry/' + Number(BigInt(token.id)) }))($img(attr({ src: res }))())
+            return $anchor(attr({ href: '/p/berry/' + tokenId }))($img(attr({ src: res }))())
           }),
           query: now(getBerryJpegUrl(token.id))
         })({}),
-        $text(style({ textAlign: 'center', fontSize: '.75em' }))(token.id)
+        $text(style({ textAlign: 'center', fontSize: '.75em' }))(String(tokenId))
       )
     })),
   )
