@@ -14,8 +14,8 @@ import { $IntermediatePromise, $IntermediateTx } from "../common/$IntermediateDi
 import { $Table2 } from "../common/$Table2"
 import { $AccountPreview } from "../components/$AccountProfile"
 import { $ButtonPrimary, $ButtonSecondary } from "../components/form/$Button"
-import { $accountRef, $card, $responsiveFlex, $txHashRef, $txnIconLink } from "../elements/$common"
-import { $caretDblDown } from "../elements/$icons"
+import { $accountRef, $anchor, $card, $responsiveFlex, $txHashRef, $txnIconLink } from "../elements/$common"
+import { $caretDblDown, $tofunft } from "../elements/$icons"
 import { getBerryMetadata, getBerryPhotoFromMetadata } from "../logic/gbc"
 import { queryToken } from "../logic/query"
 import { IToken, ITransfer } from "../types"
@@ -69,31 +69,44 @@ export const $Berry = ({ walletLink, parentRoute }: IBerry) => component((
                 $accountRef(token.owner.id),
               ),
 
-              switchLatest(map(account => {
-                const isOwner = account && account.toLowerCase() === token.owner.id.toLowerCase()
+              $row(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
+                switchLatest(map(account => {
+                  const isOwner = account && account.toLowerCase() === token.owner.id.toLowerCase()
 
-                if (!isOwner) {
-                  return empty()
-                }
+                  if (!isOwner) {
+                    return empty()
+                  }
 
-                return $row(
-                  $Popover({
-                    $$popContent: map(() => {
-                      return $TrasnferOwnership(account, token, walletLink)({
+                  return $row(
+                    $Popover({
+                      $$popContent: map(() => {
+                        return $TrasnferOwnership(account, token, walletLink)({
                         // transfer: trasnferOwnershipTether()
-                      })
-                    }, trasnferPopup),
-                  })(
-                    $row(
-                      $ButtonSecondary({
-                        $content: $text('Transfer Ownership')
-                      })({
-                        click: trasnferPopupTether()
-                      })
-                    )
-                  )({})
-                )
-              }, walletLink.account)),
+                        })
+                      }, trasnferPopup),
+                    })(
+                      $row(
+                        $ButtonSecondary({
+                          $content: $text('Transfer Ownership')
+                        })({
+                          click: trasnferPopupTether()
+                        })
+                      )
+                    )({})
+                  )
+                }, walletLink.account)),
+                
+                $row(layoutSheet.spacingSmall)(
+                  $icon({
+                    $content: $tofunft,
+                    viewBox: '0 0 32 32'
+                  }),
+                  $anchor(attr({ href: `https://tofunft.com/nft/arbi/0x17f4BAa9D35Ee54fFbCb2608e20786473c7aa49f/${berryId}` }))(
+                    $text('Trade')
+                  ),
+                ),
+              ),
+              
               switchLatest(map(meta => {
 
                 return $row(layoutSheet.spacing, style({ flexWrap: 'wrap' }))(...meta.attributes.map(trait => $card(style({ padding: '16px', minWidth: '140px' }), layoutSheet.spacingSmall)(
