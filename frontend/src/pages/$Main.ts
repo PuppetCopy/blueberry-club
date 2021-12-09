@@ -11,14 +11,15 @@ import { IEthereumProvider } from "eip1193-provider"
 import { groupByMap } from '@gambitdao/gmx-middleware'
 import { initWalletLink } from "@gambitdao/wallet-link"
 import { $logo } from '../common/$icons'
-import * as wallet from "../logic/gbc"
+import * as wallet from "../logic/provider"
 import { $MainMenu, $socialMediaLinks } from '../components/$MainMenu'
-import { $anchor, $responsiveFlex } from "../elements/$common"
+import { $anchor, $card, $responsiveFlex } from "../elements/$common"
 import { $bagOfCoins, $discount, $glp, $stackedCoins } from "../elements/$icons"
 import { claimListQuery } from "../logic/claim"
 import { helloBackend } from '../logic/websocket'
 import { $Mint } from "../components/$Mint"
 import { $Breadcrumbs } from "../components/$Breadcrumbs"
+import { $Berry } from "./$Berry"
 
 
 function buildThresholdList(numSteps = 20) {
@@ -70,6 +71,7 @@ export default ({ baseRoute = '' }: Website) => component((
 
   const rootRoute = router.create({ fragment: baseRoute, title: 'GMX Blueberry Club', fragmentsChange })
   const pagesRoute = rootRoute.create({ fragment: 'p', title: '' })
+  const berryRoute = pagesRoute.create({ fragment: 'berry', title: 'Berry Profile' })
 
 
   const claimMap = replayLatest(
@@ -133,7 +135,7 @@ export default ({ baseRoute = '' }: Website) => component((
       }
     }, eyeContainerPerspective, windowMouseMove)
   )
-  const $card = $column(layoutSheet.spacing, style({ backgroundColor: pallete.horizon, padding: '30px', borderRadius: '20px', flex: 1 }))
+  
 
   const $teamMember = (name: string, title: string) => $column(layoutSheet.spacing, style({ alignItems: 'center', fontSize: screenUtils.isDesktopScreen ? '' : '65%' }))(
     $element('img')(style({ width: screenUtils.isDesktopScreen ? '209px' : '150px', borderRadius: '22px' }), attr({ src: `/assets/team/${name}.svg`, }))(),
@@ -349,23 +351,31 @@ Public sale : December 7 - 11PM CET, UTC 22`),
 
         )
       ),
+      
 
-      // router.contains(pagesRoute)(
-      //   $column(layoutSheet.spacingBig, style({ maxWidth: '1080px', width: '100%', margin: '0 auto', paddingBottom: '45px' }))(
-      //     $row(layoutSheet.spacing, style({ padding: screenUtils.isDesktopScreen ? '34px 15px' : '18px 12px 0', zIndex: 30, alignItems: 'center' }))(
-      //       screenUtils.isDesktopScreen
-      //         ? $RouterAnchor({ $anchor: $element('a')($icon({ $content: $logo, fill: pallete.message, width: '46px', height: '46px', viewBox: '0 0 32 32' })), url: '/', route: rootRoute })({
-      //           click: linkClickTether()
-      //         })
-      //         : empty(),
-      //       screenUtils.isDesktopScreen ? $node(layoutSheet.flex)() : empty(),
-      //       $MainMenu({ walletLink, claimMap, parentRoute: pagesRoute, containerOp: style({ padding: '34px, 20px' }) })({
-      //         routeChange: linkClickTether(),
-      //         walletChange: walletChangeTether()
-      //       })
-      //     ),
-      //   )
-      // ),
+      router.contains(pagesRoute)(
+        $column(layoutSheet.spacingBig, style({ maxWidth: '1256px', width: '100%', margin: '0 auto', paddingBottom: '45px' }))(
+          $row(style({ width: '100%', padding: '30px 0 0', zIndex: 1000, borderRadius: '12px' }))(
+            $row(layoutSheet.spacingBig, style({ alignItems: 'center', flex: 1 }))(
+              screenUtils.isDesktopScreen ? $RouterAnchor({ url: '/', route: rootRoute, $anchor: $element('a')($icon({ $content: $logo, width: '55px', viewBox: '0 0 32 32' })) })({
+                click: linkClickTether()
+              }) : empty(),
+              $MainMenu({ walletLink, claimMap, parentRoute: pagesRoute, walletStore })({
+                routeChange: linkClickTether(),
+                walletChange: walletChangeTether()
+              }),
+            ),
+          ),
+
+          $node(),
+
+          $column(layoutSheet.spacingBig, style({ maxWidth: '1024px', width: '100%', margin: '0 auto', paddingBottom: '45px' }))(
+            router.contains(berryRoute)(
+              $Berry({ walletLink, parentRoute: pagesRoute })({})
+            ),
+          )
+        )
+      ),
     )
   ]
 })

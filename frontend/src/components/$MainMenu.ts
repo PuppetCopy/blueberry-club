@@ -4,13 +4,13 @@ import { Route } from '@aelea/router'
 import { $column, $icon, $Popover, $row, $seperator, layoutSheet, screenUtils, state } from '@aelea/ui-components'
 import { pallete } from "@aelea/ui-components-theme"
 import { DEPLOYED_CONTRACT, TREASURY } from "@gambitdao/gbc-middleware"
-import { formatFixed, IClaim, shortenAddress } from "@gambitdao/gmx-middleware"
+import { formatFixed, IClaim, readableNumber, shortenAddress } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import {  awaitPromises, empty, map, now, switchLatest } from '@most/core'
 import { Stream } from "@most/types"
 import { IEthereumProvider } from "eip1193-provider"
 import { $eth } from "../common/$icons"
-import { w3p } from "../logic/gbc"
+import { w3p } from "../logic/provider"
 import { $anchor } from "../elements/$common"
 import { $discord, $glp, $moreDots, $twitter } from "../elements/$icons"
 import { $AccountPreview } from "./$AccountProfile"
@@ -69,7 +69,7 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
 
               const tb = (await tq).toBigInt()
               const cb = (await dq).toBigInt()
-              return String(formatFixed(cb + tb, 18))
+              return readableNumber(formatFixed(cb + tb, 18))
             }
 
             return '0'

@@ -1,18 +1,17 @@
-import { $Branch, $element, $Node, $text, style, styleInline, stylePseudo } from "@aelea/dom"
+import { $Branch, $element, $Node, $text, attr, style, styleInline, stylePseudo } from "@aelea/dom"
 import { $ButtonIcon, $column, $icon, $row, layoutSheet, $seperator as $uiSeperator, screenUtils } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { empty, map } from "@most/core"
 import { Stream } from "@most/types"
-import { IAggregatedTradeOpen, IAggregatedTradeSummary, strictGet, Token, TradeableToken, TRADEABLE_TOKEN_ADDRESS_MAP } from "@gambitdao/gmx-middleware"
+import { IAggregatedTradeOpen, IAggregatedTradeSummary, shortenAddress, shortenTxAddress, strictGet, Token, TradeableToken, TRADEABLE_TOKEN_ADDRESS_MAP } from "@gambitdao/gmx-middleware"
 import { $tokenIconMap } from "../common/$icons"
-import { $alertIcon, $caretDblDown, $trash } from "./$icons"
+import { $alertIcon, $caretDblDown, $ethScan, $trash } from "./$icons"
+import { USE_CHAIN } from "@gambitdao/gbc-middleware"
+import { getAccountExplorerUrl, getTxnUrl } from "@gambitdao/wallet-link"
 
 export const $TrashBtn = $ButtonIcon($trash)
 
-export const $card = $column(layoutSheet.spacingBig, style({
-  padding: '16px', backgroundColor: pallete.background,
-  boxShadow: '0px 1px 1px rgba(0, 0, 0, 0.14), 0px 2px 1px rgba(0, 0, 0, 0.12), 0px 1px 3px rgba(0, 0, 0, 0.2)'
-}))
+export const $card = $column(layoutSheet.spacing, style({ backgroundColor: pallete.horizon, padding: '30px', borderRadius: '20px', flex: 1 }))
 
 export const $seperator = $text(style({ color: pallete.foreground, pointerEvents: 'none' }))('|')
 export const $responsiveFlex = screenUtils.isDesktopScreen ? $row : $column
@@ -80,3 +79,21 @@ export function $liquidationSeparator(liqWeight: Stream<number>) {
   )
 }
 
+
+export const $accountRef = (id: string) => $anchor(attr({ href: getAccountExplorerUrl(USE_CHAIN, id) }))(
+  $text(style({}))(`${shortenAddress(id)}`)
+)
+
+export const $txHashRef = (txHash: string, label?: $Node) => {
+  const href = getTxnUrl(USE_CHAIN, txHash)
+
+  return $anchor(attr({ href, target: '_blank' }))(label ?? $text(shortenTxAddress(txHash)))
+}
+
+export const $accountIconLink = (address: string) => $anchor(attr({ href: getAccountExplorerUrl(USE_CHAIN, address) }))(
+  $icon({ $content: $ethScan, width: '16px', viewBox: '0 0 24 24' })
+)
+
+export const $txnIconLink = (address: string) => $anchor(attr({ href: getTxnUrl(USE_CHAIN, address) }))(
+  $icon({ $content: $ethScan, width: '16px', viewBox: '0 0 24 24' })
+)

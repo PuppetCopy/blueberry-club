@@ -12,6 +12,7 @@ import { $jazzicon } from "../common/$avatar"
 import { $anchor } from "../elements/$common"
 import { $ethScan, $twitter } from "../elements/$icons"
 import { $Link } from "./$Link"
+import { isAddress } from "@ethersproject/address"
 
 
 export interface IAccountPreview {
@@ -60,6 +61,15 @@ export const $AccountPhoto = (address: string, claim?: IClaim, size = '42px') =>
 }
 
 export const $AccountLabel = (address: string, claim?: IClaim, adressOp: Op<INode, INode> = O()) => {
+  const isAddressValid = isAddress(address)
+
+  if (!isAddressValid) {
+    return $column(
+      $text(style({ fontSize: '.65em' }))('0x----'),
+      $text(adressOp, style({ fontSize: '1em' }))('----')
+    )
+  }
+
   if (claim) {
     return $text(style({ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }), adressOp)(claim.name)
   }

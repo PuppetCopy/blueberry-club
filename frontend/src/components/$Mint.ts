@@ -1,130 +1,25 @@
 import { Behavior, combineArray, combineObject, replayLatest } from "@aelea/core"
 import { $element, $node, $text, attr, component, INode, nodeEvent, style, styleInline, stylePseudo } from "@aelea/dom"
-import { $column, $icon, $NumberTicker, $row, $seperator, http, layoutSheet, state } from "@aelea/ui-components"
+import { $column, $icon, $NumberTicker, $row, $seperator, layoutSheet, state } from "@aelea/ui-components"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
 import { DEPLOYED_CONTRACT, MINT_MAX_SUPPLY, MINT_PRICE, USE_CHAIN, WHITELIST } from "@gambitdao/gbc-middleware"
-import { ETH_ADDRESS_REGEXP, getGatewayUrl, groupByMapMany, shortenTxAddress } from "@gambitdao/gmx-middleware"
-import { getTxExplorerUrl, IWalletLink } from "@gambitdao/wallet-link"
-import { awaitPromises, chain, combineArray as combineArrayMost, constant, continueWith, empty, filter, fromPromise, join, map, merge, mergeArray, multicast, now, periodic, skipRepeats, snapshot, startWith, switchLatest, takeWhile, tap } from "@most/core"
+import { ETH_ADDRESS_REGEXP } from "@gambitdao/gmx-middleware"
+import { IWalletLink } from "@gambitdao/wallet-link"
+import { awaitPromises, chain, combineArray as combineArrayMost, continueWith, empty, fromPromise, join, map, merge, mergeArray, multicast, now, periodic, skipRepeats, snapshot, startWith, switchLatest, takeWhile, tap } from "@most/core"
 import { Stream } from "@most/types"
 import { GBC, GBC__factory } from "contracts"
 import { IEthereumProvider } from "eip1193-provider"
 import { $IntermediatePromise, $IntermediateTx, $spinner } from "../common/$IntermediateDisplay"
-import { $alert, $anchor, $responsiveFlex } from "../elements/$common"
+import { $alert, $anchor, $responsiveFlex, $txHashRef } from "../elements/$common"
 import { $caretDown, $gift } from "../elements/$icons"
 import { $IntermediateConnect } from "./$ConnectAccount"
 import { $ButtonPrimary } from "./form/$Button"
 import { $Dropdown } from "./form/$Dropdown"
-import { ClientOptions, createClient, gql, TypedDocumentNode } from "@urql/core"
-import { BaseProvider } from "@ethersproject/providers"
 import { gbc } from "../logic/contract"
-
-
-// export type ITransfer = ExtractAndParseEventType<GBC, 'Transfer'>
-
-interface IToken {
-  id: string
-  account: string
-  uri: string
-
-  transfers: ITransfer[]
-}
-
-interface ITransfer {
-  id: string
-  token: IToken
-  from: Owner
-  to: Owner
-  transactionHash: string
-}
-
-interface Owner {
-  id: string
-  ownedTokens: IToken[]
-  balance: bigint
-}
-
-const schemaFragments = `
-
-fragment tokenFields on Token {
-  id
-  account
-  uri
-}
-
-fragment ownerFields on Owner {
-  ownedTokens
-  balance
-}
-
-`
-
-type QueryAccountOwnerNfts = {
-  account: string
-}
-
-export const accountOwnedNfts: TypedDocumentNode<{owner: Owner}, QueryAccountOwnerNfts> = gql`
-${schemaFragments}
-
-query ($account: Int) {
-  owner(id: $account) {
-    ownedTokens {
-      uri
-      id
-    }
-    balance
-  }
-}
-
-`
-
-export const mintSnapshot: TypedDocumentNode<{owner: Owner}, QueryAccountOwnerNfts> = gql`
-${schemaFragments}
-
-query ($account: String) {
-  owner(id: $account) {
-    ownedTokens {
-      transfers {
-        transactionHash
-        id
-        from {
-          id
-        }
-      }
-      uri
-      id
-    }
-    balance
-  }
-}
-`
-
-interface Owner {
-  id: string
-}
-
-export const prepareClient = (opts: ClientOptions) => {
-
-  const client = createClient(opts)
-
-  return async <Data, Variables extends object = {}>(document: TypedDocumentNode<Data, Variables>, params: Variables): Promise<Data> => {
-    const result = await client.query(document, params)
-      .toPromise()
-  
-    if (result.error) {
-      throw new Error(result.error.message)
-    }
-  
-    return result.data!
-  }
-}
-
-export const vaultClient = prepareClient({
-  fetch: fetch as any,
-  url: 'https://api.thegraph.com/subgraphs/name/nissoh/blueberry-club',
-})
-
+import { getBerryJpegUrl } from "../logic/gbc"
+import { IToken } from "../types"
+import { queryOwnerTrasnferNfts } from "../logic/query"
 
 
 
@@ -171,15 +66,6 @@ export function replayState<A, K extends keyof A = keyof A>(state: StreamInput<A
 }
 
 
-const queryOwnerTrasnferNfts = async (account: string) => {
-  const owner = (await vaultClient(mintSnapshot, { account: account.toLowerCase() })).owner
-
-  if (owner === null) {
-    return []
-  }
-
-  return Object.entries(groupByMapMany(owner.ownedTokens, token => token.transfers[0].transactionHash))
-}
 
 
 
@@ -486,7 +372,7 @@ function $mintAction(contract: GBC, mintAction: Promise<IMintEvent>) {
         $spinner,
         $text(startWith('Awaiting Approval', map(() => 'Minting...', fromPromise(contractAction)))),
         $node(style({ flex: 1 }))(),
-        switchLatest(map(txHash => $txHashLink(txHash), fromPromise(contractAction)))
+        switchLatest(map(txHash => $txHashRef(txHash), fromPromise(contractAction)))
       ),
       $done: map((tx) => {
         const tokenIds = tx?.logs.map(log => contract.interface.parseLog(log).args.tokenId)
@@ -499,7 +385,7 @@ function $mintAction(contract: GBC, mintAction: Promise<IMintEvent>) {
               id: t,
               uri,
               transfers: []
-            } as IToken
+            } as any as IToken
           }))
           return chain(tokL => $mintDetails(contract, tx.transactionHash, tokenIds.length, tokL), fromPromise(tokenList))
         }
@@ -514,55 +400,22 @@ function $mintDetails(contract: GBC, txHash: string, berriesAmount: number, ids:
   return $column(layoutSheet.spacing)(
     $row(style({ placeContent: 'space-between' }))(
       $text(style({ color: pallete.positive }))(`Minted ${berriesAmount} Berries`),
-      $txHashLink(txHash)
+      $txHashRef(txHash)
     ),
     $row(layoutSheet.spacingSmall, style({ flexWrap: 'wrap' }))(...ids.map(token => {
-      const tokenId = token.id
-      // const tokenId = token.id
-      const metadataQuery = contract.tokenURI(tokenId)
-        .then(async uri => {
-          const gwUrl = getGatewayUrl(uri)
-          const newLocal = await http.fetchJson(gwUrl) as any
-          const imageUrl = getGatewayUrl(newLocal.image)
-          const imageBlob = await (await fetch(imageUrl, {  method: 'GET', mode: 'cors', cache: 'default', })).blob()
-
-          const imageObjectURL = URL.createObjectURL(imageBlob)
-          return imageObjectURL
-        })
-        .catch(async () => {
-
-          const uri = await contract._baseTokenURI() + BigInt(tokenId).toString()
-          const gwUrl = getGatewayUrl(uri)
-          const newLocal = await http.fetchJson(gwUrl) as any
-          const imageUrl = getGatewayUrl(newLocal.image)
-          const imageBlob = await (await fetch(imageUrl, { method: 'GET', mode: 'cors', cache: 'default', })).blob()
-
-          const imageObjectURL = URL.createObjectURL(imageBlob)
-          return imageObjectURL
-        })
-        .catch(() => {
-          throw new Error('IPFS Query Failed')
-        })
-      
-
       return $column(
         $IntermediatePromise({
           $done: map(res => {
-            return $anchor(attr({ href: res, target: '_blank' }))($img(attr({ src: res }))())
+            return $anchor(attr({ href: '/p/berry/' + Number(BigInt(token.id)) }))($img(attr({ src: res }))())
           }),
-          query: now(metadataQuery)
+          query: now(getBerryJpegUrl(token.id))
         })({}),
-        $text(style({ textAlign: 'center', fontSize: '.75em' }))(String(BigInt(token.id)))
+        $text(style({ textAlign: 'center', fontSize: '.75em' }))(token.id)
       )
     })),
   )
 }
 
-const $txHashLink = (txHash: string) => {
-  const href = getTxExplorerUrl(USE_CHAIN, txHash)
-
-  return $anchor(attr({ href, target: '_blank' }))($text(shortenTxAddress(txHash)))
-}
 
 
 

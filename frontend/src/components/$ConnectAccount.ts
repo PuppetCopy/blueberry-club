@@ -6,7 +6,7 @@ import { awaitPromises, constant, empty, fromPromise, map, multicast, skipRepeat
 import { IEthereumProvider } from "eip1193-provider"
 import { IWalletLink, attemptToSwitchNetwork } from "@gambitdao/wallet-link"
 import { $walletConnectLogo } from "../common/$icons"
-import * as wallet from "../logic/gbc"
+import * as wallet from "../logic/provider"
 import { $ButtonPrimary } from "./form/$Button"
 import { $caretDown } from "../elements/$icons"
 import { USE_CHAIN } from "@gambitdao/gbc-middleware"

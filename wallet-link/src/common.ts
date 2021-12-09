@@ -137,7 +137,7 @@ export function getAccountExplorerUrl(chainId: CHAIN, account: string) {
   return getChain(chainId) + "address/" + account
 }
 
-export function getTxExplorerUrl(chainId: CHAIN, transactionHash: string) {
+export function getTxnUrl(chainId: CHAIN, transactionHash: string) {
   return  getChain(chainId) + 'tx/' + transactionHash 
 }
 
