@@ -14,7 +14,7 @@ import { $IntermediatePromise, $IntermediateTx } from "../common/$IntermediateDi
 import { $Table2 } from "../common/$Table2"
 import { $AccountPreview } from "../components/$AccountProfile"
 import { $ButtonPrimary, $ButtonSecondary } from "../components/form/$Button"
-import { $accountRef, $card, $txHashRef, $txnIconLink } from "../elements/$common"
+import { $accountRef, $card, $responsiveFlex, $txHashRef, $txnIconLink } from "../elements/$common"
 import { $caretDblDown } from "../elements/$icons"
 import { getBerryMetadata, getBerryPhotoFromMetadata } from "../logic/gbc"
 import { queryToken } from "../logic/query"
@@ -51,7 +51,7 @@ export const $Berry = ({ walletLink, parentRoute }: IBerry) => component((
   return [
     router.match(berry)(
       $column(layoutSheet.spacingBig)(
-        $row(layoutSheet.spacingBig)(
+        $responsiveFlex(layoutSheet.spacingBig)(
           $row(style({ minWidth: '400px', height: '400px', overflow: 'hidden', borderRadius: '30px' }))(
             $IntermediatePromise({
               $done: map(res => {
@@ -105,7 +105,6 @@ export const $Berry = ({ walletLink, parentRoute }: IBerry) => component((
               
             )
           }, token)),
-
         ),
 
         $column(layoutSheet.spacing)(

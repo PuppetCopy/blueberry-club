@@ -357,9 +357,9 @@ Public sale : December 7 - 11PM CET, UTC 22`),
         $column(layoutSheet.spacingBig, style({ maxWidth: '1256px', width: '100%', margin: '0 auto', paddingBottom: '45px' }))(
           $row(style({ width: '100%', padding: '30px 0 0', zIndex: 1000, borderRadius: '12px' }))(
             $row(layoutSheet.spacingBig, style({ alignItems: 'center', flex: 1 }))(
-              screenUtils.isDesktopScreen ? $RouterAnchor({ url: '/', route: rootRoute, $anchor: $element('a')($icon({ $content: $logo, width: '55px', viewBox: '0 0 32 32' })) })({
+              $RouterAnchor({ url: '/', route: rootRoute, $anchor: $element('a')($icon({ $content: $logo, width: '55px', viewBox: '0 0 32 32' })) })({
                 click: linkClickTether()
-              }) : empty(),
+              }),
               $MainMenu({ walletLink, claimMap, parentRoute: pagesRoute, walletStore })({
                 routeChange: linkClickTether(),
                 walletChange: walletChangeTether()
