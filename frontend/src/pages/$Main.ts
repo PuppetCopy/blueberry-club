@@ -1,24 +1,30 @@
-import { Behavior, replayLatest } from "@aelea/core"
+import { Behavior, fromCallback, replayLatest } from "@aelea/core"
 import { $element, $node, $text, attr, component, eventElementTarget, INode, style, styleInline } from "@aelea/dom"
 import * as router from '@aelea/router'
 import { $RouterAnchor } from '@aelea/router'
 import { $column, $icon, $row, designSheet, layoutSheet, observer, screenUtils, state } from '@aelea/ui-components'
 import { pallete } from '@aelea/ui-components-theme'
-import { awaitPromises, empty, map, merge, mergeArray, multicast, now, 
-  snapshot } from '@most/core'
-import { Stream } from "@most/types"
-import { IEthereumProvider } from "eip1193-provider"
 import { groupByMap } from '@gambitdao/gmx-middleware'
 import { initWalletLink } from "@gambitdao/wallet-link"
+import {
+  awaitPromises, constant, empty, map, merge, mergeArray, multicast, now,
+  snapshot,
+  startWith,
+  switchLatest,
+  tap
+} from '@most/core'
+import { Stream } from "@most/types"
+import { IEthereumProvider } from "eip1193-provider"
 import { $logo } from '../common/$icons'
-import * as wallet from "../logic/provider"
+import { $Breadcrumbs } from "../components/$Breadcrumbs"
 import { $MainMenu, $socialMediaLinks } from '../components/$MainMenu'
+import { $Mint } from "../components/$Mint"
 import { $anchor, $card, $responsiveFlex } from "../elements/$common"
 import { $bagOfCoins, $discount, $glp, $stackedCoins } from "../elements/$icons"
 import { claimListQuery } from "../logic/claim"
+import * as wallet from "../logic/provider"
+import { WALLET } from "../logic/provider"
 import { helloBackend } from '../logic/websocket'
-import { $Mint } from "../components/$Mint"
-import { $Breadcrumbs } from "../components/$Breadcrumbs"
 import { $Berry } from "./$Berry"
 
 
@@ -85,28 +91,35 @@ export default ({ baseRoute = '' }: Website) => component((
 
   // localstorage
   const rootStore = state.createLocalStorageChain('ROOT')
-  const walletStore = rootStore<'metamask' | 'walletConnect' | null, 'walletStore'>('walletStore', null)
+  const walletStore = rootStore<WALLET, 'walletStore'>('walletStore', WALLET.none)
 
   const chosenWalletName = now(walletStore.state)
-  const defaultWalletProvider: Stream<IEthereumProvider | null> =  awaitPromises(map(async name => {
-    const provider = name === 'walletConnect' ? wallet.walletConnect : await wallet.metamaskQuery
+  const defaultWalletProvider: Stream<IEthereumProvider | null> =  multicast(switchLatest(awaitPromises(map(async name => {
+    const isWC = name === WALLET.walletConnect
+    const provider = isWC ? wallet.walletConnect : await wallet.metamaskQuery
 
     if (name && provider) {
       const [mainAccount]: string[] = await provider.request({ method: 'eth_accounts' }) as any
 
       if (mainAccount) {
-        return provider
-      }
+        if (isWC) {
+          const connector = wallet.walletConnect.connector
+          const wcDisconnected = constant(null, fromCallback(cb => connector.on('disconnect', cb)))
 
+          return startWith(provider, wcDisconnected)
+        }
+
+        return now(provider)
+      }
     }
 
-    return null
-  }, chosenWalletName))
+    return now(null)
+  }, chosenWalletName))))
 
 
 
   const walletLink = initWalletLink(
-    mergeArray([defaultWalletProvider, walletChange])
+    replayLatest(multicast(mergeArray([defaultWalletProvider, tap(console.log, walletChange)])))
   )
 
 
@@ -290,10 +303,10 @@ After the public sale, a part of ETH will be used to create a treasury that will
               $text(`To support the project, the GMX team has decided to fully distribute 5,000 esGMX to the community at the end of each month!`),
               $element('ul')(layoutSheet.spacingBig, style({ display: 'flex', flexDirection: 'column', margin: 0 }))(
                 $element('li')(
-                  $text('Every week a snapshot is taken of each user’s GMX tokens as well as Blueberry NFT holdings'),
+                  $text('Every week a snapshot is taken of each user’s staked GMX tokens as well as Blueberry NFT holdings'),
                 ),
                 $element('li')(
-                  $text('At the end of the month, if a user has held the same Blueberry NFT for 4 weeks, they will recieve rewards from the reward pool based on the number of GMX tokens they have held during the snapshots'),
+                  $text('At the end of the month, if a user has held the same Blueberry NFT for 4 weeks, they will recieve rewards from the reward pool based on the number of staked GMX tokens they have held during the snapshots'),
                 )
               ),
               $text('Big shout out to the GMX team for providing this reward which will strengthen and unite the GMX community!'),

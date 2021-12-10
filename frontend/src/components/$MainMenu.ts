@@ -10,7 +10,7 @@ import {  awaitPromises, empty, map, now, switchLatest } from '@most/core'
 import { Stream } from "@most/types"
 import { IEthereumProvider } from "eip1193-provider"
 import { $eth } from "../common/$icons"
-import { w3p } from "../logic/provider"
+import { w3p, WALLET } from "../logic/provider"
 import { $anchor } from "../elements/$common"
 import { $discord, $glp, $moreDots, $twitter } from "../elements/$icons"
 import { $AccountPreview } from "./$AccountProfile"
@@ -30,7 +30,7 @@ interface MainMenu {
   containerOp?: Op<IBranch, IBranch>
   walletLink: IWalletLink
   claimMap: Stream<Map<string, IClaim>>
-  walletStore: state.BrowserStore<"metamask" | "walletConnect" | null, "walletStore">
+  walletStore: state.BrowserStore<WALLET, "walletStore">
 
   showAccount?: boolean
 }

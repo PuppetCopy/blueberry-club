@@ -10,13 +10,14 @@ import * as wallet from "../logic/provider"
 import { $ButtonPrimary } from "./form/$Button"
 import { $caretDown } from "../elements/$icons"
 import { USE_CHAIN } from "@gambitdao/gbc-middleware"
+import { WALLET } from "../logic/provider"
 
 
 
 export interface IIntermediateDisplay {
   $display: $Node
   walletLink: IWalletLink
-  walletStore: state.BrowserStore<"metamask" | "walletConnect" | null, "walletStore">
+  walletStore: state.BrowserStore<WALLET, "walletStore">
 
   containerOp?: Op<INode, INode>
 }
@@ -32,8 +33,6 @@ export const $IntermediateConnect = (config: IIntermediateDisplay) => component(
   return [
     $row(config.containerOp || O())(
       switchLatest(combineArray((metamask, walletProvider, account) => {
-
-        console.log(account)
 
         // no wallet connected, show connection flow
         if (!account || walletProvider === null) {
@@ -56,7 +55,7 @@ export const $IntermediateConnect = (config: IIntermediateDisplay) => component(
                 return wallet.walletConnect
               }),
               awaitPromises,
-              src => config.walletStore.store(src, constant('walletConnect')),
+              src => config.walletStore.store(src, constant(WALLET.walletConnect)),
             )
           })
 
@@ -81,7 +80,7 @@ export const $IntermediateConnect = (config: IIntermediateDisplay) => component(
                     throw new Error('Could not find metmask')
                   }),
                   awaitPromises,
-                  src => config.walletStore.store(src, constant('metamask')),
+                  src => config.walletStore.store(src, constant(WALLET.metamask)),
                 ),
               }),
               $walletConnectBtn
@@ -105,7 +104,6 @@ export const $IntermediateConnect = (config: IIntermediateDisplay) => component(
 
         return $column(
           switchLatest(map((chain) => {
-
             if (chain !== USE_CHAIN) {
               return $ButtonPrimary({
                 $content: $text('Switch to Arbitrum Network'),

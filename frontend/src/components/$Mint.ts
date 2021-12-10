@@ -20,13 +20,14 @@ import { gbc } from "../logic/contract"
 import { getBerryJpegUrl } from "../logic/gbc"
 import { IToken } from "../types"
 import { queryOwnerTrasnferNfts } from "../logic/query"
+import { WALLET } from "../logic/provider"
 
 
 
 
 export interface IMint {
   walletLink: IWalletLink
-  walletStore: state.BrowserStore<"metamask" | "walletConnect" | null, "walletStore">
+  walletStore: state.BrowserStore<WALLET, "walletStore">
 }
 
 interface IFormState {
