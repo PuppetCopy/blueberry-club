@@ -30,6 +30,7 @@
         "@ethersproject/units": "^5.5.0",
         "@ethersproject/wallet": "^5.5.0",
         "@gambitdao/gbc-middleware": "workspace:*",
+        "@gambitdao/gmx-contracts": "1.0.5",
         "@gambitdao/gmx-middleware": "0.3.0",
         "@gambitdao/wallet-link": "workspace:*",
         "@metamask/detect-provider": "^1.2.0",

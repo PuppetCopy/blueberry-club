@@ -26,6 +26,7 @@ import * as wallet from "../logic/provider"
 import { WALLET } from "../logic/provider"
 import { helloBackend } from '../logic/websocket'
 import { $Berry } from "./$Berry"
+import { $Treasury } from "./$Treasury"
 
 
 function buildThresholdList(numSteps = 20) {
@@ -77,6 +78,7 @@ export default ({ baseRoute = '' }: Website) => component((
 
   const rootRoute = router.create({ fragment: baseRoute, title: 'GMX Blueberry Club', fragmentsChange })
   const pagesRoute = rootRoute.create({ fragment: 'p', title: '' })
+  const treasuryRoute = pagesRoute.create({ fragment: 'treasury', title: 'Treasury' })
   const berryRoute = pagesRoute.create({ fragment: 'berry', title: 'Berry Profile' })
 
 
@@ -385,6 +387,9 @@ Public sale : December 7 - 11PM CET, UTC 22`),
           $column(layoutSheet.spacingBig, style({ maxWidth: '1024px', width: '100%', margin: '0 auto', paddingBottom: '45px' }))(
             router.contains(berryRoute)(
               $Berry({ walletLink, parentRoute: pagesRoute })({})
+            ),
+            router.contains(treasuryRoute)(
+              $Treasury({ walletLink, parentRoute: treasuryRoute })({})
             ),
           )
         )

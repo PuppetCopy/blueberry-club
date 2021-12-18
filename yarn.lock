@@ -810,6 +810,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@gambitdao/gmx-contracts@npm:1.0.5":
+  version: 1.0.5
+  resolution: "@gambitdao/gmx-contracts@npm:1.0.5"
+  dependencies:
+    bn.js: ^5.2.0
+    csv-parse: ^4.16.3
+  checksum: ea079da9f49659bff9cab1f78928097f56a8626d088dc9e696a55d49b8ce5768dacd0b1f17bc938176c5ec718dca5b769bd727c81a4a195537137853cf52ba06
+  languageName: node
+  linkType: hard
+
 "@gambitdao/gmx-middleware@npm:0.3.0":
   version: 0.3.0
   resolution: "@gambitdao/gmx-middleware@npm:0.3.0"
@@ -15104,6 +15114,7 @@ __metadata:
     "@ethersproject/units": ^5.5.0
     "@ethersproject/wallet": ^5.5.0
     "@gambitdao/gbc-middleware": "workspace:*"
+    "@gambitdao/gmx-contracts": 1.0.5
     "@gambitdao/gmx-middleware": 0.3.0
     "@gambitdao/wallet-link": "workspace:*"
     "@metamask/detect-provider": ^1.2.0

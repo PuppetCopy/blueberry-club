@@ -3,18 +3,17 @@ import { $node, $text, attr, component, IBranch, nodeEvent, style } from "@aelea
 import { Route } from '@aelea/router'
 import { $column, $icon, $Popover, $row, $seperator, layoutSheet, screenUtils, state } from '@aelea/ui-components'
 import { pallete } from "@aelea/ui-components-theme"
-import { DEPLOYED_CONTRACT, TREASURY } from "@gambitdao/gbc-middleware"
-import { formatFixed, IClaim, readableNumber, shortenAddress } from "@gambitdao/gmx-middleware"
+import { IClaim } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
-import {  awaitPromises, empty, map, now, switchLatest } from '@most/core'
+import {  empty, map, switchLatest } from '@most/core'
 import { Stream } from "@most/types"
 import { IEthereumProvider } from "eip1193-provider"
-import { $eth } from "../common/$icons"
-import { w3p, WALLET } from "../logic/provider"
-import { $anchor } from "../elements/$common"
-import { $discord, $glp, $moreDots, $twitter } from "../elements/$icons"
+import { WALLET } from "../logic/provider"
+import { $anchor, $treasury } from "../elements/$common"
+import { $discord, $moreDots, $twitter } from "../elements/$icons"
 import { $AccountPreview } from "./$AccountProfile"
 import { $IntermediateConnect } from "./$ConnectAccount"
+import { $Link } from "./$Link"
 
 export const $socialMediaLinks = $row(layoutSheet.spacingBig)(
   $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `1px solid ${pallete.message}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://discord.com/invite/cxjZYR4gQK' }))(
@@ -43,62 +42,25 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
 
 ) => {
 
- 
-  const $treasury = $node(layoutSheet.spacingSmall, style({ display: 'flex', flexDirection: screenUtils.isDesktopScreen ? 'row' : 'column' }))(
-    $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
-      $column(
-        $text('Treasury: '),
-        $anchor(attr({ href: 'https://arbiscan.io/address/0xDe2DBb7f1C893Cc5E2f51CbFd2A73C8a016183a0' }), style({ fontSize: '.65em' }))(
-          $text(shortenAddress('0xDe2DBb7f1C893Cc5E2f51CbFd2A73C8a016183a0'))
-        )
-      ),
-    
-      $row(layoutSheet.spacingSmall)(
-        $row(layoutSheet.spacingTiny, style({ alignItems: 'baseline' }))(
-          $icon({ $content: $glp, viewBox: '0 0 32 32', width: '14px' }),
-          $text('0'),
-        ),
-        $seperator,
-        $row(layoutSheet.spacingTiny, style({ alignItems: 'baseline' }))(
-          $icon({ $content: $eth, viewBox: '0 0 32 32', width: '14px' }),
-
-          $text(awaitPromises(map(async (p) => {
-            if (p) {
-              const tq = p.getBalance(TREASURY)
-              const dq = p.getBalance(DEPLOYED_CONTRACT)
-
-              const tb = (await tq).toBigInt()
-              const cb = (await dq).toBigInt()
-              return readableNumber(formatFixed(cb + tb, 18))
-            }
-
-            return '0'
-          }, now(w3p)))),
-        
-        
-        ),
-      )
-    )
-  )
+  
 
 
   return [
     $row(layoutSheet.spacingBig, style({ fontSize: '.9em', flex: 1, alignItems: 'center', placeContent: 'flex-end' }), containerOp)(
 
-
-      screenUtils.isDesktopScreen ? $treasury : empty(),
-      
+      $Link({ $content: $treasury, url: '/p/treasury', route: parentRoute })({
+        click: routeChangeTether()
+      }),
 
       $node(style({ flex: 1 }))(),
 
+
+
+
+      showAccount ? style({ height: '20px' }, $seperator) : empty(),
+
       screenUtils.isDesktopScreen ? $socialMediaLinks : empty(),
 
-
-      // $Link({ disabled: now(true), $content: $text('Marketplace(WIP)'), url: '/p/leaderboard', route: leaderboardRoute })({
-      //   click: routeChangeTether()
-      // }),
-      // attr({ target: '_blank' })($tradeGMX),
-      // showAccount ? style({ height: '20px' }, $seperator) : empty(),
       
 
       screenUtils.isMobileScreen
@@ -106,7 +68,6 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
           dismiss: profileLinkClick,
           $$popContent: combineArray((_) => {
             return $column(layoutSheet.spacingBig)(
-              $treasury,
               $socialMediaLinks
             )
           }, clickPopoverClaim),
