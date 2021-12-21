@@ -1,5 +1,5 @@
-import { GLP_DECIMALS, TREASURY, USD_PRECISION } from "@gambitdao/gbc-middleware"
-import { expandDecimals, formatFixed, formatReadableUSD, groupByMapMany, IAccountQueryParamApi, ITimerange, parseFixed, readableNumber } from "@gambitdao/gmx-middleware"
+import { GLP_DECIMALS, TREASURY } from "@gambitdao/gbc-middleware"
+import { expandDecimals, groupByMapMany, IAccountQueryParamApi, ITimerange } from "@gambitdao/gmx-middleware"
 import { ClientOptions, createClient, gql, TypedDocumentNode } from "@urql/core"
 import { IOwner, IToken } from "../types"
 
@@ -86,47 +86,44 @@ query ($id: String) {
 
 `
 
-const stakedGmxGlpDoc: TypedDocumentNode<{stakeGmxes: IStake[], stakeGlps: IStake[]}, QueryAccount> = gql`
+const stakedGmxGlpDoc: TypedDocumentNode<{stakeGmxes: IStake[], stakeGlps: IStake[]}, QueryAccount & Partial<ITimerange>> = gql`
 ${schemaFragments}
 
-query ($first: Int = 1000, $account: String) {
-  stakeGmxes(first: $first, orderBy: timestamp, orderDirection: desc, where:{account: $account}) {
+query ($first: Int = 1000, $account: String, $from: Int = 0, $to: Int = 1999999999) {
+  stakeGmxes(first: $first, orderBy: timestamp, orderDirection: desc, where:{account: $account, timestamp_gte: $from, timestamp_lte: $to}) {
     account
     amount
     timestamp
     id
     token
-    transaction {
-      from
-      to
-      id
-    }
+    # transaction {
+    #   from
+    #   to
+    #   id
+    # }
   }
 
-  unstakeGmxes(first: $first, orderBy: timestamp, orderDirection: desc, where:{account: $account}) {
+  unstakeGmxes(first: $first, orderBy: timestamp, orderDirection: desc, where:{account: $account, timestamp_gte: $from, timestamp_lte: $to}) {
     account
     amount
     timestamp
     id
     token
-    transaction {
-      from
-      to
-      id
-    }
+    # transaction {
+    #   from
+    #   to
+    #   id
+    # }
   }
 
   
-  stakeGlps(first: $first, orderBy: timestamp, orderDirection: desc, where:{account: $account}) {
+  stakeGlps(first: $first, orderBy: timestamp, orderDirection: desc, where:{account: $account, timestamp_gte: $from, timestamp_lte: $to}) {
     account
     id
-    transaction {
-      to
-    }
     amount
     timestamp
   }
-  unstakeGlps(first: $first, orderBy: timestamp, orderDirection: desc, where:{account: $account}) {
+  unstakeGlps(first: $first, orderBy: timestamp, orderDirection: desc, where:{account: $account, timestamp_gte: $from, timestamp_lte: $to}) {
     account
     amount
     timestamp
@@ -136,11 +133,11 @@ query ($first: Int = 1000, $account: String) {
 
 `
 
-const gmxHistoricPriceDoc: TypedDocumentNode<{uniswapPrices: IUniswapSwap[], glpStats: IGlpStat[]}, IAccountQueryParamApi & ITimerange> = gql`
+const gmxGlpHistoricPriceDoc: TypedDocumentNode<{uniswapPrices: IUniswapSwap[], glpStats: IGlpStat[]}, IAccountQueryParamApi & Partial<ITimerange>> = gql`
 ${schemaFragments}
 
-query ($first: Int = 1000) {
-  uniswapPrices(first: $first, orderBy: timestamp, orderDirection: desc) {
+query ($first: Int = 1000, $account: String, $from: Int = 0, $to: Int = 1999999999) {
+  uniswapPrices(first: $first, orderBy: timestamp, orderDirection: desc, where:{timestamp_gte: $from, timestamp_lte: $to}) {
     value
     timestamp
     period
@@ -279,23 +276,27 @@ export const queryToken = async (id: string) => {
   return owner
 }
 
-export const queryStakedEsGMX = async () => {
-  const owner = (await gmxRawGraph(stakedGmxGlpDoc, { account: TREASURY }))
+export const queryStakingEvents = async (params: Partial<ITimerange> = {}) => {
+  const { from, to } = params
+  const owner = (await gmxRawGraph(stakedGmxGlpDoc, { account: TREASURY, from, to }))
 
   return owner
 }
 
-export const gmxPriceHistory = async () => {
-  const owner = (await gmxStatsGraph(gmxHistoricPriceDoc, { account: TREASURY, from: 1, to: 1 }))
+export const gmxGlpPriceHistory = async ({ from, to }: Partial<ITimerange> = {}) => {
+  const data = (await gmxStatsGraph(gmxGlpHistoricPriceDoc, { account: TREASURY, from, to }))
+  const uniswapPrices = data.uniswapPrices
+  const glpStats = data.glpStats.filter(x => Number(x.id) >= (from || 0))
 
-  return owner
+  return { uniswapPrices, glpStats, }
 }
 
 export const queryLatestPrices = async () => {
-  const owner = (await gmxStatsGraph(latestPrices, {}))
-  const gmx = BigInt(owner.gmx.value)
-  const eth = BigInt(owner.eth.value)
-  const glp = (BigInt(owner.glpStats[0].aumInUsdg) * expandDecimals(1n, GLP_DECIMALS)) / BigInt(owner.glpStats[0].glpSupply)
+  const data = (await gmxStatsGraph(latestPrices, {}))
+
+  const gmx = BigInt(data.gmx.value)
+  const eth = BigInt(data.eth.value)
+  const glp = (BigInt(data.glpStats[0].aumInUsdg) * expandDecimals(1n, GLP_DECIMALS)) / BigInt(data.glpStats[0].glpSupply)
 
 
   // const glpUsd = formatFixed(BigInt(owner.glpStats[0].aumInUsdg), 18) / formatFixed(BigInt(owner.glpStats[0].glpSupply), 18)

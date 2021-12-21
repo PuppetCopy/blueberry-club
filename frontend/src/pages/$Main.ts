@@ -25,6 +25,7 @@ import { claimListQuery } from "../logic/claim"
 import * as wallet from "../logic/provider"
 import { WALLET } from "../logic/provider"
 import { helloBackend } from '../logic/websocket'
+import { ITreasuryStore } from "../types"
 import { $Berry } from "./$Berry"
 import { $Treasury } from "./$Treasury"
 
@@ -94,6 +95,7 @@ export default ({ baseRoute = '' }: Website) => component((
   // localstorage
   const rootStore = state.createLocalStorageChain('ROOT')
   const walletStore = rootStore<WALLET, 'walletStore'>('walletStore', WALLET.none)
+  const treasuryStore = rootStore<ITreasuryStore, 'treasuryStore'>('treasuryStore', { startedStakingGlpTimestamp: null, startedStakingGmxTimestamp: null })
 
   const chosenWalletName = now(walletStore.state)
   const defaultWalletProvider: Stream<IEthereumProvider | null> =  multicast(switchLatest(awaitPromises(map(async name => {
@@ -389,7 +391,7 @@ Public sale : December 7 - 11PM CET, UTC 22`),
               $Berry({ walletLink, parentRoute: pagesRoute })({})
             ),
             router.contains(treasuryRoute)(
-              $Treasury({ walletLink, parentRoute: treasuryRoute })({})
+              $Treasury({ walletLink, parentRoute: treasuryRoute, treasuryStore })({})
             ),
           )
         )

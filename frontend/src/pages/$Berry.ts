@@ -148,7 +148,7 @@ export const $Berry = ({ walletLink, parentRoute }: IBerry) => component((
                   return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
                     $txnIconLink(x.transactionHash),
                     $column(
-                      $text(style({ fontSize: '.65em' }))(`${timeAgo}`),
+                      $text(style({ fontSize: '.75em' }))(`${timeAgo}`),
                       $text(`${dateStr}`),
                     ),
                   )

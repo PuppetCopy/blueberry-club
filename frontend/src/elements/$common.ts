@@ -8,7 +8,7 @@ import { $tokenIconMap } from "../common/$icons"
 import { $alertIcon, $bagOfCoins, $caretDblDown, $ethScan, $trash } from "./$icons"
 import { USE_CHAIN } from "@gambitdao/gbc-middleware"
 import { getAccountExplorerUrl, getTxnUrl } from "@gambitdao/wallet-link"
-import { trasuryBalances } from "../logic/contract"
+import { accountTokenBalances } from "../logic/contract"
 
 export const $TrashBtn = $ButtonIcon($trash)
 
@@ -101,5 +101,5 @@ export const $txnIconLink = (address: string) => $anchor(attr({ href: getTxnUrl(
 
 export const $treasury = $row(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
   $icon({ $content: $bagOfCoins, width: '18px', viewBox: '0 0 32 32' }),
-  switchLatest(map(x => $text('$' + formatReadableUSD(x.totalUsd)), trasuryBalances)),
+  switchLatest(map(x => $text('$' + formatReadableUSD(x.totalUsd)), accountTokenBalances)),
 )

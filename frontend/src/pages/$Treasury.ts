@@ -1,20 +1,21 @@
 import { Behavior, combineArray, replayLatest } from "@aelea/core"
-import { $Branch, $node, $text, attr, component, motion, MOTION_NO_WOBBLE, style } from "@aelea/dom"
+import { $node, $text, attr, component, motion, MOTION_NO_WOBBLE, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
-import { $column, $icon, $NumberTicker, $row, $seperator, layoutSheet, screenUtils } from "@aelea/ui-components"
+import { $column, $NumberTicker, $row, $seperator, layoutSheet, screenUtils, state } from "@aelea/ui-components"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { USD_PRECISION } from "@gambitdao/gbc-middleware"
-import { expandDecimals, intervalInMsMap, readableNumber, unixTimeTzOffset, shortenAddress, formatFixed, formatReadableUSD, ARBITRUM_ADDRESS } from "@gambitdao/gmx-middleware"
+import { expandDecimals, intervalInMsMap, unixTimeTzOffset, shortenAddress, formatFixed, formatReadableUSD, ARBITRUM_ADDRESS, BASIS_POINTS_DIVISOR } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { empty, fromPromise, map, mergeArray, multicast, now, skipRepeats, skipRepeatsWith, startWith, switchLatest } from "@most/core"
-import { BarPrice, CrosshairMode, LineStyle, MouseEventParams, SeriesMarker, Time } from "lightweight-charts-baseline"
+import { empty, fromPromise, map, multicast, now, skipRepeats, skipRepeatsWith, startWith, switchLatest } from "@most/core"
+import { BarPrice, CrosshairMode, LastPriceAnimationMode, LineStyle, MouseEventParams, PriceScaleMode, SeriesMarker, Time } from "lightweight-charts-baseline"
 import { $Chart } from "../components/chart/$Chart"
 import { $anchor, $card } from "../elements/$common"
 import { fillIntervalGap } from "../logic/common"
-import { gmxPriceHistory, IGlpStat, IStake, IUniswapSwap, queryStakedEsGMX } from "../logic/query"
-import { ITreasuryAsset, trasuryBalances } from "../logic/contract"
-import { $eth, $tokenIconMap } from "../common/$icons"
-import { Stream } from "@most/types"
+import { gmxGlpPriceHistory, IGlpStat, IStake, IUniswapSwap, queryStakingEvents } from "../logic/query"
+import { accountTokenBalances, stakingRewards } from "../logic/contract"
+import { $tokenIconMap } from "../common/$icons"
+import { $AssetDetails, readableNumber } from "../components/$AssetDetails"
+import { ITreasuryStore } from "../types"
 
 
 
@@ -28,6 +29,7 @@ export function bnToHex(n: bigint) {
 interface ITreasury {
   walletLink: IWalletLink
   parentRoute: Route
+  treasuryStore: state.BrowserStore<ITreasuryStore, "treasuryStore">
   // walletStore: cstate.BrowserStore<"metamask" | "walletConnect" | null, "walletStore">
 }
 
@@ -45,49 +47,81 @@ interface ITreasuryTick {
 }
 
 
-export const $Treasury = ({ walletLink, parentRoute }: ITreasury) => component((
+export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => component((
   [trasnferPopup, trasnferPopupTether]: Behavior<any, any>,
   [pnlCrosshairMove, pnlCrosshairMoveTether]: Behavior<MouseEventParams, MouseEventParams>,
 ) => {
 
 
-  const treasuryRef = $anchor(attr({ href: 'https://arbiscan.io/address/0xDe2DBb7f1C893Cc5E2f51CbFd2A73C8a016183a0' }), style({ fontSize: '.65em' }))(
+  const treasuryRef = $anchor(attr({ href: 'https://arbiscan.io/address/0xDe2DBb7f1C893Cc5E2f51CbFd2A73C8a016183a0' }), style({ fontSize: '.75em' }))(
     $text(shortenAddress('0xDe2DBb7f1C893Cc5E2f51CbFd2A73C8a016183a0'))
   )
 
-
-  type ITreasuryMetric = {
-    $iconPath: $Branch
-    label: string
-    symbol: string
-    asset: Stream<ITreasuryAsset>
-  }
-
-  const $treasuryMetric = ({ label, $iconPath, asset, symbol }: ITreasuryMetric) => $node(layoutSheet.spacingSmall, style({ display: 'flex', placeContent: 'center', flexDirection: screenUtils.isDesktopScreen ? 'row' : 'column', flex: 1 }))(
-    $column(layoutSheet.spacingSmall)(
-      $row(layoutSheet.spacingSmall)(
-        $icon({ $content: $iconPath, viewBox: '0 0 32 32', width: '24px' }),
-        $text(style({ fontWeight: 'bold' }))(label),
-      ),
-      $seperator,
-      $column(layoutSheet.spacingTiny, style({ alignItems: 'baseline', fontSize: '25px' }))(
-        $row(layoutSheet.spacingTiny, style({ alignItems: 'baseline' }) )(
-          $text(style({ fontWeight: 'bold' }))(
-            map(t => readableNumber(formatFixed(t.balance, 18)), asset)
-          ),
-          $text(style({ fontSize: '.75em' }))(symbol),
-        ),
-        $text(style({ fontSize: '.75em' }))(map(t => '$' +  formatReadableUSD(t.balanceUsd), asset)),
-      ),
-    )
-  )
-
-
+  
+  const stakingRewardsState = replayLatest(multicast(stakingRewards))
+  
+  const nowDate = new Date()
   
 
+  const stakingEvents = treasuryStore.store(
+    replayLatest(multicast(fromPromise(queryStakingEvents({})))),
+    map(data => ({
+      startedStakingGlpTimestamp: data.stakeGlps[data.stakeGlps.length - 1].timestamp,
+      startedStakingGmxTimestamp: data.stakeGmxes[data.stakeGmxes.length - 1].timestamp
+    }))
+  )
+  const newLocal = treasuryStore.state.startedStakingGmxTimestamp ? {
+    from: treasuryStore.state.startedStakingGmxTimestamp
+    // from: Math.floor(nowDate.setFullYear(nowDate.getFullYear() - 1) / 1000),
+    // to: Math.floor(Date.now() / 1000)
+  } : {}
+  const gmxPriceHistoryquery = replayLatest(multicast(fromPromise(gmxGlpPriceHistory( newLocal))))
 
-  const stakedEsGMX = queryStakedEsGMX()
-  const gmxPriceHistoryquery = gmxPriceHistory()
+  const gmxPriceInterval = map(({ glpStats, uniswapPrices }) => {
+    const seed = {
+      time: getTime(uniswapPrices[uniswapPrices.length - 1]),
+      value: formatFixed(BigInt(uniswapPrices[uniswapPrices.length - 1].value), 30)
+    }
+    const price = fillIntervalGap({
+      seed, getTime,
+      source: uniswapPrices.sort((a, b) => getTime(a) - getTime(b)),
+      interval: Math.floor(intervalInMsMap.MIN30 / 1000),
+      fillMap: (prev, next) => {
+        return { time: next.timestamp, value: formatFixed(BigInt(next.value), 30) }
+      },
+    })
+
+    const initTs = treasuryStore?.state.startedStakingGmxTimestamp || 0
+    const match = uniswapPrices.find(a => a.timestamp > initTs )
+
+    const baselinePrice = match?.value ? formatFixed(BigInt(match.value), 30) : seed.value
+
+    return { series: price, baselinePrice }
+  }, gmxPriceHistoryquery)
+
+  const glpPriceInterval = map(({ glpStats }) => {
+    const seed = {
+      time: getTime(glpStats[glpStats.length - 1]),
+      value: formatFixed(getGlpPrice(glpStats[glpStats.length - 1]), 18)
+    }
+    const price = fillIntervalGap({
+      seed, getTime,
+      source: glpStats.sort((a, b) => getTime(a) - getTime(b)),
+      interval: Math.floor(intervalInMsMap.MIN30 / 1000),
+      fillMap: (prev, next) => {
+        const time = Number(next.id)
+        const value = formatFixed(getGlpPrice(next), 30)
+        return { time, value }
+      },
+    })
+
+    const initTs = treasuryStore?.state.startedStakingGmxTimestamp || 0
+    const match = glpStats.find(a => Number(a.id) > initTs )
+
+    const baselinePrice = match ? formatFixed(getGlpPrice(match), 30) : seed.value
+
+    return { series: price, baselinePrice }
+  }, gmxPriceHistoryquery)
 
   const fillRewards = (prev: ITreasuryTick, next: IUniswapSwap | IStake | IGlpStat): ITreasuryTick => {
     if (next.__typename === 'StakeGmx') {
@@ -115,7 +149,7 @@ export const $Treasury = ({ walletLink, parentRoute }: ITreasury) => component((
     }
 
     if (next.__typename === 'GlpStat') {
-      const glpPrice = BigInt(next.aumInUsdg) ? BigInt(next.aumInUsdg) * USD_PRECISION / BigInt(next.glpSupply) : 0n
+      const glpPrice = getGlpPrice(next)
       const balanceGlp = expandDecimals((glpPrice * prev.amountGlp / USD_PRECISION), 12)
       const gmxBalance = prev.balanceGmx
 
@@ -128,12 +162,11 @@ export const $Treasury = ({ walletLink, parentRoute }: ITreasury) => component((
     return prev
   }
 
-  const historicPortfolio = replayLatest(multicast(combineArray((assetMap, staked, { uniswapPrices, glpStats }) => {
-
+  const historicPortfolio = replayLatest(multicast(combineArray((assetMap, staked, { uniswapPrices, glpStats }, earnings) => {
     const parsedGlpStats = glpStats.filter(a => a.id !== 'total').sort((a, b) => getTime(a) - getTime(b))
     const source = [...uniswapPrices, ...parsedGlpStats, ...staked.stakeGlps, ...staked.stakeGmxes]
       .sort((a, b) => getTime(a) - getTime(b))
-      .slice(500)
+      // .slice(300)
     
     
     const gmxPrice = BigInt(uniswapPrices[uniswapPrices.length - 1].value)
@@ -154,33 +187,34 @@ export const $Treasury = ({ walletLink, parentRoute }: ITreasury) => component((
 
     const filledGap = fillIntervalGap({
       seed, source, getTime,
-      interval: Math.floor(intervalInMsMap.HR2 / 1000),
+      interval: Math.floor(intervalInMsMap.MIN30 / 1000),
       fillMap: fillRewards,
-      fillGapMap: fillRewards,
       // squashMap: (prev, next) => prev
     })
 
+
     // const forecastInterval = Math.floor(intervalInMsMap.HR24 / 1000)
 
-    const interval = Math.floor(intervalInMsMap.HR24 / 1000)
     const endForecast = {
       ...filledGap[filledGap.length - 1],
-      time: filledGap[filledGap.length - 1].time + interval * 365
+      time: Math.floor((Date.now() + intervalInMsMap.MONTH * 12) / 1000)
     }
 
-    // const filledForecast = fillIntervalGap({
-    //   seed: filledGap[filledGap.length - 1], source: [endForecast],
-    //   getTime: (x) => x.time, 
-    //   interval: interval,
-    //   fillMap: (prev, next) => prev,
-    //   fillGapMap: (prev, next) => {
-    //     return { ...prev, value: prev.value + 500 }
-    //   },
-    // })
+    const apr = formatFixed(earnings.totalAprPercentage, 2)
+    const perc = (apr / 365) / 100
+
+    const filledForecast = fillIntervalGap({
+      seed: filledGap[filledGap.length - 1], source: [endForecast],
+      getTime: (x) => x.time, 
+      interval: Math.floor(intervalInMsMap.HR24 / 1000),
+      fillMap: (prev, next) => {
+        return { ...prev, value: prev.value + prev.value * perc }
+      },
+    })
 
 
-    return { filledGap, staked, uniswapPrices, glpStats }
-  }, trasuryBalances, fromPromise(stakedEsGMX), fromPromise(gmxPriceHistoryquery))))
+    return { filledGap, staked, uniswapPrices, glpStats, filledForecast }
+  }, accountTokenBalances, stakingEvents, gmxPriceHistoryquery, stakingRewardsState)))
 
 
   const hasSeriesFn = (cross: MouseEventParams): boolean => {
@@ -209,44 +243,39 @@ export const $Treasury = ({ walletLink, parentRoute }: ITreasury) => component((
   }, crosshairWithInitial, historicPortfolio)))
 
 
-  const ethAsset = map(x => x.eth, trasuryBalances)
-  const gmxAsset = map(x => x.gmx, trasuryBalances)
-  const glpAsset = map(x => x.glp, trasuryBalances)
+  const ethAsset = map(x => x.eth, accountTokenBalances)
+  const gmxAsset = map(x => x.gmx, accountTokenBalances)
+  const glpAsset = map(x => x.glp, accountTokenBalances)
+
+  const $metricEntry = (label: string, value: string) => $row(style({ fontSize: '.75em', alignItems: 'center' }))(
+    $text(style({ color: pallete.foreground, flex: 1 }))(label),
+    $text(style({ fontWeight: 'bold' }))(value),
+  )
 
   return [
     $column(layoutSheet.spacingBig)(
 
       $column(style({ placeContent:'center', alignItems: 'center' }))(
         $text(style({ fontSize: '2em', fontWeight: 'bold' }))('Treasury'),
-        $text(style({ fontSize: '.65em', color: pallete.foreground }))('WORK IN PROGRESS')
+        $text(style({ fontSize: '.75em', color: pallete.foreground }))('WORK IN PROGRESS')
       ),
 
-      $card(style({ flexDirection: screenUtils.isMobileScreen ? 'column' : 'row', minHeight: '158px' }))(
-        $row(layoutSheet.spacing, style({ flex: 2 }))(
-          $treasuryMetric({
-            label: 'GMX',
-            symbol: 'GMX',
-            asset: gmxAsset,
-            $iconPath: $tokenIconMap[ARBITRUM_ADDRESS.GMX],
-          }),
-          style({ margin: screenUtils.isDesktopScreen ? '-30px 0' : '-30px 0 -16px', backgroundColor: colorAlpha(pallete.foreground, .15) }, $seperator),
-          $treasuryMetric({
-            label: 'GLP',
-            symbol: 'GLP',
-            asset: glpAsset,
-            $iconPath: $tokenIconMap[ARBITRUM_ADDRESS.GLP],
-          })
-        ),
-        style({ margin: screenUtils.isDesktopScreen ? '-30px 0' : '0 -30px', backgroundColor: colorAlpha(pallete.foreground, .15) }, $seperator),
-        $treasuryMetric({
-          label: 'Ethereum',
-          symbol: 'ETH',
-          asset: ethAsset,
-          $iconPath: $eth,
-        }),
-      ),
-      $card(style({ padding: 0, overflow: 'hidden', height: '350px', position: 'relative', display: 'block', flex: 'none' }))(
-        $row(style({ position: 'absolute', zIndex: 10, left: 0, right: 0, padding: '26px', placeContent: 'center' }))(
+      $card(style({ padding: 0, flex: 'none', overflow: 'hidden', height: '300px', position: 'relative' }))(
+        $row(style({ position: 'absolute', zIndex: 10, left: 0, right: 0, padding: '26px' }))(
+          $column(style({ flex: 1, alignItems: 'flex-start' }))(
+            $row(style({ alignItems: 'baseline' }))(
+              switchLatest(map(({ esGmxInStakedGmx, totalRewardsUsd   }) => {
+                return $row(layoutSheet.spacing)(
+                  $row(layoutSheet.spacingTiny, style({ alignItems: 'baseline' }))(
+                    $text(style({ fontSize: '2em' }))(`${readableNumber(formatFixed(esGmxInStakedGmx, 18))}`),
+                    $text(style({ fontSize: '.75em', color: pallete.foreground, fontWeight: 'bold' }))(`esGMX`),
+                  )
+                  // $text(`+${formatReadableUSD(totalRewardsUsd)}$`),
+                )
+              }, stakingRewardsState))
+            ),
+            $text(style({ color: pallete.foreground, fontSize: '.75em', textAlign: 'center' }))('Pending Rewards')
+          ),
           $column(
             $row(style({ fontSize: '2em', alignItems: 'baseline' }))(
               $NumberTicker({
@@ -261,19 +290,35 @@ export const $Treasury = ({ walletLink, parentRoute }: ITreasury) => component((
               $text(style({ fontSize: '.75em', color: pallete.foreground }))('$'),
             ),
             $text(style({ color: pallete.foreground, fontSize: '.75em', textAlign: 'center' }))('Total Holdings')
-          )
+          ),
+          $text(style({ flex: 1 }))('')
         ),
         switchLatest(
           combineArray((data) => {
-          // const startDate = new Date(data[0].time * 1000)
-          // const endDate = new Date(data[data.length - 1].time * 1000)
+            // const startDate = new Date(data[0].time * 1000)
+            // const endDate = new Date(data[data.length - 1].time * 1000)
             
 
             const lastTick = data.filledGap[data.filledGap.length -1]
 
             return $Chart({
               initializeSeries: map((api) => {
-                const series = api.addAreaBaselineSeries({
+
+
+                const seriesForecast = api.addLineSeries({
+                  baseLineWidth: 1,
+                  priceLineWidth: 1,
+                  priceLineVisible: false,
+                  lastValueVisible: false,
+                  lineWidth: 2,
+                  lastPriceAnimation: LastPriceAnimationMode.Disabled,
+                  // autoscaleInfoProvider: () => {},
+                  // title: 'Forecast',
+                  lineStyle: LineStyle.LargeDashed,
+                  color: pallete.foreground,
+                })
+
+                const series = api.addBaselineSeries({
                   baseLineWidth: 1,
                   // lineColor: colorAlpha(pallete.positive, .5),
                   priceLineWidth: 1,
@@ -295,24 +340,6 @@ export const $Treasury = ({ walletLink, parentRoute }: ITreasury) => component((
                   priceLineVisible: false,
                 })
 
-                // series.createPriceLine({
-                //   price: lastTick.value,
-                //   color: pallete.foreground,
-                //   lineWidth: 1,
-                //   axisLabelVisible: true,
-                //   title: '',
-                //   lineStyle: LineStyle.SparseDotted,
-                // })
-                // const seriesForecast = api.addLineSeries({
-                //   baseLineWidth: 1,
-                //   priceLineWidth: 1,
-                //   priceLineVisible: false,
-                //   lineWidth: 2,
-                //   title: 'Forecast',
-                //   lineStyle: LineStyle.SparseDotted,
-                //   color: pallete.foreground,
-                // })
-
                 const addGlps = data.staked.stakeGlps
                   .map((ip): SeriesMarker<Time> => {
                     return {
@@ -326,7 +353,7 @@ export const $Treasury = ({ walletLink, parentRoute }: ITreasury) => component((
                   })
 
                 const addGmxs = data.staked.stakeGmxes
-                  .filter(staked => formatFixed(BigInt(staked.amount), 18) > 200)
+                  // .filter(staked => formatFixed(BigInt(staked.amount), 18) > 200)
                   .map((ip): SeriesMarker<Time> => {
                     return {
                       color: pallete.foreground,
@@ -340,27 +367,29 @@ export const $Treasury = ({ walletLink, parentRoute }: ITreasury) => component((
 
 
 
-                // const newLocal = data.filledForecast.filter(x => x.time > lastTick.time)
+                const newLocal = data.filledForecast.filter(x => x.time > lastTick.time)
+
                 // @ts-ignore
-                series.setData([
-                  ...data.filledGap,
-                  // ...newLocal
-                ])
-                // // @ts-ignore
-                // seriesForecast.setData(data.filledForecast)
+                seriesForecast.setData(newLocal)
 
                 setTimeout(() => {
                   series.setMarkers([...addGlps, ...addGmxs].sort((a, b) => Number(a.time) - Number(b.time)))
 
-                }, 144)
-                api.timeScale().fitContent()
+                  // series.coordinateToPrice()
+                  setTimeout(() => {
+                    // @ts-ignore
+                    series.setData([
+                      ...data.filledGap,
+                      // ...newLocal
+                    ])
 
-                series.applyOptions({
-                  scaleMargins: {
-                    top: 0.35,
-                    bottom: 0,
-                  }
-                })
+                    const from = data.filledGap[0].time as Time
+                    const to = (data.filledGap[data.filledGap.length -1].time + (intervalInMsMap.MONTH * 2 / 1000)) as Time
+                    api.timeScale().setVisibleRange({ from, to })
+
+                  }, 44)
+                }, 155)
+
 
                 return series
               }),
@@ -394,14 +423,22 @@ export const $Treasury = ({ walletLink, parentRoute }: ITreasury) => component((
                   }
                 },
                 rightPriceScale: {
-                  // mode: PriceScaleMode.Logarithmic,
+                  mode: PriceScaleMode.Normal,
                   autoScale: true,
+
                   visible: true,
+                  scaleMargins: {
+                    top: 0.35,
+                    bottom: 0,
+                  }
                 },
-                handleScale: false,
-                handleScroll: false,
+                // overlayPriceScales: {
+                //   invertScale: true
+                // },
+                // handleScale: false,
+                // handleScroll: false,
                 timeScale: {
-                // rightOffset: 110,
+                  // rightOffset: 110,
                   secondsVisible: false,
                   timeVisible: true,
                   rightOffset: 0,
@@ -420,8 +457,71 @@ export const $Treasury = ({ walletLink, parentRoute }: ITreasury) => component((
                 multicast
               )
             })
-          }, historicPortfolio))
+          }, historicPortfolio)
+        )
+      ),
+
+      $column(layoutSheet.spacing, style({}))(
+        $column(layoutSheet.spacing, style({ flex: 2 }))(
+          screenUtils.isDesktopScreen
+            ? $row(style({ color: pallete.foreground, fontSize: '.75em' }))(
+              $text(style({ flex: 1 }))('Holdings'),
+              $text(style({ flex: 1 }))('Distribution'),
+              $text('Avg Entry History'),
+            ) : empty(),
+          $column(layoutSheet.spacing)(
+            $AssetDetails({
+              label: 'GMX',
+              symbol: 'GMX',
+              asset: gmxAsset,
+              priceChart: gmxPriceInterval,
+              $distribution: switchLatest(map(({ totalGmxRewardsUsd, gmxAprTotalPercentage, bonusGmxTrackerRewards, bnGmxInFeeGmx, bonusGmxInFeeGmx, gmxAprForEthPercentage, gmxAprForEsGmxPercentage }) => {
+
+                const multiplierPointsAmount = bonusGmxTrackerRewards + bnGmxInFeeGmx
+                const boostBasisPoints = formatFixed(bnGmxInFeeGmx * BASIS_POINTS_DIVISOR / bonusGmxInFeeGmx, 2)
+          
+                return $column(layoutSheet.spacingTiny, style({ flex: 1, maxWidth: '250px' }))(
+                  $metricEntry(`esGMX`, `${formatFixed(gmxAprForEsGmxPercentage, 2)}%`),
+                  $metricEntry(`ETH`, `${formatFixed(gmxAprForEthPercentage, 2)}%`),
+                  $metricEntry(`Age Boost`, `${boostBasisPoints}%`),
+                  $metricEntry(`Multiplier Points`, `${readableNumber(formatFixed(bnGmxInFeeGmx, 18))}`),
+                )
+              }, stakingRewardsState)),
+              $iconPath: $tokenIconMap[ARBITRUM_ADDRESS.GMX],
+            })({}),
+            style({ backgroundColor: colorAlpha(pallete.foreground, .15) }, $seperator),
+            $AssetDetails({
+              label: 'GLP',
+              symbol: 'GLP',
+              asset: glpAsset,
+              priceChart: glpPriceInterval,
+              $distribution: switchLatest(map(({ glpAprForEsGmxPercentage, glpAprForEthPercentage,   }) => {
+
+                return $column(layoutSheet.spacingTiny, style({ flex: 1, maxWidth: '250px' }))(
+                  $metricEntry(`esGMX`, `${formatFixed(glpAprForEsGmxPercentage, 2)}%`),
+                  $metricEntry(`ETH`, `${formatFixed(glpAprForEthPercentage, 2)}%`),
+                // $metricEntry(`Multiplier Points`, `${readableNumber(formatFixed(bnGmxInFeeglp, 18))}`),
+                )
+              }, stakingRewardsState)),
+              $iconPath: $tokenIconMap[ARBITRUM_ADDRESS.GLP],
+            })({}),
+            // style({ backgroundColor: colorAlpha(pallete.foreground, .15) }, $seperator),
+            // $treasuryMetric({
+            //   label: 'Ethereum',
+            //   symbol: 'ETH',
+            //   asset: ethAsset,
+            //   $distribution: map(s => {
+
+            //     return { apr: s.glpRewardsUsd, valueUsd: s.glpRewardsUsd, value: s.glpRewardsUsd }
+            //   }, stakingRewardsState),
+            //   $iconPath: $eth,
+            // }),
+
+          ),
+        ),
+
       )
+      
     )
   ]
 })
@@ -434,3 +534,10 @@ function getTime(next: IUniswapSwap | IGlpStat | IStake): number {
   return Number(next.timestamp)
 }
 
+
+function getGlpPrice(g: IGlpStat): bigint {
+  const aum = BigInt(g.aumInUsdg)
+  const glpSupply = BigInt(g.glpSupply)
+  const glpPrice = aum * USD_PRECISION / glpSupply
+  return glpPrice
+}

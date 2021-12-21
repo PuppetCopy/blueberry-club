@@ -57,7 +57,7 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
 
 
 
-      showAccount ? style({ height: '20px' }, $seperator) : empty(),
+      // showAccount ? style({ height: '20px' }, $seperator) : empty(),
 
       screenUtils.isDesktopScreen ? $socialMediaLinks : empty(),
 

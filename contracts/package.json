@@ -37,10 +37,10 @@
     "ethereum-waffle": "^3.4.0",
     "ethereumjs-abi": "^0.6.8",
     "ethers": "^5.5.2",
-    "hardhat": "2.7.0",
+    "hardhat": "2.8.0",
     "hardhat-contract-sizer": "^2.1.1",
     "typechain": "^6.0.5",
-    "typescript": "^4.5.2"
+    "typescript": "^4.5.4"
   },
   "dependencies": {
     "bn.js": "^5.2.0",

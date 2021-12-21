@@ -65,7 +65,7 @@ export const $AccountLabel = (address: string, claim?: IClaim, adressOp: Op<INod
 
   if (!isAddressValid) {
     return $column(
-      $text(style({ fontSize: '.65em' }))('0x----'),
+      $text(style({ fontSize: '.75em' }))('0x----'),
       $text(adressOp, style({ fontSize: '1em' }))('----')
     )
   }
@@ -75,7 +75,7 @@ export const $AccountLabel = (address: string, claim?: IClaim, adressOp: Op<INod
   }
 
   return $column(
-    $text(style({ fontSize: '.65em' }))(address.slice(0, 6)),
+    $text(style({ fontSize: '.75em' }))(address.slice(0, 6)),
     $text(adressOp, style({ fontSize: '1em' }))(address.slice(address.length -4, address.length))
   )
 }

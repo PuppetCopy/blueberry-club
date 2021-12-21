@@ -44,3 +44,9 @@ export interface ITokenMetadata {
     value: string
   }[]
 }
+
+
+export interface ITreasuryStore {
+  startedStakingGlpTimestamp: null | number
+  startedStakingGmxTimestamp: null | number
+}
