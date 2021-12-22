@@ -1,10 +1,10 @@
 import { Behavior, combineArray, replayLatest } from "@aelea/core"
-import { $node, $text, attr, component, motion, MOTION_NO_WOBBLE, style } from "@aelea/dom"
+import { $text, attr, component, motion, MOTION_NO_WOBBLE, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $NumberTicker, $row, $seperator, layoutSheet, screenUtils, state } from "@aelea/ui-components"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { USD_PRECISION } from "@gambitdao/gbc-middleware"
-import { expandDecimals, intervalInMsMap, unixTimeTzOffset, shortenAddress, formatFixed, formatReadableUSD, ARBITRUM_ADDRESS, BASIS_POINTS_DIVISOR } from "@gambitdao/gmx-middleware"
+import { expandDecimals, intervalInMsMap, unixTimeTzOffset, shortenAddress, formatFixed, ARBITRUM_ADDRESS, BASIS_POINTS_DIVISOR } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { empty, fromPromise, map, multicast, now, skipRepeats, skipRepeatsWith, startWith, switchLatest } from "@most/core"
 import { BarPrice, CrosshairMode, LastPriceAnimationMode, LineStyle, MouseEventParams, PriceScaleMode, SeriesMarker, Time } from "lightweight-charts-baseline"
@@ -37,6 +37,7 @@ interface ITreasury {
 interface ITreasuryTick {
   time: number
   value: number
+  cumulativeReward: number
   amountGmx: bigint
   amountGlp: bigint
   balanceEth: bigint
@@ -59,23 +60,21 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
 
   
   const stakingRewardsState = replayLatest(multicast(stakingRewards))
-  
-  const nowDate = new Date()
-  
-
   const stakingEvents = treasuryStore.store(
     replayLatest(multicast(fromPromise(queryStakingEvents({})))),
-    map(data => ({
-      startedStakingGlpTimestamp: data.stakeGlps[data.stakeGlps.length - 1].timestamp,
-      startedStakingGmxTimestamp: data.stakeGmxes[data.stakeGmxes.length - 1].timestamp
-    }))
+    map(data => {
+      return {
+        startedStakingGlpTimestamp: data.stakeGlps[data.stakeGlps.length - 1].timestamp,
+        startedStakingGmxTimestamp: data.stakeGmxes[data.stakeGmxes.length - 1].timestamp
+      }
+    })
   )
   const newLocal = treasuryStore.state.startedStakingGmxTimestamp ? {
     from: treasuryStore.state.startedStakingGmxTimestamp
     // from: Math.floor(nowDate.setFullYear(nowDate.getFullYear() - 1) / 1000),
     // to: Math.floor(Date.now() / 1000)
   } : {}
-  const gmxPriceHistoryquery = replayLatest(multicast(fromPromise(gmxGlpPriceHistory( newLocal))))
+  const gmxPriceHistoryquery = replayLatest(multicast(fromPromise(gmxGlpPriceHistory(newLocal))))
 
   const gmxPriceInterval = map(({ uniswapPrices }) => {
     const oldestTick = uniswapPrices[uniswapPrices.length - 1]
@@ -94,7 +93,9 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
     })
 
     const initTs = treasuryStore?.state.startedStakingGmxTimestamp || 0
-    const match = uniswapPrices.find(a => initTs > a.timestamp )
+    const match = uniswapPrices.find(a => {
+      return initTs > a.timestamp
+    })
 
     const baselinePrice = match?.value ? formatFixed(BigInt(match.value), 30) : seed.value
 
@@ -118,8 +119,11 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
       },
     })
 
-    const initTs = treasuryStore?.state.startedStakingGmxTimestamp || 0
-    const match = glpStats.find(a => initTs > Number(a.id) )
+    const initTs = treasuryStore?.state.startedStakingGlpTimestamp || 0
+    const match = oldestTick
+    // const match = glpStats.find(a => {
+    //   return initTs > Number(a.id)
+    // })
 
     const baselinePrice = match ? formatFixed(getGlpPrice(match), 30) : seed.value
 
@@ -128,11 +132,20 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
 
   const fillRewards = (prev: ITreasuryTick, next: IUniswapSwap | IStake | IGlpStat): ITreasuryTick => {
     if (next.__typename === 'StakeGmx') {
-      const amountGmx = prev.amountGmx + BigInt(next.amount)
-      const balanceGmx = (prev.gmxPrice * amountGmx / USD_PRECISION)
-      const value = formatFixed(balanceGmx + prev.balanceGlp + prev.balanceEth, 30)
+      const stakedAmountGmx = prev.amountGmx + BigInt(next.amount)
 
-      return { ...prev, time: next.timestamp, value, balanceGmx, amountGmx }
+      const addedGmxUsd = formatFixed(prev.gmxPrice * BigInt(next.amount) / USD_PRECISION, 30)
+      const isWalletStaked = addedGmxUsd > 1000
+
+      const cumulativeReward = !isWalletStaked ? prev.cumulativeReward + addedGmxUsd : prev.cumulativeReward
+
+      const balanceGmx = (prev.gmxPrice * stakedAmountGmx / USD_PRECISION)
+
+      const cumulative = formatFixed(balanceGmx + prev.balanceGlp + prev.balanceEth, 30)
+      const value = isWalletStaked ? cumulative : prev.value
+
+
+      return { ...prev, time: next.timestamp, value, cumulativeReward, balanceGmx, amountGmx: stakedAmountGmx }
     }
 
     if (next.__typename === 'StakeGlp') {
@@ -180,6 +193,7 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
       gmxPrice,
       glpPrice: glpPrice ? glpPrice / BigInt(glpStats[0].aumInUsdg) : 0n,
       value: 0,
+      cumulativeReward: 0,
       balanceEth: assetMap.eth.balanceUsd,
       balanceGlp: 0n,
       balanceGmx: 0n,
@@ -194,10 +208,11 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
       fillMap: fillRewards,
       // squashMap: (prev, next) => prev
     })
+    const oldestTick = filledGap[filledGap.length - 1]
 
 
     const endForecast = {
-      ...filledGap[filledGap.length - 1],
+      ...oldestTick,
       time: Math.floor((Date.now() + intervalInMsMap.MONTH * 12) / 1000)
     }
 
@@ -205,7 +220,7 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
     const perc = ((apr / 365) / 12) / 100
 
     const filledForecast = fillIntervalGap({
-      seed: filledGap[filledGap.length - 1], source: [endForecast],
+      seed: oldestTick, source: [endForecast],
       getTime: (x) => x.time, 
       interval: Math.floor(intervalInMsMap.MIN60 / 1000),
       fillMap: (prev, next) => {
@@ -373,10 +388,7 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
                 // @ts-ignore
                 seriesForecast.setData(newLocal)
                 // @ts-ignore
-                series.setData([
-                  ...data.filledGap,
-                  // ...newLocal
-                ])
+                series.setData(data.filledGap)
 
                 const from = data.filledGap[0].time as Time
                 const to = (data.filledGap[data.filledGap.length -1].time + (intervalInMsMap.HR24 * 12 / 1000)) as Time
