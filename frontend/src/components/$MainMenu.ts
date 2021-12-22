@@ -1,7 +1,7 @@
 import { Behavior, combineArray, O, Op } from "@aelea/core"
-import { $node, $text, attr, component, IBranch, nodeEvent, style } from "@aelea/dom"
+import { $node, attr, component, IBranch, nodeEvent, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
-import { $column, $icon, $Popover, $row, $seperator, layoutSheet, screenUtils, state } from '@aelea/ui-components'
+import { $column, $icon, $Popover, $row, layoutSheet, screenUtils, state } from '@aelea/ui-components'
 import { pallete } from "@aelea/ui-components-theme"
 import { IClaim } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"

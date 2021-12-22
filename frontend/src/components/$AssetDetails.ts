@@ -64,8 +64,8 @@ export const $AssetDetails = ({ label, $iconPath, asset, symbol, $distribution, 
       )
     ),
 
-    $row(layoutSheet.spacing, style({ flex: 2, width: '100%' }))(
-      style({ flex: 1 })(
+    $row(layoutSheet.spacingBig, style({ flex: 2, width: '100%' }))(
+      $column(style({ flex: 1 }))(
         $distribution,
       ),
       $row(style({ flex: 1, minHeight: '75px', position: 'relative' }))(
@@ -154,8 +154,8 @@ export const $AssetDetails = ({ label, $iconPath, asset, symbol, $distribution, 
                   autoScale: true,
                   // visible: true,
                   scaleMargins: {
-                    top: 0.05,
-                    bottom: 0.05,
+                    top: 0.1,
+                    bottom: 0.1,
                   }
                 },
                 overlayPriceScales: {

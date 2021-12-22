@@ -77,14 +77,16 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
   } : {}
   const gmxPriceHistoryquery = replayLatest(multicast(fromPromise(gmxGlpPriceHistory( newLocal))))
 
-  const gmxPriceInterval = map(({ glpStats, uniswapPrices }) => {
+  const gmxPriceInterval = map(({ uniswapPrices }) => {
+    const oldestTick = uniswapPrices[uniswapPrices.length - 1]
     const seed = {
-      time: getTime(uniswapPrices[uniswapPrices.length - 1]),
-      value: formatFixed(BigInt(uniswapPrices[uniswapPrices.length - 1].value), 30)
+      time: getTime(oldestTick),
+      value: formatFixed(BigInt(oldestTick.value), 30)
     }
+
     const price = fillIntervalGap({
       seed, getTime,
-      source: uniswapPrices.sort((a, b) => getTime(a) - getTime(b)),
+      source: [...uniswapPrices].sort((a, b) => getTime(a) - getTime(b)),
       interval: Math.floor(intervalInMsMap.MIN30 / 1000),
       fillMap: (prev, next) => {
         return { time: next.timestamp, value: formatFixed(BigInt(next.value), 30) }
@@ -92,7 +94,7 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
     })
 
     const initTs = treasuryStore?.state.startedStakingGmxTimestamp || 0
-    const match = uniswapPrices.find(a => a.timestamp > initTs )
+    const match = uniswapPrices.find(a => initTs > a.timestamp )
 
     const baselinePrice = match?.value ? formatFixed(BigInt(match.value), 30) : seed.value
 
@@ -100,13 +102,14 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
   }, gmxPriceHistoryquery)
 
   const glpPriceInterval = map(({ glpStats }) => {
+    const oldestTick = glpStats[glpStats.length - 1]
     const seed = {
-      time: getTime(glpStats[glpStats.length - 1]),
-      value: formatFixed(getGlpPrice(glpStats[glpStats.length - 1]), 18)
+      time: getTime(oldestTick),
+      value: formatFixed(getGlpPrice(oldestTick), 18)
     }
     const price = fillIntervalGap({
       seed, getTime,
-      source: glpStats.sort((a, b) => getTime(a) - getTime(b)),
+      source: [...glpStats].sort((a, b) => getTime(a) - getTime(b)),
       interval: Math.floor(intervalInMsMap.MIN30 / 1000),
       fillMap: (prev, next) => {
         const time = Number(next.id)
@@ -116,7 +119,7 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
     })
 
     const initTs = treasuryStore?.state.startedStakingGmxTimestamp || 0
-    const match = glpStats.find(a => Number(a.id) > initTs )
+    const match = glpStats.find(a => initTs > Number(a.id) )
 
     const baselinePrice = match ? formatFixed(getGlpPrice(match), 30) : seed.value
 
@@ -187,13 +190,11 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
 
     const filledGap = fillIntervalGap({
       seed, source, getTime,
-      interval: Math.floor(intervalInMsMap.MIN30 / 1000),
+      interval: Math.floor(intervalInMsMap.MIN60 / 1000),
       fillMap: fillRewards,
       // squashMap: (prev, next) => prev
     })
 
-
-    // const forecastInterval = Math.floor(intervalInMsMap.HR24 / 1000)
 
     const endForecast = {
       ...filledGap[filledGap.length - 1],
@@ -201,12 +202,12 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
     }
 
     const apr = formatFixed(earnings.totalAprPercentage, 2)
-    const perc = (apr / 365) / 100
+    const perc = ((apr / 365) / 12) / 100
 
     const filledForecast = fillIntervalGap({
       seed: filledGap[filledGap.length - 1], source: [endForecast],
       getTime: (x) => x.time, 
-      interval: Math.floor(intervalInMsMap.HR24 / 1000),
+      interval: Math.floor(intervalInMsMap.MIN60 / 1000),
       fillMap: (prev, next) => {
         return { ...prev, value: prev.value + prev.value * perc }
       },
@@ -261,20 +262,20 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
       ),
 
       $card(style({ padding: 0, flex: 'none', overflow: 'hidden', height: '300px', position: 'relative' }))(
-        $row(style({ position: 'absolute', zIndex: 10, left: 0, right: 0, padding: '26px' }))(
+        $row(style({ position: 'absolute', zIndex: 10, left: 0, right: 0, pointerEvents: 'none', padding: '26px' }))(
           $column(style({ flex: 1, alignItems: 'flex-start' }))(
             $row(style({ alignItems: 'baseline' }))(
               switchLatest(map(({ esGmxInStakedGmx, totalRewardsUsd   }) => {
-                return $row(layoutSheet.spacing)(
+                return $row(layoutSheet.spacing, style({ pointerEvents: 'all' }))(
                   $row(layoutSheet.spacingTiny, style({ alignItems: 'baseline' }))(
-                    $text(style({ fontSize: '2em' }))(`${readableNumber(formatFixed(esGmxInStakedGmx, 18))}`),
+                    $text(style({ fontWeight: 'bold', fontSize: '1em' }))(`+${readableNumber(formatFixed(esGmxInStakedGmx, 18))}`),
                     $text(style({ fontSize: '.75em', color: pallete.foreground, fontWeight: 'bold' }))(`esGMX`),
                   )
                   // $text(`+${formatReadableUSD(totalRewardsUsd)}$`),
                 )
               }, stakingRewardsState))
             ),
-            $text(style({ color: pallete.foreground, fontSize: '.75em', textAlign: 'center' }))('Pending Rewards')
+            $text(style({ color: pallete.foreground, fontSize: '.65em', textAlign: 'center' }))('Pending Rewards')
           ),
           $column(
             $row(style({ fontSize: '2em', alignItems: 'baseline' }))(
@@ -384,7 +385,7 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
                     ])
 
                     const from = data.filledGap[0].time as Time
-                    const to = (data.filledGap[data.filledGap.length -1].time + (intervalInMsMap.MONTH * 2 / 1000)) as Time
+                    const to = (data.filledGap[data.filledGap.length -1].time + (intervalInMsMap.HR24 * 12 / 1000)) as Time
                     api.timeScale().setVisibleRange({ from, to })
 
                   }, 44)
@@ -480,7 +481,7 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
                 const multiplierPointsAmount = bonusGmxTrackerRewards + bnGmxInFeeGmx
                 const boostBasisPoints = formatFixed(bnGmxInFeeGmx * BASIS_POINTS_DIVISOR / bonusGmxInFeeGmx, 2)
           
-                return $column(layoutSheet.spacingTiny, style({ flex: 1, maxWidth: '250px' }))(
+                return $column(layoutSheet.spacingTiny, style({ flex: 1 }))(
                   $metricEntry(`esGMX`, `${formatFixed(gmxAprForEsGmxPercentage, 2)}%`),
                   $metricEntry(`ETH`, `${formatFixed(gmxAprForEthPercentage, 2)}%`),
                   $metricEntry(`Age Boost`, `${boostBasisPoints}%`),
@@ -497,7 +498,7 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
               priceChart: glpPriceInterval,
               $distribution: switchLatest(map(({ glpAprForEsGmxPercentage, glpAprForEthPercentage,   }) => {
 
-                return $column(layoutSheet.spacingTiny, style({ flex: 1, maxWidth: '250px' }))(
+                return $column(layoutSheet.spacingTiny, style({ flex: 1 }))(
                   $metricEntry(`esGMX`, `${formatFixed(glpAprForEsGmxPercentage, 2)}%`),
                   $metricEntry(`ETH`, `${formatFixed(glpAprForEthPercentage, 2)}%`),
                 // $metricEntry(`Multiplier Points`, `${readableNumber(formatFixed(bnGmxInFeeglp, 18))}`),
@@ -505,18 +506,6 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
               }, stakingRewardsState)),
               $iconPath: $tokenIconMap[ARBITRUM_ADDRESS.GLP],
             })({}),
-            // style({ backgroundColor: colorAlpha(pallete.foreground, .15) }, $seperator),
-            // $treasuryMetric({
-            //   label: 'Ethereum',
-            //   symbol: 'ETH',
-            //   asset: ethAsset,
-            //   $distribution: map(s => {
-
-            //     return { apr: s.glpRewardsUsd, valueUsd: s.glpRewardsUsd, value: s.glpRewardsUsd }
-            //   }, stakingRewardsState),
-            //   $iconPath: $eth,
-            // }),
-
           ),
         ),
 
