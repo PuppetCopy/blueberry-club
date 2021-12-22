@@ -3,6 +3,7 @@ import { $wrapNativeElement, component, INode, style } from "@aelea/dom"
 import { observer } from '@aelea/ui-components'
 import { pallete } from '@aelea/ui-components-theme'
 import { chain, constant, delay, empty, filter, map, mergeArray, multicast, now, switchLatest, take } from '@most/core'
+import { merge } from "@most/core/dist/combinator/merge"
 import { disposeWith } from '@most/disposable'
 import { Stream } from '@most/types'
 import { ChartOptions, createChart, DeepPartial, IChartApi, ISeriesApi, LineStyle, MouseEventParams, SeriesDataItemTypeMap, SeriesMarker, SeriesType, Time, TimeRange } from 'lightweight-charts-baseline'
@@ -142,16 +143,16 @@ export const $Chart = <T extends SeriesType>({ chartConfig, realtimeSource, init
       containerOp,
     )(
       switchLatest(
-        mergeArray([
+        combineArray((entries) => {
+          const entry = entries[0]
+          const { width, height } = entry.contentRect
 
-          combineArray((entries, seriesApi) => {
-            const entry = entries[0]
-            const { width, height } = entry.contentRect
+          api.resize(width, height)
 
-            api.resize(width, height)  
-            return realtimeSource ? ignoreAll(map(data => seriesApi.update(data), realtimeSource)) : empty()
-          }, containerDimension, init),
-        ])
+          return ignoreAll(map((seriesApi) => {
+            return realtimeSource ? map(data => seriesApi.update(data), realtimeSource) : empty()
+          }, init))
+        }, containerDimension)
       )
     ),
 

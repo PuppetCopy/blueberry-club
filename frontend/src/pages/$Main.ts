@@ -95,7 +95,7 @@ export default ({ baseRoute = '' }: Website) => component((
   // localstorage
   const rootStore = state.createLocalStorageChain('ROOT')
   const walletStore = rootStore<WALLET, 'walletStore'>('walletStore', WALLET.none)
-  const treasuryStore = rootStore<ITreasuryStore, 'treasuryStore'>('treasuryStore', { startedStakingGlpTimestamp: null, startedStakingGmxTimestamp: null })
+  const treasuryStore = rootStore<ITreasuryStore, 'treasuryStore'>('treasuryStore', { startedStakingGlpTimestamp: 1639431367, startedStakingGmxTimestamp: 1639432924 })
 
   const chosenWalletName = now(walletStore.state)
   const defaultWalletProvider: Stream<IEthereumProvider | null> =  multicast(switchLatest(awaitPromises(map(async name => {

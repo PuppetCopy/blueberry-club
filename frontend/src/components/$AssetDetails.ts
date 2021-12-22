@@ -112,10 +112,10 @@ export const $AssetDetails = ({ label, $iconPath, asset, symbol, $distribution, 
 
                 // @ts-ignore
                 series.setData([ ...data.series, ])
-
-                setTimeout(() => {
-                  api.timeScale().fitContent()
-                }, 3110)
+                api.timeScale().fitContent()
+                // setTimeout(() => {
+                //   api.timeScale().fitContent()
+                // }, 3110)
 
 
                 return series

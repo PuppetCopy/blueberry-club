@@ -372,24 +372,21 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
 
                 // @ts-ignore
                 seriesForecast.setData(newLocal)
+                // @ts-ignore
+                series.setData([
+                  ...data.filledGap,
+                  // ...newLocal
+                ])
+
+                const from = data.filledGap[0].time as Time
+                const to = (data.filledGap[data.filledGap.length -1].time + (intervalInMsMap.HR24 * 12 / 1000)) as Time
+                api.timeScale().setVisibleRange({ from, to })
+                // series.coordinateToPrice()
+
 
                 setTimeout(() => {
                   series.setMarkers([...addGlps, ...addGmxs].sort((a, b) => Number(a.time) - Number(b.time)))
-
-                  // series.coordinateToPrice()
-                  setTimeout(() => {
-                    // @ts-ignore
-                    series.setData([
-                      ...data.filledGap,
-                      // ...newLocal
-                    ])
-
-                    const from = data.filledGap[0].time as Time
-                    const to = (data.filledGap[data.filledGap.length -1].time + (intervalInMsMap.HR24 * 12 / 1000)) as Time
-                    api.timeScale().setVisibleRange({ from, to })
-
-                  }, 44)
-                }, 155)
+                }, 55)
 
 
                 return series
