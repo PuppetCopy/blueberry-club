@@ -45,7 +45,7 @@ export const $Breadcrumbs = ({ sections, index, $contentOp = O(), $titleOp = O()
             row.$title,
             $icon({ $content: $caretDown, width: '14px', viewBox: '0 0 7.84 3.81' })
           ),
-          switchLatest(map(selectedIndex => selectedIndex === idx ? $content($contentOp)(row.$content) : empty(), selection)),
+          switchLatest(map(selectedIndex => selectedIndex === idx ? $content(style({ border: `1px solid ${pallete.foreground}` }))($contentOp)(row.$content) : empty(), selection)),
         )
       })
     ),

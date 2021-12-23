@@ -338,25 +338,30 @@ After the public sale, a part of ETH will be used to create a treasury that will
             ),
             $column(layoutSheet.spacingBig, style({ flex: 1 }))(
               $Breadcrumbs({
+                $contentOp: style({}),
                 sections: [
                   {
-                    $title: $text('What is the GMX Bluebery Club?'),
-                    $content: $text(`The GBC is a generative 10,000 Blueberry’s NFT Collection dedicated
-to GMX.io and its amazing community. Each GBC NFT is unique and algorithmically generated from over 130+ hand drawn traits. 
-`),
+                    $title: $text('How to be eligible for the Monthly esGMX Airdrop?'),
+                    $content: $text(`To get the Airdrop at the end of each month, you only need to hold 1 NFT and some Staked GMX from the beginning to the end of each month.`),
                   },
                   {
-                    $title: $text('What blockchain will GBC be minted on?'),
-                    $content: $text('Users will be able to mint GBC NFTs on Arbitrum.'),
+                    $title: $text('Does owning multiple GBCs increase my airdrop allocation?'),
+                    $content: $text('No, the airdrop is only based on 1 GBC and Staked GMX'),
                   },
                   {
-                    $title: $text('How much will it cost to mint?'),
-                    $content: $text('Minting a GBC will cost 0.03 ETH during the public sale'),
+                    $title: $text('How to Buy a GBC ?'),
+                    $content: $node(style({  }))(
+                      $text('To join the Blueberry Club you must first transfer ETH to Arbitrum and Mint an NFT on our Website. You can also buy a GBC on secondary sale on TofuNFT.'),
+                      $text('Follow this '),
+                      $anchor(style({ display: 'inline' }), attr({ href: 'https://arbitrum.io/bridge-tutorial/' }))(
+                        $text('tutorial')
+                      ),
+                      $text(' to transfer ETH to Arbitrum.')
+                    ),
                   },
                   {
-                    $title: $text('When will minting be begin?'),
-                    $content: $text(`Whitelisted users can mint for free from: December 5 - 11PM CET, UTC 22
-Public sale : December 7 - 11PM CET, UTC 22`),
+                    $title: $text('What’s my GBC used for?'),
+                    $content: $text(`First of all your GBC is a proof of belonging to the Club/Community. It can be used as a profile picture on social networks, gives you access to governance voting (1 GBC = 1 Vote). Other features will come along and GBC's will be more and more useful in the future.`),
                   },
                 ]
               })({}),

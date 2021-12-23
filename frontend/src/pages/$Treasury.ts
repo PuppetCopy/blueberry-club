@@ -6,7 +6,7 @@ import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { USD_PRECISION } from "@gambitdao/gbc-middleware"
 import { expandDecimals, intervalInMsMap, unixTimeTzOffset, shortenAddress, formatFixed, ARBITRUM_ADDRESS, BASIS_POINTS_DIVISOR } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { empty, fromPromise, map, multicast, now, skipRepeats, skipRepeatsWith, startWith, switchLatest } from "@most/core"
+import { empty, fromPromise, map, merge, multicast, now, skipRepeats, skipRepeatsWith, startWith, switchLatest } from "@most/core"
 import { BarPrice, CrosshairMode, LastPriceAnimationMode, LineStyle, MouseEventParams, PriceScaleMode, SeriesMarker, Time } from "lightweight-charts-baseline"
 import { $Chart } from "../components/chart/$Chart"
 import { $anchor, $card } from "../elements/$common"
@@ -278,19 +278,32 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
 
       $card(style({ padding: 0, flex: 'none', overflow: 'hidden', height: '300px', position: 'relative' }))(
         $row(style({ position: 'absolute', zIndex: 10, left: 0, right: 0, pointerEvents: 'none', padding: '26px' }))(
-          $column(style({ flex: 1, alignItems: 'flex-start' }))(
-            $row(style({ alignItems: 'baseline' }))(
-              switchLatest(map(({ esGmxInStakedGmx, totalRewardsUsd   }) => {
-                return $row(layoutSheet.spacing, style({ pointerEvents: 'all' }))(
-                  $row(layoutSheet.spacingTiny, style({ alignItems: 'baseline' }))(
-                    $text(style({ fontWeight: 'bold', fontSize: '1em' }))(`+${readableNumber(formatFixed(esGmxInStakedGmx, 18))}`),
-                    $text(style({ fontSize: '.75em', color: pallete.foreground, fontWeight: 'bold' }))(`esGMX`),
-                  )
-                  // $text(`+${formatReadableUSD(totalRewardsUsd)}$`),
-                )
-              }, stakingRewardsState))
-            ),
-            $text(style({ color: pallete.foreground, fontSize: '.65em', textAlign: 'center' }))('Pending Rewards')
+          $row(layoutSheet.spacing, style({ flex: 1, alignItems: 'flex-start' }))(
+            switchLatest(map(({ esGmxInStakedGmx, totalRewardsUsd, totalEsGmxRewards }) => {
+            
+              return $column(layoutSheet.spacingTiny)(
+                $text(style({ color: pallete.foreground, fontSize: '.65em', textAlign: 'center' }))('Staked Rewards'),
+                $row(layoutSheet.spacing)(
+                  $row(layoutSheet.spacing, style({ pointerEvents: 'all' }))(
+                    $row(layoutSheet.spacingTiny, style({ alignItems: 'baseline' }))(
+                      $text(style({ fontWeight: 'bold', fontSize: '1em' }))(`${readableNumber(formatFixed(esGmxInStakedGmx, 18))}`),
+                      $text(style({ fontSize: '.75em', color: pallete.foreground, fontWeight: 'bold' }))(`esGMX`),
+                    ),
+                  ),
+                ),
+              )
+              // return $column(style({ alignItems: 'flex-start' }))(
+              //   $row(style({ alignItems: 'baseline' }))(
+              //     $row(layoutSheet.spacing, style({ pointerEvents: 'all' }))(
+              //       $row(layoutSheet.spacingTiny, style({ alignItems: 'baseline' }))(
+              //         $text(style({ fontWeight: 'bold', fontSize: '1em' }))(`${readableNumber(formatFixed(esGmxInStakedGmx, 18))}`),
+              //         $text(style({ fontSize: '.75em', color: pallete.foreground, fontWeight: 'bold' }))(`esGMX`),
+              //       ),
+              //     )
+              //   ),
+              //   $text(style({ color: pallete.foreground, fontSize: '.65em', textAlign: 'center' }))('Staked esGMX')
+              // )
+            }, stakingRewardsState))
           ),
           $column(
             $row(style({ fontSize: '2em', alignItems: 'baseline' }))(
@@ -307,7 +320,28 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
             ),
             $text(style({ color: pallete.foreground, fontSize: '.75em', textAlign: 'center' }))('Total Holdings')
           ),
-          $text(style({ flex: 1 }))('')
+          $row(layoutSheet.spacing, style({ flex: 1, placeContent: 'flex-end', marginRight: '75px' }))(
+            switchLatest(map(({ totalEthRewards, totalEsGmxRewards }) => {
+            
+              return $column(layoutSheet.spacingTiny)(
+                $text(style({ color: pallete.foreground, fontSize: '.65em', textAlign: 'center' }))('Pending Rewards'),
+                $row(layoutSheet.spacing)(
+                  $row(layoutSheet.spacing, style({ pointerEvents: 'all' }))(
+                    $row(layoutSheet.spacingTiny, style({ alignItems: 'baseline' }))(
+                      $text(style({ fontWeight: 'bold', fontSize: '1em', color: pallete.positive }))(`+${readableNumber(formatFixed(totalEsGmxRewards, 18))}`),
+                      $text(style({ fontSize: '.75em', color: pallete.foreground, fontWeight: 'bold' }))(`esGMX`),
+                    ),
+                  ),
+                  $row(layoutSheet.spacing, style({ pointerEvents: 'all' }))(
+                    $row(layoutSheet.spacingTiny, style({ alignItems: 'baseline' }))(
+                      $text(style({ fontWeight: 'bold', fontSize: '1em', color: pallete.positive }))(`+${readableNumber(formatFixed(totalEthRewards, 18))}`),
+                      $text(style({ fontSize: '.75em', color: pallete.foreground, fontWeight: 'bold' }))(`esGMX`),
+                    ),
+                  ),
+                ),
+              )
+            }, stakingRewardsState))
+          )
         ),
         switchLatest(
           combineArray((data) => {
