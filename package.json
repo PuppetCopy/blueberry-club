@@ -6,7 +6,7 @@
   ],
   "private": true,
   "scripts": {
-    "build": "yarn workspaces foreach --exclude '{subgraph}' --verbose --topological --parallel run build",
+    "build": "yarn workspaces foreach --exclude 'subgraph' --verbose --topological --parallel run build",
     "clean": "yarn workspaces foreach --verbose --parallel run clean",
     "lint": "eslint . --ext .ts",
     "start": "yarn workspace backend run start",
