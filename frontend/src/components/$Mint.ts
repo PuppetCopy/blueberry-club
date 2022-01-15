@@ -12,7 +12,7 @@ import { GBC, GBC__factory } from "contracts"
 import { IEthereumProvider } from "eip1193-provider"
 import { $IntermediatePromise, $IntermediateTx, $spinner } from "../common/$IntermediateDisplay"
 import { $alert, $anchor, $responsiveFlex, $txHashRef } from "../elements/$common"
-import { $caretDown, $gift } from "../elements/$icons"
+import { $caretDown, $gift, $tofunft } from "../elements/$icons"
 import { $IntermediateConnect } from "./$ConnectAccount"
 import { $ButtonPrimary } from "./form/$Button"
 import { $Dropdown } from "./form/$Dropdown"
@@ -142,7 +142,7 @@ export const $Mint = (config: IMint) => component((
   return [
     $column(layoutSheet.spacing, style({ flex: 1 }))(
       
-      $column(layoutSheet.spacingTiny)(
+      $column(layoutSheet.spacing)(
         $responsiveFlex(layoutSheet.spacing, style({ fontSize: '1.5em' }))(
           switchLatest(map(hasEnded => {
             return hasEnded
@@ -160,7 +160,15 @@ export const $Mint = (config: IMint) => component((
             $text(`10,000`)
           ),
         ),
-        $text(style({ fontSize: '.75em' }))('Reveals will occur per 1k berries minted. Stay tuned and hit the refresh (:'),
+        $row(layoutSheet.spacingSmall)(
+          $icon({
+            $content: $tofunft,
+            viewBox: '0 0 32 32'
+          }),
+          $anchor(attr({ href: `https://tofunft.com/collection/blueberryclub/items?category=fixed-price&sort=price_asc` }))(
+            $text('Trade On TofuNFT')
+          ),
+        ),
       ),
 
       $node(),
