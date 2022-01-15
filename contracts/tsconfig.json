@@ -3,7 +3,8 @@
   "compilerOptions": {
     "outDir": "artifacts/build",
     "types": [
-      "node"
+      "node",
+      "mocha",
     ],
     "module": "CommonJS",
     "declarationDir": null,
