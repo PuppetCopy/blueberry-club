@@ -1,9 +1,12 @@
 import { http } from "@aelea/ui-components"
+import { DEPLOYED_CONTRACT } from "@gambitdao/gbc-middleware"
 import { getGatewayUrl } from "@gambitdao/gmx-middleware"
+import { GBC__factory } from "contracts"
 import { ITokenMetadata } from "../types"
-import { gbc } from "./contract"
+import { w3p } from "./provider"
 
 
+export const gbc = GBC__factory.connect(DEPLOYED_CONTRACT, w3p)
 
 
 export async function getBerryMetadata(id: string): Promise<ITokenMetadata> {

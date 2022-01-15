@@ -2,11 +2,10 @@ import { Behavior, combineArray, fromCallback, O, Op } from "@aelea/core"
 import { $wrapNativeElement, component, INode, style } from "@aelea/dom"
 import { observer } from '@aelea/ui-components'
 import { pallete } from '@aelea/ui-components-theme'
-import { chain, constant, delay, empty, filter, map, mergeArray, multicast, now, switchLatest, take, throttle } from '@most/core'
-import { merge } from "@most/core/dist/combinator/merge"
+import { debounce, empty, filter, map, multicast, now, switchLatest, take, throttle } from '@most/core'
 import { disposeWith } from '@most/disposable'
 import { Stream } from '@most/types'
-import { ChartOptions, createChart, DeepPartial, IChartApi, ISeriesApi, LineStyle, MouseEventParams, SeriesDataItemTypeMap, SeriesMarker, SeriesType, Time, TimeRange } from 'lightweight-charts-baseline'
+import { ChartOptions, createChart, CrosshairMode, DeepPartial, IChartApi, ISeriesApi, LineStyle, MouseEventParams, SeriesDataItemTypeMap, SeriesMarker, SeriesType, Time, TimeRange } from 'lightweight-charts-baseline'
 
 export interface IMarker extends SeriesMarker<Time> {
 
@@ -73,18 +72,20 @@ export const $Chart = <T extends SeriesType>({ chartConfig, realtimeSource, init
       
     },
     crosshair: {
+      mode: CrosshairMode.Magnet,
       horzLine: {
-        labelBackgroundColor: pallete.background,
-        color: pallete.horizon,
-        width: 2,
-        visible: false,
-        style: LineStyle.Dashed,
+        // visible: false,
+        labelBackgroundColor: pallete.foreground,
+        // labelVisible: false,
+        color: pallete.indeterminate,
+        width: 1,
+        style: LineStyle.Dotted,
       },
       vertLine: {
-        color: pallete.horizon,
-        labelBackgroundColor: pallete.background,
-        width: 3,
-        style: LineStyle.Solid,
+        color: pallete.indeterminate,
+        labelBackgroundColor: pallete.foreground,
+        width: 1,
+        style: LineStyle.Dotted,
       }
     },
     ...chartConfig
@@ -123,15 +124,6 @@ export const $Chart = <T extends SeriesType>({ chartConfig, realtimeSource, init
   )
 
 
-  // const initialRender = take(1, map(entries => {
-  //   const entry = entries[0]
-  //   const { width, height } = entry.contentRect
-
-  //   api.resize(width, height)
-
-  // }, containerDimension))
-  // const newLocal = chain(x => initializeSeries(now(api)), initialRender)
-
   
   const init = initializeSeries(now(api))
   
@@ -143,15 +135,13 @@ export const $Chart = <T extends SeriesType>({ chartConfig, realtimeSource, init
       containerOp,
     )(
       switchLatest(
-        combineArray((entries) => {
+        combineArray((entries, seriesApi) => {
           const entry = entries[0]
           const { width, height } = entry.contentRect
-          api.resize(width, height, false)
+          api.resize(width, height)
 
-          return ignoreAll(map((seriesApi) => {
-            return realtimeSource ? map(data => seriesApi.update(data), realtimeSource) : empty()
-          }, init))
-        }, throttle(10, containerDimension))
+          return ignoreAll(realtimeSource ? map(data => seriesApi.update(data), realtimeSource) : empty())
+        }, containerDimension, init)
       )
     ),
 

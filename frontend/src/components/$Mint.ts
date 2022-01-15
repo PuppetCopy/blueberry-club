@@ -16,7 +16,7 @@ import { $caretDown, $gift } from "../elements/$icons"
 import { $IntermediateConnect } from "./$ConnectAccount"
 import { $ButtonPrimary } from "./form/$Button"
 import { $Dropdown } from "./form/$Dropdown"
-import { gbc } from "../logic/contract"
+import { gbc } from "../logic/gbc"
 import { getBerryJpegUrl } from "../logic/gbc"
 import { IToken } from "../types"
 import { queryOwnerTrasnferNfts } from "../logic/query"
@@ -160,7 +160,7 @@ export const $Mint = (config: IMint) => component((
             $text(`10,000`)
           ),
         ),
-        $text(style({ fontSize: '.75em' }))('Reveals will occur per 2k berries minted. Stay tuned and hit the refresh (:'),
+        $text(style({ fontSize: '.75em' }))('Reveals will occur per 1k berries minted. Stay tuned and hit the refresh (:'),
       ),
 
       $node(),

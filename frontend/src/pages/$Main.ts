@@ -4,10 +4,11 @@ import * as router from '@aelea/router'
 import { $RouterAnchor } from '@aelea/router'
 import { $column, $icon, $row, designSheet, layoutSheet, observer, screenUtils, state } from '@aelea/ui-components'
 import { pallete } from '@aelea/ui-components-theme'
-import { groupByMap } from '@gambitdao/gmx-middleware'
+import { TREASURY_ARBITRUM } from "@gambitdao/gbc-middleware"
+import { groupByMap, IAccountQueryParamApi, intervalInMsMap, ITimerange } from '@gambitdao/gmx-middleware'
 import { initWalletLink } from "@gambitdao/wallet-link"
 import {
-  awaitPromises, constant, empty, map, merge, mergeArray, multicast, now,
+  awaitPromises, constant, empty, fromPromise, map, merge, mergeArray, multicast, now,
   snapshot,
   startWith,
   switchLatest,
@@ -17,13 +18,17 @@ import { Stream } from "@most/types"
 import { IEthereumProvider } from "eip1193-provider"
 import { $logo } from '../common/$icons'
 import { $Breadcrumbs } from "../components/$Breadcrumbs"
+import { $Link } from "../components/$Link"
 import { $MainMenu, $socialMediaLinks } from '../components/$MainMenu'
 import { $Mint } from "../components/$Mint"
+import { $StakingGraph } from "../components/$StakingGraph"
+import { $ButtonSecondary } from "../components/form/$Button"
 import { $anchor, $card, $responsiveFlex } from "../elements/$common"
 import { $bagOfCoins, $discount, $glp, $stackedCoins } from "../elements/$icons"
 import { claimListQuery } from "../logic/claim"
 import * as wallet from "../logic/provider"
 import { WALLET } from "../logic/provider"
+import { gmxGlpPriceHistory } from "../logic/query"
 import { helloBackend } from '../logic/websocket'
 import { ITreasuryStore } from "../types"
 import { $Berry } from "./$Berry"
@@ -162,6 +167,11 @@ export default ({ baseRoute = '' }: Website) => component((
     )
   )
 
+  const queryParams: IAccountQueryParamApi & Partial<ITimerange> = {
+    from: treasuryStore.state.startedStakingGmxTimestamp || undefined,
+    account: TREASURY_ARBITRUM
+  }
+
 
   return [
 
@@ -218,22 +228,29 @@ export default ({ baseRoute = '' }: Website) => component((
 
 
           $column(style({ alignItems: 'center' }))(
-            $icon({ $content: $logo, width: '100px', viewBox: '0 0 32 32' }),
+            // $icon({ $content: $logo, width: '100px', viewBox: '0 0 32 32' }),
 
-            $text(style({ fontWeight: 'bold', fontSize: '2.5em', margin: '25px 0px 30px', textAlign: 'center' }))('GMX Blueberry Club Launch'),
-            $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '878px' }))(
-              `The first goal of this collection is to reward GMX holders. That's why everyone with  Multiplier Points
-(Snapshot taken on 19 Nov 2021) will be able to mint 1 GBC for free (minting December 5 - 11PM CET, UTC 22)
+            $text(style({ fontWeight: 'bold', fontSize: '2.5em', margin: '25px 0px 30px', textAlign: 'center' }))('Treasury'),
+            $StakingGraph({
+              from: 0,
+              walletLink,
+              priceFeedHistoryMap: replayLatest(multicast(fromPromise(gmxGlpPriceHistory(queryParams)))),
+              graphInterval: intervalInMsMap.HR4,
+            })({}),
+            
+            $node(style({ margin: '20px 0' }))(),
 
-The second distribution will be a public sale which will take place on December 7 - 11PM CET, UTC 22
-You will be able to mint GBC for 0,03 ETH each.
 
-After the public sale, a part of ETH will be used to create a treasury that will benefit the GMX platform.
-(more informations below)
-
-`.trim()
-
-            ),
+            $Link({
+              $content: $anchor(
+                $ButtonSecondary({
+                  $content: $text('Treasury Page')
+                })({})
+              ),
+              url: '/p/treasury', route: treasuryRoute
+            })({
+              click: linkClickTether()
+            }),
           ),
 
           $row(
@@ -272,7 +289,7 @@ After the public sale, a part of ETH will be used to create a treasury that will
                 $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))('$GLP'),
                 $column(
                   $text('The GLP consists of an index of assets used for swap and leverage transactions on the GMX platform.'),
-                  $text('GLP token earn Escrowed GMX rewards and 50% of platform fees distributed in ETH.'),
+                  $text('GLP token earn Escrowed GMX rewards and 70% of platform fees distributed in ETH.'),
                 )
               ),
               $card(style({ minWidth: '34%' }))(
@@ -391,7 +408,7 @@ After the public sale, a part of ETH will be used to create a treasury that will
 
           $node(),
 
-          $column(layoutSheet.spacingBig, style({ maxWidth: '1024px', width: '100%', margin: '0 auto', paddingBottom: '45px' }))(
+          $column(layoutSheet.spacingBig, style({ maxWidth: '1160px', width: '100%', margin: '0 auto', paddingBottom: '45px' }))(
             router.contains(berryRoute)(
               $Berry({ walletLink, parentRoute: pagesRoute })({})
             ),

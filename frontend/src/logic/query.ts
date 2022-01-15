@@ -1,5 +1,5 @@
-import { GLP_DECIMALS, TREASURY } from "@gambitdao/gbc-middleware"
-import { expandDecimals, groupByMapMany, IAccountQueryParamApi, ITimerange } from "@gambitdao/gmx-middleware"
+import { TREASURY_ARBITRUM } from "@gambitdao/gbc-middleware"
+import { groupByMapMany, IAccountQueryParamApi, intervalInMsMap, ITimerange } from "@gambitdao/gmx-middleware"
 import { ClientOptions, createClient, gql, TypedDocumentNode } from "@urql/core"
 import { IOwner, IToken } from "../types"
 
@@ -15,20 +15,86 @@ export interface IStake {
 export interface IGlpStat {
   glpSupply: bigint
   aumInUsdg: bigint
-  period: number
+  period: string
   id: string
   distributedEth: bigint
   __typename: "GlpStat"
 }
 
-export interface IUniswapSwap {
-  value: bigint
-  timestamp: number
-  period: number
+
+export interface IPricefeedLatest {
   id: string
-  token: string
-  __typename: "UniswapPrice"
+  feed: string
+  value: bigint
+  
+  timestamp: number
+  __typename: "PricefeedHistory"
 }
+export type IPriceFeedHistoryMap = {
+  eth: IPricefeedHistory[]
+  glp: IPricefeedHistory[]
+  gmx: IPricefeedHistory[]
+}
+
+export type ILatestPriceMap = {
+  eth: IPricefeedLatest
+  glp: IPricefeedLatest
+  gmx: IPricefeedLatest
+}
+
+
+export interface IPricefeedHistory {
+  id: string
+  feed: string
+
+  o: bigint // open
+  h: bigint // high
+  l: bigint // low
+  c: bigint // close
+  
+  timestamp: number
+  interval: number
+  period: string
+  __typename: "PricefeedHistory"
+}
+
+export interface ITransfer {
+  from: string
+  id: string
+  timestamp: number
+  to: string
+  value: bigint
+}
+export interface IStakingGlpTransfer extends ITransfer {
+  __typename: "StakeGlp"
+}
+export interface IStakingGmxTransfer extends ITransfer {
+  __typename: "StakeGmx"
+}
+
+export interface IStakingClaim {
+  id: string
+  timestamp: number
+  receiver: string
+  amount: bigint
+  amountUsd: bigint
+}
+
+
+export interface IStakingGmxClaim extends IStakingClaim {
+  __typename: "StakedGmxTrackerClaim"
+}
+export interface IStakingGlpClaim extends IStakingClaim {
+  __typename: "StakedGlpTrackerClaim"
+}
+export interface IFeeGmxClaim extends IStakingClaim {
+  __typename: "FeeGmxTrackerClaim"
+}
+export interface IFeeGlpClaim extends IStakingClaim {
+  __typename: "FeeGlpTrackerClaim"
+}
+
+export type IAllRewards = IStakingGmxClaim | IStakingGlpClaim | IFeeGmxClaim | IFeeGlpClaim
 
 const schemaFragments = `
 
@@ -75,6 +141,8 @@ export type QueryIdentifiable = {
   id: string
 }
 
+export type IQueryGmxEthHistoricPrice = Partial<ITimerange & { period: intervalInMsMap }>
+
 const tokenDoc: TypedDocumentNode<{token: IToken | null}, QueryIdentifiable> = gql`
 ${schemaFragments}
 
@@ -116,13 +184,13 @@ query ($first: Int = 1000, $account: String, $from: Int = 0, $to: Int = 19999999
     # }
   }
 
-  
   stakeGlps(first: $first, orderBy: timestamp, orderDirection: desc, where:{account: $account, timestamp_gte: $from, timestamp_lte: $to}) {
     account
     id
     amount
     timestamp
   }
+
   unstakeGlps(first: $first, orderBy: timestamp, orderDirection: desc, where:{account: $account, timestamp_gte: $from, timestamp_lte: $to}) {
     account
     amount
@@ -133,45 +201,66 @@ query ($first: Int = 1000, $account: String, $from: Int = 0, $to: Int = 19999999
 
 `
 
-const gmxGlpHistoricPriceDoc: TypedDocumentNode<{uniswapPrices: IUniswapSwap[], glpStats: IGlpStat[]}, IAccountQueryParamApi & Partial<ITimerange>> = gql`
-${schemaFragments}
 
-query ($first: Int = 1000, $account: String, $from: Int = 0, $to: Int = 1999999999) {
-  uniswapPrices(first: $first, orderBy: timestamp, orderDirection: desc, where:{timestamp_gte: $from, timestamp_lte: $to}) {
-    value
+const gmxGlpEthHistoricPriceDoc: TypedDocumentNode<{ gmx: IPricefeedHistory[], glp: IPricefeedHistory[], eth: IPricefeedHistory[] }, IQueryGmxEthHistoricPrice> = gql`
+
+query ($first: Int = 1000, $period: IntervalTime = _14400, $from: Int = 0, $to: Int = 1999999999) {
+  glp: pricefeedHistories(first: $first, where: {timestamp_gt: $from, timestamp_lt: $to, interval: $period, feed: _0x321F653eED006AD1C29D174e17d96351BDe22649}) {
+    id
+    feed
+    o
+    h
+    l
+    c
     timestamp
-    period
-    id
-    token
+    interval
   }
-
-  glpStats(first: $first, orderBy: id, orderDirection: desc) {
-    glpSupply
-    aumInUsdg
-    period
+  gmx: pricefeedHistories(first: $first, where: {timestamp_gt: $from, timestamp_lt: $to, interval: $period, feed: _0xfc5a1a6eb076a2c7ad06ed22c90d7e710e35ad0a}) {
     id
-    distributedEth 
+    feed
+    o
+    h
+    l
+    c
+    timestamp
+    interval
   }
-  
+  eth: pricefeedHistories(first: $first, where: {timestamp_gt: $from, timestamp_lt: $to, interval: $period, feed: _0x82af49447d8a07e3bd95bd0d56f35241523fbab1}) {
+    id
+    feed
+    o
+    h
+    l
+    c
+    timestamp
+    interval
+  }
 }
+
 
 `
 
-const latestPrices: TypedDocumentNode<{eth: {value: string}, glpStats: IGlpStat[], gmx: {value: string}}, {}> = gql`
-query ($first: Int = 1000) {
-  eth: chainlinkPrice(id: "0x82af49447d8a07e3bd95bd0d56f35241523fbab1") {
+
+
+const latestPrices: TypedDocumentNode<{ gmx: IPricefeedLatest, glp: IPricefeedLatest, eth: IPricefeedLatest }, {}> = gql`
+query {
+  eth: pricefeedLatest(id: "0x82af49447d8a07e3bd95bd0d56f35241523fbab1") {
+    id
     value
+    timestamp
   }
-  
-  glpStats(first: 1,orderBy: id, orderDirection: desc) {
-    glpSupply
-    aumInUsdg
-  }
-  
-  gmx: uniswapPrice(id: "0xfc5a1a6eb076a2c7ad06ed22c90d7e710e35ad0a") {
+  gmx: pricefeedLatest(id: "0xfc5a1a6eb076a2c7ad06ed22c90d7e710e35ad0a") {
+    id
     value
+    timestamp
+  }
+  glp: pricefeedLatest(id: "0x321F653eED006AD1C29D174e17d96351BDe22649") {
+    id
+    value
+    timestamp
   }
 }
+
 `
 
 
@@ -193,9 +282,9 @@ query ($account: String) {
 const ownerTransferList: TypedDocumentNode<{owner: IOwner}, QueryAccountOwnerNfts> = gql`
 ${schemaFragments}
 
-query ($account: String) {
+query ($first: Int = 1000, $account: String) {
   owner(id: $account) {
-    ownedTokens {
+    ownedTokens(first: $first) {
       transfers {
         transactionHash
         id
@@ -210,6 +299,86 @@ query ($account: String) {
   }
 }
 `
+
+
+const trasnfer = `
+    from
+    id
+    timestamp
+    to
+    value
+`
+const claim = `
+  id
+  timestamp
+  receiver
+  amount
+  amountUsd
+`
+const rewardsTrackerDoc: TypedDocumentNode<{
+  stakedGmxTrackerClaims: IStakingGmxClaim[],
+  stakedGlpTrackerClaims: IStakingGlpClaim[],
+  stakeGmxes: IStake[],
+  unStakeGmxes: IStake[],
+  feeGmxTrackerClaims: IFeeGmxClaim[],
+  feeGlpTrackerClaims: IFeeGlpClaim[],
+  feeGmxTrackerTransfers: ITransfer[],
+  feeGlpTrackerTransfers: ITransfer[],
+  bonusGmxTrackerTransfers: ITransfer[]
+}, IAccountQueryParamApi & Partial<ITimerange>> = gql`
+
+query ($first: Int = 1000, $account: String, $period: IntervalTime = _86400, $from: Int = 0, $to: Int = 1999999999) {
+
+  stakeGmxes(first: $first, orderBy: timestamp, orderDirection: desc, where:{account: $account, timestamp_gte: $from, timestamp_lte: $to}) {
+    account
+    amount
+    timestamp
+    id
+    token
+    # transaction {
+    #   from
+    #   to
+    #   id
+    # }
+  }
+
+  unstakeGmxes(first: $first, orderBy: timestamp, orderDirection: desc, where:{account: $account, timestamp_gte: $from, timestamp_lte: $to}) {
+    account
+    amount
+    timestamp
+    id
+    token
+    # transaction {
+    #   from
+    #   to
+    #   id
+    # }
+  }
+
+  feeGmxTrackerClaims(first: $first, orderBy: timestamp, orderDirection: desc, where:{receiver: $account, timestamp_gte: $from, timestamp_lte: $to}) {
+    ${claim}
+  }
+
+  feeGlpTrackerClaims(first: $first, orderBy: timestamp, orderDirection: desc, where:{receiver: $account, timestamp_gte: $from, timestamp_lte: $to}) {
+    ${claim}
+  }
+
+  stakedGmxTrackerClaims(first: $first, orderBy: timestamp, orderDirection: desc, where:{receiver: $account, timestamp_gte: $from, timestamp_lte: $to}) {
+    ${claim}
+  }
+
+  stakedGlpTrackerClaims(first: $first, orderBy: timestamp, orderDirection: desc, where:{receiver: $account, timestamp_gte: $from, timestamp_lte: $to}) {
+    ${claim}
+  }
+
+  bonusGmxTrackerTransfers(first: $first, orderBy: timestamp, orderDirection: desc, where:{to: $account, timestamp_gte: $from, timestamp_lte: $to}) {
+    ${trasnfer}
+  }
+}
+
+
+`
+
 
 
 
@@ -245,6 +414,11 @@ const gmxStatsGraph = prepareClient({
   url: 'https://api.thegraph.com/subgraphs/name/gmx-io/gmx-stats',
 })
 
+const gmxRewardsGraph = prepareClient({
+  fetch: fetch as any,
+  url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-raw',
+})
+
 
 export const queryOwnerTrasnferNfts = async (account: string) => {
   const owner = (await blueberryGraph(ownerTransferList, { account: account.toLowerCase() })).owner
@@ -257,7 +431,7 @@ export const queryOwnerTrasnferNfts = async (account: string) => {
 }
 
 export const queryOwner = async () => {
-  const owner = (await blueberryGraph(ownerDoc, { account: TREASURY })).owner
+  const owner = (await blueberryGraph(ownerDoc, { account: TREASURY_ARBITRUM })).owner
 
   if (owner === null) {
     return []
@@ -276,37 +450,73 @@ export const queryToken = async (id: string) => {
   return owner
 }
 
-export const queryStakingEvents = async (params: Partial<ITimerange> = {}) => {
-  const { from, to } = params
-  const owner = (await gmxRawGraph(stakedGmxGlpDoc, { account: TREASURY, from, to }))
+export const queryStakingEvents = async (params: Partial<ITimerange> & IAccountQueryParamApi) => {
+  const owner = (await gmxRawGraph(stakedGmxGlpDoc, params))
 
   return owner
 }
 
-export const gmxGlpPriceHistory = async ({ from, to }: Partial<ITimerange> = {}) => {
-  const data = (await gmxStatsGraph(gmxGlpHistoricPriceDoc, { account: TREASURY, from, to }))
-  const uniswapPrices = data.uniswapPrices
-  const glpStats = data.glpStats.filter(x => Number(x.id) >= (from || 0))
 
-  return { uniswapPrices, glpStats, }
+
+export const gmxGlpPriceHistory = async ({ from, to }: IQueryGmxEthHistoricPrice = {}): Promise<IPriceFeedHistoryMap> => {
+  const data = (await gmxRewardsGraph(gmxGlpEthHistoricPriceDoc, { from, to }))
+  const { eth, glp, gmx } = data
+
+  return {
+    eth: eth.map(fromPricefeedJson),
+    glp: glp.map(fromPricefeedJson),
+    gmx: gmx.map(fromPricefeedJson)
+  }
 }
 
-export const queryLatestPrices = async () => {
-  const data = (await gmxStatsGraph(latestPrices, {}))
+export const queryLatestPrices = async (): Promise<ILatestPriceMap> => {
+  const data = (await gmxRewardsGraph(latestPrices, {}))
 
-  const gmx = BigInt(data.gmx.value)
-  const eth = BigInt(data.eth.value)
-  const glp = (BigInt(data.glpStats[0].aumInUsdg) * expandDecimals(1n, GLP_DECIMALS)) / BigInt(data.glpStats[0].glpSupply)
-
-
-  // const glpUsd = formatFixed(BigInt(owner.glpStats[0].aumInUsdg), 18) / formatFixed(BigInt(owner.glpStats[0].glpSupply), 18)
-  // const gmxUsd = formatFixed(gmx)
-  // const ethUsd = formatFixed(parseFixed(Number(eth) / 1e8, 30))
+  const gmx = fromLatestPriceJson(data.gmx)
+  const eth = fromLatestPriceJson(data.eth)
+  const glp = fromLatestPriceJson(data.glp)
 
   return { gmx, glp, eth }
 }
 
 
+export const queryRewards = async (config: IAccountQueryParamApi & Partial<ITimerange>) => {
+  const data = (await gmxRewardsGraph(rewardsTrackerDoc, config))
+
+  const stakedGlpTrackerClaims = data.stakedGlpTrackerClaims.map(fromStakingJson)
+  const stakedGmxTrackerClaims = data.stakedGmxTrackerClaims.map(fromStakingJson)
+  const feeGlpTrackerClaims = data.feeGlpTrackerClaims.map(fromStakingJson)
+  const feeGmxTrackerClaims = data.feeGmxTrackerClaims.map(fromStakingJson)
+
+  return { ...data, stakedGlpTrackerClaims, stakedGmxTrackerClaims, feeGlpTrackerClaims, feeGmxTrackerClaims }
+}
 
 
 
+
+function fromLatestPriceJson<T extends IPricefeedLatest>(obj: T): T {
+  return {
+    ...obj,
+    value: BigInt(obj.value),
+  }
+}
+
+function fromStakingJson<T extends {amountUsd: bigint, amount: bigint}>(obj: T): T {
+  return {
+    ...obj,
+    amountUsd: BigInt(obj.amountUsd),
+    amount: BigInt(obj.amount),
+  }
+}
+
+
+
+function fromPricefeedJson(obj: IPricefeedHistory): IPricefeedHistory {
+  return {
+    ...obj,
+    o: BigInt(obj.o),
+    h: BigInt(obj.h),
+    l: BigInt(obj.l),
+    c: BigInt(obj.c),
+  }
+}

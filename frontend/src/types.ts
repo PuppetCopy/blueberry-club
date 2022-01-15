@@ -50,3 +50,19 @@ export interface ITreasuryStore {
   startedStakingGlpTimestamp: null | number
   startedStakingGmxTimestamp: null | number
 }
+
+export interface ITreasuryTick {
+  time: number
+  value: number
+  valueWithRewards: bigint
+  valueWithRewardsUsd: number
+
+  gmx: bigint
+  gmxUsd: bigint
+
+  glp: bigint
+  // balanceEth: bigint
+  glpUsd: bigint
+  gmxPrice: bigint
+  glpPrice: bigint
+}

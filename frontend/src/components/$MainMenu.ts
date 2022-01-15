@@ -1,11 +1,11 @@
 import { Behavior, combineArray, O, Op } from "@aelea/core"
-import { $node, attr, component, IBranch, nodeEvent, style } from "@aelea/dom"
+import { $node, $text, attr, component, IBranch, nodeEvent, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
-import { $column, $icon, $Popover, $row, layoutSheet, screenUtils, state } from '@aelea/ui-components'
+import { $column, $icon, $Popover, $row, $seperator, layoutSheet, screenUtils, state } from '@aelea/ui-components'
 import { pallete } from "@aelea/ui-components-theme"
 import { IClaim } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
-import {  empty, map, switchLatest } from '@most/core'
+import {  constant, empty, map, switchLatest } from '@most/core'
 import { Stream } from "@most/types"
 import { IEthereumProvider } from "eip1193-provider"
 import { WALLET } from "../logic/provider"
@@ -14,6 +14,7 @@ import { $discord, $moreDots, $twitter } from "../elements/$icons"
 import { $AccountPreview } from "./$AccountProfile"
 import { $IntermediateConnect } from "./$ConnectAccount"
 import { $Link } from "./$Link"
+import { $ButtonSecondary } from "./form/$Button"
 
 export const $socialMediaLinks = $row(layoutSheet.spacingBig)(
   $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `1px solid ${pallete.message}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://discord.com/invite/cxjZYR4gQK' }))(
@@ -63,50 +64,65 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
 
       
 
-      screenUtils.isMobileScreen
-        ? $Popover({
-          dismiss: profileLinkClick,
-          $$popContent: combineArray((_) => {
-            return $column(layoutSheet.spacingBig)(
-              $socialMediaLinks
-            )
-          }, clickPopoverClaim),
-        })(
-          $row(clickPopoverClaimTether(nodeEvent('click')))(
-            $icon({
-              svgOps: style({
-                border: `1px solid ${pallete.foreground}`,
-                borderRadius: '50%',
-                padding: '6px',
-                cursor: 'pointer'
-              }),
-              width: '32px',
-              $content: $moreDots,
-              viewBox: '0 0 32 32'
+      $Popover({
+        dismiss: profileLinkClick,
+        $$popContent: combineArray((_) => {
+          return $column(layoutSheet.spacingBig)(
+            screenUtils.isMobileScreen ? $socialMediaLinks : empty(),
+            $ButtonSecondary({
+              $content: $text('Change Wallet')
+            })({
+              click: walletChangeTether(
+                map(pe => {
+                  pe.preventDefault()
+                  pe.stopImmediatePropagation()
+                }),
+                // awaitPromises,
+                constant(null)
+              )
             })
           )
-        )({
-        // overlayClick: clickPopoverClaimTether()
-        })
-        : empty(),
-
-      $IntermediateConnect({
-        walletStore,
-        $display: $row(
-          switchLatest(map((account) => {
-            if (!account) {
-              return empty()
-            }
+        }, clickPopoverClaim),
+      })(
+        $IntermediateConnect({
+          walletStore,
+          $display: $row(
+            switchLatest(map((account) => {
+              if (!account) {
+                return empty()
+              }
               
-            return $AccountPreview({
-              address: account,
-            })({ profileClick: O(profileLinkClickTether(), routeChangeTether()) })
-          }, walletLink.account))
-        ),
-        walletLink
-      })({
-        walletChange: walletChangeTether()
+              return $row(style({ border: `1px solid ${pallete.foreground}`, borderLeft: 0, borderRadius: '30px' }))(
+                $AccountPreview({
+                  address: account,
+                })({ profileClick: O(profileLinkClickTether(), routeChangeTether()) }),
+                style({ marginLeft: '6px' }, $seperator),
+                $icon({
+                  svgOps: O(
+                    clickPopoverClaimTether(nodeEvent('click')),
+                    style({
+                      padding: '6px',
+                      cursor: 'pointer',
+                      alignSelf: 'center',
+                      marginRight: '6px',
+                      transform: 'rotate(90deg)',
+                    })
+                  ),
+                  width: '32px',
+                  $content: $moreDots,
+                  viewBox: '0 0 32 32'
+                }),
+              )
+            }, walletLink.account))
+          ),
+          walletLink
+        })({
+          walletChange: walletChangeTether()
+        }),
+      )({
+        // overlayClick: clickPopoverClaimTether()
       }),
+
 
      
     ),

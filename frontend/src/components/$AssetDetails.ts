@@ -5,9 +5,9 @@ import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { formatReadableUSD, formatFixed } from "@gambitdao/gmx-middleware"
 import { switchLatest, skipRepeatsWith, multicast, map } from "@most/core"
 import { Stream } from "@most/types"
-import { MouseEventParams, LineStyle, BarPrice, CrosshairMode, PriceScaleMode } from "lightweight-charts-baseline"
+import { MouseEventParams, LineStyle, BarPrice, PriceScaleMode } from "lightweight-charts-baseline"
 import { $responsiveFlex } from "../elements/$common"
-import { ITreasuryAsset } from "../logic/contract"
+import { IAssetBalance } from "../logic/contract"
 import { $Chart } from "./chart/$Chart"
 
 
@@ -15,7 +15,7 @@ type ITreasuryMetric = {
   $iconPath: $Branch
   label: string
   symbol: string
-  asset: Stream<ITreasuryAsset>
+  asset: Stream<IAssetBalance>
   $distribution: $Node
   priceChart: Stream<{
     series: { time: number, value: number }[],
@@ -64,13 +64,11 @@ export const $AssetDetails = ({ label, $iconPath, asset, symbol, $distribution, 
       )
     ),
 
-    $row(layoutSheet.spacingBig, style({ flex: 2, width: '100%' }))(
-      $column(style({ flex: 1 }))(
-        $distribution,
-      ),
+    $row(layoutSheet.spacingBig, style({ flex: 3, width: '100%' }))(
       $row(style({ flex: 1, minHeight: '75px', position: 'relative' }))(
         switchLatest(
           combineArray((data) => {
+            
             // const startDate = new Date(data[0].time * 1000)
             // const endDate = new Date(data[data.length - 1].time * 1000)
 
@@ -79,6 +77,7 @@ export const $AssetDetails = ({ label, $iconPath, asset, symbol, $distribution, 
 
             return $Chart({
               initializeSeries: map((api) => {
+
                 const series = api.addBaselineSeries({
                   baseLineWidth: 1,
                   priceLineWidth: 1,
@@ -109,13 +108,12 @@ export const $AssetDetails = ({ label, $iconPath, asset, symbol, $distribution, 
                   lineStyle: LineStyle.SparseDotted,
                 })
 
-
                 // @ts-ignore
-                series.setData([ ...data.series, ])
-                api.timeScale().fitContent()
-                // setTimeout(() => {
-                //   api.timeScale().fitContent()
-                // }, 3110)
+                series.setData([...data.series])
+
+                setTimeout(() => {
+                  api.timeScale().fitContent()
+                }, 11)
 
 
                 return series
@@ -131,23 +129,6 @@ export const $AssetDetails = ({ label, $iconPath, asset, symbol, $distribution, 
                   backgroundColor: 'transparent',
                   textColor: pallete.foreground,
                   fontSize: 11
-                },
-                crosshair: {
-                  mode: CrosshairMode.Magnet,
-                  horzLine: {
-                    // visible: false,
-                    labelBackgroundColor: pallete.foreground,
-                    // labelVisible: false,
-                    color: pallete.foreground,
-                    width: 1,
-                    style: LineStyle.SparseDotted,
-                  },
-                  vertLine: {
-                    color: pallete.foreground,
-                    labelBackgroundColor: pallete.foreground,
-                    width: 1,
-                    style: LineStyle.SparseDotted,
-                  }
                 },
                 rightPriceScale: {
                   mode: PriceScaleMode.Normal,
@@ -170,7 +151,7 @@ export const $AssetDetails = ({ label, $iconPath, asset, symbol, $distribution, 
                   rightOffset: 0,
                   // fixLeftEdge: true,
                   // fixRightEdge: true,
-                  visible: false,
+                  visible: true,
                   rightBarStaysOnScroll: true,
                 },
               },
@@ -185,7 +166,10 @@ export const $AssetDetails = ({ label, $iconPath, asset, symbol, $distribution, 
             })
           }, priceChart)
         )
-      )
+      ),
+      $column(style({ flex: 1, maxWidth: '300px' }))(
+        $distribution,
+      ),
     )
 
   )

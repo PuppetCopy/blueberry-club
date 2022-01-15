@@ -2,12 +2,12 @@ import { Behavior, combineArray, O, Op } from "@aelea/core"
 import { $element, $Node, $text, attr, component, INode, style } from "@aelea/dom"
 import { $column, $icon, $Popover, $row, layoutSheet, state } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { awaitPromises, constant, empty, fromPromise, map, multicast, skipRepeats, snapshot, switchLatest, tap } from "@most/core"
+import { awaitPromises, constant, empty, fromPromise, map, multicast, skipRepeats, snapshot, switchLatest } from "@most/core"
 import { IEthereumProvider } from "eip1193-provider"
 import { IWalletLink, attemptToSwitchNetwork } from "@gambitdao/wallet-link"
 import { $walletConnectLogo } from "../common/$icons"
 import * as wallet from "../logic/provider"
-import { $ButtonPrimary } from "./form/$Button"
+import { $ButtonPrimary, $ButtonSecondary } from "./form/$Button"
 import { $caretDown } from "../elements/$icons"
 import { USE_CHAIN } from "@gambitdao/gbc-middleware"
 import { WALLET } from "../logic/provider"
@@ -36,8 +36,8 @@ export const $IntermediateConnect = (config: IIntermediateDisplay) => component(
 
         // no wallet connected, show connection flow
         if (!account || walletProvider === null) {
-          const $walletConnectBtn = $ButtonPrimary({
-            $content: $row(layoutSheet.spacing)(
+          const $walletConnectBtn = $ButtonSecondary({
+            $content: $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
               $row(style({ margin: '1px', backgroundColor: '#3B99FC', padding: '2px', borderRadius: '6px' }))(
                 $icon({
                   viewBox: '0 0 32 32',
@@ -61,8 +61,8 @@ export const $IntermediateConnect = (config: IIntermediateDisplay) => component(
 
           const $connectButtonOptions = metamask
             ? $column(layoutSheet.spacing)(
-              $ButtonPrimary({
-                $content: $row(layoutSheet.spacing)(
+              $ButtonSecondary({
+                $content: $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
                   $element('img')(attr({ src: '/assets/metamask-fox.svg' }), style({ width: '24px' }))(),
                   $text('Connect Metamask')
                 ), buttonOp: style({})
