@@ -10,7 +10,7 @@ import { Stream } from "@most/types"
 import { LastPriceAnimationMode, LineStyle, SeriesMarker, Time, BarPrice, CrosshairMode, PriceScaleMode, MouseEventParams } from "lightweight-charts-baseline"
 import { $card } from "../elements/$common"
 import { IAllRewards, IPricefeedHistory, IPriceFeedHistoryMap, IStake, queryRewards, queryStakingEvents } from "../logic/query"
-import { treasuryContract } from "../logic/stakingGraph"
+import { arbitrumContract, avalancheContract } from "../logic/stakingGraph"
 import { ITreasuryTick } from "../types"
 import { $Chart } from "./chart/$Chart"
 
@@ -40,10 +40,11 @@ export const $StakingGraph = (config: ITreasuryChart)  => component((
 
   // const accountBalanceState = replayLatest(multicast(accountTokenBalances))
 
-  const stakingRewardsState =  replayLatest(multicast(treasuryContract.stakingRewards))
+  const arbitrumStakingRewardsState =  replayLatest(multicast(arbitrumContract.stakingRewards))
+  const avalancheStakingRewardsState =  replayLatest(multicast(avalancheContract.stakingRewards))
 
 
-  const historicPortfolio = replayLatest(multicast(combineArray((staked, { gmx, glp, eth }, historicRewards, stakingRewardsState) => {
+  const historicPortfolio = replayLatest(multicast(combineArray((staked, { gmx, glpArbitrum,  glpAvalanche, eth }, historicRewards, stakingRewardsState) => {
     const source = [
       ...gmx,
       // ...glp,
@@ -60,7 +61,7 @@ export const $StakingGraph = (config: ITreasuryChart)  => component((
     ].sort((a, b) => getTime(a) - getTime(b))
     
     const gmxPrice = BigInt(gmx[gmx.length - 1].c)
-    const glpPrice = glp[glp.length - 1].c
+    const glpPrice = glpArbitrum[glpArbitrum.length - 1].c
 
 
     const seed: ITreasuryTick = {
@@ -111,8 +112,8 @@ export const $StakingGraph = (config: ITreasuryChart)  => component((
     })
 
 
-    return { filledGap, staked, gmx, glp, filledForecast, historicRewards }
-  }, stakingEvents, config.priceFeedHistoryMap, historicRewards, stakingRewardsState)))
+    return { filledGap, staked, gmx, glp: glpArbitrum, filledForecast, historicRewards }
+  }, stakingEvents, config.priceFeedHistoryMap, historicRewards, arbitrumStakingRewardsState)))
 
 
   const hasSeriesFn = (cross: MouseEventParams): boolean => {
@@ -169,7 +170,7 @@ export const $StakingGraph = (config: ITreasuryChart)  => component((
             //   ),
             //   $text(style({ color: pallete.foreground, fontSize: '.65em', textAlign: 'center' }))('Staked esGMX')
             // )
-          }, stakingRewardsState))
+          }, arbitrumStakingRewardsState))
         ),
         $column(
           $text(style({ color: pallete.foreground, fontSize: '.65em', textAlign: 'center' }))('Total Hodlings'),
@@ -187,32 +188,32 @@ export const $StakingGraph = (config: ITreasuryChart)  => component((
           ),
         ),
         $row(layoutSheet.spacing, style({ flex: 1, placeContent: 'flex-end' }))(
-          switchLatest(map(({ totalEthRewards, totalEsGmxRewards, totalAvaxRewards }) => {
+          switchLatest(combineArray((arbiStaking, avaxStaking) => {
             
             return $column(layoutSheet.spacingTiny)(
               $text(style({ color: pallete.foreground, fontSize: '.65em', textAlign: 'center' }))('Pending Rewards'),
               $row(layoutSheet.spacing)(
                 $row(layoutSheet.spacing, style({ pointerEvents: 'all' }))(
                   $row(layoutSheet.spacingTiny, style({ alignItems: 'baseline' }))(
-                    $text(style({ fontWeight: 'bold', fontSize: '1em', color: pallete.positive }))(`+${readableNumber(formatFixed(totalEsGmxRewards, 18))}`),
+                    $text(style({ fontWeight: 'bold', fontSize: '1em', color: pallete.positive }))(`+${readableNumber(formatFixed(arbiStaking.totalEsGmxRewards + avaxStaking.totalEsGmxRewards, 18))}`),
                     $text(style({ fontSize: '.75em', color: pallete.foreground, fontWeight: 'bold' }))(`esGMX`),
                   ),
                 ),
                 $row(layoutSheet.spacing, style({ pointerEvents: 'all' }))(
                   $row(layoutSheet.spacingTiny, style({ alignItems: 'baseline' }))(
-                    $text(style({ fontWeight: 'bold', fontSize: '1em', color: pallete.positive }))(`+${readableNumber(formatFixed(totalEthRewards, 18))}`),
+                    $text(style({ fontWeight: 'bold', fontSize: '1em', color: pallete.positive }))(`+${readableNumber(formatFixed(arbiStaking.totalFeeRewards, 18))}`),
                     $text(style({ fontSize: '.75em', color: pallete.foreground, fontWeight: 'bold' }))(`ETH`),
                   ),
                 ),
                 $row(layoutSheet.spacing, style({ pointerEvents: 'all' }))(
                   $row(layoutSheet.spacingTiny, style({ alignItems: 'baseline' }))(
-                    $text(style({ fontWeight: 'bold', fontSize: '1em', color: pallete.positive }))(`+${readableNumber(formatFixed(totalAvaxRewards, 18))}`),
+                    $text(style({ fontWeight: 'bold', fontSize: '1em', color: pallete.positive }))(`+${readableNumber(formatFixed(avaxStaking.totalFeeRewards, 18))}`),
                     $text(style({ fontSize: '.75em', color: pallete.foreground, fontWeight: 'bold' }))(`AVAX`),
                   ),
                 ),
               ),
             )
-          }, stakingRewardsState))
+          }, arbitrumStakingRewardsState, avalancheStakingRewardsState))
         )
       ),
       switchLatest(
@@ -445,16 +446,16 @@ function fillRewards (prev: ITreasuryTick, next: IPricefeedHistory | IStake | IA
       return { ...prev, time, value, glpPrice }
     }
 
-    if (next.feed === '_0x82af49447d8a07e3bd95bd0d56f35241523fbab1') {
-      const glpPrice = next.c
-      const balanceGlp = expandDecimals(glpPrice * prev.glp / USD_PRECISION, 12)
-      const gmxBalance = prev.gmxUsd
+    // if (next.feed === '_0x82af49447d8a07e3bd95bd0d56f35241523fbab1') {
+    //   const glpPrice = next.c
+    //   const balanceGlp = expandDecimals(glpPrice * prev.glp / USD_PRECISION, 12)
+    //   const gmxBalance = prev.gmxUsd
 
-      const value = formatFixed(gmxBalance + balanceGlp, 30)
-      const time = Number(next.id)
+    //   const value = formatFixed(gmxBalance + balanceGlp, 30)
+    //   const time = Number(next.id)
 
-      return { ...prev, time, value, glpPrice }
-    }
+    //   return { ...prev, time, value, glpPrice }
+    // }
 
 
 

@@ -1,4 +1,4 @@
-import { WebSocketProvider, Web3Provider, JsonRpcProvider } from "@ethersproject/providers"
+import { WebSocketProvider, JsonRpcProvider } from "@ethersproject/providers"
 import { NETWORK_METADATA } from "@gambitdao/wallet-link"
 import detectEthereumProvider from "@metamask/detect-provider"
 import WalletConnectProvider from "@walletconnect/ethereum-provider"

@@ -32,14 +32,18 @@ export interface IPricefeedLatest {
 }
 export type IPriceFeedHistoryMap = {
   eth: IPricefeedHistory[]
-  glp: IPricefeedHistory[]
+  glpArbitrum: IPricefeedHistory[]
+  glpAvalanche: IPricefeedHistory[]
   gmx: IPricefeedHistory[]
+  avax: IPricefeedHistory[]
 }
 
 export type ILatestPriceMap = {
   eth: IPricefeedLatest
-  glp: IPricefeedLatest
+  glpArbitrum: IPricefeedLatest
+  glpAvalanche: IPricefeedLatest
   gmx: IPricefeedLatest
+  avax: IPricefeedLatest
 }
 
 
@@ -202,10 +206,9 @@ query ($first: Int = 1000, $account: String, $from: Int = 0, $to: Int = 19999999
 `
 
 
-const gmxGlpEthHistoricPriceDoc: TypedDocumentNode<{ gmx: IPricefeedHistory[], glp: IPricefeedHistory[], eth: IPricefeedHistory[] }, IQueryGmxEthHistoricPrice> = gql`
-
+const gmxGlpEthHistoricPriceDoc: TypedDocumentNode<{ gmx: IPricefeedHistory[], glpArbitrum: IPricefeedHistory[], eth: IPricefeedHistory[] }, IQueryGmxEthHistoricPrice> = gql`
 query ($first: Int = 1000, $period: IntervalTime = _14400, $from: Int = 0, $to: Int = 1999999999) {
-  glp: pricefeedHistories(first: $first, where: {timestamp_gt: $from, timestamp_lt: $to, interval: $period, feed: _0x321F653eED006AD1C29D174e17d96351BDe22649}) {
+  glpArbitrum: pricefeedHistories(first: $first, where: {timestamp_gt: $from, timestamp_lt: $to, interval: $period, feed: _0x321F653eED006AD1C29D174e17d96351BDe22649}) {
     id
     feed
     o
@@ -236,13 +239,39 @@ query ($first: Int = 1000, $period: IntervalTime = _14400, $from: Int = 0, $to: 
     interval
   }
 }
+`
+
+const avalancheHistoricPriceDoc: TypedDocumentNode<{ avax: IPricefeedHistory[], glpAvalanche: IPricefeedHistory[] }, IQueryGmxEthHistoricPrice> = gql`
+
+query ($first: Int = 1000, $period: IntervalTime = _14400, $from: Int = 0, $to: Int = 1999999999) {
+  avax: pricefeedHistories(first: $first, where: {timestamp_gt: $from, timestamp_lt: $to, interval: $period, feed: _0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7}) {
+    id
+    feed
+    o
+    h
+    l
+    c
+    timestamp
+    interval
+  }
+  glpAvalanche: pricefeedHistories(first: $first, where: {timestamp_gt: $from, timestamp_lt: $to, interval: $period, feed: _0xe1ae4d4b06A5Fe1fc288f6B4CD72f9F8323B107F}) {
+    id
+    feed
+    o
+    h
+    l
+    c
+    timestamp
+    interval
+  }
+}
 
 
 `
 
 
 
-const latestPrices: TypedDocumentNode<{ gmx: IPricefeedLatest, glp: IPricefeedLatest, eth: IPricefeedLatest }, {}> = gql`
+const arbitrumLatestPrices: TypedDocumentNode<{ gmx: IPricefeedLatest, glpArbitrum: IPricefeedLatest, eth: IPricefeedLatest }, {}> = gql`
 query {
   eth: pricefeedLatest(id: "0x82af49447d8a07e3bd95bd0d56f35241523fbab1") {
     id
@@ -254,7 +283,22 @@ query {
     value
     timestamp
   }
-  glp: pricefeedLatest(id: "0x321F653eED006AD1C29D174e17d96351BDe22649") {
+  glpArbitrum: pricefeedLatest(id: "0x321F653eED006AD1C29D174e17d96351BDe22649") {
+    id
+    value
+    timestamp
+  }
+}
+`
+
+const avalancheLatestPrices: TypedDocumentNode<{ avax: IPricefeedLatest, glpAvalanche: IPricefeedLatest }, {}> = gql`
+query {
+  avax: pricefeedLatest(id: "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7") {
+    id
+    value
+    timestamp
+  }
+  glpAvalanche: pricefeedLatest(id: "0xe1ae4d4b06A5Fe1fc288f6B4CD72f9F8323B107F") {
     id
     value
     timestamp
@@ -409,12 +453,12 @@ const gmxRawGraph = prepareClient({
   url: 'https://api.thegraph.com/subgraphs/name/gkrasulya/gmx-raw',
 })
 
-const gmxStatsGraph = prepareClient({
+const gmxAvalancheStats = prepareClient({
   fetch: fetch as any,
-  url: 'https://api.thegraph.com/subgraphs/name/gmx-io/gmx-stats',
+  url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-stats-avalanche',
 })
 
-const gmxRewardsGraph = prepareClient({
+const gmxArbitrumStats = prepareClient({
   fetch: fetch as any,
   url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-raw',
 })
@@ -459,29 +503,38 @@ export const queryStakingEvents = async (params: Partial<ITimerange> & IAccountQ
 
 
 export const gmxGlpPriceHistory = async ({ from, to }: IQueryGmxEthHistoricPrice = {}): Promise<IPriceFeedHistoryMap> => {
-  const data = (await gmxRewardsGraph(gmxGlpEthHistoricPriceDoc, { from, to }))
-  const { eth, glp, gmx } = data
+  const queryArbi = gmxArbitrumStats(gmxGlpEthHistoricPriceDoc, { from, to })
+  const queryAvax = gmxAvalancheStats(avalancheHistoricPriceDoc, { from, to })
+  const { eth, glpArbitrum, gmx } = (await queryArbi)
+  const { avax, glpAvalanche } = (await queryAvax)
 
   return {
     eth: eth.map(fromPricefeedJson),
-    glp: glp.map(fromPricefeedJson),
-    gmx: gmx.map(fromPricefeedJson)
+    glpArbitrum: glpArbitrum.map(fromPricefeedJson),
+    glpAvalanche: glpAvalanche.map(fromPricefeedJson),
+    gmx: gmx.map(fromPricefeedJson),
+    avax: avax.map(fromPricefeedJson),
   }
 }
 
 export const queryLatestPrices = async (): Promise<ILatestPriceMap> => {
-  const data = (await gmxRewardsGraph(latestPrices, {}))
+  const queryArbi = gmxArbitrumStats(arbitrumLatestPrices, {})
+  const queryAvax = gmxAvalancheStats(avalancheLatestPrices, {})
+  const { eth, glpArbitrum, gmx } = await queryArbi
+  const { glpAvalanche, avax } = await queryAvax
 
-  const gmx = fromLatestPriceJson(data.gmx)
-  const eth = fromLatestPriceJson(data.eth)
-  const glp = fromLatestPriceJson(data.glp)
 
-  return { gmx, glp, eth }
+  return {
+    gmx: fromLatestPriceJson(gmx),
+    eth: fromLatestPriceJson(eth),
+    avax: fromLatestPriceJson(avax),
+    glpArbitrum: fromLatestPriceJson(glpArbitrum),
+    glpAvalanche: fromLatestPriceJson(glpAvalanche),
+  }
 }
 
-
 export const queryRewards = async (config: IAccountQueryParamApi & Partial<ITimerange>) => {
-  const data = (await gmxRewardsGraph(rewardsTrackerDoc, config))
+  const data = (await gmxArbitrumStats(rewardsTrackerDoc, config))
 
   const stakedGlpTrackerClaims = data.stakedGlpTrackerClaims.map(fromStakingJson)
   const stakedGmxTrackerClaims = data.stakedGmxTrackerClaims.map(fromStakingJson)
@@ -490,9 +543,6 @@ export const queryRewards = async (config: IAccountQueryParamApi & Partial<ITime
 
   return { ...data, stakedGlpTrackerClaims, stakedGmxTrackerClaims, feeGlpTrackerClaims, feeGmxTrackerClaims }
 }
-
-
-
 
 function fromLatestPriceJson<T extends IPricefeedLatest>(obj: T): T {
   return {
@@ -508,8 +558,6 @@ function fromStakingJson<T extends {amountUsd: bigint, amount: bigint}>(obj: T):
     amount: BigInt(obj.amount),
   }
 }
-
-
 
 function fromPricefeedJson(obj: IPricefeedHistory): IPricefeedHistory {
   return {

@@ -5,16 +5,16 @@ import { $column, $row, $seperator, layoutSheet, screenUtils, state } from "@ael
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { TREASURY_ARBITRUM, USD_PRECISION } from "@gambitdao/gbc-middleware"
 import { intervalInMsMap, shortenAddress, formatFixed, ARBITRUM_CONTRACT, BASIS_POINTS_DIVISOR, IAccountQueryParamApi, ITimerange, intervalListFillOrderMap, expandDecimals } from "@gambitdao/gmx-middleware"
-import { IWalletLink } from "@gambitdao/wallet-link"
+import { CHAIN, IWalletLink } from "@gambitdao/wallet-link"
 import { combine, empty, fromPromise, map, multicast, switchLatest } from "@most/core"
 import { $anchor } from "../elements/$common"
-import { gmxGlpPriceHistory } from "../logic/query"
+import { gmxGlpPriceHistory, IPricefeedHistory, IPriceFeedHistoryMap } from "../logic/query"
 
 import { $tokenIconMap } from "../common/$icons"
 import { $AssetDetails, readableNumber } from "../components/$AssetDetails"
 import { ITreasuryStore } from "../types"
 import { $StakingGraph } from "../components/$StakingGraph"
-import { treasuryContract } from "../logic/stakingGraph"
+import { arbitrumContract, avalancheContract } from "../logic/stakingGraph"
 import { Stream } from "@most/types"
 import { IAssetBalance } from "../logic/contract"
 import { latestTokenPriceMap } from "../logic/common"
@@ -47,62 +47,19 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
 
 
 
-  const stakingRewardsState = replayLatest(multicast(treasuryContract.stakingRewards))
+  const arbitrumStakingRewardsState = replayLatest(multicast(arbitrumContract.stakingRewards))
+  const avalancheStakingRewardsState = replayLatest(multicast(avalancheContract.stakingRewards))
 
 
   const gmxPriceHistoryQuery = replayLatest(multicast(fromPromise(gmxGlpPriceHistory(queryParams))))
 
-  const gmxPriceInterval = map(({ gmx }) => {
-    const oldestTick = gmx[gmx.length - 1]
-    const seed = {
-      time: oldestTick.timestamp,
-      value: formatFixed(BigInt(oldestTick.c), 30)
-    }
-
-    const series = intervalListFillOrderMap({
-      seed, getTime: a => a.timestamp,
-      source: [...gmx].sort((a, b) => a.timestamp - b.timestamp),
-      interval: GRAPHS_INTERVAL,
-      fillMap: (prev, next) => {
-        return { time: next.timestamp, value: formatFixed(BigInt(next.c), 30) }
-      },
-    })
-
-    const baselinePrice = formatFixed(BigInt(gmx[0].c), 30)
+ 
 
 
-    return { series, baselinePrice }
-  }, gmxPriceHistoryQuery)
-
-  const glpPriceInterval = map(({ glp }) => {
-    const oldestTick = glp[glp.length - 1]
-    const seed = {
-      time: oldestTick.timestamp,
-      value: formatFixed(oldestTick.c, 18)
-    }
-    const series = intervalListFillOrderMap({
-      seed, getTime: a => a.timestamp,
-      source: glp,
-      interval: GRAPHS_INTERVAL,
-      fillMap: (prev, next) => {
-        const time = Number(next.id)
-        const value = formatFixed(next.c, 30)
-        return { time, value }
-      },
-    })
-
-    const baselinePrice = formatFixed(glp[0].c, 30)
-
-    return { series, baselinePrice }
-  }, gmxPriceHistoryQuery)
-
-
-  
-
-
-  const ethAsset: Stream<IAssetBalance> = combine((bn, priceMap) => ({ balance: bn.gmxInStakedGmxUsd, balanceUsd: bn.gmxInStakedGmxUsd * priceMap.gmx.value / USD_PRECISION }), stakingRewardsState, latestTokenPriceMap)
-  const gmxAsset: Stream<IAssetBalance> = combine((bn, priceMap) => ({ balance: bn.gmxInStakedGmx, balanceUsd: bn.gmxInStakedGmx * priceMap.gmx.value / USD_PRECISION }), stakingRewardsState, latestTokenPriceMap)
-  const glpAsset: Stream<IAssetBalance> = combine((bn, priceMap) => ({ balance: bn.glpBalance, balanceUsd: expandDecimals(priceMap.glp.value * bn.glpBalance / USD_PRECISION, 12) }), stakingRewardsState, latestTokenPriceMap)
+  const ethAsset: Stream<IAssetBalance> = combine((bn, priceMap) => ({ balance: bn.gmxInStakedGmxUsd, balanceUsd: bn.gmxInStakedGmxUsd * priceMap.gmx.value / USD_PRECISION }), arbitrumStakingRewardsState, latestTokenPriceMap)
+  const gmxAsset: Stream<IAssetBalance> = combine((bn, priceMap) => ({ balance: bn.gmxInStakedGmx, balanceUsd: bn.gmxInStakedGmx * priceMap.gmx.value / USD_PRECISION }), arbitrumStakingRewardsState, latestTokenPriceMap)
+  const glpArbiAsset: Stream<IAssetBalance> = combine((bn, priceMap) => ({ balance: bn.glpBalance, balanceUsd: expandDecimals(priceMap.glpArbitrum.value * bn.glpBalance / USD_PRECISION, 12) }), arbitrumStakingRewardsState, latestTokenPriceMap)
+  const glpAvaxAsset: Stream<IAssetBalance> = combine((bn, priceMap) => ({ balance: bn.glpBalance, balanceUsd: expandDecimals(priceMap.glpArbitrum.value * bn.glpBalance / USD_PRECISION, 12) }), avalancheStakingRewardsState, latestTokenPriceMap)
 
   const $metricEntry = (label: string, value: string) => $row(style({ fontSize: '.75em', alignItems: 'center' }))(
     $text(style({ color: pallete.foreground, flex: 1 }))(label),
@@ -138,8 +95,9 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
             $AssetDetails({
               label: 'GMX',
               symbol: 'GMX',
+              chain: CHAIN.ARBITRUM,
               asset: gmxAsset,
-              priceChart: gmxPriceInterval,
+              priceChart: priceFeedHistoryInterval(map(feedMap => feedMap.gmx, gmxPriceHistoryQuery)),
               $distribution: switchLatest(map(({ totalGmxRewardsUsd, gmxAprTotalPercentage, bonusGmxTrackerRewards, bnGmxInFeeGmx, bonusGmxInFeeGmx, gmxAprForEthPercentage, gmxAprForEsGmxPercentage }) => {
 
                 const multiplierPointsAmount = bonusGmxTrackerRewards + bnGmxInFeeGmx
@@ -148,18 +106,19 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
                 return $column(layoutSheet.spacingSmall, style({ flex: 1, }))(
                   $metricEntry(`esGMX`, `${formatFixed(gmxAprForEsGmxPercentage, 2)}%`),
                   $metricEntry(`ETH`, `${formatFixed(gmxAprForEthPercentage, 2)}%`),
-                  $metricEntry(`Age Boost`, `${boostBasisPoints}%`),
+                  $metricEntry(`Compounding Bonus`, `${boostBasisPoints}%`),
                   $metricEntry(`Multiplier Points`, `${readableNumber(formatFixed(bnGmxInFeeGmx, 18))}`),
                 )
-              }, stakingRewardsState)),
+              }, arbitrumStakingRewardsState)),
               $iconPath: $tokenIconMap[ARBITRUM_CONTRACT.GMX],
             })({}),
             style({ backgroundColor: colorAlpha(pallete.foreground, .15) }, $seperator),
             $AssetDetails({
               label: 'GLP',
               symbol: 'GLP',
-              asset: glpAsset,
-              priceChart: glpPriceInterval,
+              chain: CHAIN.ARBITRUM,
+              asset: glpArbiAsset,
+              priceChart: priceFeedHistoryInterval(map(feedMap => feedMap.glpArbitrum, gmxPriceHistoryQuery)),
               $distribution: switchLatest(map(({ glpAprForEsGmxPercentage, glpAprForEthPercentage,   }) => {
 
                 return $column(layoutSheet.spacingSmall, style({ flex: 1 }))(
@@ -167,7 +126,24 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
                   $metricEntry(`ETH`, `${formatFixed(glpAprForEthPercentage, 2)}%`),
                 // $metricEntry(`Multiplier Points`, `${readableNumber(formatFixed(bnGmxInFeeglp, 18))}`),
                 )
-              }, stakingRewardsState)),
+              }, arbitrumStakingRewardsState)),
+              $iconPath: $tokenIconMap[ARBITRUM_CONTRACT.GLP],
+            })({}),
+            style({ backgroundColor: colorAlpha(pallete.foreground, .15) }, $seperator),
+            $AssetDetails({
+              label: 'GLP',
+              symbol: 'GLP',
+              chain: CHAIN.AVALANCHE,
+              asset: glpAvaxAsset,
+              priceChart: priceFeedHistoryInterval(map(feedMap => feedMap.glpAvalanche, gmxPriceHistoryQuery)),
+              $distribution: switchLatest(map(({ glpAprForEsGmxPercentage, glpAprForEthPercentage,   }) => {
+
+                return $column(layoutSheet.spacingSmall, style({ flex: 1 }))(
+                  $metricEntry(`esGMX`, `${formatFixed(glpAprForEsGmxPercentage, 2)}%`),
+                  $metricEntry(`ETH`, `${formatFixed(glpAprForEthPercentage, 2)}%`),
+                // $metricEntry(`Multiplier Points`, `${readableNumber(formatFixed(bnGmxInFeeglp, 18))}`),
+                )
+              }, avalancheStakingRewardsState)),
               $iconPath: $tokenIconMap[ARBITRUM_CONTRACT.GLP],
             })({}),
           ),
@@ -226,4 +202,28 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
 
 
 
+
+function priceFeedHistoryInterval(gmxPriceHistoryQuery: Stream<IPricefeedHistory[]>) {
+  return map((feed) => {
+    const oldestTick = feed[feed.length - 1]
+    const seed = {
+      time: oldestTick.timestamp,
+      value: formatFixed(BigInt(oldestTick.c), 30)
+    }
+
+    const series = intervalListFillOrderMap({
+      seed, getTime: a => a.timestamp,
+      source: [...feed].sort((a, b) => a.timestamp - b.timestamp),
+      interval: GRAPHS_INTERVAL,
+      fillMap: (prev, next) => {
+        return { time: next.timestamp, value: formatFixed(BigInt(next.c), 30) }
+      },
+    })
+
+    const baselinePrice = formatFixed(BigInt(feed[0].c), 30)
+
+
+    return { series, baselinePrice }
+  }, gmxPriceHistoryQuery)
+}
 

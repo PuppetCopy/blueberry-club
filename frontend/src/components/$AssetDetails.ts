@@ -1,8 +1,9 @@
 import { Behavior, combineArray } from "@aelea/core"
-import { $Branch, $Node, component, style, $text } from "@aelea/dom"
+import { $Branch, $Node, component, style, $text, $element, attr } from "@aelea/dom"
 import { $row, layoutSheet, $icon, $column } from "@aelea/ui-components"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { formatReadableUSD, formatFixed } from "@gambitdao/gmx-middleware"
+import { CHAIN } from "@gambitdao/wallet-link"
 import { switchLatest, skipRepeatsWith, multicast, map } from "@most/core"
 import { Stream } from "@most/types"
 import { MouseEventParams, LineStyle, BarPrice, PriceScaleMode } from "lightweight-charts-baseline"
@@ -14,6 +15,7 @@ import { $Chart } from "./chart/$Chart"
 type ITreasuryMetric = {
   $iconPath: $Branch
   label: string
+  chain: CHAIN
   symbol: string
   asset: Stream<IAssetBalance>
   $distribution: $Node
@@ -44,14 +46,17 @@ export function readableNumber(ammount: number) {
   return Number(whole).toLocaleString()
 }
 
-export const $AssetDetails = ({ label, $iconPath, asset, symbol, $distribution, priceChart }: ITreasuryMetric) => component((
+export const $AssetDetails = ({ label, $iconPath, asset, symbol, $distribution, priceChart, chain }: ITreasuryMetric) => component((
   [pnlCrosshairMove, pnlCrosshairMoveTether]: Behavior<MouseEventParams, MouseEventParams>
 ) => [
 
   $responsiveFlex(style({ flex: 1, alignItems: 'center' }), layoutSheet.spacingBig)(
     
     $row(layoutSheet.spacing, style({ flex: 1, }))(
-      $icon({ $content: $iconPath, viewBox: '0 0 32 32', svgOps: style({ marginTop: '3px' }), width: '34px' }),
+      $row(style({ position:'relative' }))(
+        $icon({ $content: $iconPath, viewBox: '0 0 32 32', svgOps: style({ marginTop: '3px' }), width: '34px' }),
+        $element('img')(attr({ src: `/assets/${chain === CHAIN.ARBITRUM ? 'arbitrum' : 'avalanche'}.svg` }), style({ width: '18px', padding: '3px', borderRadius: '50%', backgroundColor: pallete.background, position: 'absolute', right: '-8px', top: '-4px' }))(),
+      ),
       // $node(style({ flex: 1 }))(),
       $column(layoutSheet.spacingTiny, style({ flex: 1, alignItems: 'baseline' }))(
         $row(layoutSheet.spacingTiny, style({ alignItems: 'baseline' }) )(

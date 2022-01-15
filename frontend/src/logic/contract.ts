@@ -1,12 +1,13 @@
 import { combineArray } from "@aelea/core"
 import { BigNumber } from "@ethersproject/bignumber"
 import { BaseProvider } from "@ethersproject/providers"
-import { DEPLOYED_CONTRACT, USD_PRECISION } from "@gambitdao/gbc-middleware"
+import { USD_PRECISION } from "@gambitdao/gbc-middleware"
 import { RewardReader__factory, GMX__factory, Reader__factory, EsGMX__factory, GlpManager__factory, Vault__factory } from "@gambitdao/gmx-contracts"
 import { ARBITRUM_CONTRACT, AVALANCHE_CONTRACT, BASIS_POINTS_DIVISOR } from "@gambitdao/gmx-middleware"
 import { awaitPromises, combine, fromPromise, map, now, take } from "@most/core"
+import { Stream } from "@most/types"
 import { latestTokenPriceMap } from "./common"
-import { w3p } from "./provider"
+import { IPricefeedLatest } from "./query"
 
 
 
@@ -29,12 +30,12 @@ export interface IAssetReward {
   valueUsd: bigint
 }
 
-export type IChainInfo = ReturnType<typeof initContractChain>
+export type IGmxContractInfo = ReturnType<typeof initContractChain>
 
 
 
 
-export const initContractChain = (provider: BaseProvider, account: string, environmentContract: typeof ARBITRUM_CONTRACT | typeof AVALANCHE_CONTRACT) => {
+export const initContractChain = (provider: BaseProvider, account: string, environmentContract: typeof ARBITRUM_CONTRACT | typeof AVALANCHE_CONTRACT, latestNativeFeed: Stream<IPricefeedLatest>) => {
   const rewardReaderContract = RewardReader__factory.connect(environmentContract.RewardReader, provider)
   const readerContract = Reader__factory.connect(environmentContract.Reader, provider)
   const gmxContract = GMX__factory.connect(environmentContract.GMX, provider)
@@ -87,7 +88,6 @@ export const initContractChain = (provider: BaseProvider, account: string, envir
     return { balanceData, supplyData }
   }, now(null)))
 
-
   const gmxVestingInfo = awaitPromises(map(async () => {
     const balancesQuery = readerContract.getVestingInfo(account, [environmentContract.GmxVester])
     const [pairAmount, vestedAmount, escrowedBalance, claimedAmounts, claimable, maxVestableAmount, averageStakedAmount] = (await balancesQuery).map(x => x.toBigInt())
@@ -119,8 +119,6 @@ export const initContractChain = (provider: BaseProvider, account: string, envir
     }
 
   }, now(null)))
-
-
 
   const accountStaking = awaitPromises(map(async () => {
     const stakingTrackers = [
@@ -158,34 +156,6 @@ export const initContractChain = (provider: BaseProvider, account: string, envir
   }, now(null)))
 
 
-
-
-  // const accountTokenBalances = switchLatest(map(priceMap => {
-  //   const balanceEthBn = map(bn => bn.toBigInt(), fromPromise(provider.getBalance(account)))
-  //   const eth = map((n): IAssetBalance => {
-  //     const price = priceMap.eth
-  //     return { price, balance: n, balanceUsd: n * price / USD_PRECISION }
-  //   }, balanceEthBn)
-
-
-  //   const gmx = map((dp): IAssetBalance => {
-  //     const balance = dp[environmentContract.GMX]
-  //     return { price: priceMap.gmx, balance, balanceUsd: balance * priceMap.gmx / USD_PRECISION }
-  //   }, depositbalances)
-
-  //   const glp = map((dp): IAssetBalance => {
-  //     const price = priceMap.glp
-  //     const balance = dp[environmentContract.GLP]
-  //     const balanceUsd = expandDecimals(balance * price / USD_PRECISION, 12)
-
-  //     return { price, balance, balanceUsd }
-  //   }, depositbalances)
-
-  //   const totalUsd = combineArray((a, b, c) => a.balanceUsd + b.balanceUsd + c.balanceUsd, eth, glp, gmx)
-
-  //   return combineObject({ eth, glp, gmx, totalUsd })
-  // }, tokenPriceMap))
-
   const SECONDS_PER_YEAR = 31540000n
 
 
@@ -204,6 +174,7 @@ export const initContractChain = (provider: BaseProvider, account: string, envir
     const stakedEsGmxSupplyUsd = stakedEsGmxSupply * gmxPrice / USD_PRECISION
 
     const glpBalance = depositbalances[environmentContract.GLP]
+    const gmxBalance = depositbalances[environmentContract.GMX]
 
 
     const esGmxInStakedGmx = depositbalances[environmentContract.ES_GMX]
@@ -268,7 +239,7 @@ export const initContractChain = (provider: BaseProvider, account: string, envir
     return {
       glpBalance,
 
-      balanceData,
+      // balanceData,
       gmxSupplyUsd,
       stakedGmxSupplyUsd,
       gmxInStakedGmx,
@@ -326,14 +297,15 @@ export const initContractChain = (provider: BaseProvider, account: string, envir
 
   const balanceEthBn = map(bn => bn.toBigInt(), fromPromise(provider.getBalance(account)))
   
-  const ethBalance =  combine((n, priceMap): IAssetBalance => {
-    const price = priceMap.eth.value
+  const nativeAsset =  combine((n, latestNativePrice): IAssetBalance => {
+    const price = latestNativePrice.value
     return { price, balance: n, balanceUsd: n * price / USD_PRECISION }
-  }, balanceEthBn, latestTokenPriceMap)
+  }, balanceEthBn, latestNativeFeed)
 
 
   return {
-    ethBalance,
+    nativeAsset,
+    latestNativeFeed,
     // accountTokenBalances,
     stakingRewards,
     accountStaking,
@@ -351,29 +323,7 @@ export const initContractChain = (provider: BaseProvider, account: string, envir
 
 
 
-// export const contractAccountStats  = mergeContractAccountInfo(arbitrumContract, avalancheContract)
-// const contractAccountStats  = mergeContractAccountInfo(arbitrumContract, avalancheContract)
-
-
-
-
-// export const accountTokenBalances = contractAccountStats.accountTokenBalances
-// export const stakingRewards = contractAccountStats.stakingRewards
-
-
-
-
-export function mergeContractAccountInfo(a: IChainInfo, b: IChainInfo) {
-
-  // const accountTokenBalances = combineArray((a, b) => {
-  //   const eth = mergeAssetBalance(a.eth, b.eth)
-  //   const gmx = mergeAssetBalance(a.gmx, b.gmx)
-  //   const glp = mergeAssetBalance(a.glp, b.glp)
-
-  //   return {
-  //     eth, gmx, glp, totalUsd: a.totalUsd + b.totalUsd
-  //   }
-  // }, a.accountTokenBalances, b.accountTokenBalances)
+export function mergeContractAccountInfo(a: IGmxContractInfo, b: IGmxContractInfo) {
 
   const stakingRewards = combineArray((arbi, avax) => {
     const bnGmxInFeeGmx = arbi.bnGmxInFeeGmx + avax.bnGmxInFeeGmx
@@ -391,9 +341,9 @@ export function mergeContractAccountInfo(a: IChainInfo, b: IChainInfo) {
     const feeGmxTrackerRewards = arbi.feeGmxTrackerRewards + avax.feeGmxTrackerRewards
     const feeGmxTrackerRewardsUsd = arbi.feeGmxTrackerRewardsUsd + avax.feeGmxTrackerRewardsUsd
 
-    const glpAprForEsGmxPercentage = arbi.glpAprForEsGmxPercentage + avax.glpAprForEsGmxPercentage
-    const glpAprForEthPercentage = arbi.glpAprForEthPercentage + avax.glpAprForEthPercentage
-    const glpAprTotalPercentage = arbi.glpAprTotalPercentage + avax.glpAprTotalPercentage
+    const glpAprForEsGmxPercentage = (arbi.glpAprForEsGmxPercentage + avax.glpAprForEsGmxPercentage) / 2n
+    const glpAprForEthPercentage = (arbi.glpAprForEthPercentage + avax.glpAprForEthPercentage) / 2n
+    const glpAprTotalPercentage = (arbi.glpAprTotalPercentage + avax.glpAprTotalPercentage) / 2n
     const glpPrice = (arbi.glpPrice + avax.glpPrice) / 2n
     const glpRewardsUsd = arbi.glpRewardsUsd + avax.glpRewardsUsd
     const glpSupply = (arbi.glpSupply + avax.glpSupply) / 2n

@@ -10,6 +10,8 @@ export enum CHAIN {
   BSC = 56,
   BSC_TESTNET = 97,
 
+  AVALANCHE = 43114,
+
   ARBITRUM = 42161,
   ARBITRUM_RINKBY = 421611,
 }
@@ -43,6 +45,7 @@ export const EXPLORER_URL = {
 
   [CHAIN.ARBITRUM]: "https://arbiscan.io/",
   [CHAIN.ARBITRUM_RINKBY]: "https://testnet.arbiscan.io/",
+  [CHAIN.AVALANCHE]: "https://snowtrace.io/",
 }
 
 interface AddEthereumChainParameter {
@@ -114,5 +117,16 @@ export const NETWORK_METADATA: {[k: string]: AddEthereumChainParameter} = {
     },
     rpcUrls: ["https://arb1.arbitrum.io/rpc"],
     blockExplorerUrls: [EXPLORER_URL[CHAIN.ARBITRUM]],
+  },
+  [CHAIN.AVALANCHE]: {
+    chainId: '0x' + CHAIN.AVALANCHE.toString(16),
+    chainName: 'Avalanche',
+    nativeCurrency: {
+      name: 'AVAX',
+      symbol: 'AVAX',
+      decimals: 18
+    },
+    rpcUrls: [ "https://api.avax.network/ext/bc/C/rpc"],
+    blockExplorerUrls: [EXPLORER_URL[CHAIN.AVALANCHE]],
   },
 }
