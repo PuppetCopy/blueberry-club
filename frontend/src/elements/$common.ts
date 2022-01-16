@@ -103,3 +103,22 @@ export const $treasury = $row(layoutSheet.spacingTiny, style({ alignItems: 'cent
   $icon({ $content: $bagOfCoins, width: '18px', viewBox: '0 0 32 32' }),
   switchLatest(map(x => $text('$' + formatReadableUSD(x)), totalWalletHoldingsUsd)),
 )
+
+enum ITeamMemberSize {
+  SMALL,
+  LARGE
+}
+
+interface ITeamMember {
+  name: string
+  title: string
+  size?: ITeamMemberSize
+}
+
+export const $teamMember = ({ name, title, size = ITeamMemberSize.LARGE }: ITeamMember) => $column(layoutSheet.spacing, style({ alignItems: 'center', fontSize: screenUtils.isDesktopScreen ? '' : '65%' }))(
+  $element('img')(style({ width: screenUtils.isDesktopScreen ? '209px' : '150px', borderRadius: '22px' }), attr({ src: `/assets/team/${name}.svg`, }))(),
+  $column(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
+    $anchor(attr(({ href: `https://twitter.com/${name}` })), style({ fontWeight: 900, textDecoration: 'none', fontSize: '1.5em' }))($text(`@${name}`)),
+    $text(style({ fontSize: '.75em' }))(title),
+  )
+)

@@ -1,13 +1,13 @@
 import { Behavior, replayLatest } from "@aelea/core"
-import { $text, attr, component, style } from "@aelea/dom"
+import { $element, $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
-import { $column, $row, $seperator, layoutSheet, screenUtils, state } from "@aelea/ui-components"
+import { $column, $icon, $row, $seperator, layoutSheet, screenUtils, state } from "@aelea/ui-components"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { TREASURY_ARBITRUM, USD_PRECISION } from "@gambitdao/gbc-middleware"
 import { intervalInMsMap, shortenAddress, formatFixed, ARBITRUM_CONTRACT, BASIS_POINTS_DIVISOR, IAccountQueryParamApi, ITimerange, intervalListFillOrderMap, expandDecimals } from "@gambitdao/gmx-middleware"
-import { CHAIN, IWalletLink } from "@gambitdao/wallet-link"
+import { CHAIN, getAccountExplorerUrl, IWalletLink } from "@gambitdao/wallet-link"
 import { combine, empty, fromPromise, map, multicast, switchLatest } from "@most/core"
-import { $anchor } from "../elements/$common"
+import { $anchor, $teamMember } from "../elements/$common"
 import { gmxGlpPriceHistory, IPricefeedHistory, IPriceFeedHistoryMap } from "../logic/query"
 
 import { $tokenIconMap } from "../common/$icons"
@@ -18,6 +18,8 @@ import { arbitrumContract, avalancheContract } from "../logic/stakingGraph"
 import { Stream } from "@most/types"
 import { IAssetBalance } from "../logic/contract"
 import { latestTokenPriceMap } from "../logic/common"
+import { $AccountPreview } from "../components/$AccountProfile"
+import { $bagOfCoins } from "../elements/$icons"
 
 const GRAPHS_INTERVAL = Math.floor(intervalInMsMap.MIN60 / 1000)
 
@@ -29,7 +31,7 @@ export interface ITreasury {
 
 
 
-
+const $seperator2 = style({ backgroundColor: colorAlpha(pallete.foreground, .15) }, $seperator)
 
 export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => component((
   [trasnferPopup, trasnferPopupTether]: Behavior<any, any>,
@@ -74,14 +76,20 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
       //   $text(style({ fontSize: '.75em', color: pallete.foreground }))('WORK IN PROGRESS')
       // ),
 
+
       $StakingGraph({
         from: 0,
         walletLink,
         priceFeedHistoryMap: gmxPriceHistoryQuery,
         graphInterval: intervalInMsMap.MIN60,
-      })({ }),
+      })({}),
+      
+      $node(),
+
 
       $column(layoutSheet.spacing, style({}))(
+        $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))('Yielding Assets'),
+
         $column(layoutSheet.spacing, style({ flex: 2 }))(
           screenUtils.isDesktopScreen
             ? $row(layoutSheet.spacingBig, style({ color: pallete.foreground, fontSize: '.75em' }))(
@@ -112,7 +120,7 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
               }, arbitrumStakingRewardsState)),
               $iconPath: $tokenIconMap[ARBITRUM_CONTRACT.GMX],
             })({}),
-            style({ backgroundColor: colorAlpha(pallete.foreground, .15) }, $seperator),
+            
             $AssetDetails({
               label: 'GLP',
               symbol: 'GLP',
@@ -129,7 +137,7 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
               }, arbitrumStakingRewardsState)),
               $iconPath: $tokenIconMap[ARBITRUM_CONTRACT.GLP],
             })({}),
-            style({ backgroundColor: colorAlpha(pallete.foreground, .15) }, $seperator),
+            $seperator2,
             $AssetDetails({
               label: 'GLP',
               symbol: 'GLP',
@@ -140,7 +148,7 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
 
                 return $column(layoutSheet.spacingSmall, style({ flex: 1 }))(
                   $metricEntry(`esGMX`, `${formatFixed(glpAprForEsGmxPercentage, 2)}%`),
-                  $metricEntry(`ETH`, `${formatFixed(glpAprForEthPercentage, 2)}%`),
+                  $metricEntry(`AVAX`, `${formatFixed(glpAprForEthPercentage, 2)}%`),
                 // $metricEntry(`Multiplier Points`, `${readableNumber(formatFixed(bnGmxInFeeglp, 18))}`),
                 )
               }, avalancheStakingRewardsState)),
@@ -194,13 +202,94 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
 
         // )
 
-      )
+      ),
+
+      $node(),
+
+
+      $column(layoutSheet.spacing)(
+        $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))('Treasury Vaults'),
+        $node(
+          $text('Treasury is maintained and secured by a Multi-Signature using a 3/5 threshold allowing full control to perform actions like staking Compounding or Vesting, Asset Rebalancing and much more. powered by '),
+          $anchor(style({ display: 'inline' }), attr({ href: 'https://gnosis.io/safe/' }))($text('Gnosis Safe')),
+        ),
+        
+        $node(),
+
+        $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+          $AccountPreview({
+            address: '0xDe2DBb7f1C893Cc5E2f51CbFd2A73C8a016183a0',
+          })({}),
+          $anchor(attr({ href: getAccountExplorerUrl(CHAIN.ARBITRUM, '0xDe2DBb7f1C893Cc5E2f51CbFd2A73C8a016183a0') }))(
+            $element('img')(attr({ src: `/assets/arbitrum.svg` }), style({ width: '28px', padding: '3px', borderRadius: '50%', backgroundColor: pallete.background }))()
+          ),
+
+          $node(style({ flex: 1 }))(),
+
+          $row(layoutSheet.spacingBig)(
+            $text(style({ color: pallete.foreground }))('Signers:'),
+            $teamSigner({
+              name :'xm92boi'
+            }),
+            $teamSigner({
+              name :'0xAppodial'
+            }),
+            $teamSigner({
+              name :'itburnzz'
+            }),
+            $teamSigner({
+              name :'destructioneth'
+            }),
+            $teamSigner({
+              name :'xdev_10'
+            }),
+          )
+        ),
+
+        $seperator2,
+
+        $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+          $AccountPreview({
+            address: '0x753b4769154fd100Ee763e927305D5b3131dBC8e',
+          })({}),
+          $anchor(attr({ href: getAccountExplorerUrl(CHAIN.AVALANCHE, '0x753b4769154fd100Ee763e927305D5b3131dBC8e') }))(
+            $element('img')(attr({ src: `/assets/avalanche.svg` }), style({ width: '28px', padding: '3px', borderRadius: '50%', backgroundColor: pallete.background }))()
+          ),
+
+          $node(style({ flex: 1 }))(),
+
+          $row(layoutSheet.spacingBig)(
+            $text(style({ color: pallete.foreground }))('Signers:'),
+            $teamSigner({
+              name :'xm92boi'
+            }),
+            $teamSigner({
+              name :'0xAppodial'
+            }),
+            $teamSigner({
+              name :'itburnzz'
+            }),
+            $teamSigner({
+              name :'B2F_zer'
+            }),
+            $teamSigner({
+              name :'xdev_10'
+            }),
+          )
+        ),
+
+
+   
+      ),
       
     )
   ]
 })
 
-
+export const $teamSigner = ({ name }: {name: string}) => $row(layoutSheet.spacingTiny, style({ alignItems: 'center', fontSize: screenUtils.isDesktopScreen ? '' : '65%' }))(
+  $element('img')(style({ width: '20px', borderRadius: '22px' }), attr({ src: `https://unavatar.vercel.app/twitter/${name}`, }))(),
+  $anchor(attr(({ href: `https://twitter.com/${name}` })), style({ fontWeight: 900, textDecoration: 'none', fontSize: '.75em' }))($text(`@${name}`)),
+)
 
 
 function priceFeedHistoryInterval(gmxPriceHistoryQuery: Stream<IPricefeedHistory[]>) {

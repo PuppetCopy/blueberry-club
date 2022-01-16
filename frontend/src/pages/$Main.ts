@@ -23,7 +23,7 @@ import { $MainMenu, $socialMediaLinks } from '../components/$MainMenu'
 import { $Mint } from "../components/$Mint"
 import { $StakingGraph } from "../components/$StakingGraph"
 import { $ButtonSecondary } from "../components/form/$Button"
-import { $anchor, $card, $responsiveFlex } from "../elements/$common"
+import { $anchor, $card, $responsiveFlex, $teamMember } from "../elements/$common"
 import { $bagOfCoins, $discount, $glp, $stackedCoins } from "../elements/$icons"
 import { claimListQuery } from "../logic/claim"
 import * as wallet from "../logic/provider"
@@ -159,13 +159,7 @@ export default ({ baseRoute = '' }: Website) => component((
   )
   
 
-  const $teamMember = (name: string, title: string) => $column(layoutSheet.spacing, style({ alignItems: 'center', fontSize: screenUtils.isDesktopScreen ? '' : '65%' }))(
-    $element('img')(style({ width: screenUtils.isDesktopScreen ? '209px' : '150px', borderRadius: '22px' }), attr({ src: `/assets/team/${name}.svg`, }))(),
-    $column(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
-      $anchor(attr(({ href: `https://twitter.com/${name}` })), style({ fontWeight: 900, textDecoration: 'none', fontSize: '1.5em' }))($text(`@${name}`)),
-      $text(style({ fontSize: '.75em' }))(title),
-    )
-  )
+  
 
   const queryParams: IAccountQueryParamApi & Partial<ITimerange> = {
     from: treasuryStore.state.startedStakingGmxTimestamp || undefined,
@@ -338,10 +332,18 @@ export default ({ baseRoute = '' }: Website) => component((
           $column(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
             $text(style({ fontWeight: 'bold', fontSize: '2.5em' }))('Team'),
             $row(layoutSheet.spacingBig, style({ alignSelf: 'stretch', placeContent: 'space-evenly', flexWrap: 'wrap' }))(
-              $teamMember('xm92boi', 'Founder & Designer'),
-              $teamMember('0xAppodial', 'Marketing'),
-              $teamMember('itburnzz', 'Web3 Dev'),
-              $teamMember('destructioneth', 'Contract Dev'),
+              $teamMember({
+                name :'xm92boi', title:"Founder & Designer"
+              }),
+              $teamMember({
+                name :'0xAppodial', title:"Marketing"
+              }),
+              $teamMember({
+                name :'itburnzz', title:"Web3 Dev"
+              }),
+              $teamMember({
+                name :'destructioneth', title:"Contract Dev"
+              }),
             )
           ),
 
