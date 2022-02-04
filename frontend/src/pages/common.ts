@@ -1,7 +1,7 @@
 import { isStream, O, Op } from "@aelea/core"
 import { $text, component, INode, style, styleBehavior } from "@aelea/dom"
 import { $column, $icon, $row, $seperator, layoutSheet } from "@aelea/ui-components"
-import { pallete } from "@aelea/ui-components-theme"
+import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { filter, map, multicast, now, periodic } from "@most/core"
 import { Stream } from "@most/types"
 import { ARBITRUM_TRADEABLE_ADDRESS, calculatePositionDelta, formatReadableUSD, getLiquidationPriceFromDelta, IAggregatedAccountSummary, IAggregatedOpenPositionSummary, IAggregatedSettledTradeSummary, IAggregatedTradeSummary, liquidationWeight, parseFixed } from "@gambitdao/gmx-middleware"
@@ -185,5 +185,9 @@ export const $Entry = (pos: IAggregatedOpenPositionSummary) =>
     )
   )
 
+export const $metricEntry = (label: string, value: string) => $row(style({ fontSize: '.75em', alignItems: 'center' }))(
+  $text(style({ color: pallete.foreground, flex: 1 }))(label),
+  $text(style({ fontWeight: 'bold' }))(value),
+)
 
-
+export const $seperator2 = style({ backgroundColor: colorAlpha(pallete.foreground, .15) }, $seperator)

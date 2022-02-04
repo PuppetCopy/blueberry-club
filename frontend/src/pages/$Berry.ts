@@ -1,5 +1,5 @@
 import { Behavior, combineObject, O, replayLatest } from "@aelea/core"
-import { $element, $node, $text, attr, component, IBranch, nodeEvent, style } from "@aelea/dom"
+import { $node, $text, attr, component, IBranch, nodeEvent, style } from "@aelea/dom"
 import * as router from '@aelea/router'
 import { Route } from "@aelea/router"
 import { $column, $icon, $Popover, $row, $seperator, $TextField, layoutSheet } from "@aelea/ui-components"
@@ -10,21 +10,33 @@ import { isAddress } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { awaitPromises, empty, filter, fromPromise, map, merge, multicast, skipRepeats, snapshot, startWith, switchLatest } from "@most/core"
 import { GBC__factory } from "contracts"
-import { $IntermediatePromise, $IntermediateTx } from "../common/$IntermediateDisplay"
+import { $IntermediateTx } from "../common/$IntermediateDisplay"
 import { $Table2 } from "../common/$Table2"
 import { $AccountPreview } from "../components/$AccountProfile"
+import { $DisplayBerry } from "../components/$DisplayBerry"
 import { $ButtonPrimary, $ButtonSecondary } from "../components/form/$Button"
 import { $accountRef, $anchor, $card, $responsiveFlex, $txHashRef, $txnIconLink } from "../elements/$common"
 import { $caretDblDown, $tofunft } from "../elements/$icons"
-import { getBerryMetadata, getBerryPhotoFromMetadata } from "../logic/gbc"
+import { attributeMappings } from "../logic/gbcMappings"
 import { queryToken } from "../logic/query"
-import { IToken, ITransfer } from "../types"
+import { IAttributeMappings, IBerryMetadata, IToken, ITransfer } from "../types"
 import { timeSince } from "./common"
 
 export function bnToHex(n: bigint) {
   return '0x' + n.toString(16)
 }
 
+
+export function getMetadataLabels([bg, cloth, body, expr, faceAce, hat]: IBerryMetadata) {
+  return {
+    background: IAttributeMappings[bg],
+    clothes: IAttributeMappings[cloth],
+    body: IAttributeMappings[body],
+    expression: IAttributeMappings[expr],
+    faceAccessory: IAttributeMappings[faceAce],
+    hat: IAttributeMappings[hat],
+  }
+}
 
 
 interface IBerry {
@@ -44,20 +56,23 @@ export const $Berry = ({ walletLink, parentRoute }: IBerry) => component((
   
   const tokenId = bnToHex(BigInt(berryId))
   const token = fromPromise(queryToken(tokenId))
-  const metadata = fromPromise(getBerryMetadata(tokenId))
   
-  const photo = map(getBerryPhotoFromMetadata, metadata)
+  const berryMetadata = attributeMappings[Number(tokenId) - 1]
+  const [background, clothes, body, expression, faceAccessory, hat] = berryMetadata
+  const metadata = getMetadataLabels(berryMetadata)
 
   return [
     router.match(berry)(
       $column(layoutSheet.spacingBig)(
         $responsiveFlex(layoutSheet.spacingBig)(
           $row(style({ minWidth: '400px', height: '400px', overflow: 'hidden', borderRadius: '30px' }))(
-            $IntermediatePromise({
-              $done: map(res => {
-                return $element('img')(style({ width: '400px', height: '400px', borderRadius: '30px' }))(attr({ src: res }))()
-              }),
-              query: photo
+            $DisplayBerry({
+              size: '400px',
+              background,
+              clothes,
+              expression,
+              faceAccessory,
+              hat
             })({})
           ),
           $node(),
@@ -107,14 +122,10 @@ export const $Berry = ({ walletLink, parentRoute }: IBerry) => component((
                 ),
               ),
               
-              switchLatest(map(meta => {
-
-                return $row(layoutSheet.spacing, style({ flexWrap: 'wrap' }))(...meta.attributes.map(trait => $card(style({ padding: '16px', minWidth: '140px' }), layoutSheet.spacingSmall)(
-                  $text(style({ color: pallete.foreground, fontSize: '.75em' }))(trait.trait_type),
-                  $text(trait.value),
-                )))
-              }, metadata)),
-
+              $row(layoutSheet.spacing, style({ flexWrap: 'wrap' }))(...Object.values(metadata).map(trait => $card(style({ padding: '16px', minWidth: '140px' }), layoutSheet.spacingSmall)(
+                $text(style({ color: pallete.foreground, fontSize: '.75em' }))(trait),
+                $text(trait),
+              ))),
               
             )
           }, token)),

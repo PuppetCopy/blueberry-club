@@ -10,17 +10,17 @@ import { awaitPromises, chain, combineArray as combineArrayMost, continueWith, e
 import { Stream } from "@most/types"
 import { GBC, GBC__factory } from "contracts"
 import { IEthereumProvider } from "eip1193-provider"
-import { $IntermediatePromise, $IntermediateTx, $spinner } from "../common/$IntermediateDisplay"
+import { $IntermediateTx, $spinner } from "../common/$IntermediateDisplay"
 import { $alert, $anchor, $responsiveFlex, $txHashRef } from "../elements/$common"
 import { $caretDown, $gift, $tofunft } from "../elements/$icons"
 import { $IntermediateConnect } from "./$ConnectAccount"
 import { $ButtonPrimary } from "./form/$Button"
 import { $Dropdown } from "./form/$Dropdown"
 import { gbc } from "../logic/gbc"
-import { getBerryJpegUrl } from "../logic/gbc"
 import { IToken } from "../types"
 import { queryOwnerTrasnferNfts } from "../logic/query"
 import { WALLET } from "../logic/provider"
+import { $berryById } from "../logic/common"
 
 
 
@@ -165,7 +165,7 @@ export const $Mint = (config: IMint) => component((
             $content: $tofunft,
             viewBox: '0 0 32 32'
           }),
-          $anchor(attr({ href: `https://tofunft.com/collection/blueberryclub/items?category=fixed-price&sort=price_asc` }))(
+          $anchor(attr({ href: `https://tofunft.com/collection/blueberryclub/items?category=fixed-price` }))(
             $text('Trade On TofuNFT')
           ),
         ),
@@ -338,7 +338,7 @@ export const $Mint = (config: IMint) => component((
         return mergeArray(mintHistory.map(([txHash, tokenList]) => {
           return $column(layoutSheet.spacing)(
             style({ backgroundColor: colorAlpha(pallete.foreground, .15) }, $seperator),
-            $mintDetails(contract, txHash, tokenList.length, tokenList)
+            $mintDetails(txHash, tokenList.length, tokenList)
           )
         }))
       }, combineObject({ contract, provider: config.walletLink.provider, account: config.walletLink.account })))),
@@ -396,7 +396,7 @@ function $mintAction(contract: GBC, mintAction: Promise<IMintEvent>) {
               transfers: []
             } as any as IToken
           }))
-          return chain(tokL => $mintDetails(contract, tx.transactionHash, tokenIds.length, tokL), fromPromise(tokenList))
+          return chain(tokL => $mintDetails(tx.transactionHash, tokenIds.length, tokL), fromPromise(tokenList))
         }
 
         return $alert($text('Unable to reach subgraph'))
@@ -405,27 +405,25 @@ function $mintAction(contract: GBC, mintAction: Promise<IMintEvent>) {
   )
 }
 
-function $mintDetails(contract: GBC, txHash: string, berriesAmount: number, ids: IToken[]) {
+export const $berryTileId = (id: number, ) => $column(style({ position: 'relative' }))(
+  $berryById(id),
+  $text(style({ textAlign: 'left', paddingLeft: '3px', paddingTop: '1px', fontSize: '.55em', position: 'absolute', fontWeight: 'bold', color: '#000' }))(String(id))
+)
+
+function $mintDetails(txHash: string, berriesAmount: number, ids: IToken[]) {
   return $column(layoutSheet.spacing)(
     $row(style({ placeContent: 'space-between' }))(
       $text(style({ color: pallete.positive }))(`Minted ${berriesAmount} Berries`),
       $txHashRef(txHash)
     ),
-    $row(layoutSheet.spacingSmall, style({ flexWrap: 'wrap' }))(...ids.map(token => {
+    $row(style({ flexWrap: 'wrap' }))(...ids.map(token => {
       const tokenId = Number(BigInt(token.id))
 
-      return $column(
-        $IntermediatePromise({
-          $done: map(res => {
-            return $anchor(attr({ href: '/p/berry/' + tokenId }))($img(attr({ src: res }))())
-          }),
-          query: now(getBerryJpegUrl(token.id))
-        })({}),
-        $text(style({ textAlign: 'center', fontSize: '.75em' }))(String(tokenId))
-      )
+      return $berryTileId(tokenId)
     })),
   )
 }
+
 
 
 

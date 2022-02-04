@@ -1,10 +1,10 @@
-import { Behavior, fromCallback, replayLatest } from "@aelea/core"
+import { Behavior, combineArray, fromCallback, replayLatest } from "@aelea/core"
 import { $element, $node, $text, attr, component, eventElementTarget, INode, style, styleInline } from "@aelea/dom"
 import * as router from '@aelea/router'
 import { $RouterAnchor } from '@aelea/router'
 import { $column, $icon, $row, designSheet, layoutSheet, observer, screenUtils, state } from '@aelea/ui-components'
 import { pallete } from '@aelea/ui-components-theme'
-import { TREASURY_ARBITRUM } from "@gambitdao/gbc-middleware"
+import { TREASURY_ARBITRUM, TREASURY_AVALANCHE, USD_PRECISION } from "@gambitdao/gbc-middleware"
 import { groupByMap, IAccountQueryParamApi, intervalInMsMap, ITimerange } from '@gambitdao/gmx-middleware'
 import { initWalletLink } from "@gambitdao/wallet-link"
 import {
@@ -12,27 +12,33 @@ import {
   snapshot,
   startWith,
   switchLatest,
+  take,
   tap
 } from '@most/core'
 import { Stream } from "@most/types"
 import { IEthereumProvider } from "eip1193-provider"
 import { $logo } from '../common/$icons'
 import { $Breadcrumbs } from "../components/$Breadcrumbs"
+import { $DisplayBerry } from "../components/$DisplayBerry"
 import { $Link } from "../components/$Link"
 import { $MainMenu, $socialMediaLinks } from '../components/$MainMenu'
-import { $Mint } from "../components/$Mint"
 import { $StakingGraph } from "../components/$StakingGraph"
 import { $ButtonSecondary } from "../components/form/$Button"
 import { $anchor, $card, $responsiveFlex, $teamMember } from "../elements/$common"
-import { $bagOfCoins, $discount, $glp, $stackedCoins } from "../elements/$icons"
+import { $bagOfCoins, $discount, $glp, $stackedCoins, $tofunft } from "../elements/$icons"
 import { claimListQuery } from "../logic/claim"
+import { latestTokenPriceMap, priceFeedHistoryInterval } from "../logic/common"
+import { attributeMappings } from "../logic/gbcMappings"
+import { arbitrumContract, avalancheContract } from "../logic/gbcTreasury"
 import * as wallet from "../logic/provider"
 import { WALLET } from "../logic/provider"
-import { gmxGlpPriceHistory } from "../logic/query"
+import { gmxGlpPriceHistory, queryArbitrumRewards, queryAvalancheRewards, StakedTokenArbitrum, StakedTokenAvalanche } from "../logic/query"
 import { helloBackend } from '../logic/websocket'
-import { ITreasuryStore } from "../types"
+import { IAccountStakingStore, IAttributeFaceAccessory, IIAttributeExpression, ITreasuryStore } from "../types"
 import { $Berry } from "./$Berry"
+import { $Account } from "./$Profile"
 import { $Treasury } from "./$Treasury"
+import { $seperator2 } from "./common"
 
 
 function buildThresholdList(numSteps = 20) {
@@ -86,6 +92,7 @@ export default ({ baseRoute = '' }: Website) => component((
   const pagesRoute = rootRoute.create({ fragment: 'p', title: '' })
   const treasuryRoute = pagesRoute.create({ fragment: 'treasury', title: 'Treasury' })
   const berryRoute = pagesRoute.create({ fragment: 'berry', title: 'Berry Profile' })
+  const accountRoute = pagesRoute.create({ fragment: 'account', title: 'Berry Account' })
 
 
   const claimMap = replayLatest(
@@ -100,7 +107,8 @@ export default ({ baseRoute = '' }: Website) => component((
   // localstorage
   const rootStore = state.createLocalStorageChain('ROOT')
   const walletStore = rootStore<WALLET, 'walletStore'>('walletStore', WALLET.none)
-  const treasuryStore = rootStore<ITreasuryStore, 'treasuryStore'>('treasuryStore', { startedStakingGlpTimestamp: 1639431367, startedStakingGmxTimestamp: 1639432924 })
+  const treasuryStore = rootStore<ITreasuryStore, 'treasuryStore'>('treasuryStore', { startedStakingGlpTimestamp: 1639431367, startedStakingGmxTimestamp: 1639432924 - intervalInMsMap.MIN5 })
+  const accountStakingStore = rootStore<IAccountStakingStore, 'treasuryStore'>('treasuryStore', { })
 
   const chosenWalletName = now(walletStore.state)
   const defaultWalletProvider: Stream<IEthereumProvider | null> =  multicast(switchLatest(awaitPromises(map(async name => {
@@ -137,7 +145,7 @@ export default ({ baseRoute = '' }: Website) => component((
   const windowMouseMove = multicast(eventElementTarget('pointermove', window))
 
 
-  const $eyeBall = $row(style({ position: 'relative', backgroundColor: 'white', placeContent: 'center', border: '6px solid black', alignItems: 'flex-end', borderRadius: '50%', width: '40px', height: '40px' }))
+  const $eyeBall = $row(style({ position: 'relative', backgroundColor: 'white', placeContent: 'center', border: '6px solid black', alignItems: 'flex-end', padding: '2px', borderRadius: '50%', width: '40px', height: '40px' }))
   const $eyeInner = $node(style({ borderRadius: '50%', width: '8px', height: '8px', display: 'block', background: 'black' }))
 
   const gutterSpacingStyle = style({
@@ -166,6 +174,62 @@ export default ({ baseRoute = '' }: Website) => component((
     account: TREASURY_ARBITRUM
   }
 
+  function dailyRandom(n: number, iterations = 100){
+    for (let i = 0; i < iterations; i++) {
+      n = (n ^ (n << 1) ^ (n >> 1)) % 10000
+    }
+    return n
+  }
+
+  const berryDayId = dailyRandom(Date.now() / intervalInMsMap.HR24)
+  const [background, clothes, body, expression, faceAccessory, hat] = attributeMappings[berryDayId - 1]
+
+
+  const arbitrumStakingRewards = replayLatest(multicast(arbitrumContract.stakingRewards))
+  const avalancheStakingRewards = replayLatest(multicast(avalancheContract.stakingRewards))
+  const pricefeedQuery = replayLatest(multicast(fromPromise(gmxGlpPriceHistory(queryParams))))
+ 
+  const arbitrumYieldSourceMap = replayLatest(multicast(fromPromise(queryArbitrumRewards(queryParams))))
+  const avalancheYieldSourceMap = replayLatest(multicast(fromPromise(queryAvalancheRewards({ ...queryParams, account: TREASURY_AVALANCHE }))))
+
+
+
+  const GRAPHS_INTERVAL = Math.floor(intervalInMsMap.HR4 / 1000)
+
+  const gmxArbitrumRS = priceFeedHistoryInterval(
+    GRAPHS_INTERVAL,
+    map(feedMap => feedMap.gmx, pricefeedQuery),
+    map(staking => staking.stakes.filter(s => s.token === StakedTokenArbitrum.GMX || s.token === StakedTokenArbitrum.esGMX), arbitrumYieldSourceMap)
+  )
+
+  const glpArbitrumRS = priceFeedHistoryInterval(
+    GRAPHS_INTERVAL,
+    map(feedMap => feedMap.glpArbitrum, pricefeedQuery),
+    map(staking => staking.stakes.filter(s => s.token === StakedTokenArbitrum.GLP), arbitrumYieldSourceMap)
+  )
+
+  const glpAvalancheRS = priceFeedHistoryInterval(
+    GRAPHS_INTERVAL,
+    map(feedMap => feedMap.glpAvalanche, pricefeedQuery),
+    map(staking => staking.stakes.filter(s => s.token === StakedTokenAvalanche.GLP), avalancheYieldSourceMap)
+  )
+
+  const feeYieldClaim = combineArray((arbiStaking, avaxStaking) => [...arbiStaking.feeGlpTrackerClaims, ...arbiStaking.feeGmxTrackerClaims, ...avaxStaking.feeGlpTrackerClaims, ...avaxStaking.feeGmxTrackerClaims], arbitrumYieldSourceMap, avalancheYieldSourceMap)
+  const newLocal = take(1, latestTokenPriceMap)
+  const yieldClaim = combineArray((arbiStaking, avaxStaking, yieldFeeList, priceMap) => {
+    // amountUsd from avalanche is not reflecting the real amount because the subraph's gmx price is 0
+    // to fix this, we'll fetch arbitrum's price of GMX instead
+    const avaxYieldGmx = [...avaxStaking.stakedGlpTrackerClaims, ...avaxStaking.stakedGmxTrackerClaims]
+      .map(y => ({ ...y, amountUsd: y.amount * priceMap.gmx.value / USD_PRECISION }))
+
+    return [
+      ...yieldFeeList,
+      ...avaxYieldGmx,
+      ...arbiStaking.stakedGlpTrackerClaims,
+      ...arbiStaking.stakedGmxTrackerClaims
+    ]
+  }, arbitrumYieldSourceMap, avalancheYieldSourceMap, feeYieldClaim, newLocal)
+
 
   return [
 
@@ -186,7 +250,7 @@ export default ({ baseRoute = '' }: Website) => component((
           ),
 
 
-          $node(gutterSpacingStyle, style({ display: 'flex', gap: '36px', placeContent: 'space-between', backgroundColor: pallete.background }))(
+          $node(gutterSpacingStyle, style({ display: 'flex', gap: '36px', placeContent: 'space-between' }))(
             $column(layoutSheet.spacingBig, style({ maxWidth: '620px' }))(
               $column(style({ fontSize: screenUtils.isMobileScreen ? '2.1em' : '3.1em' }))(
                 $node(
@@ -197,26 +261,66 @@ export default ({ baseRoute = '' }: Website) => component((
 
               $text(style({ lineHeight: '1.5em' }))(`GBC is a generative NFT Collection of 10,000 Blueberries on Arbitrum dedicated to the GMX Decentralized Exchange and its amazing community. Each GBC is unique and algorithmically generated from 130+ hand drawn traits.`),
 
-              $node(),
+              // $node(),
 
-              $Mint({ walletLink, walletStore })({
-                walletChange: walletChangeTether()
-              })
+              $seperator2,
+
+              $row(style({ placeContent: 'space-evenly' }))(
+                $anchor(layoutSheet.spacingSmall, style({ alignItems: 'center' }), attr({ href: `https://tofunft.com/collection/blueberryclub/items?category=fixed-price` }))(
+                  $icon({
+                    width: '40px',
+                    $content: $tofunft,
+                    viewBox: '0 0 32 32'
+                  }),
+                  $text(style({ paddingBottom: '6px' }))('Trade On TofuNFT')
+                ),
+                $anchor(layoutSheet.spacingSmall, style({ alignItems: 'center' }), attr({ href: `https://medium.com/@BlueberryClub/gbc-plans-for-2022-3ffe57e04087` }))(
+                  $icon({
+                    width: '40px',
+                    $content: $logo,
+                    viewBox: '0 0 32 32'
+                  }),
+                  $text(style({ paddingBottom: '6px' }))('Roadmap')
+                ),
+              )
 
             ),
 
-            screenUtils.isDesktopScreen ? $row(
-              style({ maxWidth: '460px', width: '100%', height: '460px', borderRadius: '38px', transformStyle: 'preserve-3d', perspective: '100px', position: 'relative', placeContent: 'center', alignItems: 'flex-end', backgroundImage: `linear-gradient(162deg, #D0F893 21%, #5CC1D2 100%)` }),
-            )(
-              $element('img')(style({}), attr({ width: '300px', src: '/assets/preview-tag.svg', }))(),
-              $row(style({ position: 'absolute', width: '125px', marginLeft: '58px', placeContent: 'space-between', top: '225px' }))(
-                $eyeBall(leftEyeContainerPerspectiveTether(observer.resize()), eyeStylePosition(leftEyeContainerPerspective))(
-                  $eyeInner()
-                ),
-                $eyeBall(rightEyeContainerPerspectiveTether(observer.resize()), eyeStylePosition(rightEyeContainerPerspective))(
-                  $eyeInner()
-                ),
-              )
+            screenUtils.isDesktopScreen ? $column(
+              $Link({
+                url: `/p/berry/${berryDayId}`,
+                route: berryRoute,
+                $content: $row(style({ maxWidth: '460px', borderRadius: '38px', overflow: 'hidden', width: '100%', height: '460px', transformStyle: 'preserve-3d', perspective: '100px', position: 'relative', placeContent: 'center', alignItems: 'flex-end' }))(
+                  $row(style({ alignSelf: 'flex-end', fontWeight: 'bold', position: 'absolute', right: '34px', top: '16px' }))(
+                    $text(style({ paddingTop: '19px', paddingRight: '3px' }))('#'),
+                    $text(style({ fontSize: '38px' }))(String(berryDayId))
+                  ),
+                  tap(({ element }) => {
+                    element.querySelector('#wakka')?.remove()
+                  }, $DisplayBerry({
+                    size: '460px',
+                    background,
+                    clothes,
+                    // expression,
+                    expression: IIAttributeExpression.HAPPY,
+                    // faceAccessory,
+                    faceAccessory: IAttributeFaceAccessory.BUBBLEGUM,
+                    hat
+                  })({})),
+                  $row(style({ position: 'absolute', width: '125px', marginLeft: '95px', placeContent: 'space-between', top: '221px' }))(
+                    $eyeBall(leftEyeContainerPerspectiveTether(observer.resize()), eyeStylePosition(leftEyeContainerPerspective))(
+                      $eyeInner()
+                    ),
+                    $eyeBall(rightEyeContainerPerspectiveTether(observer.resize()), eyeStylePosition(rightEyeContainerPerspective))(
+                      $eyeInner()
+                    ),
+                  ),
+                  $text(style({ color: '#000', backgroundColor: pallete.message, textAlign: 'center', padding: '9px 13px', fontWeight: 'bold', textTransform: 'uppercase', borderRadius: '15px', position: 'absolute', top: '17px', left: '30px' }))('Berry of the day')
+                )
+              })({
+                click: linkClickTether()
+              }),
+              
             ) : empty()
           ),
 
@@ -226,10 +330,13 @@ export default ({ baseRoute = '' }: Website) => component((
 
             $text(style({ fontWeight: 'bold', fontSize: '2.5em', margin: '25px 0px 30px', textAlign: 'center' }))('Treasury'),
             $StakingGraph({
-              from: 0,
+              valueSource: [gmxArbitrumRS, glpArbitrumRS, glpAvalancheRS],
+              stakingYield: yieldClaim,
+              arbitrumStakingRewards,
+              avalancheStakingRewards,
               walletLink,
-              priceFeedHistoryMap: replayLatest(multicast(fromPromise(gmxGlpPriceHistory(queryParams)))),
-              graphInterval: intervalInMsMap.HR4,
+              priceFeedHistoryMap: pricefeedQuery,
+              graphInterval: GRAPHS_INTERVAL,
             })({}),
             
             $node(style({ margin: '20px 0' }))(),
@@ -413,6 +520,9 @@ export default ({ baseRoute = '' }: Website) => component((
           $column(layoutSheet.spacingBig, style({ maxWidth: '1160px', width: '100%', margin: '0 auto', paddingBottom: '45px' }))(
             router.contains(berryRoute)(
               $Berry({ walletLink, parentRoute: pagesRoute })({})
+            ),
+            router.contains(accountRoute)(
+              $Account({ walletLink, parentRoute: pagesRoute, accountStakingStore })({})
             ),
             router.contains(treasuryRoute)(
               $Treasury({ walletLink, parentRoute: treasuryRoute, treasuryStore })({})

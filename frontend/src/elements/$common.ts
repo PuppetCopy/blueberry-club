@@ -8,7 +8,7 @@ import { $tokenIconMap } from "../common/$icons"
 import { $alertIcon, $bagOfCoins, $caretDblDown, $ethScan, $trash } from "./$icons"
 import { USE_CHAIN } from "@gambitdao/gbc-middleware"
 import { getAccountExplorerUrl, getTxnUrl } from "@gambitdao/wallet-link"
-import { totalWalletHoldingsUsd } from "../logic/stakingGraph"
+import { totalWalletHoldingsUsd } from "../logic/gbcTreasury"
 
 export const $TrashBtn = $ButtonIcon($trash)
 

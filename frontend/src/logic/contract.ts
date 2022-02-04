@@ -6,21 +6,16 @@ import { RewardReader__factory, GMX__factory, Reader__factory, EsGMX__factory, G
 import { ARBITRUM_CONTRACT, AVALANCHE_CONTRACT, BASIS_POINTS_DIVISOR } from "@gambitdao/gmx-middleware"
 import { awaitPromises, combine, fromPromise, map, now, take } from "@most/core"
 import { Stream } from "@most/types"
+import { IAsset } from "../types"
 import { latestTokenPriceMap } from "./common"
-import { IPricefeedLatest } from "./query"
 
 
 
-export type IAssetBalance = {
-  price: bigint
-  balance: bigint
-  balanceUsd: bigint
-}
 
 export type ITreasuryAssetTotal = {
-  eth: IAssetBalance
-  gmx: IAssetBalance
-  glp: IAssetBalance
+  eth: IAsset
+  gmx: IAsset
+  glp: IAsset
   totalUsd: bigint
 }
 
@@ -31,11 +26,12 @@ export interface IAssetReward {
 }
 
 export type IGmxContractInfo = ReturnType<typeof initContractChain>
+export type IRewardsStream = IGmxContractInfo['stakingRewards']
 
 
 
 
-export const initContractChain = (provider: BaseProvider, account: string, environmentContract: typeof ARBITRUM_CONTRACT | typeof AVALANCHE_CONTRACT, latestNativeFeed: Stream<IPricefeedLatest>) => {
+export const initContractChain = (provider: BaseProvider, account: string, environmentContract: typeof ARBITRUM_CONTRACT | typeof AVALANCHE_CONTRACT) => {
   const rewardReaderContract = RewardReader__factory.connect(environmentContract.RewardReader, provider)
   const readerContract = Reader__factory.connect(environmentContract.Reader, provider)
   const gmxContract = GMX__factory.connect(environmentContract.GMX, provider)
@@ -150,7 +146,8 @@ export const initContractChain = (provider: BaseProvider, account: string, envir
         environmentContract.FeeGmxTracker,
         environmentContract.FeeGmxTracker,
         environmentContract.FeeGlpTracker,
-      ])
+      ]
+    )
 
     return parseTrackerInfo(balancesQuery, tokens)
   }, now(null)))
@@ -165,7 +162,7 @@ export const initContractChain = (provider: BaseProvider, account: string, envir
 
     const gmxSupplyUsd = supplyData[environmentContract.GMX] * gmxPrice / USD_PRECISION
     const stakedGmxSupplyUsd = stakedGmxSupply * gmxPrice  / USD_PRECISION
-    const gmxInStakedGmx = depositbalances[environmentContract.StakedGmxTracker]
+    const gmxInStakedGmx = depositbalances[environmentContract.GMX]
     const gmxInStakedGmxUsd = gmxInStakedGmx * gmxPrice  / USD_PRECISION
 
     const stakedGmxTrackerSupply = supplyData[environmentContract.StakedGmxTracker]
@@ -295,18 +292,12 @@ export const initContractChain = (provider: BaseProvider, account: string, envir
   }, accountBalances, depositbalances, accountStaking, gmxVestingInfo, glpVestingInfo, aum, nativeTokenPrice, stakedGmxSupply, latestPriceMapOnce)
 
 
-  const balanceEthBn = map(bn => bn.toBigInt(), fromPromise(provider.getBalance(account)))
-  
-  const nativeAsset =  combine((n, latestNativePrice): IAssetBalance => {
-    const price = latestNativePrice.value
-    return { price, balance: n, balanceUsd: n * price / USD_PRECISION }
-  }, balanceEthBn, latestNativeFeed)
+  const nativeAssetBalance = map(bn => bn.toBigInt(), fromPromise(provider.getBalance(account)))
+  const nativeAsset: Stream<IAsset> = combine((amount, price) => ({ balance: price * amount / USD_PRECISION }), nativeAssetBalance, nativeTokenPrice)
 
 
   return {
     nativeAsset,
-    latestNativeFeed,
-    // accountTokenBalances,
     stakingRewards,
     accountStaking,
     depositbalances,
@@ -322,86 +313,6 @@ export const initContractChain = (provider: BaseProvider, account: string, envir
 }
 
 
-
-export function mergeContractAccountInfo(a: IGmxContractInfo, b: IGmxContractInfo) {
-
-  const stakingRewards = combineArray((arbi, avax) => {
-    const bnGmxInFeeGmx = arbi.bnGmxInFeeGmx + avax.bnGmxInFeeGmx
-    const bonusGmxInFeeGmx = arbi.bonusGmxInFeeGmx + avax.bonusGmxInFeeGmx
-    const bonusGmxTrackerRewards = arbi.bonusGmxTrackerRewards + avax.bonusGmxTrackerRewards
-    const esGmxInStakedGmx = arbi.esGmxInStakedGmx + avax.esGmxInStakedGmx
-    const esGmxInStakedGmxUsd = arbi.esGmxInStakedGmxUsd + avax.esGmxInStakedGmxUsd
-
-    const feeGlpTrackerAnnualRewardsUsd = arbi.feeGlpTrackerAnnualRewardsUsd + avax.feeGlpTrackerAnnualRewardsUsd
-    const feeGlpTrackerRewards = arbi.feeGlpTrackerRewards + avax.feeGlpTrackerRewards
-    const feeGlpTrackerRewardsUsd = arbi.feeGlpTrackerRewardsUsd + avax.feeGlpTrackerRewardsUsd
-    const feeGmxSupply = arbi.feeGmxSupply + avax.feeGmxSupply
-    const feeGmxSupplyUsd = arbi.feeGmxSupplyUsd + avax.feeGmxSupplyUsd
-    const feeGmxTrackerAnnualRewardsUsd = arbi.feeGmxTrackerAnnualRewardsUsd + avax.feeGmxTrackerAnnualRewardsUsd
-    const feeGmxTrackerRewards = arbi.feeGmxTrackerRewards + avax.feeGmxTrackerRewards
-    const feeGmxTrackerRewardsUsd = arbi.feeGmxTrackerRewardsUsd + avax.feeGmxTrackerRewardsUsd
-
-    const glpAprForEsGmxPercentage = (arbi.glpAprForEsGmxPercentage + avax.glpAprForEsGmxPercentage) / 2n
-    const glpAprForEthPercentage = (arbi.glpAprForEthPercentage + avax.glpAprForEthPercentage) / 2n
-    const glpAprTotalPercentage = (arbi.glpAprTotalPercentage + avax.glpAprTotalPercentage) / 2n
-    const glpPrice = (arbi.glpPrice + avax.glpPrice) / 2n
-    const glpRewardsUsd = arbi.glpRewardsUsd + avax.glpRewardsUsd
-    const glpSupply = (arbi.glpSupply + avax.glpSupply) / 2n
-    const glpSupplyUsd = arbi.glpSupplyUsd + avax.glpSupplyUsd
-    const gmxAprForEsGmxPercentage = (arbi.gmxAprForEsGmxPercentage + avax.gmxAprForEsGmxPercentage) / 2n
-    const totalVesterRewardsUsd = arbi.totalVesterRewardsUsd + avax.totalVesterRewardsUsd
-    const totalVesterRewards = arbi.totalVesterRewards + avax.totalVesterRewards
-    const totalRewardsUsd = arbi.totalRewardsUsd + avax.totalRewardsUsd
-    const totalGmxRewardsUsd = arbi.totalGmxRewardsUsd + avax.totalGmxRewardsUsd
-
-    const totalEthRewardsUsd = arbi.totalFeeRewardsUsd + avax.totalFeeRewardsUsd
-    const totalEthRewards = arbi.totalFeeRewards
-    const totalAvaxRewards = avax.totalFeeRewards
-
-    const totalEsGmxRewardsUsd = arbi.totalEsGmxRewardsUsd + avax.totalEsGmxRewardsUsd
-    const totalEsGmxRewards = arbi.totalEsGmxRewards + avax.totalEsGmxRewards
-    const totalAprPercentage = (arbi.totalAprPercentage + avax.totalAprPercentage) / 2n
-    const stakedGmxTrackerSupply = arbi.stakedGmxTrackerSupply + avax.stakedGmxTrackerSupply
-    const stakedGmxTrackerRewardsUsd = arbi.stakedGmxTrackerRewardsUsd + avax.stakedGmxTrackerRewardsUsd
-    const stakedGmxTrackerRewards = arbi.stakedGmxTrackerRewards + avax.stakedGmxTrackerRewards
-    const stakedGmxTrackerAnnualRewardsUsd = arbi.stakedGmxTrackerAnnualRewardsUsd + avax.stakedGmxTrackerAnnualRewardsUsd
-    const stakedGmxSupplyUsd = arbi.stakedGmxSupplyUsd + avax.stakedGmxSupplyUsd
-    const stakedGlpTrackerRewardsUsd = arbi.stakedGlpTrackerRewardsUsd + avax.stakedGlpTrackerRewardsUsd
-    const gmxAprTotalPercentage = (arbi.gmxAprTotalPercentage + avax.gmxAprTotalPercentage) / 2n
-    const gmxAprForEthPercentage = (arbi.gmxAprForEthPercentage + avax.gmxAprForEthPercentage) / 2n
-    const gmxInStakedGmx = arbi.gmxInStakedGmx + avax.gmxInStakedGmx
-    const gmxInStakedGmxUsd = arbi.gmxInStakedGmxUsd + avax.gmxInStakedGmxUsd
-    const glpBalance = arbi.glpBalance + avax.glpBalance
-
-
-
-    return {
-      bnGmxInFeeGmx, bonusGmxInFeeGmx, bonusGmxTrackerRewards, esGmxInStakedGmx, esGmxInStakedGmxUsd, feeGlpTrackerAnnualRewardsUsd, feeGlpTrackerRewards, feeGlpTrackerRewardsUsd, feeGmxSupply, feeGmxSupplyUsd,
-      feeGmxTrackerAnnualRewardsUsd, feeGmxTrackerRewards, feeGmxTrackerRewardsUsd, glpAprForEsGmxPercentage, glpAprForEthPercentage, glpAprTotalPercentage, glpPrice, glpRewardsUsd, glpSupply, glpSupplyUsd, 
-      gmxAprForEsGmxPercentage, totalVesterRewardsUsd, 
-      totalVesterRewards, totalRewardsUsd, totalGmxRewardsUsd, totalEthRewardsUsd, totalEsGmxRewardsUsd, totalEsGmxRewards, totalAprPercentage, stakedGmxTrackerSupply, stakedGmxTrackerRewardsUsd, stakedGmxTrackerRewards, stakedGmxTrackerAnnualRewardsUsd, stakedGmxSupplyUsd, stakedGlpTrackerRewardsUsd,
-
-      gmxAprTotalPercentage, gmxAprForEthPercentage, gmxInStakedGmx, gmxInStakedGmxUsd, glpBalance,
-      totalEthRewards, totalAvaxRewards,
-    }
-  }, a.stakingRewards, b.stakingRewards)
-
-
-  return {
-    // accountTokenBalances,
-    aum: combine((a, b) => a + b, a.aum, b.aum),
-    stakingRewards
-  }
-}
-
-
-function mergeAssetBalance(a: IAssetBalance, b: IAssetBalance): IAssetBalance {
-  return {
-    balance: a.balance + b.balance,
-    balanceUsd: a.balanceUsd + b.balanceUsd,
-    price: (a.price + b.price) / 2n
-  }
-}
 
 async function parseTrackerMap<T extends ReadonlyArray<string>, R extends ReadonlyArray<string>>(argsQuery: Promise<BigNumber[]>, keys: T, trackers: R): Promise<{[K in R[number]]: keysToObject<T>}> {
   const args = await argsQuery

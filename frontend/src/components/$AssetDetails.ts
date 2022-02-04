@@ -6,9 +6,10 @@ import { formatReadableUSD, formatFixed } from "@gambitdao/gmx-middleware"
 import { CHAIN } from "@gambitdao/wallet-link"
 import { switchLatest, skipRepeatsWith, multicast, map } from "@most/core"
 import { Stream } from "@most/types"
-import { MouseEventParams, LineStyle, BarPrice, PriceScaleMode } from "lightweight-charts-baseline"
+import { MouseEventParams, LineStyle, BarPrice, PriceScaleMode, Time } from "lightweight-charts-baseline"
 import { $responsiveFlex } from "../elements/$common"
-import { IAssetBalance } from "../logic/contract"
+import { IAsset } from "../types"
+import { IValueInterval } from "./$StakingGraph"
 import { $Chart } from "./chart/$Chart"
 
 
@@ -17,12 +18,9 @@ type ITreasuryMetric = {
   label: string
   chain: CHAIN
   symbol: string
-  asset: Stream<IAssetBalance>
+  asset: Stream<IAsset>
   $distribution: $Node
-  priceChart: Stream<{
-    series: { time: number, value: number }[],
-    baselinePrice: number
-  }>
+  priceChart: Stream<IValueInterval[]>
   // entry: bigint
 }
 
@@ -73,12 +71,10 @@ export const $AssetDetails = ({ label, $iconPath, asset, symbol, $distribution, 
       $row(style({ flex: 1, minHeight: '75px', position: 'relative' }))(
         switchLatest(
           combineArray((data) => {
-            
-            // const startDate = new Date(data[0].time * 1000)
-            // const endDate = new Date(data[data.length - 1].time * 1000)
 
-            // debugger
-            const lastTick = data.series[data.series.length - 1]
+            
+            const baselinePrice = formatFixed(BigInt(data[0].price.c), 30)
+
 
             return $Chart({
               initializeSeries: map((api) => {
@@ -94,7 +90,7 @@ export const $AssetDetails = ({ label, $iconPath, asset, symbol, $distribution, 
                   bottomFillColor2: colorAlpha(pallete.negative, .3),
                   baseValue: {
                     type: 'price',
-                    price: data.baselinePrice,
+                    price: baselinePrice,
                   },
                   baseLineStyle: LineStyle.Dotted,
                   baseLineColor: 'red',
@@ -105,7 +101,7 @@ export const $AssetDetails = ({ label, $iconPath, asset, symbol, $distribution, 
                 })
 
                 series.createPriceLine({
-                  price: data.baselinePrice,
+                  price: baselinePrice,
                   color: pallete.foreground,
                   lineWidth: 1,
                   axisLabelVisible: true,
@@ -113,12 +109,14 @@ export const $AssetDetails = ({ label, $iconPath, asset, symbol, $distribution, 
                   lineStyle: LineStyle.SparseDotted,
                 })
 
-                // @ts-ignore
-                series.setData([...data.series])
 
+                const newLocal = data.map(y => ({ time: y.time as Time, value: formatFixed(y.price.c, 30) }))
+                //.slice(0, 305)
+
+                series.setData(newLocal)
                 setTimeout(() => {
                   api.timeScale().fitContent()
-                }, 11)
+                }, 100)
 
 
                 return series
