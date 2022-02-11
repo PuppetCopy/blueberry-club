@@ -27,9 +27,9 @@ const dark: Theme = {
 
     message: '#ffffff',
 
-    background: '#1E252B',
-    horizon: '#2C353D',
-    middleground: '#414141',
+    background: '#171B1F',
+    horizon: '#242c34',
+    middleground: '#3c4956',
     foreground: '#bfbbcf',
 
     positive: '#38E567',

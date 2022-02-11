@@ -145,7 +145,7 @@ export const $StakingGraph = <T>(config: ITreasuryChart<T>)  => component((
           }, config.arbitrumStakingRewards))
         ),
         $column(
-          $text(style({ color: pallete.foreground, fontSize: '.65em', textAlign: 'center' }))('Yield Hodlings'),
+          $text(style({ color: pallete.foreground, fontSize: '.65em', textAlign: 'center' }))('Total Staked'),
           $row(style({ fontSize: '2em', alignItems: 'baseline' }))(
             $text(style({ fontSize: '.45em', color: pallete.foreground, margin: '5px' }))('$'),
             $NumberTicker({

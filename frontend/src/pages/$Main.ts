@@ -1,5 +1,5 @@
 import { Behavior, combineArray, fromCallback, replayLatest } from "@aelea/core"
-import { $element, $node, $text, attr, component, eventElementTarget, INode, style, styleInline } from "@aelea/dom"
+import { $element, $node, $svg, $text, attr, component, eventElementTarget, INode, style, styleInline, stylePseudo } from "@aelea/dom"
 import * as router from '@aelea/router'
 import { $RouterAnchor } from '@aelea/router'
 import { $column, $icon, $row, designSheet, layoutSheet, observer, screenUtils, state } from '@aelea/ui-components'
@@ -19,7 +19,7 @@ import { Stream } from "@most/types"
 import { IEthereumProvider } from "eip1193-provider"
 import { $logo } from '../common/$icons'
 import { $Breadcrumbs } from "../components/$Breadcrumbs"
-import { $DisplayBerry } from "../components/$DisplayBerry"
+import { $DisplayBerry, svgPartsMapping } from "../components/$DisplayBerry"
 import { $Link } from "../components/$Link"
 import { $MainMenu, $socialMediaLinks } from '../components/$MainMenu'
 import { $StakingGraph } from "../components/$StakingGraph"
@@ -34,7 +34,8 @@ import * as wallet from "../logic/provider"
 import { WALLET } from "../logic/provider"
 import { gmxGlpPriceHistory, queryArbitrumRewards, queryAvalancheRewards, StakedTokenArbitrum, StakedTokenAvalanche } from "../logic/query"
 import { helloBackend } from '../logic/websocket'
-import { IAccountStakingStore, IAttributeFaceAccessory, IIAttributeExpression, ITreasuryStore } from "../types"
+import { fadeIn } from "../transitions/enter"
+import { IAccountStakingStore, IAttributeBackground, IAttributeBody, IAttributeClothes, IAttributeFaceAccessory, IAttributeHat, IIAttributeExpression, ITreasuryStore } from "../types"
 import { $Berry } from "./$Berry"
 import { $Account } from "./$Profile"
 import { $Treasury } from "./$Treasury"
@@ -233,22 +234,26 @@ export default ({ baseRoute = '' }: Website) => component((
 
   return [
 
+    
+
     $node(designSheet.main, style({ alignItems: 'center', overflowX: 'hidden',  placeContent: 'center', padding: screenUtils.isMobileScreen ? '0 15px': '' }))(
       router.match(rootRoute)(
         $column(style({ minHeight: '100vh', margin: '0 auto', maxWidth: '1256px', gap: '125px'  }))(
 
-          $row(style({ width: '100%', padding: '30px 0 0', zIndex: 1000, borderRadius: '12px' }))(
-            $row(layoutSheet.spacingBig, style({ alignItems: 'center', flex: 1 }))(
-              $RouterAnchor({ url: '/', route: rootRoute, $anchor: $element('a')($icon({ $content: $logo, width: '55px', viewBox: '0 0 32 32' })) })({
-                click: linkClickTether()
-              }),
-              $MainMenu({ walletLink, claimMap, parentRoute: pagesRoute, walletStore })({
-                routeChange: linkClickTether(),
-                walletChange: walletChangeTether()
-              }),
+          $column(layoutSheet.spacingBig)(
+            $row(style({ width: '100%', padding: '30px 0 0', zIndex: 1000, borderRadius: '12px' }))(
+              $row(layoutSheet.spacingBig, style({ alignItems: 'center', flex: 1 }))(
+                $RouterAnchor({ url: '/', route: rootRoute, $anchor: $element('a')($icon({ $content: $logo, width: '55px', viewBox: '0 0 32 32' })) })({
+                  click: linkClickTether()
+                }),
+                $MainMenu({ walletLink, claimMap, parentRoute: pagesRoute, walletStore })({
+                  routeChange: linkClickTether(),
+                  walletChange: walletChangeTether()
+                }),
+              ),
             ),
+            style({ margin: '0 -100vw' }, $seperator2),
           ),
-
 
           $node(gutterSpacingStyle, style({ display: 'flex', gap: '36px', placeContent: 'space-between' }))(
             $column(layoutSheet.spacingBig, style({ maxWidth: '620px' }))(
@@ -265,8 +270,8 @@ export default ({ baseRoute = '' }: Website) => component((
 
               $seperator2,
 
-              $row(style({ placeContent: 'space-evenly' }))(
-                $anchor(layoutSheet.spacingSmall, style({ alignItems: 'center' }), attr({ href: `https://tofunft.com/collection/blueberryclub/items?category=fixed-price` }))(
+              $row(layoutSheet.spacingBig)(
+                $anchor(layoutSheet.spacingSmall, style({ alignItems: 'center' }), attr({ href: `https://tofunft.com/collection/blueberryclub/items?category=fixed-price`, target:'_blank' }))(
                   $icon({
                     width: '40px',
                     $content: $tofunft,
@@ -274,7 +279,7 @@ export default ({ baseRoute = '' }: Website) => component((
                   }),
                   $text(style({ paddingBottom: '6px' }))('Trade On TofuNFT')
                 ),
-                $anchor(layoutSheet.spacingSmall, style({ alignItems: 'center' }), attr({ href: `https://medium.com/@BlueberryClub/gbc-plans-for-2022-3ffe57e04087` }))(
+                $anchor(layoutSheet.spacingSmall, style({ alignItems: 'center' }), attr({ href: `https://medium.com/@BlueberryClub/gbc-plans-for-2022-3ffe57e04087`, target:'_blank' }))(
                   $icon({
                     width: '40px',
                     $content: $logo,
@@ -296,17 +301,27 @@ export default ({ baseRoute = '' }: Website) => component((
                     $text(style({ fontSize: '38px' }))(String(berryDayId))
                   ),
                   tap(({ element }) => {
-                    element.querySelector('#wakka')?.remove()
+                    element.querySelectorAll('.wakka').forEach(el => el.remove())
                   }, $DisplayBerry({
                     size: '460px',
-                    background,
                     clothes,
+                    background,
                     // expression,
                     expression: IIAttributeExpression.HAPPY,
-                    // faceAccessory,
-                    faceAccessory: IAttributeFaceAccessory.BUBBLEGUM,
-                    hat
+                    // @ts-ignore
+                    faceAccessory: '', hat: '',
                   })({})),
+                  $svg('svg')(
+                    attr({ xmlns: 'http://www.w3.org/2000/svg', fill: 'none', viewBox: `0 0 1500 1500` }),
+                    style({ width: '460px', height: '460px', position: 'absolute', zIndex: 1, })
+                  )(
+                    tap(({ element }) => {
+                      element.innerHTML = `
+                      ${svgPartsMapping.faceAccessory[faceAccessory]},
+                      ${svgPartsMapping.hat[hat]}
+                      `
+                    })
+                  )(),
                   $row(style({ position: 'absolute', width: '125px', marginLeft: '95px', placeContent: 'space-between', top: '221px' }))(
                     $eyeBall(leftEyeContainerPerspectiveTether(observer.resize()), eyeStylePosition(leftEyeContainerPerspective))(
                       $eyeInner()
@@ -315,7 +330,19 @@ export default ({ baseRoute = '' }: Website) => component((
                       $eyeInner()
                     ),
                   ),
-                  $text(style({ color: '#000', backgroundColor: pallete.message, textAlign: 'center', padding: '9px 13px', fontWeight: 'bold', textTransform: 'uppercase', borderRadius: '15px', position: 'absolute', top: '17px', left: '30px' }))('Berry of the day')
+                  $text(
+                    style({ color: '#000', backgroundColor: pallete.message, textAlign: 'center', padding: '9px 13px', fontWeight: 'bold', borderRadius: '15px', position: 'absolute', top: '17px', left: '30px' }),
+                    stylePseudo(':after', {
+                      border: '11px solid transparent',
+                      borderTop: `5px solid ${pallete.message}`,
+                      content: "''",
+                      position: 'absolute',
+                      top: '100%',
+                      left: '56%',
+                      width: 0,
+                      height: 0
+                    })
+                  )('gm anon')
                 )
               })({
                 click: linkClickTether()
@@ -440,16 +467,44 @@ export default ({ baseRoute = '' }: Website) => component((
             $text(style({ fontWeight: 'bold', fontSize: '2.5em' }))('Team'),
             $row(layoutSheet.spacingBig, style({ alignSelf: 'stretch', placeContent: 'space-evenly', flexWrap: 'wrap' }))(
               $teamMember({
-                name :'xm92boi', title:"Founder & Designer"
+                name: 'xm92boi', title: "Founder & Designer",
+                berry: {
+                  background: IAttributeBackground.YELLOW,
+                  clothes: IAttributeClothes.BASKETBALL_GREEN,
+                  hat: IAttributeHat.STRAW_HAT,
+                  faceAccessory: IAttributeFaceAccessory.SUNGLASSES_RED,
+                  expression:IIAttributeExpression.BORED
+                }
               }),
               $teamMember({
-                name :'0xAppodial', title:"Marketing"
+                name: '0xAppodial', title: "Marketing",
+                berry: {
+                  background: IAttributeBackground.GREY,
+                  clothes: IAttributeClothes.CHEF,
+                  hat: IAttributeHat.VIKING,
+                  faceAccessory: IAttributeFaceAccessory.SKI_SUNGLASSES_BLUE,
+                  expression:IIAttributeExpression.SUPRISED
+                }
               }),
               $teamMember({
-                name :'itburnzz', title:"Web3 Dev"
+                name: 'itburnzz', title: "Dev",
+                berry: {
+                  background: IAttributeBackground.GREEN,
+                  clothes: IAttributeClothes.HOODIE_MULTICOLOR,
+                  hat: IAttributeHat.AFRO_MULTICOLOR,
+                  faceAccessory: IAttributeFaceAccessory.GRILLZ_MULTICOLOR,
+                  expression:IIAttributeExpression.WINK
+                }
               }),
               $teamMember({
-                name :'destructioneth', title:"Contract Dev"
+                name: 'B2F_zer', title: "pleb",
+                berry: {
+                  background: IAttributeBackground.GREY,
+                  clothes: IAttributeClothes.HOODIE_PINK,
+                  hat: IAttributeHat.X_BUCKET_HAT,
+                  faceAccessory: IAttributeFaceAccessory.MEDICAL_MASK,
+                  expression:IIAttributeExpression.BORED
+                }
               }),
             )
           ),
@@ -514,6 +569,8 @@ export default ({ baseRoute = '' }: Website) => component((
               }),
             ),
           ),
+
+          style({ margin: '0 -100vw' }, $seperator2),
 
           $node(),
 

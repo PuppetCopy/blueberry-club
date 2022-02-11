@@ -83,7 +83,6 @@ export interface IYieldInterval extends IAsset {
 
 
 
-
 export enum IAttributeMappings {
   "Afro Green" = 78, "Afro Multicolor" = 42, "Afro Pink" = 34, Angry = 59, "Army Green" = 116, "Army Helmet" = 95, "Army Pink" = 128, Arrow = 138, Basket = 142, "Basketball Green" = 50, "Basketball Red" = 112,
   "Bathrobe Grey" = 119, "Bathrobe Orange" = 103, "Beanie Grey" = 65, "Beanie Red" = 67, "Bear Cap" = 126, "Bear Fur" = 127, "Beard Green" = 102, "Beard Multicolor" = 98, "Beard Pink" = 64, "Black and White" = 145,
@@ -234,7 +233,7 @@ export enum IAttributeHat {
   HALO = IAttributeMappings.Halo,
   HEADBAND_PURPLE = IAttributeMappings["Headband Purple"],
   HEADBAND_YELLOW = IAttributeMappings["Headband Yellow"],
-  KING = IAttributeMappings.Yellow,
+  KING = IAttributeMappings.King,
   MOHAWK_GREEN = IAttributeMappings["Mohawk Green"],
   MOHAWK_RED = IAttributeMappings["Mohawk Red"],
   NINJA = IAttributeMappings.Ninja,

@@ -90,7 +90,7 @@ export const $Dropdown = <T>({ value, disabled, validation, $selection, select, 
   // const disabledBehavior: Op<IBranch, IBranch> = disabled ? styleInline(map(isDisabled => isDisabled ? { opacity: ".15", pointerEvents: 'none' } : { opacity: "1", pointerEvents: 'all' }, config.disabled)) : O()
 
 
-  const containerOp = O(
+  const $container = select.$container(
     style({
       overflow: 'hidden', backgroundColor: pallete.horizon,
       border: `1px solid ${pallete.middleground}`, borderRadius: '20px', position: 'absolute', top: 'calc(100% + 5px)', display: 'none', left: 0
@@ -117,11 +117,10 @@ export const $Dropdown = <T>({ value, disabled, validation, $selection, select, 
 
       $Select({
         ...select,
-        $container: $column(containerOp),
-        $option: map(x => $selectableOption($text(String(x))))
-      })({
-        select: pickTether()
-      })
+        $container,
+        optionOp: $selectableOption
+        // $option: map(x => $selectableOption($text(String(x))))
+      })({ select: pickTether() })
     ),
 
     {

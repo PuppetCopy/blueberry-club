@@ -1,14 +1,14 @@
 import { $Branch, $element, $Node, $text, attr, style, styleInline, stylePseudo } from "@aelea/dom"
 import { $ButtonIcon, $column, $icon, $row, layoutSheet, $seperator as $uiSeperator, screenUtils } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { empty, map, switchLatest } from "@most/core"
+import { empty, map } from "@most/core"
 import { Stream } from "@most/types"
-import { formatReadableUSD, IAggregatedTradeOpen, IAggregatedTradeSummary, shortenAddress, shortenTxAddress, strictGet, Token, TradeableToken, TRADEABLE_TOKEN_ADDRESS_MAP } from "@gambitdao/gmx-middleware"
+import { IAggregatedTradeOpen, IAggregatedTradeSummary, shortenAddress, shortenTxAddress, strictGet, Token, TradeableToken, TRADEABLE_TOKEN_ADDRESS_MAP } from "@gambitdao/gmx-middleware"
 import { $tokenIconMap } from "../common/$icons"
-import { $alertIcon, $bagOfCoins, $caretDblDown, $ethScan, $trash } from "./$icons"
+import { $alertIcon, $caretDblDown, $ethScan, $trash } from "./$icons"
 import { USE_CHAIN } from "@gambitdao/gbc-middleware"
 import { getAccountExplorerUrl, getTxnUrl } from "@gambitdao/wallet-link"
-import { totalWalletHoldingsUsd } from "../logic/gbcTreasury"
+import { $DisplayBerry, ICreateBerry } from "../components/$DisplayBerry"
 
 export const $TrashBtn = $ButtonIcon($trash)
 
@@ -99,10 +99,7 @@ export const $txnIconLink = (address: string) => $anchor(attr({ href: getTxnUrl(
   $icon({ $content: $ethScan, width: '16px', viewBox: '0 0 24 24' })
 )
 
-export const $treasury = $row(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
-  $icon({ $content: $bagOfCoins, width: '18px', viewBox: '0 0 32 32' }),
-  switchLatest(map(x => $text('$' + formatReadableUSD(x)), totalWalletHoldingsUsd)),
-)
+
 
 enum ITeamMemberSize {
   SMALL,
@@ -113,10 +110,11 @@ interface ITeamMember {
   name: string
   title: string
   size?: ITeamMemberSize
+  berry: ICreateBerry
 }
 
-export const $teamMember = ({ name, title, size = ITeamMemberSize.LARGE }: ITeamMember) => $column(layoutSheet.spacing, style({ alignItems: 'center', fontSize: screenUtils.isDesktopScreen ? '' : '65%' }))(
-  $element('img')(style({ width: screenUtils.isDesktopScreen ? '209px' : '150px', borderRadius: '22px' }), attr({ src: `/assets/team/${name}.svg`, }))(),
+export const $teamMember = ({ name, title, size = ITeamMemberSize.LARGE, berry }: ITeamMember) => $column(layoutSheet.spacing, style({ alignItems: 'center', fontSize: screenUtils.isDesktopScreen ? '' : '65%' }))(
+  $DisplayBerry(berry)({}),
   $column(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
     $anchor(attr(({ href: `https://twitter.com/${name}` })), style({ fontWeight: 900, textDecoration: 'none', fontSize: '1.5em' }))($text(`@${name}`)),
     $text(style({ fontSize: '.75em' }))(title),

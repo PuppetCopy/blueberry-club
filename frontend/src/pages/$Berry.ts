@@ -28,13 +28,32 @@ export function bnToHex(n: bigint) {
 
 
 export function getMetadataLabels([bg, cloth, body, expr, faceAce, hat]: IBerryMetadata) {
+
   return {
-    background: IAttributeMappings[bg],
-    clothes: IAttributeMappings[cloth],
-    body: IAttributeMappings[body],
-    expression: IAttributeMappings[expr],
-    faceAccessory: IAttributeMappings[faceAce],
-    hat: IAttributeMappings[hat],
+    background: {
+      label: 'Background',
+      value:  IAttributeMappings[bg]
+    },
+    clothes: {
+      label: 'Clothes',
+      value: IAttributeMappings[cloth],
+    },
+    body: {
+      label: 'Body',
+      value: IAttributeMappings[body],
+    },
+    expression: {
+      label: 'Expression',
+      value: IAttributeMappings[expr],
+    },
+    faceAccessory: {
+      label: 'Face Accessory',
+      value: IAttributeMappings[faceAce],
+    },
+    hat: {
+      label: 'Hat',
+      value: IAttributeMappings[hat],
+    },
   }
 }
 
@@ -123,8 +142,8 @@ export const $Berry = ({ walletLink, parentRoute }: IBerry) => component((
               ),
               
               $row(layoutSheet.spacing, style({ flexWrap: 'wrap' }))(...Object.values(metadata).map(trait => $card(style({ padding: '16px', minWidth: '140px' }), layoutSheet.spacingSmall)(
-                $text(style({ color: pallete.foreground, fontSize: '.75em' }))(trait),
-                $text(trait),
+                $text(style({ color: pallete.foreground, fontSize: '.75em' }))(trait.label),
+                $text(trait.value),
               ))),
               
             )
