@@ -78,7 +78,7 @@ export const $StakingGraph = <T>(config: ITreasuryChart<T>)  => component((
     }
 
     const apr = formatFixed(arbitrumStaking.totalAprPercentage, 2)
-    const perc = (apr / 100) / (yearInMs / config.graphInterval)
+    const perc = (apr / 100) / (yearInMs / (config.graphInterval * 1000))
 
 
     const filledForecast = intervalListFillOrderMap({
