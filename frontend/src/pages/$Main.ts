@@ -255,7 +255,7 @@ export default ({ baseRoute = '' }: Website) => component((
             style({ margin: '0 -100vw' }, $seperator2),
           ),
 
-          $node(gutterSpacingStyle, style({ display: 'flex', gap: '36px', placeContent: 'space-between' }))(
+          $node(gutterSpacingStyle, style({ display: 'flex', gap: '36px', placeContent: 'space-between', alignItems: 'center' }))(
             $column(layoutSheet.spacingBig, style({ maxWidth: '620px' }))(
               $column(style({ fontSize: screenUtils.isMobileScreen ? '2.1em' : '3.1em' }))(
                 $node(
@@ -497,7 +497,7 @@ export default ({ baseRoute = '' }: Website) => component((
                 }
               }),
               $teamMember({
-                name: 'B2F_zer', title: "pleb",
+                name: 'B2F_zer', title: "Pleb",
                 berry: {
                   background: IAttributeBackground.GREY,
                   clothes: IAttributeClothes.HOODIE_PINK,

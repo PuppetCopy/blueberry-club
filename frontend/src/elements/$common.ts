@@ -114,7 +114,7 @@ interface ITeamMember {
 }
 
 export const $teamMember = ({ name, title, size = ITeamMemberSize.LARGE, berry }: ITeamMember) => $column(layoutSheet.spacing, style({ alignItems: 'center', fontSize: screenUtils.isDesktopScreen ? '' : '65%' }))(
-  $DisplayBerry(berry)({}),
+  style({ borderRadius: '15px' }, $DisplayBerry(berry)({})),
   $column(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
     $anchor(attr(({ href: `https://twitter.com/${name}` })), style({ fontWeight: 900, textDecoration: 'none', fontSize: '1.5em' }))($text(`@${name}`)),
     $text(style({ fontSize: '.75em' }))(title),
