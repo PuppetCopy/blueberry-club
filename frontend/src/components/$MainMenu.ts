@@ -1,7 +1,7 @@
 import { Behavior, combineArray, O, Op } from "@aelea/core"
 import { $Node, $node, $text, attr, component, IBranch, nodeEvent, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
-import { $caretDown, $column, $icon, $Popover, $row, $seperator, layoutSheet, screenUtils, state } from '@aelea/ui-components'
+import { $column, $icon, $Popover, $row, $seperator, layoutSheet, screenUtils, state } from '@aelea/ui-components'
 import { pallete } from "@aelea/ui-components-theme"
 import { formatReadableUSD, IClaim } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
@@ -10,7 +10,7 @@ import { Stream } from "@most/types"
 import { IEthereumProvider } from "eip1193-provider"
 import { WALLET } from "../logic/provider"
 import { $anchor } from "../elements/$common"
-import { $discord, $moreDots, $twitter } from "../elements/$icons"
+import { $caretDown, $discord, $moreDots, $twitter } from "../elements/$icons"
 import { $AccountPreview } from "./$AccountProfile"
 import { $IntermediateConnect } from "./$ConnectAccount"
 import { $ButtonSecondary } from "./form/$Button"
@@ -46,10 +46,10 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
 
 ) => {
 
-  const $treasury = $row(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
-    $text('Treasury: '),
+  const $treasury = $row(style({ alignItems: 'center' }))(
+    $text(style({ marginRight: '8px' }))('Treasury: '),
     switchLatest(map(x => $text('$' + formatReadableUSD(x)), totalWalletHoldingsUsd)),
-    $icon({ $content: $caretDown, width: '13px', svgOps: style({ marginTop: '6px', marginLeft: '4px' }), viewBox: '0 0 32 32' }),
+    $icon({ $content: $caretDown, width: '8px', svgOps: style({ marginTop: '3px', marginLeft: '6px' }), viewBox: '0 0 7.84 3.81 ' }),
   )
 
   const $govItem = (label: string, $iconPath: $Node, description: string) => $row(layoutSheet.spacing)(

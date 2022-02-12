@@ -1,5 +1,5 @@
 import { Behavior, O, Op } from "@aelea/core"
-import { $Node, $text, component, eventElementTarget, IBranch, INode, NodeComposeFn, nodeEvent, style, styleBehavior, stylePseudo } from "@aelea/dom"
+import { $Node, component, eventElementTarget, IBranch, INode, NodeComposeFn, nodeEvent, style, styleBehavior, stylePseudo } from "@aelea/dom"
 import { $column, $icon, $row, Input, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { constant, map, merge, mergeArray, multicast, now, skip, startWith, switchLatest } from "@most/core"
@@ -92,7 +92,7 @@ export const $Dropdown = <T>({ value, disabled, validation, $selection, select, 
 
   const $container = select.$container(
     style({
-      overflow: 'hidden', backgroundColor: pallete.horizon,
+      overflow: 'hidden', backgroundColor: pallete.horizon, zIndex: 50,
       border: `1px solid ${pallete.middleground}`, borderRadius: '20px', position: 'absolute', top: 'calc(100% + 5px)', display: 'none', left: 0
     }),
     styleBehavior(
@@ -107,10 +107,6 @@ export const $Dropdown = <T>({ value, disabled, validation, $selection, select, 
   
   return [
     $column(style({ position: 'relative' }))(
-      // switchLatest(map(val => $option(
-      //   $text(String(val)),
-      //   $caretDownIcon,
-      // ), pick)),
       openMenuBehavior(switchLatest(
         $selection(merge(pick, value))
       )),

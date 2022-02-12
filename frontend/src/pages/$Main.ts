@@ -264,7 +264,7 @@ export default ({ baseRoute = '' }: Website) => component((
                 ),
               ),
 
-              $text(style({ lineHeight: '1.5em' }))(`GBC is a generative NFT Collection of 10,000 Blueberries on Arbitrum dedicated to the GMX Decentralized Exchange and its amazing community. Each GBC is unique and algorithmically generated from 130+ hand drawn traits.`),
+              $text(style({ lineHeight: '1.5em' }))(`GBC is a generative NFTfi Collection of 10,000 Blueberries on Arbitrum dedicated to the GMX Decentralized Exchange and its amazing community. Each GBC is unique and algorithmically generated from 130+ hand drawn traits.`),
 
               // $node(),
 
@@ -322,7 +322,7 @@ export default ({ baseRoute = '' }: Website) => component((
                       `
                     })
                   )(),
-                  $row(style({ position: 'absolute', width: '125px', marginLeft: '95px', placeContent: 'space-between', top: '221px' }))(
+                  $row(style({ position: 'absolute', width: '125px', left: '219px', placeContent: 'space-between', top: '221px' }))(
                     $eyeBall(leftEyeContainerPerspectiveTether(observer.resize()), eyeStylePosition(leftEyeContainerPerspective))(
                       $eyeInner()
                     ),
