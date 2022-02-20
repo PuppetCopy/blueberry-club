@@ -14,7 +14,6 @@ contract GBCLabsItems is ERC1155Enumerable, AccessControl, ERC2981 {
 
     mapping(uint256 => uint256) public getItemType;
     mapping(address => bool) public isApproved;
-    uint private _feeDenominator = 10000;
 
     bytes32 public constant DESIGNER = keccak256("DESIGNER");
     bytes32 public constant MINTER = keccak256("MINTER");
@@ -69,10 +68,6 @@ contract GBCLabsItems is ERC1155Enumerable, AccessControl, ERC2981 {
         } else {
             _resetTokenRoyalty(token);
         }
-    }
-
-    function setFeeDenominator(uint value) external onlyRole(MANAGER) {
-        _feeDenominator = value;
     }
 
     function setApproval(address _address, bool value) external onlyRole(MANAGER) {

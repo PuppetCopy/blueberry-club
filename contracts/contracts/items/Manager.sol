@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "hardhat/console.sol";
 
-import "./Manager.sol";
+import "./Items.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 import "@openzeppelin/contracts/finance/PaymentSplitter.sol";
