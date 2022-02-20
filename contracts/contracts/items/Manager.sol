@@ -11,6 +11,11 @@ import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+/**
+ * @title Blueberry Lab Manager
+ * @author IrvingDevPro
+ * @notice This contract is used by GBC Team to re render the NFT
+ */
 contract GBCLabsManager is ERC1155Holder, ReentrancyGuard, Ownable, PaymentSplitter {
 
     /// @dev Hardcoded background type id
