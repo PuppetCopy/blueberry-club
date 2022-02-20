@@ -97,13 +97,15 @@ export enum IAttributeMappings {
   "Suit Pink" = 110, "Sunglasses Green" = 7, "Sunglasses Red" = 29, Surprised = 36, "Sweater Grey" = 113, "Sweater Red" = 31, "Tank Top Black" = 55, "Tank Top White" = 104, Thinking = 22, "Top Hat" = 129, "Tshirt Green" = 43,
   "Tshirt Grey" = 106, "Tshirt Orange" = 28, "Tshirt Purple" = 57, "Tshirt Red" = 69, Unicorn = 118, Vietnamese = 109, Viking = 38, "Visor Green" = 74, "Visor Red" = 11, Wings = 120, Wink = 13, Winner = 1,
   Wizard = 27, Work = 135, "X Bucket Hat" = 19, "X Face Tattoo" = 18, "X Hoodie" = 9, Yellow = 30
+
+  // Blueberry Lab
 }
 
 export enum IAttributeBody {
   BLUEBERRY = IAttributeMappings.Blueberry
 }
 
-export enum IIAttributeExpression {
+export enum IAttributeExpression {
   ANGRY = IAttributeMappings.Angry,
   BORED = IAttributeMappings.Bored,
   CRYING = IAttributeMappings.Crying,
@@ -265,4 +267,4 @@ export enum IAttributeBackground {
 }
 
 
-export type IBerryMetadata = [IAttributeBackground, IAttributeClothes, IAttributeBody, IIAttributeExpression, IAttributeFaceAccessory, IAttributeHat]
+export type IBerryMetadata = [IAttributeBackground, IAttributeClothes, IAttributeBody, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat]

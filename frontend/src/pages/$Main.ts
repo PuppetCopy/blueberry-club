@@ -34,8 +34,7 @@ import * as wallet from "../logic/provider"
 import { WALLET } from "../logic/provider"
 import { gmxGlpPriceHistory, queryArbitrumRewards, queryAvalancheRewards, StakedTokenArbitrum, StakedTokenAvalanche } from "../logic/query"
 import { helloBackend } from '../logic/websocket'
-import { fadeIn } from "../transitions/enter"
-import { IAccountStakingStore, IAttributeBackground, IAttributeBody, IAttributeClothes, IAttributeFaceAccessory, IAttributeHat, IIAttributeExpression, ITreasuryStore } from "../types"
+import { IAccountStakingStore, IAttributeBackground, IAttributeClothes, IAttributeFaceAccessory, IAttributeHat, IAttributeExpression, ITreasuryStore } from "../types"
 import { $Berry } from "./$Berry"
 import { $Account } from "./$Profile"
 import { $Treasury } from "./$Treasury"
@@ -307,7 +306,7 @@ export default ({ baseRoute = '' }: Website) => component((
                     clothes,
                     background,
                     // expression,
-                    expression: IIAttributeExpression.HAPPY,
+                    expression: IAttributeExpression.HAPPY,
                     // @ts-ignore
                     faceAccessory: '', hat: '',
                   })({})),
@@ -352,10 +351,11 @@ export default ({ baseRoute = '' }: Website) => component((
           ),
 
 
-          $column(style({ alignItems: 'center' }))(
-            // $icon({ $content: $logo, width: '100px', viewBox: '0 0 32 32' }),
-
-            $text(style({ fontWeight: 'bold', fontSize: '2.5em', margin: '25px 0px 30px', textAlign: 'center' }))('Treasury'),
+          $column(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
+            $column(layoutSheet.spacing, style({ alignItems: 'center' }))(
+              $text(style({ fontWeight: 'bold', fontSize: '2.5em' }))('Yielding Treasury'),
+              $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '878px' }))('GMX revenue is generating yield which is distributed to GBC stakers(WIP)'),
+            ),
             $StakingGraph({
               valueSource: [gmxArbitrumRS, glpArbitrumRS, glpAvalancheRS],
               stakingYield: yieldClaim,
@@ -405,7 +405,7 @@ export default ({ baseRoute = '' }: Website) => component((
           ),
 
           $column(layoutSheet.spacingBig)(
-            $column(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
+            $column(layoutSheet.spacing, style({ alignItems: 'center' }))(
               $text(style({ fontWeight: 'bold', fontSize: '2.5em' }))('How does it work ?'),
               $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '878px' }))('The collection is based on a treasury that grows exponentially over time'),
             ),
@@ -473,7 +473,7 @@ export default ({ baseRoute = '' }: Website) => component((
                   clothes: IAttributeClothes.BASKETBALL_GREEN,
                   hat: IAttributeHat.STRAW_HAT,
                   faceAccessory: IAttributeFaceAccessory.SUNGLASSES_RED,
-                  expression:IIAttributeExpression.BORED
+                  expression:IAttributeExpression.BORED
                 }
               }),
               $teamMember({
@@ -483,7 +483,7 @@ export default ({ baseRoute = '' }: Website) => component((
                   clothes: IAttributeClothes.CHEF,
                   hat: IAttributeHat.VIKING,
                   faceAccessory: IAttributeFaceAccessory.SKI_SUNGLASSES_BLUE,
-                  expression:IIAttributeExpression.SUPRISED
+                  expression:IAttributeExpression.SUPRISED
                 }
               }),
               $teamMember({
@@ -493,7 +493,7 @@ export default ({ baseRoute = '' }: Website) => component((
                   clothes: IAttributeClothes.HOODIE_MULTICOLOR,
                   hat: IAttributeHat.AFRO_MULTICOLOR,
                   faceAccessory: IAttributeFaceAccessory.GRILLZ_MULTICOLOR,
-                  expression:IIAttributeExpression.WINK
+                  expression:IAttributeExpression.WINK
                 }
               }),
               $teamMember({
@@ -503,7 +503,7 @@ export default ({ baseRoute = '' }: Website) => component((
                   clothes: IAttributeClothes.HOODIE_PINK,
                   hat: IAttributeHat.X_BUCKET_HAT,
                   faceAccessory: IAttributeFaceAccessory.MEDICAL_MASK,
-                  expression:IIAttributeExpression.BORED
+                  expression:IAttributeExpression.BORED
                 }
               }),
             )

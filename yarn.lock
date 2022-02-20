@@ -1165,6 +1165,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@rari-capital/solmate@npm:^6.2.0":
+  version: 6.2.0
+  resolution: "@rari-capital/solmate@npm:6.2.0"
+  checksum: a120cbb7d2828e35b5fd7d620871fd7f746c68a94f79be79fc153c665e6117e82ca3f22167e2143a84d7c5876784f9ad173efc51ace075e1332726d552c5e23e
+  languageName: node
+  linkType: hard
+
 "@resolver-engine/core@npm:^0.3.3":
   version: 0.3.3
   resolution: "@resolver-engine/core@npm:0.3.3"
@@ -4634,6 +4641,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"clones-with-immutable-args@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "clones-with-immutable-args@npm:1.0.0"
+  checksum: 8fb23a911dc2a78ee31b1fe38ee9175a447a99e926fd6640f9364991b9b63c7e023c4f444aef75ec06c56cdf7cb24c6dc3cc7550555fbc96d313b17ba9471893
+  languageName: node
+  linkType: hard
+
 "code-point-at@npm:^1.0.0":
   version: 1.1.0
   resolution: "code-point-at@npm:1.1.0"
@@ -4941,11 +4955,13 @@ __metadata:
     "@nomiclabs/hardhat-etherscan": ^3.0.1
     "@nomiclabs/hardhat-waffle": ^2.0.2
     "@openzeppelin/contracts": ^4.5.0
+    "@rari-capital/solmate": ^6.2.0
     "@typechain/ethers-v5": 9.0.0
     "@typechain/hardhat": ^4.0.0
     "@types/mocha": ^9.1.0
     bn.js: ^5.2.0
     chai: ^4.3.6
+    clones-with-immutable-args: ^1.0.0
     csv-parse: ^5.0.4
     ethereum-waffle: ^3.4.0
     ethereumjs-abi: ^0.6.8
@@ -6398,7 +6414,7 @@ __metadata:
   dependencies:
     bn.js: ^4.11.8
     ethereumjs-util: ^6.0.0
-  checksum: ae074be0bb012857ab5d3ae644d1163b908a48dd724b7d2567cfde309dc72222d460438f2411936a70dc949dc604ce1ef7118f7273bd525815579143c907e336
+  checksum: 03127d09960e5f8a44167463faf25b2894db2f746376dbb8195b789ed11762f93db9c574eaa7c498c400063508e9dfc1c80de2edf5f0e1406b25c87d860ff2f1
   languageName: node
   linkType: hard
 
