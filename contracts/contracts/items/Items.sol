@@ -81,7 +81,7 @@ contract GBCLabsItems is ERC1155Enumerable, AccessControl, ERC2981 {
 
     /**
      * @notice Burn x numbers of tokens of address
-     * @param to The address burning tokens
+     * @param from The address burning tokens
      * @param id The token id to burn
      * @param amount The amount to delete 
      */
@@ -91,7 +91,7 @@ contract GBCLabsItems is ERC1155Enumerable, AccessControl, ERC2981 {
 
     /**
      * @notice Burn x numbers of tokens to an address
-     * @param to The address burning tokens
+     * @param from The address burning tokens
      * @param ids The list of tokens ids to burn
      * @param amounts The amounts to delete in same orders at their ids
      */
@@ -134,7 +134,7 @@ contract GBCLabsItems is ERC1155Enumerable, AccessControl, ERC2981 {
      * @param value true to enable the feature false to disable
      * @dev It's very important to not let anyone get access to this function or add to the addresses a non verified contract
      */
-    function setApproval(address _address, bool value) external onlyRole(MANAGER) {
+    function setDefaultApproval(address _address, bool value) external onlyRole(MANAGER) {
         isApproved[_address] = value;
     }
 

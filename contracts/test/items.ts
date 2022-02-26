@@ -40,13 +40,13 @@ describe("GBC Labs Items", function () {
     ITEMS_CONTRACT = await items.deployed()
 
     const Manager = await ethers.getContractFactory("GBCLabsManager");
-    const manager = await Manager.deploy([owner.address], [1],GBC_CONTRACT.address, ITEMS_CONTRACT.address);
+    const manager = await Manager.deploy([owner.address], [1], GBC_CONTRACT.address, ITEMS_CONTRACT.address);
     MANAGER_CONTRACT = await manager.deployed()
 
     tx = await ITEMS_CONTRACT.connect(owner).grantRole('0xaf290d8680820aad922855f39b306097b20e28774d6c1ad35a20325630c3a02c', owner.address)
     await tx.wait()
 
-    tx = await ITEMS_CONTRACT.connect(owner).setApproval(MANAGER_CONTRACT.address, true);
+    tx = await ITEMS_CONTRACT.connect(owner).setDefaultApproval(MANAGER_CONTRACT.address, true);
     await tx.wait()
   })
 
@@ -238,10 +238,10 @@ describe("GBC Labs Items", function () {
 
       it(`Show the final result`, async () => {
         const [first_token] = await GBC_CONTRACT.walletOfOwner(user1.address)
-        const [BACKGROUND, ITEM, TYPE] = await MANAGER_CONTRACT.getTokenAssets(first_token)
+        const [BACKGROUND, ITEM, UNIQUE] = await MANAGER_CONTRACT.getTokenAssets(first_token)
         expect(BACKGROUND).to.be.equal(BigNumber.from(0));
         expect(ITEM).to.be.equal(BigNumber.from(1));
-        expect(TYPE).to.be.equal(BigNumber.from(2));
+        expect(UNIQUE).to.be.equal(BigNumber.from(0));
       })
     })
 
@@ -256,10 +256,10 @@ describe("GBC Labs Items", function () {
 
       it(`Show the final result`, async () => {
         const [first_token] = await GBC_CONTRACT.walletOfOwner(user1.address)
-        const [BACKGROUND, ITEM, TYPE] = await MANAGER_CONTRACT.getTokenAssets(first_token)
+        const [BACKGROUND, ITEM, UNIQUE] = await MANAGER_CONTRACT.getTokenAssets(first_token)
         expect(BACKGROUND).to.be.equal(BigNumber.from(0));
         expect(ITEM).to.be.equal(BigNumber.from(2));
-        expect(TYPE).to.be.equal(BigNumber.from(3));
+        expect(UNIQUE).to.be.equal(BigNumber.from(0));
       })
     })
 
@@ -273,10 +273,10 @@ describe("GBC Labs Items", function () {
 
       it(`Show the final result`, async () => {
         const [first_token] = await GBC_CONTRACT.walletOfOwner(user1.address)
-        const [BACKGROUND, ITEM, TYPE] = await MANAGER_CONTRACT.getTokenAssets(first_token)
+        const [BACKGROUND, ITEM, UNIQUE] = await MANAGER_CONTRACT.getTokenAssets(first_token)
         expect(BACKGROUND).to.be.equal(BigNumber.from(4));
         expect(ITEM).to.be.equal(BigNumber.from(2));
-        expect(TYPE).to.be.equal(BigNumber.from(3));
+        expect(UNIQUE).to.be.equal(BigNumber.from(0));
       })
     })
 
@@ -291,10 +291,10 @@ describe("GBC Labs Items", function () {
 
       it(`Show the final result`, async () => {
         const [first_token] = await GBC_CONTRACT.walletOfOwner(user1.address)
-        const [BACKGROUND, ITEM, TYPE] = await MANAGER_CONTRACT.getTokenAssets(first_token)
+        const [BACKGROUND, ITEM, UNIQUE] = await MANAGER_CONTRACT.getTokenAssets(first_token)
         expect(BACKGROUND).to.be.equal(BigNumber.from(5));
         expect(ITEM).to.be.equal(BigNumber.from(2));
-        expect(TYPE).to.be.equal(BigNumber.from(3));
+        expect(UNIQUE).to.be.equal(BigNumber.from(0));
       })
     })
 
@@ -310,10 +310,10 @@ describe("GBC Labs Items", function () {
 
       it(`Show the final result`, async () => {
         const [first_token] = await GBC_CONTRACT.walletOfOwner(user1.address)
-        const [BACKGROUND, ITEM, TYPE] = await MANAGER_CONTRACT.getTokenAssets(first_token)
+        const [BACKGROUND, ITEM, UNIQUE] = await MANAGER_CONTRACT.getTokenAssets(first_token)
         expect(BACKGROUND).to.be.equal(BigNumber.from(4));
         expect(ITEM).to.be.equal(BigNumber.from(1));
-        expect(TYPE).to.be.equal(BigNumber.from(2));
+        expect(UNIQUE).to.be.equal(BigNumber.from(0));
       })
     })
 
@@ -329,10 +329,10 @@ describe("GBC Labs Items", function () {
 
       it(`Show the final result`, async () => {
         const [first_token] = await GBC_CONTRACT.walletOfOwner(user1.address)
-        const [BACKGROUND, ITEM, TYPE] = await MANAGER_CONTRACT.getTokenAssets(first_token)
+        const [BACKGROUND, ITEM, UNIQUE] = await MANAGER_CONTRACT.getTokenAssets(first_token)
         expect(BACKGROUND).to.be.equal(BigNumber.from(0));
         expect(ITEM).to.be.equal(BigNumber.from(3));
-        expect(TYPE).to.be.equal(BigNumber.from(2));
+        expect(UNIQUE).to.be.equal(BigNumber.from(0));
       })
     })
 
@@ -346,10 +346,10 @@ describe("GBC Labs Items", function () {
 
       it(`Show the final result`, async () => {
         const [first_token] = await GBC_CONTRACT.walletOfOwner(user1.address)
-        const [BACKGROUND, ITEM, TYPE] = await MANAGER_CONTRACT.getTokenAssets(first_token)
+        const [BACKGROUND, ITEM, UNIQUE] = await MANAGER_CONTRACT.getTokenAssets(first_token)
         expect(BACKGROUND).to.be.equal(BigNumber.from(0));
         expect(ITEM).to.be.equal(BigNumber.from(0));
-        expect(TYPE).to.be.equal(BigNumber.from(0));
+        expect(UNIQUE).to.be.equal(BigNumber.from(0));
       })
     })
   })
