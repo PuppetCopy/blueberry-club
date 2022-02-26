@@ -154,9 +154,4 @@ contract GBCLabsManager is ERC1155Holder, ReentrancyGuard, Ownable, PaymentSplit
         }
         _resetVars();
     }
-
-    /// @dev Let owner get back the tokens if something goes wrong
-    function rescueERC1155(address from, address to, uint[] memory ids, uint[] memory amounts) external onlyOwner {
-        ITEMS.safeBatchTransferFrom(from, to, ids, amounts, "");
-    }
 }
