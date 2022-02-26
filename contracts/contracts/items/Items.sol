@@ -1,8 +1,6 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
 
-import "hardhat/console.sol";
-
 import "./dependencies/ERC1155Enumerable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -36,7 +34,7 @@ contract GBCLabsItems is ERC1155Enumerable, AccessControl, ERC2981 {
     bytes32 public constant MANAGER = keccak256("MANAGER");
     
     /// @dev Set the deployer as default admin of the contract
-    constructor() ERC1155("https://www.blueberry.club/api/item/{id}.json") {
+    constructor() ERC1155("") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
@@ -47,9 +45,9 @@ contract GBCLabsItems is ERC1155Enumerable, AccessControl, ERC2981 {
      * @dev The type are arbitrary meaning it's to the caller of the function to take care the type follow the rules
      */
     function addItem(uint itemType, uint itemId) external onlyRole(DESIGNER) {
-        require(itemType != 0, "Items: Item cannot have type 0");
-        require(itemId != 0, "Items: Item cannot have id 0");
-        require(getItemType[itemId] == 0, "Items: Item already exist");
+        require(itemType != 0, "Item cannot have type 0");
+        require(itemId != 0, "Item cannot have id 0");
+        require(getItemType[itemId] == 0, "Item already exist");
         _mint(address(this), itemId, 1, "");
         getItemType[itemId] = itemType;
     }
@@ -96,6 +94,7 @@ contract GBCLabsItems is ERC1155Enumerable, AccessControl, ERC2981 {
      * @param amounts The amounts to delete in same orders at their ids
      */
     function burnBatch(address from, uint[] memory ids, uint[] memory amounts) external onlyRole(BURNER) {
+        require(ids.length == amounts.length, "Ids length differeent of amounts length");
         _burnBatch(from, ids, amounts);
     }
 
@@ -136,6 +135,14 @@ contract GBCLabsItems is ERC1155Enumerable, AccessControl, ERC2981 {
      */
     function setDefaultApproval(address _address, bool value) external onlyRole(MANAGER) {
         isApproved[_address] = value;
+    }
+
+    /**
+     * @notice Update the metadata uri
+     * @param newuri The new uri to set
+     */
+    function setUri(string memory newuri) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _setURI(newuri);
     }
 
     function safeTransferFrom(
