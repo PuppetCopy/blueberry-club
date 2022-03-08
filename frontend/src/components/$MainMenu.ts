@@ -65,9 +65,7 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
   return [
     $row(layoutSheet.spacingBig, style({ fontSize: '.9em', flex: 1, alignItems: 'center', placeContent: 'flex-end' }), containerOp)(
 
-      $Link({ $content: $text('Lab'), url: '/p/lab', route: parentRoute })({
-        click: routeChangeTether()
-      }),
+
 
       $Dropdown({
         value: now(null),
@@ -86,8 +84,10 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
             ),
           ],
         }
-      })({
-        
+      })({}),
+      
+      $Link({ $content: $text('Lab'), url: '/p/lab', route: parentRoute })({
+        click: routeChangeTether()
       }),
       
       style({ alignSelf: 'stretch' }, $seperator),
