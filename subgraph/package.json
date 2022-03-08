@@ -13,6 +13,6 @@
     "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 blueberry-club"
   },
   "dependencies": {
-    "@graphprotocol/graph-ts": "0.24.1"
+    "@graphprotocol/graph-ts": "0.25.0"
   }
 }

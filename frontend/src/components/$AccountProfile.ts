@@ -5,14 +5,12 @@ import { $column, $icon, $row, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { BaseProvider } from "@ethersproject/providers"
 import { Stream } from "@most/types"
-import { getGatewayUrl, getIdentityFromENS, IClaim, IClaimSource, IEnsClaim, intervalInMsMap } from "@gambitdao/gmx-middleware"
-import * as wallet from "@gambitdao/wallet-link"
-import { getAccountExplorerUrl, IWalletLink } from "@gambitdao/wallet-link"
+import { CHAIN, getAccountExplorerUrl, IClaim, IClaimSource, intervalInMsMap } from "@gambitdao/gmx-middleware"
+import { IWalletLink } from "@gambitdao/wallet-link"
 import { $jazzicon } from "../common/$avatar"
-import { $anchor } from "../elements/$common"
-import { $ethScan, $twitter } from "../elements/$icons"
-import { $Link } from "./$Link"
 import { isAddress } from "@ethersproject/address"
+import { getGatewayUrl, getIdentityFromENS, IEnsClaim } from "@gambitdao/gbc-middleware"
+import { $anchor, $ethScan, $Link, $twitter } from "@gambitdao/ui-components"
 
 
 export interface IAccountPreview {
@@ -82,7 +80,7 @@ export const $AccountLabel = (address: string, claim?: IClaim, adressOp: Op<INod
 
 
 export const $ProfileLinks = (address: string, claim?: IClaim) => {
-  const $explorer = $anchor(attr({ href: getAccountExplorerUrl(wallet.CHAIN.ARBITRUM, address) }))(
+  const $explorer = $anchor(attr({ href: getAccountExplorerUrl(CHAIN.ARBITRUM, address) }))(
     $icon({ $content: $ethScan, width: '16px', viewBox: '0 0 24 24' })
   )
 

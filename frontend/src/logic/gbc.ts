@@ -1,6 +1,5 @@
 import { http } from "@aelea/ui-components"
-import { DEPLOYED_CONTRACT } from "@gambitdao/gbc-middleware"
-import { getGatewayUrl } from "@gambitdao/gmx-middleware"
+import { DEPLOYED_CONTRACT, getGatewayUrl } from "@gambitdao/gbc-middleware"
 import { GBC__factory } from "contracts"
 import { ITokenMetadata } from "../types"
 import { w3p } from "./provider"

@@ -4,10 +4,11 @@ import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { TREASURY_ARBITRUM, TREASURY_AVALANCHE, USD_PRECISION } from "@gambitdao/gbc-middleware"
-import { intervalInMsMap, formatFixed, ARBITRUM_CONTRACT, BASIS_POINTS_DIVISOR, IAccountQueryParamApi, ITimerange } from "@gambitdao/gmx-middleware"
-import { CHAIN, getAccountExplorerUrl, IWalletLink } from "@gambitdao/wallet-link"
+import { intervalInMsMap, formatFixed, ARBITRUM_CONTRACT, BASIS_POINTS_DIVISOR, IAccountQueryParamApi, ITimerangeParamApi, CHAIN, getAccountExplorerUrl } from "@gambitdao/gmx-middleware"
+import { IWalletLink } from "@gambitdao/wallet-link"
+import { $anchor } from "@gambitdao/ui-components"
 import { combine, empty, fromPromise, map, multicast, switchLatest, take } from "@most/core"
-import { $anchor, $responsiveFlex } from "../elements/$common"
+import { $responsiveFlex } from "../elements/$common"
 import { gmxGlpPriceHistory, queryArbitrumRewards, queryAvalancheRewards, StakedTokenArbitrum, StakedTokenAvalanche } from "../logic/query"
 
 import { $tokenIconMap } from "../common/$icons"
@@ -20,7 +21,7 @@ import { latestTokenPriceMap, priceFeedHistoryInterval } from "../logic/common"
 import { $AccountPreview } from "../components/$AccountProfile"
 import { $metricEntry, $seperator2 } from "./common"
 
-const GRAPHS_INTERVAL = Math.floor(intervalInMsMap.HR4 / 1000)
+const GRAPHS_INTERVAL = Math.floor(intervalInMsMap.HR4)
 
 export interface ITreasury {
   walletLink: IWalletLink
@@ -36,7 +37,7 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
 ) => {
 
 
-  const queryParams: IAccountQueryParamApi & Partial<ITimerange> = {
+  const queryParams: IAccountQueryParamApi & Partial<ITimerangeParamApi> = {
     from: treasuryStore.state.startedStakingGmxTimestamp || undefined,
     account: TREASURY_ARBITRUM
   }
@@ -57,7 +58,6 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
   }, arbitrumStakingRewards, latestTokenPriceMap)
   const glpArbiAsset: Stream<IAsset> = combine((bn, priceMap) => ({ balance: bn.glpBalance, balanceUsd: priceMap.glpArbitrum.value * bn.glpBalance / USD_PRECISION }), arbitrumStakingRewards, latestTokenPriceMap)
   const glpAvaxAsset: Stream<IAsset> = combine((bn, priceMap) => ({ balance: bn.glpBalance, balanceUsd: priceMap.glpArbitrum.value * bn.glpBalance / USD_PRECISION }), avalancheStakingRewards, latestTokenPriceMap)
-
 
 
 

@@ -1,5 +1,5 @@
 import { WebSocketProvider, JsonRpcProvider } from "@ethersproject/providers"
-import { NETWORK_METADATA } from "@gambitdao/wallet-link"
+import { NETWORK_METADATA } from "@gambitdao/gmx-middleware"
 import detectEthereumProvider from "@metamask/detect-provider"
 import WalletConnectProvider from "@walletconnect/ethereum-provider"
 import { IEthereumProvider } from "eip1193-provider"

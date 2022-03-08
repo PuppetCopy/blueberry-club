@@ -1,9 +1,9 @@
 import { Op } from "@aelea/core"
 import { $Node, $node, $text, component, style } from "@aelea/dom"
+import { $alert } from "@gambitdao/ui-components"
 import { parseError } from "@gambitdao/wallet-link"
 import { chain, constant, empty, fromPromise, map, merge, mergeArray, multicast, now, recoverWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
-import { $alert } from "../elements/$common"
 
 
 const styleEl = document.createElement('style')

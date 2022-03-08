@@ -8,9 +8,9 @@ import { IWalletLink, attemptToSwitchNetwork } from "@gambitdao/wallet-link"
 import { $walletConnectLogo } from "../common/$icons"
 import * as wallet from "../logic/provider"
 import { $ButtonPrimary, $ButtonSecondary } from "./form/$Button"
-import { $caretDown } from "../elements/$icons"
 import { USE_CHAIN } from "@gambitdao/gbc-middleware"
 import { WALLET } from "../logic/provider"
+import { $caretDown } from "@gambitdao/ui-components/src/$icons"
 
 
 

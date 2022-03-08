@@ -2,16 +2,15 @@ import { Behavior, replayLatest, combineArray, combineObject } from "@aelea/core
 import { $text, component, motion, MOTION_NO_WOBBLE, style } from "@aelea/dom"
 import { $column, $NumberTicker, $row, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { intervalInMsMap, readableNumber, formatFixed, ITimerange, formatReadableUSD } from "@gambitdao/gmx-middleware"
+import { intervalInMsMap, readableNumber, formatFixed, formatReadableUSD, ITimerangeParamApi, unixTimestampNow, intervalListFillOrderMap } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { map, multicast, now, skipRepeats,  skipRepeatsWith, startWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
-import { LastPriceAnimationMode, LineStyle, Time, BarPrice, CrosshairMode, PriceScaleMode, MouseEventParams, SeriesMarker } from "lightweight-charts-baseline"
+import { LastPriceAnimationMode, LineStyle, Time, BarPrice, CrosshairMode, PriceScaleMode, MouseEventParams, SeriesMarker } from "lightweight-charts"
 import { $card } from "../elements/$common"
-import { intervalListFillOrderMap } from "../logic/common"
 import {  IRewardsStream } from "../logic/contract"
 import { IPricefeed, IPriceFeedMap, IStakingClaim } from "../logic/query"
-import { IAsset, IYieldInterval } from "../types"
+import { IAsset } from "../types"
 import { $Chart } from "./chart/$Chart"
 
 export interface IValueInterval extends IAsset {
@@ -20,7 +19,7 @@ export interface IValueInterval extends IAsset {
 }
 
 
-export interface ITreasuryChart<T> extends Partial<ITimerange> {
+export interface ITreasuryChart<T> extends Partial<ITimerangeParamApi> {
   walletLink: IWalletLink
   graphInterval: number
   priceFeedHistoryMap: Stream<IPriceFeedMap>
@@ -74,11 +73,11 @@ export const $StakingGraph = <T>(config: ITreasuryChart<T>)  => component((
     const yearInMs = intervalInMsMap.MONTH * 12
     const endForecast = {
       ...oldestTick,
-      time: Math.floor((Date.now() + yearInMs) / 1000)
+      time: unixTimestampNow() + yearInMs
     }
 
     const apr = formatFixed(arbitrumStaking.totalAprPercentage, 2)
-    const perc = (apr / 100) / (yearInMs / (config.graphInterval * 1000))
+    const perc = (apr / 100) / (yearInMs / config.graphInterval)
 
 
     const filledForecast = intervalListFillOrderMap({
@@ -233,7 +232,7 @@ export const $StakingGraph = <T>(config: ITreasuryChart<T>)  => component((
               })
 
 
-              const markerInterval = Math.floor(intervalInMsMap.DAY7 / 1000)
+              const markerInterval = Math.floor(intervalInMsMap.DAY7)
 
 
               if (yieldList.length) {
@@ -274,6 +273,7 @@ export const $StakingGraph = <T>(config: ITreasuryChart<T>)  => component((
 
                 setTimeout(() => {
                   glpSeries.setMarkers(markers)
+                  // api.timeScale().fitContent()
                 }, 135)
 
               }

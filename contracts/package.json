@@ -11,15 +11,15 @@
   ],
   "types": ".dist/types/index.d.ts",
   "scripts": {
-    "test": "npx hardhat test",
+    "test": "npx hardhat test --tsconfig tsconfig.hardhat.json",
     "compile": "yarn hardhat compile",
     "clean": "yarn hardhat clean && yarn g:tsc:clean",
     "deploy": "yarn hardhat run scripts/deploy.ts --network arbitrum",
     "saleActions": "yarn hardhat run scripts/saleActions.ts --network arbitrum",
     "node": "yarn hardhat node",
     "typechain": "yarn hardhat typechain",
-    "build:project": "tsc --project tsconfig.typechain.json",
-    "build:cjs": "tsc --project tsconfig.typechain.json  --outDir .dist/cjs --module CommonJS --declarationMap false --composite false --declaration false --declarationDir null",
+    "build:project": "yarn g:tsc:project",
+    "build:cjs": "yarn g:tsc:cjs",
     "build": "yarn clean && yarn hardhat typechain && yarn build:project && yarn build:cjs && yarn typechain"
   },
   "author": "",
@@ -27,19 +27,21 @@
   "devDependencies": {
     "@gambitdao/gbc-middleware": "workspace:*",
     "@nomiclabs/hardhat-ethers": "^2.0.5",
-    "@nomiclabs/hardhat-etherscan": "^3.0.1",
-    "@nomiclabs/hardhat-waffle": "^2.0.2",
+    "@nomiclabs/hardhat-etherscan": "^3.0.3",
+    "@nomiclabs/hardhat-waffle": "^2.0.3",
     "@openzeppelin/contracts": "^4.5.0",
     "@typechain/ethers-v5": "9.0.0",
-    "@typechain/hardhat": "^4.0.0",
+    "@typechain/hardhat": "^5.0.0",
     "@types/mocha": "^9.1.0",
     "chai": "^4.3.6",
     "csv-parse": "^5.0.4",
+    "ethereum-waffle": "^3.4.0",
     "ethers": "^5.5.4",
-    "hardhat": "2.8.4",
-    "hardhat-contract-sizer": "^2.4.0",
-    "typechain": "^7.0.0",
-    "typescript": "^4.5.5"
+    "hardhat": "2.9.1",
+    "hardhat-contract-sizer": "^2.5.0",
+    "tsconfig-paths": "^3.13.0",
+    "typechain": "^7.0.1",
+    "typescript": "^4.6.2"
   },
   "dependencies": {
     "bn.js": "^5.2.0"

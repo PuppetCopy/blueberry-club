@@ -2,7 +2,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { expect } from "chai"
 import { BigNumber } from "ethers"
 import { ethers } from "hardhat"
-import { GBC, GBCLabsItems, GBCLabsManager } from "../typechain-types"
+import { GBC, GBCLabsItems, GBCLabsManager, GBC__factory, GBCLabsItems__factory, GBCLabsManager__factory } from "contracts"
 
 describe("GBC Labs Items", function () {
   let owner: SignerWithAddress
@@ -19,7 +19,7 @@ describe("GBC Labs Items", function () {
 
   this.beforeAll(async () => {
     [owner, user1, user2, user3, user4, user5, market] = await ethers.getSigners()
-    const GBC = await ethers.getContractFactory("GBC")
+    const GBC = new GBC__factory(owner)
     const gbc = await GBC.deploy("Blueberry Club", "GBC", "")
     GBC_CONTRACT = await gbc.deployed()
 
@@ -35,11 +35,11 @@ describe("GBC Labs Items", function () {
     tx = await GBC_CONTRACT.connect(user3).mint(1, { value: ethers.utils.parseEther('0.03') })
     await tx.wait()
 
-    const Items = await ethers.getContractFactory("GBCLabsItems")
+    const Items = new GBCLabsItems__factory(owner)
     const items = await Items.deploy()
     ITEMS_CONTRACT = await items.deployed()
 
-    const Manager = await ethers.getContractFactory("GBCLabsManager")
+    const Manager = new GBCLabsManager__factory(owner)
     const manager = await Manager.deploy([owner.address], [1], GBC_CONTRACT.address, ITEMS_CONTRACT.address)
     MANAGER_CONTRACT = await manager.deployed()
 

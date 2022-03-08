@@ -15,7 +15,13 @@
   },
   "references": [
     {
+      "path": "../ui-components"
+    },
+    {
       "path": "../middleware"
+    },
+    {
+      "path": "../utils"
     },
     {
       "path": "../contracts"

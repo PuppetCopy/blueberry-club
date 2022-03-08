@@ -3,29 +3,25 @@ import { $element, $node, $svg, $text, attr, component, eventElementTarget, INod
 import * as router from '@aelea/router'
 import { $RouterAnchor } from '@aelea/router'
 import { $column, $icon, $row, designSheet, layoutSheet, observer, screenUtils, state } from '@aelea/ui-components'
+import { $anchor, $glp, $Link } from '@gambitdao/ui-components'
 import { pallete } from '@aelea/ui-components-theme'
-import { TREASURY_ARBITRUM, TREASURY_AVALANCHE, USD_PRECISION } from "@gambitdao/gbc-middleware"
-import { groupByMap, IAccountQueryParamApi, intervalInMsMap, ITimerange } from '@gambitdao/gmx-middleware'
+import { TREASURY_ARBITRUM, TREASURY_AVALANCHE, USD_PRECISION } from '@gambitdao/gbc-middleware'
+import { groupByMap, IAccountQueryParamApi, intervalInMsMap, ITimerangeParamApi } from '@gambitdao/gmx-middleware'
 import { initWalletLink } from "@gambitdao/wallet-link"
 import {
   awaitPromises, constant, empty, fromPromise, map, merge, mergeArray, multicast, now,
-  snapshot,
-  startWith,
-  switchLatest,
-  take,
-  tap
+  snapshot, startWith, switchLatest, take, tap
 } from '@most/core'
 import { Stream } from "@most/types"
 import { IEthereumProvider } from "eip1193-provider"
 import { $logo } from '../common/$icons'
 import { $Breadcrumbs } from "../components/$Breadcrumbs"
 import { $DisplayBerry, svgPartsMapping } from "../components/$DisplayBerry"
-import { $Link } from "../components/$Link"
 import { $MainMenu, $socialMediaLinks } from '../components/$MainMenu'
 import { $StakingGraph } from "../components/$StakingGraph"
 import { $ButtonSecondary } from "../components/form/$Button"
-import { $anchor, $card, $responsiveFlex, $teamMember } from "../elements/$common"
-import { $bagOfCoins, $discount, $glp, $stackedCoins, $tofunft } from "../elements/$icons"
+import { $card, $responsiveFlex, $teamMember } from "../elements/$common"
+import { $bagOfCoins, $discount, $stackedCoins, $tofunft } from "../elements/$icons"
 import { claimListQuery } from "../logic/claim"
 import { latestTokenPriceMap, priceFeedHistoryInterval } from "../logic/common"
 import { attributeMappings } from "../logic/gbcMappings"
@@ -34,8 +30,7 @@ import * as wallet from "../logic/provider"
 import { WALLET } from "../logic/provider"
 import { gmxGlpPriceHistory, queryArbitrumRewards, queryAvalancheRewards, StakedTokenArbitrum, StakedTokenAvalanche } from "../logic/query"
 import { helloBackend } from '../logic/websocket'
-import { fadeIn } from "../transitions/enter"
-import { IAccountStakingStore, IAttributeBackground, IAttributeBody, IAttributeClothes, IAttributeFaceAccessory, IAttributeHat, IIAttributeExpression, ITreasuryStore } from "../types"
+import { IAccountStakingStore, IAttributeBackground, IAttributeClothes, IAttributeFaceAccessory, IAttributeHat, IIAttributeExpression, ITreasuryStore } from "../types"
 import { $Berry } from "./$Berry"
 import { $Account } from "./$Profile"
 import { $Treasury } from "./$Treasury"
@@ -94,6 +89,7 @@ export default ({ baseRoute = '' }: Website) => component((
   const treasuryRoute = pagesRoute.create({ fragment: 'treasury', title: 'Treasury' })
   const berryRoute = pagesRoute.create({ fragment: 'berry', title: 'Berry Profile' })
   const accountRoute = pagesRoute.create({ fragment: 'account', title: 'Berry Account' })
+  const labRoute = pagesRoute.create({ fragment: 'lab', title: 'Blueberry Lab' })
 
 
   const claimMap = replayLatest(
@@ -170,7 +166,7 @@ export default ({ baseRoute = '' }: Website) => component((
 
   
 
-  const queryParams: IAccountQueryParamApi & Partial<ITimerange> = {
+  const queryParams: IAccountQueryParamApi & Partial<ITimerangeParamApi> = {
     from: treasuryStore.state.startedStakingGmxTimestamp || undefined,
     account: TREASURY_ARBITRUM
   }
@@ -182,7 +178,7 @@ export default ({ baseRoute = '' }: Website) => component((
     return n
   }
 
-  const berryDayId = dailyRandom(Date.now() / intervalInMsMap.HR24)
+  const berryDayId = dailyRandom(Date.now() / (intervalInMsMap.HR24 * 1000))
   const [background, clothes, body, expression, faceAccessory, hat] = attributeMappings[berryDayId - 1]
 
 
@@ -195,7 +191,7 @@ export default ({ baseRoute = '' }: Website) => component((
 
 
 
-  const GRAPHS_INTERVAL = Math.floor(intervalInMsMap.HR4 / 1000)
+  const GRAPHS_INTERVAL = intervalInMsMap.HR4
 
   const gmxArbitrumRS = priceFeedHistoryInterval(
     GRAPHS_INTERVAL,
@@ -577,6 +573,9 @@ export default ({ baseRoute = '' }: Website) => component((
           $column(layoutSheet.spacingBig, style({ maxWidth: '1160px', width: '100%', margin: '0 auto', paddingBottom: '45px' }))(
             router.contains(berryRoute)(
               $Berry({ walletLink, parentRoute: pagesRoute })({})
+            ),
+            router.contains(labRoute)(
+              $Berry({ walletLink, parentRoute: labRoute })({})
             ),
             router.contains(accountRoute)(
               $Account({ walletLink, parentRoute: pagesRoute, accountStakingStore })({})

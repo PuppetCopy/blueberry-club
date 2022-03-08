@@ -4,9 +4,9 @@ import * as router from '@aelea/router'
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
 import { USD_PRECISION } from "@gambitdao/gbc-middleware"
-import { ARBITRUM_CONTRACT, AVALANCHE_CONTRACT, BASIS_POINTS_DIVISOR, ETH_ADDRESS_REGEXP, formatFixed, IAccountQueryParamApi, intervalInMsMap, ITimerange, readableNumber } from "@gambitdao/gmx-middleware"
+import { ARBITRUM_CONTRACT, AVALANCHE_CONTRACT, BASIS_POINTS_DIVISOR, CHAIN, ETH_ADDRESS_REGEXP, formatFixed, IAccountQueryParamApi, intervalInMsMap, ITimerangeParamApi, readableNumber } from "@gambitdao/gmx-middleware"
 
-import { CHAIN, IWalletLink } from "@gambitdao/wallet-link"
+import { IWalletLink } from "@gambitdao/wallet-link"
 import { combine, empty, fromPromise, map, multicast, now, switchLatest, take } from "@most/core"
 import { $StakingGraph } from "../components/$StakingGraph"
 import { $responsiveFlex } from "../elements/$common"
@@ -21,7 +21,7 @@ import { $tokenIconMap } from "../common/$icons"
 import { $AssetDetails } from "../components/$AssetDetails"
 import { $metricEntry, $seperator2 } from "./common"
 import { $IntermediatePromise } from "../common/$IntermediateDisplay"
-import { $berryTileId } from "../components/$Mint"
+import { $berryTileId } from "../components/$common"
 
 
 export interface IAccount {
@@ -46,7 +46,7 @@ export const $Account = ({ walletLink, parentRoute, accountStakingStore }: IAcco
   const avalancheContract: IGmxContractInfo = initContractChain(w3pAva, accountAddress, AVALANCHE_CONTRACT)
 
 
-  const queryParams: IAccountQueryParamApi & Partial<ITimerange> = {
+  const queryParams: IAccountQueryParamApi & Partial<ITimerangeParamApi> = {
     from: accountStakingStore.state.startedStakingGmxTimestamp || undefined,
     account: accountAddress
   }
@@ -77,7 +77,7 @@ export const $Account = ({ walletLink, parentRoute, accountStakingStore }: IAcco
 
     return [...yieldFeeList, ...gmx, ...arbiStaking.stakedGlpTrackerClaims, ...arbiStaking.stakedGmxTrackerClaims]
   }, arbitrumYieldSourceMap, avalancheYieldSourceMap, feeYieldClaim, newLocal)
-  const GRAPHS_INTERVAL = Math.floor(intervalInMsMap.HR4 / 1000)
+  const GRAPHS_INTERVAL = Math.floor(intervalInMsMap.HR4)
 
   const gmxArbitrumRS = priceFeedHistoryInterval(
     GRAPHS_INTERVAL,

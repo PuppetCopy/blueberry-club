@@ -2,8 +2,8 @@ import { Behavior, O, Op } from "@aelea/core"
 import { $node, $Node, component, INode, nodeEvent, style } from "@aelea/dom"
 import { $column, $icon, $row } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
+import { $caretDown } from "@gambitdao/ui-components"
 import { constant, empty, map, startWith, switchLatest } from "@most/core"
-import { $caretDown } from "../elements/$icons"
 
 interface IBreadcrumbs {
   index?: number

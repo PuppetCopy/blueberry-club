@@ -1,25 +1,18 @@
 {
   "extends": "../tsconfig",
   "compilerOptions": {
-    "outDir": "artifacts/build",
-    "types": [
-      "node",
-      "mocha",
+    "target": "es5",
+    "module": "commonjs",
+    "outDir": ".dist/esm",
+    "resolveJsonModule": true,
+    "lib": [
+      "es2021",
+      "dom"
     ],
-    "module": "CommonJS",
-    "declarationDir": null,
+    "declarationDir": ".dist/types",
+    "rootDir": "typechain-types",
   },
   "include": [
-    "./typechain-types",
-    "./scripts",
-    "./test",
-  ],
-  "files": [
-    "./hardhat.config.ts",
-  ],
-  "references": [
-    {
-      "path": "../middleware"
-    }
+    "./typechain-types"
   ]
 }

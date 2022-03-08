@@ -1,10 +1,9 @@
 import { Behavior, O, Op } from "@aelea/core"
 import { $Node, component, eventElementTarget, IBranch, INode, NodeComposeFn, nodeEvent, style, styleBehavior, stylePseudo } from "@aelea/dom"
-import { $column, $icon, $row, Input, layoutSheet } from "@aelea/ui-components"
+import { $column, $row, Input, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { constant, map, merge, mergeArray, multicast, now, skip, startWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
-import { $caretDown } from "../../elements/$icons"
 
 
 export const buttonPrimaryStyle = style({
@@ -83,11 +82,6 @@ export const $Dropdown = <T>({ value, disabled, validation, $selection, select, 
 
   const $option = $row(layoutSheet.spacingSmall, style({ alignItems: 'center', padding: '15px 25px' }))
   const $selectableOption = $option(style({ cursor: 'pointer' }), stylePseudo(':hover', { backgroundColor: pallete.background }))
-
-  const $caretDownIcon = $icon({ $content: $caretDown, width: '13px', svgOps: style({ marginTop: '2px' }), viewBox: '0 0 7.84 3.81' })
-
-  
-  // const disabledBehavior: Op<IBranch, IBranch> = disabled ? styleInline(map(isDisabled => isDisabled ? { opacity: ".15", pointerEvents: 'none' } : { opacity: "1", pointerEvents: 'all' }, config.disabled)) : O()
 
 
   const $container = select.$container(

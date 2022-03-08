@@ -9,15 +9,14 @@ import {  constant, empty, map, now, switchLatest } from '@most/core'
 import { Stream } from "@most/types"
 import { IEthereumProvider } from "eip1193-provider"
 import { WALLET } from "../logic/provider"
-import { $anchor } from "../elements/$common"
-import { $caretDown, $discord, $moreDots, $twitter } from "../elements/$icons"
+import {  } from "../elements/$icons"
 import { $AccountPreview } from "./$AccountProfile"
 import { $IntermediateConnect } from "./$ConnectAccount"
 import { $ButtonSecondary } from "./form/$Button"
 import { totalWalletHoldingsUsd } from "../logic/gbcTreasury"
 import { $Dropdown } from "./form/$Dropdown"
 import { $bagOfCoinsCircle, $fileCheckCircle } from "../common/$icons"
-import { $Link } from "./$Link"
+import { $anchor, $caretDown, $discord, $Link, $moreDots, $twitter } from "@gambitdao/ui-components"
 
 export const $socialMediaLinks = $row(layoutSheet.spacingBig)(
   $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://discord.com/invite/cxjZYR4gQK' }))(
@@ -32,7 +31,7 @@ interface MainMenu {
   parentRoute: Route
   containerOp?: Op<IBranch, IBranch>
   walletLink: IWalletLink
-  claimMap: Stream<Map<string, IClaim>>
+  claimMap: Stream<{[x: string]: IClaim}>
   walletStore: state.BrowserStore<WALLET, "walletStore">
 
   showAccount?: boolean
@@ -60,16 +59,16 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
     )
   )
 
-  const $treasuryMenuItem = $Link({ $content: $govItem('Treasury', $bagOfCoinsCircle, 'GBC Community-Led Portfolio'), url: '/p/treasury', route: parentRoute })({
-    click: routeChangeTether()
-  })
-  const $govMenuItem = $anchor(style({ textDecoration:'none' }), attr({ href: 'https://snapshot.org/#/gbc-nft.eth', target:'_blank' }))(
-    $govItem('Governance', $fileCheckCircle, 'Treasury Governance, 1 GBC = 1 Voting Power')
-  )
+  
 
 
   return [
     $row(layoutSheet.spacingBig, style({ fontSize: '.9em', flex: 1, alignItems: 'center', placeContent: 'flex-end' }), containerOp)(
+
+      $Link({ $content: $text('Lab'), url: '/p/lab', route: parentRoute })({
+        click: routeChangeTether()
+      }),
+
       $Dropdown({
         value: now(null),
         // disabled: accountChange,
@@ -79,16 +78,20 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
           $container: $column(layoutSheet.spacingTiny, style({ minWidth:'400px' })),
           $option: map(option => option),
           options: [
-            $treasuryMenuItem,
-            $govMenuItem,
+            $Link({ $content: $govItem('Treasury', $bagOfCoinsCircle, 'GBC Community-Led Portfolio'), url: '/p/treasury', route: parentRoute })({
+              click: routeChangeTether()
+            }),
+            $anchor(style({ textDecoration:'none' }), attr({ href: 'https://snapshot.org/#/gbc-nft.eth', target:'_blank' }))(
+              $govItem('Governance', $fileCheckCircle, 'Treasury Governance, 1 GBC = 1 Voting Power')
+            ),
           ],
         }
       })({
         
       }),
       
+      style({ alignSelf: 'stretch' }, $seperator),
 
-      $node(style({ flex: 1 }))(),
 
       screenUtils.isDesktopScreen ? $socialMediaLinks : empty(),
 

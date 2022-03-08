@@ -4,11 +4,7 @@ import { readFileSync } from 'fs'
 import http from 'http'
 import path from 'path'
 import ws from 'ws'
-import { api } from './logic/api'
-import { scheduler } from './logic/scheduler'
-import { helloFrontend } from './messageBus'
 import compression from 'compression'
-import { requestAggregatedSettledTradeList } from './logic/aggregatedTradeList'
 
 
 
@@ -73,23 +69,11 @@ function heartbeat() {
 
 
 
-const apiComponent = helloFrontend(wss, {
-  requestAggregatedSettledTradeList,
-})
+
 
 
 const run = async () => {
 
-  apiComponent
-    .run({
-      event(time, val) {
-      
-      },
-      error(time, err) {
-        console.error(err)
-      },
-      end() {}
-    }, scheduler)
 
   
 
@@ -102,7 +86,6 @@ const run = async () => {
   app.use(express.json())
   app.use(compression())
   app.use(express.static(publicDir))
-  app.use('/api', api)
   app.use((req, res, next) => {
 
 

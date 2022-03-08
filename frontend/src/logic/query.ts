@@ -1,5 +1,4 @@
-import { TREASURY_ARBITRUM } from "@gambitdao/gbc-middleware"
-import { groupByMapMany, IAccountQueryParamApi, intervalInMsMap, ITimerange } from "@gambitdao/gmx-middleware"
+import { groupByMapMany, IAccountQueryParamApi, intervalInMsMap, ITimerangeParamApi } from "@gambitdao/gmx-middleware"
 import { ClientOptions, createClient, gql, TypedDocumentNode } from "@urql/core"
 import { IOwner, IPriceInterval, IToken } from "../types"
 
@@ -165,7 +164,7 @@ export type QueryIdentifiable = {
   id: string
 }
 
-export type IQueryGmxEthHistoricPrice = Partial<ITimerange & { period: intervalInMsMap }>
+export type IQueryGmxEthHistoricPrice = Partial<ITimerangeParamApi & { period: intervalInMsMap }>
 
 const tokenDoc: TypedDocumentNode<{token: IToken | null}, QueryIdentifiable> = gql`
 ${schemaFragments}
@@ -353,7 +352,7 @@ const rewardsTrackerDoc: TypedDocumentNode<{
   feeGmxTrackerTransfers: IStakingGmxTransfer[],
   feeGlpTrackerTransfers: IStakingGlpTransfer[],
   // bonusGmxTrackerTransfers: ITransfer[]
-}, IAccountQueryParamApi & Partial<ITimerange>> = gql`
+}, IAccountQueryParamApi & Partial<ITimerangeParamApi>> = gql`
 
 query ($first: Int = 1000, $account: String, $period: IntervalTime = _86400, $from: Int = 0, $to: Int = 1999999999) {
 
@@ -412,18 +411,18 @@ const prepareClient = (opts: ClientOptions) => {
 }
 
 const blueberryGraph = prepareClient({
-  fetch: fetch as any,
+  fetch: fetch,
   url: 'https://api.thegraph.com/subgraphs/name/nissoh/blueberry-club',
 })
 
 
 const gmxAvalancheStats = prepareClient({
-  fetch: fetch as any,
+  fetch: fetch,
   url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-staking-avalanche',
 })
 
 const gmxArbitrumStats = prepareClient({
-  fetch: fetch as any,
+  fetch: fetch,
   url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-rewards',
 })
 
@@ -492,7 +491,7 @@ export const queryLatestPrices = async (): Promise<ILatestPriceMap> => {
   }
 }
 
-export const queryArbitrumRewards = async (config: IAccountQueryParamApi & Partial<ITimerange>) => {
+export const queryArbitrumRewards = async (config: IAccountQueryParamApi & Partial<ITimerangeParamApi>) => {
   const data = (await gmxArbitrumStats(rewardsTrackerDoc, config))
 
 
@@ -507,7 +506,7 @@ export const queryArbitrumRewards = async (config: IAccountQueryParamApi & Parti
 }
 
 
-export const queryAvalancheRewards = async (config: IAccountQueryParamApi & Partial<ITimerange>) => {
+export const queryAvalancheRewards = async (config: IAccountQueryParamApi & Partial<ITimerangeParamApi>) => {
   const data = (await gmxAvalancheStats(rewardsTrackerDoc, config))
 
   const stakedGlpTrackerClaims = data.stakedGlpTrackerClaims.map(fromYieldSourceJson)
