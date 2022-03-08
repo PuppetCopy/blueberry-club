@@ -1,15 +1,12 @@
 import { Behavior } from "@aelea/core"
-import { $node, $text, attr, component, style } from "@aelea/dom"
+import { $node, $text, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
-import { $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
-import { $anchor } from "@gambitdao/ui-components"
+import { $column, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { $logo } from "../common/$icons"
 import { $DisplayBerry } from "../components/$DisplayBerry"
 import { $ButtonPrimary, $ButtonSecondary } from "../components/form/$Button"
 import { $responsiveFlex } from "../elements/$common"
-import { $tofunft } from "../elements/$icons"
 import { IAttributeBackground, IAttributeClothes, IAttributeFaceAccessory, IAttributeHat, IAttributeMappings, IBerryMetadata, IIAttributeExpression } from "../types"
 import { $seperator2 } from "./common"
 
