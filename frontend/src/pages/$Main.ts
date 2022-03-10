@@ -355,7 +355,7 @@ export default ({ baseRoute = '' }: Website) => component((
           $column(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
             $column(layoutSheet.spacing, style({ alignItems: 'center' }))(
               $text(style({ fontWeight: 'bold', fontSize: '2.5em' }))('Yielding Treasury'),
-              $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '878px' }))('GMX revenue is generating yield which is distributed to GBC stakers(WIP)'),
+              $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '878px' }))('GMX revenue is generating yield distributed to GBC stakers(WIP)'),
             ),
             $StakingGraph({
               valueSource: [gmxArbitrumRS, glpArbitrumRS, glpAvalancheRS],
