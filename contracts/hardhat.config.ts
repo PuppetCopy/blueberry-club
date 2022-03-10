@@ -55,13 +55,26 @@ const config: HardhatUserConfig = {
     //   apiKey: BSCSCAN_API_KEY
   },
   solidity: {
-    version: "0.8.1",
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 1
+    compilers: [
+      {
+        version: '0.8.4',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1
+          }
+        }
+      },
+      {
+        version: "0.8.1",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1
+          }
+        }
       }
-    }
+    ]
   },
   etherscan: {
     apiKey: ETHERSCAN_APIKEY
