@@ -182,8 +182,8 @@ export default ({ baseRoute = '' }: Website) => component((
   }
 
   const newLocal2 = Math.floor(Date.now() / intervalInMsMap.HR24)
-  const berryDayId = dailyRandom(newLocal2)
-  const [background, clothes, body, expression, faceAccessory, hat] = attributeMappings[berryDayId]
+  const berryDayId = dailyRandom(newLocal2) + 1
+  const [background, clothes, body, expression, faceAccessory, hat] = attributeMappings[berryDayId - 1]
 
 
   const arbitrumStakingRewards = replayLatest(multicast(arbitrumContract.stakingRewards))
