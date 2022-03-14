@@ -7,7 +7,7 @@ import { switchLatest, skipRepeatsWith, multicast, map } from "@most/core"
 import { Stream } from "@most/types"
 import { MouseEventParams, LineStyle, BarPrice, PriceScaleMode, Time } from "lightweight-charts"
 import { $responsiveFlex } from "../elements/$common"
-import { IAsset } from "../types"
+import { IAsset } from "@gambitdao/gbc-middleware"
 import { IValueInterval } from "./$StakingGraph"
 import { $Chart } from "./chart/$Chart"
 

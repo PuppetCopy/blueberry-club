@@ -99,11 +99,21 @@ export enum IAttributeMappings {
   Wizard = 27, Work = 135, "X Bucket Hat" = 19, "X Face Tattoo" = 18, "X Hoodie" = 9, Yellow = 30
 }
 
-export enum IAttributeBody {
-  BLUEBERRY = IAttributeMappings.Blueberry
+
+export enum IAttributeLabMappings {
+  "Avalanche Hoodie" = 10,
+  "Fast Food Cap" = 20,
+  "Builder" = 3,
+  "Christmas Hat" = 2,
+  "Beard White" = 4,
+  "Camo Background" = 5,
 }
 
-export enum IIAttributeExpression {
+export enum IAttributeBody {
+  BLUEBERRY = IAttributeMappings.Blueberry,
+}
+
+export enum IAttributeExpression {
   ANGRY = IAttributeMappings.Angry,
   BORED = IAttributeMappings.Bored,
   CRYING = IAttributeMappings.Crying,
@@ -169,6 +179,7 @@ export enum IAttributeClothes {
   WIZARD = IAttributeMappings.Wizard,
   WORK = IAttributeMappings.Work,
   X_HOODIE = IAttributeMappings["X Hoodie"],
+  NUDE = IAttributeMappings.Nude,
 }
 
 export enum IAttributeFaceAccessory {
@@ -198,9 +209,12 @@ export enum IAttributeFaceAccessory {
   SUNGLASSES_GREEN = IAttributeMappings["Sunglasses Green"],
   SUNGLASSES_RED = IAttributeMappings["Sunglasses Red"],
   X_FACE_TATTOO = IAttributeMappings["X Face Tattoo"],
+  
+  BEARD_WHITE = IAttributeLabMappings["Beard White"],
 }
 
 export enum IAttributeHat {
+  NUDE = IAttributeMappings.Nude,
   AFRO_GREEN = IAttributeMappings["Afro Green"],
   AFRO_MULTICOLOR = IAttributeMappings["Afro Multicolor"],
   AFRO_PINK = IAttributeMappings["Afro Pink"],
@@ -261,8 +275,46 @@ export enum IAttributeBackground {
   ORANGE = IAttributeMappings.Orange,
   PINK = IAttributeMappings.Pink,
   PURPLE = IAttributeMappings.Purple,
-  YELLOW = IAttributeMappings.Yellow
+  YELLOW = IAttributeMappings.Yellow,
+}
+
+export enum IAttributeLabBackground {
+  CAMO = IAttributeLabMappings['Camo Background'],
+}
+
+export enum IAttributeLabClothes {
+  BUILDER = IAttributeLabMappings.Builder,
+  AVALANCHE_HOODIE = IAttributeLabMappings["Avalanche Hoodie"],
+}
+
+export enum IAttributeLabHat {
+  CHRISTMAS_HAT = IAttributeLabMappings['Christmas Hat'],
+  FAST_FOOD_CAP = IAttributeLabMappings['Fast Food Cap'],
+}
+
+export enum IAttributeLabFaceAccessory {
+  BEARD_WHITE = IAttributeLabMappings["Beard White"],
 }
 
 
-export type IBerryMetadata = [IAttributeBackground, IAttributeClothes, IAttributeBody, IIAttributeExpression, IAttributeFaceAccessory, IAttributeHat]
+export type IBerryDisplayTupleMap = [
+  IAttributeBackground | IAttributeLabBackground,
+  IAttributeClothes | IAttributeLabClothes,
+  IAttributeBody,
+  IAttributeExpression,
+  IAttributeFaceAccessory | IAttributeLabFaceAccessory,
+  IAttributeHat | IAttributeLabHat
+]
+
+export type ILabAttributeOptions = typeof IAttributeLabBackground | typeof IAttributeLabClothes | typeof IAttributeLabHat | typeof IAttributeLabFaceAccessory
+
+
+export interface LabItemDescription {
+  name: string
+  description: string
+  id: number
+  contractAddress: string
+  saleDate: number
+  mintPrice: bigint
+  maxSupply: number
+}

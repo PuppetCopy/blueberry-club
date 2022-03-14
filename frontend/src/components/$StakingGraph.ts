@@ -10,7 +10,7 @@ import { LastPriceAnimationMode, LineStyle, Time, BarPrice, CrosshairMode, Price
 import { $card } from "../elements/$common"
 import {  IRewardsStream } from "../logic/contract"
 import { IPricefeed, IPriceFeedMap, IStakingClaim } from "../logic/query"
-import { IAsset } from "../types"
+import { IAsset } from "@gambitdao/gbc-middleware"
 import { $Chart } from "./chart/$Chart"
 
 export interface IValueInterval extends IAsset {

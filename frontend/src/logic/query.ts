@@ -1,6 +1,6 @@
 import { groupByMapMany, IAccountQueryParamApi, intervalInMsMap, ITimerangeParamApi } from "@gambitdao/gmx-middleware"
 import { ClientOptions, createClient, gql, TypedDocumentNode } from "@urql/core"
-import { IOwner, IPriceInterval, IToken } from "../types"
+import { IOwner, IPriceInterval, IToken } from "@gambitdao/gbc-middleware"
 
 
 export interface ITypename<T extends string> {

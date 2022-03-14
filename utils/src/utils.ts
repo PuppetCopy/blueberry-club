@@ -1,3 +1,6 @@
+import { replayLatest } from "@aelea/core"
+import { Stream } from "@most/types"
+import { combineArray as combineArrayMost } from "@most/core"
 import { CHAIN, EXPLORER_URL, intervalInMsMap, NETWORK_METADATA, USD_DECIMALS } from "./constant"
 import { IPageParapApi, IPagePositionParamApi, ISortParamApi } from "./types"
 
@@ -348,3 +351,24 @@ export function getAccountExplorerUrl(chain: CHAIN, account: string) {
   return EXPLORER_URL[chain] + "address/" + account
 }
 
+
+type StreamInput<T> = {
+  [P in keyof T]: Stream<T[P]>
+}
+
+
+export function replayState<A, K extends keyof A = keyof A>(state: StreamInput<A>, initialState: A): Stream<A> {
+  const entries = Object.entries(state) as [keyof A, Stream<A[K]>][]
+  const streams = entries.map(([key, stream]) => replayLatest(stream, initialState[key]))
+
+  const combinedWithInitial = combineArrayMost((...arrgs: A[K][]) => {
+    return arrgs.reduce((seed, val, idx) => {
+      const key = entries[idx][0]
+      seed[key] = val
+
+      return seed
+    }, {} as A)
+  }, streams)
+
+  return combinedWithInitial
+}

@@ -19,7 +19,7 @@ import { $bagOfCoinsCircle, $fileCheckCircle } from "../common/$icons"
 import { $anchor, $caretDown, $discord, $Link, $moreDots, $twitter } from "@gambitdao/ui-components"
 
 export const $socialMediaLinks = $row(layoutSheet.spacingBig)(
-  $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://discord.com/invite/cxjZYR4gQK' }))(
+  $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://discord.com/invite/7ZMmeU3z9j' }))(
     $icon({ $content: $discord, width: '22px', viewBox: `0 0 32 32` })
   ),
   $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://twitter.com/GBlueberryClub' }))(
@@ -65,8 +65,6 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
   return [
     $row(layoutSheet.spacingBig, style({ fontSize: '.9em', flex: 1, alignItems: 'center', placeContent: 'flex-end' }), containerOp)(
 
-
-
       $Dropdown({
         value: now(null),
         // disabled: accountChange,
@@ -74,7 +72,7 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
         $selection: map(amount => $treasury),
         select: {
           $container: $column(layoutSheet.spacingTiny, style({ minWidth:'400px' })),
-          $option: map(option => option),
+          optionOp: map(option => option),
           options: [
             $Link({ $content: $govItem('Treasury', $bagOfCoinsCircle, 'GBC Community-Led Portfolio'), url: '/p/treasury', route: parentRoute })({
               click: routeChangeTether()
@@ -86,7 +84,7 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
         }
       })({}),
       
-      $Link({ $content: $text('Lab'), url: '/p/lab', route: parentRoute })({
+      $Link({ $content: $text('Lab'), url: '/p/lab', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
         click: routeChangeTether()
       }),
       

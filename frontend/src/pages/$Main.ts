@@ -16,7 +16,7 @@ import { Stream } from "@most/types"
 import { IEthereumProvider } from "eip1193-provider"
 import { $logo } from '../common/$icons'
 import { $Breadcrumbs } from "../components/$Breadcrumbs"
-import { $DisplayBerry, svgPartsMapping } from "../components/$DisplayBerry"
+import { $DisplayBerry } from "../components/$DisplayBerry"
 import { $MainMenu, $socialMediaLinks } from '../components/$MainMenu'
 import { $StakingGraph } from "../components/$StakingGraph"
 import { $ButtonSecondary } from "../components/form/$Button"
@@ -24,17 +24,23 @@ import { $card, $responsiveFlex, $teamMember } from "../elements/$common"
 import { $bagOfCoins, $discount, $stackedCoins, $tofunft } from "../elements/$icons"
 import { claimListQuery } from "../logic/claim"
 import { latestTokenPriceMap, priceFeedHistoryInterval } from "../logic/common"
-import { attributeMappings } from "../logic/gbcMappings"
 import { arbitrumContract, avalancheContract } from "../logic/gbcTreasury"
 import * as wallet from "../logic/provider"
 import { WALLET } from "../logic/provider"
 import { gmxGlpPriceHistory, queryArbitrumRewards, queryAvalancheRewards, StakedTokenArbitrum, StakedTokenAvalanche } from "../logic/query"
 import { helloBackend } from '../logic/websocket'
-import { IAccountStakingStore, IAttributeBackground, IAttributeClothes, IAttributeFaceAccessory, IAttributeHat, IIAttributeExpression, ITreasuryStore } from "../types"
+import { IAccountStakingStore, IAttributeExpression, ITreasuryStore } from "@gambitdao/gbc-middleware"
 import { $Berry } from "./$Berry"
 import { $Account } from "./$Profile"
 import { $Treasury } from "./$Treasury"
 import { $seperator2 } from "./common"
+import { $LabLanding } from "./lab/$Landing"
+import { fadeIn } from "../transitions/enter"
+import { $Wardrobe } from "./lab/$Wardrobe"
+import { $LabStore } from "./lab/$Store"
+import svgParts from "../logic/mappings/svgParts"
+import tokenIdAttributeTuple from "../logic/mappings/tokenIdAttributeTuple"
+import { $LabItem } from "./lab/$Item"
 
 
 function buildThresholdList(numSteps = 20) {
@@ -90,6 +96,9 @@ export default ({ baseRoute = '' }: Website) => component((
   const berryRoute = pagesRoute.create({ fragment: 'berry', title: 'Berry Profile' })
   const accountRoute = pagesRoute.create({ fragment: 'account', title: 'Berry Account' })
   const labRoute = pagesRoute.create({ fragment: 'lab', title: 'Blueberry Lab' })
+  const wardrobeRoute = pagesRoute.create({ fragment: 'wardrobe', title: 'Wardrobe' })
+  const storeRoute = pagesRoute.create({ fragment: 'lab-store', title: 'Store' })
+  const itemRoute = pagesRoute.create({ fragment: 'item' }).create({ fragment: /\d+/, title: 'Lab Item' })
 
 
   const claimMap = replayLatest(
@@ -179,7 +188,7 @@ export default ({ baseRoute = '' }: Website) => component((
   }
 
   const berryDayId = dailyRandom(Date.now() / (intervalInMsMap.HR24 * 1000))
-  const [background, clothes, body, expression, faceAccessory, hat] = attributeMappings[berryDayId - 1]
+  const [background, clothes, body, expression, faceAccessory, hat] = tokenIdAttributeTuple[berryDayId - 1]
 
 
   const arbitrumStakingRewards = replayLatest(multicast(arbitrumContract.stakingRewards))
@@ -298,23 +307,15 @@ export default ({ baseRoute = '' }: Website) => component((
                   ),
                   tap(({ element }) => {
                     element.querySelectorAll('.wakka').forEach(el => el.remove())
-                  }, $DisplayBerry({
-                    size: '460px',
-                    clothes,
-                    background,
-                    // expression,
-                    expression: IIAttributeExpression.HAPPY,
-                    // @ts-ignore
-                    faceAccessory: '', hat: '',
-                  })({})),
+                  }, $DisplayBerry([background, clothes, undefined, IAttributeExpression.HAPPY, undefined, undefined], '460px',)({})),
                   $svg('svg')(
                     attr({ xmlns: 'http://www.w3.org/2000/svg', fill: 'none', viewBox: `0 0 1500 1500` }),
                     style({ width: '460px', height: '460px', position: 'absolute', zIndex: 1, })
                   )(
                     tap(({ element }) => {
                       element.innerHTML = `
-                      ${svgPartsMapping.faceAccessory[faceAccessory]},
-                      ${svgPartsMapping.hat[hat]}
+                      ${svgParts.faceAccessory[faceAccessory]},
+                      ${svgParts.hat[hat]}
                       `
                     })
                   )(),
@@ -462,46 +463,10 @@ export default ({ baseRoute = '' }: Website) => component((
           $column(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
             $text(style({ fontWeight: 'bold', fontSize: '2.5em' }))('Team'),
             $row(layoutSheet.spacingBig, style({ alignSelf: 'stretch', placeContent: 'space-evenly', flexWrap: 'wrap' }))(
-              $teamMember({
-                name: 'xm92boi', title: "Founder & Designer",
-                berry: {
-                  background: IAttributeBackground.YELLOW,
-                  clothes: IAttributeClothes.BASKETBALL_GREEN,
-                  hat: IAttributeHat.STRAW_HAT,
-                  faceAccessory: IAttributeFaceAccessory.SUNGLASSES_RED,
-                  expression:IIAttributeExpression.BORED
-                }
-              }),
-              $teamMember({
-                name: '0xAppodial', title: "Marketing",
-                berry: {
-                  background: IAttributeBackground.GREY,
-                  clothes: IAttributeClothes.CHEF,
-                  hat: IAttributeHat.VIKING,
-                  faceAccessory: IAttributeFaceAccessory.SKI_SUNGLASSES_BLUE,
-                  expression:IIAttributeExpression.SUPRISED
-                }
-              }),
-              $teamMember({
-                name: 'itburnzz', title: "Dev",
-                berry: {
-                  background: IAttributeBackground.GREEN,
-                  clothes: IAttributeClothes.HOODIE_MULTICOLOR,
-                  hat: IAttributeHat.AFRO_MULTICOLOR,
-                  faceAccessory: IAttributeFaceAccessory.GRILLZ_MULTICOLOR,
-                  expression:IIAttributeExpression.WINK
-                }
-              }),
-              $teamMember({
-                name: 'B2F_zer', title: "Pleb",
-                berry: {
-                  background: IAttributeBackground.GREY,
-                  clothes: IAttributeClothes.HOODIE_PINK,
-                  hat: IAttributeHat.X_BUCKET_HAT,
-                  faceAccessory: IAttributeFaceAccessory.MEDICAL_MASK,
-                  expression:IIAttributeExpression.BORED
-                }
-              }),
+              $teamMember({ name: 'xm92boi', title: "Founder & Designer", tokenId: 13 }),
+              $teamMember({ name: '0xAppodial', title: "Marketing", tokenId: 10 }),
+              $teamMember({ name: 'itburnzz', title: "Dev", tokenId: 12 }),
+              $teamMember({ name: 'B2F_zer', title: "Pleb", tokenId: 12 }),
             )
           ),
 
@@ -575,7 +540,22 @@ export default ({ baseRoute = '' }: Website) => component((
               $Berry({ walletLink, parentRoute: pagesRoute })({})
             ),
             router.contains(labRoute)(
-              $Berry({ walletLink, parentRoute: labRoute })({})
+              fadeIn($LabLanding({ walletLink, parentRoute: labRoute })({
+                changeRoute: linkClickTether()
+              }))
+            ),
+            router.contains(storeRoute)(
+              fadeIn($LabStore({ walletLink, parentRoute: storeRoute })({
+                changeRoute: linkClickTether()
+              }))
+            ),
+            router.contains(itemRoute)(
+              fadeIn($LabItem({ walletLink, walletStore, parentRoute: itemRoute })({
+                changeRoute: linkClickTether()
+              }))
+            ),
+            router.contains(wardrobeRoute)(
+              fadeIn($Wardrobe({ wallet: walletLink, parentRoute: wardrobeRoute })({}))
             ),
             router.contains(accountRoute)(
               $Account({ walletLink, parentRoute: pagesRoute, accountStakingStore })({})

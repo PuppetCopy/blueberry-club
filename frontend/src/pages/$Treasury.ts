@@ -13,7 +13,7 @@ import { gmxGlpPriceHistory, queryArbitrumRewards, queryAvalancheRewards, Staked
 
 import { $tokenIconMap } from "../common/$icons"
 import { $AssetDetails, readableNumber } from "../components/$AssetDetails"
-import { IAsset, ITreasuryStore } from "../types"
+import { IAsset, ITreasuryStore } from "@gambitdao/gbc-middleware"
 import { $StakingGraph } from "../components/$StakingGraph"
 import { arbitrumContract, avalancheContract } from "../logic/gbcTreasury"
 import { Stream } from "@most/types"

@@ -3,7 +3,7 @@ import { $column, layoutSheet, $row } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { $txHashRef } from "../elements/$common"
 import { $berryById } from "../logic/common"
-import { IToken } from "../types"
+import { IToken } from "@gambitdao/gbc-middleware"
 
 export const $berryTileId = (id: number,) => $column(style({ position: 'relative' }))(
   $berryById(id),

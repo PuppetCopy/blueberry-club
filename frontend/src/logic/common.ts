@@ -4,7 +4,8 @@ import { awaitPromises, map, multicast, periodic } from "@most/core"
 import { Stream } from "@most/types"
 import { $DisplayBerry } from "../components/$DisplayBerry"
 import { IValueInterval } from "../components/$StakingGraph"
-import { attributeMappings } from "./gbcMappings"
+import { IAttributeBody, IAttributeLabBackground, IAttributeLabClothes, IAttributeLabFaceAccessory, IAttributeLabHat, IAttributeExpression, IBerryDisplayTupleMap } from "@gambitdao/gbc-middleware"
+import tokenIdAttributeTuple from "./mappings/tokenIdAttributeTuple"
 import { IPricefeed, IStakeSource, queryLatestPrices } from "./query"
 
 
@@ -59,7 +60,7 @@ export function priceFeedHistoryInterval<T extends string>(interval: number, gmx
 }
 
 export const $berryById = (id: number, size = '85px') => {
-  const metaTuple = attributeMappings[id - 1]
+  const metaTuple = tokenIdAttributeTuple[id - 1]
 
   if (!metaTuple) {
     throw new Error('Could not find berry #' + id)
@@ -67,12 +68,24 @@ export const $berryById = (id: number, size = '85px') => {
 
   const [background, clothes, body, expression, faceAccessory, hat] = metaTuple
 
-  return $DisplayBerry({
-    size,
-    background,
-    clothes,
-    expression,
-    faceAccessory,
-    hat
-  })({})
+  return $DisplayBerry([background, clothes, IAttributeBody.BLUEBERRY, expression, faceAccessory, hat], size)({})
+}
+
+const labAttributeTuple = [IAttributeLabBackground, IAttributeLabClothes, IAttributeBody, IAttributeExpression, IAttributeLabFaceAccessory, IAttributeLabHat] as const
+
+export const getLabItemTupleIndex = (itemId: number) => {
+  const attrMap = itemId in IAttributeLabHat ? IAttributeLabHat : itemId in IAttributeLabBackground ? IAttributeLabBackground : itemId in IAttributeLabClothes ? IAttributeLabClothes : itemId in IAttributeLabFaceAccessory ? IAttributeLabFaceAccessory : null
+
+  if (attrMap === null) {
+    throw new Error(`item id: ${itemId} doesn't match any attribute`)
+  }
+
+  return labAttributeTuple.indexOf(attrMap)
+}
+
+export const $labItem = (id: number, size = '85px') => {
+  const state = getLabItemTupleIndex(id)
+  const newLocal = [...Array(state), id] as IBerryDisplayTupleMap
+
+  return $DisplayBerry(newLocal, size,)({})
 }

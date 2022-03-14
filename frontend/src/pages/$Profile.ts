@@ -11,11 +11,11 @@ import { combine, empty, fromPromise, map, multicast, now, switchLatest, take } 
 import { $StakingGraph } from "../components/$StakingGraph"
 import { $responsiveFlex } from "../elements/$common"
 import { gmxGlpPriceHistory, queryArbitrumRewards, queryAvalancheRewards, queryOwnerOwnedTokens, StakedTokenArbitrum, StakedTokenAvalanche } from "../logic/query"
-import { IAccountStakingStore, IAsset } from "../types"
+import { IAccountStakingStore, IAsset } from "@gambitdao/gbc-middleware"
 import { IGmxContractInfo, initContractChain } from "../logic/contract"
 import { Stream } from "@most/types"
 import { latestTokenPriceMap, priceFeedHistoryInterval } from "../logic/common"
-import { w3p, w3pAva } from "../logic/provider"
+import { web3Provider, w3pAva } from "../logic/provider"
 import { pallete } from "@aelea/ui-components-theme"
 import { $tokenIconMap } from "../common/$icons"
 import { $AssetDetails } from "../components/$AssetDetails"
@@ -42,7 +42,7 @@ export const $Account = ({ walletLink, parentRoute, accountStakingStore }: IAcco
   
 
 
-  const arbitrumContract: IGmxContractInfo = initContractChain(w3p, accountAddress, ARBITRUM_CONTRACT)
+  const arbitrumContract: IGmxContractInfo = initContractChain(web3Provider, accountAddress, ARBITRUM_CONTRACT)
   const avalancheContract: IGmxContractInfo = initContractChain(w3pAva, accountAddress, AVALANCHE_CONTRACT)
 
 

@@ -1,4 +1,5 @@
 import { WebSocketProvider, JsonRpcProvider } from "@ethersproject/providers"
+import { GLOBAL_W3P, GLOBAL_W3P_AVALANCHE } from "@gambitdao/gbc-middleware"
 import { NETWORK_METADATA } from "@gambitdao/gmx-middleware"
 import detectEthereumProvider from "@metamask/detect-provider"
 import WalletConnectProvider from "@walletconnect/ethereum-provider"
@@ -18,6 +19,7 @@ export const walletConnect = new WalletConnectProvider({
 
 export const metamaskQuery = detectEthereumProvider({ mustBeMetaMask: false, silent: true }) as Promise<IEthereumProvider & { selectedAddress: string } | null>
 
-export const w3p = new WebSocketProvider('wss://arb-mainnet.g.alchemy.com/v2/RBsflxWv6IhITsLxAWcQlhCqSuxV7Low')
-export const w3pAva = new JsonRpcProvider('https://api.avax.network/ext/bc/C/rpc')
+export const web3Provider = new WebSocketProvider(GLOBAL_W3P)
+export const web3ProviderTestnet = new WebSocketProvider(GLOBAL_W3P)
+export const w3pAva = new JsonRpcProvider(GLOBAL_W3P_AVALANCHE)
 

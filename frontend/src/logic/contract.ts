@@ -6,7 +6,7 @@ import { RewardReader__factory, GMX__factory, Reader__factory, EsGMX__factory, G
 import { ARBITRUM_CONTRACT, AVALANCHE_CONTRACT, BASIS_POINTS_DIVISOR } from "@gambitdao/gmx-middleware"
 import { awaitPromises, combine, fromPromise, map, now, take } from "@most/core"
 import { Stream } from "@most/types"
-import { IAsset } from "../types"
+import { IAsset } from "@gambitdao/gbc-middleware"
 import { latestTokenPriceMap } from "./common"
 
 

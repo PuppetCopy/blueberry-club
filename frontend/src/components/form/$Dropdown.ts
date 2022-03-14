@@ -2,7 +2,7 @@ import { Behavior, O, Op } from "@aelea/core"
 import { $Node, component, eventElementTarget, IBranch, INode, NodeComposeFn, nodeEvent, style, styleBehavior, stylePseudo } from "@aelea/dom"
 import { $column, $row, Input, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { constant, map, merge, mergeArray, multicast, now, skip, startWith, switchLatest } from "@most/core"
+import { constant, empty, map, merge, mergeArray, multicast, now, skip, startWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
 
 
@@ -23,16 +23,18 @@ export const secondaryButtonStyle = style({
 export interface ISelect<T> {
   options: T[]
 
-  $container: NodeComposeFn<$Node>
-  $option: Op<T, $Node>
+  $container?: NodeComposeFn<$Node>
+  $option?: NodeComposeFn<$Node>
 
-  optionOp?: Op<INode, INode>
+  optionOp: Op<T, $Node>
   $changeSelect?: Stream<T>
 }
 
 
 
-export const $Select = <T>({ options, optionOp = O(), $option, $container }: ISelect<T>) => component((
+
+
+export const $Select = <T>({ options, optionOp, $option = $column, $container = $column }: ISelect<T>) => component((
   [select, selectTether]: Behavior<IBranch, T>
 ) => {
 
@@ -45,8 +47,8 @@ export const $Select = <T>({ options, optionOp = O(), $option, $container }: ISe
           constant(item)
         )
 
-        const $opt = switchLatest($option(now(item)))
-        const $val = optionOp($opt)
+        const $opt = switchLatest(optionOp(now(item)))
+        const $val = $option($opt)
 
         return selectBehavior($val)
       })
@@ -63,12 +65,29 @@ export const $Select = <T>({ options, optionOp = O(), $option, $container }: ISe
 export interface IDropdown<T> extends Input<T> {
   select: Omit<ISelect<T>, '$value'>
   $selection: Op<T, $Node>
+  $container?: NodeComposeFn<$Node>
+  $option?: NodeComposeFn<$Node>
 
   openMenuOp?: Op<MouseEvent, MouseEvent>
 }
 
 
-export const $Dropdown = <T>({ value, disabled, validation, $selection, select, openMenuOp = O() }: IDropdown<T>) => component((
+
+export const $defaultOptionContainer = $row(layoutSheet.spacingSmall, style({ alignItems: 'center', padding: '15px 25px', width: '100%' }), style({ cursor: 'pointer' }), stylePseudo(':hover', { backgroundColor: pallete.middleground }))
+export const $defaultDropdownContainer = $column(layoutSheet.spacingTiny)
+export const $defaultSelectContainer = $column(layoutSheet.spacingTiny, style({
+  minWidth: '200px',
+  border: `1px solid ${pallete.middleground}`, borderRadius: '20px',
+  backgroundColor: pallete.background,
+  boxShadow: `rgb(0 0 0 / 21%) 1px 1px 14px`
+}))
+
+
+export const $Dropdown = <T>({
+  value, disabled, validation,
+  $container = $defaultDropdownContainer,
+  $selection,
+  select, openMenuOp = O() }: IDropdown<T>) => component((
   [pick, pickTether]: Behavior<T, T>,
   [openMenu, openMenuTether]: Behavior<INode, any>,
 ) => {
@@ -80,37 +99,34 @@ export const $Dropdown = <T>({ value, disabled, validation, $selection, select, 
     return now(false)
   }, mergeArray([constant(false, pick), openMenu]))))
 
-  const $option = $row(layoutSheet.spacingSmall, style({ alignItems: 'center', padding: '15px 25px' }))
-  const $selectableOption = $option(style({ cursor: 'pointer' }), stylePseudo(':hover', { backgroundColor: pallete.background }))
-
-
-  const $container = select.$container(
-    style({
-      overflow: 'hidden', backgroundColor: pallete.horizon, zIndex: 50,
-      border: `1px solid ${pallete.middleground}`, borderRadius: '20px', position: 'absolute', top: 'calc(100% + 5px)', display: 'none', left: 0
-    }),
-    styleBehavior(
-      map(state => ({ display: state ? 'flex' : 'none' }), isOpenState)
-    )
-  )
-
   const openMenuBehavior = openMenuTether(
     nodeEvent('click'),
     openMenuOp
   )
   
   return [
-    $column(style({ position: 'relative' }))(
+    $container(style({ position: 'relative' }))(
       openMenuBehavior(switchLatest(
         $selection(merge(pick, value))
       )),
 
-      $Select({
-        ...select,
-        $container,
-        optionOp: $selectableOption
+      switchLatest(map(show => {
+        if (!show) {
+          return empty()
+        }
+
+        return $Select({
+          ...select,
+          $container: (select.$container || $defaultSelectContainer)(
+            style({
+              zIndex: 50,
+              position: 'absolute', top: 'calc(100% + 5px)'
+            })
+          ),
+          $option: select.$option || $defaultOptionContainer,
         // $option: map(x => $selectableOption($text(String(x))))
-      })({ select: pickTether() })
+        })({ select: pickTether() })
+      }, isOpenState))
     ),
 
     {
