@@ -1,4 +1,4 @@
-//SPDX-License-Identifier: MIT
+//SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
 
 import "hardhat/console.sol";
@@ -6,13 +6,10 @@ import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 
-/**
- * @dev This is a fork of ERC721Enumerable from openzepplin for ERC1155
- */
-
 abstract contract ERC1155Enumerable is ERC1155, ERC1155Holder {
     mapping(address => mapping(uint256 => uint256)) private _ownedTokens;
     mapping(address => uint256) private _ownedTokensCounter;
+    mapping(uint256 => uint256) private _totalSupply;
 
     mapping(uint256 => uint256) private _ownedTokensIndex;
 
@@ -22,6 +19,14 @@ abstract contract ERC1155Enumerable is ERC1155, ERC1155Holder {
 
     function totalTokens() public view returns (uint256) {
         return _allTokens.length;
+    }
+
+    function totalSupply(uint id) public view returns (uint256) {
+        return _totalSupply[id] - 1;
+    }
+
+    function exists(uint256 id) public view virtual returns (bool) {
+        return ERC1155Enumerable.totalSupply(id) > 0;
     }
 
     function tokenByIndex(uint256 index) public view returns (uint256) {
@@ -48,6 +53,7 @@ abstract contract ERC1155Enumerable is ERC1155, ERC1155Holder {
             uint tokenId = ids[i];
             uint amount = amounts[i];
             if (from == address(0)) {
+                _totalSupply[tokenId] += amount;
                 if(balanceOf(address(this), tokenId) == 0) {
                     _addTokenToAllTokensEnumeration(tokenId);
                 }
@@ -57,6 +63,7 @@ abstract contract ERC1155Enumerable is ERC1155, ERC1155Holder {
                 }
             }
             if (to == address(0)) {
+                _totalSupply[tokenId] -= amount;
                 if(from == address(this) && (balanceOf(address(this), tokenId) - amount) == 0) {
                     _removeTokenFromAllTokensEnumeration(tokenId);
                 }

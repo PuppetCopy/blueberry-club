@@ -6,52 +6,57 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface IGBCLabsItems {
-    function mint(address to, uint id, uint amount) external;
-}
+contract GBC is
+    Context,
+    Ownable,
+    ERC721Enumerable
+{
+    using Counters for Counters.Counter;
+    Counters.Counter private _tokenIdTracker;
 
-contract GBCLabsSaleExemple is Ownable, ERC721Enumerable {
-    uint private _minted = 0;
-
-    uint TOKEN_ID = 746;
-
+    string public _baseTokenURI;
     uint256 public max = 10000;
     uint256 public maxMintPerTx = 20;
 
     bool public publicSaleStarted = false;
     bool public wlMintStarted = false;
 
+    bool public tokenURIFrozen = false;
     uint256 public cost = 0.03 ether;
 
     address public wlSigner;
-
     mapping(address => bool) blacklist;
 
-    IGBCLabsItems private ITEMS;
 
-    constructor(string memory name, string memory symbol, address _items) ERC721(name, symbol) {
+    constructor(string memory name, string memory symbol, string memory baseTokenURI) ERC721(name, symbol) {
+        _baseTokenURI = baseTokenURI;
+        _tokenIdTracker.increment();
         wlSigner = address(this);
-        ITEMS = IGBCLabsItems(_items);
+    }
+
+    function _baseURI() internal view virtual override returns (string memory) {
+        return _baseTokenURI;
     }
     
-    function adminMint(uint256 _mintAmount, address _to) external onlyOwner {
-        require(_minted + _mintAmount <= max, "Transaction exceeds max mint amount");
-        ITEMS.mint(_to, TOKEN_ID, _mintAmount);
-        _minted += _mintAmount;
+    function adminMint(uint256 _mintAmount, address _to) external onlyOwner{
+        for (uint256 i = 1; i <= _mintAmount; i++) {
+            require(_tokenIdTracker.current() <= max, "Transaction exceeds max mint amount");
+            _mint(_to, _tokenIdTracker.current());
+            _tokenIdTracker.increment();
+        }
     }
-
     function claim(bytes memory sig) external {
         require(wlMintStarted == true, "WL Mint not started yet");
         require(checkSignature(sig, _msgSender()) == true, "Signature not valid");
         require(blacklist[_msgSender()] == false, "This address was already used");
-        require(_minted + 1 <= max, "Transaction exceeds max mint amount");
-        ITEMS.mint(msg.sender, TOKEN_ID, 1);
-        _minted += 1;
+        require(_tokenIdTracker.current() <= max, "Transaction exceeds max mint amount");
+        _mint(_msgSender(), _tokenIdTracker.current());
+        _tokenIdTracker.increment();
         blacklist[_msgSender()] = true;
     }
-
     function whitelistMint(uint256 _mintAmount, bytes memory sig) external payable {
         require(publicSaleStarted == true, "Public Sale not started yet");
         require(wlMintStarted == true, "WL Mint not started yet");
@@ -59,21 +64,23 @@ contract GBCLabsSaleExemple is Ownable, ERC721Enumerable {
         require(checkSignature(sig, _msgSender()) == true, "Signature is not valid");
         require(blacklist[_msgSender()] == false, "This whitelisted address was already used");
         require(msg.value >= cost * (_mintAmount - 1), "Not enough ether provided");
-        require(_minted + _mintAmount <= max, "Transaction exceeds max mint amount");
-        ITEMS.mint(msg.sender, TOKEN_ID, _mintAmount);
-        _minted += _mintAmount;
+        for (uint256 i = 1; i <= _mintAmount; i++) {
+            require(_tokenIdTracker.current() <= max, "Transaction exceeds max mint amount");
+            _mint(_msgSender(), _tokenIdTracker.current());
+            _tokenIdTracker.increment();
+        }
         blacklist[_msgSender()] = true;
     }
-
     function mint(uint256 _mintAmount) external payable {
         require(publicSaleStarted == true, "Public Sale not started yet");
         require(_mintAmount <= maxMintPerTx, "Exceeds max amount per transaction allowed");
         require(msg.value >= cost * _mintAmount, "Not enough ether provided");
-        require(_minted + _mintAmount <= max, "Transaction exceeds max mint amount");
-        ITEMS.mint(msg.sender, TOKEN_ID, _mintAmount);
-        _minted += _mintAmount;
+        for (uint256 i = 1; i <= _mintAmount; i++) {
+            require(_tokenIdTracker.current() <= max, "Transaction exceeds max mint amount");
+            _mint(_msgSender(), _tokenIdTracker.current());
+            _tokenIdTracker.increment();
+        }
     }
-
     function withdraw(address token, uint256 amount) external onlyOwner {
         if(token == address(0)) { 
             payable(_msgSender()).transfer(amount);
@@ -81,7 +88,12 @@ contract GBCLabsSaleExemple is Ownable, ERC721Enumerable {
             IERC20(token).transfer(_msgSender(), amount);
         }
     }
-
+    
+    function setBaseTokenURI(string memory uri) external onlyOwner {
+        require(tokenURIFrozen == false, "Token URIs are frozen");
+        _baseTokenURI = uri;
+    }
+    
     function setWLSigner(address signer) external onlyOwner {
         require(signer != 0x0000000000000000000000000000000000000000, "Can't set WL signer as 0x00 address");
         wlSigner = signer;
@@ -89,6 +101,10 @@ contract GBCLabsSaleExemple is Ownable, ERC721Enumerable {
 
     function setCost(uint256 price) external onlyOwner {
         cost = price;
+    }
+    
+    function freezeBaseURI() external onlyOwner {
+        tokenURIFrozen = true;
     }
     
     function startPublicSale() external onlyOwner {
