@@ -6,6 +6,10 @@ import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 
+/**
+ * @dev This is a fork of ERC721Enumerable from openzepplin for ERC1155
+ */
+
 abstract contract ERC1155Enumerable is ERC1155, ERC1155Holder {
     mapping(address => mapping(uint256 => uint256)) private _ownedTokens;
     mapping(address => uint256) private _ownedTokensCounter;

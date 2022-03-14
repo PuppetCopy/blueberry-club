@@ -1,8 +1,8 @@
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { expect } from "chai"
-import { BigNumber } from "ethers"
-import { ethers } from "hardhat"
-import { GBC, GBCLabsItems, GBCLabsManager, GBC__factory, GBCLabsItems__factory, GBCLabsManager__factory } from "contracts"
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { expect } from "chai";
+import { BigNumber } from "ethers";
+import { ethers } from "hardhat";
+import { GBC, GBCLabsItems } from "../typechain-types";
 
 describe("GBC Labs Items", function () {
   let owner: SignerWithAddress
@@ -15,7 +15,6 @@ describe("GBC Labs Items", function () {
 
   let GBC_CONTRACT: GBC
   let ITEMS_CONTRACT: GBCLabsItems
-  let MANAGER_CONTRACT: GBCLabsManager
 
   this.beforeAll(async () => {
     [owner, user1, user2, user3, user4, user5, market] = await ethers.getSigners()
@@ -39,14 +38,7 @@ describe("GBC Labs Items", function () {
     const items = await Items.deploy()
     ITEMS_CONTRACT = await items.deployed()
 
-    const Manager = new GBCLabsManager__factory(owner)
-    const manager = await Manager.deploy([owner.address], [1], GBC_CONTRACT.address, ITEMS_CONTRACT.address)
-    MANAGER_CONTRACT = await manager.deployed()
-
     tx = await ITEMS_CONTRACT.connect(owner).grantRole('0xaf290d8680820aad922855f39b306097b20e28774d6c1ad35a20325630c3a02c', owner.address)
-    await tx.wait()
-
-    tx = await ITEMS_CONTRACT.connect(owner).setApproval(MANAGER_CONTRACT.address, true)
     await tx.wait()
   })
 
@@ -222,134 +214,6 @@ describe("GBC Labs Items", function () {
         const tx = await ITEMS_CONTRACT.connect(market).safeTransferFrom(market.address, user1.address, 5, 1, "0x00")
         await tx.wait()
         expect(await ITEMS_CONTRACT.balanceOf(user1.address, 5)).to.be.equal(BigNumber.from(1))
-      })
-    })
-
-
-    describe("Set SFT to my blueberry", () => {
-      it(`Set hat [COWBOY] and set glasse [THUG]`, async () => {
-        const [first_token] = await GBC_CONTRACT.walletOfOwner(user1.address)
-        const tx = await MANAGER_CONTRACT.connect(user1).setItemsTo(first_token, [1, 2], [false, false])
-        await tx.wait()
-        expect(await ITEMS_CONTRACT.balanceOf(user1.address, 1)).to.be.equal(BigNumber.from(1))
-        expect(await ITEMS_CONTRACT.balanceOf(user1.address, 2)).to.be.equal(BigNumber.from(1))
-      })
-
-
-      it(`Show the final result`, async () => {
-        const [first_token] = await GBC_CONTRACT.walletOfOwner(user1.address)
-        const [BACKGROUND, ITEM, TYPE] = await MANAGER_CONTRACT.getTokenAssets(first_token)
-        expect(BACKGROUND).to.be.equal(BigNumber.from(0))
-        expect(ITEM).to.be.equal(BigNumber.from(1))
-        expect(TYPE).to.be.equal(BigNumber.from(2))
-      })
-    })
-
-    describe("Changing the hat", () => {
-      it(`Set glasse [THUG]`, async () => {
-        const [first_token] = await GBC_CONTRACT.walletOfOwner(user1.address)
-        const tx = await MANAGER_CONTRACT.connect(user1).setItemsTo(first_token, [2], [false])
-        await tx.wait()
-        expect(await ITEMS_CONTRACT.balanceOf(user1.address, 1)).to.be.equal(BigNumber.from(2))
-        expect(await ITEMS_CONTRACT.balanceOf(user1.address, 2)).to.be.equal(BigNumber.from(0))
-      })
-
-      it(`Show the final result`, async () => {
-        const [first_token] = await GBC_CONTRACT.walletOfOwner(user1.address)
-        const [BACKGROUND, ITEM, TYPE] = await MANAGER_CONTRACT.getTokenAssets(first_token)
-        expect(BACKGROUND).to.be.equal(BigNumber.from(0))
-        expect(ITEM).to.be.equal(BigNumber.from(2))
-        expect(TYPE).to.be.equal(BigNumber.from(3))
-      })
-    })
-
-    describe("Changing the background", () => {
-      it(`Set background [CLOUD]`, async () => {
-        const [first_token] = await GBC_CONTRACT.walletOfOwner(user1.address)
-        const tx = await MANAGER_CONTRACT.connect(user1).setItemsTo(first_token, [4], [false])
-        await tx.wait()
-        expect(await ITEMS_CONTRACT.balanceOf(user1.address, 4)).to.be.equal(BigNumber.from(2))
-      })
-
-      it(`Show the final result`, async () => {
-        const [first_token] = await GBC_CONTRACT.walletOfOwner(user1.address)
-        const [BACKGROUND, ITEM, TYPE] = await MANAGER_CONTRACT.getTokenAssets(first_token)
-        expect(BACKGROUND).to.be.equal(BigNumber.from(4))
-        expect(ITEM).to.be.equal(BigNumber.from(2))
-        expect(TYPE).to.be.equal(BigNumber.from(3))
-      })
-    })
-
-    describe("Updating the background", () => {
-      it(`Set background [CLOUD]`, async () => {
-        const [first_token] = await GBC_CONTRACT.walletOfOwner(user1.address)
-        const tx = await MANAGER_CONTRACT.connect(user1).setItemsTo(first_token, [5], [false])
-        await tx.wait()
-        expect(await ITEMS_CONTRACT.balanceOf(user1.address, 4)).to.be.equal(BigNumber.from(3))
-        expect(await ITEMS_CONTRACT.balanceOf(user1.address, 5)).to.be.equal(BigNumber.from(0))
-      })
-
-      it(`Show the final result`, async () => {
-        const [first_token] = await GBC_CONTRACT.walletOfOwner(user1.address)
-        const [BACKGROUND, ITEM, TYPE] = await MANAGER_CONTRACT.getTokenAssets(first_token)
-        expect(BACKGROUND).to.be.equal(BigNumber.from(5))
-        expect(ITEM).to.be.equal(BigNumber.from(2))
-        expect(TYPE).to.be.equal(BigNumber.from(3))
-      })
-    })
-
-    describe("Updating the background and item", () => {
-      it(`Set background [CLOUD] and hat [COWBOY]`, async () => {
-        const [first_token] = await GBC_CONTRACT.walletOfOwner(user1.address)
-        const tx = await MANAGER_CONTRACT.connect(user1).setItemsTo(first_token, [4, 1], [false, false])
-        await tx.wait()
-        expect(await ITEMS_CONTRACT.balanceOf(user1.address, 1)).to.be.equal(BigNumber.from(1))
-        expect(await ITEMS_CONTRACT.balanceOf(user1.address, 4)).to.be.equal(BigNumber.from(2))
-        expect(await ITEMS_CONTRACT.balanceOf(user1.address, 5)).to.be.equal(BigNumber.from(1))
-      })
-
-      it(`Show the final result`, async () => {
-        const [first_token] = await GBC_CONTRACT.walletOfOwner(user1.address)
-        const [BACKGROUND, ITEM, TYPE] = await MANAGER_CONTRACT.getTokenAssets(first_token)
-        expect(BACKGROUND).to.be.equal(BigNumber.from(4))
-        expect(ITEM).to.be.equal(BigNumber.from(1))
-        expect(TYPE).to.be.equal(BigNumber.from(2))
-      })
-    })
-
-    describe("Removing only background", () => {
-      it(`Remove background [CLOUD] and hat [MISTER]`, async () => {
-        const [first_token] = await GBC_CONTRACT.walletOfOwner(user1.address)
-        const tx = await MANAGER_CONTRACT.connect(user1).setItemsTo(first_token, [4, 3], [true, false])
-        await tx.wait()
-        expect(await ITEMS_CONTRACT.balanceOf(user1.address, 1)).to.be.equal(BigNumber.from(2))
-        expect(await ITEMS_CONTRACT.balanceOf(user1.address, 3)).to.be.equal(BigNumber.from(0))
-        expect(await ITEMS_CONTRACT.balanceOf(user1.address, 4)).to.be.equal(BigNumber.from(3))
-      })
-
-      it(`Show the final result`, async () => {
-        const [first_token] = await GBC_CONTRACT.walletOfOwner(user1.address)
-        const [BACKGROUND, ITEM, TYPE] = await MANAGER_CONTRACT.getTokenAssets(first_token)
-        expect(BACKGROUND).to.be.equal(BigNumber.from(0))
-        expect(ITEM).to.be.equal(BigNumber.from(3))
-        expect(TYPE).to.be.equal(BigNumber.from(2))
-      })
-    })
-
-    describe("Removing also item", () => {
-      it(`Remove item`, async () => {
-        const [first_token] = await GBC_CONTRACT.walletOfOwner(user1.address)
-        const tx = await MANAGER_CONTRACT.connect(user1).setItemsTo(first_token, [3], [true])
-        await tx.wait()
-        expect(await ITEMS_CONTRACT.balanceOf(user1.address, 3)).to.be.equal(BigNumber.from(1))
-      })
-
-      it(`Show the final result`, async () => {
-        const [first_token] = await GBC_CONTRACT.walletOfOwner(user1.address)
-        const [BACKGROUND, ITEM, TYPE] = await MANAGER_CONTRACT.getTokenAssets(first_token)
-        expect(BACKGROUND).to.be.equal(BigNumber.from(0))
-        expect(ITEM).to.be.equal(BigNumber.from(0))
-        expect(TYPE).to.be.equal(BigNumber.from(0))
       })
     })
   })
