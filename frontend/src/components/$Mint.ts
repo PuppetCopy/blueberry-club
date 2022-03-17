@@ -9,14 +9,13 @@ import { IWalletLink } from "@gambitdao/wallet-link"
 import { awaitPromises, continueWith, empty, fromPromise, join, map, merge, multicast, now, periodic, skipRepeats, snapshot, startWith, switchLatest, takeWhile, tap } from "@most/core"
 import { Public__factory } from "contracts"
 import { IEthereumProvider } from "eip1193-provider"
-import { $IntermediateTx, $spinner } from "../common/$IntermediateDisplay"
 import { $responsiveFlex, $txHashRef } from "../elements/$common"
 import { $gift, $tofunft } from "../elements/$icons"
 import { $IntermediateConnect } from "./$ConnectAccount"
 import { $ButtonPrimary } from "./form/$Button"
 import { $Dropdown } from "./form/$Dropdown"
 import { WALLET } from "../logic/provider"
-import { $alert, $anchor, $caretDown } from "@gambitdao/ui-components"
+import { $alert, $anchor, $caretDown, $IntermediateTx, $spinner } from "@gambitdao/ui-components"
 import { $mintDetails } from "./$common"
 import { Stream } from "@most/types"
 import { itemsGlobal } from "../logic/items"
@@ -63,14 +62,12 @@ export const $Mint = ({ walletStore, walletLink, item, publicSaleLive, presaleLi
   const supportedNetwork = map(x => x !== USE_CHAIN, walletLink.network)
 
 
-  // const gbc = GBC__factory.connect(item.contractAddress, web3ProviderTestnet)
-
   const itemsUser = replayLatest(multicast(skipRepeats(awaitPromises(map(async w3p => {
     if (w3p === null || w3p?.network?.chainId !== USE_CHAIN) {
       return null
     }
 
-    const contract = Public__factory.connect(GBC_ADDRESS.LAB_ITEMS_CONTRACT, w3p.getSigner())
+    const contract = Public__factory.connect(GBC_ADDRESS.LAB, w3p.getSigner())
 
 
     if (await contract.deployed()) {

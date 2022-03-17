@@ -1,5 +1,5 @@
 import { combineArray } from "@aelea/core"
-import { GBC_ADDRESS, USD_PRECISION } from "@gambitdao/gbc-middleware"
+import { GBC_ADDRESS, BI_18_PRECISION } from "@gambitdao/gbc-middleware"
 import { ERC20__factory } from "@gambitdao/gmx-contracts"
 import { ARBITRUM_CONTRACT, AVALANCHE_CONTRACT, AVALANCHE_TRADEABLE_ADDRESS } from "@gambitdao/gmx-middleware"
 import { fromPromise, map } from "@most/core"
@@ -21,8 +21,8 @@ export const avalancheContract: IGmxContractInfo = initContractChain(w3pAva, GBC
 
 export const totalWalletHoldingsUsd = combineArray((contractEthBalance, vaultArbitrumEthBalance, vaultAvalancheEthBalance, vaultAvaxBalance, avalancheStakingRewards, latestPrice) => {
   const totalEth = contractEthBalance + vaultArbitrumEthBalance + vaultAvalancheEthBalance
-  const ethInGbcContractUsd = totalEth * latestPrice.eth.value / USD_PRECISION
-  const vaultAvaxUsd = vaultAvaxBalance * latestPrice.avax.value / USD_PRECISION
+  const ethInGbcContractUsd = totalEth * latestPrice.eth.value / BI_18_PRECISION
+  const vaultAvaxUsd = vaultAvaxBalance * latestPrice.avax.value / BI_18_PRECISION
 
 
   return ethInGbcContractUsd + avalancheStakingRewards + vaultAvaxUsd
@@ -33,8 +33,8 @@ function getTotalStakingInUsd(a: IGmxContractInfo, b: IGmxContractInfo) {
   return combineArray((aStakingRewards, bStakingRewards, latestPrice) => {
     const totalGmx = bStakingRewards.gmxInStakedGmx + bStakingRewards.esGmxInStakedGmx + aStakingRewards.gmxInStakedGmx + aStakingRewards.esGmxInStakedGmx
 
-    const gmxInStakedGmxUsd = totalGmx * latestPrice.gmx.value / USD_PRECISION
-    const glpInStakedGlpUsd = aStakingRewards.glpPrice * aStakingRewards.glpBalance / USD_PRECISION + bStakingRewards.glpPrice * bStakingRewards.glpBalance / USD_PRECISION
+    const gmxInStakedGmxUsd = totalGmx * latestPrice.gmx.value / BI_18_PRECISION
+    const glpInStakedGlpUsd = aStakingRewards.glpPrice * aStakingRewards.glpBalance / BI_18_PRECISION + bStakingRewards.glpPrice * bStakingRewards.glpBalance / BI_18_PRECISION
 
     const totalPendingRewardsUsd = bStakingRewards.totalRewardsUsd + aStakingRewards.totalRewardsUsd
 

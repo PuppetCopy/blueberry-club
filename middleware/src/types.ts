@@ -100,12 +100,12 @@ export enum IAttributeMappings {
   Wizard = 27, Work = 135, "X Bucket Hat" = 19, "X Face Tattoo" = 18, "X Hoodie" = 9, Yellow = 30,
  
   
-  "Avalanche Hoodie" = 2,
-  "Fast Food Cap" = 1,
-  "Builder",
-  "Christmas Hat",
-  "Beard White",
-  "Camo Background",
+  "Avalanche Hoodie" = 200,
+  "Fast Food Cap" = 201,
+  "Builder" = 202,
+  "Christmas Hat" = 203,
+  "Beard White" = 204,
+  "Camo Background" = 205,
 }
 
 
@@ -182,6 +182,11 @@ export enum IAttributeClothes {
   WORK = IAttributeMappings.Work,
   X_HOODIE = IAttributeMappings["X Hoodie"],
   NUDE = IAttributeMappings.Nude,
+
+
+  // lab
+  BUILDER = IAttributeMappings.Builder,
+  AVALANCHE_HOODIE = IAttributeMappings["Avalanche Hoodie"],
 }
 
 export enum IAttributeFaceAccessory {
@@ -267,6 +272,10 @@ export enum IAttributeHat {
   VISOR_RED = IAttributeMappings["Visor Red"],
   WIZARD = IAttributeMappings.Wizard,
   X_BUCKET_HAT = IAttributeMappings["X Bucket Hat"],
+
+  // lab
+  CHRISTMAS_HAT = IAttributeMappings['Christmas Hat'],
+  FAST_FOOD_CAP = IAttributeMappings['Fast Food Cap'],
 }
 
 export enum IAttributeBackground {
@@ -278,37 +287,23 @@ export enum IAttributeBackground {
   PINK = IAttributeMappings.Pink,
   PURPLE = IAttributeMappings.Purple,
   YELLOW = IAttributeMappings.Yellow,
-}
 
-export enum IAttributeLabBackground {
   CAMO = IAttributeMappings['Camo Background'],
+
 }
 
-export enum IAttributeLabClothes {
-  BUILDER = IAttributeMappings.Builder,
-  AVALANCHE_HOODIE = IAttributeMappings["Avalanche Hoodie"],
-}
-
-export enum IAttributeLabHat {
-  CHRISTMAS_HAT = IAttributeMappings['Christmas Hat'],
-  FAST_FOOD_CAP = IAttributeMappings['Fast Food Cap'],
-}
-
-export enum IAttributeLabFaceAccessory {
-  BEARD_WHITE = IAttributeMappings["Beard White"],
-}
 
 
 export type IBerryDisplayTupleMap = [
-  IAttributeBackground | IAttributeLabBackground,
-  IAttributeClothes | IAttributeLabClothes,
+  IAttributeBackground,
+  IAttributeClothes,
   IAttributeBody,
   IAttributeExpression,
-  IAttributeFaceAccessory | IAttributeLabFaceAccessory,
-  IAttributeHat | IAttributeLabHat
+  IAttributeFaceAccessory,
+  IAttributeHat
 ]
 
-export type ILabAttributeOptions = typeof IAttributeLabBackground | typeof IAttributeLabClothes | typeof IAttributeLabHat | typeof IAttributeLabFaceAccessory
+export type ILabAttributeOptions = typeof IAttributeBackground | typeof IAttributeClothes | typeof IAttributeHat | typeof IAttributeFaceAccessory
 
 
 export interface LabItemDescription {

@@ -5,7 +5,7 @@ import { $RouterAnchor } from '@aelea/router'
 import { $column, $icon, $row, designSheet, layoutSheet, observer, screenUtils, state } from '@aelea/ui-components'
 import { $anchor, $glp, $Link } from '@gambitdao/ui-components'
 import { pallete } from '@aelea/ui-components-theme'
-import { GBC_ADDRESS, USD_PRECISION } from '@gambitdao/gbc-middleware'
+import { GBC_ADDRESS, BI_18_PRECISION } from '@gambitdao/gbc-middleware'
 import { groupByMap, IAccountQueryParamApi, intervalInMsMap, ITimerangeParamApi } from '@gambitdao/gmx-middleware'
 import { initWalletLink } from "@gambitdao/wallet-link"
 import {
@@ -226,7 +226,7 @@ export default ({ baseRoute = '' }: Website) => component((
     // amountUsd from avalanche is not reflecting the real amount because the subraph's gmx price is 0
     // to fix this, we'll fetch arbitrum's price of GMX instead
     const avaxYieldGmx = [...avaxStaking.stakedGlpTrackerClaims, ...avaxStaking.stakedGmxTrackerClaims]
-      .map(y => ({ ...y, amountUsd: y.amount * priceMap.gmx.value / USD_PRECISION }))
+      .map(y => ({ ...y, amountUsd: y.amount * priceMap.gmx.value / BI_18_PRECISION }))
 
     return [
       ...yieldFeeList,

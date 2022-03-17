@@ -13,7 +13,7 @@ export function connect(wallet: IWalletLink) {
     }
 
     const gbc = GBC__factory.connect(GBC_ADDRESS.GBC, w3p.getSigner())
-    const items = GBCLab__factory.connect(GBC_ADDRESS.LAB_ITEMS_CONTRACT, w3p.getSigner())
+    const items = GBCLab__factory.connect(GBC_ADDRESS.LAB, w3p.getSigner())
 
     return { gbc, items }
   }, wallet.provider))))

@@ -3,7 +3,7 @@ import { $node, $text, component, style } from "@aelea/dom"
 import * as router from '@aelea/router'
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
-import { USD_PRECISION } from "@gambitdao/gbc-middleware"
+import { BI_18_PRECISION } from "@gambitdao/gbc-middleware"
 import { ARBITRUM_CONTRACT, AVALANCHE_CONTRACT, BASIS_POINTS_DIVISOR, CHAIN, ETH_ADDRESS_REGEXP, formatFixed, IAccountQueryParamApi, intervalInMsMap, ITimerangeParamApi, readableNumber } from "@gambitdao/gmx-middleware"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
@@ -20,8 +20,8 @@ import { pallete } from "@aelea/ui-components-theme"
 import { $tokenIconMap } from "../common/$icons"
 import { $AssetDetails } from "../components/$AssetDetails"
 import { $metricEntry, $seperator2 } from "./common"
-import { $IntermediatePromise } from "../common/$IntermediateDisplay"
 import { $berryTileId } from "../components/$common"
+import { $IntermediatePromise } from "@gambitdao/ui-components"
 
 
 export interface IAccount {
@@ -62,10 +62,10 @@ export const $Account = ({ walletLink, parentRoute, accountStakingStore }: IAcco
 
 
   const gmxAsset: Stream<IAsset> = combine((bn, priceMap) => {
-    return { balance: bn.gmxInStakedGmx, balanceUsd: bn.gmxInStakedGmx * priceMap.gmx.value / USD_PRECISION }
+    return { balance: bn.gmxInStakedGmx, balanceUsd: bn.gmxInStakedGmx * priceMap.gmx.value / BI_18_PRECISION }
   }, arbitrumStakingRewards, latestTokenPriceMap)
-  const glpArbiAsset: Stream<IAsset> = combine((bn, priceMap) => ({ balance: bn.glpBalance, balanceUsd: priceMap.glpArbitrum.value * bn.glpBalance / USD_PRECISION }), arbitrumStakingRewards, latestTokenPriceMap)
-  const glpAvaxAsset: Stream<IAsset> = combine((bn, priceMap) => ({ balance: bn.glpBalance, balanceUsd: priceMap.glpArbitrum.value * bn.glpBalance / USD_PRECISION }), avalancheStakingRewards, latestTokenPriceMap)
+  const glpArbiAsset: Stream<IAsset> = combine((bn, priceMap) => ({ balance: bn.glpBalance, balanceUsd: priceMap.glpArbitrum.value * bn.glpBalance / BI_18_PRECISION }), arbitrumStakingRewards, latestTokenPriceMap)
+  const glpAvaxAsset: Stream<IAsset> = combine((bn, priceMap) => ({ balance: bn.glpBalance, balanceUsd: priceMap.glpArbitrum.value * bn.glpBalance / BI_18_PRECISION }), avalancheStakingRewards, latestTokenPriceMap)
 
 
   const feeYieldClaim = combineArray((arbiStaking, avaxStaking) => [...arbiStaking.feeGlpTrackerClaims, ...arbiStaking.feeGmxTrackerClaims, ...avaxStaking.feeGlpTrackerClaims, ...avaxStaking.feeGmxTrackerClaims], arbitrumYieldSourceMap, avalancheYieldSourceMap)
@@ -73,7 +73,7 @@ export const $Account = ({ walletLink, parentRoute, accountStakingStore }: IAcco
   const stakingClaim = combineArray((arbiStaking, avaxStaking, yieldFeeList, priceMap) => {
     // amountUsd from avalanche is not reflecting the real amount because the subraph's gmx price is 0
     // to fix this, we'll fetch arbitrum's price of GMX instead
-    const gmx = [...avaxStaking.stakedGlpTrackerClaims, ...avaxStaking.stakedGmxTrackerClaims].map(y => ({ ...y, amountUsd: y.amount * priceMap.gmx.value / USD_PRECISION }))
+    const gmx = [...avaxStaking.stakedGlpTrackerClaims, ...avaxStaking.stakedGmxTrackerClaims].map(y => ({ ...y, amountUsd: y.amount * priceMap.gmx.value / BI_18_PRECISION }))
 
     return [...yieldFeeList, ...gmx, ...arbiStaking.stakedGlpTrackerClaims, ...arbiStaking.stakedGmxTrackerClaims]
   }, arbitrumYieldSourceMap, avalancheYieldSourceMap, feeYieldClaim, newLocal)

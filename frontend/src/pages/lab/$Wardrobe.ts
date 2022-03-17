@@ -10,7 +10,7 @@ import { $berryTileId } from "../../components/$common"
 import { $ButtonPrimary, $ButtonSecondary } from "../../components/form/$Button"
 import { $defaultSelectContainer, $Dropdown } from "../../components/form/$Dropdown"
 import { connect } from "../../logic/gbc"
-import { IAttributeLabHat, IAttributeLabBackground, IAttributeLabFaceAccessory, ILabAttributeOptions, IAttributeLabClothes, IAttributeBody, IBerryDisplayTupleMap, getLabItemTupleIndex } from "@gambitdao/gbc-middleware"
+import { IAttributeHat, IAttributeBackground, IAttributeFaceAccessory, ILabAttributeOptions, IAttributeClothes, IAttributeBody, IBerryDisplayTupleMap, getLabItemTupleIndex } from "@gambitdao/gbc-middleware"
 import { $labItem } from "../../logic/common"
 import { $Toggle } from "../../common/$ButtonToggle"
 import { fadeIn } from "../../transitions/enter"
@@ -27,10 +27,6 @@ interface IBerry {
 }
 
 
-interface IBerryLab {
-
-}
-
 export const $Wardrobe = ({ wallet, parentRoute, initialBerry, }: IBerry) => component((
   [changeRoute, changeRouteTether]: Behavior < string, string >,
   [changeBerry, changeBerryTether]: Behavior < number, number >,
@@ -46,10 +42,10 @@ export const $Wardrobe = ({ wallet, parentRoute, initialBerry, }: IBerry) => com
 
   
   const getLabel = (option: ILabAttributeOptions) => {
-    return option === IAttributeLabBackground
-      ? 'Background' : option === IAttributeLabClothes
-        ? 'Clothes' : option === IAttributeLabHat
-          ? 'Hat' : option === IAttributeLabFaceAccessory
+    return option === IAttributeBackground
+      ? 'Background' : option === IAttributeClothes
+        ? 'Clothes' : option === IAttributeHat
+          ? 'Hat' : option === IAttributeFaceAccessory
             ? 'Accessory' : null
   }
 
@@ -68,10 +64,10 @@ export const $Wardrobe = ({ wallet, parentRoute, initialBerry, }: IBerry) => com
           $Toggle({
             $container: $row(style({  })),
             options: [
-              IAttributeLabBackground,
-              IAttributeLabClothes,
-              IAttributeLabHat,
-              IAttributeLabFaceAccessory,
+              IAttributeBackground,
+              IAttributeClothes,
+              IAttributeHat,
+              IAttributeFaceAccessory,
             ],
             $option: map(option => {
               const label = getLabel(option)
@@ -89,7 +85,7 @@ export const $Wardrobe = ({ wallet, parentRoute, initialBerry, }: IBerry) => com
                       
               return $text(selectedBehavior, style({ width: '120px', cursor: 'pointer', borderBottom: `1px solid ${pallete.middleground}`, textAlign: 'center', padding: '12px 0', fontSize: '13px' }))(label)
             }),
-            selected: now(IAttributeLabHat)
+            selected: now(IAttributeHat)
           })({ select: selectedAttributeTether() }),
         ),
 
@@ -134,7 +130,6 @@ export const $Wardrobe = ({ wallet, parentRoute, initialBerry, }: IBerry) => com
 
                 return $ButtonSecondary({
                   $content,
-
                 })({})
               }),
               value: now(initialBerry || null),

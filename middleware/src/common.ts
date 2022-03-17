@@ -1,14 +1,14 @@
-import { IAttributeLabBackground, IAttributeLabClothes, IAttributeBody, IAttributeExpression, IAttributeLabFaceAccessory, IAttributeLabHat } from "./types"
+import { IAttributeBackground, IAttributeClothes, IAttributeBody, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat } from "./types"
 
 
-const labAttributeTuple = [IAttributeLabBackground, IAttributeLabClothes, IAttributeBody, IAttributeExpression, IAttributeLabFaceAccessory, IAttributeLabHat] as const
+const labAttributeTuple = [IAttributeBackground, IAttributeClothes, IAttributeBody, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat] as const
 
 export const getLabItemTupleIndex = (itemId: number) => {
-  const attrMap = itemId in IAttributeLabHat
-    ? IAttributeLabHat : itemId in IAttributeLabBackground
-      ? IAttributeLabBackground : itemId in IAttributeLabClothes
-        ? IAttributeLabClothes : itemId in IAttributeLabFaceAccessory
-          ? IAttributeLabFaceAccessory : null
+  const attrMap = itemId in IAttributeHat
+    ? IAttributeHat : itemId in IAttributeBackground
+      ? IAttributeBackground : itemId in IAttributeClothes
+        ? IAttributeClothes : itemId in IAttributeFaceAccessory
+          ? IAttributeFaceAccessory : null
 
   if (attrMap === null) {
     throw new Error(`item id: ${itemId} doesn't match any attribute`)

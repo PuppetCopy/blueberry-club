@@ -2,14 +2,18 @@ import { Behavior } from "@aelea/core"
 import { $node, $text, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
-import { $anchor, $Link } from "@gambitdao/ui-components"
+import { $alert, $anchor, $IntermediateTx, $Link } from "@gambitdao/ui-components"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $DisplayBerry } from "../../components/$DisplayBerry"
 import { $ButtonPrimary, $ButtonSecondary } from "../../components/form/$Button"
 import { $responsiveFlex } from "../../elements/$common"
-import { IAttributeLabHat, IAttributeLabFaceAccessory, IAttributeLabClothes, IAttributeExpression } from "@gambitdao/gbc-middleware"
+import { IAttributeHat, IAttributeFaceAccessory, IAttributeClothes, IAttributeExpression, BI_18_PRECISION } from "@gambitdao/gbc-middleware"
 import { $seperator2 } from "../common"
+import { map, switchLatest } from "@most/core"
+import { connect } from "../../logic/gbc"
+import { ContractReceipt } from "@ethersproject/contracts"
+import { pallete } from "@aelea/ui-components-theme"
 
 
 
@@ -63,7 +67,7 @@ interface IBerry {
 export const $LabLanding = ({ walletLink, parentRoute }: IBerry) => component((
   [trasnferPopup, trasnferPopupTether]: Behavior<any, any>,
   [changeRoute, changeRouteTether]: Behavior<string, string>,
-
+  [mintTestGbc, mintTestGbcTether]: Behavior<PointerEvent, Promise<ContractReceipt>>,
 ) => {
 
 
@@ -106,12 +110,36 @@ export const $LabLanding = ({ walletLink, parentRoute }: IBerry) => component((
             })({
               click: changeRouteTether()
             }),
+          ),
+
+          $seperator2,
+
+          $row(layoutSheet.spacing)(
+            $IntermediateTx({
+              $done: map(res => {
+                return $text(style({ color: pallete.positive }))(`Minted 2 GBC's`)
+              }),
+              query: mintTestGbc
+            })({}),
+            $ButtonPrimary({
+              $content: $text(`Mint 2 test GBC's`)
+            })({
+              click: mintTestGbcTether(
+                map(() => {
+                  const gbc = connect(walletLink)
+                  return map(x => {
+                    return x.gbc.mint(2, { value: 2n * 30000000000000000n }).then(x => x.wait())
+                  }, gbc.contract)
+                }),
+                switchLatest
+              )
+            })
           )
 
         ),
         $row(style({ minWidth: '400px', height: '400px', overflow: 'hidden', borderRadius: '30px' }))(
           $bgAnimation(
-            $DisplayBerry([undefined, IAttributeLabClothes.AVALANCHE_HOODIE, undefined, IAttributeExpression.DEAD, IAttributeLabFaceAccessory.BEARD_WHITE, IAttributeLabHat.CHRISTMAS_HAT], '400px')({})
+            $DisplayBerry([undefined, IAttributeClothes.AVALANCHE_HOODIE, undefined, IAttributeExpression.DEAD, IAttributeFaceAccessory.BEARD_WHITE, IAttributeHat.CHRISTMAS_HAT], '400px')({})
           )
         ),
       ),

@@ -6,7 +6,7 @@ import { GBC__factory, GBCLab__factory } from "contracts"
 import { web3ProviderTestnet } from "./provider"
 
 
-export const itemsGlobal = GBCLab__factory.connect(GBC_ADDRESS.LAB_ITEMS_CONTRACT, web3ProviderTestnet)
+export const itemsGlobal = GBCLab__factory.connect(GBC_ADDRESS.LAB, web3ProviderTestnet)
 
 export function connectWallet(wallet: IWalletLink) {
   const contract = replayLatest(multicast(awaitPromises(combineArray(async w3p => {
@@ -15,7 +15,7 @@ export function connectWallet(wallet: IWalletLink) {
     }
 
     const gbc = GBC__factory.connect(GBC_ADDRESS.GBC, w3p.getSigner())
-    const items = GBCLab__factory.connect(GBC_ADDRESS.LAB_ITEMS_CONTRACT, w3p.getSigner())
+    const items = GBCLab__factory.connect(GBC_ADDRESS.LAB, w3p.getSigner())
 
     return { gbc, items }
   }, wallet.provider))))

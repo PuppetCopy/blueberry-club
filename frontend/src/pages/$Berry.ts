@@ -6,12 +6,11 @@ import { $column, $icon, $Popover, $row, $seperator, $TextField, layoutSheet } f
 import { pallete } from "@aelea/ui-components-theme"
 import { USE_CHAIN, GBC_ADDRESS, IAttributeBody } from "@gambitdao/gbc-middleware"
 import { isAddress, timeSince } from "@gambitdao/gmx-middleware"
-import { $anchor, $caretDblDown } from "@gambitdao/ui-components"
+import { $anchor, $caretDblDown, $IntermediateTx } from "@gambitdao/ui-components"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { awaitPromises, empty, filter, fromPromise, map, merge, multicast, skipRepeats, snapshot, startWith, switchLatest } from "@most/core"
 import { GBC__factory } from "contracts"
-import { $IntermediateTx } from "../common/$IntermediateDisplay"
 import { $Table2 } from "../common/$Table2"
 import { $AccountPreview } from "../components/$AccountProfile"
 import { $DisplayBerry } from "../components/$DisplayBerry"

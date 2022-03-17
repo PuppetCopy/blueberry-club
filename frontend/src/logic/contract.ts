@@ -1,7 +1,7 @@
 import { combineArray } from "@aelea/core"
 import { BigNumber } from "@ethersproject/bignumber"
 import { BaseProvider } from "@ethersproject/providers"
-import { USD_PRECISION } from "@gambitdao/gbc-middleware"
+import { BI_18_PRECISION } from "@gambitdao/gbc-middleware"
 import { RewardReader__factory, GMX__factory, Reader__factory, EsGMX__factory, GlpManager__factory, Vault__factory } from "@gambitdao/gmx-contracts"
 import { ARBITRUM_CONTRACT, AVALANCHE_CONTRACT, BASIS_POINTS_DIVISOR } from "@gambitdao/gmx-middleware"
 import { awaitPromises, combine, fromPromise, map, now, take } from "@most/core"
@@ -160,58 +160,58 @@ export const initContractChain = (provider: BaseProvider, account: string, envir
   const stakingRewards = combineArray(({ balanceData, supplyData }, depositbalances, accountStaking, gmxVesting, glpVesting, aum, nativeTokenPrice, stakedGmxSupply, priceMap) => {
     const gmxPrice = priceMap.gmx.value
 
-    const gmxSupplyUsd = supplyData[environmentContract.GMX] * gmxPrice / USD_PRECISION
-    const stakedGmxSupplyUsd = stakedGmxSupply * gmxPrice  / USD_PRECISION
+    const gmxSupplyUsd = supplyData[environmentContract.GMX] * gmxPrice / BI_18_PRECISION
+    const stakedGmxSupplyUsd = stakedGmxSupply * gmxPrice  / BI_18_PRECISION
     const gmxInStakedGmx = depositbalances[environmentContract.GMX]
-    const gmxInStakedGmxUsd = gmxInStakedGmx * gmxPrice  / USD_PRECISION
+    const gmxInStakedGmxUsd = gmxInStakedGmx * gmxPrice  / BI_18_PRECISION
 
     const stakedGmxTrackerSupply = supplyData[environmentContract.StakedGmxTracker]
 
     const stakedEsGmxSupply = stakedGmxTrackerSupply - stakedGmxSupply
-    const stakedEsGmxSupplyUsd = stakedEsGmxSupply * gmxPrice / USD_PRECISION
+    const stakedEsGmxSupplyUsd = stakedEsGmxSupply * gmxPrice / BI_18_PRECISION
 
     const glpBalance = depositbalances[environmentContract.GLP]
     const gmxBalance = depositbalances[environmentContract.GMX]
 
 
     const esGmxInStakedGmx = depositbalances[environmentContract.ES_GMX]
-    const esGmxInStakedGmxUsd = esGmxInStakedGmx * gmxPrice / USD_PRECISION
+    const esGmxInStakedGmxUsd = esGmxInStakedGmx * gmxPrice / BI_18_PRECISION
 
     const bnGmxInFeeGmx = depositbalances[environmentContract.BN_GMX]
     const bonusGmxInFeeGmx = depositbalances[environmentContract.BonusGmxTracker]
     const feeGmxSupply = accountStaking[environmentContract.FeeGmxTracker].totalSupply
-    const feeGmxSupplyUsd = feeGmxSupply * gmxPrice / USD_PRECISION
+    const feeGmxSupplyUsd = feeGmxSupply * gmxPrice / BI_18_PRECISION
 
     const stakedGmxTrackerRewards = accountStaking[environmentContract.StakedGmxTracker].claimable
-    const stakedGmxTrackerRewardsUsd = stakedGmxTrackerRewards * gmxPrice / USD_PRECISION
+    const stakedGmxTrackerRewardsUsd = stakedGmxTrackerRewards * gmxPrice / BI_18_PRECISION
 
     const bonusGmxTrackerRewards = accountStaking[environmentContract.BonusGmxTracker].claimable
 
     const feeGmxTrackerRewards = accountStaking[environmentContract.FeeGmxTracker].claimable
-    const feeGmxTrackerRewardsUsd = feeGmxTrackerRewards * nativeTokenPrice / USD_PRECISION
+    const feeGmxTrackerRewardsUsd = feeGmxTrackerRewards * nativeTokenPrice / BI_18_PRECISION
 
-    const stakedGmxTrackerAnnualRewardsUsd = accountStaking[environmentContract.StakedGmxTracker].tokensPerInterval * SECONDS_PER_YEAR  * gmxPrice / USD_PRECISION
+    const stakedGmxTrackerAnnualRewardsUsd = accountStaking[environmentContract.StakedGmxTracker].tokensPerInterval * SECONDS_PER_YEAR  * gmxPrice / BI_18_PRECISION
     const gmxAprForEsGmxPercentage = stakedGmxSupplyUsd ? stakedGmxTrackerAnnualRewardsUsd * BASIS_POINTS_DIVISOR / stakedGmxSupplyUsd : 0n
-    const feeGmxTrackerAnnualRewardsUsd = accountStaking[environmentContract.FeeGmxTracker].tokensPerInterval * SECONDS_PER_YEAR * nativeTokenPrice  / USD_PRECISION
+    const feeGmxTrackerAnnualRewardsUsd = accountStaking[environmentContract.FeeGmxTracker].tokensPerInterval * SECONDS_PER_YEAR * nativeTokenPrice  / BI_18_PRECISION
     const gmxAprForEthPercentage = feeGmxTrackerAnnualRewardsUsd * BASIS_POINTS_DIVISOR / feeGmxSupplyUsd
     const gmxAprTotalPercentage = gmxAprForEthPercentage + gmxAprForEsGmxPercentage
 
     const totalGmxRewardsUsd = stakedGmxTrackerRewardsUsd + feeGmxTrackerRewardsUsd
 
     const glpSupply = supplyData[environmentContract.GLP]
-    const glpPrice = aum * USD_PRECISION / glpSupply
-    const glpSupplyUsd = glpSupply * glpPrice / USD_PRECISION
+    const glpPrice = aum * BI_18_PRECISION / glpSupply
+    const glpSupplyUsd = glpSupply * glpPrice / BI_18_PRECISION
 
 
     const stakedGlpTrackerRewards = accountStaking[environmentContract.StakedGlpTracker].claimable
-    const stakedGlpTrackerRewardsUsd = stakedGlpTrackerRewards * gmxPrice / USD_PRECISION
+    const stakedGlpTrackerRewardsUsd = stakedGlpTrackerRewards * gmxPrice / BI_18_PRECISION
 
     const feeGlpTrackerRewards = accountStaking[environmentContract.FeeGlpTracker].claimable
-    const feeGlpTrackerRewardsUsd = feeGlpTrackerRewards * nativeTokenPrice / USD_PRECISION
+    const feeGlpTrackerRewardsUsd = feeGlpTrackerRewards * nativeTokenPrice / BI_18_PRECISION
 
-    const stakedGlpTrackerAnnualRewardsUsd = accountStaking[environmentContract.StakedGlpTracker].tokensPerInterval * SECONDS_PER_YEAR * gmxPrice / USD_PRECISION
+    const stakedGlpTrackerAnnualRewardsUsd = accountStaking[environmentContract.StakedGlpTracker].tokensPerInterval * SECONDS_PER_YEAR * gmxPrice / BI_18_PRECISION
     const glpAprForEsGmxPercentage = stakedGlpTrackerAnnualRewardsUsd * BASIS_POINTS_DIVISOR / glpSupplyUsd
-    const feeGlpTrackerAnnualRewardsUsd = accountStaking[environmentContract.FeeGlpTracker].tokensPerInterval * SECONDS_PER_YEAR * nativeTokenPrice / USD_PRECISION
+    const feeGlpTrackerAnnualRewardsUsd = accountStaking[environmentContract.FeeGlpTracker].tokensPerInterval * SECONDS_PER_YEAR * nativeTokenPrice / BI_18_PRECISION
     const glpAprForEthPercentage = feeGlpTrackerAnnualRewardsUsd * BASIS_POINTS_DIVISOR / glpSupplyUsd
     const glpAprTotalPercentage = glpAprForEthPercentage + glpAprForEsGmxPercentage
 
@@ -222,7 +222,7 @@ export const initContractChain = (provider: BaseProvider, account: string, envir
     const totalEsGmxRewardsUsd = stakedGmxTrackerRewardsUsd + stakedGlpTrackerRewardsUsd
 
     const totalVesterRewards = gmxVesting.claimable + glpVesting.claimable
-    const totalVesterRewardsUsd = totalVesterRewards * gmxPrice / USD_PRECISION
+    const totalVesterRewardsUsd = totalVesterRewards * gmxPrice / BI_18_PRECISION
 
 
     const totalFeeRewards = feeGmxTrackerRewards + feeGlpTrackerRewards
@@ -293,7 +293,7 @@ export const initContractChain = (provider: BaseProvider, account: string, envir
 
 
   const nativeAssetBalance = map(bn => bn.toBigInt(), fromPromise(provider.getBalance(account)))
-  const nativeAsset: Stream<IAsset> = combine((amount, price) => ({ balance: price * amount / USD_PRECISION }), nativeAssetBalance, nativeTokenPrice)
+  const nativeAsset: Stream<IAsset> = combine((amount, price) => ({ balance: price * amount / BI_18_PRECISION }), nativeAssetBalance, nativeTokenPrice)
 
 
   return {

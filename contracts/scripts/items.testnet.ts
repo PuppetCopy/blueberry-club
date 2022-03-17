@@ -11,6 +11,8 @@ import items from "./items/items"
   const gbcFactory = new GBC__factory(owner)
   
   const gbc = await deploy(gbcFactory, GBC_DESCRIPTION.NAME, GBC_DESCRIPTION.SYMBOL, GBC_DESCRIPTION.BASE_URI)
+
+  await (await gbc.startPublicSale()).wait()
   await gbc.adminMint(1, owner.address)
 
   await items(gbc.address)
