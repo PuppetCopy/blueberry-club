@@ -1,110 +1,18 @@
-import { ethers, run } from "hardhat";
+import { GBC_DESCRIPTION } from "@gambitdao/gbc-middleware"
+import { ethers } from "hardhat"
+import { GBC__factory } from "../typechain-types"
+import { deploy } from "../utils/common"
 
-async function main() {
-  const [owner] = await ethers.getSigners();
+import items from "./items/items"
 
-  const GBC = await ethers.getContractFactory("GBCTestnet");
-  const gbc = await GBC.deploy(
-    "Blueberry Club",
-    "GBC",
-    "ipfs://QmZfVGMtQPeSfre5yHDzDdw4ocZ1WEakGtbYqvtvhhD4zQ/"
-  );
+(async () => {
+  const [owner] = await ethers.getSigners()
 
-  await gbc.deployed();
+  const gbcFactory = new GBC__factory(owner)
+  
+  const gbc = await deploy(gbcFactory, GBC_DESCRIPTION.NAME, GBC_DESCRIPTION.SYMBOL, GBC_DESCRIPTION.BASE_URI)
+  await gbc.adminMint(1, owner.address)
 
-  console.log("Gbc deployed to:", gbc.address);
+  await items(gbc.address)
+})().catch(err => console.error(err))
 
-  try {
-    await run("verify:verify", {
-      address: gbc.address,
-      constructorArguments: ["Blueberry Club", "GBC", ""],
-    });
-  } catch (error) {
-    console.log(`Verfication failed`);
-    console.error(error);
-  }
-
-  const tx = await gbc.adminMint(10, owner.address);
-  await tx.wait();
-
-  const Items = await ethers.getContractFactory("GBCLabsItems");
-  const items = await Items.deploy();
-
-  await items.deployed();
-
-  console.log("Items deployed to:", items.address);
-
-  const Sell = await ethers.getContractFactory("GBCLabsSaleExemple");
-  const sell1 = await Sell.deploy(items.address, gbc.address, 700);
-
-  await sell1.deployed();
-
-  console.log("Sell deployed to:", sell1.address);
-
-  const MINTER = await items.MINTER();
-  const DESIGNER = await items.DESIGNER();
-  await items.grantRole(DESIGNER, owner.address);
-  await items.grantRole(MINTER, sell1.address);
-  await items.addItem(6, 700);
-
-  try {
-    await run("verify:verify", {
-      address: sell1.address,
-      constructorArguments: [items.address, gbc.address, 700],
-    });
-  } catch (error) {
-    console.log(`Verfication failed`);
-    console.error(error);
-  }
-
-  const sell2 = await Sell.deploy(items.address, gbc.address, 701);
-
-  await sell2.deployed();
-
-  console.log("Sell deployed to:", sell2.address);
-
-  await items.grantRole(MINTER, sell2.address);
-  await items.addItem(2, 701);
-
-  try {
-    await run("verify:verify", {
-      address: sell2.address,
-      constructorArguments: [items.address, gbc.address, 701],
-    });
-  } catch (error) {
-    console.log(`Verfication failed`);
-    console.error(error);
-  }
-
-  try {
-    await run("verify:verify", {
-      address: items.address,
-      constructorArguments: [],
-    });
-  } catch (error) {
-    console.log(`Verfication failed`);
-    console.error(error);
-  }
-
-  const Profile = await ethers.getContractFactory("GBCProfileSetter");
-  const profile = await Profile.deploy(gbc.address);
-
-  await profile.deployed();
-
-  console.log("Profile deployed to:", profile.address);
-
-  try {
-    await run("verify:verify", {
-      address: profile.address,
-      constructorArguments: [gbc.address],
-    });
-  } catch (error) {
-    console.log(`Verfication failed`);
-    console.error(error);
-  }
-}
-
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});

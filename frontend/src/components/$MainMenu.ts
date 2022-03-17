@@ -14,7 +14,7 @@ import { $AccountPreview } from "./$AccountProfile"
 import { $IntermediateConnect } from "./$ConnectAccount"
 import { $ButtonSecondary } from "./form/$Button"
 import { totalWalletHoldingsUsd } from "../logic/gbcTreasury"
-import { $Dropdown } from "./form/$Dropdown"
+import { $Dropdown, $defaultSelectContainer } from "./form/$Dropdown"
 import { $bagOfCoinsCircle, $fileCheckCircle } from "../common/$icons"
 import { $anchor, $caretDown, $discord, $Link, $moreDots, $twitter } from "@gambitdao/ui-components"
 
@@ -71,7 +71,7 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
         // $noneSelected: $text('Choose Amount'),
         $selection: map(amount => $treasury),
         select: {
-          $container: $column(layoutSheet.spacingTiny, style({ minWidth:'400px' })),
+          $container: $defaultSelectContainer(style({ minWidth:'300px' })),
           optionOp: map(option => option),
           options: [
             $Link({ $content: $govItem('Treasury', $bagOfCoinsCircle, 'GBC Community-Led Portfolio'), url: '/p/treasury', route: parentRoute })({

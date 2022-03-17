@@ -4,7 +4,7 @@ import { awaitPromises, map, multicast, periodic } from "@most/core"
 import { Stream } from "@most/types"
 import { $DisplayBerry } from "../components/$DisplayBerry"
 import { IValueInterval } from "../components/$StakingGraph"
-import { IAttributeBody, IAttributeLabBackground, IAttributeLabClothes, IAttributeLabFaceAccessory, IAttributeLabHat, IAttributeExpression, IBerryDisplayTupleMap } from "@gambitdao/gbc-middleware"
+import { IAttributeBody, IBerryDisplayTupleMap, getLabItemTupleIndex } from "@gambitdao/gbc-middleware"
 import tokenIdAttributeTuple from "./mappings/tokenIdAttributeTuple"
 import { IPricefeed, IStakeSource, queryLatestPrices } from "./query"
 
@@ -71,17 +71,6 @@ export const $berryById = (id: number, size = '85px') => {
   return $DisplayBerry([background, clothes, IAttributeBody.BLUEBERRY, expression, faceAccessory, hat], size)({})
 }
 
-const labAttributeTuple = [IAttributeLabBackground, IAttributeLabClothes, IAttributeBody, IAttributeExpression, IAttributeLabFaceAccessory, IAttributeLabHat] as const
-
-export const getLabItemTupleIndex = (itemId: number) => {
-  const attrMap = itemId in IAttributeLabHat ? IAttributeLabHat : itemId in IAttributeLabBackground ? IAttributeLabBackground : itemId in IAttributeLabClothes ? IAttributeLabClothes : itemId in IAttributeLabFaceAccessory ? IAttributeLabFaceAccessory : null
-
-  if (attrMap === null) {
-    throw new Error(`item id: ${itemId} doesn't match any attribute`)
-  }
-
-  return labAttributeTuple.indexOf(attrMap)
-}
 
 export const $labItem = (id: number, size = '85px') => {
   const state = getLabItemTupleIndex(id)

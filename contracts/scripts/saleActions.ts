@@ -1,6 +1,6 @@
-import { GBC__factory } from 'contracts'
+import { GBC__factory } from "../typechain-types"
 import { ethers } from "hardhat"
-import { DEPLOYED_CONTRACT } from "@gambitdao/gbc-middleware"
+import { GBC_ADDRESS } from "@gambitdao/gbc-middleware"
 
  
 // .env file (should be ignored from .gitignore)
@@ -8,12 +8,12 @@ import dotEnv from 'dotenv'
 dotEnv.config()
 
 const main = async () => {
-  const [signer] = (await ethers.getSigners())
+  const [signer] = await ethers.getSigners()
 
   console.log('Deployer address:', signer.address)
-  console.log('Contract address:', DEPLOYED_CONTRACT)
+  console.log('Contract address:', GBC_ADDRESS.GBC)
 
-  const contract = GBC__factory.connect(DEPLOYED_CONTRACT, signer)
+  const contract = GBC__factory.connect(GBC_ADDRESS.GBC, signer)
   
   await contract.deployed()
   console.log(`✅ contract is deployed`)
@@ -32,8 +32,8 @@ const main = async () => {
   // console.log(`🚀 whitelist sale started`)
 
   // .4 Allow whitelist free claim for 48hrs
-  await (await contract.transferOwnership('0xDe2DBb7f1C893Cc5E2f51CbFd2A73C8a016183a0')).wait()
-  console.log(`✅ Tranfer ownership`)
+  // await (await contract.transferOwnership('0xDe2DBb7f1C893Cc5E2f51CbFd2A73C8a016183a0')).wait()
+  // console.log(`✅ Tranfer ownership`)
 
   // .5 Start Public Sale
   // await (await contract.startPublicSale()).wait()

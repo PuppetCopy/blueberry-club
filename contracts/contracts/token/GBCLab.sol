@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
 
-import "./dependencies/ERC1155Enumerable.sol";
+import "../utils/ERC1155Enumerable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
@@ -11,9 +11,9 @@ import "@openzeppelin/contracts/token/common/ERC2981.sol";
  * @author IrvingDevPro
  * @notice This contract manage the tokens usable by GBC holders
  */
-contract GBCLabsItems is ERC1155Enumerable, AccessControl, ERC2981 {
+contract GBCLab is ERC1155Enumerable, AccessControl, ERC2981 {
     /// @notice Contract Name
-    string public name = "Blueberry Lab Items";
+    string public name = "Blueberry Lab";
 
     /// @notice Contract Symbol
     string public symbol = "BLI";

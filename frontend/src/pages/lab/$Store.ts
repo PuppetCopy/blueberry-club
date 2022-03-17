@@ -1,14 +1,16 @@
 import { Behavior } from "@aelea/core"
 import { $node, $text, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
-import { $column, $row, layoutSheet } from "@aelea/ui-components"
+import { $column, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $labItem } from "../../logic/common"
 import { LabItemDescription, labItemDescriptionList } from "@gambitdao/gbc-middleware"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { $Link } from "@gambitdao/ui-components"
-
+import { itemsGlobal } from "../../logic/items"
+import { empty, fromPromise, map } from "@most/core"
+import { formatFixed, readableNumber, timeSince } from "@gambitdao/gmx-middleware"
 
 
 
@@ -25,19 +27,40 @@ export const $LabStore = ({ walletLink, parentRoute }: ILabStore) => component((
 
   const $labStoreItem = (item: LabItemDescription) => {
 
+    const totalSupply = fromPromise(itemsGlobal.totalSupply(item.id))
+    const supplyLeft = map(s => {
+
+      const total = s.toNumber()
+
+      return `${item.maxSupply - total} left`
+    }, totalSupply)
+
+    const mintPriceEth = readableNumber(formatFixed(item.mintPrice, 18)) + ' ETH'
+
+    const statusLabel = item.saleDate > Date.now()
+      ? 'in ' + timeSince(item.saleDate / 1000) : null
+    
+    
+
     return $Link({
       url: `/p/lab-item/${item.id}`,
       route: parentRoute.create({ fragment: 'fefef' }),
       $content: $column(layoutSheet.spacingSmall, style({ position: 'relative' }))(
         style({ backgroundColor: colorAlpha(pallete.message, .95), borderRadius: '18px' }, $labItem(item.id, '185px')),
         $text(style({ fontWeight: 'bold' }))(item.name),
-        $text(style({ fontWeight: 'bold', position: 'absolute', top: '15px', left: '15px', fontSize: '.75em', padding: '5px 10px', color: pallete.message, borderRadius: '8px', backgroundColor: pallete.background }))('NEW'),
+        statusLabel ? $text(style({ fontWeight: 'bold', position: 'absolute', top: '15px', left: '15px', fontSize: '.75em', padding: '5px 10px', color: pallete.message, borderRadius: '8px', backgroundColor: pallete.background }))(
+          statusLabel
+        ) : empty(),
+
+        $row(style({ placeContent: 'space-evenly', fontSize: '.75em' }))(
+          $text(supplyLeft),
+          $text(style({ color: pallete.positive }))(mintPriceEth)
+        )
       )
     })({
       click: changeRouteTether()
     })
   }
-
 
   return [
     $column(layoutSheet.spacingBig)(
@@ -49,10 +72,8 @@ export const $LabStore = ({ walletLink, parentRoute }: ILabStore) => component((
 
       $column(layoutSheet.spacingBig, style({ justifyContent: 'space-between' }))(
         $text(style({ fontWeight: 'bold', fontSize: '1.8em' }))('Items'),
-        $row(layoutSheet.spacingBig, style({ overflow: 'hidden', flexWrap: 'wrap' }))(
-
+        $row(screenUtils.isDesktopScreen ? style({ gap: '30px' }) : layoutSheet.spacingBig, style({ overflow: 'hidden', placeContent: 'space-between', flexWrap: 'wrap' }))(
           ...labItemDescriptionList.map(item => $labStoreItem(item))
-          
         ),
       ),
 

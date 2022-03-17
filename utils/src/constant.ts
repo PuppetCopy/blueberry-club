@@ -103,6 +103,17 @@ export const NETWORK_METADATA: {[k: string]: AddEthereumChainParameter} = {
     blockExplorerUrls: [EXPLORER_URL[CHAIN.ETH]],
     rpcUrls: ["https://api.infura.io/v1/jsonrpc/mainnet"],
   },
+  [CHAIN.ETH_ROPSTEN]: {
+    chainName: 'Ropsten Testnet',
+    chainId: '0x' + CHAIN.ETH_ROPSTEN.toString(16),
+    nativeCurrency: {
+      name: 'Ethereum',
+      symbol: 'ETH',
+      decimals: 18
+    },
+    blockExplorerUrls: [EXPLORER_URL[CHAIN.ETH_ROPSTEN]],
+    rpcUrls: ["https://eth-ropsten.alchemyapi.io/v2/lQJmbKMHodW3eT3FdEQdkzk5S6gQ5-Lh"],
+  },
 
   [CHAIN.BSC]: {
     chainId: '0x' + CHAIN.BSC.toString(16),

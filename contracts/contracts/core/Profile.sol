@@ -10,11 +10,9 @@ import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
  * @author IrvingDevPro
  * @notice This contract can set or unset an GBC as you profile picture on different GMX projects
  */
-contract GBCProfileSetter {
-    /// @notice track the actual main profile picture
+contract Profile {
     mapping(address => uint) private _mains;
 
-    /// @notice The GBC contract
     IERC721 private gbc;
     
     constructor(address _gbc) {

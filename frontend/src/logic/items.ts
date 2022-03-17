@@ -1,12 +1,14 @@
-import { combineArray, combineObject, replayLatest } from "@aelea/core"
-import { GBC_ADDRESS, USE_CHAIN } from "@gambitdao/gbc-middleware"
+import { replayLatest, combineArray, combineObject } from "@aelea/core"
+import { USE_CHAIN, GBC_ADDRESS } from "@gambitdao/gbc-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { multicast, awaitPromises, map, filter } from "@most/core"
+import { multicast, awaitPromises, filter, map } from "@most/core"
 import { GBC__factory, GBCLab__factory } from "contracts"
+import { web3ProviderTestnet } from "./provider"
 
 
+export const itemsGlobal = GBCLab__factory.connect(GBC_ADDRESS.LAB_ITEMS_CONTRACT, web3ProviderTestnet)
 
-export function connect(wallet: IWalletLink) {
+export function connectWallet(wallet: IWalletLink) {
   const contract = replayLatest(multicast(awaitPromises(combineArray(async w3p => {
     if (w3p === null || w3p?.network?.chainId !== USE_CHAIN) {
       throw new Error('Unable to connect ')

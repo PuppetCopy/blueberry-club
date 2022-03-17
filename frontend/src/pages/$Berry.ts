@@ -4,7 +4,7 @@ import * as router from '@aelea/router'
 import { Route } from "@aelea/router"
 import { $column, $icon, $Popover, $row, $seperator, $TextField, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { USE_CHAIN, GBC_CONTRACT, IAttributeBody } from "@gambitdao/gbc-middleware"
+import { USE_CHAIN, GBC_ADDRESS, IAttributeBody } from "@gambitdao/gbc-middleware"
 import { isAddress, timeSince } from "@gambitdao/gmx-middleware"
 import { $anchor, $caretDblDown } from "@gambitdao/ui-components"
 
@@ -197,7 +197,7 @@ const $TrasnferOwnership = (address: string, token: IToken, walletLink: IWalletL
       return null
     }
 
-    const contract = GBC__factory.connect(GBC_CONTRACT, w3p.getSigner())
+    const contract = GBC__factory.connect(GBC_ADDRESS.GBC, w3p.getSigner())
 
     if (await contract.deployed()) {
       return contract

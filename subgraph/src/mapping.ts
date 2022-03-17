@@ -1,13 +1,8 @@
-import { log, BigInt } from '@graphprotocol/graph-ts'
+import { BigInt } from '@graphprotocol/graph-ts'
 import { ERC721, Transfer as TransferEvent } from '../generated/blueberry-club/ERC721'
 import { Token, Owner, Contract, Transfer } from '../generated/schema'
 
 export function handleTransfer(event: TransferEvent): void {
-  log.debug('Transfer detected. From: {} | To: {} | TokenID: {}', [
-    event.params.from.toHexString(),
-    event.params.to.toHexString(),
-    event.params.tokenId.toHexString(),
-  ])
 
   let previousOwner = Owner.load(event.params.from.toHexString())
   let newOwner = Owner.load(event.params.to.toHexString())
@@ -17,6 +12,7 @@ export function handleTransfer(event: TransferEvent): void {
     .concat(':'.concat(event.transactionLogIndex.toHexString()))
   let transfer = Transfer.load(transferId)
   let contract = Contract.load(event.address.toHexString())
+
   const instance = ERC721.bind(event.address)
 
   if (previousOwner == null) {

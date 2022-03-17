@@ -3,7 +3,7 @@ import { $element, $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { TREASURY_ARBITRUM, TREASURY_AVALANCHE, USD_PRECISION } from "@gambitdao/gbc-middleware"
+import { GBC_ADDRESS, USD_PRECISION } from "@gambitdao/gbc-middleware"
 import { intervalInMsMap, formatFixed, ARBITRUM_CONTRACT, BASIS_POINTS_DIVISOR, IAccountQueryParamApi, ITimerangeParamApi, CHAIN, getAccountExplorerUrl } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $anchor } from "@gambitdao/ui-components"
@@ -39,7 +39,7 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
 
   const queryParams: IAccountQueryParamApi & Partial<ITimerangeParamApi> = {
     from: treasuryStore.state.startedStakingGmxTimestamp || undefined,
-    account: TREASURY_ARBITRUM
+    account: GBC_ADDRESS.TREASURY_ARBITRUM
   }
 
 
@@ -48,7 +48,7 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
   const pricefeedQuery = replayLatest(multicast(fromPromise(gmxGlpPriceHistory(queryParams))))
  
   const arbitrumYieldSourceMap = replayLatest(multicast(fromPromise(queryArbitrumRewards(queryParams))))
-  const avalancheYieldSourceMap = replayLatest(multicast(fromPromise(queryAvalancheRewards({ ...queryParams, account: TREASURY_AVALANCHE }))))
+  const avalancheYieldSourceMap = replayLatest(multicast(fromPromise(queryAvalancheRewards({ ...queryParams, account: GBC_ADDRESS.TREASURY_AVALANCHE }))))
 
 
 
@@ -195,9 +195,9 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
         $responsiveFlex(layoutSheet.spacing, style({ alignItems: 'center', placeContent: 'space-between' }))(
           $row(layoutSheet.spacingSmall)(
             $AccountPreview({
-              address: TREASURY_ARBITRUM,
+              address: GBC_ADDRESS.TREASURY_ARBITRUM,
             })({}),
-            $anchor(attr({ href: getAccountExplorerUrl(CHAIN.ARBITRUM, TREASURY_ARBITRUM) }))(
+            $anchor(attr({ href: getAccountExplorerUrl(CHAIN.ARBITRUM, GBC_ADDRESS.TREASURY_ARBITRUM) }))(
               $element('img')(attr({ src: `/assets/arbitrum.svg` }), style({ width: '28px', padding: '3px', borderRadius: '50%', backgroundColor: pallete.background }))()
             ),
           ),
@@ -227,9 +227,9 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
         $responsiveFlex(layoutSheet.spacing, style({ alignItems: 'center', placeContent: 'space-between' }))(
           $row(layoutSheet.spacingSmall)(
             $AccountPreview({
-              address: TREASURY_AVALANCHE,
+              address: GBC_ADDRESS.TREASURY_AVALANCHE,
             })({}),
-            $anchor(attr({ href: getAccountExplorerUrl(CHAIN.AVALANCHE, TREASURY_AVALANCHE) }))(
+            $anchor(attr({ href: getAccountExplorerUrl(CHAIN.AVALANCHE, GBC_ADDRESS.TREASURY_AVALANCHE) }))(
               $element('img')(attr({ src: `/assets/avalanche.svg` }), style({ width: '28px', padding: '3px', borderRadius: '50%', backgroundColor: pallete.background }))()
             )
           ),

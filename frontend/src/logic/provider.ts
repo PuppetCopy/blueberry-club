@@ -20,6 +20,6 @@ export const walletConnect = new WalletConnectProvider({
 export const metamaskQuery = detectEthereumProvider({ mustBeMetaMask: false, silent: true }) as Promise<IEthereumProvider & { selectedAddress: string } | null>
 
 export const web3Provider = new WebSocketProvider(GLOBAL_W3P)
-export const web3ProviderTestnet = new WebSocketProvider(GLOBAL_W3P)
+export const web3ProviderTestnet = new WebSocketProvider('wss://eth-ropsten.alchemyapi.io/v2/lQJmbKMHodW3eT3FdEQdkzk5S6gQ5-Lh')
 export const w3pAva = new JsonRpcProvider(GLOBAL_W3P_AVALANCHE)
 

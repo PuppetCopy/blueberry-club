@@ -5,19 +5,28 @@ import '@typechain/hardhat'
 import '@nomiclabs/hardhat-waffle'
 import { HardhatUserConfig } from "hardhat/config"
 import dotenv from "dotenv"
+import { CHAIN, NETWORK_METADATA } from '@gambitdao/gmx-middleware'
 dotenv.config({ path: '../.env' })
 
 const key = process.env.ACCOUNT
 const accounts = key ? [key] : []
 
+
 const config: HardhatUserConfig = {
   networks: {
     arbitrumTestnet: {
-      url: 'https://rinkeby.arbitrum.io/rpc',
+      chainId: CHAIN.ARBITRUM_RINKBY,
+      url: NETWORK_METADATA[CHAIN.ARBITRUM_RINKBY].rpcUrls[0],
+      accounts
+    },
+    ropsten: {
+      chainId: CHAIN.ETH_ROPSTEN,
+      url: NETWORK_METADATA[CHAIN.ETH_ROPSTEN].rpcUrls[0],
       accounts
     },
     arbitrum: {
-      url: "https://arb1.arbitrum.io/rpc",
+      chainId: CHAIN.ARBITRUM,
+      url: NETWORK_METADATA[CHAIN.ARBITRUM].rpcUrls[0],
       accounts
     },
   },

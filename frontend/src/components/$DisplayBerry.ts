@@ -1,9 +1,9 @@
 import { component, $svg, attr, $Node, $wrapNativeElement, style } from "@aelea/dom"
 import { tap } from "@most/core"
-import svgParts from "../logic/mappings/svgParts"
+
 import {
   IAttributeBody, IAttributeHat,
-  IAttributeClothes, IBerryDisplayTupleMap
+  IAttributeClothes, IBerryDisplayTupleMap, IAttributeExpression
 } from "@gambitdao/gbc-middleware"
 
 
@@ -24,21 +24,26 @@ export function $svgContent(content: string): $Node[] {
 export const $DisplayBerry = (
   [background, clothes, body, expression, faceAccessory, hat]: Partial<IBerryDisplayTupleMap>,
   size = '250px',
-) => component(() => [
-  $svg('svg')(
-    attr({ xmlns: 'http://www.w3.org/2000/svg', fill: 'none', viewBox: `0 0 1500 1500` }),
-    style({ minWidth: size, height: size })
-  )(
-    tap(({ element }) => {
+) => component(() => {
+  const svgPartsQuery = import("../logic/mappings/svgParts")
+  return [
 
-      element.innerHTML = `
+    $svg('svg')(
+      attr({ xmlns: 'http://www.w3.org/2000/svg', fill: 'none', viewBox: `0 0 1500 1500` }),
+      style({ minWidth: size, height: size })
+    )(
+      tap(async ({ element }) => {
+        const svgParts = (await svgPartsQuery).default
+
+        element.innerHTML = `
         ${background ? svgParts.background[background] : '' }
         ${svgParts.clothes[clothes ? clothes : IAttributeClothes.NUDE]}
         ${svgParts.body[body ? body : IAttributeBody.BLUEBERRY]}
-        ${expression ? svgParts.expression[expression] : ''}
+        ${svgParts.expression[expression ? expression : IAttributeExpression.HAPPY]}
         ${faceAccessory ? svgParts.faceAccessory[faceAccessory] : ''}
         ${svgParts.hat[hat ? hat : IAttributeHat.NUDE]}
       `
-    })
-  )()
-])
+      })
+    )()
+  ]
+})

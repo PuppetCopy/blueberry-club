@@ -1,3 +1,4 @@
+import { labItemDescriptionListMap } from "./config"
 
 export type IPrice = {
   priceUsd: bigint
@@ -96,18 +97,19 @@ export enum IAttributeMappings {
   "Sexy Doctor" = 79, "Shirt Blue" = 58, "Shirt Yellow" = 66, "Ski Sunglasses Blue" = 37, "Ski Sunglasses Pink" = 49, Sleeping = 32, "Soccer Jersey" = 72, Sombrero = 134, Stitches = 93, "Straw Hat" = 51, "Suit Black" = 4,
   "Suit Pink" = 110, "Sunglasses Green" = 7, "Sunglasses Red" = 29, Surprised = 36, "Sweater Grey" = 113, "Sweater Red" = 31, "Tank Top Black" = 55, "Tank Top White" = 104, Thinking = 22, "Top Hat" = 129, "Tshirt Green" = 43,
   "Tshirt Grey" = 106, "Tshirt Orange" = 28, "Tshirt Purple" = 57, "Tshirt Red" = 69, Unicorn = 118, Vietnamese = 109, Viking = 38, "Visor Green" = 74, "Visor Red" = 11, Wings = 120, Wink = 13, Winner = 1,
-  Wizard = 27, Work = 135, "X Bucket Hat" = 19, "X Face Tattoo" = 18, "X Hoodie" = 9, Yellow = 30
+  Wizard = 27, Work = 135, "X Bucket Hat" = 19, "X Face Tattoo" = 18, "X Hoodie" = 9, Yellow = 30,
+ 
+  
+  "Avalanche Hoodie" = 2,
+  "Fast Food Cap" = 1,
+  "Builder",
+  "Christmas Hat",
+  "Beard White",
+  "Camo Background",
 }
 
 
-export enum IAttributeLabMappings {
-  "Avalanche Hoodie" = 10,
-  "Fast Food Cap" = 20,
-  "Builder" = 3,
-  "Christmas Hat" = 2,
-  "Beard White" = 4,
-  "Camo Background" = 5,
-}
+
 
 export enum IAttributeBody {
   BLUEBERRY = IAttributeMappings.Blueberry,
@@ -210,7 +212,7 @@ export enum IAttributeFaceAccessory {
   SUNGLASSES_RED = IAttributeMappings["Sunglasses Red"],
   X_FACE_TATTOO = IAttributeMappings["X Face Tattoo"],
   
-  BEARD_WHITE = IAttributeLabMappings["Beard White"],
+  BEARD_WHITE = IAttributeMappings["Beard White"],
 }
 
 export enum IAttributeHat {
@@ -279,21 +281,21 @@ export enum IAttributeBackground {
 }
 
 export enum IAttributeLabBackground {
-  CAMO = IAttributeLabMappings['Camo Background'],
+  CAMO = IAttributeMappings['Camo Background'],
 }
 
 export enum IAttributeLabClothes {
-  BUILDER = IAttributeLabMappings.Builder,
-  AVALANCHE_HOODIE = IAttributeLabMappings["Avalanche Hoodie"],
+  BUILDER = IAttributeMappings.Builder,
+  AVALANCHE_HOODIE = IAttributeMappings["Avalanche Hoodie"],
 }
 
 export enum IAttributeLabHat {
-  CHRISTMAS_HAT = IAttributeLabMappings['Christmas Hat'],
-  FAST_FOOD_CAP = IAttributeLabMappings['Fast Food Cap'],
+  CHRISTMAS_HAT = IAttributeMappings['Christmas Hat'],
+  FAST_FOOD_CAP = IAttributeMappings['Fast Food Cap'],
 }
 
 export enum IAttributeLabFaceAccessory {
-  BEARD_WHITE = IAttributeLabMappings["Beard White"],
+  BEARD_WHITE = IAttributeMappings["Beard White"],
 }
 
 
@@ -312,9 +314,10 @@ export type ILabAttributeOptions = typeof IAttributeLabBackground | typeof IAttr
 export interface LabItemDescription {
   name: string
   description: string
-  id: number
   contractAddress: string
+  id: number
   saleDate: number
+  whitelistDate?: number
   mintPrice: bigint
   maxSupply: number
 }

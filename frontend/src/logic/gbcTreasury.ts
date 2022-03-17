@@ -1,5 +1,5 @@
 import { combineArray } from "@aelea/core"
-import { GBC_CONTRACT, TREASURY_ARBITRUM, TREASURY_AVALANCHE, USD_PRECISION } from "@gambitdao/gbc-middleware"
+import { GBC_ADDRESS, USD_PRECISION } from "@gambitdao/gbc-middleware"
 import { ERC20__factory } from "@gambitdao/gmx-contracts"
 import { ARBITRUM_CONTRACT, AVALANCHE_CONTRACT, AVALANCHE_TRADEABLE_ADDRESS } from "@gambitdao/gmx-middleware"
 import { fromPromise, map } from "@most/core"
@@ -9,14 +9,14 @@ import { web3Provider, w3pAva } from "./provider"
 
 const avalancheWethContract = ERC20__factory.connect(AVALANCHE_TRADEABLE_ADDRESS.WETHE, w3pAva)
 
-export const gbcContractEthBalance = map(x => x.toBigInt(), fromPromise(web3Provider.getBalance(GBC_CONTRACT)))
-export const vaultArbitrumEthBalance = map(x => x.toBigInt(), fromPromise(web3Provider.getBalance(TREASURY_ARBITRUM)))
-export const vaultAvalancheEthBalance = map(x => x.toBigInt(), fromPromise(avalancheWethContract.balanceOf(TREASURY_AVALANCHE)))
-export const vaultAvalancheAvaxBalance = map(x => x.toBigInt(), fromPromise(w3pAva.getBalance(TREASURY_AVALANCHE)))
+export const gbcContractEthBalance = map(x => x.toBigInt(), fromPromise(web3Provider.getBalance(GBC_ADDRESS.GBC)))
+export const vaultArbitrumEthBalance = map(x => x.toBigInt(), fromPromise(web3Provider.getBalance(GBC_ADDRESS.TREASURY_ARBITRUM)))
+export const vaultAvalancheEthBalance = map(x => x.toBigInt(), fromPromise(avalancheWethContract.balanceOf(GBC_ADDRESS.TREASURY_AVALANCHE)))
+export const vaultAvalancheAvaxBalance = map(x => x.toBigInt(), fromPromise(w3pAva.getBalance(GBC_ADDRESS.TREASURY_AVALANCHE)))
 
 
-export const arbitrumContract: IGmxContractInfo = initContractChain(web3Provider, TREASURY_ARBITRUM, ARBITRUM_CONTRACT)
-export const avalancheContract: IGmxContractInfo = initContractChain(w3pAva, TREASURY_AVALANCHE, AVALANCHE_CONTRACT)
+export const arbitrumContract: IGmxContractInfo = initContractChain(web3Provider, GBC_ADDRESS.TREASURY_ARBITRUM, ARBITRUM_CONTRACT)
+export const avalancheContract: IGmxContractInfo = initContractChain(w3pAva, GBC_ADDRESS.TREASURY_AVALANCHE, AVALANCHE_CONTRACT)
 
 
 export const totalWalletHoldingsUsd = combineArray((contractEthBalance, vaultArbitrumEthBalance, vaultAvalancheEthBalance, vaultAvaxBalance, avalancheStakingRewards, latestPrice) => {

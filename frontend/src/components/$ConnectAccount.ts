@@ -11,6 +11,7 @@ import { $ButtonPrimary, $ButtonSecondary } from "./form/$Button"
 import { USE_CHAIN } from "@gambitdao/gbc-middleware"
 import { WALLET } from "../logic/provider"
 import { $caretDown } from "@gambitdao/ui-components/src/$icons"
+import { NETWORK_METADATA } from "@gambitdao/gmx-middleware"
 
 
 
@@ -106,7 +107,7 @@ export const $IntermediateConnect = (config: IIntermediateDisplay) => component(
           switchLatest(map((chain) => {
             if (chain !== USE_CHAIN) {
               return $ButtonPrimary({
-                $content: $text('Switch to Arbitrum Network'),
+                $content: $text(`Switch to ${NETWORK_METADATA[USE_CHAIN].chainName}`),
               })({
                 click: switchNetworkTether(
                   snapshot(async wallet => {

@@ -1,3 +1,5 @@
-export * from './const'
+export * from './config'
 export * from './ensIdentity'
 export * from './types'
+export * from './common'
+export * from './address'

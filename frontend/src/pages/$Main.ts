@@ -5,7 +5,7 @@ import { $RouterAnchor } from '@aelea/router'
 import { $column, $icon, $row, designSheet, layoutSheet, observer, screenUtils, state } from '@aelea/ui-components'
 import { $anchor, $glp, $Link } from '@gambitdao/ui-components'
 import { pallete } from '@aelea/ui-components-theme'
-import { TREASURY_ARBITRUM, TREASURY_AVALANCHE, USD_PRECISION } from '@gambitdao/gbc-middleware'
+import { GBC_ADDRESS, USD_PRECISION } from '@gambitdao/gbc-middleware'
 import { groupByMap, IAccountQueryParamApi, intervalInMsMap, ITimerangeParamApi } from '@gambitdao/gmx-middleware'
 import { initWalletLink } from "@gambitdao/wallet-link"
 import {
@@ -177,7 +177,7 @@ export default ({ baseRoute = '' }: Website) => component((
 
   const queryParams: IAccountQueryParamApi & Partial<ITimerangeParamApi> = {
     from: treasuryStore.state.startedStakingGmxTimestamp || undefined,
-    account: TREASURY_ARBITRUM
+    account: GBC_ADDRESS.TREASURY_ARBITRUM
   }
 
   function dailyRandom(n: number, iterations = 100){
@@ -196,7 +196,7 @@ export default ({ baseRoute = '' }: Website) => component((
   const pricefeedQuery = replayLatest(multicast(fromPromise(gmxGlpPriceHistory(queryParams))))
  
   const arbitrumYieldSourceMap = replayLatest(multicast(fromPromise(queryArbitrumRewards(queryParams))))
-  const avalancheYieldSourceMap = replayLatest(multicast(fromPromise(queryAvalancheRewards({ ...queryParams, account: TREASURY_AVALANCHE }))))
+  const avalancheYieldSourceMap = replayLatest(multicast(fromPromise(queryAvalancheRewards({ ...queryParams, account: GBC_ADDRESS.TREASURY_AVALANCHE }))))
 
 
 

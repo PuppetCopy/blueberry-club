@@ -76,7 +76,7 @@ export interface IDropdown<T> extends Input<T> {
 export const $defaultOptionContainer = $row(layoutSheet.spacingSmall, style({ alignItems: 'center', padding: '15px 25px', width: '100%' }), style({ cursor: 'pointer' }), stylePseudo(':hover', { backgroundColor: pallete.middleground }))
 export const $defaultDropdownContainer = $column(layoutSheet.spacingTiny)
 export const $defaultSelectContainer = $column(layoutSheet.spacingTiny, style({
-  minWidth: '200px',
+  minWidth: '80px', overflow: 'hidden',
   border: `1px solid ${pallete.middleground}`, borderRadius: '20px',
   backgroundColor: pallete.background,
   boxShadow: `rgb(0 0 0 / 21%) 1px 1px 14px`

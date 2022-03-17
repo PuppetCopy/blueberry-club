@@ -2,25 +2,26 @@
   "name": "contracts",
   "version": "1.0.0",
   "description": "",
-  "module": ".dist/esm/index.js",
-  "main": ".dist/cjs/index.js",
+  "module": ".dist/esm/typechain-types/index.js",
+  "main": ".dist/cjs/typechain-types/index.js",
   "private": true,
   "sideEffects": false,
   "files": [
     ".dist"
   ],
-  "types": ".dist/types/index.d.ts",
+  "types": ".dist/types/typechain-types/index.d.ts",
   "scripts": {
-    "test": "npx hardhat test --tsconfig tsconfig.hardhat.json",
+    "test": "npx hardhat test",
     "compile": "yarn hardhat compile",
     "clean": "yarn hardhat clean && yarn g:tsc:clean",
     "deploy": "yarn hardhat run scripts/deploy.ts --network arbitrum",
-    "saleActions": "yarn hardhat run scripts/saleActions.ts --network arbitrum",
     "node": "yarn hardhat node",
     "typechain": "yarn hardhat typechain",
     "build:project": "yarn g:tsc:project",
     "build:cjs": "yarn g:tsc:cjs",
-    "build": "yarn clean && yarn hardhat typechain && yarn build:project && yarn build:cjs && yarn typechain"
+    "build": "yarn clean && yarn hardhat typechain && yarn build:project && yarn build:cjs && yarn typechain",
+    "script:saleActions": "yarn hardhat run scripts/saleActions.ts --network arbitrum",
+    "script:items.testnet": "yarn hardhat run scripts/items.testnet.ts --network ropsten"
   },
   "author": "",
   "license": "ISC",

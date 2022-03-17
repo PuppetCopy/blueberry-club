@@ -1,6 +1,6 @@
 import { expect } from "chai"
 import { ethers } from "hardhat"
-import { GBC__factory } from 'contracts'
+import { GBC__factory } from "../typechain-types"
 
 describe("Token contract", function () {
   it("Deployment should assign the total supply of tokens to the owner", async function () {
