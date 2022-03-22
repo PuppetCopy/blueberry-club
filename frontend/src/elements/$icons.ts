@@ -36,6 +36,9 @@ export const $discount = $path(
 )()
 
 
+export const $caretDown = $path(attr({
+  d: 'M16.866 22.5a1 1 0 01-1.732 0l-5.196-9a1 1 0 01.866-1.5h10.392a1 1 0 01.866 1.5l-5.196 9z'
+}))()
 
 
 

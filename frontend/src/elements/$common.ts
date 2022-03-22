@@ -4,7 +4,7 @@ import { pallete } from "@aelea/ui-components-theme"
 import { getAccountExplorerUrl, getTxExplorerUrl, shortenAddress, shortenTxAddress } from "@gambitdao/gmx-middleware"
 import { $trash } from "./$icons"
 import { USE_CHAIN } from "@gambitdao/gbc-middleware"
-import { $anchor, $caretDblDown, $ethScan } from "@gambitdao/ui-components"
+import { $anchor, $caretDblDown, $ethScan, $path } from "@gambitdao/ui-components"
 import { $berryById } from "../logic/common"
 
 export const $TrashBtn = $ButtonIcon($trash)
@@ -51,21 +51,15 @@ export const $txnIconLink = (address: string) => $anchor(attr({ href: getTxExplo
 )
 
 
-
-enum ITeamMemberSize {
-  SMALL,
-  LARGE
-}
-
 interface ITeamMember {
   name: string
   title: string
-  size?: ITeamMemberSize
+  size?: number
   tokenId: number
 }
 
-export const $teamMember = ({ name, title, size = ITeamMemberSize.LARGE, tokenId }: ITeamMember) => $column(layoutSheet.spacing, style({ alignItems: 'center', fontSize: screenUtils.isDesktopScreen ? '' : '65%' }))(
-  style({ borderRadius: '15px' }, $berryById(tokenId)),
+export const $teamMember = ({ name, title, size = 175, tokenId }: ITeamMember) => $column(layoutSheet.spacing, style({ alignItems: 'center', fontSize: screenUtils.isDesktopScreen ? '' : '65%' }))(
+  style({ borderRadius: '15px' }, $berryById(tokenId, size)),
   $column(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
     $anchor(attr(({ href: `https://twitter.com/${name}` })), style({ fontWeight: 900, textDecoration: 'none', fontSize: '1.5em' }))($text(`@${name}`)),
     $text(style({ fontSize: '.75em' }))(title),

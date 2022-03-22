@@ -4,18 +4,18 @@ import { $column, $icon, $NumberTicker, $row, $seperator, layoutSheet, state } f
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { ContractReceipt } from "@ethersproject/contracts"
 import { GBC_ADDRESS, LabItemDescription, USE_CHAIN } from "@gambitdao/gbc-middleware"
-import { ETH_ADDRESS_REGEXP, readableNumber, replayState } from "@gambitdao/gmx-middleware"
+import { ETH_ADDRESS_REGEXP, formatFixed, readableNumber, replayState } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { awaitPromises, continueWith, empty, fromPromise, join, map, merge, multicast, now, periodic, skipRepeats, snapshot, startWith, switchLatest, takeWhile, tap } from "@most/core"
 import { Public__factory } from "contracts"
 import { IEthereumProvider } from "eip1193-provider"
 import { $responsiveFlex, $txHashRef } from "../elements/$common"
-import { $gift, $tofunft } from "../elements/$icons"
+import { $caretDown, $gift, $tofunft } from "../elements/$icons"
 import { $IntermediateConnect } from "./$ConnectAccount"
 import { $ButtonPrimary } from "./form/$Button"
 import { $Dropdown } from "./form/$Dropdown"
 import { WALLET } from "../logic/provider"
-import { $alert, $anchor, $caretDown, $IntermediateTx, $spinner } from "@gambitdao/ui-components"
+import { $alert, $anchor, $IntermediateTx, $spinner } from "@gambitdao/ui-components"
 import { $mintDetails } from "./$common"
 import { Stream } from "@most/types"
 import { itemsGlobal } from "../logic/items"
@@ -67,7 +67,7 @@ export const $Mint = ({ walletStore, walletLink, item, publicSaleLive, presaleLi
       return null
     }
 
-    const contract = Public__factory.connect(GBC_ADDRESS.LAB, w3p.getSigner())
+    const contract = Public__factory.connect(item.contractAddress, w3p.getSigner())
 
 
     if (await contract.deployed()) {
@@ -196,7 +196,7 @@ export const $Mint = ({ walletStore, walletLink, item, publicSaleLive, presaleLi
                     )(
                       amount === null ? '' : String(amount)
                     ),
-                    $icon({ $content: $caretDown, width: '13px', svgOps: style({ marginTop: '2px', marginRight: '10px' }), viewBox: '0 0 7.84 3.81' })
+                    $icon({ $content: $caretDown, width: '13px', svgOps: style({ marginTop: '2px', marginRight: '10px' }) })
                   )
                 ),
                 select: {
@@ -226,9 +226,11 @@ export const $Mint = ({ walletStore, walletLink, item, publicSaleLive, presaleLi
                     }
 
                     if ((!accountCanMintPresale || mintAmount > 1)) {
+
+                      const priceFormated = formatFixed(item.mintPrice, 18)
                       return $container(
                         accountCanMintPresale ? $giftIcon : empty(),
-                        $text(accountCanMintPresale ? `Mint ${mintAmount - 1} + 1 free (${(mintAmount - 1) * .03}ETH)` : `Mint ${mintAmount} (${mintAmount * .03}ETH)`),
+                        $text(accountCanMintPresale ? `Mint ${mintAmount - 1} + 1 free (${(mintAmount - 1) * priceFormated}ETH)` : `Mint ${mintAmount} (${mintAmount * priceFormated}ETH)`),
                       )
                     }
                   }
@@ -256,10 +258,11 @@ export const $Mint = ({ walletStore, walletLink, item, publicSaleLive, presaleLi
                     throw new Error(`Unable to resolve contract`)
                   }
                     
+                  const value = BigInt(mintAmount) * item.mintPrice
                   //   contractAction = itemsUser.mint(mintAmount, { value: BigInt(mintAmount) * item.mintPrice })
                   // }
    
-                  const contractAction = itemsUser.mint(mintAmount, { value: BigInt(mintAmount) * item.mintPrice })
+                  const contractAction = itemsUser.mint(mintAmount, { value })
 
                 
                   const contractReceipt = contractAction.then(recp => recp.wait())

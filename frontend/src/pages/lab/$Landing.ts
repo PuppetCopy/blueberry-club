@@ -5,7 +5,7 @@ import { $column, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 import { $alert, $anchor, $IntermediateTx, $Link } from "@gambitdao/ui-components"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { $DisplayBerry } from "../../components/$DisplayBerry"
+import { $displayBerry } from "../../components/$DisplayBerry"
 import { $ButtonPrimary, $ButtonSecondary } from "../../components/form/$Button"
 import { $responsiveFlex } from "../../elements/$common"
 import { IAttributeHat, IAttributeFaceAccessory, IAttributeClothes, IAttributeExpression, BI_18_PRECISION } from "@gambitdao/gbc-middleware"
@@ -75,7 +75,7 @@ export const $LabLanding = ({ walletLink, parentRoute }: IBerry) => component((
   return [
     $column(layoutSheet.spacingBig)(
       $responsiveFlex(style({ justifyContent: 'space-between' }))(
-        $column(layoutSheet.spacingBig, style({ maxWidth: '620px' }))(
+        $column(layoutSheet.spacingBig, style({ maxWidth: '570px' }))(
           $column(style({ fontSize: screenUtils.isMobileScreen ? '2.1em' : '3.1em' }))(
             $node(
               $text(style({}))(`Bluberry `),
@@ -115,12 +115,6 @@ export const $LabLanding = ({ walletLink, parentRoute }: IBerry) => component((
           $seperator2,
 
           $row(layoutSheet.spacing)(
-            $IntermediateTx({
-              $done: map(res => {
-                return $text(style({ color: pallete.positive }))(`Minted 2 GBC's`)
-              }),
-              query: mintTestGbc
-            })({}),
             $ButtonPrimary({
               $content: $text(`Mint 2 test GBC's`)
             })({
@@ -133,13 +127,20 @@ export const $LabLanding = ({ walletLink, parentRoute }: IBerry) => component((
                 }),
                 switchLatest
               )
-            })
+            }),
+
+            $IntermediateTx({
+              $done: map(res => {
+                return $text(style({ color: pallete.positive }))(`Minted 2 GBC's`)
+              }),
+              query: mintTestGbc
+            })({}),
           )
 
         ),
-        $row(style({ minWidth: '400px', height: '400px', overflow: 'hidden', borderRadius: '30px' }))(
+        $row(style({ minWidth: '460px', height: '460px', overflow: 'hidden', borderRadius: '30px' }))(
           $bgAnimation(
-            $DisplayBerry([undefined, IAttributeClothes.AVALANCHE_HOODIE, undefined, IAttributeExpression.DEAD, IAttributeFaceAccessory.BEARD_WHITE, IAttributeHat.CHRISTMAS_HAT], '400px')({})
+            $displayBerry([undefined, IAttributeClothes.AVALANCHE_HOODIE, undefined, IAttributeExpression.DEAD, IAttributeFaceAccessory.BEARD_WHITE, IAttributeHat.CHRISTMAS_HAT], 460)
           )
         ),
       ),

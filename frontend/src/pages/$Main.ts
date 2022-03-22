@@ -1,11 +1,11 @@
 import { Behavior, combineArray, fromCallback, replayLatest } from "@aelea/core"
-import { $element, $node, $svg, $text, attr, component, eventElementTarget, INode, style, styleInline, stylePseudo } from "@aelea/dom"
+import { $Branch, $element, $Node, $node, $svg, $text, attr, component, eventElementTarget, INode, style, styleInline, stylePseudo } from "@aelea/dom"
 import * as router from '@aelea/router'
 import { $RouterAnchor } from '@aelea/router'
 import { $column, $icon, $row, designSheet, layoutSheet, observer, screenUtils, state } from '@aelea/ui-components'
 import { $anchor, $glp, $Link } from '@gambitdao/ui-components'
 import { pallete } from '@aelea/ui-components-theme'
-import { GBC_ADDRESS, BI_18_PRECISION } from '@gambitdao/gbc-middleware'
+import { GBC_ADDRESS, BI_18_PRECISION, IAttributeExpression } from '@gambitdao/gbc-middleware'
 import { groupByMap, IAccountQueryParamApi, intervalInMsMap, ITimerangeParamApi } from '@gambitdao/gmx-middleware'
 import { initWalletLink } from "@gambitdao/wallet-link"
 import {
@@ -16,7 +16,7 @@ import { Stream } from "@most/types"
 import { IEthereumProvider } from "eip1193-provider"
 import { $logo } from '../common/$icons'
 import { $Breadcrumbs } from "../components/$Breadcrumbs"
-import { $DisplayBerry } from "../components/$DisplayBerry"
+import { $displayBerry } from "../components/$DisplayBerry"
 import { $MainMenu, $socialMediaLinks } from '../components/$MainMenu'
 import { $StakingGraph } from "../components/$StakingGraph"
 import { $ButtonSecondary } from "../components/form/$Button"
@@ -29,7 +29,7 @@ import * as wallet from "../logic/provider"
 import { WALLET } from "../logic/provider"
 import { gmxGlpPriceHistory, queryArbitrumRewards, queryAvalancheRewards, StakedTokenArbitrum, StakedTokenAvalanche } from "../logic/query"
 import { helloBackend } from '../logic/websocket'
-import { IAccountStakingStore, IAttributeExpression, ITreasuryStore } from "@gambitdao/gbc-middleware"
+import { IAccountStakingStore, ITreasuryStore } from "@gambitdao/gbc-middleware"
 import { $Berry } from "./$Berry"
 import { $Account } from "./$Profile"
 import { $Treasury } from "./$Treasury"
@@ -38,7 +38,6 @@ import { $LabLanding } from "./lab/$Landing"
 import { fadeIn } from "../transitions/enter"
 import { $Wardrobe } from "./lab/$Wardrobe"
 import { $LabStore } from "./lab/$Store"
-import svgParts from "../logic/mappings/svgParts"
 import tokenIdAttributeTuple from "../logic/mappings/tokenIdAttributeTuple"
 import { $LabItem } from "./lab/$Item"
 
@@ -188,8 +187,9 @@ export default ({ baseRoute = '' }: Website) => component((
   }
 
   const berryDayId = dailyRandom(Date.now() / (intervalInMsMap.HR24 * 1000))
-  const [background, clothes, body, expression, faceAccessory, hat] = tokenIdAttributeTuple[berryDayId - 1]
+  const [background, clothes, body, expression, faceAccessory, hat] = tokenIdAttributeTuple[berryDayId]
 
+  const $randomBerry = $displayBerry([background, clothes, undefined, IAttributeExpression.HAPPY, undefined, undefined], 460)
 
   const arbitrumStakingRewards = replayLatest(multicast(arbitrumContract.stakingRewards))
   const avalancheStakingRewards = replayLatest(multicast(avalancheContract.stakingRewards))
@@ -298,25 +298,26 @@ export default ({ baseRoute = '' }: Website) => component((
 
             screenUtils.isDesktopScreen ? $column(
               $Link({
-                url: `/p/berry/${berryDayId}`,
+                url: `/p/berry/${berryDayId + 1}`,
                 route: berryRoute,
                 $content: $row(style({ maxWidth: '460px', borderRadius: '38px', overflow: 'hidden', width: '100%', height: '460px', transformStyle: 'preserve-3d', perspective: '100px', position: 'relative', placeContent: 'center', alignItems: 'flex-end' }))(
-                  $row(style({ alignSelf: 'flex-end', fontWeight: 'bold', position: 'absolute', right: '34px', top: '16px' }))(
+                  $row(style({ alignSelf: 'flex-end', color: `${pallete.message}!important`, fontWeight: 'bold', position: 'absolute', right: '34px', top: '16px' }))(
                     $text(style({ paddingTop: '19px', paddingRight: '3px' }))('#'),
                     $text(style({ fontSize: '38px' }))(String(berryDayId))
                   ),
-                  tap(({ element }) => {
+                  tap(async ({ element }) => {
+                    await import("../logic/mappings/svgParts")
+                    
                     element.querySelectorAll('.wakka').forEach(el => el.remove())
-                  }, $DisplayBerry([background, clothes, undefined, IAttributeExpression.HAPPY, undefined, undefined], '460px',)({})),
+                  }, $randomBerry as $Branch),
                   $svg('svg')(
                     attr({ xmlns: 'http://www.w3.org/2000/svg', fill: 'none', viewBox: `0 0 1500 1500` }),
                     style({ width: '460px', height: '460px', position: 'absolute', zIndex: 1, })
                   )(
-                    tap(({ element }) => {
-                      element.innerHTML = `
-                      ${svgParts.faceAccessory[faceAccessory]},
-                      ${svgParts.hat[hat]}
-                      `
+                    tap(async ({ element }) => {
+                      const svgParts = (await import("../logic/mappings/svgParts")).default
+
+                      element.innerHTML = `${svgParts[4][faceAccessory]}${svgParts[5][hat]}`
                     })
                   )(),
                   $row(style({ position: 'absolute', width: '125px', left: '219px', placeContent: 'space-between', top: '221px' }))(
@@ -446,7 +447,7 @@ export default ({ baseRoute = '' }: Website) => component((
             )(),
             $column(layoutSheet.spacingBig, style({ flex: 2, zIndex: 100 }))(
               $text(style({ fontWeight: 'bold', fontSize: '2.5em' }))('Monthly esGMX Airdrop'),
-              $text(`To support the project, the GMX team has decided to fully distribute 5,000 esGMX to the community at the end of each month!`),
+              $text(`To support the project, the GMX team has decided to fully distribute 4,000 esGMX to the community at the end of each month!`),
               $element('ul')(layoutSheet.spacingBig, style({ display: 'flex', flexDirection: 'column', margin: 0 }))(
                 $element('li')(
                   $text('Every week a snapshot is taken of each user’s staked GMX tokens as well as Blueberry NFT holdings'),
@@ -463,10 +464,11 @@ export default ({ baseRoute = '' }: Website) => component((
           $column(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
             $text(style({ fontWeight: 'bold', fontSize: '2.5em' }))('Team'),
             $row(layoutSheet.spacingBig, style({ alignSelf: 'stretch', placeContent: 'space-evenly', flexWrap: 'wrap' }))(
-              $teamMember({ name: 'xm92boi', title: "Founder & Designer", tokenId: 13 }),
-              $teamMember({ name: '0xAppodial', title: "Marketing", tokenId: 10 }),
+              $teamMember({ name: 'xm92boi', title: "Founder & Designer", tokenId: 16 }),
+              $teamMember({ name: '0xAppodial', title: "Marketing", tokenId: 11 }),
               $teamMember({ name: 'itburnzz', title: "Dev", tokenId: 12 }),
-              $teamMember({ name: 'B2F_zer', title: "Pleb", tokenId: 12 }),
+              $teamMember({ name: 'B2F_zer', title: "Pleb", tokenId: 32 }),
+              $teamMember({ name: 'IrvingDev_', title: "Dev", tokenId: 140 }),
             )
           ),
 

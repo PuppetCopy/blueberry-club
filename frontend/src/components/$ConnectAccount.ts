@@ -10,8 +10,8 @@ import * as wallet from "../logic/provider"
 import { $ButtonPrimary, $ButtonSecondary } from "./form/$Button"
 import { USE_CHAIN } from "@gambitdao/gbc-middleware"
 import { WALLET } from "../logic/provider"
-import { $caretDown } from "@gambitdao/ui-components/src/$icons"
 import { NETWORK_METADATA } from "@gambitdao/gmx-middleware"
+import { $caretDown } from "../elements/$icons"
 
 
 
@@ -94,7 +94,7 @@ export const $IntermediateConnect = (config: IIntermediateDisplay) => component(
             $ButtonPrimary({
               $content: $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
                 $text('Connect Wallet'),
-                $icon({ $content: $caretDown, width: '13px', fill: pallete.background, svgOps: style({ marginTop: '2px' }), viewBox: '0 0 7.84 3.81' }),
+                $icon({ $content: $caretDown, width: '13px', fill: pallete.background, svgOps: style({ marginTop: '2px' }) }),
               ), buttonOp: style({})
             })({
               click: connectPopoverTether(),

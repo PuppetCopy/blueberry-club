@@ -21,7 +21,10 @@
       "path": "../middleware"
     },
     {
-      "path": "../utils"
+      "path": "../@gambitdao-gmx-middleware"
+    },
+    {
+      "path": "../@gambitdao-wallet-link"
     },
     {
       "path": "../contracts"

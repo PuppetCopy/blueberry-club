@@ -35,7 +35,7 @@ export const $LabStore = ({ walletLink, parentRoute }: ILabStore) => component((
       return `${item.maxSupply - total} left`
     }, totalSupply)
 
-    const mintPriceEth = readableNumber(formatFixed(item.mintPrice, 18)) + ' ETH'
+    const mintPriceEth = item.mintPrice === 0n ? 'Free' : readableNumber(formatFixed(item.mintPrice, 18)) + ' ETH'
 
     const statusLabel = item.saleDate > Date.now()
       ? 'in ' + timeSince(item.saleDate / 1000) : null
@@ -46,13 +46,13 @@ export const $LabStore = ({ walletLink, parentRoute }: ILabStore) => component((
       url: `/p/lab-item/${item.id}`,
       route: parentRoute.create({ fragment: 'fefef' }),
       $content: $column(layoutSheet.spacingSmall, style({ position: 'relative' }))(
-        style({ backgroundColor: colorAlpha(pallete.message, .95), borderRadius: '18px' }, $labItem(item.id, '185px')),
+        style({ backgroundColor: colorAlpha(pallete.message, .95), borderRadius: '18px' }, $labItem(item.id, screenUtils.isDesktopScreen ? 185 : 140)),
         $text(style({ fontWeight: 'bold' }))(item.name),
         statusLabel ? $text(style({ fontWeight: 'bold', position: 'absolute', top: '15px', left: '15px', fontSize: '.75em', padding: '5px 10px', color: pallete.message, borderRadius: '8px', backgroundColor: pallete.background }))(
           statusLabel
         ) : empty(),
 
-        $row(style({ placeContent: 'space-evenly', fontSize: '.75em' }))(
+        $row(style({ placeContent: 'space-between', fontSize: '.75em' }))(
           $text(supplyLeft),
           $text(style({ color: pallete.positive }))(mintPriceEth)
         )
@@ -72,7 +72,7 @@ export const $LabStore = ({ walletLink, parentRoute }: ILabStore) => component((
 
       $column(layoutSheet.spacingBig, style({ justifyContent: 'space-between' }))(
         $text(style({ fontWeight: 'bold', fontSize: '1.8em' }))('Items'),
-        $row(screenUtils.isDesktopScreen ? style({ gap: '30px' }) : layoutSheet.spacingBig, style({ overflow: 'hidden', placeContent: 'space-between', flexWrap: 'wrap' }))(
+        $row(screenUtils.isDesktopScreen ? style({ gap: '58px' }) : layoutSheet.spacingBig, style({ overflow: 'hidden', flexWrap: 'wrap' }))(
           ...labItemDescriptionList.map(item => $labStoreItem(item))
         ),
       ),

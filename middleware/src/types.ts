@@ -1,4 +1,4 @@
-import { labItemDescriptionListMap } from "./config"
+
 
 export type IPrice = {
   priceUsd: bigint
@@ -100,19 +100,24 @@ export enum IAttributeMappings {
   Wizard = 27, Work = 135, "X Bucket Hat" = 19, "X Face Tattoo" = 18, "X Hoodie" = 9, Yellow = 30,
  
   
+  "Lab Head" = 199,
   "Avalanche Hoodie" = 200,
   "Fast Food Cap" = 201,
   "Builder" = 202,
   "Christmas Hat" = 203,
   "Beard White" = 204,
   "Camo Background" = 205,
+  "Avalanche Bucket Hat" = 206,
 }
-
-
 
 
 export enum IAttributeBody {
   BLUEBERRY = IAttributeMappings.Blueberry,
+  GOLD = IAttributeMappings.Gold,
+  BLACK_AND_WHITE = IAttributeMappings['Black and White'],
+  LOSER = IAttributeMappings.Looser,
+  WINNER = IAttributeMappings.Winner,
+  NUDE = IAttributeMappings.Nude,
 }
 
 export enum IAttributeExpression {
@@ -131,6 +136,11 @@ export enum IAttributeExpression {
   SUPRISED = IAttributeMappings.Surprised,
   THINKING = IAttributeMappings.Thinking,
   WINK = IAttributeMappings.Wink,
+  GOLD = IAttributeMappings.Gold,
+  BLACK_AND_WHITE = IAttributeMappings['Black and White'],
+  LOSER = IAttributeMappings.Looser,
+  WINNER = IAttributeMappings.Winner,
+  NUDE = IAttributeMappings.Nude,
 }
 
 export enum IAttributeClothes {
@@ -181,8 +191,11 @@ export enum IAttributeClothes {
   WIZARD = IAttributeMappings.Wizard,
   WORK = IAttributeMappings.Work,
   X_HOODIE = IAttributeMappings["X Hoodie"],
+  GOLD = IAttributeMappings.Gold,
+  BLACK_AND_WHITE = IAttributeMappings['Black and White'],
+  LOSER = IAttributeMappings.Looser,
+  WINNER = IAttributeMappings.Winner,
   NUDE = IAttributeMappings.Nude,
-
 
   // lab
   BUILDER = IAttributeMappings.Builder,
@@ -216,12 +229,17 @@ export enum IAttributeFaceAccessory {
   SUNGLASSES_GREEN = IAttributeMappings["Sunglasses Green"],
   SUNGLASSES_RED = IAttributeMappings["Sunglasses Red"],
   X_FACE_TATTOO = IAttributeMappings["X Face Tattoo"],
+  GOLD = IAttributeMappings.Gold,
+  BLACK_AND_WHITE = IAttributeMappings['Black and White'],
+  LOSER = IAttributeMappings.Looser,
+  WINNER = IAttributeMappings.Winner,
+  NUDE = IAttributeMappings.Nude,
   
+  // lab
   BEARD_WHITE = IAttributeMappings["Beard White"],
 }
 
 export enum IAttributeHat {
-  NUDE = IAttributeMappings.Nude,
   AFRO_GREEN = IAttributeMappings["Afro Green"],
   AFRO_MULTICOLOR = IAttributeMappings["Afro Multicolor"],
   AFRO_PINK = IAttributeMappings["Afro Pink"],
@@ -272,10 +290,18 @@ export enum IAttributeHat {
   VISOR_RED = IAttributeMappings["Visor Red"],
   WIZARD = IAttributeMappings.Wizard,
   X_BUCKET_HAT = IAttributeMappings["X Bucket Hat"],
+  GOLD = IAttributeMappings.Gold,
+  BLACK_AND_WHITE = IAttributeMappings['Black and White'],
+  LOSER = IAttributeMappings.Looser,
+  WINNER = IAttributeMappings.Winner,
+  NUDE = IAttributeMappings.Nude,
+
 
   // lab
+  LAB_HEAD = IAttributeMappings['Lab Head'],
   CHRISTMAS_HAT = IAttributeMappings['Christmas Hat'],
   FAST_FOOD_CAP = IAttributeMappings['Fast Food Cap'],
+  AVALANCHE_BUCKET_HAT = IAttributeMappings['Avalanche Bucket Hat'],
 }
 
 export enum IAttributeBackground {
@@ -287,6 +313,12 @@ export enum IAttributeBackground {
   PINK = IAttributeMappings.Pink,
   PURPLE = IAttributeMappings.Purple,
   YELLOW = IAttributeMappings.Yellow,
+  GOLD = IAttributeMappings.Gold,
+  BLACK_AND_WHITE = IAttributeMappings['Black and White'],
+  LOSER = IAttributeMappings.Looser,
+  WINNER = IAttributeMappings.Winner,
+  NUDE = IAttributeMappings.Nude,
+
 
   CAMO = IAttributeMappings['Camo Background'],
 

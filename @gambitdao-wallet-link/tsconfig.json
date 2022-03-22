@@ -1,18 +1,14 @@
 {
   "extends": "../tsconfig",
   "compilerOptions": {
-    "outDir": ".dist/cjs",
+    "outDir": ".dist/esm",
     "rootDir": "src",
-    "types": [
-      "node"
-    ],
-    "declarationDir": ".dist/types",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "lib": [
-      "es2020",
-      "dom"
+      "DOM"
     ],
+    "declarationDir": ".dist/types"
   },
   "references": [
     {

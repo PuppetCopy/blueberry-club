@@ -24,13 +24,41 @@ export const BI_18_PRECISION = 10n ** 18n
 
 export const labItemDescriptionList: LabItemDescription[] = [
   {
+    name: "Builder",
+    description: "yadda yadda",
+    id: IAttributeMappings['Builder'],
+    contractAddress: "0xAa86921095c1B9CCc089c01628ffDCF6EFA7c49c",
+    maxSupply: 100,
+    saleDate: Date.UTC(2022, 11, 25, 22, 0, 0),
+    whitelistDate: Date.UTC(2023, 0, 1, 22, 0, 0),
+    mintPrice: 10000000000000000n,
+  },
+  {
+    name: "Camo Background",
+    description: "yadda yadda",
+    id: IAttributeMappings['Camo Background'],
+    contractAddress: "0x89991C609A04970141d0a88e6179f862b34c0303",
+    maxSupply: 100,
+    saleDate: Date.UTC(2022, 2, 12, 22, 0, 0),
+    mintPrice: 10000000000000000n,
+  },
+  {
     name: "Avalanche Hoodie",
     description: "yadda yadda",
     id: IAttributeMappings["Avalanche Hoodie"],
     contractAddress: "0x005B352D6b6F4CacE6c213b39cB24D1404a73122",
     maxSupply: 100,
     saleDate: Date.UTC(2022, 2, 12, 22, 0, 0),
-    mintPrice: 30000000000000000n,
+    mintPrice: 0n,
+  },
+  {
+    name: "Lab Head",
+    description: "yadda yadda",
+    id: IAttributeMappings["Lab Head"],
+    contractAddress: "0x005B352D6b6F4CacE6c213b39cB24D1404a73122",
+    maxSupply: 100,
+    saleDate: Date.UTC(2022, 2, 12, 22, 0, 0),
+    mintPrice: 0n,
   },
   {
     name: "Fast Food Cap",
@@ -39,7 +67,7 @@ export const labItemDescriptionList: LabItemDescription[] = [
     contractAddress: "0x8277592789887bD9caBb6E847002D96726a38f96",
     maxSupply: 100,
     saleDate: Date.UTC(2022, 2, 12, 22, 0, 0),
-    mintPrice: 30000000000000000n,
+    mintPrice: 1000000000000000000n,
   },
   {
     name: "Christmas Hat",
@@ -49,7 +77,7 @@ export const labItemDescriptionList: LabItemDescription[] = [
     maxSupply: 100,
     saleDate: Date.UTC(2022, 11, 25, 22, 0, 0),
     whitelistDate: Date.UTC(2023, 0, 1, 22, 0, 0),
-    mintPrice: 30000000000000000n,
+    mintPrice: 10000000000000000n,
   },
   {
     name: "Beard White",
@@ -58,26 +86,7 @@ export const labItemDescriptionList: LabItemDescription[] = [
     contractAddress: "0xE8B6d8C161bFA073e4BBA04dB5f9678d0BAa1eF2",
     maxSupply: 100,
     saleDate: Date.UTC(2022, 11, 25, 22, 0, 0),
-    mintPrice: 30000000000000000n,
-  },
-  {
-    name: "Camo Background",
-    description: "yadda yadda",
-    id: IAttributeMappings['Camo Background'],
-    contractAddress: "0x89991C609A04970141d0a88e6179f862b34c0303",
-    maxSupply: 100,
-    saleDate: Date.UTC(2022, 11, 25, 22, 0, 0),
-    mintPrice: 30000000000000000n,
-  },
-  {
-    name: "Builder",
-    description: "yadda yadda",
-    id: IAttributeMappings['Builder'],
-    contractAddress: "0xAa86921095c1B9CCc089c01628ffDCF6EFA7c49c",
-    maxSupply: 100,
-    saleDate: Date.UTC(2022, 11, 25, 22, 0, 0),
-    whitelistDate: Date.UTC(2023, 0, 1, 22, 0, 0),
-    mintPrice: 30000000000000000n,
+    mintPrice: 10000000000000000n,
   },
 ]
 

@@ -13,5 +13,9 @@
       "ESNext"
     ]
   },
-  "references": []
+  "references": [
+    {
+      "path": "../@gambitdao-wallet-link"
+    }
+  ]
 }

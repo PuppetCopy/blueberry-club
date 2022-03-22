@@ -1,12 +1,13 @@
 import { combineArray, replayLatest } from "@aelea/core"
 import { intervalListFillOrderMap } from "@gambitdao/gmx-middleware"
-import { awaitPromises, map, multicast, periodic } from "@most/core"
+import { awaitPromises, map, multicast, periodic, tap } from "@most/core"
 import { Stream } from "@most/types"
-import { $DisplayBerry } from "../components/$DisplayBerry"
+import { $displayBerry } from "../components/$DisplayBerry"
 import { IValueInterval } from "../components/$StakingGraph"
 import { IAttributeBody, IBerryDisplayTupleMap, getLabItemTupleIndex } from "@gambitdao/gbc-middleware"
 import tokenIdAttributeTuple from "./mappings/tokenIdAttributeTuple"
 import { IPricefeed, IStakeSource, queryLatestPrices } from "./query"
+import { $svg, attr, style } from "@aelea/dom"
 
 
 export const latestTokenPriceMap = replayLatest(multicast(awaitPromises(map(() => queryLatestPrices(), periodic(5000)))))
@@ -59,7 +60,7 @@ export function priceFeedHistoryInterval<T extends string>(interval: number, gmx
   }, gmxPriceHistoryQuery, yieldSource)
 }
 
-export const $berryById = (id: number, size = '85px') => {
+export const $berryById = (id: number, size = 85) => {
   const metaTuple = tokenIdAttributeTuple[id - 1]
 
   if (!metaTuple) {
@@ -68,13 +69,29 @@ export const $berryById = (id: number, size = '85px') => {
 
   const [background, clothes, body, expression, faceAccessory, hat] = metaTuple
 
-  return $DisplayBerry([background, clothes, IAttributeBody.BLUEBERRY, expression, faceAccessory, hat], size)({})
+  return $displayBerry([background, clothes, IAttributeBody.BLUEBERRY, expression, faceAccessory, hat], size)
 }
 
 
-export const $labItem = (id: number, size = '85px') => {
+export const $labItem = (id: number, size = 85) => {
   const state = getLabItemTupleIndex(id)
   const newLocal = [...Array(state), id] as IBerryDisplayTupleMap
 
-  return $DisplayBerry(newLocal, size,)({})
+  return $displayBerry(newLocal, size)
+}
+
+export const $labItemAlone = (id: number, size = 85) => {
+  const state = getLabItemTupleIndex(id)
+
+  return $svg('svg')(
+    attr({ xmlns: 'http://www.w3.org/2000/svg', preserveAspectRatio: 'none', fill: 'none', viewBox: `0 0 1500 1500` }),
+    style({ width: `${size}px`, height: `${size}px`, position: 'absolute', zIndex: 1, })
+  )(
+    tap(async ({ element }) => {
+      const svgParts = (await import("../logic/mappings/svgParts")).default
+
+      // @ts-ignore
+      element.innerHTML = svgParts[state][id]
+    })
+  )()
 }

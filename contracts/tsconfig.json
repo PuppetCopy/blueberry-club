@@ -22,6 +22,9 @@
   ],
   "references": [
     {
+      "path": "../@gambitdao-gmx-middleware"
+    },
+    {
       "path": "../middleware"
     },
   ]

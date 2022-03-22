@@ -13,7 +13,7 @@ import { awaitPromises, empty, filter, fromPromise, map, merge, multicast, skipR
 import { GBC__factory } from "contracts"
 import { $Table2 } from "../common/$Table2"
 import { $AccountPreview } from "../components/$AccountProfile"
-import { $DisplayBerry } from "../components/$DisplayBerry"
+import { $displayBerry } from "../components/$DisplayBerry"
 import { $ButtonPrimary, $ButtonSecondary } from "../components/form/$Button"
 import { $accountRef, $card, $responsiveFlex, $txHashRef, $txnIconLink } from "../elements/$common"
 import { $tofunft } from "../elements/$icons"
@@ -84,7 +84,7 @@ export const $Berry = ({ walletLink, parentRoute }: IBerry) => component((
       $column(layoutSheet.spacingBig)(
         $responsiveFlex(layoutSheet.spacingBig)(
           $row(style({ minWidth: '400px', height: '400px', overflow: 'hidden', borderRadius: '30px' }))(
-            $DisplayBerry([background, clothes, IAttributeBody.BLUEBERRY, expression, faceAccessory, hat], '400px')({})
+            $displayBerry([background, clothes, IAttributeBody.BLUEBERRY, expression, faceAccessory, hat], 400)
           ),
           $node(),
           switchLatest(map(token => {
