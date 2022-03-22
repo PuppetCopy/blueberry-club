@@ -5243,7 +5243,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"contracts@workspace:contracts":
+"contracts@workspace:*, contracts@workspace:contracts":
   version: 0.0.0-use.local
   resolution: "contracts@workspace:contracts"
   dependencies:
@@ -15525,6 +15525,7 @@ __metadata:
     "@walletconnect/qrcode-modal": ^1.7.5
     "@walletconnect/web3-provider": ^1.7.5
     construct-style-sheets-polyfill: 3.1.0
+    contracts: "workspace:*"
     copy-webpack-plugin: 10.2.4
     eip1193-provider: 1.0.1
     fork-ts-checker-webpack-plugin: 7.2.1
