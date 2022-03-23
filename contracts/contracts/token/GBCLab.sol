@@ -32,7 +32,7 @@ contract GBCLab is ERC1155Enumerable, AccessControl, ERC2981 {
     bytes32 public constant MINTER = keccak256("MINTER");
     bytes32 public constant BURNER = keccak256("BURNER");
     bytes32 public constant MANAGER = keccak256("MANAGER");
-    
+
     /// @dev Set the deployer as default admin of the contract
     constructor() ERC1155("") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -56,7 +56,7 @@ contract GBCLab is ERC1155Enumerable, AccessControl, ERC2981 {
      * @notice Mint x number of token to an address
      * @param to The address receiver of the tokens
      * @param id The token id to mint
-     * @param amount The amount to generate 
+     * @param amount The amount to generate
      */
     function mint(address to, uint id, uint amount) external onlyRole(MINTER) {
         require(getItemType[id] != 0, "Item does not exist");
@@ -81,7 +81,7 @@ contract GBCLab is ERC1155Enumerable, AccessControl, ERC2981 {
      * @notice Burn x numbers of tokens of address
      * @param from The address burning tokens
      * @param id The token id to burn
-     * @param amount The amount to delete 
+     * @param amount The amount to delete
      */
     function burn(address from, uint id, uint amount) external onlyRole(BURNER) {
         _burn(from, id, amount);
@@ -178,7 +178,7 @@ contract GBCLab is ERC1155Enumerable, AccessControl, ERC2981 {
                 interfaceId == type(IERC1155Receiver).interfaceId ||
                 interfaceId == type(IERC1155).interfaceId ||
                 interfaceId == type(IERC1155MetadataURI).interfaceId ||
-                interfaceId == type(IAccessControl).interfaceId || 
+                interfaceId == type(IAccessControl).interfaceId ||
                 super.supportsInterface(interfaceId);
     }
 }
