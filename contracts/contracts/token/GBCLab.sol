@@ -13,10 +13,10 @@ import "@openzeppelin/contracts/token/common/ERC2981.sol";
  */
 contract GBCLab is ERC1155Enumerable, AccessControl, ERC2981 {
     /// @notice Contract Name
-    string public name = "Blueberry Lab";
+    string public name = "GMX Blueberry Lab";
 
     /// @notice Contract Symbol
-    string public symbol = "BLI";
+    string public symbol = "GBCL";
 
     /**
      * @notice Types are the different atributes of the GBC NFT
