@@ -27,46 +27,28 @@ contract Manager {
         GBCLab = IGBCLab(_gbcLab);
     }
 
-    function set(uint gbc, uint[] memory _items) external {
+    function set(uint gbc, uint[] memory _items, bool[] memory _removes) external {
         require(GBC.ownerOf(gbc) == msg.sender, "Manager: not owner of gbc");
+        Items storage items = itemsOf[gbc];
         for (uint256 i = 0; i < _items.length; i++) {
             uint item = _items[i];
-            require(GBCLab.balanceOf(msg.sender, item) > 0, "Manager: not owner of item");
+            bool remove = _removes[i];
+            if(!remove) {
+                require(GBCLab.balanceOf(msg.sender, item) > 0, "Manager: not owner of item");
+                GBCLab.burn(msg.sender, item, 1);
+            }
 
-            GBCLab.burn(msg.sender, item, 1);
-
-            Items storage items = itemsOf[gbc];
             uint itemType = GBCLab.getItemType(item);
 
             if(itemType == BACKGROUND_TYPE) {
                 if(items.background != 0) GBCLab.mint(msg.sender, items.background, 1);
-                items.background = item;
+                items.background = remove ? 0 : item;
             } else if(itemType == SPECIAL_TYPE) {
                 if(items.special != 0) GBCLab.mint(msg.sender, items.special, 1);
-                items.special = item;
+                items.special = remove ? 0 : item;
             } else {
                 if(items.custom != 0) GBCLab.mint(msg.sender, items.custom, 1);
-                items.custom = item;
-            }
-        }
-    }
-
-    function remove(uint gbc, uint[] memory sections) external {
-        require(GBC.ownerOf(gbc) == msg.sender, "Manager: not owner of gbc");
-
-        Items storage items = itemsOf[gbc];
-
-        for (uint256 i = 0; i < sections.length; i++) {
-            uint section = sections[i];
-            if(section == BACKGROUND_TYPE) {
-                if(items.background != 0) GBCLab.mint(msg.sender, items.background, 1);
-                items.background = 0;
-            } else if(section == SPECIAL_TYPE) {
-                if(items.special != 0) GBCLab.mint(msg.sender, items.special, 1);
-                items.special = 0;
-            } else {
-                if(items.custom != 0) GBCLab.mint(msg.sender, items.custom, 1);
-                items.custom = 0;
+                items.custom = remove ? 0 : item;
             }
         }
     }
