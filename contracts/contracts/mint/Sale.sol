@@ -30,10 +30,10 @@ contract Sale is Ownable {
 
     mapping(uint => bool) public isAlreadyUsed;
 
-    constructor(uint _ITEM_ID, uint _maxSupply, uint _maxPerTransaction, uint _PUBLIC_COST, uint _PUBLIC_START_DATE, uint _WHITELIST_START_DATE, uint _WHITELIST_COST, uint _WHITELIST_MAX, address _gbc, address _items) {
+    constructor(uint _ITEM_ID, uint _MAX_SUPPLY, uint _MAX_PER_TX, uint _PUBLIC_COST, uint _PUBLIC_START_DATE, uint _WHITELIST_START_DATE, uint _WHITELIST_COST, uint _WHITELIST_MAX, address _gbc, address _items) {
         ITEM_ID = _ITEM_ID;
-        MAX_SUPPLY = _maxSupply;
-        MAX_PER_TX = _maxPerTransaction;
+        MAX_SUPPLY = _MAX_SUPPLY;
+        MAX_PER_TX = _MAX_PER_TX;
 
         PUBLIC_COST = _PUBLIC_COST;
         PUBLIC_START_DATE = _PUBLIC_START_DATE;
