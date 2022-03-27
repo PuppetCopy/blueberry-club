@@ -70,11 +70,11 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
     $row(layoutSheet.spacingBig, style({ fontSize: '.9em', flex: 1, alignItems: 'center', placeContent: 'flex-end' }), containerOp)(
 
       $Dropdown({
-        value: now(null),
         // disabled: accountChange,
         // $noneSelected: $text('Choose Amount'),
         $selection: map(amount => $treasury),
         select: {
+          value: now(null),
           $container: $defaultSelectContainer(style({ minWidth:'300px' })),
           optionOp: map(option => option),
           options: [
@@ -89,6 +89,9 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
       })({}),
       
       $Link({ $content: $text('Lab'), url: '/p/lab', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
+        click: routeChangeTether()
+      }),
+      $Link({ $content: $text('Leaderboard(WIP)'), disabled: now(true), url: '/p/leaderboard', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
         click: routeChangeTether()
       }),
       

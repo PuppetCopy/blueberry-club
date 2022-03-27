@@ -1,9 +1,9 @@
-import { BaseProvider, TransactionReceipt, Web3Provider } from "@ethersproject/providers"
+import { Web3Provider } from "@ethersproject/providers"
 import { CHAIN, NETWORK_METADATA } from "@gambitdao/gmx-middleware"
 import { awaitPromises, constant, map, merge, mergeArray, snapshot } from "@most/core"
 import { Stream } from "@most/types"
 import { EIP1193Provider, ProviderInfo, ProviderRpcError } from "eip1193-provider"
-import { eip1193ProviderEvent, parseError, providerAction } from "./common"
+import { eip1193ProviderEvent, parseError } from "./common"
 
 
 export interface IWalletLink<T extends EIP1193Provider = EIP1193Provider> {
@@ -16,13 +16,6 @@ export interface IWalletLink<T extends EIP1193Provider = EIP1193Provider> {
   wallet: Stream<T | null>
 }
 
-
-export const getTxDetails = (provider: Stream<BaseProvider>) => (txHash: string): Stream<TransactionReceipt | null> => {
-  return providerAction(provider)(
-    350,
-    map(provider => provider.getTransactionReceipt(txHash))
-  )
-}
 
 
 // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1193.md

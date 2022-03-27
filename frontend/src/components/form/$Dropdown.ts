@@ -2,8 +2,8 @@ import { Behavior, O, Op } from "@aelea/core"
 import { $Node, component, eventElementTarget, IBranch, INode, NodeComposeFn, nodeEvent, style, styleBehavior, stylePseudo } from "@aelea/dom"
 import { $column, $row, Input, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { constant, empty, map, merge, mergeArray, multicast, now, skip, startWith, switchLatest } from "@most/core"
-import { Stream } from "@most/types"
+import { constant, empty, map, merge, mergeArray, multicast, now, scan, skip, startWith, switchLatest } from "@most/core"
+import { append, remove } from "@most/prelude"
 
 
 export const buttonPrimaryStyle = style({
@@ -20,21 +20,16 @@ export const secondaryButtonStyle = style({
   borderRadius: '50px'
 })
 
-export interface ISelect<T> {
+export interface ISelect<T> extends Input<T> {
   options: T[]
 
   $container?: NodeComposeFn<$Node>
-  $option?: NodeComposeFn<$Node>
 
   optionOp: Op<T, $Node>
-  $changeSelect?: Stream<T>
 }
 
 
-
-
-
-export const $Select = <T>({ options, optionOp, $option = $column, $container = $column }: ISelect<T>) => component((
+export const $Select = <T>({ options, optionOp, $container = $column, value, disabled, validation }: ISelect<T>) => component((
   [select, selectTether]: Behavior<IBranch, T>
 ) => {
 
@@ -48,7 +43,8 @@ export const $Select = <T>({ options, optionOp, $option = $column, $container = 
         )
 
         const $opt = switchLatest(optionOp(now(item)))
-        const $val = $option($opt)
+        const disableStyleBehavior = styleBehavior(map(isDisabled => ({ pointerEvents: isDisabled ? 'none' : 'all' }), disabled || empty()))
+        const $val = disableStyleBehavior($opt)
 
         return selectBehavior($val)
       })
@@ -61,8 +57,38 @@ export const $Select = <T>({ options, optionOp, $option = $column, $container = 
 })
 
 
+export interface IMultiselect<T> extends Input<T[]> {
+  select: ISelect<T>
+}
 
-export interface IDropdown<T> extends Input<T> {
+
+export const $MultiSelect = <T>(config: IMultiselect<T>) => component((
+  [select, selectTether]: Behavior<T, T>
+) => {
+
+  return [
+    $Select({ ...config.select })({ select: selectTether() }),
+
+    {
+      selection: switchLatest(map(seedList => {
+
+        return scan((seed, next) => {
+          const matchedIndex = seed.indexOf(next)
+
+          if (matchedIndex === -1) {
+            return append(next, seed)
+          }
+
+          return remove(matchedIndex, seed)
+        }, seedList, select)
+      }, config.value))
+    }
+  ]
+})
+
+
+
+export interface IDropdown<T> {
   select: Omit<ISelect<T>, '$value'>
   $selection: Op<T, $Node>
   $container?: NodeComposeFn<$Node>
@@ -84,9 +110,8 @@ export const $defaultSelectContainer = $column(layoutSheet.spacingTiny, style({
 
 
 export const $Dropdown = <T>({
-  value, disabled, validation,
   $container = $defaultDropdownContainer,
-  $selection,
+  $selection, $option = $defaultOptionContainer,
   select, openMenuOp = O() }: IDropdown<T>) => component((
   [pick, pickTether]: Behavior<T, T>,
   [openMenu, openMenuTether]: Behavior<INode, any>,
@@ -107,7 +132,7 @@ export const $Dropdown = <T>({
   return [
     $container(style({ position: 'relative' }))(
       openMenuBehavior(switchLatest(
-        $selection(merge(pick, value))
+        $selection(merge(pick, select.value))
       )),
 
       switchLatest(map(show => {
@@ -117,13 +142,13 @@ export const $Dropdown = <T>({
 
         return $Select({
           ...select,
+          optionOp: O(select.optionOp, map($option)),
           $container: (select.$container || $defaultSelectContainer)(
             style({
               zIndex: 50,
               position: 'absolute', top: 'calc(100% + 5px)'
             })
           ),
-          $option: select.$option || $defaultOptionContainer,
         // $option: map(x => $selectableOption($text(String(x))))
         })({ select: pickTether() })
       }, isOpenState))

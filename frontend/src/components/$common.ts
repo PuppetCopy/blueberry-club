@@ -4,8 +4,8 @@ import { pallete } from "@aelea/ui-components-theme"
 import { $txHashRef } from "../elements/$common"
 import { $berryById } from "../logic/common"
 
-export const $berryTileId = (id: number,) => $column(style({ position: 'relative' }))(
-  $berryById(id),
+export const $berryTileId = (id: number, size = 65) => $column(style({ position: 'relative' }))(
+  $berryById(id, size),
   $text(style({ textAlign: 'left', paddingLeft: '3px', paddingTop: '1px', fontSize: '.55em', position: 'absolute', fontWeight: 'bold', color: '#000' }))(String(id))
 )
 

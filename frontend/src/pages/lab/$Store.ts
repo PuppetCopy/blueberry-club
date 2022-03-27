@@ -5,12 +5,12 @@ import { $column, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $labItem } from "../../logic/common"
-import { LabItemDescription, labItemDescriptionList } from "@gambitdao/gbc-middleware"
+import { LabItemSaleDescription, saleDescriptionList, hasWhitelistSale } from "@gambitdao/gbc-middleware"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { $Link } from "@gambitdao/ui-components"
 import { itemsGlobal } from "../../logic/items"
 import { empty, fromPromise, map } from "@most/core"
-import { formatFixed, readableNumber, timeSince } from "@gambitdao/gmx-middleware"
+import { formatFixed, readableNumber, timeSince, unixTimestampNow } from "@gambitdao/gmx-middleware"
 
 
 
@@ -25,22 +25,32 @@ export const $LabStore = ({ walletLink, parentRoute }: ILabStore) => component((
 
 ) => {
 
-  const $labStoreItem = (item: LabItemDescription) => {
+  const $labStoreItem = (item: LabItemSaleDescription) => {
 
     const totalSupply = fromPromise(itemsGlobal.totalSupply(item.id))
     const supplyLeft = map(s => {
 
-      const total = s.toNumber()
+      const total = s.toBigInt()
 
       return `${item.maxSupply - total} left`
     }, totalSupply)
 
-    const mintPriceEth = item.mintPrice === 0n ? 'Free' : readableNumber(formatFixed(item.mintPrice, 18)) + ' ETH'
+    const unixTime = unixTimestampNow()
 
-    const statusLabel = item.saleDate > Date.now()
-      ? 'in ' + timeSince(item.saleDate / 1000) : null
+    const isWhitelist = hasWhitelistSale(item)
+    const currentSaleType = isWhitelist ? 'Whitelist' : 'Public'
+    const upcommingSaleDate = isWhitelist ? item.whitelistStartDate : item.publicStartDate
+
+    const isSaleLive = upcommingSaleDate > unixTime
+
+    const statusLabel = isSaleLive ?
+      `${currentSaleType} in ` + timeSince(upcommingSaleDate)
+      : currentSaleType
     
-    
+    const price = isWhitelist ? item.whitelistCost : item.publicCost
+
+    const mintPriceEth = price === 0n ? 'Free' : readableNumber(formatFixed(price, 18)) + ' ETH'
+
 
     return $Link({
       url: `/p/lab-item/${item.id}`,
@@ -67,13 +77,13 @@ export const $LabStore = ({ walletLink, parentRoute }: ILabStore) => component((
 
       $column(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
         $text(style({ fontWeight: 'bold', fontSize: '2.5em' }))('Blueberry Lab Store'),
-        $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '678px' }))('Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum a velit vitae quam gravida efficitur. Maecenas fringilla tempor eros, non congue justo placerat nec. '),
+        $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '678px' }))('You will find here the different items available to customize your GBC'),
       ),
 
       $column(layoutSheet.spacingBig, style({ justifyContent: 'space-between' }))(
         $text(style({ fontWeight: 'bold', fontSize: '1.8em' }))('Items'),
-        $row(screenUtils.isDesktopScreen ? style({ gap: '58px' }) : layoutSheet.spacingBig, style({ overflow: 'hidden', flexWrap: 'wrap' }))(
-          ...labItemDescriptionList.map(item => $labStoreItem(item))
+        $row(screenUtils.isDesktopScreen ? style({ gap: '57px' }) : layoutSheet.spacingBig, style({ overflow: 'hidden', flexWrap: 'wrap' }))(
+          ...saleDescriptionList.map(item => $labStoreItem(item))
         ),
       ),
 

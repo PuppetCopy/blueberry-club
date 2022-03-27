@@ -107,7 +107,6 @@ export enum IAttributeMappings {
   "Christmas Hat" = 203,
   "Beard White" = 204,
   "Camo Background" = 205,
-  "Avalanche Bucket Hat" = 206,
 }
 
 
@@ -301,7 +300,6 @@ export enum IAttributeHat {
   LAB_HEAD = IAttributeMappings['Lab Head'],
   CHRISTMAS_HAT = IAttributeMappings['Christmas Hat'],
   FAST_FOOD_CAP = IAttributeMappings['Fast Food Cap'],
-  AVALANCHE_BUCKET_HAT = IAttributeMappings['Avalanche Bucket Hat'],
 }
 
 export enum IAttributeBackground {
@@ -339,12 +337,28 @@ export type ILabAttributeOptions = typeof IAttributeBackground | typeof IAttribu
 
 
 export interface LabItemDescription {
-  name: string
-  description: string
-  contractAddress: string
-  id: number
-  saleDate: number
-  whitelistDate?: number
-  mintPrice: bigint
-  maxSupply: number
+  name: string // displays in UI
+  description: string // dispolays in UI
+
+  id: number // mapped to global unique ID
 }
+
+
+export interface LabItemSalePublicDescription extends LabItemDescription {
+  maxSupply: bigint // maximum items that can be minted
+  maxPerTx: bigint // limit amount of mint per transaction
+
+  publicCost: bigint // public mint price
+  publicStartDate: number // start of public sale
+
+  contractAddress: string
+}
+
+export interface LabItemSaleWhitelistDescription extends LabItemSalePublicDescription {
+
+  whitelistStartDate: number  // start date of whitelist sale
+  whitelistMax: bigint // limited amount of whitelist items that can be minted
+  whitelistCost: bigint // specify the mint price, 0 = free, most likley could be set at the same public mint price
+}
+
+export type LabItemSaleDescription = LabItemSalePublicDescription | LabItemSaleWhitelistDescription

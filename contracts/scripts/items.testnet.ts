@@ -18,7 +18,9 @@ import deployManager from "./lab/manager"
   await gbc.adminMint(1, owner.address)
 
   const { items, lab } = await deployLab(gbc.address)
+  
   const { manager } = await deployManager(gbc.address, lab.address)
+  // const { manager } = await deployManager(GBC_ADDRESS.GBC, GBC_ADDRESS.LAB)
 
   console.log('Sales', ...items.map(({ address }) => address))
 })().catch(err => console.error(err))

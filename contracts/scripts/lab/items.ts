@@ -14,6 +14,7 @@ export default async function(gbcAddress: string) {
   // const lab = GBCLab__factory.connect(GBC_ADDRESS.LAB, owner)
 
   const MINTER = await lab.MINTER()
+  const BURNER = await lab.BURNER()
   const DESIGNER = await lab.DESIGNER()
   await (await lab.grantRole(DESIGNER, owner.address)).wait()
 
@@ -42,6 +43,7 @@ export default async function(gbcAddress: string) {
       
 
     await (await lab.grantRole(MINTER, sale.address)).wait()
+    await (await lab.grantRole(BURNER, sale.address)).wait()
     const itemType = getLabItemTupleIndex(saleDescription.id)
     await (await lab.addItem(itemType + 1, saleDescription.id)).wait()
 

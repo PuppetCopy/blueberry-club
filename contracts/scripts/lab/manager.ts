@@ -14,8 +14,8 @@ export default async function(gbcAddress: string, labAddress: string) {
 
   const MINTER = await lab.MINTER()
   const BURNER = await lab.BURNER()
-  await (await lab.grantRole(MINTER, owner.address)).wait()
-  await (await lab.grantRole(BURNER, owner.address)).wait()
+  await (await lab.grantRole(MINTER, manager.address)).wait()
+  await (await lab.grantRole(BURNER, manager.address)).wait()
 
 
   return { manager }

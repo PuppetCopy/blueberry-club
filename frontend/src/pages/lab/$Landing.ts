@@ -2,16 +2,16 @@ import { Behavior } from "@aelea/core"
 import { $node, $text, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
-import { $alert, $anchor, $IntermediateTx, $Link } from "@gambitdao/ui-components"
+import { $anchor, $IntermediateTx, $Link } from "@gambitdao/ui-components"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $displayBerry } from "../../components/$DisplayBerry"
 import { $ButtonPrimary, $ButtonSecondary } from "../../components/form/$Button"
 import { $responsiveFlex } from "../../elements/$common"
-import { IAttributeHat, IAttributeFaceAccessory, IAttributeClothes, IAttributeExpression, BI_18_PRECISION } from "@gambitdao/gbc-middleware"
+import { IAttributeHat, IAttributeFaceAccessory, IAttributeClothes, IAttributeExpression } from "@gambitdao/gbc-middleware"
 import { $seperator2 } from "../common"
-import { map, switchLatest } from "@most/core"
-import { connect } from "../../logic/gbc"
+import { map, merge, now, switchLatest } from "@most/core"
+import { connectLab, connectGbc } from "../../logic/gbc"
 import { ContractReceipt } from "@ethersproject/contracts"
 import { pallete } from "@aelea/ui-components-theme"
 
@@ -89,6 +89,38 @@ export const $LabLanding = ({ walletLink, parentRoute }: IBerry) => component((
 
           $seperator2,
 
+
+
+          $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
+            $ButtonPrimary({
+              $content: $text(`Mint 2 GBC's`)
+            })({
+              click: mintTestGbcTether(
+                map(() => {
+
+                  const walletGbc = connectGbc(walletLink)
+                  return map(async contract => {
+                    const ctx = await contract.mint(2, { value: 2n * 30000000000000000n })
+                    return await ctx.wait()
+                  }, walletGbc.contract)
+                }),
+                switchLatest
+              )
+            }),
+
+            $IntermediateTx({
+              $done: map(res => {
+
+                if (res === 0) {
+                  return $text(style({ color: pallete.positive }))(`<- Hello Testnet, Start by minting test GBC's`)
+                }
+
+                return $text(style({ color: pallete.positive }))(`Minted 2 GBC's`)
+              }),
+              query: merge(map(q => q.then(_ => 1), mintTestGbc), now(Promise.resolve(0)))
+            })({}),
+          ),
+          $seperator2,
           $row(layoutSheet.spacingBig)(
             $Link({
               $content: $anchor(
@@ -112,34 +144,38 @@ export const $LabLanding = ({ walletLink, parentRoute }: IBerry) => component((
             }),
           ),
 
-          $seperator2,
-
-          $row(layoutSheet.spacing)(
-            $ButtonPrimary({
-              $content: $text(`Mint 2 test GBC's`)
-            })({
-              click: mintTestGbcTether(
-                map(() => {
-                  const gbc = connect(walletLink)
-                  return map(x => {
-                    return x.gbc.mint(2, { value: 2n * 30000000000000000n }).then(x => x.wait())
-                  }, gbc.contract)
-                }),
-                switchLatest
-              )
-            }),
-
-            $IntermediateTx({
-              $done: map(res => {
-                return $text(style({ color: pallete.positive }))(`Minted 2 GBC's`)
-              }),
-              query: mintTestGbc
-            })({}),
-          )
 
         ),
         $row(style({ minWidth: '460px', height: '460px', overflow: 'hidden', borderRadius: '30px' }))(
           $bgAnimation(
+            // switchLatest(combineArray((selectedItem, selectedBackground) => {
+
+
+
+            //   const displaytuple: Partial<IBerryDisplayTupleMap> = [selectedBackground || background, clothes, IAttributeBody.BLUEBERRY, expression, faceAccessory, hat]
+
+            //   if (selectedItem) {
+            //     displaytuple.splice(getLabItemTupleIndex(selectedItem), 1, selectedItem)
+            //   }
+
+            //   $berry = $displayBerry(displaytuple, 585, true)
+
+            //   const labItemStyle = O(labItemBackground, style({ flex: 1 }))
+
+            //   const gbcBackground: undefined | IAttributeBackground = undefined // IAttributeBackground.BLUE
+            //   const gbcItem: undefined | IAttributeClothes = undefined // IAttributeClothes.AVALANCHE_HOODIE
+
+        
+            //   const $tradeBox = $row(style({
+            //     height: '80px', minWidth: '80px', borderRadius: '8px', gap: '2px', overflow: 'hidden', boxShadow: '-1px 2px 7px 2px #0000002e',
+            //     position: 'relative', backgroundColor: pallete.middleground,
+            //     // backgroundImage: 'linear-gradient(to top right, #fff0 calc(50% - 2px), black , #fff0 calc(50% + 2px))'
+            //   }))
+
+
+            //   return $text('fe')
+
+            // }, itemSelection, backgroundSelection)),
             $displayBerry([undefined, IAttributeClothes.AVALANCHE_HOODIE, undefined, IAttributeExpression.DEAD, IAttributeFaceAccessory.BEARD_WHITE, IAttributeHat.CHRISTMAS_HAT], 460)
           )
         ),
@@ -151,7 +187,7 @@ export const $LabLanding = ({ walletLink, parentRoute }: IBerry) => component((
 
       $column(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
         $text(style({ fontWeight: 'bold', fontSize: '2.5em' }))('Want to get featured?'),
-        $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '678px' }))('Are you an artist, a project or an influencer? It is possible to collaborate with us to create items that fit your art or your brand  in the Blueberry Club. '),
+        $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '678px' }))('Are you an artist, a project or an influencer? It is possible to collaborate with us to create items that fit your art or your brand in the Blueberry Lab'),
 
 
         $ButtonSecondary({

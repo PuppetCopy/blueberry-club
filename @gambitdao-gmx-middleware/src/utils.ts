@@ -1,6 +1,6 @@
-import { replayLatest } from "@aelea/core"
+import { O, Op, replayLatest } from "@aelea/core"
 import { Stream } from "@most/types"
-import { combineArray as combineArrayMost } from "@most/core"
+import { at, awaitPromises, combineArray as combineArrayMost, constant, continueWith, map, merge, now, periodic, recoverWith, switchLatest, take } from "@most/core"
 import { CHAIN, EXPLORER_URL, intervalInMsMap, NETWORK_METADATA, USD_DECIMALS } from "./constant"
 import { IPageParapApi, IPagePositionParamApi, ISortParamApi } from "./types"
 
@@ -28,7 +28,7 @@ export function shortPostAdress(address: string) {
   return address.slice(address.length -4, address.length)
 }
 
-export function readableNumber(ammount: number, showDecimals = true) {
+export function readableNumber(ammount: number, decimalCount = 2) {
   const parts = ammount.toString().split('.')
   const [whole = '', decimal = ''] = parts
 
@@ -37,10 +37,9 @@ export function readableNumber(ammount: number, showDecimals = true) {
   }
 
   if (whole.replace(/^-/, '') === '0' || whole.length < 3) {
-    const shortDecimal = decimal.slice(0, 2)
-    return whole + (shortDecimal && showDecimals ? '.' + shortDecimal  : '')
+    const shortDecimal = decimal.slice(0, decimalCount)
+    return whole + (shortDecimal && decimalCount ? '.' + shortDecimal  : '')
   }
-
 
   return Number(whole).toLocaleString()
 }
@@ -371,4 +370,24 @@ export function replayState<A, K extends keyof A = keyof A>(state: StreamInput<A
   }, streams)
 
   return combinedWithInitial
+}
+
+
+export const periodicRun = <T>(interval: number, actionOp: Op<number, Promise<T>>, startImmediate = true): Stream<T> => {
+  const tickDelay = at(interval, null)
+  const tick = startImmediate ? merge(now(null), tickDelay) : tickDelay 
+
+  return O(
+    constant(performance.now()),
+    actionOp,
+    awaitPromises,
+    recoverWith(err => {
+      console.error(err)
+      
+      return periodicRun(interval * 2, actionOp, false)
+    }),
+    continueWith(() => {
+      return periodicRun(interval, actionOp, false)
+    }),
+  )(tick)
 }

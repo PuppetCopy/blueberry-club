@@ -64,24 +64,6 @@ export const resolveWalletProvider = <T extends ExternalProvider>(provider: Stre
 }
 
 
-export const providerAction = <T>(provider: Stream<BaseProvider>) => (interval: number, actionOp: Op<BaseProvider, Promise<T>>) => {
-  const tx: Stream<T> = O(
-    actionOp,
-    take(1),
-    awaitPromises,
-    recoverWith(err => {
-      console.error(err)
-      return switchLatest(at(1500, tx))
-    }),
-    continueWith(() => {
-      return switchLatest(at(interval, tx))
-    }),
-  )(provider)
-
-  return tx
-}
-
-
 export interface ProviderEventListener {
   (event: "connect"): Stream<ProviderInfo>
   (event: "disconnect"): Stream<ProviderRpcError>

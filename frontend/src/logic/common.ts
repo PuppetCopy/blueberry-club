@@ -1,6 +1,6 @@
 import { combineArray, replayLatest } from "@aelea/core"
 import { intervalListFillOrderMap } from "@gambitdao/gmx-middleware"
-import { awaitPromises, map, multicast, periodic, tap } from "@most/core"
+import { awaitPromises, continueWith, map, multicast, now, periodic, takeWhile, tap } from "@most/core"
 import { Stream } from "@most/types"
 import { $displayBerry } from "../components/$DisplayBerry"
 import { IValueInterval } from "../components/$StakingGraph"
@@ -19,6 +19,20 @@ function getByAmoutFromFeed(amount: bigint, priceUsd: bigint, decimals: number) 
 
   return amount * priceUsd / denominator
 }
+
+
+export function takeUntilLast <T>(fn: (t: T) => boolean, s: Stream<T>) {
+  let last: T
+  
+  return continueWith(() => now(last), takeWhile(x => {
+
+    const res = !fn(x)
+    last = x
+
+    return res
+  }, s))
+}
+
 
 
 export function priceFeedHistoryInterval<T extends string>(interval: number, gmxPriceHistoryQuery: Stream<IPricefeed[]>, yieldSource: Stream<IStakeSource<T>[]>): Stream<IValueInterval[]> {
@@ -80,12 +94,12 @@ export const $labItem = (id: number, size = 85) => {
   return $displayBerry(newLocal, size)
 }
 
-export const $labItemAlone = (id: number, size = 85) => {
+export const $labItemAlone = (id: number, size = 80) => {
   const state = getLabItemTupleIndex(id)
 
   return $svg('svg')(
     attr({ xmlns: 'http://www.w3.org/2000/svg', preserveAspectRatio: 'none', fill: 'none', viewBox: `0 0 1500 1500` }),
-    style({ width: `${size}px`, height: `${size}px`, position: 'absolute', zIndex: 1, })
+    style({ width: `${size}px`, height: `${size}px`, })
   )(
     tap(async ({ element }) => {
       const svgParts = (await import("../logic/mappings/svgParts")).default

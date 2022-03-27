@@ -47,30 +47,30 @@ contract Sale is Ownable {
     }
 
     function mintWhitelist(uint[] memory gbcs) external payable {
-        require(!isCanceled, "Sale: sale canceled");
-        require(WHITELIST_START_DATE <= block.timestamp, "Sale: whitelist sale didn't started");
-        require(gbcs.length <= MAX_PER_TX, "Sale: max mint amount reached");
+        require(!isCanceled, "sale canceled");
+        require(WHITELIST_START_DATE <= block.timestamp, "whitelist sale didn't started");
+        require(gbcs.length <= MAX_PER_TX, "max mint amount reached");
         minted += gbcs.length;
-        require(minted <= MAX_SUPPLY, "Sale: max reached");
+        require(minted <= MAX_SUPPLY, "max reached");
         whitelistMinted += gbcs.length;
-        require(whitelistMinted <= WHITELIST_MAX, "Sale: whitelist max reached");
-        require(msg.value >= WHITELIST_COST * gbcs.length, "Sale: underpayed");
+        require(whitelistMinted <= WHITELIST_MAX, "whitelist max reached");
+        require(msg.value >= WHITELIST_COST * gbcs.length, "underpayed");
         for (uint256 i = 0; i < gbcs.length; i++) {
             uint gbc = gbcs[i];
-            require(GBC.ownerOf(gbc) == msg.sender, "Sale: not owner");
-            require(!isAlreadyUsed[gbc], string(abi.encodePacked("Sale: gbc ", Strings.toString(gbc), " already used")));
+            require(GBC.ownerOf(gbc) == msg.sender, "not owner");
+            require(!isAlreadyUsed[gbc], string(abi.encodePacked("gbc ", Strings.toString(gbc), " already used")));
             isAlreadyUsed[gbc] = true;
         }
         ITEMS.mint(msg.sender, ITEM_ID, gbcs.length);
     }
 
     function mint(uint amount) external payable {
-        require(!isCanceled, "Sale: sale canceled");
-        require(PUBLIC_START_DATE <= block.timestamp, "Sale: public sale didn't start");
-        require(amount <= MAX_PER_TX, "Sale: max amount per transaction reached");
+        require(!isCanceled, "sale canceled");
+        require(PUBLIC_START_DATE <= block.timestamp, "public sale didn't start");
+        require(amount <= MAX_PER_TX, "max amount per transaction reached");
         minted += amount;
-        require(minted <= MAX_SUPPLY, "Sale: max reached");
-        require(msg.value >= PUBLIC_COST * amount, "Sale: underpayed");
+        require(minted <= MAX_SUPPLY, "max reached");
+        require(msg.value >= PUBLIC_COST * amount, "underpayed");
         ITEMS.mint(msg.sender, ITEM_ID, amount);
     }
 
