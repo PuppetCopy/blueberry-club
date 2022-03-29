@@ -70,8 +70,12 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
     mapping(address => uint256) public userRewardPerTokenPaid;
     /// @notice The earned() value when an account last staked/withdrew/withdrew rewards
     mapping(address => uint256) public rewards;
+    /// @notice Track when the reward change
+    mapping(address => uint) public lastRewardUpdates;
 
     /// @notice Track user activity on contract
+    mapping(address => uint) public lastActivityUpdates;
+    /// @notice Get the amount of time the user is counted as atcive
     mapping(address => uint) public activity;
 
     /// -----------------------------------------------------------------------
@@ -81,15 +85,17 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
     ERC20 public immutable rewardToken;
     ERC721 public immutable stakeToken;
     uint64 public immutable DURATION;
+    uint64 public immutable ACTIVE_LIMIT;
 
     /// -----------------------------------------------------------------------
     /// Initialization
     /// -----------------------------------------------------------------------
 
-    constructor(address _rewardToken, address _stakeToken, uint64 _DURATION) {
+    constructor(address _rewardToken, address _stakeToken, uint64 _DURATION, uint64 _ACTIVE_LIMIT) {
         stakeToken = ERC721(_stakeToken);
         rewardToken = ERC20(_rewardToken);
         DURATION = _DURATION;
+        ACTIVE_LIMIT = _ACTIVE_LIMIT;
     }
 
     /// -----------------------------------------------------------------------
@@ -127,12 +133,13 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
         // accrue rewards
         rewardPerTokenStored = rewardPerToken_;
         lastUpdateTime = lastTimeRewardApplicable_;
-        rewards[msg.sender] = _earned(
+        (rewards[msg.sender],) = _earned(
             msg.sender,
             accountBalance,
             rewardPerToken_,
             rewards[msg.sender]
         );
+        lastRewardUpdates[msg.sender] = block.timestamp;
         userRewardPerTokenPaid[msg.sender] = rewardPerToken_;
 
         // stake
@@ -145,7 +152,8 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
         }
 
         // Update activity
-        activity[msg.sender] = block.timestamp;
+        lastActivityUpdates[msg.sender] = block.timestamp;
+        activity[msg.sender] = 0;
 
         /// -----------------------------------------------------------------------
         /// Effects
@@ -195,12 +203,13 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
         // accrue rewards
         rewardPerTokenStored = rewardPerToken_;
         lastUpdateTime = lastTimeRewardApplicable_;
-        rewards[msg.sender] = _earned(
+        (rewards[msg.sender],) = _earned(
             msg.sender,
             accountBalance,
             rewardPerToken_,
             rewards[msg.sender]
         );
+        lastRewardUpdates[msg.sender] = block.timestamp;
         userRewardPerTokenPaid[msg.sender] = rewardPerToken_;
 
         // withdraw stake
@@ -223,7 +232,8 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
         }
 
         // Update activity
-        activity[msg.sender] = block.timestamp;
+        lastActivityUpdates[msg.sender] = block.timestamp;
+        activity[msg.sender] = 0;
 
         /// -----------------------------------------------------------------------
         /// Effects
@@ -270,7 +280,7 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
         /// -----------------------------------------------------------------------
 
         // give rewards
-        uint256 reward = _earned(
+        (uint256 reward,) = _earned(
             msg.sender,
             accountBalance,
             rewardPerToken_,
@@ -278,6 +288,7 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
         );
         if (reward > 0) {
             rewards[msg.sender] = 0;
+            lastRewardUpdates[msg.sender] = block.timestamp;
         }
 
         // accrue rewards
@@ -305,7 +316,8 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
         }
 
         // Update activity
-        activity[msg.sender] = block.timestamp;
+        lastActivityUpdates[msg.sender] = block.timestamp;
+        activity[msg.sender] = 0;
 
         /// -----------------------------------------------------------------------
         /// Effects
@@ -349,7 +361,7 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
         /// State updates
         /// -----------------------------------------------------------------------
 
-        uint256 reward = _earned(
+        (uint256 reward,) = _earned(
             msg.sender,
             accountBalance,
             rewardPerToken_,
@@ -364,6 +376,7 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
         // withdraw rewards
         if (reward > 0) {
             rewards[msg.sender] = 0;
+            lastRewardUpdates[msg.sender] = block.timestamp;
 
             /// -----------------------------------------------------------------------
             /// Effects
@@ -374,16 +387,28 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
         }
 
         // Update activity
-        activity[msg.sender] = block.timestamp;
+        lastActivityUpdates[msg.sender] = block.timestamp;
+        activity[msg.sender] = 0;
     }
 
     function ping() external {
+        /// -----------------------------------------------------------------------
+        /// Storage loads
+        /// -----------------------------------------------------------------------
+        uint timeElapsedFromLastActivity = block.timestamp - lastActivityUpdates[msg.sender];
+
+
         /// -----------------------------------------------------------------------
         /// State updates
         /// -----------------------------------------------------------------------
 
         // Update activity
-        activity[msg.sender] = block.timestamp;
+        if(timeElapsedFromLastActivity > ACTIVE_LIMIT) {
+            activity[msg.sender] += ACTIVE_LIMIT;
+        } else {
+            activity[msg.sender] += timeElapsedFromLastActivity;
+        }
+        lastActivityUpdates[msg.sender] = block.timestamp;
     }
 
     /// -----------------------------------------------------------------------
@@ -411,8 +436,7 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
     /// @notice The amount of reward tokens an account has accrued so far. Does not
     /// include already withdrawn rewards.
     function earned(address account) external view returns (uint256) {
-        return
-            _earned(
+        (uint reward,) = _earned(
                 account,
                 balanceOf[account],
                 _rewardPerToken(
@@ -422,6 +446,7 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
                 ),
                 rewards[account]
             );
+        return reward;
     }
 
     /// @dev ERC721 compliance
@@ -525,13 +550,23 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
         uint256 accountBalance,
         uint256 rewardPerToken_,
         uint256 accountRewards
-    ) internal view returns (uint256) {
-        return
-            FullMath.mulDiv(
-                accountBalance,
-                rewardPerToken_ - userRewardPerTokenPaid[account],
-                PRECISION
-            ) + accountRewards;
+    ) internal view returns (uint256, uint256) {
+
+        uint activity_ = activity[msg.sender];
+
+        uint timeElapsedFromLastActivity = block.timestamp - lastActivityUpdates[msg.sender];
+
+        if(timeElapsedFromLastActivity > ACTIVE_LIMIT) {
+            activity_ += ACTIVE_LIMIT;
+        } else {
+            activity_ += timeElapsedFromLastActivity;
+        }
+
+        uint timeElapsedFromLastReward = block.timestamp - lastRewardUpdates[msg.sender];
+
+        uint totalReward = FullMath.mulDiv(accountBalance, rewardPerToken_ - userRewardPerTokenPaid[account], PRECISION);
+        uint realReward = FullMath.mulDiv(totalReward, activity_, timeElapsedFromLastReward);
+        return (realReward + accountRewards, totalReward - realReward);
     }
 
     function _rewardPerToken(
