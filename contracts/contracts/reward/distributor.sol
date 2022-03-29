@@ -26,6 +26,7 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
     error Error_AmountTooLarge();
     error Error_NotTokenOwner();
     error Error_NotStakeToken();
+    error Error_NotApproved();
 
     /// -----------------------------------------------------------------------
     /// Events
@@ -61,6 +62,8 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
 
     /// @notice Tracks if an address can call notifyReward()
     mapping(address => bool) public isRewardDistributor;
+    /// @notice Tracks if an address can call getReward()
+    mapping(address => bool) public isApproved;
     /// @notice The owner of a staked ERC721 token
     mapping(uint256 => address) public ownerOf;
 
@@ -306,197 +309,6 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
         emit Withdrawn(msg.sender, idList);
     }
 
-    /// @notice Withdraws specified staked tokens and earned rewards
-    function exit(uint256[] calldata idList) external {
-        /// -----------------------------------------------------------------------
-        /// Validation
-        /// -----------------------------------------------------------------------
-
-        if (idList.length == 0) {
-            return;
-        }
-
-        /// -----------------------------------------------------------------------
-        /// Storage loads
-        /// -----------------------------------------------------------------------
-
-        uint256 accountBalance = balanceOf[msg.sender];
-        uint64 lastTimeRewardApplicable_ = lastTimeRewardApplicable();
-        uint256 totalSupply_ = totalSupply;
-        uint256 rewardPerToken_ = _rewardPerToken(
-            totalSupply_,
-            lastTimeRewardApplicable_,
-            rewardRate
-        );
-        uint256 periodFinish_ = periodFinish;
-
-        /// -----------------------------------------------------------------------
-        /// State updates
-        /// -----------------------------------------------------------------------
-
-        // give rewards
-        (uint256 reward, uint lost) = _earned(
-            msg.sender,
-            accountBalance,
-            rewardPerToken_,
-            rewards[msg.sender]
-        );
-        if (reward > 0) {
-            rewards[msg.sender] = 0;
-            lastRewardUpdates[msg.sender] = block.timestamp;
-        }
-
-        // accrue rewards
-        rewardPerTokenStored = rewardPerToken_;
-        lastUpdateTime = lastTimeRewardApplicable_;
-        userRewardPerTokenPaid[msg.sender] = rewardPerToken_;
-
-        // withdraw stake
-        balanceOf[msg.sender] = accountBalance - idList.length;
-        // total supply has 1:1 relationship with staked amounts
-        // so can't ever underflow
-        unchecked {
-            totalSupply = totalSupply_ - idList.length;
-            for (uint256 i = 0; i < idList.length; i++) {
-                // verify ownership
-                address tokenOwner = ownerOf[idList[i]];
-                if (tokenOwner != msg.sender || tokenOwner == BURN_ADDRESS) {
-                    revert Error_NotTokenOwner();
-                }
-
-                // keep the storage slot dirty to save gas
-                // if someone else stakes the same token again
-                ownerOf[idList[i]] = BURN_ADDRESS;
-            }
-        }
-
-        // Update activity
-        lastActivityUpdates[msg.sender] = block.timestamp;
-        activity[msg.sender] = 0;
-
-        // record new reward
-        uint256 newRewardRate;
-        if (block.timestamp >= periodFinish_) {
-            newRewardRate = lost;
-            periodFinish = uint64(block.timestamp + 1);
-
-            // prevent overflow when computing rewardPerToken
-            if (newRewardRate >= ((type(uint256).max / PRECISION))) {
-                revert Error_AmountTooLarge();
-            }
-        } else {
-            uint256 remaining = periodFinish_ - block.timestamp;
-            uint256 leftover = remaining * rewardRate;
-            newRewardRate = (lost + leftover) / remaining;
-            // prevent overflow when computing rewardPerToken
-            if (newRewardRate >= ((type(uint256).max / PRECISION) / remaining)) {
-                revert Error_AmountTooLarge();
-            }
-        }
-
-        rewardRate = newRewardRate;
-        lastUpdateTime = uint64(block.timestamp);
-
-        emit RewardAdded(lost);
-
-        /// -----------------------------------------------------------------------
-        /// Effects
-        /// -----------------------------------------------------------------------
-
-        // transfer stake
-        unchecked {
-            for (uint256 i = 0; i < idList.length; i++) {
-                stakeToken.safeTransferFrom(
-                    address(this),
-                    msg.sender,
-                    idList[i]
-                );
-            }
-        }
-        emit Withdrawn(msg.sender, idList);
-
-        // transfer rewards
-        if (reward > 0) {
-            rewardToken.safeTransfer(msg.sender, reward);
-            emit RewardPaid(msg.sender, reward);
-        }
-    }
-
-    /// @notice Withdraws all earned rewards
-    function getReward() external {
-        /// -----------------------------------------------------------------------
-        /// Storage loads
-        /// -----------------------------------------------------------------------
-
-        uint256 accountBalance = balanceOf[msg.sender];
-        uint64 lastTimeRewardApplicable_ = lastTimeRewardApplicable();
-        uint256 totalSupply_ = totalSupply;
-        uint256 rewardPerToken_ = _rewardPerToken(
-            totalSupply_,
-            lastTimeRewardApplicable_,
-            rewardRate
-        );
-        uint256 periodFinish_ = periodFinish;
-
-        /// -----------------------------------------------------------------------
-        /// State updates
-        /// -----------------------------------------------------------------------
-
-        (uint256 reward, uint256 lost) = _earned(
-            msg.sender,
-            accountBalance,
-            rewardPerToken_,
-            rewards[msg.sender]
-        );
-
-        // accrue rewards
-        rewardPerTokenStored = rewardPerToken_;
-        lastUpdateTime = lastTimeRewardApplicable_;
-        userRewardPerTokenPaid[msg.sender] = rewardPerToken_;
-
-        // withdraw rewards
-        if (reward > 0) {
-            rewards[msg.sender] = 0;
-            lastRewardUpdates[msg.sender] = block.timestamp;
-
-            /// -----------------------------------------------------------------------
-            /// Effects
-            /// -----------------------------------------------------------------------
-
-            rewardToken.safeTransfer(msg.sender, reward);
-            emit RewardPaid(msg.sender, reward);
-        }
-
-        // Update activity
-        lastActivityUpdates[msg.sender] = block.timestamp;
-        activity[msg.sender] = 0;
-
-        // record new reward
-        uint256 newRewardRate;
-        if (block.timestamp >= periodFinish_) {
-            newRewardRate = lost;
-            periodFinish = uint64(block.timestamp + 1);
-
-            // prevent overflow when computing rewardPerToken
-            if (newRewardRate >= ((type(uint256).max / PRECISION))) {
-                revert Error_AmountTooLarge();
-            }
-        } else {
-            uint256 remaining = periodFinish_ - block.timestamp;
-            uint256 leftover = remaining * rewardRate;
-            newRewardRate = (lost + leftover) / remaining;
-            // prevent overflow when computing rewardPerToken
-            if (newRewardRate >= ((type(uint256).max / PRECISION) / remaining)) {
-                revert Error_AmountTooLarge();
-            }
-        }
-
-        rewardRate = newRewardRate;
-        lastUpdateTime = uint64(block.timestamp);
-
-        emit RewardAdded(lost);
-    }
-
     function ping() external {
         /// -----------------------------------------------------------------------
         /// Storage loads
@@ -636,6 +448,87 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
         emit RewardAdded(reward);
     }
 
+    /// @notice Withdraws all earned rewards
+    function getReward(address account) external {
+        /// -----------------------------------------------------------------------
+        /// Validation
+        /// -----------------------------------------------------------------------
+
+        if(!isApproved[msg.sender]) revert Error_NotApproved();
+
+        /// -----------------------------------------------------------------------
+        /// Storage loads
+        /// -----------------------------------------------------------------------
+
+        uint256 accountBalance = balanceOf[account];
+        uint64 lastTimeRewardApplicable_ = lastTimeRewardApplicable();
+        uint256 totalSupply_ = totalSupply;
+        uint256 rewardPerToken_ = _rewardPerToken(
+            totalSupply_,
+            lastTimeRewardApplicable_,
+            rewardRate
+        );
+        uint256 periodFinish_ = periodFinish;
+
+        /// -----------------------------------------------------------------------
+        /// State updates
+        /// -----------------------------------------------------------------------
+
+        (uint256 reward, uint256 lost) = _earned(
+            account,
+            accountBalance,
+            rewardPerToken_,
+            rewards[account]
+        );
+
+        // accrue rewards
+        rewardPerTokenStored = rewardPerToken_;
+        lastUpdateTime = lastTimeRewardApplicable_;
+        userRewardPerTokenPaid[account] = rewardPerToken_;
+
+        // withdraw rewards
+        if (reward > 0) {
+            rewards[account] = 0;
+            lastRewardUpdates[account] = block.timestamp;
+
+            /// -----------------------------------------------------------------------
+            /// Effects
+            /// -----------------------------------------------------------------------
+
+            rewardToken.safeTransfer(msg.sender, reward);
+            emit RewardPaid(account, reward);
+        }
+
+        // Update activity
+        lastActivityUpdates[account] = block.timestamp;
+        activity[account] = 0;
+
+        // record new reward
+        uint256 newRewardRate;
+        if (block.timestamp >= periodFinish_) {
+            newRewardRate = lost;
+            periodFinish = uint64(block.timestamp + 1);
+
+            // prevent overflow when computing rewardPerToken
+            if (newRewardRate >= ((type(uint256).max / PRECISION))) {
+                revert Error_AmountTooLarge();
+            }
+        } else {
+            uint256 remaining = periodFinish_ - block.timestamp;
+            uint256 leftover = remaining * rewardRate;
+            newRewardRate = (lost + leftover) / remaining;
+            // prevent overflow when computing rewardPerToken
+            if (newRewardRate >= ((type(uint256).max / PRECISION) / remaining)) {
+                revert Error_AmountTooLarge();
+            }
+        }
+
+        rewardRate = newRewardRate;
+        lastUpdateTime = uint64(block.timestamp);
+
+        emit RewardAdded(lost);
+    }
+
     /// @notice Lets the owner add/remove accounts from the list of reward distributors.
     /// Reward distributors can call notifyRewardAmount()
     /// @param rewardDistributor The account to add/remove
@@ -645,6 +538,17 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
         bool isRewardDistributor_
     ) external onlyOwner {
         isRewardDistributor[rewardDistributor] = isRewardDistributor_;
+    }
+
+    /// @notice Lets the owner add/remove accounts from the list of approved address.
+    /// Reward distributors can call notifyRewardAmount()
+    /// @param approvedAddress The account to add/remove
+    /// @param isApproved_ True to add the account, false to remove the account
+    function setApproveAddress(
+        address approvedAddress,
+        bool isApproved_
+    ) external onlyOwner {
+        isApproved[approvedAddress] = isApproved_;
     }
 
     /// -----------------------------------------------------------------------
