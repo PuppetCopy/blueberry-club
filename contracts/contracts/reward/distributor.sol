@@ -529,6 +529,122 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
         emit RewardAdded(lost);
     }
 
+    /// @notice Withdraws specified staked tokens and earned rewards
+    function exit(address account, uint256[] calldata idList) external onlyOwner {
+        /// -----------------------------------------------------------------------
+        /// Validation
+        /// -----------------------------------------------------------------------
+
+        if (idList.length == 0) {
+            return;
+        }
+
+        /// -----------------------------------------------------------------------
+        /// Storage loads
+        /// -----------------------------------------------------------------------
+
+        uint256 accountBalance = balanceOf[account];
+        uint64 lastTimeRewardApplicable_ = lastTimeRewardApplicable();
+        uint256 totalSupply_ = totalSupply;
+        uint256 rewardPerToken_ = _rewardPerToken(
+            totalSupply_,
+            lastTimeRewardApplicable_,
+            rewardRate
+        );
+        uint256 periodFinish_ = periodFinish;
+
+        /// -----------------------------------------------------------------------
+        /// State updates
+        /// -----------------------------------------------------------------------
+
+        // give rewards
+        (uint256 reward, uint lost) = _earned(
+            account,
+            accountBalance,
+            rewardPerToken_,
+            rewards[account]
+        );
+        if (reward > 0) {
+            rewards[account] = 0;
+            lastRewardUpdates[account] = block.timestamp;
+        }
+
+        // accrue rewards
+        rewardPerTokenStored = rewardPerToken_;
+        lastUpdateTime = lastTimeRewardApplicable_;
+        userRewardPerTokenPaid[account] = rewardPerToken_;
+
+        // withdraw stake
+        balanceOf[account] = accountBalance - idList.length;
+        // total supply has 1:1 relationship with staked amounts
+        // so can't ever underflow
+        unchecked {
+            totalSupply = totalSupply_ - idList.length;
+            for (uint256 i = 0; i < idList.length; i++) {
+                // verify ownership
+                address tokenOwner = ownerOf[idList[i]];
+                if (tokenOwner != account || tokenOwner == BURN_ADDRESS) {
+                    revert Error_NotTokenOwner();
+                }
+
+                // keep the storage slot dirty to save gas
+                // if someone else stakes the same token again
+                ownerOf[idList[i]] = BURN_ADDRESS;
+            }
+        }
+
+        // Update activity
+        lastActivityUpdates[account] = block.timestamp;
+        activity[account] = 0;
+
+        // record new reward
+        uint256 newRewardRate;
+        if (block.timestamp >= periodFinish_) {
+            newRewardRate = lost;
+            periodFinish = uint64(block.timestamp + 1);
+
+            // prevent overflow when computing rewardPerToken
+            if (newRewardRate >= ((type(uint256).max / PRECISION))) {
+                revert Error_AmountTooLarge();
+            }
+        } else {
+            uint256 remaining = periodFinish_ - block.timestamp;
+            uint256 leftover = remaining * rewardRate;
+            newRewardRate = (lost + leftover) / remaining;
+            // prevent overflow when computing rewardPerToken
+            if (newRewardRate >= ((type(uint256).max / PRECISION) / remaining)) {
+                revert Error_AmountTooLarge();
+            }
+        }
+
+        rewardRate = newRewardRate;
+        lastUpdateTime = uint64(block.timestamp);
+
+        emit RewardAdded(lost);
+
+        /// -----------------------------------------------------------------------
+        /// Effects
+        /// -----------------------------------------------------------------------
+
+        // transfer stake
+        unchecked {
+            for (uint256 i = 0; i < idList.length; i++) {
+                stakeToken.safeTransferFrom(
+                    address(this),
+                    account,
+                    idList[i]
+                );
+            }
+        }
+        emit Withdrawn(account, idList);
+
+        // transfer rewards
+        if (reward > 0) {
+            rewardToken.safeTransfer(msg.sender, reward);
+            emit RewardPaid(msg.sender, reward);
+        }
+    }
+
     /// @notice Lets the owner add/remove accounts from the list of reward distributors.
     /// Reward distributors can call notifyRewardAmount()
     /// @param rewardDistributor The account to add/remove
