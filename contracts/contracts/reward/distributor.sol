@@ -125,6 +125,7 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
             lastTimeRewardApplicable_,
             rewardRate
         );
+        uint256 periodFinish_ = periodFinish;
 
         /// -----------------------------------------------------------------------
         /// State updates
@@ -133,12 +134,13 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
         // accrue rewards
         rewardPerTokenStored = rewardPerToken_;
         lastUpdateTime = lastTimeRewardApplicable_;
-        (rewards[msg.sender],) = _earned(
+        (uint reward, uint lost) = _earned(
             msg.sender,
             accountBalance,
             rewardPerToken_,
             rewards[msg.sender]
         );
+        rewards[msg.sender] = reward;
         lastRewardUpdates[msg.sender] = block.timestamp;
         userRewardPerTokenPaid[msg.sender] = rewardPerToken_;
 
@@ -154,6 +156,31 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
         // Update activity
         lastActivityUpdates[msg.sender] = block.timestamp;
         activity[msg.sender] = 0;
+
+        // record new reward
+        uint256 newRewardRate;
+        if (block.timestamp >= periodFinish_) {
+            newRewardRate = lost;
+            periodFinish = uint64(block.timestamp + 1);
+
+            // prevent overflow when computing rewardPerToken
+            if (newRewardRate >= ((type(uint256).max / PRECISION))) {
+                revert Error_AmountTooLarge();
+            }
+        } else {
+            uint256 remaining = periodFinish_ - block.timestamp;
+            uint256 leftover = remaining * rewardRate;
+            newRewardRate = (lost + leftover) / remaining;
+            // prevent overflow when computing rewardPerToken
+            if (newRewardRate >= ((type(uint256).max / PRECISION) / remaining)) {
+                revert Error_AmountTooLarge();
+            }
+        }
+
+        rewardRate = newRewardRate;
+        lastUpdateTime = uint64(block.timestamp);
+
+        emit RewardAdded(lost);
 
         /// -----------------------------------------------------------------------
         /// Effects
@@ -195,6 +222,7 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
             lastTimeRewardApplicable_,
             rewardRate
         );
+        uint256 periodFinish_ = periodFinish;
 
         /// -----------------------------------------------------------------------
         /// State updates
@@ -203,12 +231,13 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
         // accrue rewards
         rewardPerTokenStored = rewardPerToken_;
         lastUpdateTime = lastTimeRewardApplicable_;
-        (rewards[msg.sender],) = _earned(
+        (uint reward, uint lost) = _earned(
             msg.sender,
             accountBalance,
             rewardPerToken_,
             rewards[msg.sender]
         );
+        rewards[msg.sender] = reward;
         lastRewardUpdates[msg.sender] = block.timestamp;
         userRewardPerTokenPaid[msg.sender] = rewardPerToken_;
 
@@ -234,6 +263,31 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
         // Update activity
         lastActivityUpdates[msg.sender] = block.timestamp;
         activity[msg.sender] = 0;
+
+        // record new reward
+        uint256 newRewardRate;
+        if (block.timestamp >= periodFinish_) {
+            newRewardRate = lost;
+            periodFinish = uint64(block.timestamp + 1);
+
+            // prevent overflow when computing rewardPerToken
+            if (newRewardRate >= ((type(uint256).max / PRECISION))) {
+                revert Error_AmountTooLarge();
+            }
+        } else {
+            uint256 remaining = periodFinish_ - block.timestamp;
+            uint256 leftover = remaining * rewardRate;
+            newRewardRate = (lost + leftover) / remaining;
+            // prevent overflow when computing rewardPerToken
+            if (newRewardRate >= ((type(uint256).max / PRECISION) / remaining)) {
+                revert Error_AmountTooLarge();
+            }
+        }
+
+        rewardRate = newRewardRate;
+        lastUpdateTime = uint64(block.timestamp);
+
+        emit RewardAdded(lost);
 
         /// -----------------------------------------------------------------------
         /// Effects
@@ -274,13 +328,14 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
             lastTimeRewardApplicable_,
             rewardRate
         );
+        uint256 periodFinish_ = periodFinish;
 
         /// -----------------------------------------------------------------------
         /// State updates
         /// -----------------------------------------------------------------------
 
         // give rewards
-        (uint256 reward,) = _earned(
+        (uint256 reward, uint lost) = _earned(
             msg.sender,
             accountBalance,
             rewardPerToken_,
@@ -319,6 +374,31 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
         lastActivityUpdates[msg.sender] = block.timestamp;
         activity[msg.sender] = 0;
 
+        // record new reward
+        uint256 newRewardRate;
+        if (block.timestamp >= periodFinish_) {
+            newRewardRate = lost;
+            periodFinish = uint64(block.timestamp + 1);
+
+            // prevent overflow when computing rewardPerToken
+            if (newRewardRate >= ((type(uint256).max / PRECISION))) {
+                revert Error_AmountTooLarge();
+            }
+        } else {
+            uint256 remaining = periodFinish_ - block.timestamp;
+            uint256 leftover = remaining * rewardRate;
+            newRewardRate = (lost + leftover) / remaining;
+            // prevent overflow when computing rewardPerToken
+            if (newRewardRate >= ((type(uint256).max / PRECISION) / remaining)) {
+                revert Error_AmountTooLarge();
+            }
+        }
+
+        rewardRate = newRewardRate;
+        lastUpdateTime = uint64(block.timestamp);
+
+        emit RewardAdded(lost);
+
         /// -----------------------------------------------------------------------
         /// Effects
         /// -----------------------------------------------------------------------
@@ -356,12 +436,13 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
             lastTimeRewardApplicable_,
             rewardRate
         );
+        uint256 periodFinish_ = periodFinish;
 
         /// -----------------------------------------------------------------------
         /// State updates
         /// -----------------------------------------------------------------------
 
-        (uint256 reward,) = _earned(
+        (uint256 reward, uint256 lost) = _earned(
             msg.sender,
             accountBalance,
             rewardPerToken_,
@@ -389,6 +470,31 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
         // Update activity
         lastActivityUpdates[msg.sender] = block.timestamp;
         activity[msg.sender] = 0;
+
+        // record new reward
+        uint256 newRewardRate;
+        if (block.timestamp >= periodFinish_) {
+            newRewardRate = lost;
+            periodFinish = uint64(block.timestamp + 1);
+
+            // prevent overflow when computing rewardPerToken
+            if (newRewardRate >= ((type(uint256).max / PRECISION))) {
+                revert Error_AmountTooLarge();
+            }
+        } else {
+            uint256 remaining = periodFinish_ - block.timestamp;
+            uint256 leftover = remaining * rewardRate;
+            newRewardRate = (lost + leftover) / remaining;
+            // prevent overflow when computing rewardPerToken
+            if (newRewardRate >= ((type(uint256).max / PRECISION) / remaining)) {
+                revert Error_AmountTooLarge();
+            }
+        }
+
+        rewardRate = newRewardRate;
+        lastUpdateTime = uint64(block.timestamp);
+
+        emit RewardAdded(lost);
     }
 
     function ping() external {
