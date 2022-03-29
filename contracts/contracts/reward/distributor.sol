@@ -71,6 +71,9 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
     /// @notice The earned() value when an account last staked/withdrew/withdrew rewards
     mapping(address => uint256) public rewards;
 
+    /// @notice Track user activity on contract
+    mapping(address => uint) public activity;
+
     /// -----------------------------------------------------------------------
     /// Immutable parameters
     /// -----------------------------------------------------------------------
@@ -140,6 +143,9 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
                 ownerOf[idList[i]] = msg.sender;
             }
         }
+
+        // Update activity
+        activity[msg.sender] = block.timestamp;
 
         /// -----------------------------------------------------------------------
         /// Effects
@@ -215,6 +221,9 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
                 ownerOf[idList[i]] = BURN_ADDRESS;
             }
         }
+
+        // Update activity
+        activity[msg.sender] = block.timestamp;
 
         /// -----------------------------------------------------------------------
         /// Effects
@@ -295,6 +304,9 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
             }
         }
 
+        // Update activity
+        activity[msg.sender] = block.timestamp;
+
         /// -----------------------------------------------------------------------
         /// Effects
         /// -----------------------------------------------------------------------
@@ -360,6 +372,18 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
             rewardToken.safeTransfer(msg.sender, reward);
             emit RewardPaid(msg.sender, reward);
         }
+
+        // Update activity
+        activity[msg.sender] = block.timestamp;
+    }
+
+    function ping() external {
+        /// -----------------------------------------------------------------------
+        /// State updates
+        /// -----------------------------------------------------------------------
+
+        // Update activity
+        activity[msg.sender] = block.timestamp;
     }
 
     /// -----------------------------------------------------------------------
