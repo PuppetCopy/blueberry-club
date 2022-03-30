@@ -74,6 +74,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@aelea/router@npm:0.20.0":
+  version: 0.20.0
+  resolution: "@aelea/router@npm:0.20.0"
+  dependencies:
+    "@aelea/core": 1.3.0
+    "@aelea/dom": 0.2.0
+    "@most/core": 1.6.1
+    "@most/disposable": 1.3.0
+    "@most/prelude": 1.8.0
+    "@most/scheduler": 1.3.0
+    "@most/types": 1.1.0
+  checksum: 128eb7f94c8e42336a0cac9bbf0675307238fbffd60c4fd38c455a19d98b2f1351d523fed4e624b53887d98213597e1095ddd221ea0d87bdfc215aae011ae2c5
+  languageName: node
+  linkType: hard
+
 "@aelea/ui-components-theme@npm:0.10.0":
   version: 0.10.0
   resolution: "@aelea/ui-components-theme@npm:0.10.0"
@@ -15157,7 +15172,7 @@ __metadata:
   dependencies:
     "@aelea/core": 1.3.0
     "@aelea/dom": 0.2.0
-    "@aelea/router": 0.19.0
+    "@aelea/router": 0.20.0
     "@aelea/ui-components": 0.28.0
     "@aelea/ui-components-theme": 0.10.0
     "@ethersproject/abi": 5.6.0
