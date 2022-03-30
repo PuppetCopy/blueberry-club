@@ -5,6 +5,7 @@
     "outDir": ".dist/esm",
     "esModuleInterop": true,
     "resolveJsonModule": true,
+    "module": "CommonJS",
     "lib": [
       "es2021",
       "dom"

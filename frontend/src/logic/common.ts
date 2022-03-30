@@ -1,13 +1,17 @@
-import { combineArray, replayLatest } from "@aelea/core"
-import { intervalListFillOrderMap } from "@gambitdao/gmx-middleware"
-import { awaitPromises, continueWith, map, multicast, now, periodic, takeWhile, tap } from "@most/core"
+import { combineArray, O, replayLatest } from "@aelea/core"
+import { intervalListFillOrderMap, NETWORK_METADATA } from "@gambitdao/gmx-middleware"
+import { awaitPromises, continueWith, fromPromise, map, multicast, now, periodic, switchLatest, takeWhile, tap } from "@most/core"
 import { Stream } from "@most/types"
-import { $displayBerry } from "../components/$DisplayBerry"
+import { $loadBerry } from "../components/$DisplayBerry"
 import { IValueInterval } from "../components/$StakingGraph"
-import { IAttributeBody, IBerryDisplayTupleMap, getLabItemTupleIndex } from "@gambitdao/gbc-middleware"
+import { IAttributeBody, IBerryDisplayTupleMap, getLabItemTupleIndex, IAttributeExpression, GBC_ADDRESS, USE_CHAIN } from "@gambitdao/gbc-middleware"
 import tokenIdAttributeTuple from "./mappings/tokenIdAttributeTuple"
 import { IPricefeed, IStakeSource, queryLatestPrices } from "./query"
-import { $svg, attr, style } from "@aelea/dom"
+import { $Node, $svg, attr, style } from "@aelea/dom"
+import { Manager__factory } from "contracts"
+import { web3ProviderTestnet } from "./provider"
+import { colorAlpha, pallete } from "@aelea/ui-components-theme"
+import { IWalletLink } from "@gambitdao/wallet-link"
 
 
 export const latestTokenPriceMap = replayLatest(multicast(awaitPromises(map(() => queryLatestPrices(), periodic(5000)))))
@@ -31,6 +35,20 @@ export function takeUntilLast <T>(fn: (t: T) => boolean, s: Stream<T>) {
 
     return res
   }, s))
+}
+
+export function getWalletProvider(wallet: IWalletLink,) {
+  return replayLatest(multicast(awaitPromises(combineArray(async w3p => {
+    if (w3p === null) {
+      throw new Error('no Ethereum Provider available')
+    }
+
+    if (w3p?.network?.chainId !== USE_CHAIN) {
+      throw new Error(`Please connect to ${NETWORK_METADATA[USE_CHAIN].chainName} network`)
+    }
+
+    return w3p
+  }, wallet.provider))))
 }
 
 
@@ -74,6 +92,9 @@ export function priceFeedHistoryInterval<T extends string>(interval: number, gmx
   }, gmxPriceHistoryQuery, yieldSource)
 }
 
+const lab = Manager__factory.connect(GBC_ADDRESS.MANAGER, web3ProviderTestnet)
+
+
 export const $berryById = (id: number, size = 85) => {
   const metaTuple = tokenIdAttributeTuple[id - 1]
 
@@ -81,17 +102,43 @@ export const $berryById = (id: number, size = 85) => {
     throw new Error('Could not find berry #' + id)
   }
 
+  const items = fromPromise(lab.itemsOf(id))
+
   const [background, clothes, body, expression, faceAccessory, hat] = metaTuple
 
-  return $displayBerry([background, clothes, IAttributeBody.BLUEBERRY, expression, faceAccessory, hat], size)
+  return switchLatest(map(gbcLab => {
+    const customId = gbcLab.custom.toNumber()
+    const displaytuple: Partial<IBerryDisplayTupleMap> = [gbcLab.background.toNumber() || background || background, clothes, body, expression, faceAccessory, hat]
+
+    if (customId) {
+      const customIdx = getLabItemTupleIndex(customId)
+
+      displaytuple.splice(customIdx, 1, customId)
+    }
+
+    return $loadBerry(displaytuple, size)
+  }, items))
 }
 
 
-export const $labItem = (id: number, size = 85) => {
-  const state = getLabItemTupleIndex(id)
-  const newLocal = [...Array(state), id] as IBerryDisplayTupleMap
 
-  return $displayBerry(newLocal, size)
+export const $labItem = (id: number, size = 85, background = true, showFace = false): $Node => {
+  const state = getLabItemTupleIndex(id)
+  const newLocal = Array(5).fill(undefined) as IBerryDisplayTupleMap
+  newLocal.splice(state, 1, id)
+
+  if (showFace) {
+    newLocal.splice(3, 1, IAttributeExpression.HAPPY)
+  }
+
+  const backgroundStyle = background ? style({
+    backgroundColor: state === 0 ? '' : colorAlpha(pallete.message, .95),
+    placeContent: 'center',
+    maxWidth: size + 'px', overflow: 'hidden', borderRadius: 85 * 0.15 + 'px'
+  }) : O()
+
+  // @ts-ignore
+  return backgroundStyle($loadBerry(newLocal, size))
 }
 
 export const $labItemAlone = (id: number, size = 80) => {

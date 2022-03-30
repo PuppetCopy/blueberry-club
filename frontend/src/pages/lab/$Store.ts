@@ -8,9 +8,9 @@ import { $labItem } from "../../logic/common"
 import { LabItemSaleDescription, saleDescriptionList, hasWhitelistSale } from "@gambitdao/gbc-middleware"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { $Link } from "@gambitdao/ui-components"
-import { itemsGlobal } from "../../logic/items"
 import { empty, fromPromise, map } from "@most/core"
 import { formatFixed, readableNumber, timeSince, unixTimestampNow } from "@gambitdao/gmx-middleware"
+import { getMintCount } from "../../logic/contract/sale"
 
 
 
@@ -27,13 +27,7 @@ export const $LabStore = ({ walletLink, parentRoute }: ILabStore) => component((
 
   const $labStoreItem = (item: LabItemSaleDescription) => {
 
-    const totalSupply = fromPromise(itemsGlobal.totalSupply(item.id))
-    const supplyLeft = map(s => {
-
-      const total = s.toBigInt()
-
-      return `${item.maxSupply - total} left`
-    }, totalSupply)
+    const supplyLeft = map(count => `${item.maxSupply - count} left`, getMintCount(item.contractAddress, 15000))
 
     const unixTime = unixTimestampNow()
 
@@ -53,10 +47,10 @@ export const $LabStore = ({ walletLink, parentRoute }: ILabStore) => component((
 
 
     return $Link({
-      url: `/p/lab-item/${item.id}`,
+      url: `/p/item/${item.id}`,
       route: parentRoute.create({ fragment: 'fefef' }),
       $content: $column(layoutSheet.spacingSmall, style({ position: 'relative' }))(
-        style({ backgroundColor: colorAlpha(pallete.message, .95), borderRadius: '18px' }, $labItem(item.id, screenUtils.isDesktopScreen ? 185 : 140)),
+        $labItem(item.id, screenUtils.isDesktopScreen ? 185 : 140, true),
         $text(style({ fontWeight: 'bold' }))(item.name),
         statusLabel ? $text(style({ fontWeight: 'bold', position: 'absolute', top: '15px', left: '15px', fontSize: '.75em', padding: '5px 10px', color: pallete.message, borderRadius: '8px', backgroundColor: pallete.background }))(
           statusLabel

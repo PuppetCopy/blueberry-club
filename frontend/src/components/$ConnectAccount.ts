@@ -107,6 +107,7 @@ export const $IntermediateConnect = (config: IIntermediateDisplay) => component(
           switchLatest(map((chain) => {
             if (chain !== USE_CHAIN) {
               return $ButtonPrimary({
+                buttonOp: style({ alignSelf: 'flex-start' }),
                 $content: $text(`Switch to ${NETWORK_METADATA[USE_CHAIN].chainName}`),
               })({
                 click: switchNetworkTether(

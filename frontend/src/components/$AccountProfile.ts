@@ -119,7 +119,7 @@ export const $AccountPreview = ({
 
     $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
       parentRoute
-        ? $Link({ route: parentRoute.create({ fragment: '2121212' }),
+        ? $Link({ route: parentRoute.create({ fragment: 'df2f23f' }),
           $content: $preview,
           anchorOp: style({ minWidth: 0, overflow: 'hidden' }),
           url: `/p/account/${address}`,

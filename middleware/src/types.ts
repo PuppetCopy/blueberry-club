@@ -356,6 +356,9 @@ export interface LabItemSalePublicDescription extends LabItemDescription {
 
 export interface LabItemSaleWhitelistDescription extends LabItemSalePublicDescription {
 
+  // whitelistSaleName: string
+  // whitelistSaleDescription: string
+
   whitelistStartDate: number  // start date of whitelist sale
   whitelistMax: bigint // limited amount of whitelist items that can be minted
   whitelistCost: bigint // specify the mint price, 0 = free, most likley could be set at the same public mint price

@@ -4,6 +4,7 @@ import { IAttributeMappings, LabItemSaleDescription } from "./types"
 
 export const USE_CHAIN = CHAIN.ARBITRUM_RINKBY
 export const GLOBAL_W3P = 'wss://arb-mainnet.g.alchemy.com/v2/RBsflxWv6IhITsLxAWcQlhCqSuxV7Low'
+export const GLOBAL_W3P_HTTP = 'https://arbitrum-mainnet.infura.io/v3/6d7e461ad6644743b92327579860b662'
 export const GLOBAL_W3P_AVALANCHE = 'https://api.avax.network/ext/bc/C/rpc'
 
 export const MINT_WHITELIST_START = Date.UTC(2021, 11, 5, 22, 0, 0)
@@ -34,6 +35,7 @@ export const saleDescriptionList: LabItemSaleDescription[] = [
     publicStartDate: toTime(2022, 2, 31, 22),
     publicCost: 10000000000000000n,
     maxPerTx: 10n,
+    
     whitelistStartDate: 0,
     whitelistMax: 50n,
     whitelistCost: 10000000000000000n
@@ -47,7 +49,7 @@ export const saleDescriptionList: LabItemSaleDescription[] = [
     publicStartDate: toTime(2022, 4, 27, 22),
     publicCost: 10000000000000000n,
     maxPerTx: 10n,
-    whitelistStartDate: 0,
+    whitelistStartDate: toTime(2022, 6, 27, 22),
     whitelistMax: 50n,
     whitelistCost: 10000000000000000n
   },

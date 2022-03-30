@@ -6,6 +6,7 @@
     "types": [
       "node"
     ],
+    "module": "CommonJS",
     "declarationDir": ".dist/types",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,

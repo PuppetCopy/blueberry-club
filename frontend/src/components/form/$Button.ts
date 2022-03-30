@@ -14,7 +14,7 @@ export const buttonPrimaryStyle = style({
 })
 
 export const secondaryButtonStyle = style({
-  color: 'white', whiteSpace: 'nowrap', fill: 'white', borderRadius: '30px', borderStyle: 'solid',
+  color: 'white', whiteSpace: 'nowrap', fill: 'white', borderRadius: '30px', borderStyle: 'solid', backgroundColor: pallete.background,
   padding: '15px 24px', fontWeight: 'bold', borderWidth: '1px', borderColor: pallete.message
 })
 
@@ -44,7 +44,7 @@ export const $buttonAnchor = $element('a')(
   style({
     alignItems: 'center',
     textDecoration: 'none',
-    padding: '6px 12px',
+    // padding: '6px 12px',
     display: 'flex',
     cursor: 'pointer',
     color: pallete.message

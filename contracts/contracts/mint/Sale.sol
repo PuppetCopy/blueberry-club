@@ -4,10 +4,11 @@ pragma solidity ^0.8.0;
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
-
 import {GBCLab} from "../token/GBCLab.sol";
 
 contract Sale is Ownable {
+
+    address public immutable TREASURY;
 
     uint public immutable ITEM_ID;
     uint public immutable MAX_SUPPLY;
@@ -30,7 +31,8 @@ contract Sale is Ownable {
 
     mapping(uint => bool) public isAlreadyUsed;
 
-    constructor(uint _ITEM_ID, uint _MAX_SUPPLY, uint _MAX_PER_TX, uint _PUBLIC_COST, uint _PUBLIC_START_DATE, uint _WHITELIST_START_DATE, uint _WHITELIST_COST, uint _WHITELIST_MAX, address _gbc, address _items) {
+    constructor(address _TREASURY, uint _ITEM_ID, uint _MAX_SUPPLY, uint _MAX_PER_TX, uint _PUBLIC_COST, uint _PUBLIC_START_DATE, uint _WHITELIST_START_DATE, uint _WHITELIST_COST, uint _WHITELIST_MAX, address _gbc, address _items) {
+        TREASURY = _TREASURY;
         ITEM_ID = _ITEM_ID;
         MAX_SUPPLY = _MAX_SUPPLY;
         MAX_PER_TX = _MAX_PER_TX;
@@ -54,7 +56,7 @@ contract Sale is Ownable {
         require(minted <= MAX_SUPPLY, "max reached");
         whitelistMinted += gbcs.length;
         require(whitelistMinted <= WHITELIST_MAX, "whitelist max reached");
-        require(msg.value >= WHITELIST_COST * gbcs.length, "underpayed");
+        require(msg.value == WHITELIST_COST * gbcs.length, "ETH amount must match the exact cost");
         for (uint256 i = 0; i < gbcs.length; i++) {
             uint gbc = gbcs[i];
             require(GBC.ownerOf(gbc) == msg.sender, "not owner");
@@ -70,10 +72,13 @@ contract Sale is Ownable {
         require(amount <= MAX_PER_TX, "max amount per transaction reached");
         minted += amount;
         require(minted <= MAX_SUPPLY, "max reached");
-        require(msg.value >= PUBLIC_COST * amount, "underpayed");
+        require(msg.value == PUBLIC_COST * amount, "ETH amount must match the exact cost");
         ITEMS.mint(msg.sender, ITEM_ID, amount);
     }
 
+    function fundTreasury(uint256 amount) external onlyOwner {
+        payable(TREASURY).transfer(amount);
+    }
 
     function cancel() external onlyOwner {
         isCanceled = true;
