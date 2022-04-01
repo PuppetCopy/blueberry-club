@@ -27,8 +27,8 @@ const toTime = (...params: Parameters<typeof Date.UTC>) => Math.floor(Date.UTC(.
 
 export const saleDescriptionList: LabItemSaleDescription[] = [
   {
-    name: "Builder",
-    description: `Whitelist can mint now, public(non GBC holders are delayed)`,
+    name: "Builder Vest",
+    description: `This vest is only for true builders. GBC Members are whitelisted and can mint now. Public Mint is delayed`,
     id: IAttributeMappings['Builder'],
     contractAddress: "0x0317200442455F140DeE0b331463c5B194AB7211",
     maxSupply: 100n,
@@ -41,8 +41,8 @@ export const saleDescriptionList: LabItemSaleDescription[] = [
     whitelistCost: 10000000000000000n
   },
   {
-    name: "Camo Background",
-    description: "for GBC holders(whitelist), public is highly delayed",
+    name: "Abstract Background",
+    description: "GBC Members are whitelisted and can mint now. Public Mint is highly delayed",
     id: IAttributeMappings['Camo Background'],
     contractAddress: "0x2C532A0d43521D229D963D611ac935B609A26d1a",
     maxSupply: 100n,
@@ -55,7 +55,7 @@ export const saleDescriptionList: LabItemSaleDescription[] = [
   },
   {
     name: "Avalanche Hoodie",
-    description: `anyone can mint 1 per tx for free, the more dah bettah! (;`,
+    description: `Anyone can mint 1 per tx for free, the more dah bettah! (;`,
     id: IAttributeMappings["Avalanche Hoodie"],
     contractAddress: "0x5c486dC34E5C26211E588d208E87Cef59D396C5f",
     maxSupply: 1337n,
@@ -65,7 +65,7 @@ export const saleDescriptionList: LabItemSaleDescription[] = [
   },
   {
     name: "Fast Food Cap",
-    description: "yadda yadda",
+    description: "For the GMX bottom sellers",
     id: IAttributeMappings["Fast Food Cap"],
     contractAddress: "0x4a23E2A06D7E9206cFDCafB0068f5C08D0dAf336",
     maxSupply: 33n,
@@ -74,8 +74,8 @@ export const saleDescriptionList: LabItemSaleDescription[] = [
     maxPerTx: 1n,
   },
   {
-    name: "Christmas Hat",
-    description: "This item will be publicly availalbe in Christmas Day",
+    name: "Santa Claus Hat",
+    description: "GBC holders will be able to mint this item for free on Christmas Day",
     id: IAttributeMappings['Christmas Hat'],
     contractAddress: "0xD0E5C4172E5730C7386cC6ecF258EbC574929F4d",
     publicCost: 10000000000000000n,
@@ -84,8 +84,8 @@ export const saleDescriptionList: LabItemSaleDescription[] = [
     maxPerTx: 1n,
   },
   {
-    name: "Beard White",
-    description: "just an overpried beard, it's not worth it!",
+    name: "Santa Claus Beard",
+    description: "Just an overpriced beard, it's not worth it!",
     id: IAttributeMappings['Beard White'],
     contractAddress: "0xFbA672C25Ffb47cc66AAE11A6718b1e7D6E60ab6",
     publicCost: 1000000000000000000n,
