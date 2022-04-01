@@ -76,8 +76,8 @@ contract Sale is Ownable {
         ITEMS.mint(msg.sender, ITEM_ID, amount);
     }
 
-    function fundTreasury(uint256 amount) external onlyOwner {
-        payable(TREASURY).transfer(amount);
+    function fundTreasury() external onlyOwner {
+        payable(TREASURY).transfer(address(this).balance);
     }
 
     function cancel() external onlyOwner {

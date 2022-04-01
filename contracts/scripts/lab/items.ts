@@ -52,10 +52,7 @@ export default async function(gbcAddress: string) {
     items.push(sale)
   }
 
-  const profileFactory = new Profile__factory(owner)
-  const profile = await deploy(profileFactory, gbcAddress)
 
-
-  return { lab, items, profile }
+  return { lab, items }
 }
 

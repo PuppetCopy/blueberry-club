@@ -22,6 +22,14 @@ contract Manager {
 
     mapping(uint => Items) public itemsOf;
 
+    event SetItems(
+        address assigner,
+        uint tokenId,
+        uint custom,
+        uint background,
+        uint special
+    );
+
     constructor(address _gbc, address _gbcLab) {
         GBC = IERC721(_gbc);
         GBCLab = IGBCLab(_gbcLab);
@@ -51,5 +59,7 @@ contract Manager {
                 items.custom = remove ? 0 : item;
             }
         }
+
+        emit SetItems(msg.sender, gbc, items.custom, items.background, items.special);
     }
 }
