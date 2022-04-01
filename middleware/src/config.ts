@@ -1,4 +1,4 @@
-import { CHAIN, groupByMap, unixTimestampNow } from "@gambitdao/gmx-middleware"
+import { CHAIN, groupByMap } from "@gambitdao/gmx-middleware"
 import { IAttributeMappings, LabItemSaleDescription } from "./types"
 
 

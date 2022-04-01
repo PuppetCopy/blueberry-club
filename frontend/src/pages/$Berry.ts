@@ -1,6 +1,5 @@
 import { Behavior, combineObject, O, replayLatest } from "@aelea/core"
 import { $node, $text, attr, component, IBranch, nodeEvent, style } from "@aelea/dom"
-import * as router from '@aelea/router'
 import { Route } from "@aelea/router"
 import { $column, $icon, $Popover, $row, $seperator, $TextField, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"

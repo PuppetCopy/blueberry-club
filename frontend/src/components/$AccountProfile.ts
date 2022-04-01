@@ -1,5 +1,5 @@
 import { Behavior, O, Op } from "@aelea/core"
-import { $element, $text, attr, component, INode, style } from "@aelea/dom"
+import { $element, $node, $text, attr, component, INode, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
@@ -11,12 +11,15 @@ import { $jazzicon } from "../common/$avatar"
 import { isAddress } from "@ethersproject/address"
 import { getGatewayUrl, getIdentityFromENS, IEnsClaim } from "@gambitdao/gbc-middleware"
 import { $anchor, $ethScan, $Link, $twitter } from "@gambitdao/ui-components"
+import { getProfile } from "../logic/contract/manager"
+import { $berryByLabItems } from "../logic/common"
+import { fromPromise, map, switchLatest } from "@most/core"
 
 
 export interface IAccountPreview {
   address: string
   labelSize?: string
-  avatarSize?: string
+  avatarSize?: number
   parentRoute?: Route
   claim?: IClaim
 }
@@ -33,35 +36,53 @@ export interface IProfile extends IAccountClaim {
 
 const $photoContainer = $element('img')(style({ display: 'block', backgroundColor: pallete.background, position: 'relative', backgroundSize: 'cover', borderRadius: '50%', overflow: 'hidden' }))
 
-export const $AccountPhoto = (address: string, claim?: IClaim, size = '42px') => {
+export const $AccountPhoto = (address: string | null, claim?: IClaim, size = 42) => {
   const claimType = claim?.sourceType
+  const sizePx = size + 'px'
 
-  if (claimType) {
-    const isTwitter = claimType === IClaimSource.TWITTER
+  const $wrapper = $node(style({ width: sizePx, height: sizePx, minWidth: sizePx, minHeight: sizePx, borderRadius: '50%' }))
 
-    if (isTwitter) {
-      return $photoContainer(
-        style({ width: size, height: size, minWidth: size }),
-        attr({ src: `https://unavatar.vercel.app/twitter/${claim.name}` })
-      )()
-    } else {
-      const data: IEnsClaim = claim.data ? JSON.parse(claim.data) : {}
-      const imageUrl = data.imageUrl
-
-      return imageUrl
-        ? $photoContainer(attr({ src: getGatewayUrl(imageUrl) }), style({ minWidth: size, height: size }))()
-        : $jazzicon(address, size)
-    }
-
+  if (address === null || !isAddress(address)) {
+    return $wrapper(style({ border: `1px solid ${pallete.foreground}`, placeContent: 'center', alignItems: 'center' }))(
+      $text(style({ fontWeight: 800, color: pallete.foreground }))('?')
+    )
   }
+  
 
-  return $jazzicon(address, size)
+  const profile = fromPromise(getProfile(address).catch(() => null))
+  return $wrapper(
+    switchLatest(map(profile => {
+      if (profile === null || profile.tokenId === null) {
+        if (claimType) {
+          const isTwitter = claimType === IClaimSource.TWITTER
+
+          if (isTwitter) {
+            return $photoContainer(
+              style({ width: sizePx, height: sizePx, minWidth: sizePx }),
+              attr({ src: `https://unavatar.vercel.app/twitter/${claim.name}` })
+            )()
+          } else {
+            const data: IEnsClaim = claim.data ? JSON.parse(claim.data) : {}
+            const imageUrl = data.imageUrl
+
+            if (imageUrl) {
+              return $photoContainer(attr({ src: getGatewayUrl(imageUrl) }), style({ minWidth: sizePx, width: sizePx, minHeight: sizePx, height: sizePx }))()
+            }
+          }
+        }
+
+        return $jazzicon(address, sizePx)
+      }
+
+      return style({ borderRadius: '50%' }, $berryByLabItems(profile.tokenId, profile.background, profile.custom, size))
+    }, profile))
+  )
 }
 
-export const $AccountLabel = (address: string, claim?: IClaim, adressOp: Op<INode, INode> = O()) => {
-  const isAddressValid = isAddress(address)
 
-  if (!isAddressValid) {
+
+export const $AccountLabel = (address: string, claim?: IClaim, adressOp: Op<INode, INode> = O()) => {
+  if (address === null || !isAddress(address)) {
     return $column(
       $text(style({ fontSize: '.75em' }))('0x----'),
       $text(adressOp, style({ fontSize: '1em' }))('----')
@@ -76,6 +97,7 @@ export const $AccountLabel = (address: string, claim?: IClaim, adressOp: Op<INod
     $text(style({ fontSize: '.75em' }))(address.slice(0, 6)),
     $text(adressOp, style({ fontSize: '1em' }))(address.slice(address.length -4, address.length))
   )
+
 }
 
 
@@ -105,8 +127,8 @@ export const $ProfileLinks = (address: string, claim?: IClaim) => {
 
 
 export const $AccountPreview = ({
-  address, labelSize = '16px', avatarSize = '38px',
-  parentRoute, claim,
+  labelSize = '16px', avatarSize = 38,
+  parentRoute, claim, address,
 }: IAccountPreview) => component((
   [profileClick, profileClickTether]: Behavior<string, string>
 ) => {

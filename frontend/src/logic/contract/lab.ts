@@ -12,7 +12,8 @@ export function connectLab(wallet: IWalletLink) {
   const account = filter((a): a is string => a !== null, wallet.account)
 
   const itemList = awaitPromises(combineArray(async (account, contract) => {
-    return (await contract.walletOfOwner(account)).map(x => x.toNumber())
+    const items = (await contract.walletOfOwner(account)).map(x => x.toNumber())
+    return items
   }, account, contract))
 
 

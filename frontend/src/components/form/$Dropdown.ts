@@ -99,7 +99,8 @@ export const $defaultSelectContainer = $column(layoutSheet.spacingTiny, style({
 export const $Dropdown = <T>({
   $container = $defaultDropdownContainer,
   $selection, $option = $defaultOptionContainer,
-  select, openMenuOp = O() }: IDropdown<T>) => component((
+  select, openMenuOp = O()
+}: IDropdown<T>) => component((
   [pick, pickTether]: Behavior<T, T>,
   [openMenu, openMenuTether]: Behavior<INode, any>,
 ) => {

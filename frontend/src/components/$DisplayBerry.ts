@@ -27,9 +27,10 @@ export const $berry = (
   [background, clothes, body, expression, faceAccessory, hat]: Partial<IBerryDisplayTupleMap>,
   size = 250
 ) => {
+  const sizePx = size + 'px'
 
   return $svg('svg')(
-    style({ minWidth: size + 'px', height: size + 'px' }),
+    style({ minWidth: sizePx, height: sizePx }),
     attr({ xmlns: 'http://www.w3.org/2000/svg', preserveAspectRatio: "xMidYMin meet", fill: 'none', viewBox: `0 0 1500 1500` })
   )(
     tap(async ({ element }) => {

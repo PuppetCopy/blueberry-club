@@ -4,7 +4,7 @@ import { awaitPromises, continueWith, fromPromise, map, multicast, now, periodic
 import { Stream } from "@most/types"
 import { $loadBerry } from "../components/$DisplayBerry"
 import { IValueInterval } from "../components/$StakingGraph"
-import { IAttributeBody, IBerryDisplayTupleMap, getLabItemTupleIndex, IAttributeExpression, GBC_ADDRESS, USE_CHAIN } from "@gambitdao/gbc-middleware"
+import { IAttributeBody, IBerryDisplayTupleMap, getLabItemTupleIndex, IAttributeExpression, GBC_ADDRESS, USE_CHAIN, IAttributeBackground, IAttributeMappings } from "@gambitdao/gbc-middleware"
 import tokenIdAttributeTuple from "./mappings/tokenIdAttributeTuple"
 import { IPricefeed, IStakeSource, queryLatestPrices } from "./query"
 import { $Node, $svg, attr, style } from "@aelea/dom"
@@ -96,28 +96,32 @@ const lab = Manager__factory.connect(GBC_ADDRESS.MANAGER, web3ProviderTestnet)
 
 
 export const $berryById = (id: number, size = 85) => {
-  const metaTuple = tokenIdAttributeTuple[id - 1]
-
-  if (!metaTuple) {
-    throw new Error('Could not find berry #' + id)
-  }
-
   const items = fromPromise(lab.itemsOf(id))
-
-  const [background, clothes, body, expression, faceAccessory, hat] = metaTuple
 
   return switchLatest(map(gbcLab => {
     const customId = gbcLab.custom.toNumber()
-    const displaytuple: Partial<IBerryDisplayTupleMap> = [gbcLab.background.toNumber() || background || background, clothes, body, expression, faceAccessory, hat]
+    const backgroundId = gbcLab.background.toNumber()
 
-    if (customId) {
-      const customIdx = getLabItemTupleIndex(customId)
-
-      displaytuple.splice(customIdx, 1, customId)
-    }
-
-    return $loadBerry(displaytuple, size)
+    return $berryByLabItems(id, backgroundId, customId, size)
   }, items))
+}
+
+export const $berryByLabItems = (berryId: number, backgroundId?: IAttributeBackground, labItemId?: IAttributeMappings, size = 85) => {
+  const matchTuple: Partial<IBerryDisplayTupleMap> = [...tokenIdAttributeTuple[berryId - 1]]
+
+  if (labItemId) {
+    const customIdx = getLabItemTupleIndex(labItemId)
+
+    // @ts-ignore
+    matchTuple.splice(customIdx, 1, labItemId)
+  }
+
+  if (backgroundId) {
+    matchTuple.splice(0, 1, backgroundId)
+  }
+
+
+  return $loadBerry(matchTuple, size)
 }
 
 

@@ -18,6 +18,7 @@ import { $Dropdown, $defaultSelectContainer } from "./form/$Dropdown"
 import { $bagOfCoinsCircle, $fileCheckCircle } from "../common/$icons"
 import { $anchor, $discord, $instagram, $Link, $moreDots, $twitter } from "@gambitdao/ui-components"
 import { $seperator2 } from "../pages/common"
+import { connectManager } from "../logic/contract/manager"
 
 export const $socialMediaLinks = $row(layoutSheet.spacingBig)(
   $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://discord.com/invite/7ZMmeU3z9j' }))(
@@ -127,7 +128,7 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
               if (!account) {
                 return empty()
               }
-              
+
               return $row(style({ border: `2px solid ${pallete.middleground}`, borderLeft: 0, borderRadius: '30px' }))(
                 $AccountPreview({
                   address: account,

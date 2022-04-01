@@ -122,7 +122,7 @@ export const $LabLanding = ({ walletLink, parentRoute, walletStore }: IBerry) =>
               $done: map(res => {
 
                 if (res === 0) {
-                  return $text(style({ color: pallete.positive }))(`<- Hello, Start by minting test GBC's`)
+                  return $text(style({ color: pallete.positive }))(`<- Hey anon, Start by minting test GBC's`)
                 }
 
                 return $text(style({ color: pallete.positive }))(`Minted 2 GBC's`)
