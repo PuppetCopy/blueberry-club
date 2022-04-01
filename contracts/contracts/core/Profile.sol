@@ -14,6 +14,11 @@ contract Profile {
     mapping(address => uint) private _mains;
 
     IERC721 private gbc;
+
+    event SetMain(
+        address assigner,
+        uint tokenId
+    );
     
     constructor(address _gbc) {
         gbc = IERC721(_gbc);
@@ -22,6 +27,8 @@ contract Profile {
     function chooseMain(uint tokenId) external {
         require(gbc.ownerOf(tokenId) == msg.sender, "Not the owner");
         _mains[msg.sender] = tokenId;
+
+        emit SetMain(msg.sender, tokenId);
     }
 
     function getMain(address account) external view returns(uint tokenId) {
