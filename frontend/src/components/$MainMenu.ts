@@ -129,7 +129,7 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
                 return empty()
               }
 
-              return $row(style({ border: `2px solid ${pallete.middleground}`, borderLeft: 0, borderRadius: '30px' }))(
+              return $row(style({ border: `2px solid ${pallete.middleground}`, borderRadius: '30px' }))(
                 $AccountPreview({
                   address: account,
                 })({ profileClick: O(profileLinkClickTether(), routeChangeTether()) }),

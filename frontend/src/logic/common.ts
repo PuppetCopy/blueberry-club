@@ -135,11 +135,10 @@ export const $labItem = (id: number, size = 85, background = true, showFace = fa
     newLocal.splice(3, 1, IAttributeExpression.HAPPY)
   }
 
-  const backgroundStyle = background ? style({
-    backgroundColor: state === 0 ? '' : colorAlpha(pallete.message, .95),
-    placeContent: 'center',
-    maxWidth: size + 'px', overflow: 'hidden', borderRadius: 85 * 0.15 + 'px'
-  }) : O()
+  const backgroundStyle = O(
+    style({ placeContent: 'center', maxWidth: size + 'px', overflow: 'hidden', borderRadius: 85 * 0.15 + 'px' }),
+    background ? style({ backgroundColor: state === 0 ? '' : colorAlpha(pallete.message, .95) }) : O()
+  )
 
   // @ts-ignore
   return backgroundStyle($loadBerry(newLocal, size))

@@ -13,7 +13,10 @@ export const $anchor = $element('a')(
   }),
 )
 
-export const $alert = ($contnet: $Branch) => $row(layoutSheet.spacingSmall, style({ borderRadius: '100px', alignItems: 'center', fontSize: '75%', border: `1px solid ${pallete.negative}`, padding: '10px 14px' }))(
+export const $alert = ($contnet: $Branch) => $row(layoutSheet.spacingSmall, style({
+  alignSelf: 'flex-start',
+  borderRadius: '100px', alignItems: 'center', fontSize: '75%', border: `1px solid ${pallete.negative}`, padding: '10px 14px'
+}))(
   $icon({ $content: $alertIcon, viewBox: '0 0 24 24', width: '18px', svgOps: style({ minWidth: '18px' }) }),
   $contnet,
 )

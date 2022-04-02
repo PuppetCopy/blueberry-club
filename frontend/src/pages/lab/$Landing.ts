@@ -7,10 +7,10 @@ import { $anchor, $IntermediateTx, $Link } from "@gambitdao/ui-components"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $loadBerry } from "../../components/$DisplayBerry"
 import { $ButtonPrimary, $ButtonSecondary } from "../../components/form/$Button"
-import { $responsiveFlex } from "../../elements/$common"
+import { $responsiveFlex, $txHashRef } from "../../elements/$common"
 import { IAttributeHat, IAttributeFaceAccessory, IAttributeClothes, IAttributeExpression } from "@gambitdao/gbc-middleware"
 import { $seperator2 } from "../common"
-import { map, merge, now, switchLatest } from "@most/core"
+import { constant, empty, map, merge, mergeArray, multicast, now, switchLatest } from "@most/core"
 import { ContractReceipt } from "@ethersproject/contracts"
 import { pallete } from "@aelea/ui-components-theme"
 import { $IntermediateConnect } from "../../components/$ConnectAccount"
@@ -77,6 +77,7 @@ export const $LabLanding = ({ walletLink, parentRoute, walletStore }: IBerry) =>
 
 
 
+  
   return [
     $column(layoutSheet.spacingBig)(
       $responsiveFlex(layoutSheet.spacingBig, style({ justifyContent: 'space-between' }))(
@@ -101,14 +102,14 @@ export const $LabLanding = ({ walletLink, parentRoute, walletStore }: IBerry) =>
               })({
                 click: mintTestGbcTether(
                   map(() => {
-
                     const walletGbc = connectGbc(walletLink)
                     return map(async contract => {
                       const ctx = await contract.mint(2, { value: 2n * 30000000000000000n })
                       return await ctx.wait()
                     }, walletGbc.contract)
                   }),
-                  switchLatest
+                  switchLatest,
+                  multicast
                 )
               }),
         
@@ -118,16 +119,19 @@ export const $LabLanding = ({ walletLink, parentRoute, walletStore }: IBerry) =>
             }),
             
 
+            switchLatest(mergeArray([
+              now($text(style({ color: pallete.positive }))(`<- Hey anon, Start by minting test GBC's`)),
+              constant(empty(), mintTestGbc)
+            ])),
+
             $IntermediateTx({
               $done: map(res => {
-
-                if (res === 0) {
-                  return $text(style({ color: pallete.positive }))(`<- Hey anon, Start by minting test GBC's`)
-                }
-
-                return $text(style({ color: pallete.positive }))(`Minted 2 GBC's`)
+                return $row(layoutSheet.spacingSmall, style({ color: pallete.positive }))(
+                  $text(`Minted 2 test GBC's`),
+                  $txHashRef(res.transactionHash)
+                )
               }),
-              query: merge(map(q => q.then(_ => 1), mintTestGbc), now(Promise.resolve(0)))
+              query: mintTestGbc
             })({}),
           ),
           $seperator2,

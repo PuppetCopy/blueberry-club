@@ -98,111 +98,108 @@ export const $Mint = ({ walletStore, walletLink, item }: IMint) => component((
   const timer = hasWhitelistSale(item) && item.publicStartDate > item.whitelistStartDate ? whitelistTimeDelta : publicSaleTimeDelta
 
 
-  const $public = $column(
-    $row(layoutSheet.spacing, style({ flexWrap: 'wrap', alignItems: 'center' }))(
-      $Dropdown({
-        openMenuOp: tap(event => {
-          const sel = window.getSelection()
-          const range = document.createRange()
-          const target = event.target
+  const $public = $row(layoutSheet.spacing, style({ flexWrap: 'wrap', alignItems: 'center' }))(
+    $Dropdown({
+      openMenuOp: tap(event => {
+        const sel = window.getSelection()
+        const range = document.createRange()
+        const target = event.target
 
-          if (sel && target instanceof HTMLElement) {
-            range.selectNodeContents(target)
+        if (sel && target instanceof HTMLElement) {
+          range.selectNodeContents(target)
               
-            sel.removeAllRanges()
-            sel.addRange(range)
-          }
-        }),
-        $selection: map(amount => 
-          $row(
-            layoutSheet.spacingSmall, style({ alignItems: 'center', borderBottom: `2px solid ${pallete.message}` }),
-            styleInline(map(isDisabled => isDisabled ? { opacity: ".15", pointerEvents: 'none' } : { opacity: "1", pointerEvents: 'all' }, accountChange))
-          )(
-            $text(
-              attr({ contenteditable: 'true', placeholder: 'Set Amount' }), style({ padding: '15px 0 15px 10px', minWidth: '50px', backgroundColor: 'transparent', cursor: 'text', outline: '0' }),
-              stylePseudo(':empty:before', {
-                content: 'attr(placeholder)',
-                color: pallete.foreground
-              }),
-              customNftAmountTether(
-                nodeEvent('blur'),
-                snapshot((state, event) => {
-                  const target = event.target
-
-
-                  if (target instanceof HTMLElement) {
-                    const val = Number(target.innerText)
-
-                    return target.innerText !== '' && isFinite(val) && val > 0 && val <= item.maxPerTx ? val : state
-                  }
-
-                  if (state === null) {
-                    return ''
-                  }
-
-                  return state
-                }, startWith(null, selectMintAmount)),
-                multicast
-              )
-            )(
-              amount === null ? '' : String(amount)
-            ),
-            $icon({ $content: $caretDown, width: '13px', svgOps: style({ marginTop: '2px', marginRight: '10px' }) })
-          )
-        ),
-        select: {
-          // $container: $column,
-          value: startWith(null, customNftAmount),
-          optionOp: map(option => $text(String(option))),
-          options: [ 1, 2, 3, 5, 10, 20 ].filter(n => Number(item.maxPerTx) >= n),
+          sel.removeAllRanges()
+          sel.addRange(range)
         }
-      })({
-        select: selectMintAmountTether()
       }),
-      $ButtonPrimary({
-        disabled: buttonState,
-        $content: switchLatest(
-          map(({ selectedMintAmount, account }) => {
+      $selection: map(amount => 
+        $row(
+          layoutSheet.spacingSmall, style({ alignItems: 'center', borderBottom: `2px solid ${pallete.message}` }),
+          styleInline(map(isDisabled => isDisabled ? { opacity: ".15", pointerEvents: 'none' } : { opacity: "1", pointerEvents: 'all' }, accountChange))
+        )(
+          $text(
+            attr({ contenteditable: 'true', placeholder: 'Set Amount' }), style({ padding: '15px 0 15px 10px', minWidth: '50px', backgroundColor: 'transparent', cursor: 'text', outline: '0' }),
+            stylePseudo(':empty:before', {
+              content: 'attr(placeholder)',
+              color: pallete.foreground
+            }),
+            customNftAmountTether(
+              nodeEvent('blur'),
+              snapshot((state, event) => {
+                const target = event.target
 
-            if (selectedMintAmount === null) {
-              return $text('Select amount')
-            }
 
-            // if (!hasPublicSaleStarted && hasWhitelistSaleStarted) {
-            //   return accountCanMintPresale ? $freeClaimBtn : $container($giftIcon, $text('Connected Account is not eligible'))
-            // }
+                if (target instanceof HTMLElement) {
+                  const val = Number(target.innerText)
 
-            const priceFormated = formatFixed(item.publicCost, 18)
-            const total = selectedMintAmount * priceFormated
+                  return target.innerText !== '' && isFinite(val) && val > 0 && val <= item.maxPerTx ? val : state
+                }
 
-            return $text(`Mint ${selectedMintAmount} (${total > 0n ? total + 'ETH' : 'Free'})`)
+                if (state === null) {
+                  return ''
+                }
 
-          }, formState)
-        ),
-      })({
-        click: clickClaimTether(
-          snapshot(async ({ formState: { selectedMintAmount }, saleContract, account }): Promise<IMintEvent> => {
-
-            if (saleContract === null || selectedMintAmount === null) {
-              throw new Error('could not resolve sales contract')
-            }
-                    
-            const value = BigInt(selectedMintAmount) * item.publicCost
-
-            const contractAction = saleContract.mint(selectedMintAmount, { value })
-            const contractReceipt = contractAction.then(recp => recp.wait())
-
-            return {
-              amount: selectedMintAmount,
-              contractReceipt,
-              txHash: contractAction.then(t => t.hash),
-            }
-
-          }, combineObject({ formState, saleContract: saleWallet.contract, account: walletLink.account })),
+                return state
+              }, startWith(null, selectMintAmount)),
+              multicast
+            )
+          )(
+            amount === null ? '' : String(amount)
+          ),
+          $icon({ $content: $caretDown, width: '13px', svgOps: style({ marginTop: '2px', marginRight: '10px' }) })
         )
-      })
-        
-    )
+      ),
+      select: {
+        // $container: $column,
+        value: startWith(null, customNftAmount),
+        optionOp: map(option => $text(String(option))),
+        options: [ 1, 2, 3, 5, 10, 20 ].filter(n => Number(item.maxPerTx) >= n),
+      }
+    })({
+      select: selectMintAmountTether()
+    }),
+    $ButtonPrimary({
+      disabled: buttonState,
+      $content: switchLatest(
+        map(({ selectedMintAmount, account }) => {
+
+          if (selectedMintAmount === null) {
+            return $text('Select amount')
+          }
+
+          // if (!hasPublicSaleStarted && hasWhitelistSaleStarted) {
+          //   return accountCanMintPresale ? $freeClaimBtn : $container($giftIcon, $text('Connected Account is not eligible'))
+          // }
+
+          const priceFormated = formatFixed(item.publicCost, 18)
+          const total = selectedMintAmount * priceFormated
+
+          return $text(`Mint ${selectedMintAmount} (${total > 0n ? total + 'ETH' : 'Free'})`)
+
+        }, formState)
+      ),
+    })({
+      click: clickClaimTether(
+        snapshot(async ({ formState: { selectedMintAmount }, saleContract, account }): Promise<IMintEvent> => {
+
+          if (saleContract === null || selectedMintAmount === null) {
+            throw new Error('could not resolve sales contract')
+          }
+                    
+          const value = BigInt(selectedMintAmount) * item.publicCost
+
+          const contractAction = saleContract.mint(selectedMintAmount, { value })
+          const contractReceipt = contractAction.then(recp => recp.wait())
+
+          return {
+            amount: selectedMintAmount,
+            contractReceipt,
+            txHash: contractAction.then(t => t.hash),
+          }
+
+        }, combineObject({ formState, saleContract: saleWallet.contract, account: walletLink.account })),
+      )
+    })   
   )
 
   const $whitelist = switchLatest(map(ownedGbcs => {
@@ -215,9 +212,9 @@ export const $Mint = ({ walletStore, walletLink, item }: IMint) => component((
 
       const chosenTokens = startWith([], selectTokensForWhitelist)
 
-      return $column(layoutSheet.spacing, style({ alignItems: 'flex-start' }))(
+      return $column(layoutSheet.spacing)(
+        $row(layoutSheet.spacing, style({ alignItems: 'flex-start' }))(
 
-        $row(layoutSheet.spacing)(
           $DropMultiSelect({
             $selection: map(s => {
 
@@ -228,6 +225,7 @@ export const $Mint = ({ walletStore, walletLink, item }: IMint) => component((
 
               return $ButtonSecondary({
                 $content,
+                disabled: now(tokenList.length === 0)
               })({})
             }),
             value: now([]),
@@ -248,53 +246,52 @@ export const $Mint = ({ walletStore, walletLink, item }: IMint) => component((
             }
           })({
             selection: selectTokensForWhitelistTether()
-          }),
-            
-          tokenList.length === 0 ? $noBerriesOwnedMsg : empty()
-        ),
+          }),            
 
-        $ButtonPrimary({
-          disabled: map(s => s.length === 0, chosenTokens),
-          $content: switchLatest(
-            map(({ chosenTokens }) => {
+          $ButtonPrimary({
+            disabled: map(s => s.length === 0, chosenTokens),
+            $content: switchLatest(
+              map(({ chosenTokens }) => {
 
-              if (!hasWhitelistSale(item) || chosenTokens.length === 0) {
-                return $text('Select amount')
-              }
+                if (!hasWhitelistSale(item) || chosenTokens.length === 0) {
+                  return $text('Select amount')
+                }
 
   
-              const cost = BigInt(chosenTokens.length) * item.whitelistCost
-              const costUsd = formatFixed(cost, 18)
+                const cost = BigInt(chosenTokens.length) * item.whitelistCost
+                const costUsd = formatFixed(cost, 18)
                           
    
-              return $text(`Mint (${cost > 0n ? costUsd + 'ETH' : 'Free'})`)
+                return $text(`Mint (${cost > 0n ? costUsd + 'ETH' : 'Free'})`)
 
-            }, combineObject({ chosenTokens }))
-          ),
-        })({
-          click: clickClaimTether(
-            snapshot(async ({ selectTokensForWhitelist, saleContract, account }): Promise<IMintEvent> => {
-              if (!hasWhitelistSale(item)) {
-                throw new Error(`Unable to resolve contract`)
-              }
-              if ((saleContract === null || !account)) {
-                throw new Error(`Unable to resolve contract`)
-              }
+              }, combineObject({ chosenTokens }))
+            ),
+          })({
+            click: clickClaimTether(
+              snapshot(async ({ selectTokensForWhitelist, saleContract, account }): Promise<IMintEvent> => {
+                if (!hasWhitelistSale(item)) {
+                  throw new Error(`Unable to resolve contract`)
+                }
+                if ((saleContract === null || !account)) {
+                  throw new Error(`Unable to resolve contract`)
+                }
 
                     
-              const cost = BigInt(selectTokensForWhitelist.length) * item.whitelistCost                       
-              const contractAction = saleContract.mintWhitelist(selectTokensForWhitelist, { value: cost })
-              const contractReceipt = contractAction.then(recp => recp.wait())
+                const cost = BigInt(selectTokensForWhitelist.length) * item.whitelistCost                       
+                const contractAction = saleContract.mintWhitelist(selectTokensForWhitelist, { value: cost })
+                const contractReceipt = contractAction.then(recp => recp.wait())
 
-              return {
-                amount: selectTokensForWhitelist.length,
-                contractReceipt,
-                txHash: contractAction.then(t => t.hash),
-              }
+                return {
+                  amount: selectTokensForWhitelist.length,
+                  contractReceipt,
+                  txHash: contractAction.then(t => t.hash),
+                }
 
-            }, combineObject({ selectTokensForWhitelist: chosenTokens, saleContract: saleWallet.contract, account: walletLink.account })),
-          )
-        })
+              }, combineObject({ selectTokensForWhitelist: chosenTokens, saleContract: saleWallet.contract, account: walletLink.account })),
+            )
+          })
+        ),
+        tokenList.length === 0 ? $noBerriesOwnedMsg : empty()
       )
     }, gbcWallet.tokenList))
 
@@ -312,7 +309,7 @@ export const $Mint = ({ walletStore, walletLink, item }: IMint) => component((
           hasWhitelistSale(item)
             ? $column(layoutSheet.spacing)(
               $row(layoutSheet.spacing, style({ alignItems: 'baseline' }))(
-                $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(`Whitelist sale`),
+                $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(`Whitelist`),
 
                 $text(
                   switchLatest(map(timeDelta => {
@@ -346,7 +343,7 @@ export const $Mint = ({ walletStore, walletLink, item }: IMint) => component((
 
             return $column(layoutSheet.spacing)(
               $row(layoutSheet.spacing, style({ alignItems: 'baseline' }))(
-                $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(`Public sale`),
+                $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(`Public`),
                 ...!hasEnded
                   ? [
                     $text(countdownFn(Date.now() + timeDelta * 1000, Date.now()))

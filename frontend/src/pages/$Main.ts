@@ -139,7 +139,7 @@ export default ({ baseRoute = '' }: Website) => component((
         $column(layoutSheet.spacingBig, style({ maxWidth: '1256px', width: '100%', margin: '0 auto', paddingBottom: '45px' }))(
           $row(style({ width: '100%', padding: '30px 0 0', zIndex: 1000, borderRadius: '12px' }))(
             $row(layoutSheet.spacingBig, style({ alignItems: 'center', flex: 1 }))(
-              $RouterAnchor({ url: '/', route: rootRoute, $anchor: $element('a')($icon({ $content: $logo, width: '55px', viewBox: '0 0 32 32' })) })({
+              $RouterAnchor({ url: '/', route: rootRoute, anchorOp: style({ display: 'flex' }), $anchor: $element('a')($icon({ $content: $logo, width: '55px', viewBox: '0 0 32 32' })) })({
                 click: linkClickTether()
               }),
               $MainMenu({ walletLink, claimMap, parentRoute: pagesRoute, walletStore })({
