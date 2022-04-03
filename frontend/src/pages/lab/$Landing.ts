@@ -1,7 +1,7 @@
 import { Behavior } from "@aelea/core"
 import { $node, $text, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
-import { $column, $row, layoutSheet, state } from "@aelea/ui-components"
+import { $column, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
 import { $anchor, $IntermediateTx, $Link } from "@gambitdao/ui-components"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
@@ -160,7 +160,7 @@ export const $LabLanding = ({ walletLink, parentRoute, walletStore }: IBerry) =>
 
 
         ),
-        $row(style({ maxWidth: '80vw', placeSelf: 'center', minWidth: '460px', height: '460px', overflow: 'hidden', borderRadius: '30px' }))(
+        $row(style({ maxWidth: '80vw', placeSelf: 'center', overflow: 'hidden' }))(
           $bgAnimation(
             // switchLatest(combineArray((selectedItem, selectedBackground) => {
 
@@ -190,7 +190,9 @@ export const $LabLanding = ({ walletLink, parentRoute, walletStore }: IBerry) =>
             //   return $text('fe')
 
             // }, itemSelection, backgroundSelection)),
-            $loadBerry([undefined, IAttributeClothes.AVALANCHE_HOODIE, undefined, IAttributeExpression.DEAD, IAttributeFaceAccessory.BEARD_WHITE, IAttributeHat.CHRISTMAS_HAT], 460)
+            style({ borderRadius: '30px' }, $loadBerry([
+              undefined, IAttributeClothes.AVALANCHE_HOODIE, undefined, IAttributeExpression.DEAD, IAttributeFaceAccessory.BEARD_WHITE, IAttributeHat.CHRISTMAS_HAT
+            ], screenUtils.isDesktopScreen ? 460 : 300))
           )
         ),
       ),
@@ -200,7 +202,7 @@ export const $LabLanding = ({ walletLink, parentRoute, walletStore }: IBerry) =>
       $node(),
 
       $column(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
-        $text(style({ fontWeight: 'bold', fontSize: '2.5em' }))('Want to get featured?'),
+        $text(style({ fontWeight: 'bold', fontSize: screenUtils.isDesktopScreen ? '2.5em' : '1.45em', textAlign: 'center' }))('Want to get featured?'),
         $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '678px' }))('Are you an artist, a project or an influencer? It is possible to collaborate with us to create items that fit your art or your brand in the Blueberry Lab'),
 
 

@@ -1,11 +1,11 @@
 import { Behavior } from "@aelea/core"
-import { $node, $text, component, style } from "@aelea/dom"
+import { $text, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $responsiveFlex } from "../../elements/$common"
 import { getLabItemTupleIndex, labItemDescriptionListMap } from "@gambitdao/gbc-middleware"
-import { colorAlpha, pallete } from "@aelea/ui-components-theme"
+import { pallete } from "@aelea/ui-components-theme"
 import { $Mint } from "../../components/$Mint"
 import { WALLET } from "../../logic/provider"
 import { $labItem } from "../../logic/common"
@@ -49,7 +49,7 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
           )
           
         ),
-        $text(style({ lineHeight: '1.5em' }))(item.description),
+        $text(style({ lineHeight: '1.5em', whiteSpace: 'pre-wrap' }))(item.description.trim()),
 
         $seperator2,
 

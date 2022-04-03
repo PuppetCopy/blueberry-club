@@ -33,4 +33,3 @@ import deployManager from "./lab/manager"
 
 })().catch(err => console.error(err))
 
-// 

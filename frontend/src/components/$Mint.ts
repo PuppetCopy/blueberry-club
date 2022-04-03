@@ -331,8 +331,8 @@ export const $Mint = ({ walletStore, walletLink, item }: IMint) => component((
                 return $whitelist
 
               }, whitelistTimeDelta)),
+              $node(),
               $seperator2,
-            
             )
             : empty(),
 
