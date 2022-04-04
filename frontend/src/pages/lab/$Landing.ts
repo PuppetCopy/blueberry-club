@@ -207,6 +207,7 @@ export const $LabLanding = ({ walletLink, parentRoute, walletStore }: IBerry) =>
 
 
         $ButtonSecondary({
+          buttonOp: style({ alignSelf: 'center' }),
           $content: $text('Contact us on Telegram')
         })({})
       ),

@@ -121,39 +121,33 @@ export default ({ baseRoute = '' }: Website) => component((
 
   return [
 
-    $node(designSheet.main, style({ alignItems: 'center', overflowX: 'hidden',  placeContent: 'center', padding: screenUtils.isMobileScreen ? '0 15px': '' }))(
-      router.match(rootRoute)(
-        $Home({
-          walletLink,
-          parentRoute: pagesRoute,
-          treasuryStore,
-          claimMap,
-          walletStore
-        })({
-          routeChanges: linkClickTether(),
-          walletChange: walletChangeTether()
-        })
-      ),
+    $column(designSheet.main, style({ alignItems: 'center', overflowX: 'hidden', placeContent: 'center', padding: screenUtils.isMobileScreen ? '0 15px' : '' }))(
       
-      router.contains(pagesRoute)(
-        $column(layoutSheet.spacingBig, style({ maxWidth: '1256px', width: '100%', margin: '0 auto', paddingBottom: '45px' }))(
-          $row(style({ width: '100%', padding: '30px 0 0', zIndex: 1000, borderRadius: '12px' }))(
-            $row(layoutSheet.spacingBig, style({ alignItems: 'center', flex: 1 }))(
-              $RouterAnchor({ url: '/', route: rootRoute, anchorOp: style({ display: 'flex' }), $anchor: $element('a')($icon({ $content: $logo, width: '55px', viewBox: '0 0 32 32' })) })({
-                click: linkClickTether()
-              }),
-              $MainMenu({ walletLink, claimMap, parentRoute: pagesRoute, walletStore })({
-                routeChange: linkClickTether(),
-                walletChange: walletChangeTether()
-              }),
-            ),
-          ),
+      $column(layoutSheet.spacingBig, style({ minHeight: '100vh', margin: '0 auto', maxWidth: '1256px' }))(
 
-          style({ margin: '0 -100vw' }, $seperator2),
+        $row(style({ width: '100%', padding: '30px 0 0', zIndex: 1000, borderRadius: '12px' }))(
+          $MainMenu({ walletLink, claimMap, parentRoute: rootRoute, walletStore })({
+            routeChange: linkClickTether(),
+            walletChange: walletChangeTether()
+          }),
+        ),
+        style({ margin: '0 -100vw' }, $seperator2),
 
-          $node(),
-
-          $column(layoutSheet.spacingBig, style({ maxWidth: '1160px', width: '100%', margin: '0 auto', paddingBottom: '45px' }))(
+        router.match(rootRoute)(
+          $Home({
+            walletLink,
+            parentRoute: pagesRoute,
+            treasuryStore,
+            claimMap,
+            walletStore
+          })({
+            routeChanges: linkClickTether(),
+            walletChange: walletChangeTether()
+          })
+        ),
+      
+        router.contains(pagesRoute)(
+          $column(layoutSheet.spacingBig, style({ width: '100%', margin: '0 auto', paddingBottom: '45px' }))(
             router.match(berryRoute)(
               $BerryPage({ walletLink, parentRoute: pagesRoute })({})
             ),
@@ -173,7 +167,7 @@ export default ({ baseRoute = '' }: Website) => component((
               })
             ),
             router.match(wardrobeRoute)(
-              fadeIn($Wardrobe({ wallet: walletLink, parentRoute: wardrobeRoute })({}))
+              fadeIn($Wardrobe({ walletLink: walletLink, parentRoute: wardrobeRoute, walletStore })({ changeRoute: linkClickTether() }))
             ),
             router.match(accountRoute)(
               $Account({ walletLink, parentRoute: pagesRoute, accountStakingStore })({})
@@ -182,8 +176,10 @@ export default ({ baseRoute = '' }: Website) => component((
               $Treasury({ walletLink, parentRoute: treasuryRoute, treasuryStore })({})
             ),
           )
-        )
+        ),
       ),
+
+
     )
   ]
 })

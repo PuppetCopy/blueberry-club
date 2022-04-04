@@ -1,4 +1,4 @@
-import { $Node, $text, attr, style } from "@aelea/dom"
+import { $Branch, $Node, $text, attr, style } from "@aelea/dom"
 import { $ButtonIcon, $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { getAccountExplorerUrl, getTxExplorerUrl, shortenAddress, shortenTxAddress } from "@gambitdao/gmx-middleware"
@@ -29,6 +29,16 @@ export const $labeledDivider = (label: string) => {
 
 
 
+export const $iconCircular = ($iconPath: $Branch<SVGPathElement>) => {
+  return $icon({
+    $content: $iconPath,
+    svgOps: style({
+      backgroundColor: pallete.middleground, position: 'absolute', zIndex: 10, borderRadius: '50%', cursor: 'pointer',
+      height: '22px', width: '22px', fontSize: '11px', textAlign: 'center', lineHeight: '15px', fontWeight: 'bold', color: pallete.message,
+    }),
+    width: '18px', viewBox: '0 0 32 32'
+  })
+}
 
 
 

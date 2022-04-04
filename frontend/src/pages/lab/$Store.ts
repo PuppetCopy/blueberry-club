@@ -35,9 +35,9 @@ export const $LabStore = ({ walletLink, parentRoute }: ILabStore) => component((
     const currentSaleType = isWhitelist ? 'Whitelist' : 'Public'
     const upcommingSaleDate = isWhitelist ? item.whitelistStartDate : item.publicStartDate
 
-    const isSaleLive = upcommingSaleDate > unixTime
+    const isSaleUpcomming = upcommingSaleDate > unixTime
 
-    const statusLabel = isSaleLive ?
+    const statusLabel = isSaleUpcomming ?
       `${currentSaleType} in ` + timeSince(upcommingSaleDate)
       : currentSaleType
     

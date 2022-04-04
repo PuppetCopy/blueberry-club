@@ -9,12 +9,13 @@ import { $Button } from "./$buttonCore"
 export const buttonPrimaryStyle = style({
   color: pallete.background, whiteSpace: 'nowrap', fill: 'white', borderRadius: '30px',
   boxShadow: `0px 0px 0px 0 ${pallete.primary} inset`, position: 'relative',
-  transition: 'ease-in',
+  transition: 'ease-in', alignSelf: 'flex-start',
   padding: '15px 24px', fontWeight: 'bold', borderWidth: '0px', backgroundColor: pallete.message,
 })
 
 export const secondaryButtonStyle = style({
   color: 'white', whiteSpace: 'nowrap', fill: 'white', borderRadius: '30px', borderStyle: 'solid', backgroundColor: pallete.background,
+  alignSelf: 'flex-start',
   padding: '15px 24px', fontWeight: 'bold', borderWidth: '1px', borderColor: pallete.message
 })
 

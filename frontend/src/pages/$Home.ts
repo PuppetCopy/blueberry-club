@@ -139,22 +139,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore, claimMap, wallet
 
 
   return [
-    $column(style({ minHeight: '100vh', margin: '0 auto', maxWidth: '1256px', gap: '125px'  }))(
-
-      $column(layoutSheet.spacingBig)(
-        $row(style({ width: '100%', padding: '30px 0 0', zIndex: 1000, borderRadius: '12px' }))(
-          $row(layoutSheet.spacingBig, style({ alignItems: 'center', flex: 1 }))(
-            $RouterAnchor({ url: '/', route: parentRoute, $anchor: $element('a')($icon({ $content: $logo, width: '55px', viewBox: '0 0 32 32' })) })({
-              click: linkClickTether()
-            }),
-            $MainMenu({ walletLink, claimMap, parentRoute, walletStore })({
-              routeChange: linkClickTether(),
-              walletChange: walletChangeTether()
-            }),
-          ),
-        ),
-        style({ margin: '0 -100vw' }, $seperator2),
-      ),
+    $column(style({ gap: '125px' }))(
 
       $node(gutterSpacingStyle, style({ display: 'flex', gap: '36px', placeContent: 'space-between', alignItems: 'center' }))(
         $column(layoutSheet.spacingBig, style({ maxWidth: '620px' }))(

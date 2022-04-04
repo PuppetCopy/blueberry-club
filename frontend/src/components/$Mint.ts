@@ -357,9 +357,6 @@ export const $Mint = ({ walletStore, walletLink, item }: IMint) => component((
 
           }, publicSaleTimeDelta)),
 
-            
-            
-
         ),
 
         join(snapshot(({ contract, provider }, minev) => {

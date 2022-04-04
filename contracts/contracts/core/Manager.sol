@@ -42,7 +42,7 @@ contract Manager {
             uint item = _items[i];
             bool remove = _removes[i];
             if(!remove) {
-                require(GBCLab.balanceOf(msg.sender, item) > 0, "Manager: not owner of item");
+                require(GBCLab.balanceOf(msg.sender, item) > 0, "Account doesn't own the item");
                 GBCLab.burn(msg.sender, item, 1);
             }
 
