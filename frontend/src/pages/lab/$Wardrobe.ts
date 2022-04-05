@@ -15,8 +15,8 @@ import { fadeIn } from "../../transitions/enter"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { $loadBerry } from "../../components/$DisplayBerry"
 import tokenIdAttributeTuple from "../../logic/mappings/tokenIdAttributeTuple"
-import { $bagOfCoins, $caretDown, $stackedCoins } from "../../elements/$icons"
-import { $alert, $arrowsFlip, $IntermediateTx, $Link, $xCross } from "@gambitdao/ui-components"
+import { $caretDown } from "../../elements/$icons"
+import { $alert, $arrowsFlip, $IntermediateTx, $xCross } from "@gambitdao/ui-components"
 import { ContractReceipt } from "@ethersproject/contracts"
 import { Stream } from "@most/types"
 import { Manager } from "contracts"
@@ -25,10 +25,9 @@ import { connectManager } from "../../logic/contract/manager"
 import { connectGbc } from "../../logic/contract/gbc"
 import { connectLab } from "../../logic/contract/lab"
 import { $seperator2 } from "../common"
-import { timeSince, unixTimestampNow } from "@gambitdao/gmx-middleware"
-import { connectSale } from "../../logic/contract/sale"
-import { $IntermediateConnect } from "../../components/$ConnectAccount"
+import { unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { WALLET } from "../../logic/provider"
+import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 
 
 interface IBerry {
@@ -333,22 +332,24 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
               })
             }, manager.profileContract, walletLink.account, selectedBerry))),
 
-            $IntermediateConnect({
-              $display : $ButtonPrimary({
-                $content: $text(startWith('Choose Berry', primaryActionLabel as Stream<string>)),
-                disabled: startWith(true, combineArray((updateItemState, updateBackgroundState, berry) => {
-                  if (berry === null || updateItemState === null && updateBackgroundState === null) {
-                    return true
-                  }
+            $IntermediateConnectButton({
+              $display: map(() => {
+                return $ButtonPrimary({
+                  $content: $text(startWith('Choose Berry', primaryActionLabel as Stream<string>)),
+                  disabled: startWith(true, combineArray((updateItemState, updateBackgroundState, berry) => {
+                    if (berry === null || updateItemState === null && updateBackgroundState === null) {
+                      return true
+                    }
 
-                  if (!updateItemState?.isRemove && updateItemState?.id === berry.custom || !updateBackgroundState?.isRemove && updateBackgroundState?.id === berry.background) {
-                    return true
-                  }
+                    if (!updateItemState?.isRemove && updateItemState?.id === berry.custom || !updateBackgroundState?.isRemove && updateBackgroundState?.id === berry.background) {
+                      return true
+                    }
 
-                  return false
-                }, itemChangeState, backgroundChangeState, selectedBerry))
-              })({
-                click: clickSaveTether()
+                    return false
+                  }, itemChangeState, backgroundChangeState, selectedBerry))
+                })({
+                  click: clickSaveTether()
+                })
               }),
               walletLink,
               walletStore,

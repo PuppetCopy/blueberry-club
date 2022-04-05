@@ -36,18 +36,13 @@ export interface IProfile extends IAccountClaim {
 
 const $photoContainer = $element('img')(style({ display: 'block', backgroundColor: pallete.background, position: 'relative', backgroundSize: 'cover', borderRadius: '50%', overflow: 'hidden' }))
 
-export const $AccountPhoto = (address: string | null, claim?: IClaim, size = 42) => {
+export const $AccountPhoto = (address: string, claim?: IClaim, size = 42) => {
   const claimType = claim?.sourceType
   const sizePx = size + 'px'
 
   const $wrapper = $node(style({ width: sizePx, height: sizePx, minWidth: sizePx, minHeight: sizePx, borderRadius: '50%' }))
 
-  if (address === null || !isAddress(address)) {
-    return $wrapper(style({ border: `1px solid ${pallete.foreground}`, placeContent: 'center', alignItems: 'center' }))(
-      $text(style({ fontWeight: 800, color: pallete.foreground }))('?')
-    )
-  }
-  
+ 
 
   const profile = fromPromise(getProfile(address).catch(() => null))
   return $wrapper(
@@ -82,13 +77,6 @@ export const $AccountPhoto = (address: string | null, claim?: IClaim, size = 42)
 
 
 export const $AccountLabel = (address: string, claim?: IClaim, adressOp: Op<INode, INode> = O()) => {
-  if (address === null || !isAddress(address)) {
-    return $column(
-      $text(style({ fontSize: '.75em' }))('0x----'),
-      $text(adressOp, style({ fontSize: '1em' }))('----')
-    )
-  }
-
   if (claim) {
     return $text(style({ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }), adressOp)(claim.name)
   }
@@ -153,6 +141,22 @@ export const $AccountPreview = ({
     { profileClick }
   ]
 })
+
+
+export const $walletAccountDisplay = (avatarSize = 38) => {
+  const sizePx = avatarSize + 'px'
+  const $wrapper = $node(style({ width: sizePx, height: sizePx, minWidth: sizePx, minHeight: sizePx, borderRadius: '50%' }))
+
+  return $row(layoutSheet.row, layoutSheet.spacingSmall, style({ alignItems: 'center', textDecoration: 'none' }))(
+    $wrapper(style({ display: 'flex', border: `1px solid ${pallete.foreground}`, placeContent: 'center', alignItems: 'center' }))(
+      $text(style({ fontWeight: 800, color: pallete.foreground }))('?')
+    ),
+    $column(
+      $text(style({ fontSize: '.75em' }))('0x----'),
+      $text(style({ fontSize: '1em' }))('----')
+    )
+  )
+}
 
 
 

@@ -1,8 +1,7 @@
 import { Behavior, fromCallback, replayLatest } from "@aelea/core"
-import { $element, $node, component, eventElementTarget, style } from "@aelea/dom"
+import { component, eventElementTarget, style } from "@aelea/dom"
 import * as router from '@aelea/router'
-import { $RouterAnchor } from '@aelea/router'
-import { $column, $icon, $row, designSheet, layoutSheet, screenUtils, state } from '@aelea/ui-components'
+import { $column, $row, designSheet, layoutSheet, screenUtils, state } from '@aelea/ui-components'
 import { groupByMap, intervalInMsMap } from '@gambitdao/gmx-middleware'
 import { initWalletLink } from "@gambitdao/wallet-link"
 import {
@@ -11,7 +10,6 @@ import {
 } from '@most/core'
 import { Stream } from "@most/types"
 import { IEthereumProvider } from "eip1193-provider"
-import { $logo } from '../common/$icons'
 import { $MainMenu } from '../components/$MainMenu'
 import { claimListQuery } from "../logic/claim"
 import * as wallet from "../logic/provider"

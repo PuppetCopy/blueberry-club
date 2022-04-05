@@ -13,7 +13,7 @@ import { $seperator2 } from "../common"
 import { constant, empty, map, merge, mergeArray, multicast, now, switchLatest } from "@most/core"
 import { ContractReceipt } from "@ethersproject/contracts"
 import { pallete } from "@aelea/ui-components-theme"
-import { $IntermediateConnect } from "../../components/$ConnectAccount"
+import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 import { WALLET } from "../../logic/provider"
 import { IEthereumProvider } from "eip1193-provider"
 import { connectGbc } from "../../logic/contract/gbc"
@@ -94,23 +94,25 @@ export const $LabLanding = ({ walletLink, parentRoute, walletStore }: IBerry) =>
           $seperator2,
 
           $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
-            $IntermediateConnect({
+            $IntermediateConnectButton({
               walletStore,
               $container: $column,
-              $display: $ButtonPrimary({
-                $content: $text(`Mint 2 GBC's`)
-              })({
-                click: mintTestGbcTether(
-                  map(() => {
-                    const walletGbc = connectGbc(walletLink)
-                    return map(async contract => {
-                      const ctx = await contract.mint(2, { value: 2n * 30000000000000000n })
-                      return await ctx.wait()
-                    }, walletGbc.contract)
-                  }),
-                  switchLatest,
-                  multicast
-                )
+              $display: map(() => {
+                return $ButtonPrimary({
+                  $content: $text(`Mint 2 GBC's`)
+                })({
+                  click: mintTestGbcTether(
+                    map(() => {
+                      const walletGbc = connectGbc(walletLink)
+                      return map(async contract => {
+                        const ctx = await contract.mint(2, { value: 2n * 30000000000000000n })
+                        return await ctx.wait()
+                      }, walletGbc.contract)
+                    }),
+                    switchLatest,
+                    multicast
+                  )
+                })
               }),
         
               walletLink: walletLink

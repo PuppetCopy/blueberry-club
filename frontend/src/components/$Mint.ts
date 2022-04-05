@@ -10,7 +10,7 @@ import { awaitPromises, empty, fromPromise, join, map, merge, multicast, now, pe
 import { IEthereumProvider } from "eip1193-provider"
 import { $txHashRef } from "../elements/$common"
 import { $caretDown, $gift } from "../elements/$icons"
-import { $IntermediateConnect } from "./$ConnectAccount"
+import { $IntermediateConnectButton } from "./$ConnectAccount"
 import { $ButtonPrimary, $ButtonSecondary } from "./form/$Button"
 import { $defaultSelectContainer, $Dropdown, $DropMultiSelect } from "./form/$Dropdown"
 import { WALLET } from "../logic/provider"
@@ -300,114 +300,117 @@ export const $Mint = ({ walletStore, walletLink, item }: IMint) => component((
 
 
   return [
-    $IntermediateConnect({
+    $IntermediateConnectButton({
       walletStore,
       $container: $column(layoutSheet.spacingBig),
-      $display: $column(layoutSheet.spacingBig)(
-        $column(layoutSheet.spacingBig)(
+      $display: map(() => {
 
-          hasWhitelistSale(item)
-            ? $column(layoutSheet.spacing)(
-              $row(layoutSheet.spacing, style({ alignItems: 'baseline' }))(
-                $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(`Whitelist`),
+        return $column(layoutSheet.spacingBig)(
+          $column(layoutSheet.spacingBig)(
 
-                $text(
-                  switchLatest(map(timeDelta => {
-                    const hasEnded = timeDelta === null
+            hasWhitelistSale(item)
+              ? $column(layoutSheet.spacing)(
+                $row(layoutSheet.spacing, style({ alignItems: 'baseline' }))(
+                  $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(`Whitelist`),
 
-                    return hasEnded
-                      ? map(count => `${item.whitelistMax - count.toBigInt()}/${item.whitelistMax} left`, saleWallet.whitelistMinted)
-                      : now(countdownFn(Date.now() + timeDelta * 1000, Date.now()))
+                  $text(
+                    switchLatest(map(timeDelta => {
+                      const hasEnded = timeDelta === null
 
-                  }, whitelistTimeDelta))
+                      return hasEnded
+                        ? map(count => `${item.whitelistMax - count.toBigInt()}/${item.whitelistMax} left`, saleWallet.whitelistMinted)
+                        : now(countdownFn(Date.now() + timeDelta * 1000, Date.now()))
+
+                    }, whitelistTimeDelta))
+                  ),
                 ),
-              ),
                 
-              switchLatest(map(timeDelta => {
-                if (typeof timeDelta === 'number') {
-                  return empty()
-                }
+                switchLatest(map(timeDelta => {
+                  if (typeof timeDelta === 'number') {
+                    return empty()
+                  }
 
-                return $whitelist
+                  return $whitelist
 
-              }, whitelistTimeDelta)),
-              $node(),
-              $seperator2,
-            )
-            : empty(),
+                }, whitelistTimeDelta)),
+                $node(),
+                $seperator2,
+              )
+              : empty(),
 
 
-          switchLatest(map(timeDelta => {
+            switchLatest(map(timeDelta => {
 
-            const hasEnded = timeDelta === null
+              const hasEnded = timeDelta === null
+
+              return $column(layoutSheet.spacing)(
+                $row(layoutSheet.spacing, style({ alignItems: 'baseline' }))(
+                  $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(`Public`),
+                  ...!hasEnded
+                    ? [
+                      $text(countdownFn(Date.now() + timeDelta * 1000, Date.now()))
+                    ]
+                    : [
+                    // $text(map(count => `${item.whitelistMax - count.toBigInt()}/${item.whitelistMax} left`, saleWallet.whitelistMinted)),
+                    ],
+                ),
+                hasEnded ? $public : empty()
+              )
+
+            }, publicSaleTimeDelta)),
+
+          ),
+
+          join(snapshot(({ contract, provider }, minev) => {
+            if (contract === null || provider === null) {
+              return empty()
+            }
+
+            const contractAction = minev.then(me => me.txHash)
+            const contractReceipt = minev.then(me => me.contractReceipt)
+
 
             return $column(layoutSheet.spacing)(
-              $row(layoutSheet.spacing, style({ alignItems: 'baseline' }))(
-                $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(`Public`),
-                ...!hasEnded
-                  ? [
-                    $text(countdownFn(Date.now() + timeDelta * 1000, Date.now()))
-                  ]
-                  : [
-                    // $text(map(count => `${item.whitelistMax - count.toBigInt()}/${item.whitelistMax} left`, saleWallet.whitelistMinted)),
-                  ],
-              ),
-              hasEnded ? $public : empty()
+              style({ backgroundColor: colorAlpha(pallete.foreground, .15) }, $seperator),
+
+              $IntermediateTx({
+                query: now(contractReceipt),
+                $loader: $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+                  $spinner,
+                  $text(startWith('Awaiting Approval', map(() => 'Minting...', fromPromise(contractAction)))),
+                  $node(style({ flex: 1 }))(),
+                  switchLatest(map(txHash => $txHashRef(txHash), fromPromise(contractAction)))
+                ),
+                $done: map(tx => {
+                  if (tx?.logs.length === 0) {
+                    return $alert($text('Unable to reach subgraph'))
+                  }
+
+
+                  return $column(
+                    ...tx.logs.map(log => {
+                      const parsedLog = contract.interface.parseLog(log)
+                      const labItemId: number = parsedLog.args.id.toNumber()
+                      const amount: number = parsedLog.args.value.toNumber()
+                  
+                      return $column(layoutSheet.spacing)(
+                        $row(style({ placeContent: 'space-between' }))(
+                          $text(style({ color: pallete.positive }))(`Minted ${amount} ${IAttributeMappings[labItemId]}`),
+                          $txHashRef(tx.transactionHash)
+                        ),
+                        $row(style({ flexWrap: 'wrap' }))(...Array(amount).map(tokenId => {     
+                          return $labItem(labItemId)
+                        })),
+                      )
+                    })
+                  )
+                }),
+              })({}),
             )
 
-          }, publicSaleTimeDelta)),
-
-        ),
-
-        join(snapshot(({ contract, provider }, minev) => {
-          if (contract === null || provider === null) {
-            return empty()
-          }
-
-          const contractAction = minev.then(me => me.txHash)
-          const contractReceipt = minev.then(me => me.contractReceipt)
-
-
-          return $column(layoutSheet.spacing)(
-            style({ backgroundColor: colorAlpha(pallete.foreground, .15) }, $seperator),
-
-            $IntermediateTx({
-              query: now(contractReceipt),
-              $loader: $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
-                $spinner,
-                $text(startWith('Awaiting Approval', map(() => 'Minting...', fromPromise(contractAction)))),
-                $node(style({ flex: 1 }))(),
-                switchLatest(map(txHash => $txHashRef(txHash), fromPromise(contractAction)))
-              ),
-              $done: map(tx => {
-                if (tx?.logs.length === 0) {
-                  return $alert($text('Unable to reach subgraph'))
-                }
-
-
-                return $column(
-                  ...tx.logs.map(log => {
-                    const parsedLog = contract.interface.parseLog(log)
-                    const labItemId: number = parsedLog.args.id.toNumber()
-                    const amount: number = parsedLog.args.value.toNumber()
-                  
-                    return $column(layoutSheet.spacing)(
-                      $row(style({ placeContent: 'space-between' }))(
-                        $text(style({ color: pallete.positive }))(`Minted ${amount} ${IAttributeMappings[labItemId]}`),
-                        $txHashRef(tx.transactionHash)
-                      ),
-                      $row(style({ flexWrap: 'wrap' }))(...Array(amount).map(tokenId => {     
-                        return $labItem(labItemId)
-                      })),
-                    )
-                  })
-                )
-              }),
-            })({}),
-          )
-
-        }, combineObject({ contract: labWallet.contract, provider: walletLink.provider, account: walletLink.account }), clickClaim)),
-      ),
+          }, combineObject({ contract: labWallet.contract, provider: walletLink.provider, account: walletLink.account }), clickClaim)),
+        )
+      }),
         
       walletLink: walletLink
     })({

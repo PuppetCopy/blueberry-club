@@ -1,11 +1,11 @@
 import { Behavior, combineArray, replayLatest } from "@aelea/core"
 import { $Branch, $element, $node, $svg, $text, attr, component, eventElementTarget, INode, style, styleInline, stylePseudo } from "@aelea/dom"
-import { $RouterAnchor, Route } from "@aelea/router"
+import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, observer, screenUtils, state } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { IAccountQueryParamApi, IClaim, intervalInMsMap, ITimerangeParamApi } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { $anchor, $glp, $Link } from "@gambitdao/ui-components"
+import { $anchor, $gitbook, $glp, $Link } from "@gambitdao/ui-components"
 import { empty, fromPromise, map, multicast, snapshot, take, tap } from "@most/core"
 import { $card, $responsiveFlex, $teamMember } from "../elements/$common"
 
@@ -14,7 +14,7 @@ import { BI_18_PRECISION, GBC_ADDRESS, IAttributeExpression, ITreasuryStore } fr
 import { $StakingGraph } from "../components/$StakingGraph"
 import { $seperator2 } from "./common"
 import { $Breadcrumbs } from "../components/$Breadcrumbs"
-import { $MainMenu, $socialMediaLinks } from "../components/$MainMenu"
+import { $socialMediaLinks } from "../components/$MainMenu"
 import { $ButtonSecondary } from "../components/form/$Button"
 import { $bagOfCoins, $discount, $stackedCoins, $tofunft } from "../elements/$icons"
 import { Stream } from "@most/types"
@@ -165,13 +165,13 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore, claimMap, wallet
               }),
               $text(style({ paddingBottom: '6px' }))('Trade On TofuNFT')
             ),
-            $anchor(layoutSheet.spacingSmall, style({ alignItems: 'center' }), attr({ href: `https://medium.com/@BlueberryClub/gbc-plans-for-2022-3ffe57e04087`, target:'_blank' }))(
+            $anchor(layoutSheet.spacingSmall, style({ alignItems: 'center' }), attr({ href: `https://docs.blueberry.club`, target:'_blank' }))(
               $icon({
                 width: '40px',
-                $content: $logo,
+                $content: $gitbook,
                 viewBox: '0 0 32 32'
               }),
-              $text(style({ paddingBottom: '6px' }))('Roadmap')
+              $text(style({ paddingBottom: '6px' }))('Documentation')
             ),
           )
 
