@@ -1,10 +1,9 @@
 import { Behavior, combineArray, replayLatest } from "@aelea/core"
 import { $node, $text, component, style } from "@aelea/dom"
-import * as router from '@aelea/router'
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
 import { BI_18_PRECISION } from "@gambitdao/gbc-middleware"
-import { ARBITRUM_CONTRACT, AVALANCHE_CONTRACT, BASIS_POINTS_DIVISOR, CHAIN, ETH_ADDRESS_REGEXP, formatFixed, IAccountQueryParamApi, intervalInMsMap, ITimerangeParamApi, readableNumber } from "@gambitdao/gmx-middleware"
+import { ARBITRUM_CONTRACT, AVALANCHE_CONTRACT, BASIS_POINTS_DIVISOR, CHAIN, formatFixed, IAccountQueryParamApi, intervalInMsMap, ITimerangeParamApi, readableNumber } from "@gambitdao/gmx-middleware"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { combine, empty, fromPromise, map, multicast, now, switchLatest, take } from "@most/core"
@@ -35,7 +34,6 @@ export const $Account = ({ walletLink, parentRoute, accountStakingStore }: IAcco
   [trasnferPopup, trasnferPopupTether]: Behavior<any, any>,
 ) => {
 
-  const account = parentRoute.create({ fragment: ETH_ADDRESS_REGEXP })
 
   const urlFragments = document.location.pathname.split('/')
   const accountAddress = urlFragments[urlFragments.length - 1].toLowerCase()
@@ -103,109 +101,107 @@ export const $Account = ({ walletLink, parentRoute, accountStakingStore }: IAcco
 
 
   return [
-    router.match(account)(
-      $column(layoutSheet.spacingBig)(
+    $column(layoutSheet.spacingBig)(
 
-        $IntermediatePromise({
-          query: now(queryOwnerOwnedTokens(accountAddress)),
-          $done: map(ids => {
-            return $row(style({ flexWrap: 'wrap' }))(...ids.map(token => {
-              const tokenId = Number(BigInt(token.id))
+      $IntermediatePromise({
+        query: now(queryOwnerOwnedTokens(accountAddress)),
+        $done: map(ids => {
+          return $row(style({ flexWrap: 'wrap' }))(...ids.map(token => {
+            const tokenId = Number(BigInt(token.id))
 
-              return $berryTileId(tokenId)
-            }))
-          }),
+            return $berryTileId(tokenId)
+          }))
+        }),
+      })({}),
+
+
+      $responsiveFlex(layoutSheet.spacingBig)(
+
+        $StakingGraph({
+          valueSource: [gmxArbitrumRS, glpArbitrumRS, glpAvalancheRS],
+          stakingYield: combineArray((...claims) => claims.flat(), map(feeList => feeList.map(fc => {
+            return { ...fc, deltaUsd: fc.amountUsd, time: fc.timestamp }
+          }), stakingClaim)),
+          arbitrumStakingRewards,
+          avalancheStakingRewards,
+          // yieldList: combineArray((...yields) => yields.flat(),  glpAvalancheRS),
+          walletLink,
+          priceFeedHistoryMap: pricefeedQuery,
+          graphInterval: GRAPHS_INTERVAL,
         })({}),
 
 
-        $responsiveFlex(layoutSheet.spacingBig)(
 
-          $StakingGraph({
-            valueSource: [gmxArbitrumRS, glpArbitrumRS, glpAvalancheRS],
-            stakingYield: combineArray((...claims) => claims.flat(), map(feeList => feeList.map(fc => {
-              return { ...fc, deltaUsd: fc.amountUsd, time: fc.timestamp }
-            }), stakingClaim)),
-            arbitrumStakingRewards,
-            avalancheStakingRewards,
-            // yieldList: combineArray((...yields) => yields.flat(),  glpAvalancheRS),
-            walletLink,
-            priceFeedHistoryMap: pricefeedQuery,
-            graphInterval: GRAPHS_INTERVAL,
-          })({}),
+      ),
 
+      $node(),
 
+      $column(layoutSheet.spacing, style({}))(
+        $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))('Yielding Assets'),
 
-        ),
-
-        $node(),
-
-        $column(layoutSheet.spacing, style({}))(
-          $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))('Yielding Assets'),
-
-          $column(layoutSheet.spacing, style({ flex: 2 }))(
-            screenUtils.isDesktopScreen
-              ? $row(layoutSheet.spacingBig, style({ color: pallete.foreground, fontSize: '.75em' }))(
-                $text(style({ flex: 1 }))('Holdings'),
-                $row(layoutSheet.spacingBig, style({ flex: 3 }))(
-                  $text(style({ flex: 1 }))('Price History'),
-                  $text(style({ flex: 1, maxWidth: '300px' }))('Distribution')
-                ),
-              ) : empty(),
-            $column(layoutSheet.spacingBig)(
-              $AssetDetails({
-                label: 'GMX',
-                symbol: 'GMX',
-                chain: CHAIN.ARBITRUM,
-                asset: gmxAsset,
-                priceChart: gmxArbitrumRS,
-                $distribution: switchLatest(map(({  bnGmxInFeeGmx, bonusGmxInFeeGmx, gmxAprForEthPercentage, gmxAprForEsGmxPercentage }) => {
-                  const boostBasisPoints = formatFixed(bnGmxInFeeGmx * BASIS_POINTS_DIVISOR / bonusGmxInFeeGmx, 2)
+        $column(layoutSheet.spacing, style({ flex: 2 }))(
+          screenUtils.isDesktopScreen
+            ? $row(layoutSheet.spacingBig, style({ color: pallete.foreground, fontSize: '.75em' }))(
+              $text(style({ flex: 1 }))('Holdings'),
+              $row(layoutSheet.spacingBig, style({ flex: 3 }))(
+                $text(style({ flex: 1 }))('Price History'),
+                $text(style({ flex: 1, maxWidth: '300px' }))('Distribution')
+              ),
+            ) : empty(),
+          $column(layoutSheet.spacingBig)(
+            $AssetDetails({
+              label: 'GMX',
+              symbol: 'GMX',
+              chain: CHAIN.ARBITRUM,
+              asset: gmxAsset,
+              priceChart: gmxArbitrumRS,
+              $distribution: switchLatest(map(({  bnGmxInFeeGmx, bonusGmxInFeeGmx, gmxAprForEthPercentage, gmxAprForEsGmxPercentage }) => {
+                const boostBasisPoints = formatFixed(bnGmxInFeeGmx * BASIS_POINTS_DIVISOR / bonusGmxInFeeGmx, 2)
           
-                  return $column(layoutSheet.spacingSmall, style({ flex: 1, }))(
-                    $metricEntry(`esGMX`, `${formatFixed(gmxAprForEsGmxPercentage, 2)}%`),
-                    $metricEntry(`ETH`, `${formatFixed(gmxAprForEthPercentage, 2)}%`),
-                    $metricEntry(`Compounding Bonus`, `${boostBasisPoints}%`),
-                    $metricEntry(`Compounding Multiplier`, `${readableNumber(formatFixed(bnGmxInFeeGmx, 18))}`),
-                  )
-                }, arbitrumStakingRewards)),
-                $iconPath: $tokenIconMap[ARBITRUM_CONTRACT.GMX],
-              })({}),
-              $seperator2,
-              $AssetDetails({
-                label: 'GLP',
-                symbol: 'GLP',
-                chain: CHAIN.ARBITRUM,
-                asset: glpArbiAsset,
-                priceChart: glpArbitrumRS,
-                $distribution: switchLatest(map(({ glpAprForEsGmxPercentage, glpAprForEthPercentage,   }) => {
+                return $column(layoutSheet.spacingSmall, style({ flex: 1, }))(
+                  $metricEntry(`esGMX`, `${formatFixed(gmxAprForEsGmxPercentage, 2)}%`),
+                  $metricEntry(`ETH`, `${formatFixed(gmxAprForEthPercentage, 2)}%`),
+                  $metricEntry(`Compounding Bonus`, `${boostBasisPoints}%`),
+                  $metricEntry(`Compounding Multiplier`, `${readableNumber(formatFixed(bnGmxInFeeGmx, 18))}`),
+                )
+              }, arbitrumStakingRewards)),
+              $iconPath: $tokenIconMap[ARBITRUM_CONTRACT.GMX],
+            })({}),
+            $seperator2,
+            $AssetDetails({
+              label: 'GLP',
+              symbol: 'GLP',
+              chain: CHAIN.ARBITRUM,
+              asset: glpArbiAsset,
+              priceChart: glpArbitrumRS,
+              $distribution: switchLatest(map(({ glpAprForEsGmxPercentage, glpAprForEthPercentage,   }) => {
 
-                  return $column(layoutSheet.spacingSmall, style({ flex: 1 }))(
-                    $metricEntry(`esGMX`, `${formatFixed(glpAprForEsGmxPercentage, 2)}%`),
-                    $metricEntry(`ETH`, `${formatFixed(glpAprForEthPercentage, 2)}%`),
-                  )
-                }, arbitrumStakingRewards)),
-                $iconPath: $tokenIconMap[ARBITRUM_CONTRACT.GLP],
-              })({}),
-              $seperator2,
-              $AssetDetails({
-                label: 'GLP',
-                symbol: 'GLP',
-                chain: CHAIN.AVALANCHE,
-                asset: glpAvaxAsset,
-                priceChart: glpAvalancheRS,
-                $distribution: switchLatest(map(({ glpAprForEsGmxPercentage, glpAprForEthPercentage,   }) => {
+                return $column(layoutSheet.spacingSmall, style({ flex: 1 }))(
+                  $metricEntry(`esGMX`, `${formatFixed(glpAprForEsGmxPercentage, 2)}%`),
+                  $metricEntry(`ETH`, `${formatFixed(glpAprForEthPercentage, 2)}%`),
+                )
+              }, arbitrumStakingRewards)),
+              $iconPath: $tokenIconMap[ARBITRUM_CONTRACT.GLP],
+            })({}),
+            $seperator2,
+            $AssetDetails({
+              label: 'GLP',
+              symbol: 'GLP',
+              chain: CHAIN.AVALANCHE,
+              asset: glpAvaxAsset,
+              priceChart: glpAvalancheRS,
+              $distribution: switchLatest(map(({ glpAprForEsGmxPercentage, glpAprForEthPercentage,   }) => {
 
-                  return $column(layoutSheet.spacingSmall, style({ flex: 1 }))(
-                    $metricEntry(`esGMX`, `${formatFixed(glpAprForEsGmxPercentage, 2)}%`),
-                    $metricEntry(`AVAX`, `${formatFixed(glpAprForEthPercentage, 2)}%`),
-                  )
-                }, avalancheStakingRewards)),
-                $iconPath: $tokenIconMap[ARBITRUM_CONTRACT.GLP],
-              })({}),
-            ),
+                return $column(layoutSheet.spacingSmall, style({ flex: 1 }))(
+                  $metricEntry(`esGMX`, `${formatFixed(glpAprForEsGmxPercentage, 2)}%`),
+                  $metricEntry(`AVAX`, `${formatFixed(glpAprForEthPercentage, 2)}%`),
+                )
+              }, avalancheStakingRewards)),
+              $iconPath: $tokenIconMap[ARBITRUM_CONTRACT.GLP],
+            })({}),
           ),
         ),
-      )
+      ),
     )
   ]
 })

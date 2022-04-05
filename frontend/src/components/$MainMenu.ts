@@ -11,7 +11,7 @@ import { IEthereumProvider } from "eip1193-provider"
 import { WALLET } from "../logic/provider"
 import { $caretDown } from "../elements/$icons"
 import { $AccountPreview, $walletAccountDisplay } from "./$AccountProfile"
-import { $IntermediateConnectButton, $IntermediateConnectPopover } from "./$ConnectAccount"
+import { $IntermediateConnectPopover } from "./$ConnectAccount"
 import { $ButtonSecondary } from "./form/$Button"
 import { totalWalletHoldingsUsd } from "../logic/gbcTreasury"
 import { $Dropdown, $defaultSelectContainer } from "./form/$Dropdown"
@@ -132,39 +132,38 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
             )
           }, clickPopoverClaim),
         })(
-          switchLatest(map((account) => {
-            return $row(style({ border: `2px solid ${pallete.middleground}`, borderRadius: '30px' }))(
+          $row(style({ border: `2px solid ${pallete.middleground}`, borderRadius: '30px' }))(
 
-              $IntermediateConnectPopover({
-                $button: style({ cursor: 'pointer' }, $walletAccountDisplay()),
-                walletLink,
-                walletStore,
-                $display: map(address => {
-                  return $AccountPreview({
-                    address,
-                  })({ profileClick: O(profileLinkClickTether(), routeChangeTether()) })
+            $IntermediateConnectPopover({
+              $button: profileLinkClickTether()(style({ cursor: 'pointer' }, $walletAccountDisplay())),
+              walletLink,
+              walletStore,
+              $display: map(address => {
+                return $AccountPreview({
+                  parentRoute: parentRoute,
+                  address,
+                })({ profileClick: routeChangeTether() })
+              })
+            })({
+              walletChange: walletChangeTether()
+            }),
+            style({ marginLeft: '6px', backgroundColor: pallete.middleground, width: '2px' }, $seperator2),
+            $icon({
+              svgOps: O(
+                clickPopoverClaimTether(nodeEvent('click')),
+                style({
+                  padding: '6px',
+                  cursor: 'pointer',
+                  alignSelf: 'center',
+                  marginRight: '6px',
+                  transform: 'rotate(90deg)',
                 })
-              })({
-                walletChange: walletChangeTether()
-              }),
-              style({ marginLeft: '6px', backgroundColor: pallete.middleground, width: '2px' }, $seperator2),
-              $icon({
-                svgOps: O(
-                  clickPopoverClaimTether(nodeEvent('click')),
-                  style({
-                    padding: '6px',
-                    cursor: 'pointer',
-                    alignSelf: 'center',
-                    marginRight: '6px',
-                    transform: 'rotate(90deg)',
-                  })
-                ),
-                width: '32px',
-                $content: $moreDots,
-                viewBox: '0 0 32 32'
-              }),
-            )
-          }, walletLink.account)),
+              ),
+              width: '32px',
+              $content: $moreDots,
+              viewBox: '0 0 32 32'
+            }),
+          ),
         )({
         // overlayClick: clickPopoverClaimTether()
         }),

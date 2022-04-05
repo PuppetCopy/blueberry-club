@@ -2,7 +2,7 @@ import { Behavior, fromCallback, replayLatest } from "@aelea/core"
 import { component, eventElementTarget, style } from "@aelea/dom"
 import * as router from '@aelea/router'
 import { $column, $row, designSheet, layoutSheet, screenUtils, state } from '@aelea/ui-components'
-import { groupByMap, intervalInMsMap } from '@gambitdao/gmx-middleware'
+import { ETH_ADDRESS_REGEXP, groupByMap, intervalInMsMap } from '@gambitdao/gmx-middleware'
 import { initWalletLink } from "@gambitdao/wallet-link"
 import {
   awaitPromises, constant, map, merge, mergeArray, multicast, now,
@@ -63,7 +63,7 @@ export default ({ baseRoute = '' }: Website) => component((
   const pagesRoute = rootRoute.create({ fragment: 'p', title: '' })
   const treasuryRoute = pagesRoute.create({ fragment: 'treasury', title: 'Treasury' })
   const berryRoute = pagesRoute.create({ fragment: 'berry' }).create({ fragment: /\d+/, title: 'Berry' })
-  const accountRoute = pagesRoute.create({ fragment: 'account', title: 'Berry Account' })
+  const accountRoute = pagesRoute.create({ fragment: 'account', title: 'Berry Account' }).create({ fragment: ETH_ADDRESS_REGEXP  })
   const labRoute = pagesRoute.create({ fragment: 'lab', title: 'Blueberry Lab' })
   const wardrobeRoute = pagesRoute.create({ fragment: 'wardrobe', title: 'Wardrobe' })
   const storeRoute = pagesRoute.create({ fragment: 'lab-store', title: 'Store' })
