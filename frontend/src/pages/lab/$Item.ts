@@ -13,6 +13,7 @@ import { $seperator2 } from "../common"
 import { attributeIndexToLabel } from "../../logic/mappings/label"
 import { getMintCount } from "../../logic/contract/sale"
 import { map } from "@most/core"
+import { readableNumber } from "../../../../@gambitdao-gmx-middleware/src"
 
 
 
@@ -24,7 +25,6 @@ interface ILabItem {
 
 export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => component((
   [changeRoute, changeRouteTether]: Behavior<string, string>,
-
 ) => {
   const urlFragments = document.location.pathname.split('/')
   const [itemIdUrl] = urlFragments.slice(3)
@@ -45,9 +45,8 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
 
           $row(layoutSheet.spacingTiny)(
             $text(style({ color: pallete.foreground }))(attributeIndexToLabel[getLabItemTupleIndex(item.id)]),
-            $text(style({  }))(map(count => count ? ` ${item.maxSupply - count}/${item.maxSupply} left` : '', getMintCount(item.contractAddress, 3500))),
+            $text(style({  }))(map(count => count ? ` ${readableNumber(item.maxSupply - count)}/${item.maxSupply} left` : '', getMintCount(item.contractAddress, 3500))),
           )
-          
         ),
         $text(style({ lineHeight: '1.5em', whiteSpace: 'pre-wrap' }))(item.description.trim()),
 

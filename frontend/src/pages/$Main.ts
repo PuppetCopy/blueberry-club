@@ -17,7 +17,7 @@ import { WALLET } from "../logic/provider"
 import { helloBackend } from '../logic/websocket'
 import { IAccountStakingStore, ITreasuryStore } from "@gambitdao/gbc-middleware"
 import { $BerryPage } from "./$Berry"
-import { $Account } from "./$Profile"
+import { $Profile } from "./$Profile"
 import { $Treasury } from "./$Treasury"
 import { $seperator2 } from "./common"
 import { $LabLanding } from "./lab/$Landing"
@@ -168,7 +168,7 @@ export default ({ baseRoute = '' }: Website) => component((
               fadeIn($Wardrobe({ walletLink: walletLink, parentRoute: wardrobeRoute, walletStore })({ changeRoute: linkClickTether() }))
             ),
             router.match(accountRoute)(
-              $Account({ walletLink, parentRoute: pagesRoute, accountStakingStore })({})
+              $Profile({ walletLink, parentRoute: pagesRoute, accountStakingStore })({})
             ),
             router.match(treasuryRoute)(
               $Treasury({ walletLink, parentRoute: treasuryRoute, treasuryStore })({})

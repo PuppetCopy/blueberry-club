@@ -28,7 +28,7 @@ export function shortPostAdress(address: string) {
   return address.slice(address.length -4, address.length)
 }
 
-export function readableNumber(ammount: number, decimalCount = 2) {
+export function readableNumber(ammount: number | bigint, decimalCount = 2) {
   const parts = ammount.toString().split('.')
   const [whole = '', decimal = ''] = parts
 

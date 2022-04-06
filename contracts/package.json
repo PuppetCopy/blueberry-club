@@ -20,8 +20,8 @@
     "build:project": "tsc --project tsconfig.typechain.json",
     "build:cjs": "tsc --project tsconfig.typechain.json  --outDir .dist/cjs --module CommonJS --declarationMap false --composite false --declaration false --declarationDir null",
     "build": "yarn hardhat typechain && yarn build:project && yarn build:cjs && yarn typechain",
-    "script:saleActions": "yarn hardhat run scripts/saleActions.ts --network arbitrum",
-    "script:items.testnet": "yarn hardhat run scripts/items.testnet.ts --network arbitrumTestnet"
+    "script:lab": "yarn hardhat run scripts/lab.deploy.ts --network arbitrumTestnet",
+    "script:rewards": "yarn hardhat run scripts/rewardDist.deploy.ts --network arbitrumTestnet"
   },
   "author": "",
   "license": "ISC",

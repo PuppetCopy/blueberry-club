@@ -1,4 +1,4 @@
-import { CHAIN, groupByMap } from "@gambitdao/gmx-middleware"
+import { CHAIN, groupByMap, intervalInMsMap } from "@gambitdao/gmx-middleware"
 import { IAttributeMappings, LabItemSaleDescription } from "./types"
 
 
@@ -21,6 +21,12 @@ export const GBC_DESCRIPTION = {
 
 export const MINT_MAX_SUPPLY = 10000
 export const BI_18_PRECISION = 10n ** 18n
+export const BI_30_PRECISION = 10n ** 30n
+
+export const REWARD_DISTRIBUTOR = {
+  distributionPeriod: intervalInMsMap.DAY7,
+  activityPeriod: intervalInMsMap.MONTH,
+}
 
 
 const toTime = (...params: Parameters<typeof Date.UTC>) => Math.floor(Date.UTC(...params) / 1000)

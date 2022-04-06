@@ -202,98 +202,93 @@ export const $Mint = ({ walletStore, walletLink, item }: IMint) => component((
     })   
   )
 
-  const $whitelist = switchLatest(map(ownedGbcs => {
-
+  const $whitelist = switchLatest(map(tokenList => {
 
     const $noBerriesOwnedMsg = $alert($text(`Connected account does not own any GBC's`))
+    const chosenTokens = startWith([], selectTokensForWhitelist)
 
-    return switchLatest(map(tokenList => {
-      const options = tokenList
 
-      const chosenTokens = startWith([], selectTokensForWhitelist)
+    return $column(layoutSheet.spacing)(
+      $row(layoutSheet.spacing, style({ alignItems: 'flex-start' }))(
 
-      return $column(layoutSheet.spacing)(
-        $row(layoutSheet.spacing, style({ alignItems: 'flex-start' }))(
+        $DropMultiSelect({
+          $selection: map(s => {
 
-          $DropMultiSelect({
-            $selection: map(s => {
+            const $content = $row(style({ alignItems: 'center' }))(
+              s.length === 0 ? $text(`Select Berry`) : $row(...s.map(i => $berryTileId(i))),
+              $icon({ $content: $caretDown, width: '18px', svgOps: style({ marginTop: '3px', marginLeft: '6px' }), viewBox: '0 0 32 32' }),
+            )
 
-              const $content = $row(style({ alignItems: 'center' }))(
-                s.length === 0 ? $text(`Select Berry`) : $row(...s.map(i => $berryTileId(i))),
-                $icon({ $content: $caretDown, width: '18px', svgOps: style({ marginTop: '3px', marginLeft: '6px' }), viewBox: '0 0 32 32' }),
-              )
+            return $ButtonSecondary({
+              $content,
+              disabled: now(tokenList.length === 0)
+            })({})
+          }),
+          value: now([]),
+          $option: $row,
+          select: {
+            $container: $defaultSelectContainer(style({ gap: 0, flexWrap: 'wrap', width: '300px', maxHeight: '400px', overflow: 'auto', flexDirection: 'row' })),
+            optionOp: snapshot((list, token) => {
 
-              return $ButtonSecondary({
-                $content,
-                disabled: now(tokenList.length === 0)
-              })({})
-            }),
-            value: now([]),
-            $option: $row,
-            select: {
-              $container: $defaultSelectContainer(style({ gap: 0, flexWrap: 'wrap', width: '300px', maxHeight: '400px', overflow: 'auto', flexDirection: 'row' })),
-              optionOp: snapshot((list, token) => {
+              if (!token) {
+                throw new Error(`No berry id:${token} exists`)
+              }
 
-                if (!token) {
-                  throw new Error(`No berry id:${token} exists`)
-                }
+              const isUsedStyle = styleBehavior(map(isUsed => (isUsed ? { filter: 'grayscale(100%)', pointerEvents: 'none' } : null), saleWallet.hasTokenUsed(token)))
 
-                const isUsedStyle = styleBehavior(map(isUsed => (isUsed ? { filter: 'grayscale(100%)', pointerEvents: 'none' } : null), saleWallet.hasTokenUsed(token)))
+              return isUsedStyle(style({ cursor: 'pointer', opacity: list.indexOf(token) === -1 ? 1 : .5 }, $berryTileId(token)))
+            }, chosenTokens),
+            options: tokenList
+          }
+        })({
+          selection: selectTokensForWhitelistTether()
+        }),            
 
-                return isUsedStyle(style({ cursor: 'pointer', opacity: list.indexOf(token) === -1 ? 1 : .5 }, $berryTileId(token)))
-              }, chosenTokens),
-              options
-            }
-          })({
-            selection: selectTokensForWhitelistTether()
-          }),            
+        $ButtonPrimary({
+          disabled: map(s => s.length === 0, chosenTokens),
+          $content: switchLatest(
+            map(({ chosenTokens }) => {
 
-          $ButtonPrimary({
-            disabled: map(s => s.length === 0, chosenTokens),
-            $content: switchLatest(
-              map(({ chosenTokens }) => {
-
-                if (!hasWhitelistSale(item) || chosenTokens.length === 0) {
-                  return $text('Select amount')
-                }
+              if (!hasWhitelistSale(item) || chosenTokens.length === 0) {
+                return $text('Select amount')
+              }
 
   
-                const cost = BigInt(chosenTokens.length) * item.whitelistCost
-                const costUsd = formatFixed(cost, 18)
+              const cost = BigInt(chosenTokens.length) * item.whitelistCost
+              const costUsd = formatFixed(cost, 18)
                           
    
-                return $text(`Mint (${cost > 0n ? costUsd + 'ETH' : 'Free'})`)
+              return $text(`Mint (${cost > 0n ? costUsd + 'ETH' : 'Free'})`)
 
-              }, combineObject({ chosenTokens }))
-            ),
-          })({
-            click: clickClaimTether(
-              snapshot(async ({ selectTokensForWhitelist, saleContract, account }): Promise<IMintEvent> => {
-                if (!hasWhitelistSale(item)) {
-                  throw new Error(`Unable to resolve contract`)
-                }
-                if ((saleContract === null || !account)) {
-                  throw new Error(`Unable to resolve contract`)
-                }
+            }, combineObject({ chosenTokens }))
+          ),
+        })({
+          click: clickClaimTether(
+            snapshot(async ({ selectTokensForWhitelist, saleContract, account }): Promise<IMintEvent> => {
+              if (!hasWhitelistSale(item)) {
+                throw new Error(`Unable to resolve contract`)
+              }
+              if ((saleContract === null || !account)) {
+                throw new Error(`Unable to resolve contract`)
+              }
 
                     
-                const cost = BigInt(selectTokensForWhitelist.length) * item.whitelistCost                       
-                const contractAction = saleContract.mintWhitelist(selectTokensForWhitelist, { value: cost })
-                const contractReceipt = contractAction.then(recp => recp.wait())
+              const cost = BigInt(selectTokensForWhitelist.length) * item.whitelistCost                       
+              const contractAction = saleContract.mintWhitelist(selectTokensForWhitelist, { value: cost })
+              const contractReceipt = contractAction.then(recp => recp.wait())
 
-                return {
-                  amount: selectTokensForWhitelist.length,
-                  contractReceipt,
-                  txHash: contractAction.then(t => t.hash),
-                }
+              return {
+                amount: selectTokensForWhitelist.length,
+                contractReceipt,
+                txHash: contractAction.then(t => t.hash),
+              }
 
-              }, combineObject({ selectTokensForWhitelist: chosenTokens, saleContract: saleWallet.contract, account: walletLink.account })),
-            )
-          })
-        ),
-        tokenList.length === 0 ? $noBerriesOwnedMsg : empty()
-      )
-    }, gbcWallet.tokenList))
+            }, combineObject({ selectTokensForWhitelist: chosenTokens, saleContract: saleWallet.contract, account: walletLink.account })),
+          )
+        })
+      ),
+      tokenList.length === 0 ? $noBerriesOwnedMsg : empty()
+    )
 
   }, gbcWallet.tokenList))
 

@@ -93,6 +93,17 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
     /// -----------------------------------------------------------------------
     /// Initialization
     /// -----------------------------------------------------------------------
+    function initialize(address initialOwner) external {
+        if (owner() != address(0)) {
+            revert Error_AlreadyInitialized();
+        }
+
+        if (initialOwner == address(0)) {
+            revert Error_ZeroOwner();
+        }
+
+        _transferOwnership(initialOwner);
+    }
 
     constructor(address _rewardToken, address _stakeToken, uint64 _DURATION, uint64 _ACTIVE_LIMIT) {
         stakeToken = ERC721(_stakeToken);
@@ -309,7 +320,7 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
         emit Withdrawn(msg.sender, idList);
     }
 
-    function ping() external {
+    function ping() external {  
         /// -----------------------------------------------------------------------
         /// Storage loads
         /// -----------------------------------------------------------------------

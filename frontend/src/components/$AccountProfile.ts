@@ -75,14 +75,14 @@ export const $AccountPhoto = (address: string, claim?: IClaim, size = 42) => {
 
 
 
-export const $AccountLabel = (address: string, claim?: IClaim, adressOp: Op<INode, INode> = O()) => {
+export const $AccountLabel = (address: string, claim?: IClaim, fontSize = '1em') => {
   if (claim) {
-    return $text(style({ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }), adressOp)(claim.name)
+    return $text(style({ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', fontSize }))(claim.name)
   }
 
-  return $column(
+  return $column(style({ fontSize }))(
     $text(style({ fontSize: '.75em' }))(address.slice(0, 6)),
-    $text(adressOp, style({ fontSize: '1em' }))(address.slice(address.length -4, address.length))
+    $text(style({ fontSize: '1em' }))(address.slice(address.length -4, address.length))
   )
 
 }
@@ -120,9 +120,11 @@ export const $AccountPreview = ({
   [profileClick, profileClickTether]: Behavior<string, string>
 ) => {
 
+  const styleLabel = parentRoute ? style({ color: pallete.primary, fontSize: labelSize }) : style({ fontSize: labelSize })
+
   const $preview = $row(layoutSheet.row, layoutSheet.spacingSmall, style({ alignItems: 'center', pointerEvents: 'none', textDecoration: 'none' }))(
     $AccountPhoto(address, claim, avatarSize),
-    $AccountLabel(address, claim, parentRoute ? style({ color: pallete.primary, fontSize: labelSize }) : style({ fontSize: labelSize }))
+    styleLabel($AccountLabel(address, claim, labelSize))
   )
   return [
 

@@ -72,10 +72,7 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
     $Link({ $content: $text('Lab'), url: '/p/lab', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
       click: routeChangeTether()
     }),
-    $Link({ $content: $text('Earn(WIP)'), disabled: now(true), url: '/p/leaderboard', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
-      click: routeChangeTether()
-    }),
-    $Link({ $content: $text('Trade(WIP)'), disabled: now(true), url: '/p/leaderboard', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
+    $Link({ $content: $text('Leaderboard'), disabled: now(true), url: '/p/leaderboard', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
       click: routeChangeTether()
     }),
   ]
