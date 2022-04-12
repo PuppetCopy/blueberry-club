@@ -160,9 +160,9 @@ export default ({ baseRoute = '' }: Website) => component((
               }))
             ),
             router.match(itemRoute)(
-              $LabItem({ walletLink, walletStore, parentRoute: itemRoute })({
+              fadeIn($LabItem({ walletLink, walletStore, parentRoute: itemRoute })({
                 changeRoute: linkClickTether()
-              })
+              }))
             ),
             router.match(wardrobeRoute)(
               fadeIn($Wardrobe({ walletLink: walletLink, parentRoute: wardrobeRoute, walletStore })({ changeRoute: linkClickTether() }))
