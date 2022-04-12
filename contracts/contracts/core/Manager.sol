@@ -46,7 +46,7 @@ contract Manager {
                 GBCLab.burn(msg.sender, item, 1);
             }
 
-            uint itemType = GBCLab.getItemType(item);
+            uint itemType = GBCLab.getAttributeOf(item);
 
             if(itemType == BACKGROUND_TYPE) {
                 if(items.background != 0) GBCLab.mint(msg.sender, items.background, 1);
