@@ -320,7 +320,7 @@ contract RewardDistributor is Ownable, ERC721TokenReceiver {
         emit Withdrawn(msg.sender, idList);
     }
 
-    function ping() external {  
+    function ping() external {
         /// -----------------------------------------------------------------------
         /// Storage loads
         /// -----------------------------------------------------------------------
