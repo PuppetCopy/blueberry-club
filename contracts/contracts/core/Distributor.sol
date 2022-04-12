@@ -364,13 +364,13 @@ contract ERC721StakingPool is Ownable, ERC721TokenReceiver {
     }
 
     /// @notice Withdraws specified staked tokens and earned rewards
-    function exitForAccount(address account, uint256[] calldata idList) external {
+    function exitForAccount(address account, address receiver, uint256[] calldata idList) external returns(uint) {
         /// -----------------------------------------------------------------------
         /// Validation
         /// -----------------------------------------------------------------------
 
         if (idList.length == 0) {
-            return;
+            return 0;
         }
         if (!isRewardDistributor[msg.sender]) {
             revert Error_NotRewardDistributor();
@@ -446,13 +446,16 @@ contract ERC721StakingPool is Ownable, ERC721TokenReceiver {
 
         // transfer rewards
         if (reward > 0) {
-            rewardToken.safeTransfer(msg.sender, reward);
-            emit RewardPaid(msg.sender, reward);
+            rewardToken.safeTransfer(receiver, reward);
+            emit RewardPaid(account, reward);
+            return reward;
         }
+
+        return 0;
     }
 
     /// @notice Withdraws all earned rewards
-    function getRewardForAccount(address account) external {
+    function getRewardForAccount(address account, address receiver, uint amount) external returns(uint) {
         /// -----------------------------------------------------------------------
         /// Validation
         /// -----------------------------------------------------------------------
@@ -492,15 +495,19 @@ contract ERC721StakingPool is Ownable, ERC721TokenReceiver {
 
         // withdraw rewards
         if (reward > 0) {
-            rewards[account] = 0;
+            uint realReward = (reward * amount) / accountBalance;
+            rewards[account] = reward - realReward;
 
             /// -----------------------------------------------------------------------
             /// Effects
             /// -----------------------------------------------------------------------
 
-            rewardToken.safeTransfer(account, reward);
-            emit RewardPaid(account, reward);
+            rewardToken.safeTransfer(receiver, realReward);
+            emit RewardPaid(account, realReward);
+
+            return realReward;
         }
+        return 0;
     }
 
     /// -----------------------------------------------------------------------

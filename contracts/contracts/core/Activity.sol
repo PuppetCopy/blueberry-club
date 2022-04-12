@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract GBCActivity is Ownable {
+contract Activity is Ownable {
 
     event Ping(address indexed sender, address indexed account, uint duration);
 
