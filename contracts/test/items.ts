@@ -57,43 +57,6 @@ describe("GBC Labs Items", function () {
   })
 
   describe("Adding Hats [COWBOY]", async () => {
-    describe("Create new item with the new type", async () => {
-      it("Should revert when user don't have DESIGNER role", async () => {
-        await expect(
-          items.addItem(1, 1)
-        ).to.be.revertedWith(
-          "AccessControl: account 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266 is missing role 0x90b2805f180e032c7264ccc730b08b69796f06e8c50ab1ad71a632183810bac9"
-        )
-      })
-
-      it("Should add owner DESIGNER role", async () => {
-        const tx = await items.grantRole(
-          "0x90b2805f180e032c7264ccc730b08b69796f06e8c50ab1ad71a632183810bac9",
-          owner.address
-        )
-        await tx.wait()
-        expect(
-          await items.hasRole(
-            await items.DEFAULT_ADMIN_ROLE(),
-            owner.address
-          )
-        ).to.be.equal(true)
-      })
-
-      it("Should revert when type ID is 0", async () => {
-        await expect(
-          items.addItem(0, 1)
-        ).to.be.revertedWith("Item cannot have type 0")
-      })
-
-      it("Create a new item of type ID 2", async () => {
-        const tx = await items.addItem(2, 1)
-        await tx.wait()
-        expect(await items.totalTokens()).to.be.equal(
-          BigNumber.from(1)
-        )
-      })
-    })
     describe("Add 10 Hats on the market", async () => {
       it("Should revert when user is not a MINTER", async () => {
         await expect(
@@ -150,11 +113,6 @@ describe("GBC Labs Items", function () {
   })
 
   describe("Adding glasses [THUG]", async () => {
-    it("Create a new item of type ID 3", async () => {
-      const tx = await items.addItem(3, 2)
-      await tx.wait()
-      expect(await items.totalTokens()).to.be.equal(BigNumber.from(2))
-    })
     describe("Add 2 glasses on the market", async () => {
       it("Mint 2 tokens", async () => {
         const tx = await items.mint(
@@ -188,11 +146,6 @@ describe("GBC Labs Items", function () {
   })
 
   describe("Adding 20 new hats [MISTER] !", async () => {
-    it("Create a new item of type ID 2", async () => {
-      const tx = await items.addItem(2, 3)
-      await tx.wait()
-      expect(await items.totalTokens()).to.be.equal(BigNumber.from(3))
-    })
     describe("Add 20 new Hats on the market", async () => {
       it("Mint 2 tokens", async () => {
         const tx = await items.mint(
@@ -225,11 +178,6 @@ describe("GBC Labs Items", function () {
   })
 
   describe("Adding 1000 new background [CLOUD] !", async () => {
-    it("Create a new item of type ID 1", async () => {
-      const tx = await items.addItem(1, 4)
-      await tx.wait()
-      expect(await items.totalTokens()).to.be.equal(BigNumber.from(4))
-    })
     describe("Add 1000 new Background on the market", async () => {
       it("Mint 2 tokens", async () => {
         const tx = await items.mint(
@@ -260,11 +208,6 @@ describe("GBC Labs Items", function () {
   })
 
   describe("Adding 1000 new background [LAVA] !", async () => {
-    it("Create a new item of type ID 1", async () => {
-      const tx = await items.addItem(1, 5)
-      await tx.wait()
-      expect(await items.totalTokens()).to.be.equal(BigNumber.from(5))
-    })
     describe("Add 1000 new Background on the market", async () => {
       it("Mint 2 tokens", async () => {
         const tx = await items.mint(
