@@ -10,8 +10,8 @@ export type IAsset = {
 }
 
 
-export interface IToken {
-  id: string
+export interface IToken extends IBerry {
+  id: number
   uri: string
   owner: IOwner
 
@@ -37,10 +37,24 @@ export interface ITransfer {
   timestamp: bigint
 }
 
+export type IBerry = {
+  background: number;
+  special: number;
+  custom: number;
+}
+
+export type IBerryIdentifable = IBerry & {
+  id: number
+}
+
 export interface IOwner {
   id: string
   ownedTokens: IToken[]
   balance: bigint
+  stakedTokenList: IToken[]
+
+  main: IToken
+  rewardPaidCumulative: bigint
 }
 
 export interface ITokenMetadata {

@@ -27,7 +27,10 @@ export const $LabStore = ({ walletLink, parentRoute }: ILabStore) => component((
 
   const $labStoreItem = (item: LabItemSaleDescription) => {
 
-    const supplyLeft = map(count => `${item.maxSupply - count} left`, getMintCount(item.contractAddress, 15000))
+    const supplyLeft = map(amount => {
+      const count = item.maxSupply - amount
+      return count ? `${count} left` : 'Sold Out'
+    }, getMintCount(item.contractAddress, 15000))
 
     const unixTime = unixTimestampNow()
 

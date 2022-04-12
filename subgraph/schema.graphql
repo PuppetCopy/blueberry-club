@@ -4,19 +4,36 @@ type Token @entity {
   uri: String!
   transfers: [Transfer!]! @derivedFrom(field: "token")
   contract: Contract!
+  background: BigInt!
+  custom: BigInt!
+  special: BigInt!
+}
+
+type LabItem @entity {
+  id: ID!
+  owner: Owner
+  uri: String!
+  transfers: [TransferLabItem!]! @derivedFrom(field: "token")
+  contract: Contract!
 }
 
 type Owner @entity {
   id: ID!
   ownedTokens: [Token!]! @derivedFrom(field: "owner")
+  ownedLabItems: [LabItem!]! @derivedFrom(field: "owner")
   balance: BigInt!
+  labBalance: BigInt!
+  main: Token
+  stakedTokenList: [Token!]!
+  rewardPaidCumulative: BigInt!
 }
+
 
 type Contract @entity {
   id: ID!
-  name: String
-  symbol: String
-  totalSupply: BigInt
+  name: String!
+  symbol: String!
+  totalSupply: BigInt!
   mintedTokens: [Token!]! @derivedFrom(field: "contract")
 }
 
@@ -26,7 +43,25 @@ type Transfer @entity {
   from: Owner!
   to: Owner!
   timestamp: BigInt!
-  block: BigInt!
-  transactionHash: String!
   contract: Contract!
+  transaction: Transaction!
 }
+
+type TransferLabItem @entity {
+  id: ID!
+  token: LabItem!
+  from: Owner!
+  to: Owner!
+  timestamp: BigInt!
+  contract: Contract!
+  transaction: Transaction!
+}
+
+type Transaction @entity {
+  id: ID!
+  blockNumber: Int!
+  timestamp: Int!
+  from: String!
+  to: String
+}
+

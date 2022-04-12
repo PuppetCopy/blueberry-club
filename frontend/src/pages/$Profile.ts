@@ -1,33 +1,24 @@
 import { Behavior, combineArray, combineObject, replayLatest } from "@aelea/core"
-import { $node, $text, component, style, styleBehavior } from "@aelea/dom"
+import { $node, $text, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
-import { $column, $icon, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
-import { BI_18_PRECISION, BI_30_PRECISION, GBC_ADDRESS, GBC_DESCRIPTION, hasWhitelistSale, MINT_MAX_SUPPLY } from "@gambitdao/gbc-middleware"
-import { ARBITRUM_CONTRACT, AVALANCHE_CONTRACT, BASIS_POINTS_DIVISOR, CHAIN, formatFixed, formatReadableUSD, IAccountQueryParamApi, intervalInMsMap, ITimerangeParamApi, readableNumber } from "@gambitdao/gmx-middleware"
+import { $column, $row, layoutSheet, state } from "@aelea/ui-components"
+import { GBC_ADDRESS, IToken, MINT_MAX_SUPPLY, REWARD_DISTRIBUTOR } from "@gambitdao/gbc-middleware"
+import { formatFixed, formatReadableUSD, readableNumber } from "@gambitdao/gmx-middleware"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { combine, empty, fromPromise, map, merge, multicast, now, snapshot, startWith, switchLatest, take } from "@most/core"
-import { $StakingGraph } from "../components/$StakingGraph"
+import { empty, fromPromise, map, merge, multicast, snapshot, startWith, switchLatest } from "@most/core"
 import { $responsiveFlex } from "../elements/$common"
-import { gmxGlpPriceHistory, queryArbitrumRewards, queryAvalancheRewards, queryLatestPrices, queryOwnerOwnedTokens, StakedTokenArbitrum, StakedTokenAvalanche } from "../logic/query"
-import { IAccountStakingStore, IAsset } from "@gambitdao/gbc-middleware"
-import { IGmxContractInfo, initContractChain } from "../logic/contract"
-import { Stream } from "@most/types"
-import { latestTokenPriceMap, priceFeedHistoryInterval } from "../logic/common"
-import { web3Provider, w3pAva } from "../logic/provider"
+import { queryLatestPrices, queryOwnerV2 } from "../logic/query"
+import { IAccountStakingStore } from "@gambitdao/gbc-middleware"
 import { pallete } from "@aelea/ui-components-theme"
-import { $tokenIconMap } from "../common/$icons"
-import { $AssetDetails } from "../components/$AssetDetails"
-import { $metricEntry, $seperator2 } from "./common"
-import { $berryTileId } from "../components/$common"
-import { $alert, $IntermediatePromise, $IntermediateTx } from "@gambitdao/ui-components"
+import { $seperator2 } from "./common"
+import { $alert, $IntermediateTx } from "@gambitdao/ui-components"
 import { connectGbc } from "../logic/contract/gbc"
-import { $defaultSelectContainer, $DropMultiSelect } from "../components/form/$Dropdown"
-import { $ButtonSecondary, $ButtonPrimary } from "../components/form/$Button"
-import { $caretDown } from "../elements/$icons"
+import { $ButtonPrimary } from "../components/form/$Button"
 import { connectRewardDistributor } from "../logic/contract/rewardDistributor"
 import { $AccountPreview } from "../components/$AccountProfile"
 import { ContractReceipt } from "@ethersproject/contracts"
+import { $SelectBerries } from "../components/$SelectBerries"
 
 
 export interface IAccount {
@@ -38,13 +29,16 @@ export interface IAccount {
 }
 
 export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAccount) => component((
-  [trasnferPopup, trasnferPopupTether]: Behavior<any, any>,
-  [selectTokensForWhitelist, selectTokensForWhitelistTether]: Behavior<number[], number[]>,
+  [selectTokensForWhitelist, selectTokensForWhitelistTether]: Behavior<IToken[], IToken[]>,
+  [selectTokensToWithdraw, selectTokensToWithdrawTether]: Behavior<IToken[], IToken[]>,
+  [clickWithdraw, clickWithdrawTether]: Behavior<PointerEvent, PointerEvent>,
+
   [stakeTxn, stakeTxnTether]: Behavior<any, Promise<ContractReceipt>>,
   [setApprovalForAll, setApprovalForAllTether]: Behavior<any, Promise<ContractReceipt>>,
 
 ) => {
 
+  
   
   // const saleWallet = connectSale(walletLink, item.contractAddress)
 
@@ -108,7 +102,13 @@ export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAcco
 
   const urlFragments = document.location.pathname.split('/')
   const accountAddress = urlFragments[urlFragments.length - 1].toLowerCase()
-  
+
+  const queryOwner = fromPromise(accountAddress ? queryOwnerV2(accountAddress) : Promise.reject())
+
+  const ownedTokens = map(owner => owner.ownedTokens, queryOwner)
+
+  const stakedList = map(owner => owner.stakedTokenList, queryOwner)
+
 
   const gbcWallet = connectGbc(walletLink)
   const rewardDistributor = connectRewardDistributor(walletLink)
@@ -117,6 +117,24 @@ export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAcco
 
   
   const isApprovedForAll = replayLatest(multicast(rewardDistributor.isApprovedForAll))
+
+  // Promise<ContractReceipt>
+
+  const chosenTokens = startWith([], selectTokensForWhitelist)
+
+  const withdrawTxn = snapshot(async ({ selection, contract, account }) => {
+     
+    if ((contract === null || !account)) {
+      throw new Error(`Unable to resolve contract`)
+    }
+
+
+    const idList = selection.map(s => s.id)
+    const tx = (await contract.withdraw(idList)).wait()
+
+    return tx
+
+  }, combineObject({ selection: selectTokensToWithdraw, contract: rewardDistributor.contract, account: walletLink.account }), clickWithdraw)
 
 
   return [
@@ -130,51 +148,68 @@ export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAcco
         })({}),
       ),
 
-      $column(layoutSheet.spacing, style({ alignItems: 'flex-start', flex: 1 }))(
+      $column(style({ gap: '50px', flex: 1 }))(
 
-        $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
-          $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(`Trading Rewards`),
-          $row(layoutSheet.spacingSmall)(
-            $text(combineArray((totalSupply) => readableNumber(MINT_MAX_SUPPLY) + `/${readableNumber(totalSupply)}`, rewardDistributor.totalSupply)),
-            $text(style({ color: pallete.foreground }))('Staked'),
+        $column(layoutSheet.spacing)(
+          $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
+            $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(`Rewards`),
+            $row(layoutSheet.spacingSmall)(
+              $text(style({ color: pallete.foreground }))('Distributing'),
+              $text(combineArray(rr => {
+                const leftToDist = BigInt(REWARD_DISTRIBUTOR.distributionPeriod) * rr / 7n
+
+                return `${readableNumber(formatFixed(leftToDist, 18))} ETH`
+              }, rewardDistributor.rewardRate)),
+              $text(style({ color: pallete.foreground }))('between'),
+              $text(combineArray((totalSupply) => readableNumber(totalSupply), rewardDistributor.totalSupply)),
+              $text(style({ color: pallete.foreground }))('GBC\'s Per Day'),
+            ),
           ),
+
+          $node(),
+
+            
+          $row(layoutSheet.spacing)(
+            $column(
+              $text('Earned:'),
+              $text(combineArray((earned, balance, pmap) => `$${formatReadableUSD(earned)}`, rewardDistributor.earned, rewardDistributor.tokenBalance, priceMap))
+            ),
+            $column(
+              $text('Staking:'),
+              $text(combineArray((balance) => `${balance}`, rewardDistributor.stakeBalance))
+            ),
+          ), 
         ),
-        
-        switchLatest(map(tokenList => {
 
-          const chosenTokens = startWith([], selectTokensForWhitelist)
 
-          return $row(layoutSheet.spacing)(
+        $seperator2,
 
-            $DropMultiSelect({
-              $selection: map(s => {
-                const $content = $row(style({ alignItems: 'center' }))(
-                  s.length === 0 ? $text(`Select Berry`) : $row(...s.map(i => $berryTileId(i))),
-                  $icon({ $content: $caretDown, width: '18px', svgOps: style({ marginTop: '3px', marginLeft: '6px' }), viewBox: '0 0 32 32' }),
-                )
 
-                return $ButtonSecondary({
-                  $content,
-                  disabled: now(tokenList.length === 0)
-                })({})
-              }),
-              value: now([]),
-              $option: $row,
-              select: {
-                $container: $defaultSelectContainer(style({ gap: 0, flexWrap: 'wrap', width: '300px', maxHeight: '400px', overflow: 'auto', flexDirection: 'row' })),
-                optionOp: snapshot((list, token) => {
+        $column(layoutSheet.spacing)(
+          $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
+            $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(`Stake GBC`),
+            $row(layoutSheet.spacingSmall)(
+              $text(combineArray((totalSupply) => readableNumber(MINT_MAX_SUPPLY) + `/${readableNumber(totalSupply)}`, rewardDistributor.totalSupply)),
+              $text(style({ color: pallete.foreground }))('Staked'),
+            ),
+          ),
 
-                  if (!token) {
-                    throw new Error(`No berry id:${token} exists`)
-                  }
+          $node(),
 
-                  return style({ cursor: 'pointer', opacity: list.indexOf(token) === -1 ? 1 : .5 }, $berryTileId(token))
-                }, chosenTokens),
+
+          $row(layoutSheet.spacing)(
+            switchLatest(map(tokenList => {
+
+              const selection = startWith([], selectTokensForWhitelist)
+
+              return $SelectBerries({
+                label: 'Deposit',
                 options: tokenList
-              }
-            })({
-              selection: selectTokensForWhitelistTether()
-            }),
+              })({
+                select: selectTokensForWhitelistTether()
+              })
+
+            }, ownedTokens)),
 
 
             switchLatest(map(isApproved => {
@@ -188,7 +223,9 @@ export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAcco
                   }
 
 
-                  const tx = (await contract.stake(selection)).wait()
+                  const idList = selection.map(t => t.id)
+
+                  const tx = (await contract.stake(idList)).wait()
 
                   return tx
 
@@ -201,12 +238,13 @@ export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAcco
 
 
               return $ButtonPrimary({
-                disabled: map(({ chosenTokens }) => chosenTokens.length === 0, combineObject({ chosenTokens, isApprovedForAll })),
+                disabled: map(list => isApproved && list.length === 0, chosenTokens),
                 $content: switchLatest(
                   map(({ chosenTokens }) => {
 
                     const amount = chosenTokens.length
-                    return $text(amount ? `Stake ${amount}` : 'Stake')
+                    const label = isApproved ? amount ? `Stake ${amount}` : 'Stake' : 'Allow Staking'
+                    return $text(label)
 
                   }, combineObject({ chosenTokens }))
                 ),
@@ -215,43 +253,57 @@ export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAcco
               })
             }, isApprovedForAll)),
 
-
-
             $IntermediateTx({
               query: merge(stakeTxn, setApprovalForAll),
               $done: map(tx => $text('done'))
             })({}),
 
-
             switchLatest(map(isApproved => isApproved ? empty() : $alert($text('<- Initial Staking approval is needed first')), isApprovedForAll))
-          )
-
-        }, gbcWallet.tokenList)),
-
-        $seperator2,
-            
-        $row(layoutSheet.spacing)(
-          $column(
-            $text('Weekly APY(est):'),
-            $text(combineArray((rewardPerToken, balance, pmap) => {
-              // (balance * (rpt - rptOfUser))/ PRECISION
-
-              intervalInMsMap.YEAR
-
-              const rewardRateUsd = pmap.eth.value * (balance * rewardPerToken) / BI_30_PRECISION
-
-              return `${formatFixed(rewardRateUsd, 30)}`
-            }, rewardDistributor.rewardPerToken, rewardDistributor.tokenBalance, priceMap))
           ),
-          $column(
-            $text('Earned:'),
-            $text(combineArray((earned, balance, pmap) => `$${formatReadableUSD(earned)}`, rewardDistributor.earned, rewardDistributor.tokenBalance, priceMap))
-          ),
-          $column(
-            $text('Staking:'),
-            $text(combineArray((balance) => `${balance}`, rewardDistributor.stakeBalance))
-          ),
+
+
+          switchLatest(combineArray((stakedList, ownedTokens) => {
+
+            const selection = startWith([], selectTokensToWithdraw)
+
+            return $row(layoutSheet.spacing)(
+
+              $SelectBerries({
+                options: stakedList,
+                label: 'Withdraw'
+              })({
+                select: selectTokensToWithdrawTether()
+              }),
+
+
+              $ButtonPrimary({
+                disabled: map(list => list.length === 0, selection),
+                $content: switchLatest(
+                  map(({ selection }) => {
+                    const amount = selection.length
+                    const label = amount ? `Withdraw ${amount}` : 'Withdraw'
+                    return $text(label)
+
+                  }, combineObject({ selection }))
+                ),
+              })({
+                click: clickWithdrawTether()
+              }),
+
+
+
+              $IntermediateTx({
+                query: withdrawTxn,
+                $done: map(tx => $text('done'))
+              })({}),
+
+
+            )
+
+          }, stakedList, ownedTokens)),
         )
+
+
       ),
 
 

@@ -8,7 +8,7 @@ import { awaitPromises, combine, constant, empty, filter, map, merge, mergeArray
 import { $berryTileId } from "../../components/$common"
 import { $buttonAnchor, $ButtonPrimary, $ButtonSecondary } from "../../components/form/$Button"
 import { $defaultSelectContainer, $Dropdown } from "../../components/form/$Dropdown"
-import { IAttributeHat, IAttributeBackground, IAttributeFaceAccessory, ILabAttributeOptions, IAttributeClothes, IBerryDisplayTupleMap, getLabItemTupleIndex, saleDescriptionList, hasWhitelistSale, LabItemSaleDescription } from "@gambitdao/gbc-middleware"
+import { IAttributeHat, IAttributeBackground, IAttributeFaceAccessory, ILabAttributeOptions, IAttributeClothes, IBerryDisplayTupleMap, getLabItemTupleIndex, saleDescriptionList, hasWhitelistSale, LabItemSaleDescription, IBerry } from "@gambitdao/gbc-middleware"
 import { $labItem } from "../../logic/common"
 import { $Toggle } from "../../common/$ButtonToggle"
 import { fadeIn } from "../../transitions/enter"
@@ -30,7 +30,7 @@ import { WALLET } from "../../logic/provider"
 import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 
 
-interface IBerry {
+interface IBerryComp {
   walletLink: IWalletLink
   parentRoute: Route
   walletStore: state.BrowserStore<WALLET, "walletStore">
@@ -47,18 +47,12 @@ interface ExchangeState {
   updateItemState: ItemSlotState | null
   updateBackgroundState: ItemSlotState | null
   contract: Manager
-  selectedBerry: SelectedBerry | null
-}
-
-type SelectedBerry = {
-  id: number;
-  background: number;
-  special: number;
-  custom: number;
+  selectedBerry: IBerry & { id: number } | null
 }
 
 
-export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }: IBerry) => component((
+
+export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }: IBerryComp) => component((
   [changeRoute, changeRouteTether]: Behavior <any, string>,
   [changeBerry, changeBerryTether]: Behavior <number, number>,
   [selectedAttribute, selectedAttributeTether]: Behavior <ILabAttributeOptions, ILabAttributeOptions>,
@@ -82,7 +76,7 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
   const reEmitBerryAfterSave = snapshot((berry) => berry, changeBerryId, clickSave)
   
   const newLoca2l = merge(changeBerryId, reEmitBerryAfterSave)
-  const selectedBerry = multicast(awaitPromises(combine(async (id, contract): Promise<SelectedBerry | null> => {
+  const selectedBerry = multicast(awaitPromises(combine(async (id, contract): Promise<ExchangeState['selectedBerry'] | null> => {
     if (id === null) {
       return null
     }
@@ -120,7 +114,7 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
 
   const previewSize = screenUtils.isDesktopScreen ? 475 : 350
 
-  const mustBerry = filter((b): b is SelectedBerry => b !== null, selectedBerry)
+  const mustBerry = filter((b): b is NonNullable<ExchangeState['selectedBerry']>  => b !== null, selectedBerry)
 
   const primaryActionLabel = combineArray((updateItemState, updateBackgroundState, berry) => {
 
@@ -188,7 +182,7 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
               select: {
                 $container: $defaultSelectContainer(style({ gap: 0, flexWrap: 'wrap', width: '300px', maxHeight: '400px', overflow: 'auto', flexDirection: 'row' })),
                 value: now(initialBerry || null),
-                optionOp: map(token => {
+                $$option: map(token => {
 
                   if (!token) {
                     throw new Error(`No berry id:${token} exists`)

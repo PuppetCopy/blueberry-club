@@ -4,7 +4,7 @@ import { awaitPromises, continueWith, fromPromise, map, multicast, now, periodic
 import { Stream } from "@most/types"
 import { $loadBerry } from "../components/$DisplayBerry"
 import { IValueInterval } from "../components/$StakingGraph"
-import { IAttributeBody, IBerryDisplayTupleMap, getLabItemTupleIndex, IAttributeExpression, GBC_ADDRESS, USE_CHAIN, IAttributeBackground, IAttributeMappings } from "@gambitdao/gbc-middleware"
+import { IAttributeBody, IBerryDisplayTupleMap, getLabItemTupleIndex, IAttributeExpression, GBC_ADDRESS, USE_CHAIN, IAttributeBackground, IAttributeMappings, IBerry } from "@gambitdao/gbc-middleware"
 import tokenIdAttributeTuple from "./mappings/tokenIdAttributeTuple"
 import { IPricefeed, IStakeSource, queryLatestPrices } from "./query"
 import { $Node, $svg, attr, style } from "@aelea/dom"
@@ -95,15 +95,8 @@ export function priceFeedHistoryInterval<T extends string>(interval: number, gmx
 const lab = Manager__factory.connect(GBC_ADDRESS.MANAGER, web3ProviderTestnet)
 
 
-export const $berryById = (id: number, size = 85) => {
-  const items = fromPromise(lab.itemsOf(id))
-
-  return switchLatest(map(gbcLab => {
-    const customId = gbcLab.custom.toNumber()
-    const backgroundId = gbcLab.background.toNumber()
-
-    return $berryByLabItems(id, backgroundId, customId, size)
-  }, items))
+export const $berryById = (id: number, berry: IBerry | null = null, size = 85) => {
+  return $berryByLabItems(id, berry?.background, berry?.custom, size)
 }
 
 export const $berryByLabItems = (berryId: number, backgroundId?: IAttributeBackground, labItemId?: IAttributeMappings, size = 85) => {

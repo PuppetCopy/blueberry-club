@@ -26,18 +26,22 @@ export function connectRewardDistributor(wallet: IWalletLink) {
       return newLocal
     }))
   }, contract, account))
+  
+  
+  const tokenBalance = awaitPromises(combineArray(async (c, account) => (await c.balanceOf(account)).toBigInt(), contract, account))
+  const stakeBalance = awaitPromises(combineArray(async (c, account) => (await c.balanceOf(account)).toBigInt(), contract, account))
+
   const rewardPerToken = awaitPromises(map(async (c) => (await c.rewardPerToken()).toBigInt(), contract))
   const lastTimeRewardApplicable = awaitPromises(map((c) => c.lastTimeRewardApplicable(), contract))
-  const tokenBalance = awaitPromises(combineArray(async (c, account) => (await c.balanceOf(account)).toBigInt(), contract, account))
-  const totalSupply = awaitPromises(combineArray(async (c) => (await c.totalSupply()).toBigInt(), contract))
-  const stakeBalance = awaitPromises(combineArray(async (c, account) => (await c.balanceOf(account)).toBigInt(), contract, account))
+  const totalSupply = awaitPromises(map(async (c) => (await c.totalSupply()).toBigInt(), contract))
+  const rewardRate = awaitPromises(map(async c => (await c.rewardRate()).toBigInt(), contract))
 
   const isApprovedForAll = awaitPromises(combineArray(async (account, contract, gbc) => {
     return gbc.isApprovedForAll(account, GBC_ADDRESS.REWARD_DISTRIBUTOR)
   }, account, contract, gbc.contract))
 
 
-  return { contract, earned, lastTimeRewardApplicable, rewardPerToken, tokenBalance, isApprovedForAll, totalSupply, stakeBalance }
+  return { contract, earned, lastTimeRewardApplicable, rewardPerToken, tokenBalance, isApprovedForAll, totalSupply, stakeBalance, rewardRate }
 }
 
 

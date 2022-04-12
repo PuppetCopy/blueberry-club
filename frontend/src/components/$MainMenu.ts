@@ -91,7 +91,7 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
           select: {
             value: now(null),
             $container: $defaultSelectContainer(style({ minWidth:'300px' })),
-            optionOp: map(option => option),
+            $$option: map(option => option),
             options: [
               $Link({ $content: $govItem('Treasury', $bagOfCoinsCircle, 'GBC Community-Led Portfolio'), url: '/p/treasury', route: parentRoute })({
                 click: routeChangeTether()

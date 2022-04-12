@@ -318,6 +318,40 @@ query ($first: Int = 1000, $account: String) {
 `
 
 
+const ownerV2: TypedDocumentNode<{owner: IOwner}, QueryAccountOwnerNfts> = gql`
+${schemaFragments}
+
+query ($account: String) {
+  owner(id: $account) {
+    balance
+    labBalance
+    rewardPaidCumulative
+    ownedTokens {
+      id
+      background
+      custom
+      special
+    }
+    ownedLabItems {
+      id
+    }
+    main {
+      id
+      background
+      custom
+      special
+    }
+    stakedTokenList {
+      id
+      background
+      custom
+      special
+    }
+  }
+}
+`
+
+
 const trasnfer = `
   from
   id
@@ -415,6 +449,11 @@ const blueberryGraph = prepareClient({
   url: 'https://api.thegraph.com/subgraphs/name/nissoh/blueberry-club',
 })
 
+const blueberryGraphV2 = prepareClient({
+  fetch: fetch,
+  url: 'https://api.thegraph.com/subgraphs/name/nissoh/blueberry-club-rinkeby',
+})
+
 
 const gmxAvalancheStats = prepareClient({
   fetch: fetch,
@@ -445,6 +484,20 @@ export const queryOwnerOwnedTokens = async (account: string) => {
   }
 
   return owner.ownedTokens
+}
+
+export const queryOwnerV2 = async (account: string): Promise<IOwner> => {
+  const owner = (await blueberryGraphV2(ownerV2, { account })).owner
+
+  if (owner === null) {
+    throw new Error(`Owner ${account} not found`)
+  }
+
+  return {
+    ...owner,
+    ownedTokens: owner.ownedTokens.map(fromTokenJson),
+    stakedTokenList: owner.stakedTokenList.map(fromTokenJson),
+  }
 }
  
 export const queryToken = async (id: string) => {
@@ -520,6 +573,17 @@ export const queryAvalancheRewards = async (config: IAccountQueryParamApi & Part
 }
 
 
+
+
+function fromTokenJson<T extends IToken>(obj: T): T {
+  return {
+    ...obj,
+    id: Number(obj.id),
+    background: Number(obj.background),
+    custom: Number(obj.custom),
+    special: Number(obj.special),
+  }
+}
 
 
 function fromYieldSourceJson<K extends string, T extends IStakeSource<K>>(obj: T): T {

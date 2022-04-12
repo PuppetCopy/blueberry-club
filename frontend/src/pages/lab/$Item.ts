@@ -39,16 +39,28 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
     $responsiveFlex(screenUtils.isDesktopScreen ? style({ gap: '50px' }): layoutSheet.spacingBig)(
       $labItem(item.id, 415, true, true),
 
-      $column(layoutSheet.spacingBig, style({ flex: 1 }))(
-        $column(style({  }))(
-          $text(style({ fontSize: screenUtils.isMobileScreen ? '2.1em' : '3.1em', fontWeight: 'bold' }))(item.name),
+      $column(style({ gap: '50px', flex: 1 }))(
 
-          $row(layoutSheet.spacingTiny)(
-            $text(style({ color: pallete.foreground }))(attributeIndexToLabel[getLabItemTupleIndex(item.id)]),
-            $text(style({  }))(map(count => count ? ` ${readableNumber(item.maxSupply - count)}/${item.maxSupply} left` : '', getMintCount(item.contractAddress, 3500))),
-          )
+        $column(layoutSheet.spacingBig)(
+          $column(style({  }))(
+            $text(style({ fontSize: screenUtils.isMobileScreen ? '2.1em' : '3.1em', fontWeight: 'bold' }))(item.name),
+
+            $row(layoutSheet.spacingTiny)(
+              $text(style({ color: pallete.foreground }))(attributeIndexToLabel[getLabItemTupleIndex(item.id)]),
+              $text(style({}))(
+                map(amount => {
+                  const count = item.maxSupply - amount
+                  return count
+                    ? amount
+                      ? `${readableNumber(count)}/${readableNumber(item.maxSupply)} left`
+                      : `${readableNumber(item.maxSupply)} in total`
+                    : 'Sold Out'
+                }, getMintCount(item.contractAddress, 3500))
+              ),
+            )
+          ),
+          $text(style({ lineHeight: '1.5em', whiteSpace: 'pre-wrap' }))(item.description.trim()),
         ),
-        $text(style({ lineHeight: '1.5em', whiteSpace: 'pre-wrap' }))(item.description.trim()),
 
         $seperator2,
 

@@ -1,12 +1,12 @@
 import { Behavior } from "@aelea/core"
-import { $node, $text, component, style } from "@aelea/dom"
+import { $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
 import { $anchor, $IntermediateTx, $Link } from "@gambitdao/ui-components"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $loadBerry } from "../../components/$DisplayBerry"
-import { $ButtonPrimary, $ButtonSecondary } from "../../components/form/$Button"
+import { $buttonAnchor, $ButtonPrimary, $ButtonSecondary } from "../../components/form/$Button"
 import { $responsiveFlex, $txHashRef } from "../../elements/$common"
 import { IAttributeHat, IAttributeFaceAccessory, IAttributeClothes, IAttributeExpression } from "@gambitdao/gbc-middleware"
 import { $seperator2 } from "../common"
@@ -84,7 +84,7 @@ export const $LabLanding = ({ walletLink, parentRoute, walletStore }: IBerry) =>
         $column(layoutSheet.spacingBig, style({ maxWidth: '570px' }))(
           $column(style({ fontSize: '3.2em' }))(
             $node(
-              $text(style({}))(`Bluberry `),
+              $text(style({}))(`Blueberry `),
               $text(style({ fontWeight: 'bold' }))( `Lab`),
             ),
           ),
@@ -208,10 +208,7 @@ export const $LabLanding = ({ walletLink, parentRoute, walletStore }: IBerry) =>
         $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '678px' }))('Are you an artist, a project or an influencer? It is possible to collaborate with us to create items that fit your art or your brand in the Blueberry Lab'),
 
 
-        $ButtonSecondary({
-          buttonOp: style({ alignSelf: 'center' }),
-          $content: $text('Contact us on Telegram')
-        })({})
+        $buttonAnchor(style({ alignSelf: 'center' }), attr({ href: 'https://discord.com/invite/7ZMmeU3z9j', target: '_blank' }))($text('Contact us on Discord'))
       ),
     ),
 
