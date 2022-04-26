@@ -14,30 +14,37 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract Profile is Ownable {
 
     mapping(address => uint) private _mains;
+    mapping(address => string) private _usernames;
     mapping(address => bool) public isHandler;
 
     IERC721 private gbc;
 
-    event SetMain(address assigner, uint tokenId);
+    event SetMain(address indexed assigner, uint tokenId);
+    event SetUsername(address indexed assigner, string username);
 
     constructor(address _gbc) {
         gbc = IERC721(_gbc);
     }
 
     function chooseMain(uint tokenId) external {
-        require(gbc.ownerOf(tokenId) == msg.sender, "Not the owner");
-        _mains[msg.sender] = tokenId;
+        require(gbc.ownerOf(tokenId) == _msgSender(), "Not the owner");
+        _mains[_msgSender()] = tokenId;
 
-        emit SetMain(msg.sender, tokenId);
+        emit SetMain(_msgSender(), tokenId);
     }
 
-    function getMain(address account) external view returns(uint tokenId) {
+    function chooseUsername(string memory username) external {
+        _usernames[_msgSender()] = username;
+        emit SetUsername(_msgSender(), username);
+    }
+
+    function getDataOf(address account) external view returns(uint tokenId, string memory username) {
         tokenId = _mains[account];
         address owner = gbc.ownerOf(tokenId);
-        if(isHandler[owner] || owner == account) {
-            return tokenId;
+        username = _usernames[account];
+        if(!isHandler[owner] && owner != account) {
+            tokenId = 0;
         }
-        return 0;
     }
 
     function setHandler(address handler, bool _isHandler) external onlyOwner {
