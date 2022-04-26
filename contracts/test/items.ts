@@ -4,7 +4,7 @@ import { BigNumber } from "ethers"
 import { ethers } from "hardhat"
 import { GBC, GBCLab, GBCLab__factory, GBC__factory } from "../typechain-types"
 
-describe("GBC Labs Items", function () {
+describe.skip("GBC Labs Items", function () {
   let owner: SignerWithAddress
   let user1: SignerWithAddress
   let user2: SignerWithAddress

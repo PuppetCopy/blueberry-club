@@ -27,6 +27,8 @@ contract Distributor is Ownable, ERC721TokenReceiver {
     error Error_NotTokenOwner();
     error Error_NotStakeToken();
     error Error_KeptOverReward();
+    error Error_AlreadyEnabled();
+    error Error_AlreadyDisable();
 
     /// -----------------------------------------------------------------------
     /// Events
@@ -497,6 +499,12 @@ contract Distributor is Ownable, ERC721TokenReceiver {
                     revert Error_NotTokenOwner();
                 }
 
+                bool disable = isDisabled[idList[i]];
+
+                if(disable) {
+                    revert Error_AlreadyDisable();
+                }
+
                 isDisabled[idList[i]] = true;
             }
         }
@@ -566,8 +574,13 @@ contract Distributor is Ownable, ERC721TokenReceiver {
             for (uint256 i = 0; i < idList.length; i++) {
                 // verify ownership
                 address tokenOwner = ownerOf[idList[i]];
-                if (tokenOwner != staker || stakeToken.ownerOf(idList[i]) == address(this) || tokenOwner == BURN_ADDRESS) {
+                if (tokenOwner != staker || stakeToken.ownerOf(idList[i]) != address(this) || tokenOwner == BURN_ADDRESS) {
                     revert Error_NotTokenOwner();
+                }
+
+                bool disabled = isDisabled[idList[i]];
+                if(!disabled) {
+                    revert Error_AlreadyEnabled();
                 }
 
                 isDisabled[idList[i]] = false;

@@ -10,7 +10,7 @@ import deployManager from "./lab/manager"
   const [owner] = await ethers.getSigners()
 
   const gbcFactory = new GBC__factory(owner)
-  
+
   const gbc = await deploy(gbcFactory, GBC_DESCRIPTION.NAME, GBC_DESCRIPTION.SYMBOL, GBC_DESCRIPTION.BASE_URI)
   // const gbc = GBC__factory.connect(GBC_ADDRESS.GBC, owner)
 
@@ -18,7 +18,7 @@ import deployManager from "./lab/manager"
   await gbc.adminMint(1, owner.address)
 
   const { items, lab } = await deployLab(gbc.address)
-  
+
   const { manager } = await deployManager(gbc.address, lab.address)
   // const { manager } = await deployManager(GBC_ADDRESS.GBC, GBC_ADDRESS.LAB)
 

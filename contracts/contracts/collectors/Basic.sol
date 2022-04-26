@@ -15,7 +15,7 @@ import {Router} from "../core/Router.sol";
  * To use this reward distributor you need to specify this contract
  * ethereum address when you stake your tokens
  */
-contract BasicRewardDistribution is Ownable {
+contract BasicCollector is Ownable {
 
     ERC20Wrapper public WETH;
     Router public router;
