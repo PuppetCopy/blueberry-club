@@ -7,7 +7,6 @@ import {ERC20Wrapper} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20
 
 import {Router} from "../core/Router.sol";
 
-import {IRewardDistribution} from "./IRewardDistribution.sol";
 
 /**
  * This contract is an reward distributor example. It receive user
@@ -16,25 +15,19 @@ import {IRewardDistribution} from "./IRewardDistribution.sol";
  * To use this reward distributor you need to specify this contract
  * ethereum address when you stake your tokens
  */
-contract BasicRewardDistribution is IRewardDistribution, Ownable {
+contract BasicRewardDistribution is Ownable {
 
     ERC20Wrapper public WETH;
+    Router public router;
 
-    mapping(address => uint256) public rewardOf;
-    mapping(address => bool) public isAllowed;
-
-    constructor(address _weth) {
+    constructor(address _weth, address _router) {
         WETH = ERC20Wrapper(_weth);
-    }
-
-    function notifyReward(address account, uint256 amount) external {
-        require(isAllowed[msg.sender], "Sender is not allowed");
-        rewardOf[account] += amount;
+        router = Router(_router);
     }
 
     function claim() external {
-        uint256 earned = rewardOf[_msgSender()];
-        WETH.withdrawTo(_msgSender(), earned);
-        rewardOf[_msgSender()] = 0;
+        uint256 claimable = router.claimable(_msgSender());
+        router.claim(_msgSender(), claimable);
+        WETH.withdrawTo(_msgSender(), claimable);
     }
 }

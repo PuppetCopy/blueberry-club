@@ -26,6 +26,7 @@ contract Distributor is Ownable, ERC721TokenReceiver {
     error Error_AmountTooLarge();
     error Error_NotTokenOwner();
     error Error_NotStakeToken();
+    error Error_KeptOverReward();
 
     /// -----------------------------------------------------------------------
     /// Events
@@ -35,8 +36,8 @@ contract Distributor is Ownable, ERC721TokenReceiver {
     event Staked(address indexed user, uint256[] idList);
     event Withdrawn(address indexed user, uint256[] idList);
     event RewardPaid(address indexed user, uint256 reward);
-    event Enabled(address indexed user, uint256[] idList);
     event Disabled(address indexed user, uint256[] idList);
+    event Enabled(address indexed user, uint256[] idList);
 
     /// -----------------------------------------------------------------------
     /// Constants
@@ -58,17 +59,21 @@ contract Distributor is Ownable, ERC721TokenReceiver {
     uint256 public rewardRate;
     /// @notice The last stored rewardPerToken value
     uint256 public rewardPerTokenStored;
-    /// @notice The total tokens staked in the pool
-    uint256 public totalSupply;
+    /// @notice The total tokens staked and enabled in the pool
+    uint256 public totalEnabled;
+    /// @notice The total tokens staked and disabled in the pool
+    uint256 public totalDisabled;
 
     /// @notice Tracks if an address can call notifyReward()
     mapping(address => bool) public isRewardDistributor;
     /// @notice The owner of a staked ERC721 token
     mapping(uint256 => address) public ownerOf;
+    /// @notice The status of a staked ERC721 token
+    mapping(uint256 => bool) public isDisabled;
 
-    /// @notice The amount of tokens staked by an account
-    mapping(address => uint256) public balanceOf;
-    /// @notice The amount of tokens staked but disabled
+    /// @notice The amount of tokens staked and enabled by an account
+    mapping(address => uint256) public enabledOf;
+    /// @notice The amount of tokens staked and enabled by an account
     mapping(address => uint256) public disabledOf;
     /// @notice The rewardPerToken value when an account last staked/withdrew/withdrew rewards
     mapping(address => uint256) public userRewardPerTokenPaid;
@@ -79,8 +84,8 @@ contract Distributor is Ownable, ERC721TokenReceiver {
     /// Immutable parameters
     /// -----------------------------------------------------------------------
 
-    ERC20 public immutable rewardToken;
-    ERC721 public immutable stakeToken;
+    ERC20 immutable public rewardToken;
+    ERC721 immutable public stakeToken;
 
     /// -----------------------------------------------------------------------
     /// Initialization
@@ -92,8 +97,503 @@ contract Distributor is Ownable, ERC721TokenReceiver {
     }
 
     /// -----------------------------------------------------------------------
+    /// User actions
+    /// -----------------------------------------------------------------------
+
+    /// @notice Stakes a list of ERC721 tokens in the pool to earn rewards
+    /// @param holder The address which hold ERC721 tokens
+    /// @param staker The address which receive the staked tokens
+    /// @param idList The list of ERC721 token IDs to stake
+    function stakeForAccount(address holder, address staker, uint256[] calldata idList) external {
+        /// -----------------------------------------------------------------------
+        /// Validation
+        /// -----------------------------------------------------------------------
+
+        if (idList.length == 0) {
+            return;
+        }
+        if (!isRewardDistributor[msg.sender]) {
+            revert Error_NotRewardDistributor();
+        }
+
+        /// -----------------------------------------------------------------------
+        /// Storage loads
+        /// -----------------------------------------------------------------------
+
+        uint256 accountBalance = enabledOf[staker];
+        uint64 lastTimeRewardApplicable_ = lastTimeRewardApplicable();
+        uint256 totalSupply_ = totalEnabled;
+        uint256 rewardPerToken_ = _rewardPerToken(
+            totalSupply_,
+            lastTimeRewardApplicable_,
+            rewardRate
+        );
+
+        /// -----------------------------------------------------------------------
+        /// State updates
+        /// -----------------------------------------------------------------------
+
+        // accrue rewards
+        rewardPerTokenStored = rewardPerToken_;
+        lastUpdateTime = lastTimeRewardApplicable_;
+        rewards[staker] = _earned(
+            staker,
+            accountBalance,
+            rewardPerToken_,
+            rewards[staker]
+        );
+        userRewardPerTokenPaid[staker] = rewardPerToken_;
+
+        // stake
+        totalEnabled = totalSupply_ + idList.length;
+        enabledOf[staker] = accountBalance + idList.length;
+        unchecked {
+            for (uint256 i = 0; i < idList.length; i++) {
+                ownerOf[idList[i]] = staker;
+            }
+        }
+
+        /// -----------------------------------------------------------------------
+        /// Effects
+        /// -----------------------------------------------------------------------
+
+        unchecked {
+            for (uint256 i = 0; i < idList.length; i++) {
+                stakeToken.safeTransferFrom(
+                    holder,
+                    address(this),
+                    idList[i]
+                );
+            }
+        }
+
+        emit Staked(staker, idList);
+    }
+
+    /// @notice Withdraws staked tokens from the pool
+    /// @param holder The address which receive unstaked ERC721 tokens
+    /// @param staker The address which holds the staked tokens
+    /// @param idList The list of ERC721 token IDs to stake
+    function withdrawForAccount(address holder, address staker, uint256[] calldata idList) external {
+        /// -----------------------------------------------------------------------
+        /// Validation
+        /// -----------------------------------------------------------------------
+
+        if (idList.length == 0) {
+            return;
+        }
+        if (!isRewardDistributor[msg.sender]) {
+            revert Error_NotRewardDistributor();
+        }
+
+        /// -----------------------------------------------------------------------
+        /// Storage loads
+        /// -----------------------------------------------------------------------
+
+        uint256 accountBalance = enabledOf[staker];
+        uint64 lastTimeRewardApplicable_ = lastTimeRewardApplicable();
+        uint256 totalSupply_ = totalEnabled;
+        uint256 rewardPerToken_ = _rewardPerToken(
+            totalSupply_,
+            lastTimeRewardApplicable_,
+            rewardRate
+        );
+
+        /// -----------------------------------------------------------------------
+        /// State updates
+        /// -----------------------------------------------------------------------
+
+        // accrue rewards
+        rewardPerTokenStored = rewardPerToken_;
+        lastUpdateTime = lastTimeRewardApplicable_;
+        rewards[staker] = _earned(
+            staker,
+            accountBalance,
+            rewardPerToken_,
+            rewards[staker]
+        );
+        userRewardPerTokenPaid[staker] = rewardPerToken_;
+
+        // withdraw stake
+        uint256 enabledAmount;
+        uint256 disabledAmount;
+        // total supply has 1:1 relationship with staked amounts
+        // so can't ever underflow
+        unchecked {
+            totalEnabled = totalSupply_ - idList.length;
+            for (uint256 i = 0; i < idList.length; i++) {
+                // verify ownership
+                address tokenOwner = ownerOf[idList[i]];
+                if (tokenOwner != staker || tokenOwner == BURN_ADDRESS) {
+                    revert Error_NotTokenOwner();
+                }
+
+                // keep the storage slot dirty to save gas
+                // if someone else stakes the same token again
+                ownerOf[idList[i]] = BURN_ADDRESS;
+
+                bool disabled = isDisabled[idList[i]];
+                if (disabled) {
+                    isDisabled[idList[i]] = false;
+                    disabledAmount++;
+                } else {
+                    enabledAmount++;
+                }
+            }
+        }
+        enabledOf[staker] = accountBalance - enabledAmount;
+        disabledOf[staker] -= disabledAmount;
+
+        /// -----------------------------------------------------------------------
+        /// Effects
+        /// -----------------------------------------------------------------------
+
+        unchecked {
+            for (uint256 i = 0; i < idList.length; i++) {
+                stakeToken.safeTransferFrom(
+                    address(this),
+                    holder,
+                    idList[i]
+                );
+            }
+        }
+
+        emit Withdrawn(staker, idList);
+    }
+
+    /// @notice Withdraws specified staked tokens and earned rewards
+    /// @param holder The address which receive unstaked ERC721 tokens
+    /// @param staker The address which holds the staked tokens
+    /// @param receiver The address which receive the rewards
+    /// @param idList The list of ERC721 token IDs to stake
+    /// @param kept The reward kept on the contract
+    function exitForAccount(
+        address holder,
+        address staker,
+        address receiver,
+        uint256[] calldata idList,
+        uint256 kept
+    ) external {
+        /// -----------------------------------------------------------------------
+        /// Validation
+        /// -----------------------------------------------------------------------
+
+        if (idList.length == 0) {
+            return;
+        }
+        if (!isRewardDistributor[msg.sender]) {
+            revert Error_NotRewardDistributor();
+        }
+
+        /// -----------------------------------------------------------------------
+        /// Storage loads
+        /// -----------------------------------------------------------------------
+
+        uint256 accountBalance = enabledOf[staker];
+        uint64 lastTimeRewardApplicable_ = lastTimeRewardApplicable();
+        uint256 totalSupply_ = totalEnabled;
+        uint256 rewardPerToken_ = _rewardPerToken(
+            totalSupply_,
+            lastTimeRewardApplicable_,
+            rewardRate
+        );
+
+        /// -----------------------------------------------------------------------
+        /// State updates
+        /// -----------------------------------------------------------------------
+
+        // give rewards
+        uint256 reward = _earned(
+            staker,
+            accountBalance,
+            rewardPerToken_,
+            rewards[staker]
+        );
+        if (reward > 0) {
+            if (reward < kept) {
+                revert Error_KeptOverReward();
+            }
+            rewards[staker] = kept;
+            reward -= kept;
+        }
+
+        // accrue rewards
+        rewardPerTokenStored = rewardPerToken_;
+        lastUpdateTime = lastTimeRewardApplicable_;
+        userRewardPerTokenPaid[staker] = rewardPerToken_;
+
+        // withdraw stake
+        enabledOf[staker] = accountBalance - idList.length;
+        // total supply has 1:1 relationship with staked amounts
+        // so can't ever underflow
+        unchecked {
+            totalEnabled = totalSupply_ - idList.length;
+            for (uint256 i = 0; i < idList.length; i++) {
+                // verify ownership
+                address tokenOwner = ownerOf[idList[i]];
+                if (tokenOwner != staker || tokenOwner == BURN_ADDRESS) {
+                    revert Error_NotTokenOwner();
+                }
+
+                // keep the storage slot dirty to save gas
+                // if someone else stakes the same token again
+                ownerOf[idList[i]] = BURN_ADDRESS;
+            }
+        }
+
+        /// -----------------------------------------------------------------------
+        /// Effects
+        /// -----------------------------------------------------------------------
+
+        // transfer stake
+        unchecked {
+            for (uint256 i = 0; i < idList.length; i++) {
+                stakeToken.safeTransferFrom(
+                    address(this),
+                    holder,
+                    idList[i]
+                );
+            }
+        }
+        emit Withdrawn(staker, idList);
+
+        // transfer rewards
+        if (reward > 0) {
+            rewardToken.safeTransfer(receiver, reward);
+            emit RewardPaid(staker, reward);
+        }
+    }
+
+    /// @notice Withdraws all earned rewards
+    /// @param staker The address which holds the staked tokens
+    /// @param receiver The address which receive the rewards
+    /// @param kept The reward kept on the contract
+    function getRewardForAccount(address staker, address receiver, uint256 kept) external {
+        /// -----------------------------------------------------------------------
+        /// Validation
+        /// -----------------------------------------------------------------------
+
+        if (!isRewardDistributor[msg.sender]) {
+            revert Error_NotRewardDistributor();
+        }
+
+        /// -----------------------------------------------------------------------
+        /// Storage loads
+        /// -----------------------------------------------------------------------
+
+        uint256 accountBalance = enabledOf[staker];
+        uint64 lastTimeRewardApplicable_ = lastTimeRewardApplicable();
+        uint256 totalSupply_ = totalEnabled;
+        uint256 rewardPerToken_ = _rewardPerToken(
+            totalSupply_,
+            lastTimeRewardApplicable_,
+            rewardRate
+        );
+
+        /// -----------------------------------------------------------------------
+        /// State updates
+        /// -----------------------------------------------------------------------
+
+        uint256 reward = _earned(
+            staker,
+            accountBalance,
+            rewardPerToken_,
+            rewards[staker]
+        );
+
+        // accrue rewards
+        rewardPerTokenStored = rewardPerToken_;
+        lastUpdateTime = lastTimeRewardApplicable_;
+        userRewardPerTokenPaid[staker] = rewardPerToken_;
+
+        // withdraw rewards
+        if (reward > 0) {
+            if (reward < kept) {
+                revert Error_KeptOverReward();
+            }
+            rewards[staker] = kept;
+            reward -= kept;
+
+            /// -----------------------------------------------------------------------
+            /// Effects
+            /// -----------------------------------------------------------------------
+
+            rewardToken.safeTransfer(receiver, reward);
+            emit RewardPaid(staker, reward);
+        }
+    }
+
+    /// @notice Withdraws specified staked tokens and earned rewards
+    /// @param staker The address which holds the staked tokens
+    /// @param receiver The address which receive the rewards
+    /// @param idList The list of ERC721 token IDs to stake
+    /// @param kept The reward kept on the contract
+    function disableForAccount(
+        address staker,
+        address receiver,
+        uint256[] calldata idList,
+        uint256 kept
+    ) external {
+        /// -----------------------------------------------------------------------
+        /// Validation
+        /// -----------------------------------------------------------------------
+
+        if (idList.length == 0) {
+            return;
+        }
+        if (!isRewardDistributor[msg.sender]) {
+            revert Error_NotRewardDistributor();
+        }
+
+        /// -----------------------------------------------------------------------
+        /// Storage loads
+        /// -----------------------------------------------------------------------
+
+        uint256 accountBalance = enabledOf[staker];
+        uint64 lastTimeRewardApplicable_ = lastTimeRewardApplicable();
+        uint256 totalSupply_ = totalEnabled;
+        uint256 rewardPerToken_ = _rewardPerToken(
+            totalSupply_,
+            lastTimeRewardApplicable_,
+            rewardRate
+        );
+
+        /// -----------------------------------------------------------------------
+        /// State updates
+        /// -----------------------------------------------------------------------
+
+        // give rewards
+        uint256 reward = _earned(
+            staker,
+            accountBalance,
+            rewardPerToken_,
+            rewards[staker]
+        );
+        if (reward > 0) {
+            if (reward < kept) {
+                revert Error_KeptOverReward();
+            }
+            rewards[staker] = kept;
+            reward -= kept;
+        }
+
+        // accrue rewards
+        rewardPerTokenStored = rewardPerToken_;
+        lastUpdateTime = lastTimeRewardApplicable_;
+        userRewardPerTokenPaid[staker] = rewardPerToken_;
+
+        // withdraw stake
+        enabledOf[staker] = accountBalance - idList.length;
+        disabledOf[staker] += idList.length;
+        totalDisabled += idList.length;
+        // total supply has 1:1 relationship with staked amounts
+        // so can't ever underflow
+        unchecked {
+            totalEnabled = totalSupply_ - idList.length;
+            for (uint256 i = 0; i < idList.length; i++) {
+                // verify ownership
+                address tokenOwner = ownerOf[idList[i]];
+                if (tokenOwner != staker || tokenOwner == BURN_ADDRESS) {
+                    revert Error_NotTokenOwner();
+                }
+
+                isDisabled[idList[i]] = true;
+            }
+        }
+
+        /// -----------------------------------------------------------------------
+        /// Effects
+        /// -----------------------------------------------------------------------
+
+        emit Disabled(staker, idList);
+
+        // transfer rewards
+        if (reward > 0) {
+            rewardToken.safeTransfer(receiver, reward);
+            emit RewardPaid(staker, reward);
+        }
+    }
+
+    /// @notice Stakes a list of ERC721 tokens in the pool to earn rewards
+    /// @param staker The address which receive the staked tokens
+    /// @param idList The list of ERC721 token IDs to stake
+    function enableForAccount(address staker, uint256[] calldata idList) external {
+        /// -----------------------------------------------------------------------
+        /// Validation
+        /// -----------------------------------------------------------------------
+
+        if (idList.length == 0) {
+            return;
+        }
+        if (!isRewardDistributor[msg.sender]) {
+            revert Error_NotRewardDistributor();
+        }
+
+        /// -----------------------------------------------------------------------
+        /// Storage loads
+        /// -----------------------------------------------------------------------
+
+        uint256 accountBalance = enabledOf[staker];
+        uint64 lastTimeRewardApplicable_ = lastTimeRewardApplicable();
+        uint256 totalSupply_ = totalEnabled;
+        uint256 rewardPerToken_ = _rewardPerToken(
+            totalSupply_,
+            lastTimeRewardApplicable_,
+            rewardRate
+        );
+
+        /// -----------------------------------------------------------------------
+        /// State updates
+        /// -----------------------------------------------------------------------
+
+        // accrue rewards
+        rewardPerTokenStored = rewardPerToken_;
+        lastUpdateTime = lastTimeRewardApplicable_;
+        rewards[staker] = _earned(
+            staker,
+            accountBalance,
+            rewardPerToken_,
+            rewards[staker]
+        );
+        userRewardPerTokenPaid[staker] = rewardPerToken_;
+
+        // stake
+        totalEnabled = totalSupply_ + idList.length;
+        totalDisabled -= idList.length;
+        enabledOf[staker] = accountBalance + idList.length;
+        disabledOf[staker] -= idList.length;
+        unchecked {
+            for (uint256 i = 0; i < idList.length; i++) {
+                // verify ownership
+                address tokenOwner = ownerOf[idList[i]];
+                if (tokenOwner != staker || stakeToken.ownerOf(idList[i]) == address(this) || tokenOwner == BURN_ADDRESS) {
+                    revert Error_NotTokenOwner();
+                }
+
+                isDisabled[idList[i]] = false;
+            }
+        }
+
+        /// -----------------------------------------------------------------------
+        /// Effects
+        /// -----------------------------------------------------------------------
+
+        emit Enabled(staker, idList);
+    }
+
+    /// -----------------------------------------------------------------------
     /// Getters
     /// -----------------------------------------------------------------------
+
+    /// @notice The total tokens staked in the pool
+    function totalSupply() public view returns(uint256) {
+        return totalEnabled + totalDisabled;
+    }
+
+    /// @notice The amount of tokens staked by an account
+    function balanceOf(address account) public view returns(uint256) {
+        return enabledOf[account] + disabledOf[account];
+    }
 
     /// @notice The latest time at which stakers are earning rewards.
     function lastTimeRewardApplicable() public view returns (uint64) {
@@ -107,7 +607,7 @@ contract Distributor is Ownable, ERC721TokenReceiver {
     function rewardPerToken() external view returns (uint256) {
         return
             _rewardPerToken(
-                totalSupply,
+                totalEnabled,
                 lastTimeRewardApplicable(),
                 rewardRate
             );
@@ -119,9 +619,9 @@ contract Distributor is Ownable, ERC721TokenReceiver {
         return
             _earned(
                 account,
-                balanceOf[account],
+                enabledOf[account],
                 _rewardPerToken(
-                    totalSupply,
+                    totalEnabled,
                     lastTimeRewardApplicable(),
                     rewardRate
                 ),
@@ -175,7 +675,7 @@ contract Distributor is Ownable, ERC721TokenReceiver {
         uint64 lastTimeRewardApplicable_ = block.timestamp < periodFinish_
             ? uint64(block.timestamp)
             : periodFinish_;
-        uint256 totalSupply_ = totalSupply;
+        uint256 totalSupply_ = totalEnabled;
 
         /// -----------------------------------------------------------------------
         /// State updates
@@ -213,446 +713,11 @@ contract Distributor is Ownable, ERC721TokenReceiver {
     /// Reward distributors can call notifyRewardAmount()
     /// @param rewardDistributor The account to add/remove
     /// @param isRewardDistributor_ True to add the account, false to remove the account
-    function setRewardDistributor(address rewardDistributor, bool isRewardDistributor_) external onlyOwner {
+    function setRewardDistributor(
+        address rewardDistributor,
+        bool isRewardDistributor_
+    ) external onlyOwner {
         isRewardDistributor[rewardDistributor] = isRewardDistributor_;
-    }
-
-    /// @notice Stakes a list of ERC721 tokens in the pool to earn rewards
-    /// @param idList The list of ERC721 token IDs to stake
-    function stakeForAccount(address account, uint256[] calldata idList) external {
-        /// -----------------------------------------------------------------------
-        /// Validation
-        /// -----------------------------------------------------------------------
-
-        if (idList.length == 0) {
-            return;
-        }
-        if (!isRewardDistributor[msg.sender]) {
-            revert Error_NotRewardDistributor();
-        }
-
-        /// -----------------------------------------------------------------------
-        /// Storage loads
-        /// -----------------------------------------------------------------------
-
-        uint256 accountBalance = balanceOf[account];
-        uint64 lastTimeRewardApplicable_ = lastTimeRewardApplicable();
-        uint256 totalSupply_ = totalSupply;
-        uint256 rewardPerToken_ = _rewardPerToken(
-            totalSupply_,
-            lastTimeRewardApplicable_,
-            rewardRate
-        );
-
-        /// -----------------------------------------------------------------------
-        /// State updates
-        /// -----------------------------------------------------------------------
-
-        // accrue rewards
-        rewardPerTokenStored = rewardPerToken_;
-        lastUpdateTime = lastTimeRewardApplicable_;
-        rewards[account] = _earned(
-            account,
-            accountBalance,
-            rewardPerToken_,
-            rewards[account]
-        );
-        userRewardPerTokenPaid[account] = rewardPerToken_;
-
-        // stake
-        totalSupply = totalSupply_ + idList.length;
-        balanceOf[account] = accountBalance + idList.length;
-        unchecked {
-            for (uint256 i = 0; i < idList.length; i++) {
-                ownerOf[idList[i]] = account;
-            }
-        }
-
-        /// -----------------------------------------------------------------------
-        /// Effects
-        /// -----------------------------------------------------------------------
-
-        unchecked {
-            for (uint256 i = 0; i < idList.length; i++) {
-                stakeToken.safeTransferFrom(
-                    account,
-                    address(this),
-                    idList[i]
-                );
-            }
-        }
-
-        emit Staked(account, idList);
-    }
-
-    /// @notice Withdraws staked tokens from the pool
-    /// @param idList The list of ERC721 token IDs to stake
-    function withdrawForAccount(address account, uint256[] calldata idList) external {
-        /// -----------------------------------------------------------------------
-        /// Validation
-        /// -----------------------------------------------------------------------
-
-        if (idList.length == 0) {
-            return;
-        }
-        if (!isRewardDistributor[msg.sender]) {
-            revert Error_NotRewardDistributor();
-        }
-
-        /// -----------------------------------------------------------------------
-        /// Storage loads
-        /// -----------------------------------------------------------------------
-
-        uint256 accountBalance = balanceOf[account];
-        uint64 lastTimeRewardApplicable_ = lastTimeRewardApplicable();
-        uint256 totalSupply_ = totalSupply;
-        uint256 rewardPerToken_ = _rewardPerToken(
-            totalSupply_,
-            lastTimeRewardApplicable_,
-            rewardRate
-        );
-
-        /// -----------------------------------------------------------------------
-        /// State updates
-        /// -----------------------------------------------------------------------
-
-        // accrue rewards
-        rewardPerTokenStored = rewardPerToken_;
-        lastUpdateTime = lastTimeRewardApplicable_;
-        rewards[account] = _earned(
-            account,
-            accountBalance,
-            rewardPerToken_,
-            rewards[account]
-        );
-        userRewardPerTokenPaid[account] = rewardPerToken_;
-
-        // withdraw stake
-        balanceOf[account] = accountBalance - idList.length;
-        // total supply has 1:1 relationship with staked amounts
-        // so can't ever underflow
-        unchecked {
-            totalSupply = totalSupply_ - idList.length;
-            for (uint256 i = 0; i < idList.length; i++) {
-                // verify ownership
-                address tokenOwner = ownerOf[idList[i]];
-                if (tokenOwner != account || tokenOwner == BURN_ADDRESS) {
-                    revert Error_NotTokenOwner();
-                }
-
-                // keep the storage slot dirty to save gas
-                // if someone else stakes the same token again
-                ownerOf[idList[i]] = BURN_ADDRESS;
-            }
-        }
-
-        /// -----------------------------------------------------------------------
-        /// Effects
-        /// -----------------------------------------------------------------------
-
-        unchecked {
-            for (uint256 i = 0; i < idList.length; i++) {
-                stakeToken.safeTransferFrom(
-                    address(this),
-                    account,
-                    idList[i]
-                );
-            }
-        }
-
-        emit Withdrawn(account, idList);
-    }
-
-    /// @notice Withdraws specified staked tokens and earned rewards
-    function exitForAccount(address account, address receiver, uint256[] calldata idList) external returns(uint) {
-        /// -----------------------------------------------------------------------
-        /// Validation
-        /// -----------------------------------------------------------------------
-
-        if (idList.length == 0) {
-            return 0;
-        }
-        if (!isRewardDistributor[msg.sender]) {
-            revert Error_NotRewardDistributor();
-        }
-
-        /// -----------------------------------------------------------------------
-        /// Storage loads
-        /// -----------------------------------------------------------------------
-
-        uint256 accountBalance = balanceOf[account];
-        uint64 lastTimeRewardApplicable_ = lastTimeRewardApplicable();
-        uint256 totalSupply_ = totalSupply;
-        uint256 rewardPerToken_ = _rewardPerToken(
-            totalSupply_,
-            lastTimeRewardApplicable_,
-            rewardRate
-        );
-
-        /// -----------------------------------------------------------------------
-        /// State updates
-        /// -----------------------------------------------------------------------
-
-        // give rewards
-        uint256 reward = _earned(
-            account,
-            accountBalance,
-            rewardPerToken_,
-            rewards[account]
-        );
-        if (reward > 0) {
-            uint realReward = (reward * idList.length) / accountBalance;
-            rewards[account] = reward - realReward;
-            reward = realReward;
-        }
-
-        // accrue rewards
-        rewardPerTokenStored = rewardPerToken_;
-        lastUpdateTime = lastTimeRewardApplicable_;
-        userRewardPerTokenPaid[account] = rewardPerToken_;
-
-        // withdraw stake
-        balanceOf[account] = accountBalance - idList.length;
-        // total supply has 1:1 relationship with staked amounts
-        // so can't ever underflow
-        unchecked {
-            totalSupply = totalSupply_ - idList.length;
-            for (uint256 i = 0; i < idList.length; i++) {
-                // verify ownership
-                address tokenOwner = ownerOf[idList[i]];
-                if (tokenOwner != account || tokenOwner == BURN_ADDRESS) {
-                    revert Error_NotTokenOwner();
-                }
-
-                // keep the storage slot dirty to save gas
-                // if someone else stakes the same token again
-                ownerOf[idList[i]] = BURN_ADDRESS;
-            }
-        }
-
-        /// -----------------------------------------------------------------------
-        /// Effects
-        /// -----------------------------------------------------------------------
-
-        // transfer stake
-        unchecked {
-            for (uint256 i = 0; i < idList.length; i++) {
-                stakeToken.safeTransferFrom(
-                    address(this),
-                    account,
-                    idList[i]
-                );
-            }
-        }
-        emit Withdrawn(account, idList);
-
-        // transfer rewards
-        if (reward > 0) {
-            rewardToken.safeTransfer(receiver, reward);
-            emit RewardPaid(account, reward);
-            return reward;
-        }
-
-        return 0;
-    }
-
-    function disableForAccount(address account, address receiver, uint256[] calldata idList) external returns(uint) {
-        /// -----------------------------------------------------------------------
-        /// Validation
-        /// -----------------------------------------------------------------------
-
-        if (idList.length == 0) {
-            return 0;
-        }
-        if (!isRewardDistributor[msg.sender]) {
-            revert Error_NotRewardDistributor();
-        }
-
-        /// -----------------------------------------------------------------------
-        /// Storage loads
-        /// -----------------------------------------------------------------------
-
-        uint256 accountBalance = balanceOf[account];
-        uint64 lastTimeRewardApplicable_ = lastTimeRewardApplicable();
-        uint256 totalSupply_ = totalSupply;
-        uint256 rewardPerToken_ = _rewardPerToken(
-            totalSupply_,
-            lastTimeRewardApplicable_,
-            rewardRate
-        );
-
-        /// -----------------------------------------------------------------------
-        /// State updates
-        /// -----------------------------------------------------------------------
-
-        // give rewards
-        uint256 reward = _earned(
-            account,
-            accountBalance,
-            rewardPerToken_,
-            rewards[account]
-        );
-        if (reward > 0) {
-            uint realReward = (reward * idList.length) / accountBalance;
-            rewards[account] = reward - realReward;
-            reward = realReward;
-        }
-
-        // accrue rewards
-        rewardPerTokenStored = rewardPerToken_;
-        lastUpdateTime = lastTimeRewardApplicable_;
-        userRewardPerTokenPaid[account] = rewardPerToken_;
-
-        // withdraw stake
-        balanceOf[account] = accountBalance - idList.length;
-        disabledOf[account] += idList.length;
-        // total supply has 1:1 relationship with staked amounts
-        // so can't ever underflow
-        unchecked {
-            totalSupply = totalSupply_ - idList.length;
-            for (uint256 i = 0; i < idList.length; i++) {
-                // verify ownership
-                address tokenOwner = ownerOf[idList[i]];
-                if (tokenOwner != account || tokenOwner == BURN_ADDRESS) {
-                    revert Error_NotTokenOwner();
-                }
-            }
-        }
-
-        /// -----------------------------------------------------------------------
-        /// Effects
-        /// -----------------------------------------------------------------------
-
-        emit Disabled(account, idList);
-
-        // transfer rewards
-        if (reward > 0) {
-            rewardToken.safeTransfer(receiver, reward);
-            emit RewardPaid(account, reward);
-            return reward;
-        }
-
-        return 0;
-    }
-
-    function enableForAccount(address account, uint256[] calldata idList) external {
-        /// -----------------------------------------------------------------------
-        /// Validation
-        /// -----------------------------------------------------------------------
-
-        if (idList.length == 0) {
-            return;
-        }
-        if (!isRewardDistributor[msg.sender]) {
-            revert Error_NotRewardDistributor();
-        }
-
-        /// -----------------------------------------------------------------------
-        /// Storage loads
-        /// -----------------------------------------------------------------------
-
-        uint256 accountBalance = balanceOf[account];
-        uint64 lastTimeRewardApplicable_ = lastTimeRewardApplicable();
-        uint256 totalSupply_ = totalSupply;
-        uint256 rewardPerToken_ = _rewardPerToken(
-            totalSupply_,
-            lastTimeRewardApplicable_,
-            rewardRate
-        );
-
-        /// -----------------------------------------------------------------------
-        /// State updates
-        /// -----------------------------------------------------------------------
-
-        // accrue rewards
-        rewardPerTokenStored = rewardPerToken_;
-        lastUpdateTime = lastTimeRewardApplicable_;
-        rewards[account] = _earned(
-            account,
-            accountBalance,
-            rewardPerToken_,
-            rewards[account]
-        );
-        userRewardPerTokenPaid[account] = rewardPerToken_;
-
-        // stake
-        totalSupply = totalSupply_ + idList.length;
-        balanceOf[account] = accountBalance + idList.length;
-        disabledOf[account] -= idList.length;
-        unchecked {
-            for (uint256 i = 0; i < idList.length; i++) {
-                // verify ownership
-                address tokenOwner = ownerOf[idList[i]];
-                address actualOwner = stakeToken.ownerOf(idList[i]);
-                if (tokenOwner != account || tokenOwner == BURN_ADDRESS || actualOwner != address(this)) {
-                    revert Error_NotTokenOwner();
-                }
-            }
-        }
-
-        /// -----------------------------------------------------------------------
-        /// Effects
-        /// -----------------------------------------------------------------------
-
-        emit Enabled(account, idList);
-    }
-
-    /// @notice Withdraws all earned rewards
-    function getRewardForAccount(address account, address receiver, uint amount) external returns(uint) {
-        /// -----------------------------------------------------------------------
-        /// Validation
-        /// -----------------------------------------------------------------------
-
-        if (!isRewardDistributor[msg.sender]) {
-            revert Error_NotRewardDistributor();
-        }
-
-        if(amount == 0) return 0;
-
-        /// -----------------------------------------------------------------------
-        /// Storage loads
-        /// -----------------------------------------------------------------------
-
-        uint256 accountBalance = balanceOf[account];
-        uint64 lastTimeRewardApplicable_ = lastTimeRewardApplicable();
-        uint256 totalSupply_ = totalSupply;
-        uint256 rewardPerToken_ = _rewardPerToken(
-            totalSupply_,
-            lastTimeRewardApplicable_,
-            rewardRate
-        );
-
-        /// -----------------------------------------------------------------------
-        /// State updates
-        /// -----------------------------------------------------------------------
-
-        uint256 reward = _earned(
-            account,
-            accountBalance,
-            rewardPerToken_,
-            rewards[account]
-        );
-
-        // accrue rewards
-        rewardPerTokenStored = rewardPerToken_;
-        lastUpdateTime = lastTimeRewardApplicable_;
-        userRewardPerTokenPaid[account] = rewardPerToken_;
-
-        // withdraw rewards
-        if (reward > 0) {
-            uint realReward = (reward * amount) / accountBalance;
-            rewards[account] = reward - realReward;
-
-            /// -----------------------------------------------------------------------
-            /// Effects
-            /// -----------------------------------------------------------------------
-
-            rewardToken.safeTransfer(receiver, realReward);
-            emit RewardPaid(account, realReward);
-
-            return realReward;
-        }
-        return 0;
     }
 
     /// -----------------------------------------------------------------------
@@ -688,18 +753,5 @@ contract Distributor is Ownable, ERC721TokenReceiver {
                 rewardRate_,
                 totalSupply_
             );
-    }
-
-    function _getImmutableVariablesOffset()
-        internal
-        pure
-        returns (uint256 offset)
-    {
-        assembly {
-            offset := sub(
-                calldatasize(),
-                add(shr(240, calldataload(sub(calldatasize(), 2))), 2)
-            )
-        }
     }
 }

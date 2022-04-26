@@ -6,27 +6,21 @@ import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 import {Distributor} from "./Distributor.sol";
 
-import {IRewardDistribution} from "../distributions/IRewardDistribution.sol";
-
 contract Router is Ownable {
 
     event Ping(address indexed sender, address indexed account, uint256 timestamp);
 
     error Error_PingBackwards();
-    error Error_NotRewardDistributor();
-    error Error_SenderNotRewardDistributor();
-    error Error_NotTokenOwner();
-    error Error_BalanceTooLow();
+    error Error_SenderNotCollector();
+    error Error_AmountOverEarned();
 
     IERC721 public gbc;
     Distributor public distributor;
 
     /// @notice Keep the last action done on contract timestamp
     mapping(address => uint256) public lastActivityOf;
-    /// @notice Let set address as distributor
-    mapping(address => bool) public isRewardDistributor;
-    /// @notice Get amount staked on each distributors
-    mapping(address => mapping(address => uint256)) public balanceOf;
+    /// @notice Keep track which address can collect user earnings
+    mapping(address => bool) public isCollector;
 
     constructor(address _gbc, address _distributor) {
         gbc = IERC721(_gbc);
@@ -37,62 +31,33 @@ contract Router is Ownable {
         _ping(account, block.timestamp);
     }
 
-    function stake(address rewardDistributor, uint256[] calldata idList) external {
-        if(!isRewardDistributor[rewardDistributor]) revert Error_NotRewardDistributor();
-
-        distributor.stakeForAccount(_msgSender(), idList);
-
-        balanceOf[_msgSender()][rewardDistributor] += idList.length;
+    function stake(uint256[] calldata idList) external {
+        distributor.stakeForAccount(_msgSender(), _msgSender(), idList);
         _ping(_msgSender(), block.timestamp);
     }
 
-    function withdraw(address rewardDistributor, uint256[] calldata idList) external {
-        if(!isRewardDistributor[rewardDistributor]) revert Error_NotRewardDistributor();
-
-        uint256 staked = balanceOf[_msgSender()][rewardDistributor];
-        if(idList.length > staked) revert Error_BalanceTooLow();
-
-        distributor.withdrawForAccount(_msgSender(), idList);
-
-        balanceOf[_msgSender()][rewardDistributor] = staked - idList.length;
+    function withdraw(uint256[] calldata idList) external {
+        distributor.withdrawForAccount(_msgSender(), _msgSender(), idList);
         _ping(_msgSender(), block.timestamp);
-    }
-
-    function claim(address rewardDistributor) external {
-        if(!isRewardDistributor[rewardDistributor]) revert Error_NotRewardDistributor();
-
-        uint256 earned = distributor.getRewardForAccount(_msgSender(), rewardDistributor, balanceOf[_msgSender()][rewardDistributor]);
-
-        IRewardDistribution(rewardDistributor).notifyReward(_msgSender(), earned);
-        _ping(_msgSender(), block.timestamp);
-    }
-
-    function exit(address rewardDistributor, uint256[] calldata idList) external {
-        if(!isRewardDistributor[rewardDistributor]) revert Error_NotRewardDistributor();
-
-        uint256 staked = balanceOf[_msgSender()][rewardDistributor];
-        if(idList.length > staked) revert Error_BalanceTooLow();
-
-       uint256 earned = distributor.exitForAccount(_msgSender(), rewardDistributor, idList);
-
-        IRewardDistribution(rewardDistributor).notifyReward(_msgSender(), earned);
-        balanceOf[_msgSender()][rewardDistributor] = staked - idList.length;
-        _ping(_msgSender(), block.timestamp);
-    }
-
-    function disable(address account, address rewardDistributor, uint256[] calldata idList) external onlyOwner {
-        if(!isRewardDistributor[rewardDistributor]) revert Error_NotRewardDistributor();
-
-        uint256 staked = balanceOf[_msgSender()][rewardDistributor];
-        if(idList.length > staked) revert Error_BalanceTooLow();
-
-        uint256 earned = distributor.disableForAccount(account, rewardDistributor, idList);
-        IRewardDistribution(rewardDistributor).notifyReward(_msgSender(), earned);
     }
 
     function enable(uint256[] calldata idList) external {
         distributor.enableForAccount(_msgSender(), idList);
         _ping(_msgSender(), block.timestamp);
+    }
+
+    function claim(address account, uint256 amount) external {
+        if(!isCollector[msg.sender]) revert Error_SenderNotCollector();
+
+        uint256 earned = distributor.earned(account);
+        if(amount > earned) revert Error_AmountOverEarned();
+
+        distributor.getRewardForAccount(account, msg.sender, earned - amount);
+        _ping(account, block.timestamp);
+    }
+
+    function claimable(address account) external view returns (uint256) {
+        return distributor.earned(account);
     }
 
     function _ping(address account, uint256 timestamp_) internal {
