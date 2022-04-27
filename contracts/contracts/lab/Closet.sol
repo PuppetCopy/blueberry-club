@@ -6,8 +6,12 @@ import "hardhat/console.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {GBCLab as IGBCLab} from "./GBCLab.sol";
 
+/**
+ * @title Closet
+ * @author IrvingDevPro
+ * @notice Permit GBC holders add and remove items from lab to their GBC
+ */
 contract Closet {
-
     uint public constant BACKGROUND_ATTRIBUTE = 1;
     uint public constant SPECIAL_ATTRIBUTE = 8;
 

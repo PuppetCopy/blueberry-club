@@ -6,6 +6,11 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {GBCLab} from "../GBCLab.sol";
 
+/**
+ * @title SaleExample
+ * @author IrvingDevPro
+ * @notice Just a simple sale to show how to use the power of GBCLab
+ */
 contract SaleExample is Ownable {
 
     address public immutable TREASURY;
