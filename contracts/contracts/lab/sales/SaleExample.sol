@@ -4,16 +4,16 @@ pragma solidity ^0.8.0;
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
-import {GBCLab} from "../token/GBCLab.sol";
+import {GBCLab} from "../GBCLab.sol";
 
-contract Sale is Ownable {
+contract SaleExample is Ownable {
 
     address public immutable TREASURY;
 
     uint public immutable ITEM_ID;
     uint public immutable MAX_SUPPLY;
     uint public immutable MAX_PER_TX;
-    
+
     uint public immutable PUBLIC_COST;
     uint public immutable PUBLIC_START_DATE;
 

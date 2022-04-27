@@ -4,12 +4,12 @@ pragma solidity ^0.8.0;
 import "hardhat/console.sol";
 
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {GBCLab as IGBCLab} from "../token/GBCLab.sol";
+import {GBCLab as IGBCLab} from "./GBCLab.sol";
 
-contract Manager {
+contract Closet {
 
-    uint public constant BACKGROUND_TYPE = 1;
-    uint public constant SPECIAL_TYPE = 8;
+    uint public constant BACKGROUND_ATTRIBUTE = 1;
+    uint public constant SPECIAL_ATTRIBUTE = 8;
 
     IERC721 public GBC;
     IGBCLab public GBCLab;
@@ -48,10 +48,10 @@ contract Manager {
 
             uint itemType = GBCLab.getAttributeOf(item);
 
-            if(itemType == BACKGROUND_TYPE) {
+            if(itemType == BACKGROUND_ATTRIBUTE) {
                 if(items.background != 0) GBCLab.mint(msg.sender, items.background, 1);
                 items.background = remove ? 0 : item;
-            } else if(itemType == SPECIAL_TYPE) {
+            } else if(itemType == SPECIAL_ATTRIBUTE) {
                 if(items.special != 0) GBCLab.mint(msg.sender, items.special, 1);
                 items.special = remove ? 0 : item;
             } else {
