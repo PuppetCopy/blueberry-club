@@ -31,21 +31,21 @@ contract Profile is Ownable {
     }
 
     function chooseMain(uint tokenId) external {
-        require(gbc.ownerOf(tokenId) == _msgSender(), "Profile: not the owner");
+        require(gbc.ownerOf(tokenId) == msg.sender, "Profile: not the owner");
 
-        _mains[_msgSender()] = tokenId;
-        emit SetMain(_msgSender(), tokenId);
+        _mains[msg.sender] = tokenId;
+        emit SetMain(msg.sender, tokenId);
     }
 
     function chooseUsername(string memory newUsername) external {
         require(bytes(newUsername).length >= 4 && bytes(newUsername).length <= 15, "Profile: username invalid length");
         require(!isUsernameUsed[newUsername], "Profile: username already used");
 
-        string memory oldUsername = _usernames[_msgSender()];
+        string memory oldUsername = _usernames[msg.sender];
         isUsernameUsed[oldUsername] = false;
         isUsernameUsed[newUsername] = true;
-        _usernames[_msgSender()] = newUsername;
-        emit SetUsername(_msgSender(), newUsername);
+        _usernames[msg.sender] = newUsername;
+        emit SetUsername(msg.sender, newUsername);
     }
 
     function getDataOf(address account) external view returns(uint tokenId, string memory username) {

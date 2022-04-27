@@ -159,7 +159,7 @@ contract GBCLab is ERC1155, Ownable, AccessControl, ERC2981 {
         bytes memory data
     ) public virtual override {
         require(
-            from == _msgSender() || isApprovedForAll(from, _msgSender()) || isApproved[_msgSender()],
+            from == msg.sender || isApprovedForAll(from, msg.sender) || isApproved[msg.sender],
             "ERC1155: caller is not owner nor approved"
         );
         _safeTransferFrom(from, to, id, amount, data);
@@ -173,7 +173,7 @@ contract GBCLab is ERC1155, Ownable, AccessControl, ERC2981 {
         bytes memory data
     ) public virtual override {
         require(
-            from == _msgSender() || isApprovedForAll(from, _msgSender()) || isApproved[_msgSender()],
+            from == msg.sender || isApprovedForAll(from, msg.sender) || isApproved[msg.sender],
             "ERC1155: transfer caller is not owner nor approved"
         );
         _safeBatchTransferFrom(from, to, ids, amounts, data);
