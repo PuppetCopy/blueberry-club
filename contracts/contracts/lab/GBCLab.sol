@@ -64,6 +64,11 @@ contract GBCLab is ERC1155, Ownable, AccessControl, ERC2981 {
         return tokenIds;
     }
 
+    function create(uint id, uint attribute) external onlyOwner {
+        require(getAttributeOf[id] == 0, "GBCLab: Item already exists");
+        getAttributeOf[id] = attribute;
+    }
+
     /**
      * @notice Mint x number of token to an address
      * @param to The address receiver of the tokens
@@ -71,6 +76,7 @@ contract GBCLab is ERC1155, Ownable, AccessControl, ERC2981 {
      * @param amount The amount to generate
      */
     function mint(address to, uint id, uint amount) external onlyRole(MINTER) {
+        require(getAttributeOf[id] != 0, "GBCLab: Item does not exist");
         _mint(to, id, amount, "");
     }
 
