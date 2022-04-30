@@ -53,13 +53,13 @@ contract Closet {
             uint itemType = GBCLab.getAttributeOf(item);
 
             if(itemType == BACKGROUND_ATTRIBUTE) {
-                if(items.background != 0) GBCLab.mint(msg.sender, items.background, 1);
+                if(items.background != 0) GBCLab.mint(msg.sender, items.background, 1, "");
                 items.background = remove ? 0 : item;
             } else if(itemType == SPECIAL_ATTRIBUTE) {
-                if(items.special != 0) GBCLab.mint(msg.sender, items.special, 1);
+                if(items.special != 0) GBCLab.mint(msg.sender, items.special, 1, "");
                 items.special = remove ? 0 : item;
             } else {
-                if(items.custom != 0) GBCLab.mint(msg.sender, items.custom, 1);
+                if(items.custom != 0) GBCLab.mint(msg.sender, items.custom, 1, "");
                 items.custom = remove ? 0 : item;
             }
         }

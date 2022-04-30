@@ -68,7 +68,7 @@ contract SaleExample is Ownable {
             require(!isAlreadyUsed[gbc], string(abi.encodePacked("gbc ", Strings.toString(gbc), " already used")));
             isAlreadyUsed[gbc] = true;
         }
-        ITEMS.mint(msg.sender, ITEM_ID, gbcs.length);
+        ITEMS.mint(msg.sender, ITEM_ID, gbcs.length, "");
     }
 
     function mint(uint amount) external payable {
@@ -78,7 +78,7 @@ contract SaleExample is Ownable {
         minted += amount;
         require(minted <= MAX_SUPPLY, "max reached");
         require(msg.value == PUBLIC_COST * amount, "ETH amount must match the exact cost");
-        ITEMS.mint(msg.sender, ITEM_ID, amount);
+        ITEMS.mint(msg.sender, ITEM_ID, amount, "");
     }
 
     function fundTreasury() external onlyOwner {
