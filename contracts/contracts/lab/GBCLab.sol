@@ -24,7 +24,7 @@ contract GBCLab is ERC1155, Auth, ERC2981 {
 
     function uri(uint256 id) public view override returns (string memory) {
         string memory uri_ = _uris[id];
-        if (bytes(uri_).length > 0 && keccak256(bytes(uri_)) != keccak256("deleted")) return uri_;
+        if (bytes(uri_).length > 0) return uri_;
         return _uri;
     }
 
@@ -34,7 +34,11 @@ contract GBCLab is ERC1155, Auth, ERC2981 {
 
     function setUri(uint256 id, string memory uri_) external requiresAuth {
         _uris[id] = uri_;
-        emit URI(uri_, id);
+        if (bytes(uri_).length == 0) {
+            emit URI(_uri, id);
+        } else {
+            emit URI(uri_, id);
+        }
     }
 
     function create(uint id, uint attribute) external requiresAuth {
