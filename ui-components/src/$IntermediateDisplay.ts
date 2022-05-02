@@ -1,9 +1,13 @@
-import { Op } from "@aelea/core"
+import { Op, replayLatest } from "@aelea/core"
 import { $Node, $node, $text, component, style } from "@aelea/dom"
+import { $row, layoutSheet } from "@aelea/ui-components"
+import { pallete } from "@aelea/ui-components-theme"
+import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
 import { parseError } from "@gambitdao/wallet-link"
-import { chain, constant, empty, fromPromise, map, merge, mergeArray, multicast, now, recoverWith, switchLatest } from "@most/core"
+import { chain, constant, empty, fromPromise, map, merge, mergeArray, multicast, now, recoverWith, startWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
-import { $alert } from "./$common"
+import { CHAIN } from "../../@gambitdao-gmx-middleware/src"
+import { $alert, $txHashRef,  } from "./$common"
 
 
 const styleEl = document.createElement('style')
@@ -30,12 +34,12 @@ export const $spinner = $node(style({
 }))()
 
 
-interface ISpinner<T> {
+export interface IIntermediatPromise<T> {
   query: Stream<Promise<T>>
   clean?: Stream<any>
 
-  $done: Op<T, $Node>
-  $fail?: Op<Error, $Node>
+  $$done: Op<T, $Node>
+  $$fail?: Op<Error, $Node>
 
   $loader?: $Node
 }
@@ -62,10 +66,10 @@ interface IIntermediateError {
 export const $IntermediatePromise = <T>({
   $loader = $spinner,
   query,
-  $fail = map(res => $alert($text(res.message))),
-  $done,
+  $$fail = map(res => $alert($text(res.message))),
+  $$done,
   clean = empty()
-}: ISpinner<T>) => component(() => {
+}: IIntermediatPromise<T>) => component(() => {
   const state: Stream<IIntermediateState<T> | IIntermediateLoading | IIntermediateError> = multicast(switchLatest(map(prom => {
     const doneData: Stream<IIntermediateState<T>> = map(data => ({ status: STATUS.DONE, data }), fromPromise(prom))
     const loading: Stream<IIntermediateLoading> = now({ status: STATUS.LOADING, $loader })
@@ -83,10 +87,10 @@ export const $IntermediatePromise = <T>({
         }
 
         if (state.status === STATUS.ERROR) {
-          return $fail(now(state.error))
+          return $$fail(now(state.error))
         }
 
-        return $done(now(state.data))
+        return $$done(now(state.data))
       }, state),
       constant(empty(), clean)
     ])),
@@ -96,11 +100,46 @@ export const $IntermediatePromise = <T>({
 })
 
 
-export const $IntermediateTx = <T>({ $done, query, clean, $loader }: ISpinner<T>) => $IntermediatePromise({
-  query, clean, $done, $loader,
-  $fail: map(res => {
-    const error = parseError(res)
+type IIntermediateTx<T extends ContractTransaction> = {
+  $$success?: Op<ContractReceipt, $Node>
+  chain: CHAIN
+  query: Stream<Promise<T>>
+}
 
-    return $alert($text(error.message))
-  }),
-})
+export const $IntermediateTx = <T extends ContractTransaction>({
+  query,
+  chain,
+  $$success = constant($text(style({ color: pallete.positive }))('Tx Succeeded'))
+}: IIntermediateTx<T>) => {
+
+  const multicastQuery = replayLatest(multicast(query))
+
+  return $IntermediatePromise({
+    query: map(async x => {
+      const n = await x
+      return await n.wait()
+    }, multicastQuery),
+    $$done: map((res: ContractReceipt) => {
+      return $row(layoutSheet.spacingSmall, style({ color: pallete.positive }))(
+        switchLatest($$success(now(res))),
+        $txHashRef(res.transactionHash, chain)
+      )
+    }),
+    $loader: switchLatest(map(c => {
+      const n = c.then(x => x.wait())
+
+      return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+        $spinner,
+        $text(startWith('Awaiting wallet approval', map(() => 'Minting...', fromPromise(n)))),
+        $node(style({ flex: 1 }))(),
+        switchLatest(map(txHash => $txHashRef(txHash.hash, chain), fromPromise(c)))
+      )
+    }, multicastQuery)),
+    $$fail: map(res => {
+      const error = parseError(res)
+
+      return $alert($text(error.message))
+    }),
+  })
+}
+

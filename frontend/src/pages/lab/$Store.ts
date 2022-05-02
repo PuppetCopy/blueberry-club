@@ -1,5 +1,5 @@
-import { Behavior } from "@aelea/core"
-import { $node, $text, component, style } from "@aelea/dom"
+import { Behavior, O, Tether } from "@aelea/core"
+import { $Branch, $element, $node, $text, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 
@@ -24,50 +24,7 @@ export const $LabStore = ({ walletLink, parentRoute }: ILabStore) => component((
   [changeRoute, changeRouteTether]: Behavior<string, string>,
 
 ) => {
-
-  const $labStoreItem = (item: LabItemSaleDescription) => {
-
-    const supplyLeft = map(amount => {
-      const count = item.maxSupply - amount
-      return count ? `${count} left` : 'Sold Out'
-    }, getMintCount(item.contractAddress, 15000))
-
-    const unixTime = unixTimestampNow()
-
-    const isWhitelist = hasWhitelistSale(item)
-    const currentSaleType = isWhitelist ? 'Whitelist' : 'Public'
-    const upcommingSaleDate = isWhitelist ? item.whitelistStartDate : item.publicStartDate
-
-    const isSaleUpcomming = upcommingSaleDate > unixTime
-
-    const statusLabel = isSaleUpcomming ?
-      `${currentSaleType} in ` + timeSince(upcommingSaleDate)
-      : currentSaleType
-    
-    const price = isWhitelist ? item.whitelistCost : item.publicCost
-
-    const mintPriceEth = price === 0n ? 'Free' : readableNumber(formatFixed(price, 18)) + ' ETH'
-
-
-    return $Link({
-      url: `/p/item/${item.id}`,
-      route: parentRoute.create({ fragment: 'fefef' }),
-      $content: $column(layoutSheet.spacingSmall, style({ position: 'relative' }))(
-        $labItem(item.id, screenUtils.isDesktopScreen ? 185 : 140, true, true),
-        $text(style({ fontWeight: 'bold' }))(item.name),
-        statusLabel ? $text(style({ fontWeight: 'bold', position: 'absolute', top: '15px', left: '15px', fontSize: '.75em', padding: '5px 10px', color: pallete.message, borderRadius: '8px', backgroundColor: pallete.background }))(
-          statusLabel
-        ) : empty(),
-
-        $row(style({ placeContent: 'space-between', fontSize: '.75em' }))(
-          $text(supplyLeft),
-          $text(style({ color: pallete.positive }))(mintPriceEth)
-        )
-      )
-    })({
-      click: changeRouteTether()
-    })
-  }
+  
 
   return [
     $column(layoutSheet.spacingBig)(
@@ -79,18 +36,64 @@ export const $LabStore = ({ walletLink, parentRoute }: ILabStore) => component((
 
       $column(layoutSheet.spacingBig, style({ justifyContent: 'space-between' }))(
         $text(style({ fontWeight: 'bold', fontSize: '1.8em' }))('Items'),
-        $row(screenUtils.isDesktopScreen ? style({ gap: '57px' }) : layoutSheet.spacingBig, style({ overflow: 'hidden', flexWrap: 'wrap' }))(
-          ...saleDescriptionList.map(item => $labStoreItem(item))
+        $row(screenUtils.isDesktopScreen ? style({ gap: '57px', placeContent: 'center', flexWrap: 'wrap' }) : O(layoutSheet.spacingBig, style({ overflow: 'hidden', placeContent: 'space-evenly', flexWrap: 'wrap' })))(
+          ...saleDescriptionList.map(item =>
+            $labStoreItem(item, parentRoute, changeRouteTether)
+          )
         ),
       ),
 
-
       $node(),
-
-
-      
     ),
 
     { changeRoute }
   ]
 })
+
+const $labStoreItem = (item: LabItemSaleDescription, parentRoute: Route, changeRouteTether: Tether<string, string>) => {
+
+  const supplyLeft = map(amount => {
+    const count = item.maxSupply - amount
+    return count ? `${count} left` : 'Sold Out'
+  }, getMintCount(item.contractAddress, 15000))
+
+  const unixTime = unixTimestampNow()
+
+  const isWhitelist = hasWhitelistSale(item)
+  const currentSaleType = isWhitelist ? 'Whitelist' : 'Public'
+  const upcommingSaleDate = isWhitelist ? item.whitelistStartDate : item.publicStartDate
+
+  const isSaleUpcomming = upcommingSaleDate > unixTime
+
+  const statusLabel = isSaleUpcomming ?
+    `${currentSaleType} in ` + timeSince(upcommingSaleDate)
+    : currentSaleType
+    
+  const price = isWhitelist ? item.whitelistCost : item.publicCost
+
+  const mintPriceEth = price === 0n ? 'Free' : readableNumber(formatFixed(price, 18)) + ' ETH'
+
+
+
+  return $Link({
+    url: `/p/item/${item.id}`,
+    anchorOp: screenUtils.isMobileScreen ? style({ maxWidth: '160px' }) : style({ flexBasis: '25' }),
+    route: parentRoute.create({ fragment: 'fefef' }),
+    $content: $column(layoutSheet.spacingSmall, style({ position: 'relative', flexDirection: 'column' }))(
+      $column(style({ position: 'relative' }))(
+        $labItem(item.id, screenUtils.isDesktopScreen ? 185 : 160, true, true),
+        statusLabel ? $text(style({ fontWeight: 'bold', position: 'absolute', top:  screenUtils.isDesktopScreen ? '15px' : '8px', left: screenUtils.isDesktopScreen ? '15px' : '8px', fontSize: '.75em', padding: '5px 10px', color: pallete.message, borderRadius: '8px', backgroundColor: pallete.background }))(
+          statusLabel
+        ) : empty(),
+      ),
+      $text(style({ fontWeight: 'bold' }))(item.name),
+
+      $row(style({ placeContent: 'space-between', fontSize: '.75em' }))(
+        $text(supplyLeft),
+        $text(style({ color: pallete.positive }))(mintPriceEth)
+      )
+    )
+  })({
+    click: changeRouteTether()
+  })
+}

@@ -89,7 +89,7 @@ export const $defaultSelectContainer = $column(layoutSheet.spacingTiny, style({
 
 
 export const $Dropdown = <T>({
-  $container = $column(layoutSheet.spacingTiny),
+  $container = $column(layoutSheet.spacingTiny, style({ position: 'relative' })),
   $selection,
   $option = $defaultOptionContainer,
   select,
@@ -111,15 +111,10 @@ export const $Dropdown = <T>({
     openMenuOp
   )
 
-  const $floatingContainer = $defaultSelectContainer(
-    style({
-      zIndex: 50,
-      position: 'absolute', top: 'calc(100% + 5px)'
-    })
-  )
+
   
   return [
-    $container(style({ position: 'relative' }))(
+    $container(
       openMenuBehavior(switchLatest(
         $selection(merge(pick, select.value))
       )),
@@ -129,14 +124,16 @@ export const $Dropdown = <T>({
           return empty()
         }
 
-        return $floatingContainer(
-          $Select({
-            ...select,
-            $container: select.$container,
-            $$option: O(select.$$option, map($option)),
+        return $Select({
+          ...select,
+          $container: select.$container(style({
+            zIndex: 50,
+            position: 'absolute', top: 'calc(100% + 5px)'
+          })),
+          $$option: O(select.$$option, map($option)),
           // $option: map(x => $selectableOption($text(String(x))))
-          })({ select: pickTether() })
-        )
+        })({ select: pickTether() })
+        
       }, isOpenState))
     ),
 
@@ -297,7 +294,7 @@ export const $DropMultiSelect = <T>({
             const $floatingContainer = selectDrop.$container(
               style({
                 padding: '8px', zIndex: 50, left: 0,
-                position: 'absolute', top: 'calc(100% + 5px)'
+                position: 'absolute', top: 'calc(100% + 1px)'
               })
             )
 

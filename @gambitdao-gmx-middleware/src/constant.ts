@@ -1,3 +1,6 @@
+
+export const AddressZero = "0x0000000000000000000000000000000000000000" as const
+
 export const USD_DECIMALS = 30
 
 export const BASIS_POINTS_DIVISOR = 10000n

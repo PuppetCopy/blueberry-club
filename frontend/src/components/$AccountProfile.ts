@@ -19,7 +19,6 @@ export interface IAccountPreview {
   address: string
   labelSize?: string
   avatarSize?: number
-  parentRoute?: Route
   claim?: IClaim
 }
 
@@ -113,35 +112,15 @@ export const $ProfileLinks = (address: string, claim?: IClaim) => {
 
 
 
-export const $AccountPreview = ({
-  labelSize = '16px', avatarSize = 38,
-  parentRoute, claim, address,
-}: IAccountPreview) => component((
-  [profileClick, profileClickTether]: Behavior<string, string>
-) => {
+export const $accountPreview = ({
+  labelSize = '16px', avatarSize = 38, claim, address,
+}: IAccountPreview) => {
 
-  const styleLabel = parentRoute ? style({ color: pallete.primary, fontSize: labelSize }) : style({ fontSize: labelSize })
-
-  const $preview = $row(layoutSheet.row, layoutSheet.spacingSmall, style({ alignItems: 'center', pointerEvents: 'none', textDecoration: 'none' }))(
+  return $row(layoutSheet.row, layoutSheet.spacingSmall, style({ alignItems: 'center', pointerEvents: 'none', textDecoration: 'none' }))(
     $AccountPhoto(address, claim, avatarSize),
-    styleLabel($AccountLabel(address, claim, labelSize))
+    $AccountLabel(address, claim, labelSize)
   )
-  return [
-
-    $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
-      parentRoute
-        ? $Link({ route: parentRoute.create({ fragment: 'df2f23f' }),
-          $content: $preview,
-          anchorOp: style({ minWidth: 0, overflow: 'hidden' }),
-          url: `/p/account/${address}`,
-        })({ click: profileClickTether() })
-        : $preview,
-      // parentRoute ? $ProfileLinks(address) : empty()
-    ),
-
-    { profileClick }
-  ]
-})
+}
 
 
 export const $walletAccountDisplay = (avatarSize = 38) => {

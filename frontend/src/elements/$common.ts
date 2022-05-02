@@ -1,10 +1,10 @@
-import { $Branch, $Node, $text, attr, style } from "@aelea/dom"
+import { $Branch, $text, attr, style } from "@aelea/dom"
 import { $ButtonIcon, $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { getAccountExplorerUrl, getTxExplorerUrl, shortenAddress, shortenTxAddress } from "@gambitdao/gmx-middleware"
+import { getAccountExplorerUrl, getTxExplorerUrl, shortenAddress } from "@gambitdao/gmx-middleware"
 import { $trash } from "./$icons"
 import { USE_CHAIN } from "@gambitdao/gbc-middleware"
-import { $anchor, $caretDblDown, $ethScan, $path } from "@gambitdao/ui-components"
+import { $anchor, $caretDblDown, $ethScan } from "@gambitdao/ui-components"
 import { $berryById } from "../logic/common"
 
 export const $TrashBtn = $ButtonIcon($trash)
@@ -46,11 +46,6 @@ export const $accountRef = (id: string) => $anchor(attr({ href: getAccountExplor
   $text(style({}))(`${shortenAddress(id)}`)
 )
 
-export const $txHashRef = (txHash: string, label?: $Node) => {
-  const href = getTxExplorerUrl(USE_CHAIN, txHash)
-
-  return $anchor(attr({ href, target: '_blank' }))(label ?? $text(shortenTxAddress(txHash)))
-}
 
 export const $accountIconLink = (address: string) => $anchor(attr({ href: getAccountExplorerUrl(USE_CHAIN, address) }))(
   $icon({ $content: $ethScan, width: '16px', viewBox: '0 0 24 24' })
@@ -64,14 +59,14 @@ export const $txnIconLink = (address: string) => $anchor(attr({ href: getTxExplo
 interface ITeamMember {
   name: string
   title: string
-  size?: number
+  size?: 'small' | 'big'
   tokenId: number
 }
 
-export const $teamMember = ({ name, title, size = 175, tokenId }: ITeamMember) => $column(layoutSheet.spacing, style({ alignItems: 'center', fontSize: screenUtils.isDesktopScreen ? '' : '65%' }))(
-  style({ borderRadius: '15px' }, $berryById(tokenId, null, size)),
+export const $teamMember = ({ name, title, size = 'big', tokenId }: ITeamMember) => $column(layoutSheet.spacing, style({ flexBasis: size === 'small' ? '110px' : '', alignItems: 'center', fontSize: screenUtils.isDesktopScreen ? '' : '75%' }))(
+  style({ borderRadius: '15px' }, $berryById(tokenId, null, size === 'big' ? 155 : 75)),
   $column(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
-    $anchor(attr(({ href: `https://twitter.com/${name}` })), style({ fontWeight: 900, textDecoration: 'none', fontSize: '1.5em' }))($text(`@${name}`)),
-    $text(style({ fontSize: '.75em' }))(title),
+    $anchor(attr(({ href: `https://twitter.com/${name}` })), style({ fontWeight: 900, textDecoration: 'none', fontSize: size === 'big' ? '1.5em' : '.75em' }))($text(`@${name}`)),
+    $text(style({ fontSize: '.75em', color: pallete.foreground, textAlign: 'center' }))(title),
   )
 )

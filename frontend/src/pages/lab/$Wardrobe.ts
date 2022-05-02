@@ -8,7 +8,7 @@ import { awaitPromises, combine, constant, empty, filter, map, merge, mergeArray
 import { $berryTileId } from "../../components/$common"
 import { $buttonAnchor, $ButtonPrimary, $ButtonSecondary } from "../../components/form/$Button"
 import { $defaultSelectContainer, $Dropdown } from "../../components/form/$Dropdown"
-import { IAttributeHat, IAttributeBackground, IAttributeFaceAccessory, ILabAttributeOptions, IAttributeClothes, IBerryDisplayTupleMap, getLabItemTupleIndex, saleDescriptionList, hasWhitelistSale, LabItemSaleDescription, IBerry } from "@gambitdao/gbc-middleware"
+import { IAttributeHat, IAttributeBackground, IAttributeFaceAccessory, ILabAttributeOptions, IAttributeClothes, IBerryDisplayTupleMap, getLabItemTupleIndex, saleDescriptionList, hasWhitelistSale, LabItemSaleDescription, IBerry, USE_CHAIN } from "@gambitdao/gbc-middleware"
 import { $labItem } from "../../logic/common"
 import { $Toggle } from "../../common/$ButtonToggle"
 import { fadeIn } from "../../transitions/enter"
@@ -16,11 +16,11 @@ import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { $loadBerry } from "../../components/$DisplayBerry"
 import tokenIdAttributeTuple from "../../logic/mappings/tokenIdAttributeTuple"
 import { $caretDown } from "../../elements/$icons"
-import { $alert, $arrowsFlip, $IntermediateTx, $xCross } from "@gambitdao/ui-components"
-import { ContractReceipt } from "@ethersproject/contracts"
+import { $alert, $arrowsFlip, $IntermediateTx, $txHashRef, $xCross } from "@gambitdao/ui-components"
+import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
 import { Stream } from "@most/types"
 import { Manager } from "contracts"
-import { $iconCircular, $responsiveFlex, $txHashRef } from "../../elements/$common"
+import { $iconCircular, $responsiveFlex } from "../../elements/$common"
 import { connectManager } from "../../logic/contract/manager"
 import { connectGbc } from "../../logic/contract/gbc"
 import { connectLab } from "../../logic/contract/lab"
@@ -62,7 +62,7 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
   [changeBackgroundState, changeBackgroundStateTether]: Behavior<any, ItemSlotState | null>,
 
   [clickBerry, clickBerryTether]: Behavior<INode, PointerEvent>,
-  [setMainBerry, setMainBerryTether]: Behavior<PointerEvent, Promise<ContractReceipt>>,
+  [setMainBerry, setMainBerryTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
   
 ) => {
 
@@ -154,7 +154,7 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
       throw 'no berry selected'
     }
                 
-    const tx = (await contract.set(selectedBerry.id, changeList, removeList)).wait()
+    const tx = (await contract.set(selectedBerry.id, changeList, removeList))
 
     return tx
   }, exchangeState, clickSave))
@@ -294,11 +294,8 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
 
         $node(layoutSheet.spacing, style({ flexDirection: 'row-reverse', display: 'flex', placeContent: screenUtils.isDesktopScreen ? 'flex-start' : 'center', flexWrap: 'wrap-reverse' }))(
           $IntermediateTx({
-            query: mergeArray([itemSetTxn, setMainBerry]),
-            $done: map(tx => $row(layoutSheet.spacing, style({ color: pallete.positive }))(
-              $text(`Stored`),
-              $txHashRef(tx.transactionHash)
-            ))
+            chain: USE_CHAIN,
+            query: mergeArray([itemSetTxn, setMainBerry])
           })({}),
 
           $row(layoutSheet.spacing)(
@@ -309,7 +306,7 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
               }
               
               try {
-                const mainId = (await contract.getMain(account)).toNumber()
+                const mainId = (await contract.getDataOf(account)).tokenId.toNumber()
                 if (berry.id === mainId) {
                   return empty()
                 }
@@ -321,7 +318,7 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
 
               return $ButtonSecondary({ $content: $text(`Set #${berry.id} as Profile`) })({
                 click: setMainBerryTether(map(async () => {
-                  return (await contract.chooseMain(berry.id)).wait()
+                  return (await contract.chooseMain(berry.id))
                 }))
               })
             }, manager.profileContract, walletLink.account, selectedBerry))),

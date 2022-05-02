@@ -10,7 +10,7 @@ export const profile = Profile__factory.connect(GBC_ADDRESS.PROFILE, web3Provide
 
 
 export const getProfile = async (address: string) => {
-  const tokenId = (await profile.getMain(address)).toBigInt()
+  const tokenId = (await profile.getDataOf(address)).tokenId.toBigInt()
   const { background, custom, special } = await manager.itemsOf(tokenId)
   return {
     background: Number(background),
@@ -28,7 +28,7 @@ export function connectManager(wallet: IWalletLink) {
   const account = filter((a): a is string => a !== null, wallet.account)
 
   const main = (address: string) => awaitPromises(map(async contract => {
-    return (await contract.getMain(address)).toBigInt()
+    return (await contract.getDataOf(address)).tokenId.toBigInt()
   }, profileContract))
 
   return { contract, profileContract, main }

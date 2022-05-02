@@ -33,6 +33,26 @@ const toTime = (...params: Parameters<typeof Date.UTC>) => Math.floor(Date.UTC(.
 
 export const saleDescriptionList: LabItemSaleDescription[] = [
   {
+    name: "Santa Claus Hat",
+    description: "GBC holders will be able to mint this item for free on Christmas Day\n\nBut, since Christmas date will be far too long for a test, we shall celebrate an early Ho ho ho! Merry Christmas!",
+    id: IAttributeMappings['Christmas Hat'],
+    contractAddress: "0xa90C156D2632d18F4EB20f96991609DAC5689288",
+    publicCost: 10000000000000000n,
+    maxSupply: 1500n,
+    publicStartDate: toTime(2022, 3, 25, 22),
+    maxPerTx: 1n,
+  },
+  {
+    name: "Santa Claus Beard",
+    description: "Just an overpriced beard, it's not worth it!",
+    id: IAttributeMappings['Beard White'],
+    contractAddress: "0x2B1be9Cea002C8797a51c3e8ce4C0f64eD1d9835",
+    publicCost: 20000000000000000n,
+    maxSupply: 2023n,
+    publicStartDate: 0,
+    maxPerTx: 10n,
+  },
+  {
     name: "Avalanche Hoodie",
     description: `A possible partnership could be a GBC Treasury paid promotion\n\none example would be, anyone who mints this item and wears as a profile(on-chain) would be eligible for an air-drop or allowed for an entry to a special event`,
     id: IAttributeMappings["Avalanche Hoodie"],
@@ -75,26 +95,7 @@ export const saleDescriptionList: LabItemSaleDescription[] = [
     publicCost: 20000000000000000n,
     maxPerTx: 1n,
   },
-  {
-    name: "Santa Claus Hat",
-    description: "GBC holders will be able to mint this item for free on Christmas Day\n\nBut, since Christmas date will be far too long for a test, we shall celebrate an early Ho ho ho! Merry Christmas!",
-    id: IAttributeMappings['Christmas Hat'],
-    contractAddress: "0xa90C156D2632d18F4EB20f96991609DAC5689288",
-    publicCost: 10000000000000000n,
-    maxSupply: 1500n,
-    publicStartDate: toTime(2022, 3, 25, 22),
-    maxPerTx: 1n,
-  },
-  {
-    name: "Santa Claus Beard",
-    description: "Just an overpriced beard, it's not worth it!",
-    id: IAttributeMappings['Beard White'],
-    contractAddress: "0x2B1be9Cea002C8797a51c3e8ce4C0f64eD1d9835",
-    publicCost: 20000000000000000n,
-    maxSupply: 2023n,
-    publicStartDate: 0,
-    maxPerTx: 10n,
-  },
+
 ]
 
 export const labItemDescriptionListMap = groupByMap(saleDescriptionList, i => i.id)

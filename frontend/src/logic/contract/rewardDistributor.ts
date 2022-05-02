@@ -2,7 +2,7 @@ import { combineArray } from "@aelea/core"
 import { GBC_ADDRESS } from "@gambitdao/gbc-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { awaitPromises, filter, map, switchLatest } from "@most/core"
-import { RewardDistributor__factory } from "contracts"
+import { Distributor__factory } from "contracts"
 import { periodicRun } from "../../../../@gambitdao-gmx-middleware/src"
 import { getWalletProvider } from "../common"
 import { connectGbc } from "./gbc"
@@ -12,7 +12,7 @@ export function connectRewardDistributor(wallet: IWalletLink) {
   const provider = getWalletProvider(wallet)
   const gbc = connectGbc(wallet)
 
-  const contract = map(w3p => RewardDistributor__factory.connect(GBC_ADDRESS.REWARD_DISTRIBUTOR, w3p.getSigner()), provider)
+  const contract = map(w3p => Distributor__factory.connect(GBC_ADDRESS.REWARD_DISTRIBUTOR, w3p.getSigner()), provider)
   const account = filter((a): a is string => a !== null, wallet.account)
 
   // const hasTokenUsed = (tokenId: BigNumberish) => awaitPromises(map(c => c.ownerOf(tokenId), contract))

@@ -11,10 +11,10 @@ import { IWalletLink } from "@gambitdao/wallet-link"
 import { awaitPromises, empty, filter, fromPromise, map, merge, multicast, skipRepeats, snapshot, startWith, switchLatest } from "@most/core"
 import { GBC__factory } from "contracts"
 import { $Table2 } from "../common/$Table2"
-import { $AccountPreview } from "../components/$AccountProfile"
+import { $accountPreview } from "../components/$AccountProfile"
 import { $loadBerry } from "../components/$DisplayBerry"
 import { $ButtonPrimary, $ButtonSecondary } from "../components/form/$Button"
-import { $accountRef, $card, $responsiveFlex, $txHashRef, $txnIconLink } from "../elements/$common"
+import { $accountRef, $card, $responsiveFlex, $txnIconLink } from "../elements/$common"
 import { $tofunft } from "../elements/$icons"
 import tokenIdAttributeTuple from "../logic/mappings/tokenIdAttributeTuple"
 import { queryToken } from "../logic/query"
@@ -191,7 +191,7 @@ const $TrasnferOwnership = (address: string, token: IToken, walletLink: IWalletL
       throw new Error(`Connected account does not own this token`)
     }
 
-    return (await contract.transferFrom(address, transferTo, token.id)).wait()
+    return (await contract.transferFrom(address, transferTo, token.id))
   }, combineObject({ contract, transferTo }), submit)
 
   return [
@@ -229,11 +229,11 @@ const $TrasnferOwnership = (address: string, token: IToken, walletLink: IWalletL
           fill: pallete.foreground,
           viewBox: '0 0 32 32'
         }),
-        switchLatest(map(ta => $AccountPreview({ address: ta })({}), transferTo))
+        switchLatest(map(ta => $accountPreview({ address: ta }), transferTo))
       ),
       $IntermediateTx({
+        chain: USE_CHAIN,
         query: transfer,
-        $done: map(tx => $row(style({ color: pallete.positive }))($txHashRef(tx.transactionHash)))
       })({}),
     ),
 

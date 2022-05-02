@@ -1,20 +1,19 @@
 import { Behavior, combineArray, combineObject, replayLatest } from "@aelea/core"
 import { $element, $node, $text, attr, component, INode, nodeEvent, style, styleInline, stylePseudo } from "@aelea/dom"
-import { $column, $icon, $row, $seperator, layoutSheet, state } from "@aelea/ui-components"
-import { colorAlpha, pallete } from "@aelea/ui-components-theme"
+import { $column, $icon, $row, layoutSheet, state } from "@aelea/ui-components"
+import { pallete } from "@aelea/ui-components-theme"
 import { ContractReceipt } from "@ethersproject/contracts"
 import { hasWhitelistSale, IAttributeMappings, IBerryIdentifable, LabItemSaleDescription, USE_CHAIN } from "@gambitdao/gbc-middleware"
 import { countdownFn, ETH_ADDRESS_REGEXP, formatFixed, replayState, unixTimestampNow } from "@gambitdao/gmx-middleware"
-import { IWalletLink } from "@gambitdao/wallet-link"
-import { awaitPromises, chain, empty, fromPromise, join, map, merge, multicast, now, periodic, skipRepeats, snapshot, startWith, switchLatest, tap } from "@most/core"
+import { IWalletLink, parseError } from "@gambitdao/wallet-link"
+import { awaitPromises, empty, fromPromise, join, map, merge, multicast, now, periodic, skipRepeats, snapshot, startWith, switchLatest, tap } from "@most/core"
 import { IEthereumProvider } from "eip1193-provider"
-import { $txHashRef } from "../elements/$common"
 import { $caretDown, $gift } from "../elements/$icons"
 import { $IntermediateConnectButton } from "./$ConnectAccount"
 import { $ButtonPrimary } from "./form/$Button"
 import { $Dropdown } from "./form/$Dropdown"
 import { WALLET } from "../logic/provider"
-import { $alert, $IntermediateTx, $spinner } from "@gambitdao/ui-components"
+import { $alert, $IntermediatePromise, $IntermediateTx, $spinner, $txHashRef } from "@gambitdao/ui-components"
 import { $labItem, takeUntilLast } from "../logic/common"
 import { $seperator2 } from "../pages/common"
 import { connectGbc } from "../logic/contract/gbc"
@@ -192,7 +191,7 @@ export const $Mint = ({ walletStore, walletLink, item }: IMint) => component((
   }, gbcWallet.tokenList))
 
 
-  const $public = $column(
+  const $public = $column(layoutSheet.spacing)(
     $row(layoutSheet.spacing, style({ flexWrap: 'wrap', alignItems: 'center' }))(
       $Dropdown({
         openMenuOp: tap(event => {
@@ -388,15 +387,20 @@ function $displayMintEvents(contract: Stream<GBCLab>, minev: Stream<Promise<IMin
     const contractAction = event.then(me => me.txHash)
     const contractReceipt = event.then(me => me.contractReceipt)
 
-    return $IntermediateTx({
+    return $IntermediatePromise({
       query: now(contractReceipt),
+      $$fail: map(res => {
+        const error = parseError(res)
+
+        return $alert($text(error.message))
+      }),
       $loader: $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
         $spinner,
         $text(startWith('Awaiting Approval', map(() => 'Minting...', fromPromise(contractAction)))),
         $node(style({ flex: 1 }))(),
-        switchLatest(map(txHash => $txHashRef(txHash), fromPromise(contractAction)))
+        switchLatest(map(txHash => $txHashRef(txHash, USE_CHAIN), fromPromise(contractAction)))
       ),
-      $done: map(tx => {
+      $$done: map(tx => {
         if (tx?.logs.length === 0) {
           return $alert($text('Unable to reach subgraph'))
         }
@@ -411,7 +415,7 @@ function $displayMintEvents(contract: Stream<GBCLab>, minev: Stream<Promise<IMin
             return $column(layoutSheet.spacing)(
               $row(style({ placeContent: 'space-between' }))(
                 $text(style({ color: pallete.positive }))(`Minted ${amount} ${IAttributeMappings[labItemId]}`),
-                $txHashRef(tx.transactionHash)
+                $txHashRef(tx.transactionHash, USE_CHAIN)
               ),
               $row(style({ flexWrap: 'wrap' }))(...Array(amount).map(tokenId => {     
                 return $labItem(labItemId)

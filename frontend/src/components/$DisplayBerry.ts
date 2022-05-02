@@ -55,7 +55,7 @@ export const $loadBerry = (
 
   return $IntermediatePromise({
     query,
-    $done: map(svgBody => {
+    $$done: map(svgBody => {
       return $berry(svgBody, attributeTuple, size)
     })
   })({})

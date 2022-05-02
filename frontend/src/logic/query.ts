@@ -487,7 +487,7 @@ export const queryOwnerOwnedTokens = async (account: string) => {
 }
 
 export const queryOwnerV2 = async (account: string): Promise<IOwner> => {
-  const owner = (await blueberryGraphV2(ownerV2, { account })).owner
+  const owner = (await blueberryGraphV2(ownerV2, { account: account.toLowerCase() })).owner
 
   if (owner === null) {
     throw new Error(`Owner ${account} not found`)

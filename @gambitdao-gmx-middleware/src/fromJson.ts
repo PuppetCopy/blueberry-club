@@ -1,8 +1,8 @@
 import { isTradeClosed, isTradeLiquidated } from "."
-import { ARBITRUM_TRADEABLE_ADDRESS, AVALANCHE_TRADEABLE_ADDRESS } from "./address"
 import {
   ITrade, IIdentifiableEntity, IPositionClose, IPositionDecrease,
-  IPositionIncrease, IPositionLiquidated, IPositionUpdate, IAccountSummary, IAbstractPositionDelta, IPricefeed, IPriceLatest,
+  IPositionIncrease, IPositionLiquidated, IPositionUpdate, IAccountSummary, IAbstractPositionDelta,
+  IPricefeed, IPriceLatest, ADDRESS_LEVERAGE,
 } from "./types"
 
 
@@ -35,7 +35,7 @@ function pricefeedJson(json: IPricefeed): IPricefeed {
   const h = BigInt(json.h)
   const l = BigInt(json.l)
   const o = BigInt(json.o)
-  const tokenAddress = json.tokenAddress.slice(1) as ARBITRUM_TRADEABLE_ADDRESS | AVALANCHE_TRADEABLE_ADDRESS
+  const tokenAddress = json.tokenAddress.slice(1) as ADDRESS_LEVERAGE
 
   return { ...json, c, h, l, o, tokenAddress }
 }

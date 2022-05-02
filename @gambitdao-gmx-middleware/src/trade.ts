@@ -1,31 +1,10 @@
-import { BaseProvider } from "@ethersproject/providers"
-import { Vault__factory } from "@gambitdao/gmx-contracts"
-import { ARBITRUM_CONTRACT, groupByMapMany } from "./address"
 import { BASIS_POINTS_DIVISOR, FUNDING_RATE_PRECISION, MARGIN_FEE_BASIS_POINTS, MAX_LEVERAGE } from "./constant"
-import { listen } from "./contract"
 import { IAccountSummary,  ITrade, IPositionDelta,  IClaim, IClaimSource, IPositionClose, IPositionLiquidated, IAbstractPositionStake, ITradeSettled, IAbstractTrade, ITradeClosed, ITradeLiquidated, ITradeOpen, TradeStatus } from "./types"
-import { formatFixed, isAddress } from "./utils"
+import { formatFixed, groupByMapMany, isAddress } from "./utils"
 
 
-export const gambitContract = (jsonProvider: BaseProvider) => {
-  const contract = Vault__factory.connect(ARBITRUM_CONTRACT.Vault, jsonProvider)
-  const vaultEvent = listen(contract)
 
-  return {
-    contract,
-    address: ARBITRUM_CONTRACT.Vault,
-    increasePosition: vaultEvent('IncreasePosition'),
-    decreasePosition: vaultEvent('DecreasePosition'),
-    updatePosition: vaultEvent('UpdatePosition'),
-    closePosition: vaultEvent('ClosePosition'),
-    liquidatePosition: vaultEvent('LiquidatePosition'),
-    buyUSDG: vaultEvent('BuyUSDG'),
-    swap: vaultEvent('Swap'),
-    pnl: vaultEvent('UpdatePnl'),
-  }
-}
-
-function getPositionCumulativeFundingFee(size: bigint, fundingRate: bigint) {
+export function getPositionCumulativeFundingFee(size: bigint, fundingRate: bigint) {
   return size * fundingRate / FUNDING_RATE_PRECISION
 }
 

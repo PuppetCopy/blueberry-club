@@ -1,6 +1,7 @@
 import { saleDescriptionList, getLabItemTupleIndex, hasWhitelistSale, GBC_ADDRESS } from "@gambitdao/gbc-middleware"
 import { ethers } from "hardhat"
-import { GBCLab__factory, Sale, Sale__factory, Profile__factory } from "../../typechain-types"
+import { GBCLab__factory, SaleExample } from "../../typechain-types"
+import { Sale__factory } from "../../typechain-types/factories/contracts/mint"
 import { deploy } from "../../utils/common"
 
 
@@ -15,12 +16,10 @@ export default async function(gbcAddress: string) {
 
   const MINTER = await lab.MINTER()
   const BURNER = await lab.BURNER()
-  const DESIGNER = await lab.DESIGNER()
-  await (await lab.grantRole(DESIGNER, owner.address)).wait()
 
   const saleFactory = new Sale__factory(owner)
 
-  const items: Sale[] = []
+  const items: SaleExample[] = []
 
   for (const saleDescription of saleDescriptionList) {
     console.log(`🏁 Creating Lab Item: ${saleDescription.name}`)
@@ -47,7 +46,7 @@ export default async function(gbcAddress: string) {
     await (await lab.grantRole(MINTER, sale.address)).wait()
     await (await lab.grantRole(BURNER, sale.address)).wait()
     const itemType = getLabItemTupleIndex(saleDescription.id)
-    await (await lab.addItem(itemType + 1, saleDescription.id)).wait()
+    await (await lab.create(itemType + 1, saleDescription.id)).wait()
 
     items.push(sale)
   }

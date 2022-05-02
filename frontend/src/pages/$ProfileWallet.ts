@@ -6,7 +6,7 @@ import { GBC_ADDRESS, IToken, MINT_MAX_SUPPLY, REWARD_DISTRIBUTOR, USE_CHAIN } f
 import { formatFixed, formatReadableUSD, readableNumber } from "@gambitdao/gmx-middleware"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { empty, fromPromise, map, merge, multicast, snapshot, startWith, switchLatest } from "@most/core"
+import { awaitPromises, empty, fromPromise, map, merge, multicast, snapshot, startWith, switchLatest } from "@most/core"
 import { $responsiveFlex } from "../elements/$common"
 import { queryLatestPrices, queryOwnerV2 } from "../logic/query"
 import { IAccountStakingStore } from "@gambitdao/gbc-middleware"
@@ -28,7 +28,7 @@ export interface IAccount {
   // walletStore: cstate.BrowserStore<"metamask" | "walletConnect" | null, "walletStore">
 }
 
-export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAccount) => component((
+export const $ProfileWallet = ({ walletLink, parentRoute, accountStakingStore }: IAccount) => component((
   [selectTokensForWhitelist, selectTokensForWhitelistTether]: Behavior<IToken[], IToken[]>,
   [selectTokensToWithdraw, selectTokensToWithdrawTether]: Behavior<IToken[], IToken[]>,
   [clickWithdraw, clickWithdrawTether]: Behavior<PointerEvent, PointerEvent>,
@@ -99,11 +99,13 @@ export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAcco
 
 
 
+  const queryOwner = awaitPromises(map(address => {
+    if (!address) {
+      throw new Error('No account connected')
+    }
 
-  const urlFragments = document.location.pathname.split('/')
-  const accountAddress = urlFragments[urlFragments.length - 1].toLowerCase()
-
-  const queryOwner = fromPromise(accountAddress ? queryOwnerV2(accountAddress) : Promise.reject())
+    return queryOwnerV2(address)
+  }, walletLink.account))
 
   const ownedTokens = map(owner => owner.ownedTokens, queryOwner)
 
@@ -130,7 +132,7 @@ export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAcco
 
 
     const idList = selection.map(s => s.id)
-    const tx = contract.stakeForAccount(account, account, idList)
+    const tx = contract.withdrawForAccount('', '', idList)
 
     return tx
 
@@ -141,11 +143,17 @@ export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAcco
     $responsiveFlex(layoutSheet.spacingBig)(
 
       $column(style({ width: '500px' }))(
-        $accountPreview({
-          address: accountAddress,
-          avatarSize: 150,
-          labelSize: '2em'
-        }),
+        switchLatest(map(address => {
+          if (!address) {
+            throw new Error('No account connected')
+          }
+
+          return $accountPreview({
+            address,
+            avatarSize: 150,
+            labelSize: '2em'
+          })
+        }, walletLink.account))
       ),
 
       $column(style({ gap: '50px', flex: 1 }))(
@@ -224,7 +232,7 @@ export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAcco
 
                   const idList = selection.map(t => t.id)
 
-                  return contract.stakeForAccount(account, account, idList)
+                  return contract.stakeForAccount('', '', idList)
 
                 }, combineObject({ selection: chosenTokens, contract: rewardDistributor.contract, account: walletLink.account })))
                 :  stakeTxnTether(snapshot(async ({ contract }) => {

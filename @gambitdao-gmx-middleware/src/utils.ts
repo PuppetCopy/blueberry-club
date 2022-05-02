@@ -1,6 +1,6 @@
 import { O, Op, replayLatest } from "@aelea/core"
 import { Stream } from "@most/types"
-import { at, awaitPromises, combineArray as combineArrayMost, constant, continueWith, map, merge, now, periodic, recoverWith, switchLatest, take } from "@most/core"
+import { at, awaitPromises, combineArray as combineArrayMost, constant, continueWith, merge, now, recoverWith } from "@most/core"
 import { CHAIN, EXPLORER_URL, intervalInMsMap, NETWORK_METADATA, USD_DECIMALS } from "./constant"
 import { IPageParapApi, IPagePositionParamApi, ISortParamApi } from "./types"
 
@@ -390,4 +390,74 @@ export const periodicRun = <T>(interval: number, actionOp: Op<number, Promise<T>
       return periodicRun(interval, actionOp, false)
     }),
   )(tick)
+}
+
+
+export const timespanPassedSinceInvoke = (timespan: number) => {
+  let lastTimePasses = 0
+
+  return () => {
+    const now = unixTimestampNow()
+    if (now - lastTimePasses > timespan) {
+      lastTimePasses = now
+      return true
+    }
+
+    return false
+  }
+}
+
+export const cacheMap = (cacheMap: any) => async <T>(key: string, lifespan: number, cacheFn: () => Promise<T>): Promise<T> => {
+  const cacheEntry = cacheMap[key]
+
+  if (cacheEntry && !cacheMap[key].lifespanFn()) {
+    return cacheEntry.item
+  } else {
+    const lifespanFn = cacheMap[key]?.lifespanFn ?? timespanPassedSinceInvoke(lifespan)
+    lifespanFn()
+    cacheMap[key] = { item: cacheFn(), lifespanFn }
+    return cacheMap[key].item
+  }
+}
+
+
+
+export function groupByMapMany<A, B extends string | symbol | number>(list: A[], getKey: (v: A) => B) {
+  const map: { [P in B]: A[] } = {} as any
+
+  list.forEach(item => {
+    const key = getKey(item)
+
+    map[key] ??= []
+    map[key].push(item)
+  })
+
+  return map
+}
+
+export function getMappedKeyByValue<T>(map: { [P in keyof T]: T[P] }, match: T[keyof T]): keyof T {
+  const entires: any[] = Object.values(map)
+  const val = entires.find(symb => symb === match)
+
+  if (!val) {
+    throw new Error(`No token ${match} matched`)
+  }
+
+  return val
+}
+
+export function groupByMap<A, B extends string | symbol | number>(list: A[], getKey: (v: A) => B) {
+  const map: { [P in B]: A } = {} as any
+
+  list.forEach((item) => {
+    const key = getKey(item)
+
+    if (map[key]) {
+      console.warn(new Error(`${groupByMap.name}() is overwriting property: ${key}`))
+    }
+
+    map[key] = item
+  })
+
+  return map
 }

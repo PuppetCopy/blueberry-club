@@ -5,6 +5,9 @@ import http from 'http'
 import path from 'path'
 import ws from 'ws'
 import compression from 'compression'
+import { helloFrontend } from './messageBus'
+import { requestLeaderboardTopList, requestLatestPriceMap, requestAccountTradeList, requestPricefeed } from './logic/api'
+import { scheduler } from './logic/scheduler'
 
 
 
@@ -68,14 +71,29 @@ function heartbeat() {
 }
 
 
+const apiComponent = helloFrontend(wss, {
+  requestLeaderboardTopList,
+  requestLatestPriceMap,
+  requestAccountTradeList,
+  requestPricefeed,
+})
 
 
 
 
 const run = async () => {
 
+  apiComponent
+    .run({
+      event(time, val) {
+      
+      },
+      error(time, err) {
+        console.error(err)
+      },
+      end() {}
+    }, scheduler)
 
-  
 
   const publicDir = path.resolve(process.cwd(), '.dist/cjs/public')
   const htmlFile = readFileSync(path.join(publicDir, '/index.html')).toString()

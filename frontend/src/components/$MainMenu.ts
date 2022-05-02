@@ -10,7 +10,7 @@ import { Stream } from "@most/types"
 import { IEthereumProvider } from "eip1193-provider"
 import { WALLET } from "../logic/provider"
 import { $caretDown } from "../elements/$icons"
-import { $AccountPreview, $walletAccountDisplay } from "./$AccountProfile"
+import { $accountPreview, $walletAccountDisplay } from "./$AccountProfile"
 import { $IntermediateConnectPopover } from "./$ConnectAccount"
 import { $ButtonSecondary } from "./form/$Button"
 import { totalWalletHoldingsUsd } from "../logic/gbcTreasury"
@@ -72,17 +72,22 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
     $Link({ $content: $text('Lab'), url: '/p/lab', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
       click: routeChangeTether()
     }),
-    $Link({ $content: $text('Leaderboard'), disabled: now(true), url: '/p/leaderboard', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
+    $Link({ $content: $text('Leaderboard'), url: '/p/leaderboard', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
+      click: routeChangeTether()
+    }),
+    $Link({ $content: $text('Trade'), url: '/p/trade', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
       click: routeChangeTether()
     }),
   ]
 
   return [
-    $row(layoutSheet.spacingBig, style({ alignItems: 'center', flex: 1 }))(
-      $RouterAnchor({ url: '/', route: parentRoute, $anchor: $element('a')($icon({ $content: $logo, width: '55px', viewBox: '0 0 32 32' })) })({
-        click: routeChangeTether()
-      }),
-      $row(layoutSheet.spacingBig, style({ fontSize: '.9em', flex: 1, alignItems: 'center', placeContent: 'flex-end' }), containerOp)(
+    $row(layoutSheet.spacingBig, style({ alignItems: 'center', placeContent: 'center', flex: 1, width: '100%', padding: '30px 0', zIndex: 1000, borderRadius: '12px' }))(
+      $row(style({ flex: 1 }))(
+        $RouterAnchor({ url: '/', route: parentRoute, $anchor: $element('a')($icon({ $content: $logo, width: '55px', viewBox: '0 0 32 32' })) })({
+          click: routeChangeTether()
+        })
+      ),
+      $row(layoutSheet.spacingBig, style({ fontSize: '.9em', flex: 1, alignItems: 'center' }), containerOp)(
 
         $Dropdown({
           // disabled: accountChange,
@@ -112,8 +117,10 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
           dismiss: profileLinkClick,
           $$popContent: combineArray((_) => {
             return $column(layoutSheet.spacingBig)(
-              ...$menuItemList,
-              $socialMediaLinks,
+              ...screenUtils.isMobileScreen ? [
+                ...$menuItemList,
+                $socialMediaLinks
+              ] : [],
               $ButtonSecondary({
                 $content: $text('Change Wallet')
               })({
@@ -136,10 +143,11 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
               walletLink,
               walletStore,
               $display: map(address => {
-                return $AccountPreview({
-                  parentRoute: parentRoute,
-                  address,
-                })({ profileClick: routeChangeTether() })
+                return $Link({ route: parentRoute.create({ fragment: 'df2f23f' }),
+                  $content: $accountPreview({ address }),
+                  anchorOp: style({ minWidth: 0, overflow: 'hidden' }),
+                  url: `/p/wallet`,
+                })({ click: routeChangeTether() })
               })
             })({
               walletChange: walletChangeTether()
@@ -166,6 +174,9 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
         }),
 
       ),
+      $row(style({ flex: 1, placeContent: 'flex-end' }))(
+        ...screenUtils.isDesktopScreen ? [$socialMediaLinks] : []
+      )
     ),
 
 

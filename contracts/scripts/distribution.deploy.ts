@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { GBC_ADDRESS } from "@gambitdao/gbc-middleware"
 import { ethers } from "hardhat"
 import { Distributor__factory } from "../typechain-types"

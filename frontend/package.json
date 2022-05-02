@@ -30,7 +30,6 @@
         "@ethersproject/units": "^5.6.0",
         "@ethersproject/wallet": "^5.6.0",
         "@gambitdao/gbc-middleware": "workspace:*",
-        "@gambitdao/gmx-contracts": "1.0.6",
         "@gambitdao/gmx-middleware": "workspace:*",
         "@gambitdao/ui-components": "workspace:*",
         "@gambitdao/wallet-link": "workspace:*",

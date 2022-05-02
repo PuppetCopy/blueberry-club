@@ -1,13 +1,13 @@
 import { combineArray } from "@aelea/core"
 import { GBC_ADDRESS, BI_18_PRECISION } from "@gambitdao/gbc-middleware"
-import { ERC20__factory } from "@gambitdao/gmx-contracts"
-import { ARBITRUM_CONTRACT, AVALANCHE_CONTRACT, AVALANCHE_TRADEABLE_ADDRESS } from "@gambitdao/gmx-middleware"
+import { ARBITRUM_ADDRESS, AVALANCHE_ADDRESS } from "@gambitdao/gmx-middleware"
 import { fromPromise, map } from "@most/core"
+import { ERC20__factory } from "contracts"
 import { latestTokenPriceMap } from "./common"
 import { IGmxContractInfo, initContractChain } from "./contract"
 import { web3Provider, w3pAva } from "./provider"
 
-const avalancheWethContract = ERC20__factory.connect(AVALANCHE_TRADEABLE_ADDRESS.WETHE, w3pAva)
+const avalancheWethContract = ERC20__factory.connect(AVALANCHE_ADDRESS.WETHE, w3pAva)
 
 export const gbcContractEthBalance = map(x => x.toBigInt(), fromPromise(web3Provider.getBalance(GBC_ADDRESS.GBC)))
 export const vaultArbitrumEthBalance = map(x => x.toBigInt(), fromPromise(web3Provider.getBalance(GBC_ADDRESS.TREASURY_ARBITRUM)))
@@ -15,8 +15,8 @@ export const vaultAvalancheEthBalance = map(x => x.toBigInt(), fromPromise(avala
 export const vaultAvalancheAvaxBalance = map(x => x.toBigInt(), fromPromise(w3pAva.getBalance(GBC_ADDRESS.TREASURY_AVALANCHE)))
 
 
-export const arbitrumContract: IGmxContractInfo = initContractChain(web3Provider, GBC_ADDRESS.TREASURY_ARBITRUM, ARBITRUM_CONTRACT)
-export const avalancheContract: IGmxContractInfo = initContractChain(w3pAva, GBC_ADDRESS.TREASURY_AVALANCHE, AVALANCHE_CONTRACT)
+export const arbitrumContract: IGmxContractInfo = initContractChain(web3Provider, GBC_ADDRESS.TREASURY_ARBITRUM, ARBITRUM_ADDRESS)
+export const avalancheContract: IGmxContractInfo = initContractChain(w3pAva, GBC_ADDRESS.TREASURY_AVALANCHE, AVALANCHE_ADDRESS)
 
 
 export const totalWalletHoldingsUsd = combineArray((contractEthBalance, vaultArbitrumEthBalance, vaultAvalancheEthBalance, vaultAvaxBalance, avalancheStakingRewards, latestPrice) => {

@@ -31,7 +31,7 @@
         "@ethersproject/strings": "5.6.0",
         "@ethersproject/units": "^5.6.0",
         "@ethersproject/wallet": "^5.6.0",
-        "@gambitdao/gmx-contracts": "1.0.6",
+        "@gambitdao/gmx-middleware": "0.7.0",
         "@gambitdao/wallet-link": "workspace:*",
         "@metamask/detect-provider": "^1.2.0",
         "@most/core": "1.6.1",

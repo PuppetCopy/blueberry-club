@@ -9,13 +9,12 @@ import { $anchor, $gitbook, $glp, $Link } from "@gambitdao/ui-components"
 import { empty, fromPromise, map, multicast, snapshot, take, tap } from "@most/core"
 import { $card, $responsiveFlex, $teamMember } from "../elements/$common"
 
-import { $logo } from "../common/$icons"
 import { BI_18_PRECISION, GBC_ADDRESS, IAttributeExpression, ITreasuryStore } from "@gambitdao/gbc-middleware"
 import { $StakingGraph } from "../components/$StakingGraph"
 import { $seperator2 } from "./common"
 import { $Breadcrumbs } from "../components/$Breadcrumbs"
 import { $socialMediaLinks } from "../components/$MainMenu"
-import { $ButtonSecondary } from "../components/form/$Button"
+import { $buttonAnchor, $ButtonSecondary } from "../components/form/$Button"
 import { $bagOfCoins, $discount, $stackedCoins, $tofunft } from "../elements/$icons"
 import { Stream } from "@most/types"
 import { $loadBerry } from "../components/$DisplayBerry"
@@ -55,7 +54,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore, claimMap, wallet
   const $eyeInner = $node(style({ borderRadius: '50%', width: '8px', height: '8px', display: 'block', background: 'black' }))
 
   const gutterSpacingStyle = style({
-    ...(screenUtils.isMobileScreen ? { flexDirection: 'column' } : { flexDirection: 'row', padding: '0 55px' }),
+    ...(screenUtils.isMobileScreen ? { flexDirection: 'column' } : { flexDirection: 'row' }),
   })
   
   const eyeStylePosition = (eyeContainerPerspective: Stream<ResizeObserverEntry[]>) => styleInline(
@@ -343,19 +342,41 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore, claimMap, wallet
 
 
       $column(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
-        $text(style({ fontWeight: 'bold', fontSize: '2.5em' }))('Team'),
+        $text(style({ fontWeight: 'bold', fontSize: '2.5em' }))('Active Contributors'),
+        $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '878px' }))(`Powered by the community`),
         $row(layoutSheet.spacingBig, style({ alignSelf: 'stretch', placeContent: 'space-evenly', flexWrap: 'wrap' }))(
           $teamMember({ name: 'xm92boi', title: "Founder & Designer", tokenId: 16 }),
           $teamMember({ name: '0xAppodial', title: "Marketing", tokenId: 11 }),
           $teamMember({ name: 'itburnzz', title: "Dev", tokenId: 12 }),
           $teamMember({ name: 'B2F_zer', title: "Pleb", tokenId: 22 }),
           $teamMember({ name: 'IrvingDev_', title: "Dev", tokenId: 140 }),
-        )
+        ),
+
+        $seperator2,
+
+        $row(layoutSheet.spacingBig, style({ flexWrap: 'wrap', width: '100%', placeContent: 'center' }))(
+          $teamMember({ name: 'kingblockchain', size: 'small', title: "Marketing & Advocee", tokenId: 4825 }),
+          $teamMember({ name: '1tbk1', size: 'small', title: "GBC Builder", tokenId: 9376 }),
+          $teamMember({ name: 'Mr_r0bo1', size: 'small', title: "GBC Builder", tokenId: 175 }),
+          $teamMember({ name: 'monte_xyz', size: 'small', title: "Discord Mod", tokenId: 5708 }),
+          $teamMember({ name: '0x11nze', size: 'small', title: "Fondation B Lead", tokenId: 9036 }),
+          $teamMember({ name: 'juandelamochila', size: 'small', title: "Discord Mod", tokenId: 734 }),
+          $teamMember({ name: 'quantumzebra123', size: 'small', title: "Analyst", tokenId: 9681 }),
+        ),
+
+        $node(),
+
+        $column(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
+          $text(style({ fontWeight: 'bold', fontSize: screenUtils.isDesktopScreen ? '2.5em' : '1.45em', textAlign: 'center' }))('Got skillz?'),
+          $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '678px' }))(`ideas constantly popping in your head? `),
+
+          $buttonAnchor(style({ alignSelf: 'center' }), attr({ href: 'https://discord.com/invite/7ZMmeU3z9j', target: '_blank' }))($text('Become a Contributor'))
+        ),
       ),
 
 
       $responsiveFlex(layoutSheet.spacingBig)(
-        $column(layoutSheet.spacingBig, style({ flex: .5 }))(
+        $column(layoutSheet.spacingBig, style({ flex: .7 }))(
           $text(style({ fontWeight: 'bold', fontSize: '2.5em' }))('Frequently asked  questions'),
           $text(style({ whiteSpace: 'pre-wrap', maxWidth: '878px' }))(`You can also contact us on our networks
 (Use the dedicated NFT channel on discord)`),

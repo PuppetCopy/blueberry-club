@@ -1,3 +1,6 @@
+// @ts-nocheck
+
+
 import { ethers } from "hardhat"
 import { GBCLab__factory, Manager__factory, } from "../../typechain-types"
 import { deploy } from "../../utils/common"

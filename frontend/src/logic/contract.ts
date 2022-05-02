@@ -3,7 +3,7 @@ import { BigNumber } from "@ethersproject/bignumber"
 import { BaseProvider } from "@ethersproject/providers"
 import { BI_18_PRECISION } from "@gambitdao/gbc-middleware"
 import { RewardReader__factory, GMX__factory, Reader__factory, EsGMX__factory, GlpManager__factory, Vault__factory } from "@gambitdao/gmx-contracts"
-import { ARBITRUM_CONTRACT, AVALANCHE_CONTRACT, BASIS_POINTS_DIVISOR } from "@gambitdao/gmx-middleware"
+import { ARBITRUM_ADDRESS, AVALANCHE_ADDRESS, BASIS_POINTS_DIVISOR } from "@gambitdao/gmx-middleware"
 import { awaitPromises, combine, fromPromise, map, now, take } from "@most/core"
 import { Stream } from "@most/types"
 import { IAsset } from "@gambitdao/gbc-middleware"
@@ -31,7 +31,7 @@ export type IRewardsStream = IGmxContractInfo['stakingRewards']
 
 
 
-export const initContractChain = (provider: BaseProvider, account: string, environmentContract: typeof ARBITRUM_CONTRACT | typeof AVALANCHE_CONTRACT) => {
+export const initContractChain = (provider: BaseProvider, account: string, environmentContract: typeof ARBITRUM_ADDRESS | typeof AVALANCHE_ADDRESS) => {
   const rewardReaderContract = RewardReader__factory.connect(environmentContract.RewardReader, provider)
   const readerContract = Reader__factory.connect(environmentContract.Reader, provider)
   const gmxContract = GMX__factory.connect(environmentContract.GMX, provider)

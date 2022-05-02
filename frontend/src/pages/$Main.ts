@@ -1,8 +1,12 @@
 import { Behavior, fromCallback, replayLatest } from "@aelea/core"
 import { component, eventElementTarget, style } from "@aelea/dom"
 import * as router from '@aelea/router'
-import { $column, $row, designSheet, layoutSheet, screenUtils, state } from '@aelea/ui-components'
-import { ETH_ADDRESS_REGEXP, groupByMap, intervalInMsMap } from '@gambitdao/gmx-middleware'
+import { $column, designSheet, layoutSheet, screenUtils, state } from '@aelea/ui-components'
+import {
+  ADDRESS_LEVERAGE,
+  ETH_ADDRESS_REGEXP, fromJson, groupByMap, IAccountSummary, IAccountTradeListParamApi, IChainParamApi,
+  ILeaderboardRequest, intervalInMsMap, IPageParapApi, IPricefeed, IPricefeedParamApi, IPriceLatestMap, ITradeOpen
+} from '@gambitdao/gmx-middleware'
 import { initWalletLink } from "@gambitdao/wallet-link"
 import {
   awaitPromises, constant, map, merge, mergeArray, multicast, now,
@@ -26,6 +30,9 @@ import { $Wardrobe } from "./lab/$Wardrobe"
 import { $LabStore } from "./lab/$Store"
 import { $LabItem } from "./lab/$Item"
 import { $Home } from "./$Home"
+import { $ProfileWallet } from "./$ProfileWallet"
+import { $Leaderboard } from "./$Leaderboard"
+import { $Trade } from "./$Trade"
 
 
 
@@ -47,6 +54,12 @@ interface Website {
 export default ({ baseRoute = '' }: Website) => component((
   [routeChanges, linkClickTether]: Behavior<any, string>,
   [walletChange, walletChangeTether]: Behavior<IEthereumProvider | null, IEthereumProvider | null>,
+
+  [requestAccountTradeList, requestAccountTradeListTether]: Behavior<IAccountTradeListParamApi, IAccountTradeListParamApi>,
+  [requestLeaderboardTopList, requestLeaderboardTopListTether]: Behavior<ILeaderboardRequest, ILeaderboardRequest>,
+  [requestPricefeed, requestPricefeedTether]: Behavior<IPricefeedParamApi, IPricefeedParamApi>,
+  [requestLatestPriceMap, requestLatestPriceMapTether]: Behavior<IChainParamApi, IChainParamApi>,
+  
 ) => {
 
   const changes = merge(locationChange, multicast(routeChanges))
@@ -63,11 +76,14 @@ export default ({ baseRoute = '' }: Website) => component((
   const pagesRoute = rootRoute.create({ fragment: 'p', title: '' })
   const treasuryRoute = pagesRoute.create({ fragment: 'treasury', title: 'Treasury' })
   const berryRoute = pagesRoute.create({ fragment: 'berry' }).create({ fragment: /\d+/, title: 'Berry' })
-  const accountRoute = pagesRoute.create({ fragment: 'account', title: 'Berry Account' }).create({ fragment: ETH_ADDRESS_REGEXP  })
+  const profileRoute = pagesRoute.create({ fragment: 'profile', title: 'Berry Account' }).create({ fragment: ETH_ADDRESS_REGEXP  })
+  const profileWalletRoute = pagesRoute.create({ fragment: 'wallet', title: 'Wallet Account' })
   const labRoute = pagesRoute.create({ fragment: 'lab', title: 'Blueberry Lab' })
+  const leaderboardRoute = pagesRoute.create({ fragment: 'leaderboard', title: 'Leaderboard' })
   const wardrobeRoute = pagesRoute.create({ fragment: 'wardrobe', title: 'Wardrobe' })
   const storeRoute = pagesRoute.create({ fragment: 'lab-store', title: 'Store' })
   const itemRoute = pagesRoute.create({ fragment: 'item' }).create({ fragment: /\d+/, title: 'Lab Item' })
+  const tradeRoute = pagesRoute.create({ fragment: 'trade' })
 
 
   const claimMap = replayLatest(
@@ -76,8 +92,17 @@ export default ({ baseRoute = '' }: Website) => component((
 
 
   const clientApi = helloBackend({
-
+    requestLeaderboardTopList,
+    requestPricefeed,
+    requestLatestPriceMap,
+    requestAccountTradeList
   })
+
+  const latestPriceMap = replayLatest(multicast(map((res: IPriceLatestMap) => Object.entries(res).reduce((seed, [key, price]) => {
+    const k = key as ADDRESS_LEVERAGE
+    seed[k] = fromJson.priceLatestJson(price)
+    return seed
+  }, {} as IPriceLatestMap), clientApi.requestLatestPriceMap)))
 
   // localstorage
   const rootStore = state.createLocalStorageChain('ROOT')
@@ -119,16 +144,14 @@ export default ({ baseRoute = '' }: Website) => component((
 
   return [
 
-    $column(designSheet.main, style({ alignItems: 'center', overflowX: 'hidden', placeContent: 'center', padding: screenUtils.isMobileScreen ? '0 15px' : '' }))(
-      
-      $column(layoutSheet.spacingBig, style({ minHeight: '100vh', margin: '0 auto', maxWidth: '1256px' }))(
+    $column(designSheet.main, style({ alignItems: 'center', overflowX: 'hidden', placeContent: 'center', padding: screenUtils.isMobileScreen ? '0 15px' : '0 55px' }))(
 
-        $row(style({ width: '100%', padding: '30px 0 0', zIndex: 1000, borderRadius: '12px' }))(
-          $MainMenu({ walletLink, claimMap, parentRoute: rootRoute, walletStore })({
-            routeChange: linkClickTether(),
-            walletChange: walletChangeTether()
-          }),
-        ),
+      $MainMenu({ walletLink, claimMap, parentRoute: rootRoute, walletStore })({
+        routeChange: linkClickTether(),
+        walletChange: walletChangeTether()
+      }),
+      
+      $column(style({ gap: '55px', margin: '0 auto', maxWidth: '1080px' }))(
         style({ margin: '0 -100vw' }, $seperator2),
 
         router.match(rootRoute)(
@@ -167,8 +190,41 @@ export default ({ baseRoute = '' }: Website) => component((
             router.match(wardrobeRoute)(
               fadeIn($Wardrobe({ walletLink: walletLink, parentRoute: wardrobeRoute, walletStore })({ changeRoute: linkClickTether() }))
             ),
-            router.match(accountRoute)(
+            router.match(profileRoute)(
               fadeIn($Profile({ walletLink, parentRoute: pagesRoute, accountStakingStore })({}))
+            ),
+            router.match(profileWalletRoute)(
+              fadeIn($ProfileWallet({ walletLink, parentRoute: pagesRoute, accountStakingStore })({}))
+            ),
+            router.match(tradeRoute)(
+              $Trade({
+                walletLink,
+                parentRoute: tradeRoute,
+                walletStore,
+                accountTradeList: map((res: ITradeOpen[]) => res.map(fromJson.toTradeJson), clientApi.requestAccountTradeList),
+                pricefeed: map((feed: IPricefeed[]) => feed.map(fromJson.pricefeedJson), clientApi.requestPricefeed),
+                latestPriceMap,
+                parentStore: rootStore,
+                
+              })({
+                requestPricefeed: requestPricefeedTether(),
+                requestAccountTradeList: requestAccountTradeListTether(),
+                requestLatestPriceMap: requestLatestPriceMapTether(),
+                changeRoute: linkClickTether(),
+                walletChange: walletChangeTether()
+              })
+            ),
+            router.match(leaderboardRoute)(
+              fadeIn($Leaderboard({
+                walletLink, parentRoute: pagesRoute, accountStakingStore,
+                leaderboardTopList: map((data: IPageParapApi<IAccountSummary>) => ({
+                  page: data.page.map(fromJson.accountSummaryJson),
+                  offset: data.offset,
+                  pageSize: data.pageSize
+                }), clientApi.requestLeaderboardTopList)
+              })({
+                requestLeaderboardTopList: requestLeaderboardTopListTether(),
+              }))
             ),
             router.match(treasuryRoute)(
               $Treasury({ walletLink, parentRoute: treasuryRoute, treasuryStore })({})

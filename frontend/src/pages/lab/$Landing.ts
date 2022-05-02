@@ -7,11 +7,11 @@ import { $anchor, $IntermediateTx, $Link } from "@gambitdao/ui-components"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $loadBerry } from "../../components/$DisplayBerry"
 import { $buttonAnchor, $ButtonPrimary, $ButtonSecondary } from "../../components/form/$Button"
-import { $responsiveFlex, $txHashRef } from "../../elements/$common"
-import { IAttributeHat, IAttributeFaceAccessory, IAttributeClothes, IAttributeExpression } from "@gambitdao/gbc-middleware"
+import { $responsiveFlex } from "../../elements/$common"
+import { IAttributeHat, IAttributeFaceAccessory, IAttributeClothes, IAttributeExpression, USE_CHAIN } from "@gambitdao/gbc-middleware"
 import { $seperator2 } from "../common"
 import { constant, empty, map, merge, mergeArray, multicast, now, switchLatest } from "@most/core"
-import { ContractReceipt } from "@ethersproject/contracts"
+import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
 import { pallete } from "@aelea/ui-components-theme"
 import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 import { WALLET } from "../../logic/provider"
@@ -72,7 +72,7 @@ interface IBerry {
 export const $LabLanding = ({ walletLink, parentRoute, walletStore }: IBerry) => component((
   [walletChange, walletChangeTether]: Behavior<IEthereumProvider | null, IEthereumProvider | null>,
   [changeRoute, changeRouteTether]: Behavior<string, string>,
-  [mintTestGbc, mintTestGbcTether]: Behavior<PointerEvent, Promise<ContractReceipt>>,
+  [mintTestGbc, mintTestGbcTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
 ) => {
 
 
@@ -106,7 +106,7 @@ export const $LabLanding = ({ walletLink, parentRoute, walletStore }: IBerry) =>
                       const walletGbc = connectGbc(walletLink)
                       return map(async contract => {
                         const ctx = await contract.mint(2, { value: 2n * 30000000000000000n })
-                        return await ctx.wait()
+                        return ctx
                       }, walletGbc.contract)
                     }),
                     switchLatest,
@@ -127,12 +127,8 @@ export const $LabLanding = ({ walletLink, parentRoute, walletStore }: IBerry) =>
             ])),
 
             $IntermediateTx({
-              $done: map(res => {
-                return $row(layoutSheet.spacingSmall, style({ color: pallete.positive }))(
-                  $text(`Minted 2 test GBC's`),
-                  $txHashRef(res.transactionHash)
-                )
-              }),
+              $$success: map(() => $text(`Minted 2 test GBC's`)),
+              chain: USE_CHAIN,
               query: mintTestGbc
             })({}),
           ),
