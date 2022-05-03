@@ -88,5 +88,4 @@ contract SaleExample is Ownable {
     function cancel() external onlyOwner {
         isCanceled = true;
     }
-
 }

@@ -4,7 +4,7 @@ import { GBCLab__factory, SaleExample } from "../../typechain-types"
 import { Sale__factory } from "../../typechain-types/factories/contracts/mint"
 import { deploy } from "../../utils/common"
 
-
+const MINTER = "0x 4d 49 4e 54 45 52 00 00".replaceAll(' ', '') // MINTER string to bytes8
 
 export default async function(gbcAddress: string) {
   const [owner] = await ethers.getSigners()
@@ -41,7 +41,7 @@ export default async function(gbcAddress: string) {
         0, 0, 0,
         gbcAddress, lab.address
       )
-      
+
 
     await (await lab.grantRole(MINTER, sale.address)).wait()
     await (await lab.grantRole(BURNER, sale.address)).wait()
