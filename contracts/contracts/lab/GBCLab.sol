@@ -15,7 +15,7 @@ contract GBCLab is ERC1155, Auth, ERC2981 {
     error Error_ItemAlreadyExist();
     error Error_ItemNotExist();
 
-    constructor() Auth(msg.sender, Authority(address(0))) {}
+    constructor(address _owner, Authority _authority) Auth(_owner, _authority) {}
 
     string private _uri;
     mapping(uint256 => string) private _uris;

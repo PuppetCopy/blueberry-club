@@ -3,7 +3,7 @@ import { ethers } from "hardhat"
 import { GBCLab__factory, Sale, Sale__factory, Profile__factory } from "../../typechain-types"
 import { deploy } from "../../utils/common"
 
-
+const MINTER = "0x 4d 49 4e 54 45 52 00 00".replaceAll(' ', '') // MINTER string to bytes8
 
 export default async function(gbcAddress: string) {
   const [owner] = await ethers.getSigners()
@@ -42,7 +42,7 @@ export default async function(gbcAddress: string) {
         0, 0, 0,
         gbcAddress, lab.address
       )
-      
+
 
     await (await lab.grantRole(MINTER, sale.address)).wait()
     await (await lab.grantRole(BURNER, sale.address)).wait()
