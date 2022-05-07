@@ -34,105 +34,120 @@ const sales: Array<SaleData> = []
 
 const main = async () => {
   const [owner] = (await ethers.getSigners())
+  console.clear()
 
   console.log(`DEPLOYER WIZARD 🧙‍♂️ (by IrvingDev)`)
-  console.log(`The deployer and owner by default of the contracts will be ${owner.address}`)
+
+  console.log(`------------------------------------------------------------------------------\n`)
+  console.log(`🔑 Deployer: ${owner.address}`)
 
   const treasury = getAddress(TREASURY) == ZERO_ADDRESS ? owner.address : getAddress(TREASURY)
 
-  console.log(`Treasury address: ${treasury}`)
+  console.log(`💰 Treasury address: ${treasury}\n`)
+  console.log(`------------------------------------------------------------------------------\n`)
 
   let gbc_address = getAddress(GBC)
 
   if (gbc_address == ZERO_ADDRESS) {
-    console.log(`\nDeploying GBC contract...`)
     const gbc = await deploy_gbc()
-    console.log(`GBC contract deployed !`)
-    console.log(`Address: ${gbc.address}`)
     gbc_address = gbc.address
   }
-
+  console.log(`------------------------------------------------------------------------------\n`)
   let police_address = getAddress(POLICE)
   let police: Police
 
   if (police_address == ZERO_ADDRESS) {
-    console.log(`\nDeploying POLICE contract...`)
     police = await deploy_police()
-    console.log(`POLICE contract deployed !`)
-    console.log(`Address: ${police.address}`)
     police_address = police.address
   } else {
+    console.log(`🔍 Get police contract at: ${police_address}`)
     police = await ethers.getContractAt("Police", police_address)
   }
+  console.log(`------------------------------------------------------------------------------\n`)
 
   let lab_address = getAddress(LAB)
   let lab: GBCLab
 
   if (lab_address == ZERO_ADDRESS) {
-    console.log(`\nDeploying LAB contract...`)
     lab = await deploy_lab(owner.address, police_address)
-    console.log(`LAB contract deployed !`)
-    console.log(`Address: ${lab.address}`)
     lab_address = lab.address
 
-    console.log(`\nCreating roles for LAB`)
+    console.log(`✋ Adding roles for LAB`)
     await police.setRoleCapability(ROLES.MINTER, lab.address, lab.interface.getSighash(lab.interface.functions["mint(address,uint256,uint256,bytes)"]), true)
     await police.setRoleCapability(ROLES.MINTER, lab.address, lab.interface.getSighash(lab.interface.functions["batchMint(address,uint256[],uint256[],bytes)"]), true)
-    console.log(`MINTER role created !`)
+    console.log(`  - MINTER role created !`)
     await police.setRoleCapability(ROLES.BURNER, lab.address, lab.interface.getSighash(lab.interface.functions["burn(address,uint256,uint256)"]), true)
     await police.setRoleCapability(ROLES.BURNER, lab.address, lab.interface.getSighash(lab.interface.functions["batchBurn(address,uint256[],uint256[])"]), true)
-    console.log(`CREATOR role created !`)
+    console.log(`  - BURNER role created !`)
+    console.log()
   } else {
     if (getAddress(POLICE) == ZERO_ADDRESS) {
-      return console.log(`We cannot set a new POLICE with old LAB`)
+      console.log(`❌ LAB already deployed with police we can't set roles`)
+    } else {
+      console.log(`🔍 Get LAB contract at: ${lab_address}`)
+      lab = await ethers.getContractAt("GBCLab", lab_address)
+      console.log(`✋ Adding roles for LAB`)
+      try {
+        await police.setRoleCapability(ROLES.MINTER, lab.address, lab.interface.getSighash(lab.interface.functions["mint(address,uint256,uint256,bytes)"]), true)
+        await police.setRoleCapability(ROLES.MINTER, lab.address, lab.interface.getSighash(lab.interface.functions["batchMint(address,uint256[],uint256[],bytes)"]), true)
+        console.log(`  - MINTER role created !`)
+        await police.setRoleCapability(ROLES.BURNER, lab.address, lab.interface.getSighash(lab.interface.functions["burn(address,uint256,uint256)"]), true)
+        await police.setRoleCapability(ROLES.BURNER, lab.address, lab.interface.getSighash(lab.interface.functions["batchBurn(address,uint256[],uint256[])"]), true)
+        console.log(`  - BURNER role created !`)
+      } catch (error) {
+        console.log(`❌ Actual deployer is not owner of previous police contract`)
+      }
+      console.log()
     }
-    console.log(`\nGet LAB contract`)
-    lab = await ethers.getContractAt("GBCLab", lab_address)
-    console.log(`\nCreating/Overwrite roles for LAB`)
-    await police.setRoleCapability(ROLES.MINTER, lab.address, lab.interface.getSighash(lab.interface.functions["mint(address,uint256,uint256,bytes)"]), true)
-    await police.setRoleCapability(ROLES.MINTER, lab.address, lab.interface.getSighash(lab.interface.functions["batchMint(address,uint256[],uint256[],bytes)"]), true)
-    console.log(`MINTER role created !`)
-    await police.setRoleCapability(ROLES.BURNER, lab.address, lab.interface.getSighash(lab.interface.functions["burn(address,uint256,uint256)"]), true)
-    await police.setRoleCapability(ROLES.BURNER, lab.address, lab.interface.getSighash(lab.interface.functions["batchBurn(address,uint256[],uint256[])"]), true)
   }
+  console.log(`------------------------------------------------------------------------------\n`)
 
   if (getAddress(PROFILE) == ZERO_ADDRESS) {
-    console.log(`\nDeploying PROFILE contract...`)
-    const profile = await deploy_profile(gbc_address, owner.address, police_address)
-    console.log(`PROFILE contract deployed !`)
-    console.log(`Address: ${profile.address}`)
+    await deploy_profile(gbc_address, owner.address, police_address)
   }
 
+  console.log(`------------------------------------------------------------------------------\n`)
   if (getAddress(CLOSET) == ZERO_ADDRESS) {
-    console.log(`\nDeploying CLOSET contract...`)
     const closet = await deploy_closet(gbc_address, lab_address)
-    console.log(`CLOSET contract deployed !`)
-    console.log(`Address: ${closet.address}`)
 
-    console.log(`\nSet the MINTER and BURNER ROLE`)
+    console.log(`🎩 Set roles from LAB to CLOSET`)
     await police.setUserRole(closet.address, ROLES.MINTER, true)
-    console.log(`MINTER setted !`)
+    console.log(`  - MINTER role setted !`)
     await police.setUserRole(closet.address, ROLES.BURNER, true)
-    console.log(`BURNER setted !`)
+    console.log(`  - BURNER role setted !`)
+    console.log()
   } else {
-    console.log(`\nGet CLOSET contract`)
-    const closet = await ethers.getContractAt("Closet", getAddress(CLOSET))
-    console.log(`\nSet the MINTER and BURNER ROLE`)
-    await police.setUserRole(closet.address, ROLES.MINTER, true)
-    console.log(`MINTER setted !`)
-    await police.setUserRole(closet.address, ROLES.BURNER, true)
-    console.log(`BURNER setted !`)
+    if (getAddress(POLICE) == ZERO_ADDRESS) {
+      console.log(`❌ CLOSET already deployed with police we can't set roles`)
+    } else {
+      console.log(`🔍 Get closet contract at: ${getAddress(CLOSET)}`)
+      const closet = await ethers.getContractAt("Closet", getAddress(CLOSET))
+      console.log(`🎩 Set roles from LAB to CLOSET`)
+      try {
+        await police.setUserRole(closet.address, ROLES.MINTER, true)
+        console.log(`  - MINTER role setted !`)
+        await police.setUserRole(closet.address, ROLES.BURNER, true)
+        console.log(`  - BURNER role setted !`)
+      } catch (error) {
+        console.log(`❌ Actual deployer is not owner of previous police contract`)
+      }
+    }
+    console.log()
   }
+  console.log(`------------------------------------------------------------------------------\n`)
 
   sales.forEach(async (sale, index) => {
-    console.log(`\nDeploying sale ${index} contract...`)
     const instance = await deploy_sale(sale, gbc_address, lab_address, treasury)
-    console.log(`sale ${index} contract deployed !`)
-    console.log(`Address: ${instance.address}`)
 
-    console.log(`\nSet the MINTER role`)
-    await police.setUserRole(instance.address, ROLES.MINTER, true)
-    console.log(`MINTER setted !`)
+    console.log(`🎩 Set roles from LAB to SALE #${index}`)
+    try {
+      await police.setUserRole(instance.address, ROLES.MINTER, true)
+      console.log(`  - MINTER role setted !`)
+    } catch (error) {
+      console.log(`❌ Actual deployer is not owner of previous police contract`)
+    }
+    console.log()
+    console.log(`------------------------------------------------------------------------------\n`)
   })
 }
 

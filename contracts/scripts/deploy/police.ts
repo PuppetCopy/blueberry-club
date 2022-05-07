@@ -1,5 +1,6 @@
 import { ethers } from "hardhat"
 import { Police__factory, Police } from "../../typechain-types"
+import { deploy } from "../utils/deploy"
 
 export const ROLES = {
   MINTER: 0,
@@ -11,7 +12,7 @@ export default async function(): Promise<Police> {
 
   const factory = new Police__factory(owner)
 
-  const instance = await factory.deploy()
+  const instance = await deploy(factory)
 
   await instance.deployed()
 
