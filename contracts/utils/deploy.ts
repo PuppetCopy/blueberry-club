@@ -28,8 +28,9 @@ export async function deploy<T extends ContractFactory>(contractFactory: T, ...c
     .catch(err => {
       if (err.message.indexOf('Already Verified')) {
         console.warn(`🏁 ${network.name} Already Verified: ${explorerUrl}\n`)
+      } else {
+        console.error(err)
       }
-      console.error(err)
     })
   
   await contract.deployed()
