@@ -107,7 +107,7 @@ export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAcco
 
   const ownedTokens = map(owner => owner.ownedTokens, queryOwner)
 
-  const stakedList = map(owner => owner.stakedTokenList, queryOwner)
+  // const stakedList = map(owner => owner.stakedTokenList, queryOwner)
 
 
   const gbcWallet = connectGbc(walletLink)
@@ -116,25 +116,25 @@ export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAcco
   const priceMap = fromPromise(queryLatestPrices())
 
   
-  const isApprovedForAll = replayLatest(multicast(rewardDistributor.isApprovedForAll))
+  // const isApprovedForAll = replayLatest(multicast(rewardDistributor.isApprovedForAll))
 
-  // Promise<ContractReceipt>
+  // // Promise<ContractReceipt>
 
-  const chosenTokens = startWith([], selectTokensForWhitelist)
+  // const chosenTokens = startWith([], selectTokensForWhitelist)
 
-  const withdrawTxn = snapshot(async ({ selection, contract, account }) => {
+  // const withdrawTxn = snapshot(async ({ selection, contract, account }) => {
      
-    if ((contract === null || !account)) {
-      throw new Error(`Unable to resolve contract`)
-    }
+  //   if ((contract === null || !account)) {
+  //     throw new Error(`Unable to resolve contract`)
+  //   }
 
 
-    const idList = selection.map(s => s.id)
-    const tx = contract.stakeForAccount(account, account, idList)
+  //   const idList = selection.map(s => s.id)
+  //   const tx = contract.stakeForAccount(account, account, idList)
 
-    return tx
+  //   return tx
 
-  }, combineObject({ selection: selectTokensToWithdraw, contract: rewardDistributor.contract, account: walletLink.account }), clickWithdraw)
+  // }, combineObject({ selection: selectTokensToWithdraw, contract: rewardDistributor.contract, account: walletLink.account }), clickWithdraw)
 
 
   return [
@@ -148,162 +148,162 @@ export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAcco
         }),
       ),
 
-      $column(style({ gap: '50px', flex: 1 }))(
+      // $column(style({ gap: '50px', flex: 1 }))(
 
-        $column(layoutSheet.spacing)(
-          $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
-            $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(`Rewards`),
-            $row(layoutSheet.spacingSmall)(
-              $text(style({ color: pallete.foreground }))('Distributing'),
-              $text(combineArray(rr => {
-                const leftToDist = BigInt(REWARD_DISTRIBUTOR.distributionPeriod) * rr / 7n
+      //   $column(layoutSheet.spacing)(
+      //     $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
+      //       $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(`Rewards`),
+      //       $row(layoutSheet.spacingSmall)(
+      //         $text(style({ color: pallete.foreground }))('Distributing'),
+      //         $text(combineArray(rr => {
+      //           const leftToDist = BigInt(REWARD_DISTRIBUTOR.distributionPeriod) * rr / 7n
 
-                return `${readableNumber(formatFixed(leftToDist, 18))} ETH`
-              }, rewardDistributor.rewardRate)),
-              $text(style({ color: pallete.foreground }))('between'),
-              $text(combineArray((totalSupply) => `${readableNumber(totalSupply)} GBC`, rewardDistributor.totalSupply)),
-              $text(style({ color: pallete.foreground }))('Each Day'),
-            ),
-          ),
+      //           return `${readableNumber(formatFixed(leftToDist, 18))} ETH`
+      //         }, rewardDistributor.rewardRate)),
+      //         $text(style({ color: pallete.foreground }))('between'),
+      //         $text(combineArray((totalSupply) => `${readableNumber(totalSupply)} GBC`, rewardDistributor.totalSupply)),
+      //         $text(style({ color: pallete.foreground }))('Each Day'),
+      //       ),
+      //     ),
 
-          $node(),
+      //     $node(),
 
             
-          $row(layoutSheet.spacing)(
-            $column(
-              $text('Earned:'),
-              $text(combineArray((earned, balance, pmap) => `$${formatReadableUSD(earned)}`, rewardDistributor.earned, rewardDistributor.tokenBalance, priceMap))
-            ),
-            $column(
-              $text('Staking:'),
-              $text(combineArray((balance) => `${balance}`, rewardDistributor.stakeBalance))
-            ),
-          ), 
-        ),
+      //     $row(layoutSheet.spacing)(
+      //       $column(
+      //         $text('Earned:'),
+      //         $text(combineArray((earned, balance, pmap) => `$${formatReadableUSD(earned)}`, rewardDistributor.earned, rewardDistributor.tokenBalance, priceMap))
+      //       ),
+      //       $column(
+      //         $text('Staking:'),
+      //         $text(combineArray((balance) => `${balance}`, rewardDistributor.stakeBalance))
+      //       ),
+      //     ), 
+      //   ),
 
 
-        $seperator2,
+      //   $seperator2,
 
 
-        $column(layoutSheet.spacing)(
-          $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
-            $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(`Stake GBC`),
-            $row(layoutSheet.spacingSmall)(
-              $text(combineArray((totalSupply) => `${readableNumber(totalSupply)}/${readableNumber(MINT_MAX_SUPPLY)}`, rewardDistributor.totalSupply)),
-              $text(style({ color: pallete.foreground }))('Staked'),
-            ),
-          ),
+      //   $column(layoutSheet.spacing)(
+      //     $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
+      //       $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(`Stake GBC`),
+      //       $row(layoutSheet.spacingSmall)(
+      //         $text(combineArray((totalSupply) => `${readableNumber(totalSupply)}/${readableNumber(MINT_MAX_SUPPLY)}`, rewardDistributor.totalSupply)),
+      //         $text(style({ color: pallete.foreground }))('Staked'),
+      //       ),
+      //     ),
 
-          $node(),
-
-
-          $row(layoutSheet.spacing)(
-            switchLatest(map(tokenList => {
-
-              const selection = startWith([], selectTokensForWhitelist)
-
-              return $SelectBerries({
-                label: 'Deposit',
-                options: tokenList
-              })({
-                select: selectTokensForWhitelistTether()
-              })
-
-            }, ownedTokens)),
+      //     $node(),
 
 
-            switchLatest(map(isApproved => {
+      //     $row(layoutSheet.spacing)(
+      //       switchLatest(map(tokenList => {
+
+      //         const selection = startWith([], selectTokensForWhitelist)
+
+      //         return $SelectBerries({
+      //           label: 'Deposit',
+      //           options: tokenList
+      //         })({
+      //           select: selectTokensForWhitelistTether()
+      //         })
+
+      //       }, ownedTokens)),
 
 
-              const buttonBehavior = isApproved
-                ? setApprovalForAllTether(snapshot(async ({ selection, contract, account }) => {
+      //       switchLatest(map(isApproved => {
+
+
+      //         const buttonBehavior = isApproved
+      //           ? setApprovalForAllTether(snapshot(async ({ selection, contract, account }) => {
      
-                  if ((contract === null || !account)) {
-                    throw new Error(`Unable to resolve contract`)
-                  }
+      //             if ((contract === null || !account)) {
+      //               throw new Error(`Unable to resolve contract`)
+      //             }
 
-                  const idList = selection.map(t => t.id)
+      //             const idList = selection.map(t => t.id)
 
-                  return contract.stakeForAccount(account, account, idList)
+      //             return contract.stakeForAccount(account, account, idList)
 
-                }, combineObject({ selection: chosenTokens, contract: rewardDistributor.contract, account: walletLink.account })))
-                :  stakeTxnTether(snapshot(async ({ contract }) => {
+      //           }, combineObject({ selection: chosenTokens, contract: rewardDistributor.contract, account: walletLink.account })))
+      //           :  stakeTxnTether(snapshot(async ({ contract }) => {
      
-                  return contract.setApprovalForAll(GBC_ADDRESS.REWARD_DISTRIBUTOR, true)
+      //             return contract.setApprovalForAll(GBC_ADDRESS.REWARD_DISTRIBUTOR, true)
 
-                }, combineObject({ contract: gbcWallet.contract })))
-
-
-              return $ButtonPrimary({
-                disabled: map(list => isApproved && list.length === 0, chosenTokens),
-                $content: switchLatest(
-                  map(({ chosenTokens }) => {
-
-                    const amount = chosenTokens.length
-                    const label = isApproved ? amount ? `Stake ${amount}` : 'Stake' : 'Allow Staking'
-                    return $text(label)
-
-                  }, combineObject({ chosenTokens }))
-                ),
-              })({
-                click: buttonBehavior
-              })
-            }, isApprovedForAll)),
+      //           }, combineObject({ contract: gbcWallet.contract })))
 
 
-            switchLatest(map(isApproved => isApproved ? empty() : $alert($text('<- Initial Staking approval is needed first')), isApprovedForAll))
-          ),
+      //         return $ButtonPrimary({
+      //           disabled: map(list => isApproved && list.length === 0, chosenTokens),
+      //           $content: switchLatest(
+      //             map(({ chosenTokens }) => {
+
+      //               const amount = chosenTokens.length
+      //               const label = isApproved ? amount ? `Stake ${amount}` : 'Stake' : 'Allow Staking'
+      //               return $text(label)
+
+      //             }, combineObject({ chosenTokens }))
+      //           ),
+      //         })({
+      //           click: buttonBehavior
+      //         })
+      //       }, isApprovedForAll)),
 
 
-          style({ alignSelf: 'flex-end' })(
-            $IntermediateTx({
-              chain: USE_CHAIN,
-              query: merge(stakeTxn, setApprovalForAll)
-            })({})
-          ),
-
-          $node(),
+      //       switchLatest(map(isApproved => isApproved ? empty() : $alert($text('<- Initial Staking approval is needed first')), isApprovedForAll))
+      //     ),
 
 
-          switchLatest(combineArray((stakedList, ownedTokens) => {
+      //     style({ alignSelf: 'flex-end' })(
+      //       $IntermediateTx({
+      //         chain: USE_CHAIN,
+      //         query: merge(stakeTxn, setApprovalForAll)
+      //       })({})
+      //     ),
 
-            const selection = startWith([], selectTokensToWithdraw)
-
-            return $column(layoutSheet.spacing)(
-              $row(layoutSheet.spacing)(
-                $SelectBerries({
-                  options: stakedList,
-                  label: 'Withdraw'
-                })({
-                  select: selectTokensToWithdrawTether()
-                }),
-
-                $ButtonPrimary({
-                  disabled: map(list => list.length === 0, selection),
-                  $content: switchLatest(
-                    map(({ selection }) => {
-                      const amount = selection.length
-                      const label = amount ? `Withdraw ${amount}` : 'Withdraw'
-                      return $text(label)
-
-                    }, combineObject({ selection }))
-                  ),
-                })({
-                  click: clickWithdrawTether()
-                }),
-              ),
-
-              $IntermediateTx({
-                chain: USE_CHAIN,
-                query: withdrawTxn,
-              })({}),
-            )
-
-          }, stakedList, ownedTokens)),
-        )
+      //     $node(),
 
 
-      ),
+      //     switchLatest(combineArray((stakedList, ownedTokens) => {
+
+      //       const selection = startWith([], selectTokensToWithdraw)
+
+      //       return $column(layoutSheet.spacing)(
+      //         $row(layoutSheet.spacing)(
+      //           $SelectBerries({
+      //             options: stakedList,
+      //             label: 'Withdraw'
+      //           })({
+      //             select: selectTokensToWithdrawTether()
+      //           }),
+
+      //           $ButtonPrimary({
+      //             disabled: map(list => list.length === 0, selection),
+      //             $content: switchLatest(
+      //               map(({ selection }) => {
+      //                 const amount = selection.length
+      //                 const label = amount ? `Withdraw ${amount}` : 'Withdraw'
+      //                 return $text(label)
+
+      //               }, combineObject({ selection }))
+      //             ),
+      //           })({
+      //             click: clickWithdrawTether()
+      //           }),
+      //         ),
+
+      //         $IntermediateTx({
+      //           chain: USE_CHAIN,
+      //           query: withdrawTxn,
+      //         })({}),
+      //       )
+
+      //     }, stakedList, ownedTokens)),
+      //   )
+
+
+      // ),
 
 
 

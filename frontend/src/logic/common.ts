@@ -8,7 +8,6 @@ import { IAttributeBody, IBerryDisplayTupleMap, getLabItemTupleIndex, IAttribute
 import tokenIdAttributeTuple from "./mappings/tokenIdAttributeTuple"
 import { IPricefeed, IStakeSource, queryLatestPrices } from "./query"
 import { $Node, $svg, attr, style } from "@aelea/dom"
-import { Manager__factory } from "contracts"
 import { web3ProviderTestnet } from "./provider"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { IWalletLink } from "@gambitdao/wallet-link"
@@ -92,7 +91,6 @@ export function priceFeedHistoryInterval<T extends string>(interval: number, gmx
   }, gmxPriceHistoryQuery, yieldSource)
 }
 
-const lab = Manager__factory.connect(GBC_ADDRESS.MANAGER, web3ProviderTestnet)
 
 
 export const $berryById = (id: number, berry: IBerry | null = null, size = 85) => {

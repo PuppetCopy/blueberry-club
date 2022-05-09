@@ -325,7 +325,7 @@ interface ITradeBox {
 const $TradeBox = (config: ITradeBox) => component((
   [changeInput, changeInputTether]: Behavior<any, number>,
   [changeLeverage, changeLeverageTether]: Behavior<any, any>,
-  [selectInput, selectInputTether]: Behavior<TOKEN_SYMBOL, ARBITRUM_ADDRESS_LEVERAGE | typeof AddressZero>,
+  [selectInput, selectInputTether]: Behavior<ARBITRUM_ADDRESS_LEVERAGE | typeof AddressZero, ARBITRUM_ADDRESS_LEVERAGE | typeof AddressZero>,
 ) => {
 
   const $field = $element('input')(attr({ placeholder: '0.0' }), style({ flex: 1, padding: '0 16px', fontSize: '1.25em', background: 'transparent', border: 'none', height: '60px', outline: 'none', lineHeight: '60px', color: pallete.message }))
@@ -356,21 +356,25 @@ const $TradeBox = (config: ITradeBox) => component((
           return Number(target.value)
         })))(),
 
-        $Dropdown({
+        $Dropdown<ARBITRUM_ADDRESS_LEVERAGE | typeof AddressZero>({
           $container: $row(style({ position: 'relative', alignSelf: 'center', padding: '0 15px' })),
           // disabled: accountChange,
           // $noneSelected: $text('Choose Amount'),
           $selection: map(option => {
+            const tokenDesc = option === AddressZero ? TOKEN_DESCRIPTION_MAP.ETH : TOKEN_DESCRIPTION_MAP[CHAIN_TOKEN_ADDRESS_TO_SYMBOL[option]]
+
             return $row(style({ alignItems: 'center', cursor: 'pointer' }))(
-              $icon({ $content: $tokenIconMap[option], width: '34px', viewBox: '0 0 32 32' }),
+              $icon({ $content: $tokenIconMap[tokenDesc.symbol], width: '34px', viewBox: '0 0 32 32' }),
               $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginTop: '3px', marginLeft: '5px' }), viewBox: '0 0 32 32' }),
             )
           }),
           select: {
-            value: now(TOKEN_SYMBOL.ETH),
+            value: now(ARBITRUM_ADDRESS.NATIVE_TOKEN),
             $container: $defaultSelectContainer(style({ minWidth:'300px', right: 0 })),
             $$option: map(option => {
-              return $tokenLabelFromSummary(TOKEN_DESCRIPTION_MAP[option])
+              const tokenDesc = option === AddressZero ? TOKEN_DESCRIPTION_MAP.ETH : TOKEN_DESCRIPTION_MAP[CHAIN_TOKEN_ADDRESS_TO_SYMBOL[option]]
+
+              return $tokenLabelFromSummary(tokenDesc)
             }),
             options: [
               AddressZero,
@@ -381,10 +385,7 @@ const $TradeBox = (config: ITradeBox) => component((
             ],
           }
         })({
-          select: selectInputTether(map(option => {
-            // const symbol = option === TOKEN_SYMBOL.ETH ? TOKEN_SYMBOL.ETH : option === TOKEN_SYMBOL.WETH ?
-            return getMappedKeyByValue(CHAIN_TOKEN_ADDRESS_TO_SYMBOL, option)
-          }))
+          select: selectInputTether()
         }),
       ),
       

@@ -9,12 +9,25 @@ export type IAsset = {
   balanceUsd: bigint
 }
 
+export type LabItemOwnership = {
+  owner: IOwner
+  item: ILabItem
+  balance: bigint
+}
+
+
+export interface ILabItem {
+  id: number
+  uri: string
+  supply: bigint
+  owners?: ILabItemOwnership[]
+  transfers?: ITransfer[]
+}
 
 export interface IToken extends IBerry {
   id: number
   uri: string
   owner: IOwner
-
   transfers: ITransfer[]
   contract: IContract
 }
@@ -29,12 +42,19 @@ export interface IContract {
 
 export interface ITransfer {
   id: string
-  token: IToken
   from: IOwner
   to: IOwner
-  transactionHash: string
+  transaction: ITransaction
   block: bigint
   timestamp: bigint
+}
+
+export type ITransaction = {
+  id: string
+  blockNumber: number
+  timestamp: number
+  from: string
+  to: string
 }
 
 export type IBerry = {
@@ -47,26 +67,26 @@ export type IBerryIdentifable = IBerry & {
   id: number
 }
 
+export type ILabItemOwnership = {
+  id: string
+  owner: IOwner
+  item: ILabItem
+  balance: bigint
+}
+
 export interface IOwner {
   id: string
-  ownedTokens: IToken[]
   balance: bigint
-  stakedTokenList: IToken[]
+  rewardClaimedCumulative: bigint
 
-  main: IToken
-  rewardPaidCumulative: bigint
+  ownedTokens: IToken[]
+  ownedLabItems: ILabItemOwnership[]
+
+  main: IToken | null
+  displayName: string | null
 }
 
-export interface ITokenMetadata {
-  description: string
-  image: string
-  name: string
 
-  attributes: {
-    trait_type: string
-    value: string
-  }[]
-}
 
 
 export interface ITreasuryStore {

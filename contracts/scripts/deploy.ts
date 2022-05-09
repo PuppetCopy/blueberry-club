@@ -1,14 +1,18 @@
-import { Police, GBCLab } from "../typechain-types"
-import { ethers, run } from "hardhat"
+import { Profile__factory, GBCLab__factory, Police__factory, Closet__factory, GBC__factory, SaleExample__factory } from "../typechain-types"
+import { ethers } from "hardhat"
 
-import getAddress, { ZERO_ADDRESS } from "./utils/getAddress"
+import getAddress, { ZERO_ADDRESS } from "../utils/getAddress"
+import { connectOrDeploy } from "../utils/deploy"
+import { GBC_ADDRESS, hasWhitelistSale, saleDescriptionList } from "@gambitdao/gbc-middleware"
+import { AddressZero } from "@gambitdao/gmx-middleware"
 
-import deploy_gbc from "./deploy/gbc"
-import deploy_police, { ROLES } from "./deploy/police"
-import deploy_lab from "./deploy/lab/lab"
-import deploy_profile from "./deploy/lab/profile"
-import deploy_closet from "./deploy/lab/closet"
-import deploy_sale, { SaleData } from "./deploy/lab/sales/example"
+export enum ROLES {
+  MINTER,
+  BURNER,
+  CREATOR
+}
+
+
 
 /**
  *  DEPLOYER WIZARD 🧙‍♂️
@@ -21,16 +25,16 @@ import deploy_sale, { SaleData } from "./deploy/lab/sales/example"
 
 // This contract/address can be used on other contracts
 const TREASURY = "" // Multisig or you personal address (if you leave it blank it will be the owner address)
-const POLICE = "" // Police contract
-const GBC = "" // The GBC ERC721 (NFT) contract
-const LAB = "" // The Lab items ERC1155 contract
+const GBC = GBC_ADDRESS.GBC // The GBC ERC721 (NFT) contract
+const POLICE = "0xcEa45644121ACec2d7B9567D5c759165B74d3CEE" // Police contract
+const LAB = "0x3FD0F44E4CE52795Eb4309B92300083353E34F9d" // The Lab items ERC1155 contract
 
 // This contract can be redeployed safely they are not required
 // on others contract (for now)
-const PROFILE = ""
+const PROFILE = "0x14a9a217130a13B803C2b8B79f629C32344193e1"
 const CLOSET = ""
 
-const sales: Array<SaleData> = []
+const saleConfigList = saleDescriptionList
 
 const main = async () => {
   const [owner] = (await ethers.getSigners())
@@ -46,109 +50,69 @@ const main = async () => {
   console.log(`💰 Treasury address: ${treasury}\n`)
   console.log(`------------------------------------------------------------------------------\n`)
 
-  let gbc_address = getAddress(GBC)
+  const gbc = await connectOrDeploy(GBC, GBC__factory, "Blueberry Club", "GBC", "")
 
-  if (gbc_address == ZERO_ADDRESS) {
-    const gbc = await deploy_gbc()
-    gbc_address = gbc.address
-  }
-  console.log(`------------------------------------------------------------------------------\n`)
-  let police_address = getAddress(POLICE)
-  let police: Police
-
-  if (police_address == ZERO_ADDRESS) {
-    police = await deploy_police()
-    police_address = police.address
-  } else {
-    console.log(`🔍 Get police contract at: ${police_address}`)
-    police = await ethers.getContractAt("Police", police_address)
-  }
-  console.log(`------------------------------------------------------------------------------\n`)
-
-  let lab_address = getAddress(LAB)
-  let lab: GBCLab
-
-  if (lab_address == ZERO_ADDRESS) {
-    lab = await deploy_lab(owner.address, police_address)
-    lab_address = lab.address
-
-    console.log(`✋ Adding roles for LAB`)
-    await police.setRoleCapability(ROLES.MINTER, lab.address, lab.interface.getSighash(lab.interface.functions["mint(address,uint256,uint256,bytes)"]), true)
-    await police.setRoleCapability(ROLES.MINTER, lab.address, lab.interface.getSighash(lab.interface.functions["batchMint(address,uint256[],uint256[],bytes)"]), true)
-    console.log(`  - MINTER role created !`)
-    await police.setRoleCapability(ROLES.BURNER, lab.address, lab.interface.getSighash(lab.interface.functions["burn(address,uint256,uint256)"]), true)
-    await police.setRoleCapability(ROLES.BURNER, lab.address, lab.interface.getSighash(lab.interface.functions["batchBurn(address,uint256[],uint256[])"]), true)
-    console.log(`  - BURNER role created !`)
-    console.log()
-  } else {
-    if (getAddress(POLICE) == ZERO_ADDRESS) {
-      console.log(`❌ LAB already deployed with police we can't set roles`)
-    } else {
-      console.log(`🔍 Get LAB contract at: ${lab_address}`)
-      lab = await ethers.getContractAt("GBCLab", lab_address)
-      console.log(`✋ Adding roles for LAB`)
-      try {
-        await police.setRoleCapability(ROLES.MINTER, lab.address, lab.interface.getSighash(lab.interface.functions["mint(address,uint256,uint256,bytes)"]), true)
-        await police.setRoleCapability(ROLES.MINTER, lab.address, lab.interface.getSighash(lab.interface.functions["batchMint(address,uint256[],uint256[],bytes)"]), true)
-        console.log(`  - MINTER role created !`)
-        await police.setRoleCapability(ROLES.BURNER, lab.address, lab.interface.getSighash(lab.interface.functions["burn(address,uint256,uint256)"]), true)
-        await police.setRoleCapability(ROLES.BURNER, lab.address, lab.interface.getSighash(lab.interface.functions["batchBurn(address,uint256[],uint256[])"]), true)
-        console.log(`  - BURNER role created !`)
-      } catch (error) {
-        console.log(`❌ Actual deployer is not owner of previous police contract`)
-      }
-      console.log()
-    }
-  }
-  console.log(`------------------------------------------------------------------------------\n`)
-
-  if (getAddress(PROFILE) == ZERO_ADDRESS) {
-    await deploy_profile(gbc_address, owner.address, police_address)
-  }
 
   console.log(`------------------------------------------------------------------------------\n`)
-  if (getAddress(CLOSET) == ZERO_ADDRESS) {
-    const closet = await deploy_closet(gbc_address, lab_address)
-
-    console.log(`🎩 Set roles from LAB to CLOSET`)
-    await police.setUserRole(closet.address, ROLES.MINTER, true)
-    console.log(`  - MINTER role setted !`)
-    await police.setUserRole(closet.address, ROLES.BURNER, true)
-    console.log(`  - BURNER role setted !`)
-    console.log()
-  } else {
-    if (getAddress(POLICE) == ZERO_ADDRESS) {
-      console.log(`❌ CLOSET already deployed with police we can't set roles`)
-    } else {
-      console.log(`🔍 Get closet contract at: ${getAddress(CLOSET)}`)
-      const closet = await ethers.getContractAt("Closet", getAddress(CLOSET))
-      console.log(`🎩 Set roles from LAB to CLOSET`)
-      try {
-        await police.setUserRole(closet.address, ROLES.MINTER, true)
-        console.log(`  - MINTER role setted !`)
-        await police.setUserRole(closet.address, ROLES.BURNER, true)
-        console.log(`  - BURNER role setted !`)
-      } catch (error) {
-        console.log(`❌ Actual deployer is not owner of previous police contract`)
-      }
-    }
-    console.log()
-  }
+  const police = await connectOrDeploy(POLICE, Police__factory)
   console.log(`------------------------------------------------------------------------------\n`)
 
-  sales.forEach(async (sale, index) => {
-    const instance = await deploy_sale(sale, gbc_address, lab_address, treasury)
+  const lab = await connectOrDeploy(LAB, GBCLab__factory, owner.address, police.address)
 
-    console.log(`🎩 Set roles from LAB to SALE #${index}`)
+  if (getAddress(LAB) == AddressZero) {
     try {
-      await police.setUserRole(instance.address, ROLES.MINTER, true)
+      console.log(`✋ Adding roles for LAB`)
+      await police.setRoleCapability(ROLES.MINTER, lab.address, lab.interface.getSighash(lab.interface.functions["mint(address,uint256,uint256,bytes)"]), true)
+      await police.setRoleCapability(ROLES.MINTER, lab.address, lab.interface.getSighash(lab.interface.functions["batchMint(address,uint256[],uint256[],bytes)"]), true)
+      console.log(`  - MINTER role created !`)
+      await police.setRoleCapability(ROLES.BURNER, lab.address, lab.interface.getSighash(lab.interface.functions["burn(address,uint256,uint256)"]), true)
+      await police.setRoleCapability(ROLES.BURNER, lab.address, lab.interface.getSighash(lab.interface.functions["batchBurn(address,uint256[],uint256[])"]), true)
+      console.log(`  - BURNER role created !`)
+    } catch (error) {
+      console.log(`❌ Actual deployer is not owner of previous police contract`)
+    }
+  }
+
+  console.log(`------------------------------------------------------------------------------\n`)
+
+  await connectOrDeploy(PROFILE, Profile__factory, gbc.address, owner.address, police.address)
+
+  console.log(`------------------------------------------------------------------------------\n`)
+
+  const closet = await connectOrDeploy(CLOSET, Closet__factory, gbc.address, lab.address)
+
+  if (getAddress(CLOSET) == AddressZero) {
+    console.log(`🎩 Set roles from LAB to CLOSET`)
+    try {
+      await police.setUserRole(closet.address, ROLES.MINTER, true)
+      console.log(`  - MINTER role setted !`)
+      await police.setUserRole(closet.address, ROLES.BURNER, true)
+      console.log(`  - BURNER role setted !`)
+    } catch (error) {
+      console.log(`❌ Actual deployer is not owner of previous police contract`)
+    }
+  }
+
+
+  for (const config of saleConfigList) {
+    console.log(`------------------------------------------------------------------------------\n`)
+
+    const sale = hasWhitelistSale(config)
+      ? await connectOrDeploy(TREASURY, SaleExample__factory, config.contractAddress, config.id, config.maxSupply, config.maxPerTx, config.publicCost, config.publicStartDate, config.whitelistStartDate, config.whitelistCost, config.whitelistMax, GBC, LAB)
+      : await connectOrDeploy(TREASURY, SaleExample__factory, config.contractAddress, config.id, config.maxSupply, config.maxPerTx, config.publicCost, config.publicStartDate, 0, 0, 0, GBC, LAB)
+
+    console.log(`🎩 Set roles from LAB to ${config.name} SALE`)
+    try {
+      await police.setUserRole(sale.address, ROLES.MINTER, true)
       console.log(`  - MINTER role setted !`)
     } catch (error) {
+      console.log(error)
       console.log(`❌ Actual deployer is not owner of previous police contract`)
     }
     console.log()
     console.log(`------------------------------------------------------------------------------\n`)
-  })
+  }
+
 }
 
 main()

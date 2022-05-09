@@ -303,7 +303,9 @@ query ($first: Int = 1000, $account: String) {
   owner(id: $account) {
     ownedTokens(first: $first) {
       transfers {
-        transactionHash
+        transaction {
+          id
+        }
         id
         from {
           id
@@ -324,24 +326,21 @@ ${schemaFragments}
 query ($account: String) {
   owner(id: $account) {
     balance
-    labBalance
-    rewardPaidCumulative
+    rewardClaimedCumulative
+    ownedLabItems {
+      balance
+      item {
+        id
+      }
+      id
+    }
     ownedTokens {
       id
       background
       custom
       special
     }
-    ownedLabItems {
-      id
-    }
     main {
-      id
-      background
-      custom
-      special
-    }
-    stakedTokenList {
       id
       background
       custom
@@ -473,7 +472,7 @@ export const queryOwnerTrasnferNfts = async (account: string) => {
     return []
   }
 
-  return Object.entries(groupByMapMany(owner.ownedTokens, token => token.transfers[0].transactionHash))
+  return Object.entries(groupByMapMany(owner.ownedTokens, token => token.transfers[0].transaction.id))
 }
 
 export const queryOwnerOwnedTokens = async (account: string) => {
@@ -495,8 +494,7 @@ export const queryOwnerV2 = async (account: string): Promise<IOwner> => {
 
   return {
     ...owner,
-    ownedTokens: owner.ownedTokens.map(fromTokenJson),
-    stakedTokenList: owner.stakedTokenList.map(fromTokenJson),
+    ownedTokens: owner.ownedTokens.map(fromTokenJson)
   }
 }
  

@@ -11,12 +11,12 @@ import { $responsiveFlex } from "../elements/$common"
 import { queryLatestPrices, queryOwnerV2 } from "../logic/query"
 import { IAccountStakingStore } from "@gambitdao/gbc-middleware"
 import { connectGbc } from "../logic/contract/gbc"
-import { connectRewardDistributor } from "../logic/contract/rewardDistributor"
 import { $accountPreview } from "../components/$AccountProfile"
 import { ContractTransaction } from "@ethersproject/contracts"
 import { $Table2 } from "../common/$Table2"
 import { Stream } from "@most/types"
 import { $ProfitLossText, $risk } from "@gambitdao/ui-components"
+import { connectRewardDistributor } from "../logic/contract/rewardDistributor"
 
 
 export interface IAccount {
@@ -56,7 +56,7 @@ export const $Leaderboard = ({ walletLink, leaderboardTopList, parentRoute, acco
 
   const ownedTokens = map(owner => owner.ownedTokens, queryOwner)
 
-  const stakedList = map(owner => owner.stakedTokenList, queryOwner)
+  // const stakedList = map(owner => owner.stakedTokenList, queryOwner)
 
 
   const gbcWallet = connectGbc(walletLink)
@@ -65,7 +65,7 @@ export const $Leaderboard = ({ walletLink, leaderboardTopList, parentRoute, acco
   const priceMap = fromPromise(queryLatestPrices())
 
   
-  const isApprovedForAll = replayLatest(multicast(rewardDistributor.isApprovedForAll))
+  // const isApprovedForAll = replayLatest(multicast(rewardDistributor.isApprovedForAll))
 
   // Promise<ContractReceipt>
 

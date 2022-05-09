@@ -1,6 +1,7 @@
 import { ContractFactory } from "@ethersproject/contracts"
-import { getAccountExplorerUrl } from "@gambitdao/gmx-middleware"
+import { AddressZero, getAccountExplorerUrl } from "@gambitdao/gmx-middleware"
 import { run, network, ethers } from "hardhat"
+import getAddress from "./getAddress"
 
 
 export async function deploy<T extends ContractFactory>(contractFactory: T, ...constructorArguments: Parameters<T['deploy']>): Promise<ReturnType<T['deploy']>> {
@@ -18,10 +19,38 @@ export async function deploy<T extends ContractFactory>(contractFactory: T, ...c
     return contract
   }
 
-  await run("verify:verify", { address, constructorArguments, }).catch(err => console.log('⚠️ Etherscan verification failed, the contract may have been verified'))
-
   const explorerUrl = getAccountExplorerUrl(network.config.chainId, address)
-  console.log(`🏁 ${network.name} Verified: ${explorerUrl}\n`)
+
+  await run("verify:verify", { address, constructorArguments, })
+    .then(() => {
+      console.log(`🏁 ${network.name} Verified: ${explorerUrl}\n`)
+    })
+    .catch(err => {
+      if (err.message.indexOf('Already Verified')) {
+        console.warn(`🏁 ${network.name} Already Verified: ${explorerUrl}\n`)
+      }
+      console.error(err)
+    })
+  
+  await contract.deployed()
 
   return contract
+}
+
+
+export async function connectOrDeploy<T extends typeof ContractFactory, RT extends InstanceType<T>>(givenAddress: any, ctor: T, ...constructorArguments: Parameters<RT['deploy']>): Promise<ReturnType<RT['deploy']>> {
+  const contractAddress = getAddress(givenAddress)
+  const [signer] = await ethers.getSigners()
+
+  if (contractAddress == AddressZero) {
+    // @ts-ignore
+    const factory = new ctor(signer)
+
+    return deploy(factory, ...constructorArguments)
+  }
+
+  console.log(`🔍 Get existing ${ctor.name} contract at: ${contractAddress}`)
+
+  // @ts-ignore
+  return ctor.connect(contractAddress, signer)
 }

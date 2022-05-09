@@ -141,7 +141,7 @@ export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
                 const timeAgo = timeSince(time)
 
                 return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
-                  $txnIconLink(x.transactionHash),
+                  $txnIconLink(x.transaction.id),
                   $column(
                     $text(style({ fontSize: '.75em' }))(`${timeAgo}`),
                     $text(`${dateStr}`),

@@ -3,7 +3,7 @@ import * as lab from "../generated/ERC1155/ERC1155"
 import * as manager from "../generated/Manager/Manager"
 import * as profile from "../generated/Profile/Profile"
 import * as distributor from "../generated/RewardDistributor/RewardDistributor"
-import { Owner, Contract, Transfer, Token } from "../generated/schema"
+import { Owner, Transfer, Token } from "../generated/schema"
 import { handleLabItemTransfer, _createNewOwner } from "./common"
 import { ONE_BI, ZERO_BI, _createTransactionIfNotExist } from './helpers'
 
@@ -11,7 +11,7 @@ import { ONE_BI, ZERO_BI, _createTransactionIfNotExist } from './helpers'
 export function handleTransferSingle(event: lab.TransferSingle): void {
   const params = event.params
 
-  handleLabItemTransfer(params.from, params.to, params.id, params.value, event)
+  handleLabItemTransfer(params.from, params.to, params.id, params.amount, event)
 }
 
 export function handleTransferBatch(event: lab.TransferBatch): void {
@@ -19,8 +19,8 @@ export function handleTransferBatch(event: lab.TransferBatch): void {
 
   for (let index = 0; index < params.ids.length; index++) {
     const id = params.ids[index]
-    const value = params.values[index]
-    handleLabItemTransfer(params.from, params.to, value, id, event)
+    const amount = params.amounts[index]
+    handleLabItemTransfer(params.from, params.to, amount, id, event)
   }
 }
 
@@ -46,11 +46,10 @@ export function handleRewardPaid(event: distributor.RewardPaid): void {
   const owner = Owner.load(assigner)
 
   if (owner) {
-    owner.rewardPaidCumulative = owner.rewardPaidCumulative.plus(params.reward)
+    owner.rewardClaimedCumulative = owner.rewardClaimedCumulative.plus(params.reward)
     owner.save()
   }
 }
-
 
 
 export function handleSetMain(event: profile.SetMain): void {
@@ -66,44 +65,14 @@ export function handleSetMain(event: profile.SetMain): void {
   }
 }
 
-
-export function handleStaked(event: distributor.Staked): void {
+export function handleSetUsername(event: profile.SetUsername): void {
   const params = event.params
-  const account = params.user.toHex()
-  const entity = Owner.load(account)
-
-  if (entity) {
-    const addStakeList = params.idList
-    const stakeList = entity.stakedTokenList
-
-    for (let index = 0; index < addStakeList.length; index++) {
-      const tokenId = addStakeList[index].toHex()
-      stakeList.push(tokenId)
-    }
-
-    entity.stakedTokenList = stakeList
-    entity.save()
-  }
-}
-
-export function handleWithdrawn(event: distributor.Withdrawn): void {
-  const params = event.params
-
-  const account = params.user.toHex()
-  const entity = Owner.load(account)
-
-  if (entity) {
-    const removeFromStakeList = params.idList
-    const stakeList = entity.stakedTokenList
-
-    for (let index = 0; index < removeFromStakeList.length; index++) {
-      const element = removeFromStakeList[index].toHex()
-      const removeIdx = stakeList.indexOf(element)
-      stakeList.splice(removeIdx, 1)
-    }
-
-    entity.stakedTokenList = stakeList
-    entity.save()
+  const assigner = params.assigner.toHex()
+  const owner = Owner.load(assigner)
+  
+  if (owner) {
+    owner.displayName = params.username
+    owner.save()
   }
 }
 
@@ -120,7 +89,6 @@ export function handleERC721Transfer(event: generated.Transfer): void {
     .toHexString()
     .concat(':'.concat(event.transactionLogIndex.toHexString()))
   let transfer = Transfer.load(transferId)
-  let contract = Contract.load(event.address.toHexString())
 
   const instance = generated.ERC721.bind(event.address)
 
@@ -130,10 +98,6 @@ export function handleERC721Transfer(event: generated.Transfer): void {
     const prevBalance = previousOwner.balance
     if (prevBalance !== null && prevBalance > ZERO_BI) {
       previousOwner.balance = prevBalance.minus(ONE_BI)
-    }
-
-    if (previousOwner.main === tokenId && previousOwner.stakedTokenList.indexOf(tokenId)) {
-      previousOwner.main = null
     }
   }
 
@@ -145,7 +109,7 @@ export function handleERC721Transfer(event: generated.Transfer): void {
 
   if (token == null) {
     token = new Token(tokenId)
-    token.contract = event.address.toHexString()
+    token.operator = event.address.toHexString()
     token.background = ZERO_BI
     token.custom = ZERO_BI
     token.special = ZERO_BI
@@ -167,29 +131,9 @@ export function handleERC721Transfer(event: generated.Transfer): void {
     transfer.transaction = _createTransactionIfNotExist(event)
   }
 
-  if (contract == null) {
-    contract = new Contract(event.address.toHexString())
-  }
-
-  const name = instance.try_name()
-  if (!name.reverted) {
-    contract.name = name.value
-  }
-
-  const symbol = instance.try_symbol()
-  if (!symbol.reverted) {
-    contract.symbol = symbol.value
-  }
-
-  const totalSupply = instance.try_totalSupply()
-  if (!totalSupply.reverted) {
-    contract.totalSupply = totalSupply.value
-  }
-
 
   previousOwner.save()
   owner.save()
   token.save()
-  contract.save()
   transfer.save()
 }

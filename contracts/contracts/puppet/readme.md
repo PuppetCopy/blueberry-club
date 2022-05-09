@@ -1,8 +1,8 @@
 # GBC Mirror Trading, Powered by Puppet
 
-Day Trading is one of world's hardest skill to ascertain, it requires the knowledge and understanding in risk, research, cycles/patterns, Price Action and mitigating trading based on emotions or crowd following
+Day Trading is one of world's hardest skill to ascertain, it requires the knowledge and understanding in risk, research, cycles/patterns, Price Action and mitigating trading decisions based on emotions or crowd following
 
-There are 2 participant types. Trader and Puppet, traders gets additional profit and clout based on their performance while Puppets search for traders that are likley to generate profit using the leaderboard by mirroring their trading strategy
+There are 2 participant types. Trader and Puppet, traders gets additional profit and clout based on their performance while Puppets search for traders that are likley to generate profit using the leaderboard by mirroring their trading strategy.
 we propose a utility that attempts to share the benefits between both participants, we think it's possible using GMX as protocol
 
 our platform will accesses all of the trading activity that is happening on <https://blueberry.club> through <https://gmx.io> contracts, this allows the visibility of any trader's historic performance, we use the data to build a platform that allow users the ability to pick and choose traders that are likely to give them profit by mirroring their trading strategy

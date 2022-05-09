@@ -1,73 +1,96 @@
-import { Address, ethereum, BigInt } from "@graphprotocol/graph-ts"
-import { Owner, Contract, TransferLabItem, LabItem } from "../generated/schema"
+import { Address, ethereum, BigInt, store } from "@graphprotocol/graph-ts"
+import { Owner, TransferSingle, LabItem, LabItemOwnership } from "../generated/schema"
 import * as lab from "../generated/ERC1155/ERC1155"
-import { ONE_BI, ZERO_BI, _createTransactionIfNotExist } from "./helpers"
+import { AddressZero, ZERO_BI, _createTransactionIfNotExist } from "./helpers"
 
 export function _createNewOwner(address: string): Owner {
   const owner = new Owner(address)
-  owner.rewardPaidCumulative = ZERO_BI
+  owner.rewardClaimedCumulative = ZERO_BI
   owner.balance = ZERO_BI
-  owner.labBalance = ZERO_BI
-  owner.stakedTokenList = []
 
   return owner
 }
 
-export function handleLabItemTransfer(from: Address, to: Address, id: BigInt, value: BigInt, event: ethereum.Event): void {
+export function handleLabItemTransfer(fromAddress: Address, toAddress: Address, id: BigInt, amount: BigInt, event: ethereum.Event): void {
   const transferId = event.transaction.hash
-    .toHexString()
-    .concat(':'.concat(event.transactionLogIndex.toHexString()))
+    .toHex()
+    .concat(':'.concat(event.transactionLogIndex.toHex()))
+  const tokenId = id.toHex()
+  const from = fromAddress.toHex()
+  const to = toAddress.toHex()
 
-
-  let previousOwner = Owner.load(from.toHexString())
-  let newOwner = Owner.load(to.toHexString())
-  let labItem = LabItem.load(id.toHexString())
-  let transfer = TransferLabItem.load(transferId)
-  let contract = Contract.load(event.address.toHexString())
+  let previousOwner = Owner.load(from)
+  let newOwner = Owner.load(to)
+  let labItem = LabItem.load(tokenId)
+  let transfer = TransferSingle.load(transferId)
+  const newLabItemOwnerId = tokenId + ':' + to
+  const previousLabItemOwnerId = tokenId + ':' + from
+  let newLabItemOwner = LabItemOwnership.load(newLabItemOwnerId)
+  let previousLabItemOwner = LabItemOwnership.load(previousLabItemOwnerId)
 
   const instance = lab.ERC1155.bind(event.address)
 
   if (previousOwner == null) {
-    previousOwner = _createNewOwner(to.toHex())
+    previousOwner = _createNewOwner(from)
   }
 
   if (newOwner == null) {
-    newOwner = _createNewOwner(to.toHexString())
+    newOwner = _createNewOwner(to)
   }
-  
-  newOwner.labBalance = newOwner.labBalance.plus(ONE_BI)
-
 
   if (labItem == null) {
-    labItem = new LabItem(id.toHexString())
-    labItem.contract = event.address.toHexString()
+    labItem = new LabItem(tokenId)
     labItem.uri = instance.uri(id)
+    labItem.operator = event.address.toHex()
   }
 
-  labItem.owner = to.toHexString()
+
+  if (previousLabItemOwner === null) { 
+    previousLabItemOwner = new LabItemOwnership(previousLabItemOwnerId)
+    previousLabItemOwner.owner = previousLabItemOwnerId
+    previousLabItemOwner.item = labItem.id
+    previousLabItemOwner.balance = ZERO_BI
+  }
+
+  previousLabItemOwner.balance = previousLabItemOwner.balance.minus(amount)
+
+  if (newLabItemOwner === null) {
+    newLabItemOwner = new LabItemOwnership(newLabItemOwnerId)
+    newLabItemOwner.owner = newOwner.id
+    newLabItemOwner.item = labItem.id
+    newLabItemOwner.balance = ZERO_BI
+  }
+
+  newLabItemOwner.balance = newLabItemOwner.balance.plus(amount)
+
+
+  if (to === AddressZero) {
+    labItem.supply = labItem.supply.minus(amount)
+
+    if (labItem.supply.equals(ZERO_BI)) {
+      store.remove('LabItemOwnership', newLabItemOwnerId)
+    }
+
+  } else {
+    labItem.supply = labItem.supply.plus(amount)
+  }
 
 
   if (transfer == null) {
-    transfer = new TransferLabItem(transferId)
-    transfer.token = id.toHexString()
-    transfer.from = from.toHexString()
-    transfer.to = to.toHexString()
+    transfer = new TransferSingle(transferId)
+    transfer.id = tokenId
+    transfer.from = from
+    transfer.to = to
+    transfer.operator = event.address.toHex()
     transfer.timestamp = event.block.timestamp
     transfer.transaction = _createTransactionIfNotExist(event)
   }
 
-  if (contract == null) {
-    contract = new Contract(event.address.toHexString())
-    contract.name = instance.name()
-    contract.symbol = instance.symbol()
-  }
-
-  contract.totalSupply = instance.totalTokens()
-
   previousOwner.save()
   newOwner.save()
   labItem.save()
-  contract.save()
   transfer.save()
+  previousLabItemOwner.save()
+  newLabItemOwner.save()
 }
 

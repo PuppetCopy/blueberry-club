@@ -410,16 +410,14 @@ function $displayMintEvents(contract: Stream<GBCLab>, minev: Stream<Promise<IMin
           ...tx.logs.map(log => {
             const parsedLog = lab.interface.parseLog(log)
             const labItemId: number = parsedLog.args.id.toNumber()
-            const amount: number = parsedLog.args.value.toNumber()
+            const amount: number = parsedLog.args.amount.toNumber()
                 
             return $column(layoutSheet.spacing)(
               $row(style({ placeContent: 'space-between' }))(
                 $text(style({ color: pallete.positive }))(`Minted ${amount} ${IAttributeMappings[labItemId]}`),
                 $txHashRef(tx.transactionHash, USE_CHAIN)
               ),
-              $row(style({ flexWrap: 'wrap' }))(...Array(amount).map(tokenId => {     
-                return $labItem(labItemId)
-              })),
+              $row(layoutSheet.spacing, style({ flexWrap: 'wrap' }))(...Array(amount).fill($labItem(labItemId))),
             )
           })
         )

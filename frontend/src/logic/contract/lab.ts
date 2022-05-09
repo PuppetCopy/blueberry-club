@@ -11,11 +11,6 @@ export function connectLab(wallet: IWalletLink) {
   const contract = map(w3p => GBCLab__factory.connect(GBC_ADDRESS.LAB, w3p.getSigner()), provider)
   const account = filter((a): a is string => a !== null, wallet.account)
 
-  const itemList = awaitPromises(combineArray(async (account, contract) => {
-    const items = (await contract.walletOfOwner(account)).map(x => x.toNumber())
-    return items
-  }, account, contract))
 
-
-  return { contract, itemList }
+  return { contract }
 }

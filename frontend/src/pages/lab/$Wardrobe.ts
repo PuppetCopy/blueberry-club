@@ -8,7 +8,7 @@ import { awaitPromises, combine, constant, empty, filter, map, merge, mergeArray
 import { $berryTileId } from "../../components/$common"
 import { $buttonAnchor, $ButtonPrimary, $ButtonSecondary } from "../../components/form/$Button"
 import { $defaultSelectContainer, $Dropdown } from "../../components/form/$Dropdown"
-import { IAttributeHat, IAttributeBackground, IAttributeFaceAccessory, ILabAttributeOptions, IAttributeClothes, IBerryDisplayTupleMap, getLabItemTupleIndex, saleDescriptionList, hasWhitelistSale, LabItemSaleDescription, IBerry, USE_CHAIN } from "@gambitdao/gbc-middleware"
+import { IAttributeHat, IAttributeBackground, IAttributeFaceAccessory, ILabAttributeOptions, IAttributeClothes, IBerryDisplayTupleMap, getLabItemTupleIndex, saleDescriptionList, hasWhitelistSale, LabItemSaleDescription, IBerry, USE_CHAIN, IToken } from "@gambitdao/gbc-middleware"
 import { $labItem } from "../../logic/common"
 import { $Toggle } from "../../common/$ButtonToggle"
 import { fadeIn } from "../../transitions/enter"
@@ -16,10 +16,10 @@ import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { $loadBerry } from "../../components/$DisplayBerry"
 import tokenIdAttributeTuple from "../../logic/mappings/tokenIdAttributeTuple"
 import { $caretDown } from "../../elements/$icons"
-import { $alert, $arrowsFlip, $IntermediateTx, $txHashRef, $xCross } from "@gambitdao/ui-components"
-import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
+import { $alert, $arrowsFlip, $IntermediateTx, $xCross } from "@gambitdao/ui-components"
+import { ContractTransaction } from "@ethersproject/contracts"
 import { Stream } from "@most/types"
-import { Manager } from "contracts"
+import { Closet } from "contracts"
 import { $iconCircular, $responsiveFlex } from "../../elements/$common"
 import { connectManager } from "../../logic/contract/manager"
 import { connectGbc } from "../../logic/contract/gbc"
@@ -28,6 +28,7 @@ import { $seperator2 } from "../common"
 import { unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { WALLET } from "../../logic/provider"
 import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
+import { queryOwnerV2 } from "../../logic/query"
 
 
 interface IBerryComp {
@@ -35,7 +36,7 @@ interface IBerryComp {
   parentRoute: Route
   walletStore: state.BrowserStore<WALLET, "walletStore">
 
-  initialBerry?: number
+  initialBerry?: IToken
 }
 
 type ItemSlotState = {
@@ -46,7 +47,7 @@ type ItemSlotState = {
 interface ExchangeState {
   updateItemState: ItemSlotState | null
   updateBackgroundState: ItemSlotState | null
-  contract: Manager
+  contract: Closet
   selectedBerry: IBerry & { id: number } | null
 }
 
@@ -54,7 +55,7 @@ interface ExchangeState {
 
 export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }: IBerryComp) => component((
   [changeRoute, changeRouteTether]: Behavior <any, string>,
-  [changeBerry, changeBerryTether]: Behavior <number, number>,
+  [changeBerry, changeBerryTether]: Behavior <IToken, IToken>,
   [selectedAttribute, selectedAttributeTether]: Behavior <ILabAttributeOptions, ILabAttributeOptions>,
   [clickSave, clickSaveTether]: Behavior<PointerEvent, PointerEvent>,
 
@@ -67,8 +68,19 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
 ) => {
 
   const lab = connectLab(walletLink)
-  const gbc = connectGbc(walletLink)
+  // const gbc = connectGbc(walletLink)
   const manager = connectManager(walletLink)
+
+
+  const owner = awaitPromises(map(async n => {
+    if (n === null) {
+      throw new Error('no account given')
+    }
+    return queryOwnerV2(n)
+  }, walletLink.account))
+
+  const tokenList = map(xz => xz.ownedTokens, owner)
+  const itemList = map(xz => xz.ownedLabItems, owner)
 
 
   const changeBerryId = merge(now(initialBerry || null), changeBerry)
@@ -76,15 +88,15 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
   const reEmitBerryAfterSave = snapshot((berry) => berry, changeBerryId, clickSave)
   
   const newLoca2l = merge(changeBerryId, reEmitBerryAfterSave)
-  const selectedBerry = multicast(awaitPromises(combine(async (id, contract): Promise<ExchangeState['selectedBerry'] | null> => {
-    if (id === null) {
+  const selectedBerry = multicast(awaitPromises(combine(async (token, contract): Promise<ExchangeState['selectedBerry'] | null> => {
+    if (token === null) {
       return null
     }
 
-    const obj = await contract.itemsOf(id)
+    const obj = await contract.itemsOf(token.id)
 
     return {
-      id,
+      id: token.id,
       background: obj.background.toNumber(),
       special: obj.special.toNumber(),
       custom: obj.custom.toNumber(),
@@ -169,7 +181,7 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
             $Dropdown({
               $selection: map(s => {
                 const $content = $row(style({ alignItems: 'center' }))(
-                  style({ fontSize: screenUtils.isMobileScreen ? '1em' : '1.2em' }, s ? $text(`GBC #` + s) : $text('Choose Berry')),
+                  style({ fontSize: screenUtils.isMobileScreen ? '1em' : '1.2em' }, s ? $text(`GBC #` + s.id) : $text('Choose Berry')),
                   $icon({ $content: $caretDown, width: '18px', svgOps: style({ marginTop: '3px', marginLeft: '6px' }), viewBox: '0 0 32 32' }),
                 )
 
@@ -188,7 +200,7 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
                     throw new Error(`No berry id:${token} exists`)
                   }
 
-                  return style({ cursor: 'pointer' }, $berryTileId(token))
+                  return style({ cursor: 'pointer' }, $berryTileId(token.id, token))
                 }),
                 options: tokenList
               }
@@ -198,7 +210,7 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
             tokenList.length === 0 ? $alert($text(`Connected account does not own any GBC's`)) : empty()
           )
 
-        }, gbc.tokenList)),
+        }, tokenList)),
         
       
 
@@ -241,7 +253,7 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
 
               const isWhitelist = hasWhitelistSale(item)
               const upcommingSaleDate = isWhitelist ? item.whitelistStartDate : item.publicStartDate
-              const itemOwned = ownedItems.find(ownedItem => ownedItem === id)
+              const itemOwned = ownedItems.find(ownedItem => ownedItem.item.id === id)
 
               const isSaleUpcomming = upcommingSaleDate > unixTime
 
@@ -286,7 +298,7 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
               )
             })
           )
-        }, mergeArray([switchLatest(constant(lab.itemList, awaitPromises(itemSetTxn))), lab.itemList]), selectedTabState)),
+        }, itemList, selectedTabState)),
 
         $node(style({ flex: 1 }))(),
 

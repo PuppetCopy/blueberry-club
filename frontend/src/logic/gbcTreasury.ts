@@ -2,12 +2,12 @@ import { combineArray } from "@aelea/core"
 import { GBC_ADDRESS, BI_18_PRECISION } from "@gambitdao/gbc-middleware"
 import { ARBITRUM_ADDRESS, AVALANCHE_ADDRESS } from "@gambitdao/gmx-middleware"
 import { fromPromise, map } from "@most/core"
-import { ERC20__factory } from "contracts"
+import { IERC20__factory } from "contracts"
 import { latestTokenPriceMap } from "./common"
 import { IGmxContractInfo, initContractChain } from "./contract"
 import { web3Provider, w3pAva } from "./provider"
 
-const avalancheWethContract = ERC20__factory.connect(AVALANCHE_ADDRESS.WETHE, w3pAva)
+const avalancheWethContract = IERC20__factory.connect(AVALANCHE_ADDRESS.WETHE, w3pAva)
 
 export const gbcContractEthBalance = map(x => x.toBigInt(), fromPromise(web3Provider.getBalance(GBC_ADDRESS.GBC)))
 export const vaultArbitrumEthBalance = map(x => x.toBigInt(), fromPromise(web3Provider.getBalance(GBC_ADDRESS.TREASURY_ARBITRUM)))

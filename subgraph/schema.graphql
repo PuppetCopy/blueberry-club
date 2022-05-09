@@ -1,40 +1,38 @@
 type Token @entity {
   id: ID!
-  owner: Owner
+  owner: Owner!
   uri: String!
   transfers: [Transfer!]! @derivedFrom(field: "token")
-  contract: Contract!
+  operator: String!
   background: BigInt!
   custom: BigInt!
   special: BigInt!
+}                  
+
+type LabItemOwnership @entity {
+  id: ID!
+  owner: Owner!
+  item: LabItem!
+  balance: BigInt!
 }
 
 type LabItem @entity {
   id: ID!
-  owner: Owner
+  supply: BigInt!
   uri: String!
-  transfers: [TransferLabItem!]! @derivedFrom(field: "token")
-  contract: Contract!
+  owners: [LabItemOwnership!]! @derivedFrom(field: "item")
+  transfers: [TransferSingle!]! @derivedFrom(field: "item")
+  operator: String!
 }
 
 type Owner @entity {
   id: ID!
   ownedTokens: [Token!]! @derivedFrom(field: "owner")
-  ownedLabItems: [LabItem!]! @derivedFrom(field: "owner")
-  balance: BigInt!
-  labBalance: BigInt!
+  ownedLabItems: [LabItemOwnership!]! @derivedFrom(field: "owner")
   main: Token
-  stakedTokenList: [Token!]!
-  rewardPaidCumulative: BigInt!
-}
-
-
-type Contract @entity {
-  id: ID!
-  name: String!
-  symbol: String!
-  totalSupply: BigInt!
-  mintedTokens: [Token!]! @derivedFrom(field: "contract")
+  displayName: String
+  balance: BigInt!
+  rewardClaimedCumulative: BigInt!
 }
 
 type Transfer @entity {
@@ -43,17 +41,28 @@ type Transfer @entity {
   from: Owner!
   to: Owner!
   timestamp: BigInt!
-  contract: Contract!
+  operator: String!
   transaction: Transaction!
 }
 
-type TransferLabItem @entity {
+type TransferSingle @entity {
   id: ID!
-  token: LabItem!
+  operator: String!
   from: Owner!
   to: Owner!
   timestamp: BigInt!
-  contract: Contract!
+  item: LabItem!
+  transaction: Transaction!
+}
+
+type TransferBatch @entity {
+  id: ID!
+  operator: String!
+  from: Owner!
+  to: Owner!
+  timestamp: BigInt!
+  ids: [BigInt!]
+  amounts: [BigInt!]
   transaction: Transaction!
 }
 

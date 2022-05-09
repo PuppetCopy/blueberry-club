@@ -1,6 +1,8 @@
 import { ethereum, BigInt } from "@graphprotocol/graph-ts"
 import { Transaction } from "../generated/schema"
 
+export const AddressZero = "0x0000000000000000000000000000000000000000"
+
 export const ZERO_BI = BigInt.fromI32(0)
 export const ONE_BI = BigInt.fromI32(1)
 
