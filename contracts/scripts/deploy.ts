@@ -26,12 +26,12 @@ export enum ROLES {
 // This contract/address can be used on other contracts
 const TREASURY = "" // Multisig or you personal address (if you leave it blank it will be the owner address)
 const GBC = GBC_ADDRESS.GBC // The GBC ERC721 (NFT) contract
-const POLICE = "0xcEa45644121ACec2d7B9567D5c759165B74d3CEE" // Police contract
-const LAB = "0x3FD0F44E4CE52795Eb4309B92300083353E34F9d" // The Lab items ERC1155 contract
+const POLICE = "" // Police contract
+const LAB = "" // The Lab items ERC1155 contract
 
 // This contract can be redeployed safely they are not required
 // on others contract (for now)
-const PROFILE = "0x14a9a217130a13B803C2b8B79f629C32344193e1"
+const PROFILE = ""
 const CLOSET = ""
 
 const saleConfigList = saleDescriptionList
