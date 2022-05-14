@@ -4803,6 +4803,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"clones-with-immutable-args@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "clones-with-immutable-args@npm:1.0.0"
+  checksum: 8fb23a911dc2a78ee31b1fe38ee9175a447a99e926fd6640f9364991b9b63c7e023c4f444aef75ec06c56cdf7cb24c6dc3cc7550555fbc96d313b17ba9471893
+  languageName: node
+  linkType: hard
+
 "code-point-at@npm:^1.0.0":
   version: 1.1.0
   resolution: "code-point-at@npm:1.1.0"
@@ -5101,6 +5108,7 @@ __metadata:
     "@types/mocha": ^9.1.1
     bn.js: ^5.2.0
     chai: ^4.3.6
+    clones-with-immutable-args: ^1.0.0
     csv-parse: ^5.0.4
     ethereum-waffle: 3.4.4
     ethers: ^5.6.5

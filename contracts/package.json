@@ -47,6 +47,7 @@
   "dependencies": {
     "@gambitdao/gbc-middleware": "workspace:*",
     "@gambitdao/gmx-middleware": "workspace:*",
-    "@rari-capital/solmate": "^6.2.0"
+    "@rari-capital/solmate": "^6.2.0",
+    "clones-with-immutable-args": "^1.0.0"
   }
 }
