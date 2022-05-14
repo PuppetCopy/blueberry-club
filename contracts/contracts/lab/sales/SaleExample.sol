@@ -5,19 +5,14 @@ import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {GBCLab} from "../GBCLab.sol";
+import {Sale} from "./sale.sol";
 
 /**
  * @title SaleExample
  * @author IrvingDevPro
  * @notice Just a simple sale to show how to use the power of GBCLab
  */
-contract SaleExample is Ownable {
-
-    address public immutable TREASURY;
-
-    uint public immutable ITEM_ID;
-    uint public immutable MAX_SUPPLY;
-    uint public immutable MAX_PER_TX;
+contract SaleExample is Sale {
 
     uint public immutable PUBLIC_COST;
     uint public immutable PUBLIC_START_DATE;
@@ -27,20 +22,12 @@ contract SaleExample is Ownable {
     uint public immutable WHITELIST_MAX;
 
     IERC721 public immutable GBC;
-    GBCLab public immutable ITEMS;
 
-    uint public minted;
     uint public whitelistMinted;
-
-    bool public isCanceled;
 
     mapping(uint => bool) public isAlreadyUsed;
 
-    constructor(address _TREASURY, uint _ITEM_ID, uint _MAX_SUPPLY, uint _MAX_PER_TX, uint _PUBLIC_COST, uint _PUBLIC_START_DATE, uint _WHITELIST_START_DATE, uint _WHITELIST_COST, uint _WHITELIST_MAX, address _gbc, address _items) {
-        TREASURY = _TREASURY;
-        ITEM_ID = _ITEM_ID;
-        MAX_SUPPLY = _MAX_SUPPLY;
-        MAX_PER_TX = _MAX_PER_TX;
+    constructor(address _TREASURY, uint _ITEM_ID, uint _MAX_SUPPLY, uint _MAX_PER_TX, uint _PUBLIC_COST, uint _PUBLIC_START_DATE, uint _WHITELIST_START_DATE, uint _WHITELIST_COST, uint _WHITELIST_MAX, address _gbc, address _items) Sale(_TREASURY, _ITEM_ID, _MAX_SUPPLY, _MAX_PER_TX, _PUBLIC_START_DATE, _items) {
 
         PUBLIC_COST = _PUBLIC_COST;
         PUBLIC_START_DATE = _PUBLIC_START_DATE;
@@ -50,7 +37,6 @@ contract SaleExample is Ownable {
         WHITELIST_MAX = _WHITELIST_MAX;
 
         GBC = IERC721(_gbc);
-        ITEMS = GBCLab(_items);
     }
 
     function mintWhitelist(uint[] memory gbcs) external payable {
@@ -81,11 +67,4 @@ contract SaleExample is Ownable {
         ITEMS.mint(msg.sender, ITEM_ID, amount, "");
     }
 
-    function fundTreasury() external onlyOwner {
-        payable(TREASURY).transfer(address(this).balance);
-    }
-
-    function cancel() external onlyOwner {
-        isCanceled = true;
-    }
 }
