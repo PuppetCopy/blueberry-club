@@ -1,5 +1,5 @@
 import { Behavior, combineArray, combineObject, O, Op, replayLatest, Tether } from "@aelea/core"
-import { $node, $Node, $text, attr, component, INode, nodeEvent, style, styleBehavior } from "@aelea/dom"
+import { $node, $Node, $text, attr, attrBehavior, component, INode, nodeEvent, style, styleBehavior } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
 
@@ -69,7 +69,7 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
   [changeItemState, changeItemStateTether]: Behavior<any, ItemSlotState | null>,
   [changeBackgroundState, changeBackgroundStateTether]: Behavior<any, ItemSlotState | null>,
 
-  [clickBerry, clickBerryTether]: Behavior<INode, PointerEvent>,
+  [hoverDownloadBtn, hoverDownloadBtnTether]: Behavior<INode, PointerEvent>,
   [setMainBerry, setMainBerryTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
   
 ) => {
@@ -264,7 +264,7 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
                 ? wearBehavior(nodeEvent('click'), constant({ isRemove: false, id }))
                 : changeRouteTether(nodeEvent('click'), constant(`/p/item/${id}`), tap(x => history.pushState(null, '', x)))
 
-              return $row(style({ cursor: 'pointer', position: 'relative', overflow: 'hidden', borderRadius: '8px', backgroundColor: colorAlpha(pallete.message, .95) }))(
+              return $row(style({ cursor: 'pointer', position: 'relative', borderRadius: '8px', backgroundColor: colorAlpha(pallete.message, .95) }))(
                 fadeIn(
                   style({ filter: itemOwned ? '' : 'grayscale(1)' }, selectBehavior($labItem(id, 118)))
                 ),
@@ -280,11 +280,13 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
                       buttonOp: style({
                         zoom: .6,
                         position: 'absolute',
-                        top: '4px',
-                        right: '4px',
+                        top: '-15px',
+                        width: '50px',
+                        height: '50px',
+                        right: '-15px',
                         padding: '4px'
                       }),
-                      $content: $text(style({ padding: '4px 6px'  }))('Sample'),
+                      $content: $text(style({ padding: '4px 6px'  }))('Try'),
                     })({
                       click: O(wearBehavior(constant({ isRemove: false, id })), changeRouteTether())
                     })
@@ -389,21 +391,25 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
             $berry = style({ borderRadius: '30px' }, $loadBerry(displaytuple, previewSize))
           }
 
-          const clickBerryBehavior = clickBerryTether(
-            nodeEvent('click')
+          const hoverDownloadBehavior = hoverDownloadBtnTether(
+            nodeEvent('pointerenter')
           )
 
+          return $berry ? $row(
+            $buttonAnchor(
+              hoverDownloadBehavior,
+              style({ position: 'absolute', bottom: '-20px', right: '50%', transform: 'translateX(50%)' }),
+              attr({ target: '_blank', download: `GBC-${selectedBerry?.id}.png` }),
+              attrBehavior(awaitPromises(map(async x => {
+                const svg = document.querySelector('#BERRY')! as SVGElement
+                const href = await getGbcDownloadableUrl(svg)
 
-          return $row(
-            switchLatest(awaitPromises(map(async url => {
-              const svg = document.querySelector('#BERRY')! as SVGElement
-              const href = await getGbcDownloadableUrl(svg)
+                return { href }
+              }, hoverDownloadBtn)))
+            )($text('Download')),
 
-              return fadeIn($buttonAnchor(style({ position: 'absolute', bottom: '30px', right: '30px' }), attr({ target: '_blank', download: `GBC-${selectedBerry?.id}.png`, href }))($text('Download')))
-            }, clickBerry))),
-
-            $berry ? clickBerryBehavior(attr({ id: 'BERRY' }, style({ cursor: 'pointer' }, $berry))) : $row(style({  }))(),
-          )
+            attr({ id: 'BERRY' }, style({ cursor: 'pointer' }, $berry))
+          ) : $row(style({  }))()
 
         }, exchangeState)),
       ),
