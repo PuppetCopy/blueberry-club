@@ -51,6 +51,13 @@ interface ExchangeState {
   selectedBerry: IBerry & { id: number } | null
 }
 
+const getLabel = (option: ILabAttributeOptions) => {
+  return option === IAttributeBackground
+    ? 'Background' : option === IAttributeClothes
+      ? 'Clothes' : option === IAttributeHat
+        ? 'Hat' : option === IAttributeFaceAccessory
+          ? 'Accessory' : null
+}
 
 
 export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }: IBerryComp) => component((
@@ -103,14 +110,7 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
     }
   }, newLoca2l, manager.contract)))
 
-    
-  const getLabel = (option: ILabAttributeOptions) => {
-    return option === IAttributeBackground
-      ? 'Background' : option === IAttributeClothes
-        ? 'Clothes' : option === IAttributeHat
-          ? 'Hat' : option === IAttributeFaceAccessory
-            ? 'Accessory' : null
-  }
+
 
 
   const itemChangeState = startWith(null, changeItemState)
@@ -192,7 +192,7 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
               }),
               $option: $row,
               select: {
-                $container: $defaultSelectContainer(style({ gap: 0, flexWrap: 'wrap', width: '300px', maxHeight: '400px', overflow: 'auto', flexDirection: 'row' })),
+                $container: $defaultSelectContainer(style({ gap: 0, padding: '15px', flexWrap: 'wrap', width: '300px', maxHeight: '400px', overflow: 'auto', flexDirection: 'row' })),
                 value: now(initialBerry || null),
                 $$option: map(token => {
 
@@ -202,7 +202,7 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
 
                   return style({ cursor: 'pointer' }, $berryTileId(token.id, token))
                 }),
-                options: tokenList
+                list: tokenList
               }
             })({
               select: changeBerryTether()

@@ -7,8 +7,6 @@ we propose a utility that attempts to share the benefits between both participan
 
 our platform will accesses all of the trading activity that is happening on <https://blueberry.club> through <https://gmx.io> contracts, this allows the visibility of any trader's historic performance, we use the data to build a platform that allow users the ability to pick and choose traders that are likely to give them profit by mirroring their trading strategy
 
-to ensure Traders have Skin in the game(risk) they are required to deposit funds and, based on the amount they deposit they will be able use amount of Puppet's deposited funds. if a trader opens a trade using 100% of his deposited tokens in the Mirror Account this means he reached his limit, he will have to add additional funds or settle opened position in order to open a position of the same token
-
 We will also launch monthly tournaments, is an on-going draft, see(needs update to reflect Mirror Trading) <https://docs.google.com/document/d/1raoPyVwOSWPdy7HWzEuFt__2KNHigSC-sVYJ8tkJZSY/edit?usp=sharing>
 
 ## Trader
@@ -16,19 +14,14 @@ We will also launch monthly tournaments, is an on-going draft, see(needs update 
 ### Trader features
 
 - opens GMX leveraged trades. successful trades win the profit and receive additional fee per Puppet
-- ranked on a leaderboard that displays historic records, successful track record increases exposure
+- ranked on a leaderboard that displays historic records, successful track record will increase exposure
 - controls additional liquidity given by each Puppet based on his allocation in the contract
 - achieve clout, build a community and gather followers by providing twitter/reddit info
 
 ### Trader actions
 
 - create Mirror Account (Lab profile required)
-- specify route rules ETH <> USDC, BTC <> USDC
-  - define which tokens can be traded, in this case only ETH and BTC long and short can be opened
-- deposit routed tokens
-  - minimum $10 in one of routed tokens
-  - can use a Puppet funds based on his deposited token amount or less
-  - if the Trader has opened position using 100% he deposited, he will have to deposit additional funds or settle his open positions
+- define which tokens can be traded, in this case only ETH and BTC long and short can be opened
 - open/modify/close GMX positions (increasePosition, decreasePosition)
   - open/close a trade, update funds allocation of Trader and his Puppet's funds in the contract
   - when a trade gets liquidated.. TBD, find a way to get the remaining liquidity to update funds allocation
@@ -43,7 +36,6 @@ We will also launch monthly tournaments, is an on-going draft, see(needs update 
 - leaderboard to allow visibility into Traders historic track record
 - search for traders that are likely to generate profit using the leaderboard
 - balance risk by Mirroring multiple traders based on configured threshold
-- successful trades receive the profit and pays a small fee to the trader
 
 ### Puppet actions
 
@@ -56,5 +48,5 @@ We will also launch monthly tournaments, is an on-going draft, see(needs update 
     - an issue could happen if the trader has opened 5 ETH trade, he could deposit additional funds and use another 2.5 ETH and repeat this process
 - switch take profit on/off(default) after trade settles(close, liquidate)
   - off, update net-value contract token allocation
-  - on, send net-value token to Puppet's wallet
+  - on, lock net-value into a profit reseve(to be withdrawn)
 - withdraw a token from the contract. unused allocated funds will be sent to his wallet

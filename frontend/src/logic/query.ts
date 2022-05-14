@@ -325,8 +325,8 @@ ${schemaFragments}
 
 query ($account: String) {
   owner(id: $account) {
+    id
     balance
-    rewardClaimedCumulative
     ownedLabItems {
       balance
       item {
@@ -334,11 +334,16 @@ query ($account: String) {
       }
       id
     }
+    displayName
+    rewardClaimedCumulative
     ownedTokens {
       id
       background
       custom
       special
+    }
+    ownedLabItems {
+      id
     }
     main {
       id
@@ -475,16 +480,6 @@ export const queryOwnerTrasnferNfts = async (account: string) => {
   return Object.entries(groupByMapMany(owner.ownedTokens, token => token.transfers[0].transaction.id))
 }
 
-export const queryOwnerOwnedTokens = async (account: string) => {
-  const owner = (await blueberryGraph(ownerDoc, { account })).owner
-
-  if (owner === null) {
-    return []
-  }
-
-  return owner.ownedTokens
-}
-
 export const queryOwnerV2 = async (account: string): Promise<IOwner> => {
   const owner = (await blueberryGraphV2(ownerV2, { account: account.toLowerCase() })).owner
 
@@ -492,10 +487,7 @@ export const queryOwnerV2 = async (account: string): Promise<IOwner> => {
     throw new Error(`Owner ${account} not found`)
   }
 
-  return {
-    ...owner,
-    ownedTokens: owner.ownedTokens.map(fromTokenJson)
-  }
+  return fromOwnerJson(owner)
 }
  
 export const queryToken = async (id: string) => {
@@ -576,10 +568,20 @@ export const queryAvalancheRewards = async (config: IAccountQueryParamApi & Part
 function fromTokenJson<T extends IToken>(obj: T): T {
   return {
     ...obj,
+    owner: obj.owner ? fromOwnerJson(obj.owner) : null,
     id: Number(obj.id),
-    background: Number(obj.background),
-    custom: Number(obj.custom),
-    special: Number(obj.special),
+    background: obj.background ? Number(obj.background) : undefined,
+    custom: obj.custom ? Number(obj.custom) : undefined,
+    special: obj.special ? Number(obj.special) : undefined,
+  }
+}
+
+function fromOwnerJson<T extends IOwner>(obj: T): T {
+  return {
+    ...obj,
+    main: obj.main ? fromTokenJson(obj.main) : null,
+    ownedTokens: obj.ownedTokens.map(fromTokenJson),
+    ownedLabItems: obj.ownedLabItems.map(json => ({ ...json, balance: BigInt(json.balance), item: { id: Number(json.item.id) } }))
   }
 }
 

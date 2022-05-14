@@ -376,7 +376,7 @@ const $TradeBox = (config: ITradeBox) => component((
 
               return $tokenLabelFromSummary(tokenDesc)
             }),
-            options: [
+            list: [
               AddressZero,
               ARBITRUM_ADDRESS.NATIVE_TOKEN,
               ARBITRUM_ADDRESS.LINK,

@@ -6,19 +6,20 @@ import { GBC_ADDRESS, IToken, MINT_MAX_SUPPLY, REWARD_DISTRIBUTOR, USE_CHAIN } f
 import { formatFixed, formatReadableUSD, readableNumber } from "@gambitdao/gmx-middleware"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { empty, fromPromise, map, merge, multicast, snapshot, startWith, switchLatest } from "@most/core"
+import { empty, fromPromise, map, merge, multicast, now, snapshot, startWith, switchLatest } from "@most/core"
 import { $responsiveFlex } from "../elements/$common"
 import { queryLatestPrices, queryOwnerV2 } from "../logic/query"
 import { IAccountStakingStore } from "@gambitdao/gbc-middleware"
 import { pallete } from "@aelea/ui-components-theme"
 import { $seperator2 } from "./common"
-import { $alert, $IntermediateTx } from "@gambitdao/ui-components"
+import { $alert, $IntermediatePromise, $IntermediateTx } from "@gambitdao/ui-components"
 import { connectGbc } from "../logic/contract/gbc"
 import { $ButtonPrimary } from "../components/form/$Button"
 import { connectRewardDistributor } from "../logic/contract/rewardDistributor"
 import { $accountPreview } from "../components/$AccountProfile"
 import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
 import { $SelectBerries } from "../components/$SelectBerries"
+import { $berryTileId } from "../components/$common"
 
 
 export interface IAccount {
@@ -169,17 +170,7 @@ export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAcco
       //     $node(),
 
             
-      //     $row(layoutSheet.spacing)(
-      //       $column(
-      //         $text('Earned:'),
-      //         $text(combineArray((earned, balance, pmap) => `$${formatReadableUSD(earned)}`, rewardDistributor.earned, rewardDistributor.tokenBalance, priceMap))
-      //       ),
-      //       $column(
-      //         $text('Staking:'),
-      //         $text(combineArray((balance) => `${balance}`, rewardDistributor.stakeBalance))
-      //       ),
-      //     ), 
-      //   ),
+
 
 
       //   $seperator2,
@@ -307,16 +298,16 @@ export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAcco
 
 
 
-      // $IntermediatePromise({
-      //   query: now(queryOwnerOwnedTokens(accountAddress)),
-      //   $done: map(ids => {
-      //     return $row(style({ flexWrap: 'wrap' }))(...ids.map(token => {
-      //       const tokenId = Number(BigInt(token.id))
+      $IntermediatePromise({
+        query: now(queryOwnerV2(accountAddress.toLowerCase())),
+        $$done: map(owner => {
+          return $row(style({ flexWrap: 'wrap' }))(...owner.ownedTokens.map(token => {
+            const tokenId = Number(BigInt(token.id))
 
-      //       return $berryTileId(tokenId)
-      //     }))
-      //   }),
-      // })({}),
+            return $berryTileId(tokenId, token)
+          }))
+        }),
+      })({}),
 
 
       // $responsiveFlex(layoutSheet.spacingBig)(

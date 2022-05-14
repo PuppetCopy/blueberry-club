@@ -59,7 +59,7 @@ export const $SelectBerries = (config: ISelectBerries) => component((
 
           return $berryTileId(token.id, token)
         }),
-        options: [
+        list: [
           'ALL' as const,
           ...config.options
         ]

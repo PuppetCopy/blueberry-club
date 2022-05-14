@@ -1,9 +1,9 @@
 import { Behavior, O, Op } from "@aelea/core"
-import { $element, $node, $Node, $text, attr, component, eventElementTarget, IBranch, INode, NodeComposeFn, nodeEvent, style, styleBehavior, stylePseudo } from "@aelea/dom"
-import { $column, $Field, $icon, $row, $TextField, Input, layoutSheet } from "@aelea/ui-components"
+import { $element, $Node, $text, attr, component, eventElementTarget, IBranch, INode, NodeComposeFn, nodeEvent, style, styleBehavior, stylePseudo } from "@aelea/dom"
+import { $column, $icon, $row, Input, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { $xCross } from "@gambitdao/ui-components"
-import { constant, empty, map, merge, mergeArray, multicast, now, scan, skip, snapshot, startWith, switchLatest, tap } from "@most/core"
+import { constant, empty, map, merge, mergeArray, multicast, now, scan, skip, startWith, switchLatest, tap } from "@most/core"
 import { append, remove } from "@most/prelude"
 import { $label as $LabelNode } from "../../common/$TextField"
 import { $caretDown } from "../../elements/$icons"
@@ -24,20 +24,20 @@ export const secondaryButtonStyle = style({
 })
 
 export interface ISelect<T> extends Input<T> {
-  options: T[]
+  list: T[]
 
   $container: NodeComposeFn<$Node>
   $$option: Op<T, $Node>
 }
 
 
-export const $Select = <T>({ options, $$option, disabled, $container, value, validation }: ISelect<T>) => component((
+export const $Select = <T>({ list, $$option, disabled, $container, value, validation }: ISelect<T>) => component((
   [select, selectTether]: Behavior<IBranch, T>
 ) => {
 
   return [
     $container(
-      ...options.map(item => {
+      ...list.map(item => {
 
         const selectBehavior = selectTether(
           nodeEvent('click'),
@@ -131,7 +131,6 @@ export const $Dropdown = <T>({
             position: 'absolute', top: 'calc(100% + 5px)'
           })),
           $$option: O(select.$$option, map($option)),
-          // $option: map(x => $selectableOption($text(String(x))))
         })({ select: pickTether() })
         
       }, isOpenState))
@@ -298,7 +297,7 @@ export const $DropMultiSelect = <T>({
               })
             )
 
-            const optionSelection = selectDrop.options.filter(n => valueList.indexOf(n) === -1)
+            const optionSelection = selectDrop.list.filter(n => valueList.indexOf(n) === -1)
 
             if (optionSelection.length === 0) {
               return $floatingContainer($text('Nothing to select'))
@@ -308,7 +307,7 @@ export const $DropMultiSelect = <T>({
             return $Select({
               ...selectDrop,
               $container: $floatingContainer,
-              options: optionSelection,
+              list: optionSelection,
               value: empty(),
               // $container: ,
               // $option: map(x => $selectableOption($text(String(x))))

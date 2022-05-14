@@ -7,7 +7,7 @@ import { $berryById, $labItem } from "../logic/common"
 
 export const $berryTileId = (id: number, berry: IBerry | null = null, size = 65) => $column(style({ position: 'relative' }))(
   $berryById(id, berry, size),
-  $text(style({ textAlign: 'left', paddingLeft: '3px', paddingTop: '1px', fontSize: '.55em', position: 'absolute', fontWeight: 'bold', color: '#000' }))(String(id))
+  $text(style({ textAlign: 'left', paddingLeft: '3px', paddingTop: '1px', color: '#fff', textShadow: '0px 0px 5px black', fontSize: '.55em', position: 'absolute', fontWeight: 'bold' }))(String(id))
 )
 
 export function $mintDet1ails(txHash: string, berriesAmount: number, ids: number[]) {
