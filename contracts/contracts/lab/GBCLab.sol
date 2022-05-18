@@ -14,6 +14,7 @@ contract GBCLab is ERC1155, Auth, ERC2981 {
 
     error Error_ItemAlreadyExist();
     error Error_ItemNotExist();
+    error Error_AttributeIsZero();
 
     constructor(address _owner, Authority _authority) Auth(_owner, _authority) {}
 
@@ -43,11 +44,12 @@ contract GBCLab is ERC1155, Auth, ERC2981 {
 
     function create(uint id, uint attribute) external requiresAuth {
         if (getAttributeOf[id] != 0) revert Error_ItemAlreadyExist();
+        if (attribute == 0) revert Error_AttributeIsZero();
         getAttributeOf[id] = attribute;
     }
 
     function mint(address to, uint256 id, uint256 amount, bytes memory data) external requiresAuth {
-        if (getAttributeOf[id] != 0) revert Error_ItemNotExist();
+        if (getAttributeOf[id] == 0) revert Error_ItemNotExist();
         _mint(to, id, amount, data);
     }
 
@@ -59,7 +61,7 @@ contract GBCLab is ERC1155, Auth, ERC2981 {
     ) external requiresAuth {
         unchecked {
             for (uint256 i = 0; i < ids.length; i++) {
-                if (getAttributeOf[ids[i]] != 0) revert Error_ItemNotExist();
+                if (getAttributeOf[ids[i]] == 0) revert Error_ItemNotExist();
             }
         }
         _batchMint(to, ids, amounts, data);
