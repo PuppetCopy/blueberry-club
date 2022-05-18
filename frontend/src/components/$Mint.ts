@@ -11,7 +11,7 @@ import { IEthereumProvider } from "eip1193-provider"
 import { $caretDown, $gift } from "../elements/$icons"
 import { $IntermediateConnectButton } from "./$ConnectAccount"
 import { $ButtonPrimary } from "./form/$Button"
-import { $Dropdown } from "./form/$Dropdown"
+import { $Dropdown, $defaultSelectContainer } from "./form/$Dropdown"
 import { WALLET } from "../logic/provider"
 import { $alert, $IntermediatePromise, $IntermediateTx, $spinner, $txHashRef } from "@gambitdao/ui-components"
 import { $labItem, takeUntilLast } from "../logic/common"
@@ -244,10 +244,10 @@ export const $Mint = ({ walletStore, walletLink, item }: IMint) => component((
           )
         ),
         select: {
-          $container: $column,
+          $container: $defaultSelectContainer(style({ minWidth:'300px' })),
           value: startWith(null, customNftAmount),
           $$option: map(option => $text(String(option))),
-          options: [ 1, 2, 3, 5, 10, 20 ].filter(n => Number(item.maxPerTx) >= n),
+          list: [ 1, 2, 3, 5, 10, 20 ].filter(n => Number(item.maxPerTx) >= n),
         }
       })({
         select: selectMintAmountTether()

@@ -168,7 +168,7 @@ export default ({ baseRoute = '' }: Website) => component((
         ),
       
         router.contains(pagesRoute)(
-          $column(layoutSheet.spacingBig, style({ width: '100%', margin: '0 auto', paddingBottom: '45px' }))(
+          $column(layoutSheet.spacingBig, style({ width: '100%', margin: '0 auto', paddingBottom: '145px' }))(
             router.match(berryRoute)(
               $BerryPage({ walletLink, parentRoute: pagesRoute })({})
             ),

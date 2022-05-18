@@ -1,4 +1,4 @@
-import { Address, ethereum, BigInt, store } from "@graphprotocol/graph-ts"
+import { Address, ethereum, BigInt } from "@graphprotocol/graph-ts"
 import { Owner, TransferSingle, LabItem, LabItemOwnership } from "../generated/schema"
 import * as lab from "../generated/ERC1155/ERC1155"
 import { AddressZero, ZERO_BI, _createTransactionIfNotExist } from "./helpers"
@@ -66,11 +66,6 @@ export function handleLabItemTransfer(fromAddress: Address, toAddress: Address, 
 
   if (to === AddressZero) {
     labItem.supply = labItem.supply.minus(amount)
-
-    if (labItem.supply.equals(ZERO_BI)) {
-      store.remove('LabItemOwnership', newLabItemOwnerId)
-    }
-
   } else {
     labItem.supply = labItem.supply.plus(amount)
   }

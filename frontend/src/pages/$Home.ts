@@ -5,7 +5,7 @@ import { $column, $icon, $row, layoutSheet, observer, screenUtils, state } from 
 import { pallete } from "@aelea/ui-components-theme"
 import { IAccountQueryParamApi, IClaim, intervalInMsMap, ITimerangeParamApi } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { $anchor, $gitbook, $glp, $Link } from "@gambitdao/ui-components"
+import { $anchor, $discord, $gitbook, $github, $glp, $instagram, $Link, $twitter } from "@gambitdao/ui-components"
 import { empty, fromPromise, map, multicast, snapshot, take, tap } from "@most/core"
 import { $card, $responsiveFlex, $teamMember } from "../elements/$common"
 
@@ -13,7 +13,6 @@ import { BI_18_PRECISION, GBC_ADDRESS, IAttributeExpression, ITreasuryStore } fr
 import { $StakingGraph } from "../components/$StakingGraph"
 import { $seperator2 } from "./common"
 import { $Breadcrumbs } from "../components/$Breadcrumbs"
-import { $socialMediaLinks } from "../components/$MainMenu"
 import { $buttonAnchor, $ButtonSecondary } from "../components/form/$Button"
 import { $bagOfCoins, $discount, $stackedCoins, $tofunft } from "../elements/$icons"
 import { Stream } from "@most/types"
@@ -380,7 +379,23 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore, claimMap, wallet
           $text(style({ fontWeight: 'bold', fontSize: '2.5em' }))('Frequently asked  questions'),
           $text(style({ whiteSpace: 'pre-wrap', maxWidth: '878px' }))(`You can also contact us on our networks
 (Use the dedicated NFT channel on discord)`),
-          $socialMediaLinks
+          $row(layoutSheet.spacingBig)(
+            $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://discord.com/invite/7ZMmeU3z9j' }))(
+              $icon({ $content: $discord, width: '22px', viewBox: `0 0 32 32` })
+            ),
+            $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://docs.blueberry.club/' }))(
+              $icon({ $content: $gitbook, width: '22px', viewBox: `0 0 32 32` })
+            ),
+            $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://twitter.com/GBlueberryClub' }))(
+              $icon({ $content: $twitter, width: '22px', viewBox: `0 0 24 24` })
+            ),
+            $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://www.instagram.com/blueberryclub.eth' }))(
+              $icon({ $content: $instagram, width: '18px', viewBox: `0 0 32 32` })
+            ),
+            $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://github.com/nissoh/blueberry-club' }))(
+              $icon({ $content: $github, width: '22px', viewBox: `0 0 32 32` })
+            ),
+          )
         ),
         $column(layoutSheet.spacingBig, style({ flex: 1 }))(
           $Breadcrumbs({
