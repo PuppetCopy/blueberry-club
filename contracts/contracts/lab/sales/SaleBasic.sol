@@ -12,7 +12,7 @@ import {Owned} from "@rari-capital/solmate/src/auth/Owned.sol";
  * @author IrvingDevPro
  * @notice Just a simple sale to show how to use the power of GBCLab
  */
-contract Sale is Owned {
+contract SaleBasic is Owned {
 
     uint public immutable ITEM_ID;
     uint public immutable COST;

@@ -1,9 +1,8 @@
 import { expect } from "chai"
 import { ethers } from "hardhat"
-import { Police, GBC, Whitelist__factory, GBCLab, GBCLab__factory, GBC__factory, Police__factory, Sale__factory } from "../typechain-types"
+import { Police, GBC, PermissionedWhitelist__factory, GBCLab, GBCLab__factory, GBC__factory, Police__factory, SaleBasic__factory } from "../typechain-types"
 import { MerkleTree } from 'merkletreejs'
 import { keccak256, parseEther } from "ethers/lib/utils"
-import { deploy } from "../utils/deploy"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 
 // TODO: (aling to custom errors) https://github.com/dethcrypto/TypeChain/pull/682
@@ -78,7 +77,7 @@ describe("Minting through contracts", function () {
 
     it.only('public sale', async () => {
 
-      const saleFactory = new Sale__factory(owner)
+      const saleFactory = new SaleBasic__factory(owner)
       const sale = await saleFactory.deploy(lab.address, owner.address, 12, parseEther("0.3"), 100, 20, 0)
       await sale.deployed()
       await police.setUserRole(sale.address, ROLES.MINTER, true)
@@ -107,7 +106,7 @@ describe("Minting through contracts", function () {
       const tree = new MerkleTree(leaves, keccak256, { sort: true })
       const merkleRoot = tree.getHexRoot()
 
-      const wlFactory = new Whitelist__factory(owner)
+      const wlFactory = new PermissionedWhitelist__factory(owner)
       const sale = await wlFactory.deploy(lab.address, owner.address, 12, parseEther("0.3"), 100, 20, 0, merkleRoot)
       await police.setUserRole(sale.address, ROLES.MINTER, true)
 

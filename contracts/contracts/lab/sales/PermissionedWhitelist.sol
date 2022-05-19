@@ -3,9 +3,9 @@ pragma solidity ^0.8.0;
 
 import {GBCLab} from "../GBCLab.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import {Sale} from "./Sale.sol";
+import {SaleBasic} from "./SaleBasic.sol";
 
-contract Whitelist is Sale {
+contract PermissionedWhitelist is SaleBasic {
 
     bytes32 public immutable MERKLE_ROOT;
 
@@ -13,7 +13,7 @@ contract Whitelist is Sale {
 
     mapping(address => bool) public claimed;
 
-    constructor(address _lab, address _owner, uint _ITEM_ID, uint _COST, uint _MAX_SUPPLY, uint _MAX_PER_TX, uint _PUBLIC_START_DATE, bytes32 _MERKLE_ROOT) Sale(_lab, _owner, _ITEM_ID, _COST, _MAX_SUPPLY, _MAX_PER_TX, _PUBLIC_START_DATE) {
+    constructor(address _lab, address _owner, uint _ITEM_ID, uint _COST, uint _MAX_SUPPLY, uint _MAX_PER_TX, uint _PUBLIC_START_DATE, bytes32 _MERKLE_ROOT) SaleBasic(_lab, _owner, _ITEM_ID, _COST, _MAX_SUPPLY, _MAX_PER_TX, _PUBLIC_START_DATE) {
         MERKLE_ROOT = _MERKLE_ROOT;
     }
 
