@@ -955,6 +955,7 @@ __metadata:
     bn.js: ^5.2.0
     chai: ^4.3.6
     chai-as-promised: ^7.1.1
+    clones-with-immutable-args: ^1.0.0
     csv-parse: ^5.0.4
     dotenv: ^16.0.1
     ethereum-waffle: 3.4.4
@@ -4866,6 +4867,13 @@ __metadata:
   version: 1.0.4
   resolution: "clone@npm:1.0.4"
   checksum: d06418b7335897209e77bdd430d04f882189582e67bd1f75a04565f3f07f5b3f119a9d670c943b6697d0afb100f03b866b3b8a1f91d4d02d72c4ecf2bb64b5dd
+  languageName: node
+  linkType: hard
+
+"clones-with-immutable-args@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "clones-with-immutable-args@npm:1.0.0"
+  checksum: 8fb23a911dc2a78ee31b1fe38ee9175a447a99e926fd6640f9364991b9b63c7e023c4f444aef75ec06c56cdf7cb24c6dc3cc7550555fbc96d313b17ba9471893
   languageName: node
   linkType: hard
 

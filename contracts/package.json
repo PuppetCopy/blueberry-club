@@ -47,6 +47,8 @@
     "@ethersproject/bytes": "^5.6.1",
     "@ethersproject/providers": "^5.6.6",
     "@gambitdao/gbc-middleware": "workspace:*",
-    "@gambitdao/gmx-middleware": "workspace:*"
+    "@gambitdao/gmx-middleware": "workspace:*",
+    "@rari-capital/solmate": "^6.2.0",
+    "clones-with-immutable-args": "^1.0.0"
   }
 }
