@@ -1,7 +1,7 @@
 import { GBC_ADDRESS } from "@gambitdao/gbc-middleware"
+import { Closet__factory, Profile__factory } from "@gambitdao/gbc-contracts"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { awaitPromises, filter, map } from "@most/core"
-import { Closet__factory, Profile__factory } from "contracts"
 import { getWalletProvider } from "../common"
 import { web3ProviderTestnet } from "../provider"
 

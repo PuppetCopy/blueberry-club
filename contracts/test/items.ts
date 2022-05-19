@@ -1,15 +1,19 @@
-// @ts-nocheck
 
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { expect } from "chai"
 import { BigNumber } from "ethers"
 import { ethers } from "hardhat"
-import { GBC, GBCLab, GBCLab__factory, GBC__factory, Police__factory } from "../typechain-types"
-import { Police } from "../typechain-types/contracts"
+import { Police, GBC, GBCLab, GBCLab__factory, GBC__factory, Police__factory } from "../typechain-types"
 
-const MINTER_ROLE = "0x4d494e5445520000"
 
-describe.skip("GBC Labs Items", function () {
+export enum ROLES {
+  MINTER,
+  BURNER,
+  DESIGNER
+}
+
+
+describe("GBC Labs Items", function () {
   let owner: SignerWithAddress
   let minter: SignerWithAddress
   let user1: SignerWithAddress
@@ -18,8 +22,9 @@ describe.skip("GBC Labs Items", function () {
   let market: SignerWithAddress
 
   let gbc: GBC
-  let items: GBCLab
+  let lab: GBCLab
   let police: Police
+
 
   this.beforeAll(async () => {
     [owner, minter, user1, user2, user3, market] = await ethers.getSigners()
@@ -42,15 +47,18 @@ describe.skip("GBC Labs Items", function () {
       value: ethers.utils.parseEther("0.03"),
     })
 
-    const itemsFactory = new GBCLab__factory(owner)
-    items = await itemsFactory.deploy()
-
     const policeFactory = new Police__factory(owner)
-    police = await policeFactory.deploy()
+    police = await policeFactory.deploy(owner.address)
 
-    await items.setAuthority(police.address)
+    const itemsFactory = new GBCLab__factory(owner)
+    lab = await itemsFactory.deploy(owner.address, police.address)
 
-    await police.setRoleCapability(MINTER_ROLE, items.address, items.interface.getSighash(items.interface.functions["mint(address,uint256,uint256,bytes)"]), true)
+    await police.deployed()
+    await lab.deployed()
+
+    const setRoleTx = await police.setRoleCapability(ROLES.MINTER, lab.address, lab.interface.getSighash(lab.interface.functions["mint(address,uint256,uint256,bytes)"]), true)
+    setRoleTx.wait()
+
   })
 
   it("Check initial values", async () => {
@@ -69,35 +77,35 @@ describe.skip("GBC Labs Items", function () {
     describe("Add 10 Hats on the market", async () => {
       it("Should revert when user is not a MINTER", async () => {
         await expect(
-          items.connect(minter).mint(owner.address, 1, 10, "")
+          lab.connect(minter).mint(minter.address, 1, 10, "0x00")
         ).to.be.revertedWith(
           "UNAUTHORIZED"
         )
       })
 
       it("Should add owner MINTER role", async () => {
-        const tx = await police.setUserRole(minter.address, MINTER_ROLE, true)
+        const tx = await police.setUserRole(minter.address, ROLES.MINTER, true)
         await tx.wait()
         expect(
-          await police.doesUserHaveRole(minter.address, MINTER_ROLE)
+          await police.doesUserHaveRole(minter.address, ROLES.MINTER)
         ).to.be.equal(true)
       })
 
       it("Mint 10 tokens", async () => {
-        const tx = await items.connect(minter).mint(
+        const tx = await lab.connect(minter).mint(
           owner.address,
           1,
           10,
-          ""
+          "0x00"
         )
         await tx.wait()
-        expect(await items.balanceOf(owner.address, 1)).to.be.equal(
+        expect(await lab.balanceOf(owner.address, 1)).to.be.equal(
           BigNumber.from(10)
         )
       })
 
       it(`"Sell" the 10 tokens`, async () => {
-        const tx = await items.safeTransferFrom(
+        const tx = await lab.safeTransferFrom(
           owner.address,
           market.address,
           1,
@@ -105,7 +113,7 @@ describe.skip("GBC Labs Items", function () {
           "0x00"
         )
         await tx.wait()
-        expect(await items.balanceOf(market.address, 1)).to.be.equal(
+        expect(await lab.balanceOf(market.address, 1)).to.be.equal(
           BigNumber.from(10)
         )
       })
@@ -115,20 +123,20 @@ describe.skip("GBC Labs Items", function () {
   describe("Adding glasses [THUG]", async () => {
     describe("Add 2 glasses on the market", async () => {
       it("Mint 2 tokens", async () => {
-        const tx = await items.connect(minter).mint(
+        const tx = await lab.connect(minter).mint(
           owner.address,
           2,
           2,
-          ""
+          "0x00"
         )
         await tx.wait()
-        expect(await items.balanceOf(owner.address, 2)).to.be.equal(
+        expect(await lab.balanceOf(owner.address, 2)).to.be.equal(
           BigNumber.from(2)
         )
       })
 
       it(`"Sell" the 2 tokens`, async () => {
-        const tx = await items.safeTransferFrom(
+        const tx = await lab.safeTransferFrom(
           owner.address,
           market.address,
           2,
@@ -136,7 +144,7 @@ describe.skip("GBC Labs Items", function () {
           "0x00"
         )
         await tx.wait()
-        expect(await items.balanceOf(market.address, 2)).to.be.equal(
+        expect(await lab.balanceOf(market.address, 2)).to.be.equal(
           BigNumber.from(2)
         )
       })
@@ -146,20 +154,20 @@ describe.skip("GBC Labs Items", function () {
   describe("Adding 20 new hats [MISTER] !", async () => {
     describe("Add 20 new Hats on the market", async () => {
       it("Mint 2 tokens", async () => {
-        const tx = await items.connect(minter).mint(
+        const tx = await lab.connect(minter).mint(
           owner.address,
           3,
           20,
-          ""
+          "0x00"
         )
         await tx.wait()
-        expect(await items.balanceOf(owner.address, 3)).to.be.equal(
+        expect(await lab.balanceOf(owner.address, 3)).to.be.equal(
           BigNumber.from(20)
         )
       })
 
       it(`"Sell" the 2 tokens`, async () => {
-        const tx = await items.safeTransferFrom(
+        const tx = await lab.safeTransferFrom(
           owner.address,
           market.address,
           3,
@@ -167,7 +175,7 @@ describe.skip("GBC Labs Items", function () {
           "0x00"
         )
         await tx.wait()
-        expect(await items.balanceOf(market.address, 3)).to.be.equal(
+        expect(await lab.balanceOf(market.address, 3)).to.be.equal(
           BigNumber.from(20)
         )
       })
@@ -177,20 +185,20 @@ describe.skip("GBC Labs Items", function () {
   describe("Adding 1000 new background [CLOUD] !", async () => {
     describe("Add 1000 new Background on the market", async () => {
       it("Mint 2 tokens", async () => {
-        const tx = await items.connect(minter).mint(
+        const tx = await lab.connect(minter).mint(
           owner.address,
           4,
           1000,
-          ""
+          "0x00"
         )
         await tx.wait()
-        expect(await items.balanceOf(owner.address, 4)).to.be.equal(
+        expect(await lab.balanceOf(owner.address, 4)).to.be.equal(
           BigNumber.from(1000)
         )
       })
 
       it(`"Sell" the 1000 tokens`, async () => {
-        const tx = await items.safeTransferFrom(
+        const tx = await lab.safeTransferFrom(
           owner.address,
           market.address,
           4,
@@ -198,7 +206,7 @@ describe.skip("GBC Labs Items", function () {
           "0x00"
         )
         await tx.wait()
-        expect(await items.balanceOf(market.address, 4)).to.be.equal(
+        expect(await lab.balanceOf(market.address, 4)).to.be.equal(
           BigNumber.from(1000)
         )
       })
@@ -208,20 +216,20 @@ describe.skip("GBC Labs Items", function () {
   describe("Adding 1000 new background [LAVA] !", async () => {
     describe("Add 1000 new Background on the market", async () => {
       it("Mint 2 tokens", async () => {
-        const tx = await items.connect(minter).mint(
+        const tx = await lab.connect(minter).mint(
           owner.address,
           5,
           1000,
-          ""
+          "0x00"
         )
         await tx.wait()
-        expect(await items.balanceOf(owner.address, 5)).to.be.equal(
+        expect(await lab.balanceOf(owner.address, 5)).to.be.equal(
           BigNumber.from(1000)
         )
       })
 
       it(`"Sell" the 1000 tokens`, async () => {
-        const tx = await items.safeTransferFrom(
+        const tx = await lab.safeTransferFrom(
           owner.address,
           market.address,
           5,
@@ -229,7 +237,7 @@ describe.skip("GBC Labs Items", function () {
           "0x00"
         )
         await tx.wait()
-        expect(await items.balanceOf(market.address, 5)).to.be.equal(
+        expect(await lab.balanceOf(market.address, 5)).to.be.equal(
           BigNumber.from(1000)
         )
       })
@@ -239,7 +247,7 @@ describe.skip("GBC Labs Items", function () {
   describe("Pimp my blueberry", () => {
     describe("Buy some SFT", () => {
       it(`"Buy" 2 Hats [COWBOY]`, async () => {
-        const tx = await items.connect(market).safeTransferFrom(
+        const tx = await lab.connect(market).safeTransferFrom(
           market.address,
           user1.address,
           1,
@@ -247,13 +255,13 @@ describe.skip("GBC Labs Items", function () {
           "0x00"
         )
         await tx.wait()
-        expect(await items.balanceOf(user1.address, 1)).to.be.equal(
+        expect(await lab.balanceOf(user1.address, 1)).to.be.equal(
           BigNumber.from(2)
         )
       })
 
       it(`"Buy" 1 glasse [THUG]`, async () => {
-        const tx = await items.connect(market).safeTransferFrom(
+        const tx = await lab.connect(market).safeTransferFrom(
           market.address,
           user1.address,
           2,
@@ -261,13 +269,13 @@ describe.skip("GBC Labs Items", function () {
           "0x00"
         )
         await tx.wait()
-        expect(await items.balanceOf(user1.address, 2)).to.be.equal(
+        expect(await lab.balanceOf(user1.address, 2)).to.be.equal(
           BigNumber.from(1)
         )
       })
 
       it(`"Buy" 1 glasse [MISTER]`, async () => {
-        const tx = await items.connect(market).safeTransferFrom(
+        const tx = await lab.connect(market).safeTransferFrom(
           market.address,
           user1.address,
           3,
@@ -275,13 +283,13 @@ describe.skip("GBC Labs Items", function () {
           "0x00"
         )
         await tx.wait()
-        expect(await items.balanceOf(user1.address, 3)).to.be.equal(
+        expect(await lab.balanceOf(user1.address, 3)).to.be.equal(
           BigNumber.from(1)
         )
       })
 
       it(`"Buy" 3 background [CLOUD]`, async () => {
-        const tx = await items.connect(market).safeTransferFrom(
+        const tx = await lab.connect(market).safeTransferFrom(
           market.address,
           user1.address,
           4,
@@ -289,13 +297,13 @@ describe.skip("GBC Labs Items", function () {
           "0x00"
         )
         await tx.wait()
-        expect(await items.balanceOf(user1.address, 4)).to.be.equal(
+        expect(await lab.balanceOf(user1.address, 4)).to.be.equal(
           BigNumber.from(3)
         )
       })
 
       it(`"Buy" 1 background [LAVA]`, async () => {
-        const tx = await items.connect(market).safeTransferFrom(
+        const tx = await lab.connect(market).safeTransferFrom(
           market.address,
           user1.address,
           5,
@@ -303,10 +311,11 @@ describe.skip("GBC Labs Items", function () {
           "0x00"
         )
         await tx.wait()
-        expect(await items.balanceOf(user1.address, 5)).to.be.equal(
+        expect(await lab.balanceOf(user1.address, 5)).to.be.equal(
           BigNumber.from(1)
         )
       })
     })
   })
+
 })

@@ -1,6 +1,6 @@
-import { fromCallback, O, Op } from "@aelea/core"
+import { fromCallback } from "@aelea/core"
 import type { BaseProvider, EventType, ExternalProvider } from "@ethersproject/providers"
-import { at, awaitPromises, chain, continueWith, empty, filter, map, recoverWith, switchLatest, take } from "@most/core"
+import { at, chain, empty, filter, map, recoverWith, switchLatest } from "@most/core"
 import { disposeWith } from "@most/disposable"
 import { Stream } from "@most/types"
 import type { EIP1193Provider, ProviderAccounts, ProviderChainId, ProviderInfo, ProviderMessage, ProviderRpcError } from "eip1193-provider"

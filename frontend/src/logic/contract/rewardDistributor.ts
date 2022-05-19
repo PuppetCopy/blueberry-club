@@ -1,8 +1,8 @@
 import { combineArray } from "@aelea/core"
 import { GBC_ADDRESS } from "@gambitdao/gbc-middleware"
+import { IERC20__factory } from "@gambitdao/gmx-contracts"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { awaitPromises, filter, map, switchLatest } from "@most/core"
-import { IERC20__factory } from "contracts"
 import { periodicRun } from "../../../../@gambitdao-gmx-middleware/src"
 import { getWalletProvider } from "../common"
 import { connectGbc } from "./gbc"
@@ -17,7 +17,6 @@ export function connectRewardDistributor(wallet: IWalletLink) {
 
   // const hasTokenUsed = (tokenId: BigNumberish) => awaitPromises(map(c => c.ownerOf(tokenId), contract))
 
-  
   // const earned = switchLatest(combineArray((c, account) => {
   //   return periodicRun(5500, map(async x => {
   //     const newLocal = (await c.earned(account)).toBigInt()

@@ -8,7 +8,7 @@ import { awaitPromises, combine, constant, empty, filter, map, merge, mergeArray
 import { $berryTileId } from "../../components/$common"
 import { $buttonAnchor, $ButtonPrimary, $ButtonSecondary } from "../../components/form/$Button"
 import { $defaultSelectContainer, $Dropdown } from "../../components/form/$Dropdown"
-import { IAttributeHat, IAttributeBackground, IAttributeFaceAccessory, ILabAttributeOptions, IAttributeClothes, IBerryDisplayTupleMap, getLabItemTupleIndex, saleDescriptionList, hasWhitelistSale, LabItemSaleDescription, IBerry, USE_CHAIN, IToken } from "@gambitdao/gbc-middleware"
+import { IAttributeHat, IAttributeBackground, IAttributeFaceAccessory, ILabAttributeOptions, IAttributeClothes, IBerryDisplayTupleMap, getLabItemTupleIndex, saleDescriptionList, LabItemSaleDescription, IBerry, USE_CHAIN, IToken, SaleType } from "@gambitdao/gbc-middleware"
 import { $labItem } from "../../logic/common"
 import { $Toggle } from "../../common/$ButtonToggle"
 import { fadeIn } from "../../transitions/enter"
@@ -19,16 +19,15 @@ import { $caretDown } from "../../elements/$icons"
 import { $alert, $arrowsFlip, $IntermediateTx, $xCross } from "@gambitdao/ui-components"
 import { ContractTransaction } from "@ethersproject/contracts"
 import { Stream } from "@most/types"
-import { Closet } from "contracts"
 import { $iconCircular, $responsiveFlex } from "../../elements/$common"
 import { connectManager } from "../../logic/contract/manager"
-import { connectGbc } from "../../logic/contract/gbc"
 import { connectLab } from "../../logic/contract/lab"
 import { $seperator2 } from "../common"
 import { unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { WALLET } from "../../logic/provider"
 import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 import { queryOwnerV2 } from "../../logic/query"
+import { Closet } from "@gambitdao/gbc-contracts"
 
 
 interface IBerryComp {
@@ -60,10 +59,10 @@ const getLabel = (option: ILabAttributeOptions) => {
 }
 
 
-export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }: IBerryComp) => component((
-  [changeRoute, changeRouteTether]: Behavior <any, string>,
-  [changeBerry, changeBerryTether]: Behavior <IToken, IToken>,
-  [selectedAttribute, selectedAttributeTether]: Behavior <ILabAttributeOptions, ILabAttributeOptions>,
+export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp) => component((
+  [changeRoute, changeRouteTether]: Behavior<any, string>,
+  [changeBerry, changeBerryTether]: Behavior<IToken, IToken>,
+  [selectedAttribute, selectedAttributeTether]: Behavior<ILabAttributeOptions, ILabAttributeOptions>,
   [clickSave, clickSaveTether]: Behavior<PointerEvent, PointerEvent>,
 
   [changeItemState, changeItemStateTether]: Behavior<any, ItemSlotState | null>,
@@ -71,7 +70,7 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
 
   [hoverDownloadBtn, hoverDownloadBtnTether]: Behavior<INode, PointerEvent>,
   [setMainBerry, setMainBerryTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
-  
+
 ) => {
 
   const lab = connectLab(walletLink)
@@ -93,7 +92,7 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
   const changeBerryId = merge(now(initialBerry || null), changeBerry)
 
   const reEmitBerryAfterSave = snapshot((berry) => berry, changeBerryId, clickSave)
-  
+
   const newLoca2l = merge(changeBerryId, reEmitBerryAfterSave)
   const selectedBerry = multicast(awaitPromises(combine(async (token, contract): Promise<ExchangeState['selectedBerry'] | null> => {
     if (token === null) {
@@ -126,7 +125,7 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
 
   const previewSize = screenUtils.isDesktopScreen ? 475 : 350
 
-  const mustBerry = filter((b): b is NonNullable<ExchangeState['selectedBerry']>  => b !== null, selectedBerry)
+  const mustBerry = filter((b): b is NonNullable<ExchangeState['selectedBerry']> => b !== null, selectedBerry)
 
   const primaryActionLabel = combineArray((updateItemState, updateBackgroundState, berry) => {
 
@@ -165,16 +164,16 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
     if (!selectedBerry) {
       throw 'no berry selected'
     }
-                
+
     const tx = (await contract.set(selectedBerry.id, changeList, removeList))
 
     return tx
   }, exchangeState, clickSave))
-  
+
 
   return [
-    $responsiveFlex(style({ gap: screenUtils.isDesktopScreen ? '150px' : '75px', alignItems: 'stretch', placeContent:'space-between' }))(
-      
+    $responsiveFlex(style({ gap: screenUtils.isDesktopScreen ? '150px' : '75px', alignItems: 'stretch', placeContent: 'space-between' }))(
+
       $column(layoutSheet.spacingBig, style({ flex: 1, }))(
         switchLatest(map(tokenList => {
           return $row(layoutSheet.spacing)(
@@ -211,11 +210,11 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
           )
 
         }, tokenList)),
-        
-      
+
+
 
         $Toggle({
-          $container: $row(style({ })),
+          $container: $row(style({})),
           options: [
             IAttributeBackground,
             IAttributeClothes,
@@ -235,7 +234,7 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
               selectedTabState
               )
             )
-                      
+
             return $text(selectedBehavior, style({ flex: 1, width: '120px', cursor: 'pointer', borderBottom: `1px solid ${pallete.middleground}`, textAlign: 'center', padding: '12px 0', fontSize: '13px' }))(label)
           }),
           selected: now(IAttributeHat)
@@ -251,7 +250,7 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
               const unixTime = unixTimestampNow()
 
 
-              const isWhitelist = hasWhitelistSale(item)
+              const isWhitelist = item.type === SaleType.whitelist
               const upcommingSaleDate = isWhitelist ? item.whitelistStartDate : item.publicStartDate
               const itemOwned = ownedItems.find(ownedItem => ownedItem.item.id === id)
 
@@ -264,9 +263,11 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
                 ? wearBehavior(nodeEvent('click'), constant({ isRemove: false, id }))
                 : changeRouteTether(nodeEvent('click'), constant(`/p/item/${id}`), tap(x => history.pushState(null, '', x)))
 
-              return $row(style({ cursor: 'pointer', position: 'relative', borderRadius: '8px', backgroundColor: colorAlpha(pallete.message, .95) }))(
-                fadeIn(
-                  style({ filter: itemOwned ? '' : 'grayscale(1)' }, selectBehavior($labItem(id, 118)))
+              return $row(style({ position: 'relative' }))(
+                $row(style({ cursor: 'pointer', overflow: 'hidden', borderRadius: '8px', backgroundColor: colorAlpha(pallete.message, .95) }))(
+                  fadeIn(
+                    style({ filter: itemOwned ? '' : 'grayscale(1)' }, selectBehavior($labItem(id, 118)))
+                  )
                 ),
                 switchLatest(awaitPromises(combineArray(async (exchangeState, contract, account) => {
                   if (!account) {
@@ -286,7 +287,7 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
                         right: '-15px',
                         padding: '4px'
                       }),
-                      $content: $text(style({ padding: '4px 6px'  }))('Try'),
+                      $content: $text(style({ padding: '4px 6px' }))('Try'),
                     })({
                       click: O(wearBehavior(constant({ isRemove: false, id })), changeRouteTether())
                     })
@@ -294,7 +295,7 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
 
                   const count = ((await contract.balanceOf(account, id)).toNumber() + delta)
 
-                  
+
                   return $text(style({ position: 'absolute', top: '1px', right: '4px', fontSize: '.75em', fontWeight: 'bold', color: pallete.background }))(`${count < 0 ? 0 : count}x`)
                 }, exchangeState, lab.contract, walletLink.account))),
               )
@@ -314,11 +315,11 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
 
           $row(layoutSheet.spacing)(
             switchLatest(awaitPromises(combineArray(async (contract, account, berry) => {
-              
+
               if (berry === null || account === null) {
                 return empty()
               }
-              
+
               try {
                 const mainId = (await contract.getDataOf(account)).tokenId.toNumber()
                 if (berry.id === mainId) {
@@ -409,11 +410,11 @@ export const $Wardrobe = ({ walletLink, parentRoute, initialBerry, walletStore }
             )($text('Download')),
 
             attr({ id: 'BERRY' }, style({ cursor: 'pointer' }, $berry))
-          ) : $row(style({  }))()
+          ) : $row(style({}))()
 
         }, exchangeState)),
       ),
-      
+
     ),
 
     { changeRoute }
@@ -431,13 +432,13 @@ function itemChangeFn(changeItemStateTether: Tether<INode, ItemSlotState | null>
 
     const state = change === null && gbcItemId
       ? { isRemove: true, id: gbcItemId }
-      : null 
+      : null
 
-    
+
     const itemSize = 80
     const itemSizePx = itemSize + 'px'
-    
-    const $itemWrapper = $row(style({ overflow: 'hidden', placeContent: 'center', width: '65px' }))     
+
+    const $itemWrapper = $row(style({ overflow: 'hidden', placeContent: 'center', width: '65px' }))
     const $tradeBox = $row(style({
       height: itemSizePx, minWidth: itemSizePx, borderRadius: '12.75px', gap: '1px', overflow: 'hidden', boxShadow: '-1px 2px 7px 2px #0000002e',
       position: 'relative', backgroundColor: '#D1D1D1', border: `1px solid #D1D1D1`
@@ -445,7 +446,7 @@ function itemChangeFn(changeItemStateTether: Tether<INode, ItemSlotState | null>
 
 
 
-    
+
     return $column(style({ position: 'relative' }))(
       item
         ? changeItemStateTether(nodeEvent('click'), constant(state))(
@@ -454,7 +455,7 @@ function itemChangeFn(changeItemStateTether: Tether<INode, ItemSlotState | null>
         : empty(),
       $tradeBox(
         gbcItemId && isSwap && !isGbcItemRemove ? $itemWrapper($labItem(gbcItemId, itemSize)) : empty(),
-        gbcItemId && isSwap && !isGbcItemRemove ? style({ left: '50%', top: '50%', marginLeft: '-12px', marginTop: '-12px' })($iconCircular($arrowsFlip))  : empty(),
+        gbcItemId && isSwap && !isGbcItemRemove ? style({ left: '50%', top: '50%', marginLeft: '-12px', marginTop: '-12px' })($iconCircular($arrowsFlip)) : empty(),
         $itemWrapper(style({ width: isSwap ? '65px' : itemSizePx }))(
           item ? $labItem(item, itemSize) : empty()
         )
@@ -495,7 +496,7 @@ function getGbcDownloadableUrl(svg: SVGElement): Promise<string> {
 
       canvas.toBlob(blob => {
         if (!blob) throw new Error('Unable to create an image')
-        
+
         const downloadableLink = URL.createObjectURL(blob)
         resolve(downloadableLink)
       })

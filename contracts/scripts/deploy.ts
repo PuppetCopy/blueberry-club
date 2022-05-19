@@ -1,15 +1,18 @@
-import { Profile__factory, GBCLab__factory, Police__factory, Closet__factory, GBC__factory, SaleExample__factory } from "../typechain-types"
+import {
+  saleDescriptionList, Whitelist__factory, Sale__factory, GbcWhitelist__factory, GBC_ADDRESS, Profile__factory, GBCLab__factory,
+  Police__factory, Closet__factory, GBC__factory, getLabItemTupleIndex, SaleType
+} from "@gambitdao/gbc-middleware"
+import { AddressZero } from "@gambitdao/gmx-middleware"
+
 import { ethers } from "hardhat"
 
 import getAddress, { ZERO_ADDRESS } from "../utils/getAddress"
 import { connectOrDeploy } from "../utils/deploy"
-import { GBC_ADDRESS, hasWhitelistSale, saleDescriptionList } from "@gambitdao/gbc-middleware"
-import { AddressZero } from "@gambitdao/gmx-middleware"
 
 export enum ROLES {
   MINTER,
   BURNER,
-  CREATOR
+  DESIGNER
 }
 
 
@@ -34,30 +37,29 @@ const LAB = "" // The Lab items ERC1155 contract
 const PROFILE = ""
 const CLOSET = ""
 
-const saleConfigList = saleDescriptionList
 
 const main = async () => {
-  const [owner] = (await ethers.getSigners())
+  const [creator] = (await ethers.getSigners())
   console.clear()
 
   console.log(`DEPLOYER WIZARD 🧙‍♂️ (by IrvingDev)`)
 
   console.log(`------------------------------------------------------------------------------\n`)
-  console.log(`🔑 Deployer: ${owner.address}`)
+  console.log(`🔑 Deployer: ${creator.address}`)
 
-  const treasury = getAddress(TREASURY) == ZERO_ADDRESS ? owner.address : getAddress(TREASURY)
+  const owner = getAddress(TREASURY) == ZERO_ADDRESS ? creator.address : getAddress(TREASURY)
 
-  console.log(`💰 Treasury address: ${treasury}\n`)
+  console.log(`💰 Treasury address: ${owner}\n`)
   console.log(`------------------------------------------------------------------------------\n`)
 
   const gbc = await connectOrDeploy(GBC, GBC__factory, "Blueberry Club", "GBC", "")
 
 
   console.log(`------------------------------------------------------------------------------\n`)
-  const police = await connectOrDeploy(POLICE, Police__factory)
+  const police = await connectOrDeploy(POLICE, Police__factory, owner)
   console.log(`------------------------------------------------------------------------------\n`)
 
-  const lab = await connectOrDeploy(LAB, GBCLab__factory, owner.address, police.address)
+  const lab = await connectOrDeploy(LAB, GBCLab__factory, owner, police.address)
 
   if (getAddress(LAB) == AddressZero) {
     try {
@@ -75,15 +77,19 @@ const main = async () => {
 
   console.log(`------------------------------------------------------------------------------\n`)
 
-  await connectOrDeploy(PROFILE, Profile__factory, gbc.address, owner.address, police.address)
+  await connectOrDeploy(PROFILE, Profile__factory, gbc.address, owner, police.address)
 
   console.log(`------------------------------------------------------------------------------\n`)
 
-  const closet = await connectOrDeploy(CLOSET, Closet__factory, gbc.address, lab.address)
+  const closet = await connectOrDeploy(CLOSET, Closet__factory, gbc.address, lab.address, owner, police.address)
 
   if (getAddress(CLOSET) == AddressZero) {
+    console.log(`✋ Adding roles for CLOSET`)
+    await police.setRoleCapability(ROLES.DESIGNER, closet.address, closet.interface.getSighash(closet.interface.functions["setItemType(uint256,uint256)"]), true)
+
     console.log(`🎩 Set roles from LAB to CLOSET`)
     try {
+
       await police.setUserRole(closet.address, ROLES.MINTER, true)
       console.log(`  - MINTER role setted !`)
       await police.setUserRole(closet.address, ROLES.BURNER, true)
@@ -94,16 +100,28 @@ const main = async () => {
   }
 
 
-  for (const config of saleConfigList) {
+  for (const config of saleDescriptionList) {
     console.log(`------------------------------------------------------------------------------\n`)
 
-    const sale = hasWhitelistSale(config)
-      ? await connectOrDeploy(TREASURY, SaleExample__factory, config.contractAddress, config.id, config.maxSupply, config.maxPerTx, config.publicCost, config.publicStartDate, config.whitelistStartDate, config.whitelistCost, config.whitelistMax, GBC, LAB)
-      : await connectOrDeploy(TREASURY, SaleExample__factory, config.contractAddress, config.id, config.maxSupply, config.maxPerTx, config.publicCost, config.publicStartDate, 0, 0, 0, GBC, LAB)
+    if (getAddress(config.contractAddress) === AddressZero) {
+      console.log(`❌ Sale exists, skipping`)
+      return
+    }
+
+    const sale = config.type === SaleType.Public ?
+      await connectOrDeploy(config.contractAddress, Sale__factory, lab.address, owner, config.id, config.publicCost, config.maxSupply, config.maxPerTx, config.publicStartDate)
+      : config.type === SaleType.GbcWhitelist
+        ? await connectOrDeploy(config.contractAddress, GbcWhitelist__factory, gbc.address, lab.address, owner, config.id, config.publicCost, config.maxSupply, config.maxPerTx, config.publicStartDate, config.whitelistStartDate, config.whitelistCost, config.whitelistMax)
+        : await connectOrDeploy(config.contractAddress, Whitelist__factory, lab.address, owner, config.id, config.publicCost, config.maxSupply, config.maxPerTx, config.publicStartDate, config.merkleRoot) 
 
     console.log(`🎩 Set roles from LAB to ${config.name} SALE`)
     try {
       await police.setUserRole(sale.address, ROLES.MINTER, true)
+      await police.setUserRole(sale.address, ROLES.DESIGNER, true)
+
+      // background would be 0, we need to ensure it is incremented as 0 is considered nullish
+      const typeId = getLabItemTupleIndex(config.id) + 1
+      await closet.setItemType(config.id, typeId)
       console.log(`  - MINTER role setted !`)
     } catch (error) {
       console.log(error)

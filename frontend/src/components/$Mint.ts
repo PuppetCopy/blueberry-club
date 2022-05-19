@@ -3,7 +3,7 @@ import { $element, $node, $text, attr, component, INode, nodeEvent, style, style
 import { $column, $icon, $row, layoutSheet, state } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { ContractReceipt } from "@ethersproject/contracts"
-import { hasWhitelistSale, IAttributeMappings, IBerryIdentifable, LabItemSaleDescription, USE_CHAIN } from "@gambitdao/gbc-middleware"
+import { hasWhitelistSale, IAttributeMappings, IBerryIdentifable, LabItemSaleDescription, SaleType, USE_CHAIN } from "@gambitdao/gbc-middleware"
 import { countdownFn, ETH_ADDRESS_REGEXP, formatFixed, replayState, unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { IWalletLink, parseError } from "@gambitdao/wallet-link"
 import { awaitPromises, empty, fromPromise, join, map, merge, multicast, now, periodic, skipRepeats, snapshot, startWith, switchLatest, tap } from "@most/core"
@@ -18,11 +18,11 @@ import { $labItem, takeUntilLast } from "../logic/common"
 import { $seperator2 } from "../pages/common"
 import { connectGbc } from "../logic/contract/gbc"
 import { connectLab } from "../logic/contract/lab"
-import { connectSale, getMintCount } from "../logic/contract/sale"
+import { connectGbcWhitelistSale, connectSale, getMintCount } from "../logic/contract/sale"
 import { $SelectBerries } from "./$SelectBerries"
 import { connectManager } from "../logic/contract/manager"
-import { GBCLab } from "contracts"
 import { Stream } from "@most/types"
+import { GBCLab } from "@gambitdao/gbc-contracts"
 
 
 
@@ -65,8 +65,7 @@ export const $Mint = ({ walletStore, walletLink, item }: IMint) => component((
   const gbcWallet = connectGbc(walletLink)
   const labWallet = connectLab(walletLink)
   const managerWallet = connectManager(walletLink)
-  const saleWallet = connectSale(walletLink, item.contractAddress)
-  
+  const saleWallet = item.type === SaleType.GbcWhiteliszt ? connectGbcWhitelistSale(walletLink, item.contractAddress) : connectSale(walletLink, item.contractAddress)
 
   const totalMintedChange = takeUntilLast(isLive => isLive === item.maxSupply, mintCount)
 

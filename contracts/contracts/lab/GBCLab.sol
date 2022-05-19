@@ -12,15 +12,10 @@ import {ERC2981} from "@openzeppelin/contracts/token/common/ERC2981.sol";
  */
 contract GBCLab is ERC1155, Auth, ERC2981 {
 
-    error Error_ItemAlreadyExist();
-    error Error_ItemNotExist();
-
     constructor(address _owner, Authority _authority) Auth(_owner, _authority) {}
 
     string private _uri;
     mapping(uint256 => string) private _uris;
-
-    mapping(uint256 => uint256) public getAttributeOf;
 
     function uri(uint256 id) public view override returns (string memory) {
         string memory uri_ = _uris[id];
@@ -41,13 +36,7 @@ contract GBCLab is ERC1155, Auth, ERC2981 {
         }
     }
 
-    function create(uint id, uint attribute) external requiresAuth {
-        if (getAttributeOf[id] != 0) revert Error_ItemAlreadyExist();
-        getAttributeOf[id] = attribute;
-    }
-
     function mint(address to, uint256 id, uint256 amount, bytes memory data) external requiresAuth {
-        if (getAttributeOf[id] != 0) revert Error_ItemNotExist();
         _mint(to, id, amount, data);
     }
 
@@ -57,11 +46,6 @@ contract GBCLab is ERC1155, Auth, ERC2981 {
         uint256[] memory amounts,
         bytes memory data
     ) external requiresAuth {
-        unchecked {
-            for (uint256 i = 0; i < ids.length; i++) {
-                if (getAttributeOf[ids[i]] != 0) revert Error_ItemNotExist();
-            }
-        }
         _batchMint(to, ids, amounts, data);
     }
 
@@ -96,3 +80,4 @@ contract GBCLab is ERC1155, Auth, ERC2981 {
     }
 }
 
+error Error_ItemNotExist();

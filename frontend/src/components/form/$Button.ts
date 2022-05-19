@@ -41,7 +41,7 @@ export const $ButtonSecondary = (config: IButton) => {
 export const $buttonAnchor = $element('a')(
   layoutSheet.spacingSmall,
   secondaryButtonStyle,
-  stylePseudo(':hover', { color: 'inherit', boxShadow: 'none' }),
+  stylePseudo(':hover', { color: 'inherit', boxShadow: 'none', borderColor: pallete.primary }),
   style({
     alignItems: 'center',
     textDecoration: 'none',

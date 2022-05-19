@@ -1,11 +1,11 @@
 import { Behavior, O, Tether } from "@aelea/core"
-import { $Branch, $element, $node, $text, component, style } from "@aelea/dom"
+import { $node, $text, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $labItem } from "../../logic/common"
-import { LabItemSaleDescription, saleDescriptionList, hasWhitelistSale } from "@gambitdao/gbc-middleware"
+import { LabItemSaleDescription, saleDescriptionList, SaleType } from "@gambitdao/gbc-middleware"
 import { pallete } from "@aelea/ui-components-theme"
 import { $Link } from "@gambitdao/ui-components"
 import { empty, map } from "@most/core"
@@ -59,7 +59,7 @@ const $labStoreItem = (item: LabItemSaleDescription, parentRoute: Route, changeR
 
   const unixTime = unixTimestampNow()
 
-  const isWhitelist = hasWhitelistSale(item)
+  const isWhitelist = item.type === SaleType.GbcWhitelist
   const currentSaleType = isWhitelist ? 'Whitelist' : 'Public'
   const upcommingSaleDate = isWhitelist ? item.whitelistStartDate : item.publicStartDate
 

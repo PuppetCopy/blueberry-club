@@ -142,7 +142,7 @@ const run = async () => {
   app.use((req, res) => res.status(404).json({ message: 'No route found' }))
 
   server.listen(port, () => {
-    console.log(`express started at http://localhost:${port}`)
+    console.log(`Running at http://localhost:${port}`)
   })
 }
 

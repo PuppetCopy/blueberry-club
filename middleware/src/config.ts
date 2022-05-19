@@ -1,5 +1,5 @@
 import { CHAIN, groupByMap, intervalInMsMap } from "@gambitdao/gmx-middleware"
-import { IAttributeMappings, LabItemSaleDescription } from "./types"
+import { IAttributeMappings, LabItemSaleDescription, SaleType } from "./types"
 
 
 export const USE_CHAIN = CHAIN.ARBITRUM_RINKBY
@@ -29,44 +29,49 @@ export const REWARD_DISTRIBUTOR = {
 }
 
 
+
 const toTime = (...params: Parameters<typeof Date.UTC>) => Math.floor(Date.UTC(...params) / 1000)
 
 export const saleDescriptionList: LabItemSaleDescription[] = [
   {
+    type: SaleType.Public,
     name: "Santa Claus Hat",
     description: "GBC holders will be able to mint this item for free on Christmas Day\n\nBut, since Christmas date will be far too long for a test, we shall celebrate an early Ho ho ho! Merry Christmas!",
     id: IAttributeMappings['Christmas Hat'],
-    contractAddress: "0xE1cD99d4b8883758e2F2344acebaE18B3476873e",
+    contractAddress: "",
     publicCost: 10000000000000000n,
     maxSupply: 1500n,
     publicStartDate: toTime(2022, 3, 25, 22),
     maxPerTx: 1n,
   },
   {
+    type: SaleType.Public,
     name: "Santa Claus Beard",
     description: "Just an overpriced beard, it's not worth it!",
     id: IAttributeMappings['Beard White'],
-    contractAddress: "0xd248410e0fb6132D9f53B674d322EF5f2750C430",
+    contractAddress: "",
     publicCost: 20000000000000000n,
     maxSupply: 2023n,
     publicStartDate: 0,
     maxPerTx: 10n,
   },
   {
+    type: SaleType.Public,
     name: "Avalanche Hoodie",
     description: `A possible partnership could be a GBC Treasury paid promotion\n\none example would be, anyone who mints this item and wears as a profile(on-chain) would be eligible for an air-drop or allowed for an entry to a special event`,
     id: IAttributeMappings["Avalanche Hoodie"],
-    contractAddress: "0x938B3f39B2e7444126F351CfDeb24369a5f1f5BA",
+    contractAddress: "",
     maxSupply: 1337n,
     publicStartDate: 0,
     publicCost: 0n,
     maxPerTx: 1n,
   },
   {
+    type: SaleType.GbcWhitelist,
     name: "Abstract Background",
     description: `GBC Members are whitelisted and can mint on ${new Date(toTime(2022, 3, 7, 22) * 1000).toLocaleString()} . Public Mint is highly delayed`,
     id: IAttributeMappings['Camo Background'],
-    contractAddress: "0x20572a51c085C103849ea6Cb33d758d66038498B",
+    contractAddress: "",
     maxSupply: 100n,
     publicStartDate: toTime(2022, 9, 27, 22),
     publicCost: 10000000000000000n,
@@ -76,20 +81,24 @@ export const saleDescriptionList: LabItemSaleDescription[] = [
     whitelistCost: 10000000000000000n
   },
   {
+    type: SaleType.whitelist,
     name: "Builder Vest",
-    description: `This vest is only for true builders`,
+    whitelistStartDate: toTime(2022, 9, 27, 22),
+    description: `This vest is only for true builders, whitelist `,
     id: IAttributeMappings['Builder'],
-    contractAddress: "0x24f2EA7532f0397df269AF2bB4A7116eb857feaa",
+    contractAddress: "",
     maxSupply: 100n,
     publicStartDate: toTime(2022, 3, 8, 22),
     publicCost: 10000000000000000n,
     maxPerTx: 10n,
+    merkleRoot: ''
   },
   {
+    type: SaleType.Public,
     name: "Fast Food Cap",
     description: "Because every GMX bottom seller needs one (;",
     id: IAttributeMappings["Fast Food Cap"],
-    contractAddress: "0x38546D3F4050BA2171075495C08EA8c7eDd9d627",
+    contractAddress: "",
     maxSupply: 33n,
     publicStartDate: toTime(2022, 3, 9, 22),
     publicCost: 20000000000000000n,

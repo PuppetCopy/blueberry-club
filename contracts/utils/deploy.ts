@@ -1,4 +1,4 @@
-import { ContractFactory } from "@ethersproject/contracts"
+import { ContractFactory, BigNumber } from "ethers"
 import { AddressZero, getAccountExplorerUrl } from "@gambitdao/gmx-middleware"
 import { run, network, ethers } from "hardhat"
 import getAddress from "./getAddress"

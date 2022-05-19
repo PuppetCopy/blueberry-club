@@ -1,32 +1,26 @@
 {
-  "extends": "../tsconfig",
   "compilerOptions": {
-    "target": "ES2020",
-    "outDir": ".dist/esm",
+    "target": "es2018",
+    "module": "commonjs",
+    "strict": true,
     "esModuleInterop": true,
-    "resolveJsonModule": true,
-    "module": "CommonJS",
-    "lib": [
-      "es2021",
-      "dom"
-    ],
-    "declarationDir": ".dist/types",
+    "outDir": "./dist",
+    "noEmit": true,
+    "declaration": true,
+    "composite": true
   },
   "include": [
-    "./typechain-types",
     "./scripts",
     "./test",
-    "./utils"
+    "./utils",
+    "./typechain-types"
   ],
   "files": [
     "./hardhat.config.ts"
   ],
-  "references": [
-    {
-      "path": "../@gambitdao-gmx-middleware"
-    },
-    {
-      "path": "../middleware"
-    },
-  ]
+  "ts-node": {
+    "compilerOptions": {
+      "module": "CommonJS"
+    }
+  }
 }

@@ -5,8 +5,7 @@ import { $column, $icon, $Popover, $row, layoutSheet, screenUtils, state } from 
 import { pallete } from "@aelea/ui-components-theme"
 import { formatReadableUSD, IClaim } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
-import {  constant, empty, map, now, switchLatest } from '@most/core'
-import { Stream } from "@most/types"
+import { constant, empty, map, now, switchLatest } from '@most/core'
 import { IEthereumProvider } from "eip1193-provider"
 import { WALLET } from "../logic/provider"
 import { $caretDown } from "../elements/$icons"
@@ -25,13 +24,12 @@ interface MainMenu {
   parentRoute: Route
   containerOp?: Op<IBranch, IBranch>
   walletLink: IWalletLink
-  claimMap: Stream<{[x: string]: IClaim}>
   walletStore: state.BrowserStore<WALLET, "walletStore">
 
   showAccount?: boolean
 }
 
-export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletStore, claimMap, showAccount = true }: MainMenu) => component((
+export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletStore, showAccount = true }: MainMenu) => component((
   [routeChange, routeChangeTether]: Behavior<string, string>,
   [profileLinkClick, profileLinkClickTether]: Behavior<any, any>,
   [walletChange, walletChangeTether]: Behavior<any, IEthereumProvider | null>,
@@ -49,11 +47,11 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
     $icon({ $content: $iconPath, width: '36px', svgOps: style({ minWidth: '36px' }), viewBox: '0 0 32 32' }),
     $column(layoutSheet.spacingTiny)(
       $text(label),
-      $text(style({ color: pallete.foreground, fontSize:'.75em' }))(description)
+      $text(style({ color: pallete.foreground, fontSize: '.75em' }))(description)
     )
   )
 
-  
+
 
   const $menuItemList = [
     $Link({ $content: $text('Lab'), url: '/p/lab', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
@@ -82,13 +80,13 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
           $selection: map(amount => $treasury),
           select: {
             value: now(null),
-            $container: $defaultSelectContainer(style({ minWidth:'300px' })),
+            $container: $defaultSelectContainer(style({ minWidth: '300px' })),
             $$option: map(option => option),
             list: [
               $Link({ $content: $govItem('Treasury', $bagOfCoinsCircle, 'GBC Community-Led Portfolio'), url: '/p/treasury', route: parentRoute })({
                 click: routeChangeTether()
               }),
-              $anchor(style({ textDecoration:'none' }), attr({ href: 'https://snapshot.org/#/gbc-nft.eth', target:'_blank' }))(
+              $anchor(style({ textDecoration: 'none' }), attr({ href: 'https://snapshot.org/#/gbc-nft.eth', target: '_blank' }))(
                 $govItem('Governance', $fileCheckCircle, 'Treasury Governance, 1 GBC = 1 Voting Power')
               ),
             ],
@@ -105,7 +103,7 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
           $$popContent: combineArray((_) => {
             return $column(layoutSheet.spacingBig)(
               ...screenUtils.isMobileScreen ? $menuItemList : [],
-              $row(layoutSheet.spacingBig)(
+              $row(layoutSheet.spacingBig, style({ flexWrap: 'wrap', width: '210px' }))(
                 $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://discord.com/invite/7ZMmeU3z9j' }))(
                   $icon({ $content: $discord, width: '22px', viewBox: `0 0 32 32` })
                 ),
@@ -144,7 +142,8 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
               walletLink,
               walletStore,
               $display: map(address => {
-                return $Link({ route: parentRoute.create({ fragment: 'df2f23f' }),
+                return $Link({
+                  route: parentRoute.create({ fragment: 'df2f23f' }),
                   $content: $accountPreview({ address }),
                   anchorOp: style({ minWidth: 0, overflow: 'hidden' }),
                   url: `/p/wallet`,
@@ -171,7 +170,7 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
             }),
           ),
         )({
-        // overlayClick: clickPopoverClaimTether()
+          // overlayClick: clickPopoverClaimTether()
         }),
 
       ),

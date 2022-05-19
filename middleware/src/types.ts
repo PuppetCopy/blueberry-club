@@ -1,5 +1,4 @@
 
-
 export type IPrice = {
   priceUsd: bigint
 }
@@ -105,7 +104,7 @@ export interface IPriceInterval {
   h: bigint // high
   l: bigint // low
   c: bigint // close
-  
+
   timestamp: number
 }
 
@@ -132,8 +131,8 @@ export enum IAttributeMappings {
   "Suit Pink" = 110, "Sunglasses Green" = 7, "Sunglasses Red" = 29, Surprised = 36, "Sweater Grey" = 113, "Sweater Red" = 31, "Tank Top Black" = 55, "Tank Top White" = 104, Thinking = 22, "Top Hat" = 129, "Tshirt Green" = 43,
   "Tshirt Grey" = 106, "Tshirt Orange" = 28, "Tshirt Purple" = 57, "Tshirt Red" = 69, Unicorn = 118, Vietnamese = 109, Viking = 38, "Visor Green" = 74, "Visor Red" = 11, Wings = 120, Wink = 13, Winner = 1,
   Wizard = 27, Work = 135, "X Bucket Hat" = 19, "X Face Tattoo" = 18, "X Hoodie" = 9, Yellow = 30,
- 
-  
+
+
   "Lab Head" = 199,
   "Avalanche Hoodie" = 200,
   "Fast Food Cap" = 201,
@@ -267,7 +266,7 @@ export enum IAttributeFaceAccessory {
   LOSER = IAttributeMappings.Looser,
   WINNER = IAttributeMappings.Winner,
   NUDE = IAttributeMappings.Nude,
-  
+
   // lab
   BEARD_WHITE = IAttributeMappings["Beard White"],
 }
@@ -356,7 +355,11 @@ export enum IAttributeBackground {
 
 }
 
-
+export enum SaleType {
+  Public,
+  GbcWhitelist,
+  whitelist,
+}
 
 export type IBerryDisplayTupleMap = [
   IAttributeBackground,
@@ -375,10 +378,7 @@ export interface LabItemDescription {
   description: string // dispolays in UI
 
   id: number // mapped to global unique ID
-}
 
-
-export interface LabItemSalePublicDescription extends LabItemDescription {
   maxSupply: bigint // maximum items that can be minted
   maxPerTx: bigint // limit amount of mint per transaction
 
@@ -388,14 +388,24 @@ export interface LabItemSalePublicDescription extends LabItemDescription {
   contractAddress: string
 }
 
-export interface LabItemSaleWhitelistDescription extends LabItemSalePublicDescription {
 
-  // whitelistSaleName: string
-  // whitelistSaleDescription: string
+export interface LabItemSalePublicDescription extends LabItemDescription {
+  type: SaleType.Public
+}
 
+export interface LabSaleWhitelistDescription extends LabItemDescription {
   whitelistStartDate: number  // start date of whitelist sale
   whitelistMax: bigint // limited amount of whitelist items that can be minted
   whitelistCost: bigint // specify the mint price, 0 = free, most likley could be set at the same public mint price
 }
 
-export type LabItemSaleDescription = LabItemSalePublicDescription | LabItemSaleWhitelistDescription
+export interface LabItemSaleGbcWhitelistDescription extends LabSaleWhitelistDescription {
+  type: SaleType.GbcWhitelist
+}
+
+export interface LabItemSalePermissionedWhitelistDescription extends LabSaleWhitelistDescription {
+  type: SaleType.whitelist
+  merkleRoot: string  // start date of whitelist sale
+}
+
+export type LabItemSaleDescription = LabItemSalePublicDescription | LabItemSaleGbcWhitelistDescription | LabItemSalePermissionedWhitelistDescription

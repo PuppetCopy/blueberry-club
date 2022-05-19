@@ -86,9 +86,6 @@ export default ({ baseRoute = '' }: Website) => component((
   const tradeRoute = pagesRoute.create({ fragment: 'trade' })
 
 
-  const claimMap = replayLatest(
-    map(list => groupByMap(list, item => item.account.toLowerCase()), claimListQuery())
-  )
 
 
   const clientApi = helloBackend({
@@ -146,7 +143,7 @@ export default ({ baseRoute = '' }: Website) => component((
 
     $column(designSheet.main, style({ alignItems: 'center', overflowX: 'hidden', placeContent: 'center', padding: screenUtils.isMobileScreen ? '0 15px' : '0 55px' }))(
 
-      $MainMenu({ walletLink, claimMap, parentRoute: rootRoute, walletStore })({
+      $MainMenu({ walletLink, parentRoute: rootRoute, walletStore })({
         routeChange: linkClickTether(),
         walletChange: walletChangeTether()
       }),
@@ -159,7 +156,6 @@ export default ({ baseRoute = '' }: Website) => component((
             walletLink,
             parentRoute: pagesRoute,
             treasuryStore,
-            claimMap,
             walletStore
           })({
             routeChanges: linkClickTether(),
