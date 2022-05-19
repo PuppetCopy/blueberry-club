@@ -75,7 +75,7 @@ describe("Minting through contracts", function () {
 
   describe("Mint different Sales", () => {
 
-    it.only('public sale', async () => {
+    it('public sale', async () => {
 
       const saleFactory = new SaleBasic__factory(owner)
       const sale = await saleFactory.deploy(lab.address, owner.address, 12, parseEther("0.3"), 100, 20, 0)
