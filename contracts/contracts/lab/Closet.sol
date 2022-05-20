@@ -3,77 +3,117 @@ pragma solidity ^0.8.0;
 
 import "hardhat/console.sol";
 
-import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {GBCLab as IGBCLab} from "./GBCLab.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {GBCLab} from "./GBCLab.sol";
 import {Auth, Authority} from "@rari-capital/solmate/src/auth/Auth.sol";
+import {ERC1155TokenReceiver} from "@rari-capital/solmate/src/tokens/ERC1155.sol";
 
 /**
  * @title Closet
  * @author IrvingDevPro
  * @notice Permit GBC holders add and remove items from lab to their GBC
  */
-contract Closet is Auth {
-    uint public constant BACKGROUND_ATTRIBUTE = 1;
-    uint public constant SPECIAL_ATTRIBUTE = 8;
+contract Closet is ERC1155TokenReceiver {
 
-    IERC721 public GBC;
-    IGBCLab public GBCLab;
+    uint256 constant DEAD_INDEX = type(uint256).max;
 
-    struct Items {
-        uint background;
-        uint special;
-        uint custom;
+    error AlreadyDeposited();
+    error NotDeposited();
+    error NotOwner();
+
+    /// @notice Keep the list of items owned by an NFT
+    mapping(uint256 => mapping(uint256 => uint256)) itemsOwned;
+    /// @notice Keep the length of the list of items by an NFT
+    mapping(uint256 => uint256) ownedLength;
+    /// @notice Keep the index of an item on the list
+    mapping(uint256 => mapping(uint256 => uint256)) itemsIndex;
+
+
+    IERC721 immutable GBC;
+    GBCLab immutable LAB;
+
+    constructor(IERC721 _gbc, GBCLab _lab) {
+        GBC = _gbc;
+        LAB = _lab;
     }
 
-    mapping(uint => Items) public itemsOf;
-    mapping(uint256 => uint256) public getAttributeOf;
+    function get(uint256 token, uint256 start, uint256 size) external view returns (uint256[] memory) {
+        uint256 length = ownedLength[token];
 
-    event SetItems(
-        address assigner,
-        uint tokenId,
-        uint custom,
-        uint background,
-        uint special
-    );
-
-    constructor(address _gbc, address _gbcLab, address _owner, Authority _authority) Auth(_owner, _authority) {
-        GBC = IERC721(_gbc);
-        GBCLab = IGBCLab(_gbcLab);
-    }
-
-    function set(uint gbc, uint[] memory _items, bool[] memory _removes) external {
-        require(GBC.ownerOf(gbc) == msg.sender, "Manager: not owner of gbc");
-        Items storage items = itemsOf[gbc];
-        for (uint256 i = 0; i < _items.length; i++) {
-            uint item = _items[i];
-            bool remove = _removes[i];
-            if(!remove) {
-                require(GBCLab.balanceOf(msg.sender, item) > 0, "Manager: Account doesn't own the item");
-                GBCLab.burn(msg.sender, item, 1);
-            }
-
-            uint itemType = getAttributeOf[item];
-
-            if(itemType == BACKGROUND_ATTRIBUTE) {
-                if(items.background != 0) GBCLab.mint(msg.sender, items.background, 1, "");
-                items.background = remove ? 0 : item;
-            } else if(itemType == SPECIAL_ATTRIBUTE) {
-                if(items.special != 0) GBCLab.mint(msg.sender, items.special, 1, "");
-                items.special = remove ? 0 : item;
-            } else {
-                if(items.custom != 0) GBCLab.mint(msg.sender, items.custom, 1, "");
-                items.custom = remove ? 0 : item;
-            }
+        if (start >= length) {
+            return new uint256[](0);
         }
 
-        emit SetItems(msg.sender, gbc, items.custom, items.background, items.special);
+        length -= start;
+
+        if (size > length) {
+            size = length;
+        }
+
+        uint256[] memory owned = new uint256[](size);
+
+        for (uint256 i = 0; i < size; i++) {
+            owned[i] = itemsOwned[token][start + i + 1];
+        }
+
+        return owned;
     }
 
-    function setItemType(uint id, uint attribute) external requiresAuth {
-        if (getAttributeOf[id] != 0) revert Error_ItemAlreadyExist();
-        getAttributeOf[id] = attribute;
+    function set(uint256 token, uint256[] calldata deposits, uint256[] calldata withdraws) external {
+        if (GBC.ownerOf(token) != msg.sender) revert NotOwner();
+        _deposit(msg.sender, token, deposits);
+        _withdraw(msg.sender, token, withdraws);
     }
 
+    function _deposit(address owner, uint256 token, uint256[] calldata items) internal {
+        uint256 nextIndex = ownedLength[token];
+        uint256 length = items.length;
+        uint256[] memory amounts = new uint256[](length);
+        for (uint256 i = 0; i < length; i++) {
+            uint256 item = items[i];
+
+            _validDeposit(itemsIndex[token][item]);
+
+            nextIndex++;
+            itemsOwned[token][nextIndex] = item;
+            itemsIndex[token][item] = nextIndex;
+            amounts[i] = 1;
+        }
+        ownedLength[token] = nextIndex;
+        LAB.safeBatchTransferFrom(owner, address(this), items, amounts, "");
+    }
+
+    function _withdraw(address receiver, uint256 token, uint256[] calldata items) internal {
+        uint256 lastIndex = ownedLength[token];
+        uint256 length = items.length;
+        uint256[] memory amounts = new uint256[](length);
+        for (uint256 i = 0; i < length; i++) {
+            uint256 item = items[i];
+            uint256 index = itemsIndex[token][item];
+
+            _validWithdraw(index);
+
+            if (index != lastIndex) {
+                uint256 lastItem = itemsOwned[token][lastIndex];
+
+                itemsOwned[token][index] = lastItem;
+                itemsIndex[token][lastItem] = index;
+            }
+
+            itemsIndex[token][item] = DEAD_INDEX;
+            itemsOwned[token][lastIndex] = DEAD_INDEX;
+            lastIndex--;
+            amounts[i] = 1;
+        }
+        ownedLength[token] = lastIndex;
+        LAB.safeBatchTransferFrom(address(this), receiver, items, amounts, "");
+    }
+
+    function _validDeposit(uint256 index) internal pure {
+        if (index != 0 && index != DEAD_INDEX) revert AlreadyDeposited();
+    }
+
+    function _validWithdraw(uint256 index) internal pure {
+        if (index == 0 && index == DEAD_INDEX) revert NotDeposited();
+    }
 }
-
-error Error_ItemAlreadyExist();

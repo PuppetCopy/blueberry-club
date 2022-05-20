@@ -79,5 +79,3 @@ contract GBCLab is ERC1155, Auth, ERC2981 {
             interfaceId == 0x0e89341c; // ERC165 Interface ID for ERC1155MetadataURI
     }
 }
-
-error Error_ItemNotExist();
