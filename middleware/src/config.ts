@@ -84,6 +84,8 @@ export const saleDescriptionList: LabItemSaleDescription[] = [
     type: SaleType.whitelist,
     name: "Builder Vest",
     whitelistStartDate: toTime(2022, 9, 27, 22),
+    whitelistMax: 400n,
+    whitelistCost: 0n,
     description: `This vest is only for true builders, whitelist `,
     id: IAttributeMappings['Builder'],
     contractAddress: "",
