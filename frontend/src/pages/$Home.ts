@@ -29,14 +29,13 @@ export interface ITreasury {
   walletLink: IWalletLink
   parentRoute: Route
   treasuryStore: state.BrowserStore<ITreasuryStore, "treasuryStore">
-  claimMap: Stream<{ [x: string]: IClaim }>
   walletStore: state.BrowserStore<WALLET, "walletStore">
 }
 
 
 
 
-export const $Home = ({ walletLink, parentRoute, treasuryStore, claimMap, walletStore }: ITreasury) => component((
+export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => component((
   [routeChanges, linkClickTether]: Behavior<any, string>,
   [leftEyeContainerPerspective, leftEyeContainerPerspectiveTether]: Behavior<INode, ResizeObserverEntry[]>,
   [rightEyeContainerPerspective, rightEyeContainerPerspectiveTether]: Behavior<INode, ResizeObserverEntry[]>,

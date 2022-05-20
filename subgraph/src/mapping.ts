@@ -1,8 +1,7 @@
 import * as generated from '../generated/ERC721/ERC721'
 import * as lab from "../generated/ERC1155/ERC1155"
-import * as manager from "../generated/Manager/Manager"
+import * as manager from "../generated/Closet/Closet"
 import * as profile from "../generated/Profile/Profile"
-import * as distributor from "../generated/RewardDistributor/RewardDistributor"
 import { Owner, Transfer, Token } from "../generated/schema"
 import { handleLabItemTransfer, _createNewOwner } from "./common"
 import { ONE_BI, ZERO_BI, _createTransactionIfNotExist } from './helpers'
@@ -38,18 +37,6 @@ export function handleSetItems(event: manager.SetItems): void {
   }
 }
 
-
-export function handleRewardPaid(event: distributor.RewardPaid): void {
-  const params = event.params
-  const assigner = params.user.toHex()
-
-  const owner = Owner.load(assigner)
-
-  if (owner) {
-    owner.rewardClaimedCumulative = owner.rewardClaimedCumulative.plus(params.reward)
-    owner.save()
-  }
-}
 
 
 export function handleSetMain(event: profile.SetMain): void {

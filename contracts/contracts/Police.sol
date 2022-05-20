@@ -10,5 +10,5 @@ import {RolesAuthority, Authority} from "@rari-capital/solmate/src/auth/authorit
  * in all contracts which this contract setted as autority
  */
 contract Police is RolesAuthority {
-    constructor() RolesAuthority(msg.sender, Authority(address(0))) {}
+    constructor(address _owner) RolesAuthority(_owner, Authority(address(0))) {}
 }

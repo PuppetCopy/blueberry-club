@@ -1,4 +1,6 @@
-env.json
 artifacts/
 cache/
+node_modules/
+generated/
+build/
 typechain-types/

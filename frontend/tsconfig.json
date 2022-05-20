@@ -22,9 +22,6 @@
     },
     {
       "path": "../@gambitdao-wallet-link"
-    },
-    {
-      "path": "../contracts"
     }
   ]
 }

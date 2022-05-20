@@ -1,4 +1,4 @@
-import { IAttributeBackground, IAttributeClothes, IAttributeBody, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat, LabItemSaleDescription, LabItemSaleWhitelistDescription } from "./types"
+import { IAttributeBackground, IAttributeClothes, IAttributeBody, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat, LabItemSaleDescription, LabItemSaleGbcWhitelistDescription, LabItemSalePermissionedWhitelistDescription, LabSaleWhitelistDescription, LabItemSalePublicDescription } from "./types"
 
 
 const labAttributeTuple = [IAttributeBackground, IAttributeClothes, IAttributeBody, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat] as const
@@ -18,6 +18,6 @@ export const getLabItemTupleIndex = (itemId: number) => {
 }
 
 
-export function hasWhitelistSale (sale: LabItemSaleDescription): sale is LabItemSaleWhitelistDescription {
+export function hasWhitelistSale<T extends LabSaleWhitelistDescription>(sale: T | LabItemSalePublicDescription): sale is T {
   return 'whitelistStartDate' in sale
 }

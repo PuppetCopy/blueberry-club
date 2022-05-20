@@ -6,7 +6,8 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "lib": [
-      "DOM"
+      "DOM",
+      "es2020",
     ],
     "declarationDir": ".dist/types"
   },

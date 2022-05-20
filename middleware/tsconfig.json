@@ -2,18 +2,18 @@
   "extends": "../tsconfig",
   "compilerOptions": {
     "outDir": ".dist/esm",
-    "rootDir": "src",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "lib": [
       "DOM",
       "es2021"
     ],
-    "declarationDir": ".dist/types"
+    "declarationDir": ".dist/types",
+    "rootDir": "./src",
   },
   "references": [
     {
       "path": "../@gambitdao-gmx-middleware"
-    },
+    }
   ]
 }

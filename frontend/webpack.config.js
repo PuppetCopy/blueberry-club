@@ -8,7 +8,7 @@ module.exports = {
   mode: "development",
   watch: false,
   context: __dirname, // to automatically find tsconfig.json
-  devtool: 'source-map',
+  devtool: 'inline-source-map',
   entry: {
     theme: './src/assignThemeSync.ts',
     main: './src/index.ts',
@@ -34,8 +34,14 @@ module.exports = {
       path.resolve(__dirname)
     ],
     extensions: [".ts", '.js'],
-    alias: {
-      "hash.js": require.resolve('hash.js'),
+    fallback: {
+      '@walletconnect/encoding': require.resolve("@walletconnect/encoding"),
+      // ethers: false,
+      ethers: require.resolve("ethers"),
+      process: false,
+      events: require.resolve("eventemitter3"),
+      buffer: false
+      // buffer: require.resolve("buffer/")
     }
   },
   plugins: [

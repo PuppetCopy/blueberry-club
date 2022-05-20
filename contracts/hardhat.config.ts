@@ -1,9 +1,9 @@
 
-import '@nomiclabs/hardhat-etherscan'
-import 'hardhat-contract-sizer'
-import '@typechain/hardhat'
-import '@nomiclabs/hardhat-waffle'
-import { HardhatUserConfig } from "hardhat/config"
+import { HardhatUserConfig, task } from "hardhat/config"
+import "@nomiclabs/hardhat-etherscan"
+import "@nomiclabs/hardhat-waffle"
+import "@typechain/hardhat"
+
 import dotenv from "dotenv"
 import { CHAIN, NETWORK_METADATA } from '@gambitdao/gmx-middleware'
 dotenv.config({ path: '../.env' })

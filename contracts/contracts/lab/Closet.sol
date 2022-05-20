@@ -5,13 +5,14 @@ import "hardhat/console.sol";
 
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {GBCLab as IGBCLab} from "./GBCLab.sol";
+import {Auth, Authority} from "@rari-capital/solmate/src/auth/Auth.sol";
 
 /**
  * @title Closet
  * @author IrvingDevPro
  * @notice Permit GBC holders add and remove items from lab to their GBC
  */
-contract Closet {
+contract Closet is Auth {
     uint public constant BACKGROUND_ATTRIBUTE = 1;
     uint public constant SPECIAL_ATTRIBUTE = 8;
 
@@ -25,6 +26,7 @@ contract Closet {
     }
 
     mapping(uint => Items) public itemsOf;
+    mapping(uint256 => uint256) public getAttributeOf;
 
     event SetItems(
         address assigner,
@@ -34,7 +36,7 @@ contract Closet {
         uint special
     );
 
-    constructor(address _gbc, address _gbcLab) {
+    constructor(address _gbc, address _gbcLab, address _owner, Authority _authority) Auth(_owner, _authority) {
         GBC = IERC721(_gbc);
         GBCLab = IGBCLab(_gbcLab);
     }
@@ -50,7 +52,7 @@ contract Closet {
                 GBCLab.burn(msg.sender, item, 1);
             }
 
-            uint itemType = GBCLab.getAttributeOf(item);
+            uint itemType = getAttributeOf[item];
 
             if(itemType == BACKGROUND_ATTRIBUTE) {
                 if(items.background != 0) GBCLab.mint(msg.sender, items.background, 1, "");
@@ -66,4 +68,12 @@ contract Closet {
 
         emit SetItems(msg.sender, gbc, items.custom, items.background, items.special);
     }
+
+    function setItemType(uint id, uint attribute) external requiresAuth {
+        if (getAttributeOf[id] != 0) revert Error_ItemAlreadyExist();
+        getAttributeOf[id] = attribute;
+    }
+
 }
+
+error Error_ItemAlreadyExist();

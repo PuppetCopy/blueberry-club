@@ -1,8 +1,8 @@
 import { combineArray } from "@aelea/core"
 import { GBC_ADDRESS } from "@gambitdao/gbc-middleware"
+import { GBCLab__factory } from "@gambitdao/gbc-contracts"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { filter, awaitPromises, map } from "@most/core"
-import { GBCLab__factory } from "contracts"
 import { getWalletProvider } from "../common"
 
 export function connectLab(wallet: IWalletLink) {
