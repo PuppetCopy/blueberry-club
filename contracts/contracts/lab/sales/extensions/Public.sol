@@ -16,6 +16,8 @@ error TransactionLimit();
 
 abstract contract Public is SalePay {
 
+    event PublicStateUpdate(PublicState oldState, PublicState newState);
+
     PublicState private state;
 
     constructor(PublicState memory state_) {
@@ -49,6 +51,8 @@ abstract contract Public is SalePay {
     }
 
     function setState(PublicState memory state_) external onlyOwner {
+        PublicState memory oldState = state;
         state = state_;
+        emit PublicStateUpdate(oldState, state_);
     }
 }

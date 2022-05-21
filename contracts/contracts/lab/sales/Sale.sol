@@ -14,6 +14,10 @@ error SalePaused();
 error MaxSupplyReached();
 
 contract Sale is Owned {
+
+    event Paused(address executor);
+    event Unpaused(address executor);
+
     uint256 public immutable ITEM;
     GBCLab public immutable LAB;
 
@@ -49,8 +53,10 @@ contract Sale is Owned {
     function setPaused(bool isPaused_) external onlyOwner {
         if (isPaused_) {
             state.paused = 2;
+            emit Paused(msg.sender);
         } else {
             state.paused = 1;
+            emit Unpaused(msg.sender);
         }
     }
 }

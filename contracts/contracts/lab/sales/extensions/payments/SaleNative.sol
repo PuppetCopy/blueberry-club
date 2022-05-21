@@ -13,9 +13,11 @@ abstract contract SaleNative is SalePay {
 
     function _takeMoney() internal {
         receiver.transfer(msg.value);
+        emit Paied(msg.sender, msg.value);
     }
 
     function _takeMoney(uint256 amount) internal override {
         receiver.transfer(amount);
+        emit Paied(msg.sender, amount);
     }
 }

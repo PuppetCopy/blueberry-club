@@ -21,5 +21,6 @@ abstract contract SaleToken is SalePay {
 
     function _takeMoney(uint256 amount) internal override {
         token.safeTransferFrom(msg.sender, receiver, amount);
+        emit Paied(msg.sender, amount);
     }
 }

@@ -17,6 +17,8 @@ contract Closet is ERC1155TokenReceiver {
 
     uint256 constant DEAD_INDEX = type(uint256).max;
 
+    event Set(address signer, uint256 indexed token, uint256[] deposits, uint256[] whithdraws);
+
     error AlreadyDeposited();
     error NotDeposited();
     error NotOwner();
@@ -63,6 +65,8 @@ contract Closet is ERC1155TokenReceiver {
         if (GBC.ownerOf(token) != msg.sender) revert NotOwner();
         _deposit(msg.sender, token, deposits);
         _withdraw(msg.sender, token, withdraws);
+
+        emit Set(msg.sender, token, deposits, withdraws);
     }
 
     function _deposit(address owner, uint256 token, uint256[] calldata items) internal {
