@@ -73,7 +73,7 @@ describe("Minting through contracts", function () {
     expect(await hardhatToken.totalSupply()).to.equal(ownerBalance)
   })
 
-  describe("Mint different Sales", () => {
+  describe.only("Mint different Sales", () => {
 
     it('public sale', async () => {
 
@@ -89,8 +89,8 @@ describe("Minting through contracts", function () {
 
       expect(await user1connect.publicMint(1, { value: cost })).ok
       expect(await lab.balanceOf(user1.address, 12)).eq(1)
-      await expect(user1connect.publicMint(1, { value: cost.mul(2) })).revertedWith("Error_MismatchCost")
-      await expect(user1connect.publicMint(2, { value: cost })).revertedWith("Error_MismatchCost")
+      await expect(user1connect.publicMint(1, { value: cost.mul(2) })).revertedWith("Error_Cost")
+      await expect(user1connect.publicMint(2, { value: cost })).revertedWith("Error_Cost")
 
       expect(await sale.cancel()).ok
 
@@ -117,7 +117,7 @@ describe("Minting through contracts", function () {
       const invalidMerkleProof = tree.getHexProof(keccak256(notWhitelisted[0].address))
 
       expect(await wlUser1Connect.whitelistMint(merkleProof)).ok
-      await expect(wlUser1Connect.whitelistMint(merkleProof)).revertedWith('Error_AlreadyClaimed')
+      await expect(wlUser1Connect.whitelistMint(merkleProof)).revertedWith('Error_Claimed')
       await expect(nonWlUser1Connect.whitelistMint(invalidMerkleProof)).revertedWith('Error_InvalidProof')
       expect(await wlUser1Connect.publicMint(1, { value: parseEther("0.3") })).ok
       expect(await nonWlUser1Connect.publicMint(1, { value: parseEther("0.3") })).ok

@@ -54,7 +54,13 @@ export const $Leaderboard = ({ walletLink, leaderboardTopList, parentRoute, acco
 
   const queryOwner = fromPromise(accountAddress ? queryOwnerV2(accountAddress) : Promise.reject())
 
-  const ownedTokens = map(owner => owner.ownedTokens, queryOwner)
+  const ownedTokens = map(owner => {
+    if (owner === null) {
+      return null
+    }
+
+    return owner.ownedTokens
+  }, queryOwner)
 
   // const stakedList = map(owner => owner.stakedTokenList, queryOwner)
 

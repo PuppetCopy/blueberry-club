@@ -74,6 +74,10 @@ export const $ProfileWallet = ({ walletLink, parentRoute, accountStakingStore }:
       $IntermediatePromise({
         query: queryOwner,
         $$done: map(owner => {
+          if (owner === null) {
+            return null
+          }
+
           return $Profile(owner)({})
         }),
       })({}),

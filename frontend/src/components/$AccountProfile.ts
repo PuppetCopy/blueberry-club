@@ -1,6 +1,4 @@
-import { Behavior, O, Op } from "@aelea/core"
-import { $element, $node, $text, attr, component, INode, style } from "@aelea/dom"
-import { Route } from "@aelea/router"
+import { $element, $node, $text, attr, style } from "@aelea/dom"
 import { $column, $icon, $row, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { BaseProvider } from "@ethersproject/providers"
@@ -9,7 +7,7 @@ import { CHAIN, getAccountExplorerUrl, IClaim, IClaimSource, intervalInMsMap } f
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $jazzicon } from "../common/$avatar"
 import { getGatewayUrl, getIdentityFromENS, IEnsClaim } from "@gambitdao/gbc-middleware"
-import { $anchor, $ethScan, $Link, $twitter } from "@gambitdao/ui-components"
+import { $anchor, $ethScan, $twitter } from "@gambitdao/ui-components"
 import { getProfile } from "../logic/contract/manager"
 import { $berryByLabItems } from "../logic/common"
 import { fromPromise, map, switchLatest } from "@most/core"
@@ -67,7 +65,7 @@ export const $AccountPhoto = (address: string, claim?: IClaim, size = 42) => {
         return $jazzicon(address, sizePx)
       }
 
-      return style({ borderRadius: '50%' }, $berryByLabItems(profile.tokenId, profile.background, profile.custom, size))
+      return style({ borderRadius: '50%' }, $berryByLabItems(Number(profile.tokenId), profile.background, profile.custom, size))
     }, profile))
   )
 }

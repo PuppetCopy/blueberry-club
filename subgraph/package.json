@@ -4,9 +4,8 @@
   "private": true,
   "scripts": {
     "codegen": "graph codegen",
-    "contracts-typecain": "yarn workspace contracts run typechain",
     "build": "graph build",
-    "build-pre-deploy": "yarn run contracts-typecain && yarn run codegen && yarn run build",
+    "build-pre-deploy": "yarn run codegen && yarn run build",
     "deploy": "yarn run build-pre-deploy && graph deploy --product hosted-service nissoh/blueberry-club-rinkeby"
   },
   "dependencies": {

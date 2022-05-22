@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {GBCLab} from "../GBCLab.sol";
-import {SaleBasic} from "./SaleBasic.sol";
+import {SaleBasic, Error_Cost, Error_StartDate} from "./SaleBasic.sol";
 
 /**
  * @title SaleExample
@@ -32,17 +32,17 @@ contract GbcWhitelist is SaleBasic {
     }
 
     function mintWhitelist(uint[] memory gbcs) external payable {
-        if (WHITELIST_START_DATE >= block.timestamp) revert Error_WhitelistNotLive();
+        if (WHITELIST_START_DATE >= block.timestamp) revert Error_StartDate();
         
         whitelistMinted += gbcs.length;
 
-        if (whitelistMinted >= WHITELIST_MAX) revert Error_WhitelistMaxReached();
-        if (msg.value != WHITELIST_COST * gbcs.length) revert Error_MismatchCost();
+        if (whitelistMinted >= WHITELIST_MAX) revert Error_MintSupply();
+        if (msg.value != WHITELIST_COST * gbcs.length) revert Error_Cost();
 
         for (uint256 i = 0; i < gbcs.length; i++) {
             uint gbc = gbcs[i];
-            if (GBC.ownerOf(gbc) != msg.sender) revert Error_NotOwned();
-            if (isAlreadyUsed[gbc]) revert Error_UsedGBC();
+            if (GBC.ownerOf(gbc) != msg.sender) revert Error_OwnerOf();
+            if (isAlreadyUsed[gbc]) revert Error_Claimed();
 
             isAlreadyUsed[gbc] = true;
         }
@@ -52,10 +52,8 @@ contract GbcWhitelist is SaleBasic {
 
 }
 
-error Error_WhitelistNotLive(); // Whitelist has not started yet
-error Error_WhitelistMaxReached(); // max mint amount reached
+error Error_MintSupply(); // white amount reached
 error Error_Whitelist(); // max mint amount reached
-error Error_NotOwned(); // not owner
-error Error_UsedGBC(); // already 
-error Error_MismatchCost(); // ETH amount must match the exact cost
+error Error_OwnerOf(); // not owner
+error Error_Claimed(); // already 
 
