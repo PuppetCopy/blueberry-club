@@ -142,7 +142,6 @@ export const $PublicMint = (item: LabItemSalePublicDescription, walletLink: IWal
               if (saleContract === null || selectedMintAmount === null) {
                 throw new Error('could not resolve sales contract')
               }
-
               const value = BigInt(selectedMintAmount) * item.publicCost
 
               const contractAction = saleContract.publicMint(selectedMintAmount, { value })

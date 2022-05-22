@@ -8,7 +8,7 @@ import { $alert } from "@gambitdao/ui-components"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { awaitPromises, switchLatest, now, empty, multicast, startWith, snapshot, map } from "@most/core"
 import { $SelectBerries } from "../$SelectBerries"
-import { takeUntilLast } from "../../logic/common"
+import { getTokenSlots, takeUntilLast } from "../../logic/common"
 import { connectGbc } from "../../logic/contract/gbc"
 import { connectLab } from "../../logic/contract/lab"
 import { connectManager } from "../../logic/contract/manager"
@@ -65,12 +65,14 @@ export const $GbcWhitelist = <T extends LabSaleWhitelistDescription>(item: T, wa
 
             const items = (await Promise.all(
               tokenList.map(async id => {
-                const queryItems = manager.itemsOf(id)
+                const queryItems = (await manager.get(id, 0, 3)).map(n => n.toBigInt())
                 const queryIsUsed = sale.isAlreadyUsed(id)
 
                 const [isUsed, res] = await Promise.all([queryIsUsed, queryItems])
 
-                return { isUsed, background: res.background.toNumber(), custom: res.custom.toNumber(), special: res.special.toNumber(), id }
+                const slots = await getTokenSlots(id, manager)
+
+                return { isUsed, ...slots, id }
               })
             )).filter(x => x.isUsed === false)
 

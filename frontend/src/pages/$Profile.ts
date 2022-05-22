@@ -106,7 +106,7 @@ export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAcco
 
   const queryOwner = fromPromise(accountAddress ? queryOwnerV2(accountAddress) : Promise.reject())
 
-  const ownedTokens = map(owner => owner.ownedTokens, queryOwner)
+  // const ownedTokens = map(owner => owner.ownedTokens, queryOwner)
 
   // const stakedList = map(owner => owner.stakedTokenList, queryOwner)
 
@@ -301,6 +301,10 @@ export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAcco
       $IntermediatePromise({
         query: now(queryOwnerV2(accountAddress.toLowerCase())),
         $$done: map(owner => {
+          if (owner == null) {
+            return $alert($text(style({ alignSelf: 'center' }))(`Connected account does not own any GBC's`))
+          }
+
           return $row(style({ flexWrap: 'wrap' }))(...owner.ownedTokens.map(token => {
             const tokenId = Number(BigInt(token.id))
 

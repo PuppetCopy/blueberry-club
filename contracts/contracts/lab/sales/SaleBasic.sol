@@ -39,7 +39,7 @@ contract SaleBasic is Owned {
 
     function _mint(uint amount) internal {
         if (isCanceled) revert Error_Canceled();
-        if (amount >= MAX_PER_TX) revert Error_MintAmountPerTx();
+        if (amount > MAX_PER_TX) revert Error_AmountPerTx();
 
         minted += amount;
         if (minted >= MAX_SUPPLY) revert Error_MaxSupply();
@@ -49,8 +49,8 @@ contract SaleBasic is Owned {
 
 
    function publicMint(uint amount) external payable {
-        if (START_DATE >= block.timestamp) revert Error_NotLive();
-        if (msg.value != COST * amount) revert Error_MismatchCost();
+        if (START_DATE >= block.timestamp) revert Error_StartDate();
+        if (msg.value != COST * amount) revert Error_Cost();
 
         _mint(amount);
     }
@@ -66,7 +66,7 @@ contract SaleBasic is Owned {
 }
 
 error Error_Canceled(); // max amount per transaction reached
-error Error_MintAmountPerTx(); // max amount per transaction reached
-error Error_MismatchCost(); // ETH amount must match the exact cost
-error Error_NotLive(); // ETH amount must match the exact cost
+error Error_AmountPerTx(); // max amount per transaction reached
+error Error_Cost(); // ETH amount must match the exact cost
+error Error_StartDate(); // ETH amount must match the exact cost
 error Error_MaxSupply(); // ETH amount must match the exact cost

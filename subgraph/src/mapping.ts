@@ -24,18 +24,18 @@ export function handleTransferBatch(event: lab.TransferBatch): void {
 }
 
 
-export function handleSetItems(event: manager.SetItems): void {
-  const params = event.params
-  const token = Token.load(params.tokenId.toHex())
+// export function handleSetItems(event: manager.Set): void {
+//   const params = event.params
+//   const token = Token.load(params.tokenId.toHex())
 
-  if (token) {
-    token.background = params.background
-    token.custom = params.custom
-    token.special = params.special
+//   if (token) {
+//     token.background = params.background
+//     token.custom = params.custom
+//     token.special = params.special
 
-    token.save()
-  }
-}
+//     token.save()
+//   }
+// }
 
 
 

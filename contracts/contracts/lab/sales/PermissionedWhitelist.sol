@@ -18,7 +18,7 @@ contract PermissionedWhitelist is SaleBasic {
     }
 
     function whitelistMint(bytes32[] calldata merkleProof) public {
-        if (claimed[msg.sender]) revert Error_AlreadyClaimed();
+        if (claimed[msg.sender]) revert Error_Claimed();
         if (!MerkleProof.verify(merkleProof, MERKLE_ROOT, keccak256(abi.encodePacked(msg.sender)))) revert Error_InvalidProof();
 
         claimed[msg.sender] = true;
@@ -28,6 +28,6 @@ contract PermissionedWhitelist is SaleBasic {
 
 }
 
-error Error_AlreadyClaimed(); // max amount per transaction reached
-error Error_InvalidProof(); // max amount per transaction reached
+error Error_Claimed(); // max amount per transaction reached
+error Error_InvalidProof(); // Account is not whitelisted
 

@@ -11,6 +11,8 @@ import { $Node, $svg, attr, style } from "@aelea/dom"
 import { web3ProviderTestnet } from "./provider"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { IWalletLink } from "@gambitdao/wallet-link"
+import { Closet } from "@gambitdao/gbc-contracts"
+import { BigNumberish } from "@ethersproject/bignumber"
 
 
 export const latestTokenPriceMap = replayLatest(multicast(awaitPromises(map(() => queryLatestPrices(), periodic(5000)))))
@@ -24,9 +26,9 @@ function getByAmoutFromFeed(amount: bigint, priceUsd: bigint, decimals: number) 
 }
 
 
-export function takeUntilLast <T>(fn: (t: T) => boolean, s: Stream<T>) {
+export function takeUntilLast<T>(fn: (t: T) => boolean, s: Stream<T>) {
   let last: T
-  
+
   return continueWith(() => now(last), takeWhile(x => {
 
     const res = !fn(x)
@@ -150,3 +152,23 @@ export const $labItemAlone = (id: number, size = 80) => {
     })
   )()
 }
+
+export async function getTokenSlots(token: BigNumberish, closet: Closet) {
+  const seedObj = { background: 0, special: 0, custom: 0, }
+
+  return (await closet.get(token, 0, 2)).reduce((seed, next) => {
+
+    const ndx = getLabItemTupleIndex(next.toNumber())
+
+    if (ndx === 0) {
+      seed.background = ndx
+    } else if (ndx === 7) {
+      seed.special = ndx
+    } else {
+      seed.custom = ndx
+    }
+
+    return seed
+  }, seedObj)
+}
+

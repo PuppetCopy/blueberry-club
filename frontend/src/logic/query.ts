@@ -480,11 +480,11 @@ export const queryOwnerTrasnferNfts = async (account: string) => {
   return Object.entries(groupByMapMany(owner.ownedTokens, token => token.transfers[0].transaction.id))
 }
 
-export const queryOwnerV2 = async (account: string): Promise<IOwner> => {
+export const queryOwnerV2 = async (account: string): Promise<IOwner | null> => {
   const owner = (await blueberryGraphV2(ownerV2, { account: account.toLowerCase() })).owner
 
   if (owner === null) {
-    throw new Error(`Owner ${account} not found`)
+    return null
   }
 
   return fromOwnerJson(owner)

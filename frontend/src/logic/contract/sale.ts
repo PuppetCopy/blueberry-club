@@ -1,6 +1,6 @@
 import { replayLatest } from "@aelea/core"
 import { BigNumberish } from "@ethersproject/bignumber"
-import { GbcWhitelist__factory, Sale__factory } from "@gambitdao/gbc-contracts"
+import { Classic__factory, GbcWhitelist__factory, SaleBasic__factory, Sale__factory } from "@gambitdao/gbc-contracts"
 import { periodicRun } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { awaitPromises, map, multicast } from "@most/core"
@@ -11,7 +11,7 @@ import { web3ProviderTestnet } from "../provider"
 export function connectSale(wallet: IWalletLink, saleAddress: string) {
   const provider = getWalletProvider(wallet)
 
-  const contract = map(w3p => Sale__factory.connect(saleAddress, w3p.getSigner()), provider)
+  const contract = map(w3p => SaleBasic__factory.connect(saleAddress, w3p.getSigner()), provider)
 
 
   return { contract }
@@ -28,7 +28,7 @@ export function connectGbcWhitelistSale(wallet: IWalletLink, saleAddress: string
   return { contract, hasTokenUsed, whitelistMinted }
 }
 
-const sale = (address: string) => Sale__factory.connect(address, web3ProviderTestnet)
+const sale = (address: string) => SaleBasic__factory.connect(address, web3ProviderTestnet)
 
 
 export const getMintCount = (address: string, updateInterval = 3500) => {

@@ -14,13 +14,18 @@
     "clean": "yarn hardhat clean && yarn g:tsc:clean",
     "deploy": "yarn hardhat run scripts/deploy.ts --network arbitrum",
     "node": "yarn hardhat node",
-    "build": "yarn hardhat clean && yarn hardhat compile",
-    "build:project": "tsc --project tsconfig.typechain.json",
+    "build": "yarn hardhat clean && yarn hardhat compile && concurrently 'yarn run build:project' 'yarn run build:cjs'",
+    "build:project": "tsc -b tsconfig.typechain.json",
     "build:cjs": "tsc --project tsconfig.typechain.json  --outDir .dist/cjs --module CommonJS --declarationMap false --composite false --declaration false --declarationDir null",
     "script:lab": "yarn hardhat run scripts/deploy.ts --network arbitrumTestnet",
     "script:rewards": "yarn hardhat run scripts/rewardDist.deploy.ts --network arbitrumTestnet"
   },
   "devDependencies": {
+    "@ethersproject/abi": "^5.6.2",
+    "@ethersproject/bytes": "^5.6.1",
+    "@ethersproject/providers": "^5.6.6",
+    "@gambitdao/gbc-middleware": "workspace:*",
+    "@gambitdao/gmx-middleware": "workspace:*",
     "@nomiclabs/hardhat-ethers": "^2.0.6",
     "@nomiclabs/hardhat-etherscan": "^3.0.3",
     "@nomiclabs/hardhat-waffle": "^2.0.3",
@@ -32,6 +37,8 @@
     "bn.js": "^5.2.0",
     "chai": "^4.3.6",
     "chai-as-promised": "^7.1.1",
+    "clones-with-immutable-args": "^1.0.0",
+    "concurrently": "^7.2.0",
     "csv-parse": "^5.0.4",
     "dotenv": "^16.0.1",
     "ethereum-waffle": "3.4.4",
@@ -41,14 +48,5 @@
     "merkletreejs": "^0.2.31",
     "tsconfig-paths": "^4.0.0",
     "typescript": "^4.6.4"
-  },
-  "dependencies": {
-    "@ethersproject/abi": "^5.6.2",
-    "@ethersproject/bytes": "^5.6.1",
-    "@ethersproject/providers": "^5.6.6",
-    "@gambitdao/gbc-middleware": "workspace:*",
-    "@gambitdao/gmx-middleware": "workspace:*",
-    "@rari-capital/solmate": "^6.3.0",
-    "clones-with-immutable-args": "^1.0.0"
   }
 }
