@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "hardhat/console.sol";
 
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {GBCLab} from "./GBCLab.sol";
+import {GBCLab} from "../GBCLab.sol";
 import {Auth, Authority} from "@rari-capital/solmate/src/auth/Auth.sol";
 import {ERC1155TokenReceiver} from "@rari-capital/solmate/src/tokens/ERC1155.sol";
 
@@ -64,6 +64,21 @@ contract Closet is ERC1155TokenReceiver {
         }
 
         return owned;
+    }
+
+    function isWearing(uint256 token, uint256 item) external view returns(bool) {
+        uint256 index = itemsIndex[token][item];
+        return (index != 0 && index != DEAD_INDEX);
+    }
+
+    function isWearing(uint256 token, uint256[] memory items) external view returns(bool[] memory) {
+        uint256 length = items.length;
+        bool[] memory wearings = new bool[](length);
+        for (uint256 i = 0; i < length; i++) {
+            uint256 index = itemsIndex[token][items[i]];
+            wearings[i] = (index != 0 && index != DEAD_INDEX);
+        }
+        return wearings;
     }
 
     function set(uint256 token, uint256[] calldata deposits, uint256[] calldata withdraws, address receiver) external {
