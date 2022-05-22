@@ -17,22 +17,27 @@ contract Closet is ERC1155TokenReceiver {
 
     uint256 constant DEAD_INDEX = type(uint256).max;
 
-    event Set(address signer, uint256 indexed token, uint256[] deposits, uint256[] whithdraws);
+    event Set(uint256 indexed token, uint256[] deposits, uint256[] whithdraws);
 
     error AlreadyDeposited();
     error NotDeposited();
     error NotOwner();
+    error MaxOwnableReached();
+    error PluginNotApproved();
 
     /// @notice Keep the list of items owned by an NFT
-    mapping(uint256 => mapping(uint256 => uint256)) itemsOwned;
+    mapping(uint256 => mapping(uint256 => uint256)) public itemsOwned;
     /// @notice Keep the length of the list of items by an NFT
-    mapping(uint256 => uint256) ownedLength;
+    mapping(uint256 => uint256) public ownedLength;
     /// @notice Keep the index of an item on the list
-    mapping(uint256 => mapping(uint256 => uint256)) itemsIndex;
+    mapping(uint256 => mapping(uint256 => uint256)) public itemsIndex;
+
+    /// @notice Let user appove plugin
+    mapping(address => mapping(address => bool)) public pluginApproval;
 
 
-    IERC721 immutable GBC;
-    GBCLab immutable LAB;
+    IERC721 immutable public GBC;
+    GBCLab immutable public LAB;
 
     constructor(IERC721 _gbc, GBCLab _lab) {
         GBC = _gbc;
@@ -61,19 +66,33 @@ contract Closet is ERC1155TokenReceiver {
         return owned;
     }
 
-    function set(uint256 token, uint256[] calldata deposits, uint256[] calldata withdraws) external {
+    function set(uint256 token, uint256[] calldata deposits, uint256[] calldata withdraws, address receiver) external {
         if (GBC.ownerOf(token) != msg.sender) revert NotOwner();
         _deposit(msg.sender, token, deposits);
-        _withdraw(msg.sender, token, withdraws);
+        _withdraw(receiver, token, withdraws);
 
-        emit Set(msg.sender, token, deposits, withdraws);
+        emit Set(token, deposits, withdraws);
+    }
+
+    function setForAccount(address account, uint256 token, uint256[] calldata deposits, uint256[] calldata withdraws, address receiver) external {
+        if (!pluginApproval[account][msg.sender]) revert PluginNotApproved();
+        if (GBC.ownerOf(token) != account) revert NotOwner();
+
+        _deposit(account, token, deposits);
+        _withdraw(receiver, token, withdraws);
+
+        emit Set(token, deposits, withdraws);
+    }
+
+    function approve(address plugin, bool approved) external {
+        pluginApproval[msg.sender][plugin] = approved;
     }
 
     function _deposit(address owner, uint256 token, uint256[] calldata items) internal {
         uint256 nextIndex = ownedLength[token];
         uint256 length = items.length;
         uint256[] memory amounts = new uint256[](length);
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i = 0; i < length;) {
             uint256 item = items[i];
 
             _validDeposit(itemsIndex[token][item]);
@@ -82,7 +101,12 @@ contract Closet is ERC1155TokenReceiver {
             itemsOwned[token][nextIndex] = item;
             itemsIndex[token][item] = nextIndex;
             amounts[i] = 1;
+
+            unchecked {
+                i++;
+            }
         }
+        if (nextIndex == DEAD_INDEX) revert MaxOwnableReached();
         ownedLength[token] = nextIndex;
         LAB.safeBatchTransferFrom(owner, address(this), items, amounts, "");
     }
@@ -91,7 +115,7 @@ contract Closet is ERC1155TokenReceiver {
         uint256 lastIndex = ownedLength[token];
         uint256 length = items.length;
         uint256[] memory amounts = new uint256[](length);
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i = 0; i < length;) {
             uint256 item = items[i];
             uint256 index = itemsIndex[token][item];
 
@@ -108,6 +132,9 @@ contract Closet is ERC1155TokenReceiver {
             itemsOwned[token][lastIndex] = DEAD_INDEX;
             lastIndex--;
             amounts[i] = 1;
+            unchecked {
+                i++;
+            }
         }
         ownedLength[token] = lastIndex;
         LAB.safeBatchTransferFrom(address(this), receiver, items, amounts, "");
