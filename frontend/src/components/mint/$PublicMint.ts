@@ -12,7 +12,7 @@ import { connectLab } from "../../logic/contract/lab"
 import { connectSale, getMintCount } from "../../logic/contract/sale"
 import { $ButtonPrimary } from "../form/$Button"
 import { $Dropdown, $defaultSelectContainer } from "../form/$Dropdown"
-import { $displayMintEvents, IMintEvent } from "./mintUtils"
+import { $displayMintEvents, IMintEvent } from "./mintUtils2"
 
 
 

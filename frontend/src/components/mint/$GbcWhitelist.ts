@@ -14,7 +14,7 @@ import { connectLab } from "../../logic/contract/lab"
 import { connectManager } from "../../logic/contract/manager"
 import { connectGbcWhitelistSale } from "../../logic/contract/sale"
 import { $ButtonPrimary } from "../form/$Button"
-import { $displayMintEvents, IMintEvent, timeChange } from "./mintUtils"
+import { $displayMintEvents, IMintEvent, timeChange } from "./mintUtils2"
 
 export const $GbcWhitelist = <T extends LabSaleWhitelistDescription>(item: T, walletLink: IWalletLink) => component((
   [clickMintWhitelist, clickMintWhitelistTether]: Behavior<PointerEvent, Promise<IMintEvent>>,
