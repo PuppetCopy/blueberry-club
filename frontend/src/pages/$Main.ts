@@ -15,7 +15,6 @@ import {
 import { Stream } from "@most/types"
 import { IEthereumProvider } from "eip1193-provider"
 import { $MainMenu } from '../components/$MainMenu'
-import { claimListQuery } from "../logic/claim"
 import * as wallet from "../logic/provider"
 import { WALLET } from "../logic/provider"
 import { helloBackend } from '../logic/websocket'

@@ -19,7 +19,7 @@ export function timeSince(time: number) {
   if (!interval) {
     return ''
   }
-    
+
   const count = Math.floor(timeDelta / interval.seconds)
   return `${count} ${interval.label}${count !== 1 ? 's' : ''}`
 }

@@ -17,6 +17,8 @@ import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 import { WALLET } from "../../logic/provider"
 import { IEthereumProvider } from "eip1193-provider"
 import { connectGbc } from "../../logic/contract/gbc"
+import { countdownFn } from "@gambitdao/gmx-middleware"
+import { timeChange } from "../../components/mint/mintUtils2"
 
 
 
@@ -80,7 +82,7 @@ export const $LabLanding = ({ walletLink, parentRoute, walletStore }: IBerry) =>
 
   return [
     mergeArray([
-      $responsiveFlex(layoutSheet.spacingBig, style({ justifyContent: 'space-between' }))(
+      $responsiveFlex(style({ gap: '75px', justifyContent: 'space-between' }))(
         $column(layoutSheet.spacingBig, style({ maxWidth: '570px' }))(
           $column(style({ fontSize: '3.2em' }))(
             $node(
@@ -93,104 +95,113 @@ export const $LabLanding = ({ walletLink, parentRoute, walletStore }: IBerry) =>
 
           $seperator2,
 
-          $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
-            $IntermediateConnectButton({
-              walletStore,
-              $container: $column,
-              $display: map(() => {
-                return $ButtonPrimary({
-                  $content: $text(`Mint 2 GBC's`)
-                })({
-                  click: mintTestGbcTether(
-                    map(() => {
-                      const walletGbc = connectGbc(walletLink)
-                      return map(async contract => {
-                        const ctx = await contract.mint(2, { value: 2n * 30000000000000000n })
-                        return ctx
-                      }, walletGbc.contract)
-                    }),
-                    switchLatest,
-                    multicast
-                  )
-                })
-              }),
+          // $text(style({ lineHeight: '1.5em' }))(`Bootstraping the lab`),
 
-              walletLink: walletLink
-            })({
-              walletChange: walletChangeTether()
-            }),
-
-
-            switchLatest(mergeArray([
-              now($text(style({ color: pallete.positive }))(`<- Hey anon, Start by minting test GBC's`)),
-              constant(empty(), mintTestGbc)
-            ])),
-
-            $IntermediateTx({
-              $$success: map(() => $text(`Minted 2 test GBC's`)),
-              chain: USE_CHAIN,
-              query: mintTestGbc
-            })({}),
+          $node(style({ fontSize: '1.7em' }))(
+            $text(style({ color: pallete.foreground, paddingRight: '15px' }))(`Launching in`),
+            $text(style({ fontSize: '1.5em', fontWeight: 'bold' }))(map(t => countdownFn(Date.UTC(2022, 5, 7, 22), t * 1000), timeChange)),
           ),
-          $seperator2,
-          $row(layoutSheet.spacingBig)(
-            $Link({
-              $content: $anchor(
-                $ButtonSecondary({
-                  $content: $text('Customize my GBC')
-                })({}),
-              ),
-              url: '/p/wardrobe', route: parentRoute
-            })({
-              click: changeRouteTether()
-            }),
-            $Link({
-              $content: $anchor(
-                $ButtonPrimary({
-                  $content: $text('View Store')
-                })({}),
-              ),
-              url: '/p/lab-store', route: parentRoute
-            })({
-              click: changeRouteTether()
-            }),
-          ),
+
+
+          // $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
+          //   $IntermediateConnectButton({
+          //     walletStore,
+          //     $container: $column,
+          //     $display: map(() => {
+          //       return $ButtonPrimary({
+          //         $content: $text(`Mint 2 GBC's`)
+          //       })({
+          //         click: mintTestGbcTether(
+          //           map(() => {
+          //             const walletGbc = connectGbc(walletLink)
+          //             return map(async contract => {
+          //               const ctx = await contract.mint(2, { value: 2n * 30000000000000000n })
+          //               return ctx
+          //             }, walletGbc.contract)
+          //           }),
+          //           switchLatest,
+          //           multicast
+          //         )
+          //       })
+          //     }),
+
+          //     walletLink: walletLink
+          //   })({
+          //     walletChange: walletChangeTether()
+          //   }),
+
+
+          //   switchLatest(mergeArray([
+          //     now($text(style({ color: pallete.positive }))(`<- Hey anon, Start by minting test GBC's`)),
+          //     constant(empty(), mintTestGbc)
+          //   ])),
+
+          //   $IntermediateTx({
+          //     $$success: map(() => $text(`Minted 2 test GBC's`)),
+          //     chain: USE_CHAIN,
+          //     query: mintTestGbc
+          //   })({}),
+          // ),
+          // $seperator2,
+          // $row(layoutSheet.spacingBig)(
+          //   $Link({
+          //     $content: $anchor(
+          //       $ButtonSecondary({
+          //         $content: $text('Customize my GBC')
+          //       })({}),
+          //     ),
+          //     url: '/p/wardrobe', route: parentRoute
+          //   })({
+          //     click: changeRouteTether()
+          //   }),
+          //   $Link({
+          //     $content: $anchor(
+          //       $ButtonPrimary({
+          //         $content: $text('View Store')
+          //       })({}),
+          //     ),
+          //     url: '/p/lab-store', route: parentRoute
+          //   })({
+          //     click: changeRouteTether()
+          //   }),
+          // ),
 
 
         ),
-        $row(style({ maxWidth: '80vw', placeSelf: 'center', overflow: 'hidden' }))(
-          $bgAnimation(
-            // switchLatest(combineArray((selectedItem, selectedBackground) => {
+        $bgAnimation(
+          // switchLatest(combineArray((selectedItem, selectedBackground) => {
 
 
 
-            //   const displaytuple: Partial<IBerryDisplayTupleMap> = [selectedBackground || background, clothes, IAttributeBody.BLUEBERRY, expression, faceAccessory, hat]
+          //   const displaytuple: Partial<IBerryDisplayTupleMap> = [selectedBackground || background, clothes, IAttributeBody.BLUEBERRY, expression, faceAccessory, hat]
 
-            //   if (selectedItem) {
-            //     displaytuple.splice(getLabItemTupleIndex(selectedItem), 1, selectedItem)
-            //   }
+          //   if (selectedItem) {
+          //     displaytuple.splice(getLabItemTupleIndex(selectedItem), 1, selectedItem)
+          //   }
 
-            //   $berry = $displayBerry(displaytuple, 585, true)
+          //   $berry = $displayBerry(displaytuple, 585, true)
 
-            //   const labItemStyle = O(labItemBackground, style({ flex: 1 }))
+          //   const labItemStyle = O(labItemBackground, style({ flex: 1 }))
 
-            //   const gbcBackground: undefined | IAttributeBackground = undefined // IAttributeBackground.BLUE
-            //   const gbcItem: undefined | IAttributeClothes = undefined // IAttributeClothes.AVALANCHE_HOODIE
-
-
-            //   const $tradeBox = $row(style({
-            //     height: '80px', minWidth: '80px', borderRadius: '8px', gap: '2px', overflow: 'hidden', boxShadow: '-1px 2px 7px 2px #0000002e',
-            //     position: 'relative', backgroundColor: pallete.middleground,
-            //     // backgroundImage: 'linear-gradient(to top right, #fff0 calc(50% - 2px), black , #fff0 calc(50% + 2px))'
-            //   }))
+          //   const gbcBackground: undefined | IAttributeBackground = undefined // IAttributeBackground.BLUE
+          //   const gbcItem: undefined | IAttributeClothes = undefined // IAttributeClothes.AVALANCHE_HOODIE
 
 
-            //   return $text('fe')
+          //   const $tradeBox = $row(style({
+          //     height: '80px', minWidth: '80px', borderRadius: '8px', gap: '2px', overflow: 'hidden', boxShadow: '-1px 2px 7px 2px #0000002e',
+          //     position: 'relative', backgroundColor: pallete.middleground,
+          //     // backgroundImage: 'linear-gradient(to top right, #fff0 calc(50% - 2px), black , #fff0 calc(50% + 2px))'
+          //   }))
 
-            // }, itemSelection, backgroundSelection)),
-            style({ borderRadius: '30px' }, $loadBerry([
+
+          //   return $text('fe')
+
+          // }, itemSelection, backgroundSelection)),
+          style(
+            screenUtils.isDesktopScreen ? { maxWidth: '80vw', placeSelf: 'center', overflow: 'hidden', minWidth: '460px', borderRadius: '30px' } : { alignSelf: 'center', borderRadius: '30px' },
+            $loadBerry([
               undefined, IAttributeClothes.AVALANCHE_HOODIE, undefined, IAttributeExpression.DEAD, IAttributeFaceAccessory.BEARD_WHITE, IAttributeHat.CHRISTMAS_HAT
-            ], screenUtils.isDesktopScreen ? 460 : 300))
+            ], screenUtils.isDesktopScreen ? 460 : 300)
           )
         ),
       ),

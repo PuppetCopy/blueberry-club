@@ -52,10 +52,10 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
     $Link({ $content: $text('Lab'), url: '/p/lab', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
       click: routeChangeTether()
     }),
-    $Link({ $content: $text('Leaderboard'), url: '/p/leaderboard', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
+    $Link({ $content: $text('Leaderboard'), url: '/p/leaderboard', disabled: now(true), route: parentRoute.create({ fragment: 'feefwefwe' }) })({
       click: routeChangeTether()
     }),
-    $Link({ $content: $text('Trade'), url: '/p/trade', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
+    $Link({ $content: $text('Trade'), url: '/p/trade', disabled: now(true), route: parentRoute.create({ fragment: 'feefwefwe' }) })({
       click: routeChangeTether()
     }),
   ]
