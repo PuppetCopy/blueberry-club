@@ -36,7 +36,7 @@ export const $LabStore = ({ walletLink, parentRoute }: ILabStore) => component((
 
       $column(layoutSheet.spacingBig, style({ justifyContent: 'space-between' }))(
         $text(style({ fontWeight: 'bold', fontSize: '1.8em' }))('Items'),
-        $row(screenUtils.isDesktopScreen ? style({ gap: '57px', placeContent: 'center', flexWrap: 'wrap' }) : O(layoutSheet.spacingBig, style({ overflow: 'hidden', placeContent: 'space-evenly', flexWrap: 'wrap' })))(
+        $row(screenUtils.isDesktopScreen ? style({ gap: '50px', placeContent: 'center', flexWrap: 'wrap' }) : O(layoutSheet.spacingBig, style({ overflow: 'hidden', placeContent: 'space-evenly', flexWrap: 'wrap' })))(
           ...saleDescriptionList.map(item =>
             $labStoreItem(item, parentRoute, changeRouteTether)
           )
@@ -81,7 +81,7 @@ const $labStoreItem = (item: LabItemSaleDescription, parentRoute: Route, changeR
     route: parentRoute.create({ fragment: 'fefef' }),
     $content: $column(layoutSheet.spacingSmall, style({ position: 'relative', flexDirection: 'column' }))(
       $column(style({ position: 'relative' }))(
-        $labItem(item.id, screenUtils.isDesktopScreen ? 185 : 160, true, true),
+        $labItem(item.id, screenUtils.isDesktopScreen ? 173 : 160, true, true),
         statusLabel ? $text(style({ fontWeight: 'bold', position: 'absolute', top:  screenUtils.isDesktopScreen ? '15px' : '8px', left: screenUtils.isDesktopScreen ? '15px' : '8px', fontSize: '.75em', padding: '5px 10px', color: pallete.message, borderRadius: '8px', backgroundColor: pallete.background }))(
           statusLabel
         ) : empty(),

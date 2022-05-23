@@ -107,7 +107,7 @@ export const $PublicMint = (item: LabItemSalePublicDescription, walletLink: IWal
             )
           ),
           select: {
-            $container: $defaultSelectContainer(style({ minWidth: '300px' })),
+            $container: $defaultSelectContainer(style({  })),
             value: startWith(null, customNftAmount),
             $$option: map(option => $text(String(option))),
             list: [1, 2, 3, 5, 10, 20].filter(n => Number(item.maxPerTx) >= n),
