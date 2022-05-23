@@ -13,7 +13,7 @@ import { WALLET } from "../logic/provider"
 import { takeUntilLast } from "../logic/common"
 import { $seperator2 } from "../pages/common"
 import { $GbcWhitelist } from "./mint/$GbcWhitelist"
-import { timeChange } from "./mint/mintutils"
+import { timeChange } from "./mint/mintUtils"
 import { $PublicMint } from "./mint/$PublicMint"
 
 

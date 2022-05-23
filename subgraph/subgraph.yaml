@@ -32,7 +32,7 @@ dataSources:
     name: ERC1155
     network: arbitrum-rinkeby
     source:
-      address: '0x559699eB95cf92126FAD35505ED18d989a0484eA'
+      address: '0x3eaBD423D21DC2CE90aA982fB7D1939EA2Ec16ED'
       abi: ERC1155
       startBlock: 12011408 
     mapping:
@@ -59,7 +59,7 @@ dataSources:
     name: Profile
     network: arbitrum-rinkeby
     source:
-      address: '0xcEbAf0C363e30e151Dd8dDa880286c6d9b17087a'
+      address: '0x13F82f192cB2A8746Aede30e23479B6Ff8FbcE2b'
       abi: Profile
       startBlock: 12011416
     mapping:
@@ -78,25 +78,25 @@ dataSources:
           handler: handleSetUsername
       file: ./src/mapping.ts
 
-  # - kind: ethereum/contract
-  #   name: Closet
-  #   network: arbitrum-rinkeby
-  #   source:
-  #     address: '0x554849110aB32Acd4D2D71e26Ff2Fb538057BCE4'
-  #     abi: Closet
-  #     startBlock: 12011419
-  #   mapping:
-  #     kind: ethereum/events
-  #     apiVersion: 0.0.6
-  #     language: wasm/assemblyscript
-  #     entities:
-  #       - Token
-  #     abis:
-  #       - name: Closet
-  #         file: ../contracts/artifacts/contracts/lab/Closet.sol/Closet.json
-  #     eventHandlers:
-  #       - event: Set(address,indexed uint256,uint256[],uint256[])
-  #         handler: handleSetItems
-  #     file: ./src/mapping.ts
+  - kind: ethereum/contract
+    name: Closet
+    network: arbitrum-rinkeby
+    source:
+      address: '0x227995578643a9c4E5EceF49AbA461EF74df1085'
+      abi: Closet
+      startBlock: 12011419
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Token
+      abis:
+        - name: Closet
+          file: ../contracts/artifacts/contracts/lab/closet/Closet.sol/Closet.json
+      eventHandlers:
+        - event: Set(indexed uint256,uint256[],uint256[])
+          handler: handleSetItems
+      file: ./src/mapping.ts
 
 

@@ -405,7 +405,8 @@ export interface LabItemSaleGbcWhitelistDescription extends LabSaleWhitelistDesc
 
 export interface LabItemSalePermissionedWhitelistDescription extends LabSaleWhitelistDescription {
   type: SaleType.whitelist
-  merkleRoot: string  // start date of whitelist sale
+  whitelist: string[]  // start date of whitelist sale
+  signatureList: string[]
 }
 
 export type LabItemSaleDescription = LabItemSalePublicDescription | LabItemSaleGbcWhitelistDescription | LabItemSalePermissionedWhitelistDescription

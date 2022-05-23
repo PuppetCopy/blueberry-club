@@ -5,13 +5,13 @@ import { awaitPromises, filter, map } from "@most/core"
 import { getTokenSlots, getWalletProvider } from "../common"
 import { web3ProviderTestnet } from "../provider"
 
-export const manager = Closet__factory.connect(GBC_ADDRESS.CLOSET, web3ProviderTestnet)
+export const closetGlobal = Closet__factory.connect(GBC_ADDRESS.CLOSET, web3ProviderTestnet)
 export const profile = Profile__factory.connect(GBC_ADDRESS.PROFILE, web3ProviderTestnet)
 
 
 export const getProfile = async (address: string) => {
   const tokenId = (await profile.getDataOf(address)).tokenId.toBigInt()
-  return { ...await getTokenSlots(tokenId, manager), tokenId }
+  return { ...await getTokenSlots(tokenId, closetGlobal), tokenId }
 }
 
 

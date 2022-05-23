@@ -1,17 +1,18 @@
 import { Behavior, combineObject } from "@aelea/core"
 import { component, style, $text, attr, nodeEvent, styleInline, stylePseudo, INode } from "@aelea/dom"
-import { $column, layoutSheet, $row, $caretDown, $icon } from "@aelea/ui-components"
+import { $column, layoutSheet, $row, $icon } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { LabItemSalePublicDescription, USE_CHAIN } from "@gambitdao/gbc-middleware"
 import { ETH_ADDRESS_REGEXP, formatFixed, replayState } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { switchLatest, multicast, startWith, snapshot, map, tap, skipRepeats, merge } from "@most/core"
+import { $caretDown } from "../../elements/$icons"
 import { takeUntilLast } from "../../logic/common"
 import { connectLab } from "../../logic/contract/lab"
 import { connectSale, getMintCount } from "../../logic/contract/sale"
 import { $ButtonPrimary } from "../form/$Button"
 import { $Dropdown, $defaultSelectContainer } from "../form/$Dropdown"
-import { $displayMintEvents, IMintEvent } from "./mintutils"
+import { $displayMintEvents, IMintEvent } from "./mintUtils"
 
 
 
@@ -102,7 +103,7 @@ export const $PublicMint = (item: LabItemSalePublicDescription, walletLink: IWal
               )(
                 amount === null ? '' : String(amount)
               ),
-              $icon({ $content: $caretDown, width: '13px', svgOps: style({ marginTop: '2px', marginRight: '10px' }) })
+              $icon({ viewBox: '0 0 32 32', $content: $caretDown, width: '13px', svgOps: style({ marginTop: '2px', marginRight: '10px' }) })
             )
           ),
           select: {

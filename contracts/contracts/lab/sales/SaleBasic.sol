@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {GBCLab} from "../GBCLab.sol";
-import {Closet} from "../Closet.sol";
 import {Owned} from "@rari-capital/solmate/src/auth/Owned.sol";
 
 /**

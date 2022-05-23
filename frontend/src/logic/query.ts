@@ -1,6 +1,9 @@
 import { groupByMapMany, IAccountQueryParamApi, intervalInMsMap, ITimerangeParamApi } from "@gambitdao/gmx-middleware"
 import { ClientOptions, createClient, gql, TypedDocumentNode } from "@urql/core"
 import { IOwner, IPriceInterval, IToken } from "@gambitdao/gbc-middleware"
+import { Closet } from "@gambitdao/gbc-contracts"
+import { closetGlobal } from "./contract/manager"
+import { getTokenSlots } from "./common"
 
 
 export interface ITypename<T extends string> {
@@ -480,14 +483,14 @@ export const queryOwnerTrasnferNfts = async (account: string) => {
   return Object.entries(groupByMapMany(owner.ownedTokens, token => token.transfers[0].transaction.id))
 }
 
-export const queryOwnerV2 = async (account: string): Promise<IOwner | null> => {
+export const queryOwnerV2 = async (account: string, closet = closetGlobal): Promise<IOwner | null> => {
   const owner = (await blueberryGraphV2(ownerV2, { account: account.toLowerCase() })).owner
 
   if (owner === null) {
     return null
   }
 
-  return fromOwnerJson(owner)
+  return fromOwnerJson(owner, closet)
 }
  
 export const queryToken = async (id: string) => {
@@ -565,22 +568,25 @@ export const queryAvalancheRewards = async (config: IAccountQueryParamApi & Part
 
 
 
-function fromTokenJson<T extends IToken>(obj: T): T {
+async function fromTokenJson<T extends IToken>(obj: T, closet: Closet): Promise<T> {
+  const labItems = await getTokenSlots(obj.id, closetGlobal)
   return {
     ...obj,
-    owner: obj.owner ? fromOwnerJson(obj.owner) : null,
+    owner: obj.owner ? fromOwnerJson(obj.owner, closet) : null,
     id: Number(obj.id),
-    background: obj.background ? Number(obj.background) : undefined,
-    custom: obj.custom ? Number(obj.custom) : undefined,
-    special: obj.special ? Number(obj.special) : undefined,
+    ...labItems,
+    // background: obj.background ? Number(obj.background) : undefined,
+    // custom: obj.custom ? Number(obj.custom) : undefined,
+    // special: obj.special ? Number(obj.special) : undefined,
   }
 }
 
-function fromOwnerJson<T extends IOwner>(obj: T): T {
+async function fromOwnerJson<T extends IOwner>(obj: T, closet: Closet): Promise<T> {
+  const ownedTokens = await Promise.all(obj.ownedTokens.map(t => fromTokenJson(t, closet)))
   return {
     ...obj,
-    main: obj.main ? fromTokenJson(obj.main) : null,
-    ownedTokens: obj.ownedTokens.map(fromTokenJson),
+    main: obj.main ? await fromTokenJson(obj.main, closet) : null,
+    ownedTokens,
     ownedLabItems: obj.ownedLabItems.map(json => ({ ...json, balance: BigInt(json.balance), item: { id: Number(json.item.id) } }))
   }
 }

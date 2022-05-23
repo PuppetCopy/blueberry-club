@@ -8,4 +8,4 @@ export const $metricEntry = (label: string, value: string) => $row(style({ fontS
   $text(style({ fontWeight: 'bold' }))(value),
 )
 
-export const $seperator2 = style({ backgroundColor: colorAlpha(pallete.foreground, .15), alignSelf: 'stretch' }, $seperator)
+export const $seperator2 = style({ backgroundColor: colorAlpha(pallete.foreground, .15), alignSelf: 'stretch', display: 'block' }, $seperator)

@@ -77,15 +77,15 @@ export const $LabLanding = ({ walletLink, parentRoute, walletStore }: IBerry) =>
 
 
 
-  
+
   return [
-    $column(layoutSheet.spacingBig)(
+    mergeArray([
       $responsiveFlex(layoutSheet.spacingBig, style({ justifyContent: 'space-between' }))(
         $column(layoutSheet.spacingBig, style({ maxWidth: '570px' }))(
           $column(style({ fontSize: '3.2em' }))(
             $node(
               $text(style({}))(`Blueberry `),
-              $text(style({ fontWeight: 'bold' }))( `Lab`),
+              $text(style({ fontWeight: 'bold' }))(`Lab`),
             ),
           ),
 
@@ -114,12 +114,12 @@ export const $LabLanding = ({ walletLink, parentRoute, walletStore }: IBerry) =>
                   )
                 })
               }),
-        
+
               walletLink: walletLink
             })({
               walletChange: walletChangeTether()
             }),
-            
+
 
             switchLatest(mergeArray([
               now($text(style({ color: pallete.positive }))(`<- Hey anon, Start by minting test GBC's`)),
@@ -177,7 +177,7 @@ export const $LabLanding = ({ walletLink, parentRoute, walletStore }: IBerry) =>
             //   const gbcBackground: undefined | IAttributeBackground = undefined // IAttributeBackground.BLUE
             //   const gbcItem: undefined | IAttributeClothes = undefined // IAttributeClothes.AVALANCHE_HOODIE
 
-        
+
             //   const $tradeBox = $row(style({
             //     height: '80px', minWidth: '80px', borderRadius: '8px', gap: '2px', overflow: 'hidden', boxShadow: '-1px 2px 7px 2px #0000002e',
             //     position: 'relative', backgroundColor: pallete.middleground,
@@ -195,10 +195,6 @@ export const $LabLanding = ({ walletLink, parentRoute, walletStore }: IBerry) =>
         ),
       ),
 
-
-      $node(),
-      $node(),
-
       $column(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
         $text(style({ fontWeight: 'bold', fontSize: screenUtils.isDesktopScreen ? '2.5em' : '1.45em', textAlign: 'center' }))('Want to get featured?'),
         $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '678px' }))('Are you an artist, a project or an influencer? It is possible to collaborate with us to create items that fit your art or your brand in the Blueberry Lab'),
@@ -206,7 +202,7 @@ export const $LabLanding = ({ walletLink, parentRoute, walletStore }: IBerry) =>
 
         $buttonAnchor(style({ alignSelf: 'center' }), attr({ href: 'https://discord.com/invite/7ZMmeU3z9j', target: '_blank' }))($text('Contact us on Discord'))
       ),
-    ),
+    ].reverse()),
 
     { changeRoute, walletChange }
   ]

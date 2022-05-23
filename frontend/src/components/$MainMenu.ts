@@ -37,11 +37,6 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
 
 ) => {
 
-  const $treasury = $row(style({ alignItems: 'center', cursor: 'pointer' }))(
-    screenUtils.isDesktopScreen ? $text(style({ marginRight: '8px' }))('Treasury: ') : empty(),
-    switchLatest(map(x => $text('$' + formatReadableUSD(x)), totalWalletHoldingsUsd)),
-    $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginTop: '3px', marginLeft: '5px' }), viewBox: '0 0 32 32' }),
-  )
 
   const $govItem = (label: string, $iconPath: $Node, description: string) => $row(layoutSheet.spacing)(
     $icon({ $content: $iconPath, width: '36px', svgOps: style({ minWidth: '36px' }), viewBox: '0 0 32 32' }),
@@ -67,17 +62,20 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
 
   return [
     $row(layoutSheet.spacingBig, style({ alignItems: 'center', placeContent: 'center', flex: 1, width: '100%', padding: '30px 0', zIndex: 1000, borderRadius: '12px' }))(
-      $row(style({ flex: 1 }))(
+      $row(layoutSheet.spacingBig, style({ flex: 1, alignItems: 'center' }))(
         $RouterAnchor({ url: '/', route: parentRoute, $anchor: $element('a')($icon({ $content: $logo, width: '55px', viewBox: '0 0 32 32' })) })({
           click: routeChangeTether()
-        })
-      ),
-      $row(layoutSheet.spacingBig, style({ fontSize: '.9em', flex: 1, alignItems: 'center' }), containerOp)(
-
+        }),
         $Dropdown({
           // disabled: accountChange,
           // $noneSelected: $text('Choose Amount'),
-          $selection: map(amount => $treasury),
+          $selection: map(amount => {
+            return $row(style({ alignItems: 'center', cursor: 'pointer' }))(
+              screenUtils.isDesktopScreen ? $text(style({ marginRight: '8px' }))('Treasury: ') : empty(),
+              switchLatest(map(x => $text('$' + formatReadableUSD(x)), totalWalletHoldingsUsd)),
+              $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginTop: '3px', marginLeft: '5px' }), viewBox: '0 0 32 32' }),
+            )
+          }),
           select: {
             value: now(null),
             $container: $defaultSelectContainer(style({ minWidth: '300px' })),
@@ -92,6 +90,9 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
             ],
           }
         })({}),
+      ),
+      $row(layoutSheet.spacingBig, style({ fontSize: '.9em', flex: 1, alignItems: 'center', placeContent: 'center' }), containerOp)(
+
         ...screenUtils.isDesktopScreen ? [
           ...$menuItemList,
           style({ alignSelf: 'stretch' }, $seperator2)

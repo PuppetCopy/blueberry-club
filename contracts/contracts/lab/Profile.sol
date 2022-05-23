@@ -51,10 +51,10 @@ contract Profile is Auth {
     }
 
     function getDataOf(address account) external view returns(uint tokenId, string memory username) {
+        tokenId = mainOf[account];
         address owner = GBC.ownerOf(tokenId);
         if(!isHandler[owner] && owner != account) revert NotOwner();
 
-        tokenId = mainOf[account];
         username = usernameOf[account];
     }
 

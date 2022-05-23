@@ -1,6 +1,6 @@
 import {
   GbcWhitelist__factory, Profile__factory, GBCLab__factory,
-  Police__factory, Closet__factory, GBC__factory, PermissionedWhitelist__factory, SaleBasic__factory,
+  Police__factory, Closet__factory, GBC__factory, PermissionedWhitelist__factory, SaleBasic__factory, SaleBasic,
 } from "../typechain-types"
 import { AddressZero } from "@gambitdao/gmx-middleware"
 
@@ -9,6 +9,7 @@ import { ethers } from "hardhat"
 import getAddress, { ZERO_ADDRESS } from "../utils/getAddress"
 import { connectOrDeploy } from "../utils/deploy"
 import { GBC_ADDRESS, saleDescriptionList, SaleType } from "@gambitdao/gbc-middleware"
+import { createWhitelistProofs } from "../utils/whitelist"
 
 export enum ROLES {
   MINTER,
@@ -31,14 +32,14 @@ export enum ROLES {
 const TREASURY = "" // Multisig or you personal address (if you leave it blank it will be the owner address)
 const GBC = GBC_ADDRESS.GBC // The GBC ERC721 (NFT) contract
 // const POLICE = "" // Police contract
-const POLICE = GBC_ADDRESS.POLICE // Police contract
+const POLICE = "0x6082Ba2c841c50a01267306927150da9DA798D21" // Police contract
 // const LAB = "" // The Lab items ERC1155 contract
-const LAB = GBC_ADDRESS.LAB // The Lab items ERC1155 contract
+const LAB = "0x3eaBD423D21DC2CE90aA982fB7D1939EA2Ec16ED" // The Lab items ERC1155 contract
 
 // This contract can be redeployed safely they are not required
 // on others contract (for now)
-const PROFILE = GBC_ADDRESS.PROFILE
-const CLOSET = GBC_ADDRESS.CLOSET
+const PROFILE = "0x13F82f192cB2A8746Aede30e23479B6Ff8FbcE2b"
+const CLOSET = "0x227995578643a9c4E5EceF49AbA461EF74df1085"
 
 
 const main = async () => {
@@ -87,12 +88,12 @@ const main = async () => {
   const closet = await connectOrDeploy(CLOSET, Closet__factory, gbc.address, lab.address)
 
   if (getAddress(CLOSET) == AddressZero) {
+    console.log(`🎩 Set LAB isApprovedForAll to CLOSET`)
     console.log(`✋ Adding roles for CLOSET`)
     await police.setRoleCapability(ROLES.DESIGNER, closet.address, closet.interface.getSighash(closet.interface.functions["get(uint256,uint256,uint256)"]), true)
 
-    console.log(`🎩 Set roles from LAB to CLOSET`)
     try {
-
+      console.log(`🎩 Set roles from LAB to CLOSET`)
       await police.setUserRole(closet.address, ROLES.MINTER, true)
       console.log(`  - MINTER role setted !`)
     } catch (error) {
@@ -104,18 +105,24 @@ const main = async () => {
   for (const config of saleDescriptionList) {
     console.log(`------------------------------------------------------------------------------\n`)
 
+    let sale: SaleBasic
 
+    if (config.type === SaleType.Public) {
+      sale = await connectOrDeploy(config.contractAddress, SaleBasic__factory, lab.address, owner, config.id, config.publicCost, config.maxSupply, config.maxPerTx, config.publicStartDate)
+    } else if (config.type === SaleType.GbcWhitelist) {
+      sale = await connectOrDeploy(config.contractAddress, GbcWhitelist__factory, gbc.address, lab.address, owner, config.id, config.publicCost, config.maxSupply, config.maxPerTx, config.publicStartDate, config.whitelistStartDate, config.whitelistCost, config.whitelistMax)
+    } else {
+      const res = createWhitelistProofs(config.whitelist)
+      console.log(res.whitelist)
+      console.log('root: ', res.merkleRoot)
 
-    const sale = config.type === SaleType.Public ?
-      await connectOrDeploy(config.contractAddress, SaleBasic__factory, lab.address, owner, config.id, config.publicCost, config.maxSupply, config.maxPerTx, config.publicStartDate)
-      : config.type === SaleType.GbcWhitelist
-        ? await connectOrDeploy(config.contractAddress, GbcWhitelist__factory, gbc.address, lab.address, owner, config.id, config.publicCost, config.maxSupply, config.maxPerTx, config.publicStartDate, config.whitelistStartDate, config.whitelistCost, config.whitelistMax)
-        : await connectOrDeploy(config.contractAddress, PermissionedWhitelist__factory, lab.address, owner, config.id, config.publicCost, config.maxSupply, config.maxPerTx, config.publicStartDate, config.merkleRoot)
+      sale = await connectOrDeploy(config.contractAddress, PermissionedWhitelist__factory, lab.address, owner, config.id, config.publicCost, config.maxSupply, config.maxPerTx, config.publicStartDate, res.merkleRoot)
+    }
+
 
     console.log(`🎩 Set roles from LAB to ${config.name} SALE`)
 
-
-    if (getAddress(config.contractAddress) !== AddressZero) {
+    if (getAddress(config.contractAddress) === AddressZero) {
       try {
         await police.setUserRole(sale.address, ROLES.MINTER, true)
         console.log(`  - MINTER role setted !`)

@@ -158,14 +158,15 @@ export async function getTokenSlots(token: BigNumberish, closet: Closet) {
 
   return (await closet.get(token, 0, 2)).reduce((seed, next) => {
 
-    const ndx = getLabItemTupleIndex(next.toNumber())
+    const itemId = next.toNumber()
+    const ndx = getLabItemTupleIndex(itemId)
 
     if (ndx === 0) {
-      seed.background = ndx
+      seed.background = itemId
     } else if (ndx === 7) {
-      seed.special = ndx
+      seed.special = itemId
     } else {
-      seed.custom = ndx
+      seed.custom = itemId
     }
 
     return seed
