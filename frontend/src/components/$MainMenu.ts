@@ -100,7 +100,7 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
 
 
         $Popover({
-          dismiss: profileLinkClick,
+          // dismiss: profileLinkClick,
           $$popContent: combineArray((_) => {
             return $column(layoutSheet.spacingBig)(
               ...screenUtils.isMobileScreen ? $menuItemList : [],
