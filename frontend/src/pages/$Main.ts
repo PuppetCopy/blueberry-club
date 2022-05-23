@@ -234,4 +234,3 @@ export default ({ baseRoute = '' }: Website) => component((
   ]
 })
 
-

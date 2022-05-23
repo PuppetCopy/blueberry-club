@@ -3,7 +3,8 @@ import { map, now, tap } from "@most/core"
 
 import {
   IAttributeBody, IAttributeHat,
-  IAttributeClothes, IBerryDisplayTupleMap } from "@gambitdao/gbc-middleware"
+  IAttributeClothes, IBerryDisplayTupleMap
+} from "@gambitdao/gbc-middleware"
 import { $IntermediatePromise } from "@gambitdao/ui-components"
 import { SvgPartsMap } from "../logic/mappings/svgParts"
 
@@ -35,7 +36,7 @@ export const $berry = (
   )(
     tap(async ({ element }) => {
       element.innerHTML = `
-        ${background ? svgParts[0][background] : '' }
+        ${background ? svgParts[0][background] : ''}
         ${svgParts[1][clothes ? clothes : IAttributeClothes.NUDE]}
         ${svgParts[2][body ? body : IAttributeBody.BLUEBERRY]}
         ${expression ? svgParts[3][expression] : ''}
