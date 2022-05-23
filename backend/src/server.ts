@@ -4,11 +4,10 @@ import { readFileSync } from 'fs'
 import http from 'http'
 import path from 'path'
 import ws from 'ws'
-import { api } from './logic/api'
-import { scheduler } from './logic/scheduler'
-import { helloFrontend } from './messageBus'
 import compression from 'compression'
-import { requestAggregatedSettledTradeList } from './logic/aggregatedTradeList'
+import { helloFrontend } from './messageBus'
+import { requestLeaderboardTopList, requestLatestPriceMap, requestAccountTradeList, requestPricefeed } from './logic/api'
+import { scheduler } from './logic/scheduler'
 
 
 
@@ -72,10 +71,14 @@ function heartbeat() {
 }
 
 
-
 const apiComponent = helloFrontend(wss, {
-  requestAggregatedSettledTradeList,
+  requestLeaderboardTopList,
+  requestLatestPriceMap,
+  requestAccountTradeList,
+  requestPricefeed,
 })
+
+
 
 
 const run = async () => {
@@ -91,7 +94,6 @@ const run = async () => {
       end() {}
     }, scheduler)
 
-  
 
   const publicDir = path.resolve(process.cwd(), '.dist/cjs/public')
   const htmlFile = readFileSync(path.join(publicDir, '/index.html')).toString()
@@ -102,7 +104,6 @@ const run = async () => {
   app.use(express.json())
   app.use(compression())
   app.use(express.static(publicDir))
-  app.use('/api', api)
   app.use((req, res, next) => {
 
 
@@ -141,7 +142,7 @@ const run = async () => {
   app.use((req, res) => res.status(404).json({ message: 'No route found' }))
 
   server.listen(port, () => {
-    console.log(`express started at http://localhost:${port}`)
+    console.log(`Running at http://localhost:${port}`)
   })
 }
 

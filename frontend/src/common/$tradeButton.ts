@@ -1,8 +1,8 @@
 import { attr, stylePseudo, style, $text } from "@aelea/dom"
 import { $row, layoutSheet, $icon } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
+import { $anchor } from "@gambitdao/ui-components"
 import { $ButtonPrimary } from "../components/form/$Button"
-import { $anchor } from "../elements/$common"
 import { $gmxLogo } from "./$icons"
 
 

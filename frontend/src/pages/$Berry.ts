@@ -1,61 +1,31 @@
 import { Behavior, combineObject, O, replayLatest } from "@aelea/core"
 import { $node, $text, attr, component, IBranch, nodeEvent, style } from "@aelea/dom"
-import * as router from '@aelea/router'
 import { Route } from "@aelea/router"
 import { $column, $icon, $Popover, $row, $seperator, $TextField, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { USE_CHAIN, DEPLOYED_CONTRACT } from "@gambitdao/gbc-middleware"
-import { isAddress } from "@gambitdao/gmx-middleware"
+import { USE_CHAIN, GBC_ADDRESS, IAttributeBody, IAttributeMappings } from "@gambitdao/gbc-middleware"
+import { GBC__factory } from "@gambitdao/gbc-contracts"
+import { isAddress, timeSince } from "@gambitdao/gmx-middleware"
+import { $anchor, $caretDblDown, $IntermediateTx } from "@gambitdao/ui-components"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { awaitPromises, empty, filter, fromPromise, map, merge, multicast, skipRepeats, snapshot, startWith, switchLatest } from "@most/core"
-import { GBC__factory } from "contracts"
-import { $IntermediateTx } from "../common/$IntermediateDisplay"
 import { $Table2 } from "../common/$Table2"
-import { $AccountPreview } from "../components/$AccountProfile"
-import { $DisplayBerry } from "../components/$DisplayBerry"
+import { $accountPreview } from "../components/$AccountProfile"
+import { $loadBerry } from "../components/$DisplayBerry"
 import { $ButtonPrimary, $ButtonSecondary } from "../components/form/$Button"
-import { $accountRef, $anchor, $card, $responsiveFlex, $txHashRef, $txnIconLink } from "../elements/$common"
-import { $caretDblDown, $tofunft } from "../elements/$icons"
-import { attributeMappings } from "../logic/gbcMappings"
+import { $accountRef, $card, $responsiveFlex, $txnIconLink } from "../elements/$common"
+import { $tofunft } from "../elements/$icons"
+import tokenIdAttributeTuple from "../logic/mappings/tokenIdAttributeTuple"
 import { queryToken } from "../logic/query"
-import { IAttributeMappings, IBerryMetadata, IToken, ITransfer } from "../types"
-import { timeSince } from "./common"
+import { IToken, ITransfer } from "@gambitdao/gbc-middleware"
+import { attributeIndexToLabel } from "../logic/mappings/label"
 
 export function bnToHex(n: bigint) {
   return '0x' + n.toString(16)
 }
 
 
-export function getMetadataLabels([bg, cloth, body, expr, faceAce, hat]: IBerryMetadata) {
-
-  return {
-    background: {
-      label: 'Background',
-      value:  IAttributeMappings[bg]
-    },
-    clothes: {
-      label: 'Clothes',
-      value: IAttributeMappings[cloth],
-    },
-    body: {
-      label: 'Body',
-      value: IAttributeMappings[body],
-    },
-    expression: {
-      label: 'Expression',
-      value: IAttributeMappings[expr],
-    },
-    faceAccessory: {
-      label: 'Face Accessory',
-      value: IAttributeMappings[faceAce],
-    },
-    hat: {
-      label: 'Hat',
-      value: IAttributeMappings[hat],
-    },
-  }
-}
 
 
 interface IBerry {
@@ -64,11 +34,10 @@ interface IBerry {
   // walletStore: cstate.BrowserStore<"metamask" | "walletConnect" | null, "walletStore">
 }
 
-export const $Berry = ({ walletLink, parentRoute }: IBerry) => component((
+export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
   [trasnferPopup, trasnferPopupTether]: Behavior<any, any>,
 ) => {
 
-  const berry = parentRoute.create({ fragment: /\d+/ })
 
   const urlFragments = document.location.pathname.split('/')
   const berryId = urlFragments[urlFragments.length - 1]
@@ -76,117 +45,112 @@ export const $Berry = ({ walletLink, parentRoute }: IBerry) => component((
   const tokenId = bnToHex(BigInt(berryId))
   const token = fromPromise(queryToken(tokenId))
   
-  const berryMetadata = attributeMappings[Number(tokenId) - 1]
+  const berryMetadata = tokenIdAttributeTuple[Number(tokenId) - 1]
   const [background, clothes, body, expression, faceAccessory, hat] = berryMetadata
-  const metadata = getMetadataLabels(berryMetadata)
 
   return [
-    router.match(berry)(
-      $column(layoutSheet.spacingBig)(
-        $responsiveFlex(layoutSheet.spacingBig)(
-          $row(style({ minWidth: '400px', height: '400px', overflow: 'hidden', borderRadius: '30px' }))(
-            $DisplayBerry({
-              size: '400px',
-              background,
-              clothes,
-              expression,
-              faceAccessory,
-              hat
-            })({})
-          ),
-          $node(),
-          switchLatest(map(token => {
-            return $column(layoutSheet.spacingBig)(
-              $text(style({ fontWeight: 800, fontSize: '2.25em' }))(`GBC #${berryId}`),
-              $row(layoutSheet.spacingSmall)(
-                $text(style({  }))(`Owned by `),
-                $accountRef(token.owner.id),
-              ),
+    $column(layoutSheet.spacingBig)(
+      $responsiveFlex(layoutSheet.spacingBig)(
+        $row(style({ minWidth: '400px', height: '400px', overflow: 'hidden', borderRadius: '30px' }))(
+          $loadBerry([background, clothes, IAttributeBody.BLUEBERRY, expression, faceAccessory, hat], 400)
+        ),
+        $node(),
+        switchLatest(map(token => {
+          return $column(layoutSheet.spacingBig)(
+            $text(style({ fontWeight: 800, fontSize: '2.25em' }))(`GBC #${berryId}`),
+            $row(layoutSheet.spacingSmall)(
+              $text(style({  }))(`Owned by `),
+              $accountRef(token.owner.id),
+            ),
 
-              $row(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
-                switchLatest(map(account => {
-                  const isOwner = account && account.toLowerCase() === token.owner.id.toLowerCase()
+            $row(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
+              switchLatest(map(account => {
+                const isOwner = account && account.toLowerCase() === token.owner.id.toLowerCase()
 
-                  if (!isOwner) {
-                    return empty()
-                  }
+                if (!isOwner) {
+                  return empty()
+                }
 
-                  return $row(
-                    $Popover({
-                      $$popContent: map(() => {
-                        return $TrasnferOwnership(account, token, walletLink)({
+                return $row(
+                  $Popover({
+                    $$popContent: map(() => {
+                      return $TrasnferOwnership(account, token, walletLink)({
                         // transfer: trasnferOwnershipTether()
-                        })
-                      }, trasnferPopup),
-                    })(
-                      $row(
-                        $ButtonSecondary({
-                          $content: $text('Transfer Ownership')
-                        })({
-                          click: trasnferPopupTether()
-                        })
-                      )
-                    )({})
-                  )
-                }, walletLink.account)),
+                      })
+                    }, trasnferPopup),
+                  })(
+                    $row(
+                      $ButtonSecondary({
+                        $content: $text('Transfer Ownership')
+                      })({
+                        click: trasnferPopupTether()
+                      })
+                    )
+                  )({})
+                )
+              }, walletLink.account)),
                 
-                $row(layoutSheet.spacingSmall)(
-                  $icon({
-                    $content: $tofunft,
-                    viewBox: '0 0 32 32'
-                  }),
-                  $anchor(attr({ href: `https://tofunft.com/nft/arbi/0x17f4BAa9D35Ee54fFbCb2608e20786473c7aa49f/${berryId}` }))(
-                    $text('Trade')
-                  ),
+              $row(layoutSheet.spacingSmall)(
+                $icon({
+                  $content: $tofunft,
+                  viewBox: '0 0 32 32'
+                }),
+                $anchor(attr({ href: `https://tofunft.com/nft/arbi/0x17f4BAa9D35Ee54fFbCb2608e20786473c7aa49f/${berryId}` }))(
+                  $text('Trade')
                 ),
               ),
+            ),
               
-              $row(layoutSheet.spacing, style({ flexWrap: 'wrap' }))(...Object.values(metadata).map(trait => $card(style({ padding: '16px', minWidth: '140px' }), layoutSheet.spacingSmall)(
-                $text(style({ color: pallete.foreground, fontSize: '.75em' }))(trait.label),
-                $text(trait.value),
-              ))),
+            $row(layoutSheet.spacing, style({ flexWrap: 'wrap' }))(
+              ...berryMetadata.map((val, idx) => {
+
+                return $card(style({ padding: '16px', minWidth: '140px' }), layoutSheet.spacingSmall)(
+                  $text(style({ color: pallete.foreground, fontSize: '.75em' }))(attributeIndexToLabel[idx]),
+                  $text(IAttributeMappings[val]),
+                )
+              })
+            ),
               
-            )
-          }, token)),
-        ),
+          )
+        }, token)),
+      ),
 
-        $column(layoutSheet.spacing)(
-          $text(style({ fontSize: '1.5em' }))('Transaction History'),
-          $seperator,
-          $Table2<ITransfer>({
-            dataSource: map(md => {
-              return md.transfers
-            }, token),
-            cellOp: style({ alignItems: 'center' }),
-            columns: [
-              {
-                $head: $text('From'),
-                $body: map(x => $accountRef(x.from.id))
-              },
-              {
-                $head: $text('To'),
-                $body: map(x => $accountRef(x.to.id))
-              },
-              {
-                $head: $text('Txn'),
-                $body: map(x => {
-                  const time = Number(BigInt(x.timestamp))
-                  const dateStr = new Date(Math.floor(time * 1000)).toLocaleDateString()
+      $column(layoutSheet.spacing)(
+        $text(style({ fontSize: '1.5em' }))('Transaction History'),
+        $seperator,
+        $Table2<ITransfer>({
+          dataSource: map(md => {
+            return md.transfers
+          }, token),
+          cellOp: style({ alignItems: 'center' }),
+          columns: [
+            {
+              $head: $text('From'),
+              $body: map(x => $accountRef(x.from.id))
+            },
+            {
+              $head: $text('To'),
+              $body: map(x => $accountRef(x.to.id))
+            },
+            {
+              $head: $text('Txn'),
+              $body: map(x => {
+                const time = Number(BigInt(x.timestamp))
+                const dateStr = new Date(Math.floor(time * 1000)).toLocaleDateString()
 
-                  const timeAgo = timeSince(time)
+                const timeAgo = timeSince(time)
 
-                  return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
-                    $txnIconLink(x.transactionHash),
-                    $column(
-                      $text(style({ fontSize: '.75em' }))(`${timeAgo}`),
-                      $text(`${dateStr}`),
-                    ),
-                  )
-                })
-              },
-            ]
-          })({})
-        )
+                return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+                  $txnIconLink(x.transaction.id),
+                  $column(
+                    $text(style({ fontSize: '.75em' }))(`${timeAgo}`),
+                    $text(`${dateStr}`),
+                  ),
+                )
+              })
+            },
+          ]
+        })({})
       )
     )
   ]
@@ -204,7 +168,7 @@ const $TrasnferOwnership = (address: string, token: IToken, walletLink: IWalletL
       return null
     }
 
-    const contract = GBC__factory.connect(DEPLOYED_CONTRACT, w3p.getSigner())
+    const contract = GBC__factory.connect(GBC_ADDRESS.GBC, w3p.getSigner())
 
     if (await contract.deployed()) {
       return contract
@@ -227,7 +191,7 @@ const $TrasnferOwnership = (address: string, token: IToken, walletLink: IWalletL
       throw new Error(`Connected account does not own this token`)
     }
 
-    return (await contract.transferFrom(address, transferTo, token.id)).wait()
+    return (await contract.transferFrom(address, transferTo, token.id))
   }, combineObject({ contract, transferTo }), submit)
 
   return [
@@ -265,11 +229,11 @@ const $TrasnferOwnership = (address: string, token: IToken, walletLink: IWalletL
           fill: pallete.foreground,
           viewBox: '0 0 32 32'
         }),
-        switchLatest(map(ta => $AccountPreview({ address: ta })({}), transferTo))
+        switchLatest(map(ta => $accountPreview({ address: ta }), transferTo))
       ),
       $IntermediateTx({
+        chain: USE_CHAIN,
         query: transfer,
-        $done: map(tx => $row(style({ color: pallete.positive }))($txHashRef(tx.transactionHash)))
       })({}),
     ),
 

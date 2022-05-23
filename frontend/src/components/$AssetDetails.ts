@@ -2,13 +2,12 @@ import { Behavior, combineArray } from "@aelea/core"
 import { $Branch, $Node, component, style, $text, $element, attr } from "@aelea/dom"
 import { $row, layoutSheet, $icon, $column } from "@aelea/ui-components"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
-import { formatReadableUSD, formatFixed } from "@gambitdao/gmx-middleware"
-import { CHAIN } from "@gambitdao/wallet-link"
+import { formatReadableUSD, formatFixed, CHAIN } from "@gambitdao/gmx-middleware"
 import { switchLatest, skipRepeatsWith, multicast, map } from "@most/core"
 import { Stream } from "@most/types"
-import { MouseEventParams, LineStyle, BarPrice, PriceScaleMode, Time } from "lightweight-charts-baseline"
+import { MouseEventParams, LineStyle, BarPrice, PriceScaleMode, Time } from "lightweight-charts"
 import { $responsiveFlex } from "../elements/$common"
-import { IAsset } from "../types"
+import { IAsset } from "@gambitdao/gbc-middleware"
 import { IValueInterval } from "./$StakingGraph"
 import { $Chart } from "./chart/$Chart"
 
@@ -105,6 +104,7 @@ export const $AssetDetails = ({ label, $iconPath, asset, symbol, $distribution, 
                   color: pallete.foreground,
                   lineWidth: 1,
                   axisLabelVisible: true,
+                  lineVisible: true,
                   title: '',
                   lineStyle: LineStyle.SparseDotted,
                 })

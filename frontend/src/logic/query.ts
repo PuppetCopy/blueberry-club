@@ -1,7 +1,9 @@
-import { TREASURY_ARBITRUM } from "@gambitdao/gbc-middleware"
-import { groupByMapMany, IAccountQueryParamApi, intervalInMsMap, ITimerange } from "@gambitdao/gmx-middleware"
+import { groupByMapMany, IAccountQueryParamApi, intervalInMsMap, ITimerangeParamApi } from "@gambitdao/gmx-middleware"
 import { ClientOptions, createClient, gql, TypedDocumentNode } from "@urql/core"
-import { IOwner, IPriceInterval, IToken } from "../types"
+import { IOwner, IPriceInterval, IToken } from "@gambitdao/gbc-middleware"
+import { Closet } from "@gambitdao/gbc-contracts"
+import { closetGlobal } from "./contract/manager"
+import { getTokenSlots } from "./common"
 
 
 export interface ITypename<T extends string> {
@@ -165,7 +167,7 @@ export type QueryIdentifiable = {
   id: string
 }
 
-export type IQueryGmxEthHistoricPrice = Partial<ITimerange & { period: intervalInMsMap }>
+export type IQueryGmxEthHistoricPrice = Partial<ITimerangeParamApi & { period: intervalInMsMap }>
 
 const tokenDoc: TypedDocumentNode<{token: IToken | null}, QueryIdentifiable> = gql`
 ${schemaFragments}
@@ -304,7 +306,9 @@ query ($first: Int = 1000, $account: String) {
   owner(id: $account) {
     ownedTokens(first: $first) {
       transfers {
-        transactionHash
+        transaction {
+          id
+        }
         id
         from {
           id
@@ -314,6 +318,42 @@ query ($first: Int = 1000, $account: String) {
       id
     }
     balance
+  }
+}
+`
+
+
+const ownerV2: TypedDocumentNode<{owner: IOwner}, QueryAccountOwnerNfts> = gql`
+${schemaFragments}
+
+query ($account: String) {
+  owner(id: $account) {
+    id
+    balance
+    ownedLabItems {
+      balance
+      item {
+        id
+      }
+      id
+    }
+    displayName
+    rewardClaimedCumulative
+    ownedTokens {
+      id
+      background
+      custom
+      special
+    }
+    ownedLabItems {
+      id
+    }
+    main {
+      id
+      background
+      custom
+      special
+    }
   }
 }
 `
@@ -353,7 +393,7 @@ const rewardsTrackerDoc: TypedDocumentNode<{
   feeGmxTrackerTransfers: IStakingGmxTransfer[],
   feeGlpTrackerTransfers: IStakingGlpTransfer[],
   // bonusGmxTrackerTransfers: ITransfer[]
-}, IAccountQueryParamApi & Partial<ITimerange>> = gql`
+}, IAccountQueryParamApi & Partial<ITimerangeParamApi>> = gql`
 
 query ($first: Int = 1000, $account: String, $period: IntervalTime = _86400, $from: Int = 0, $to: Int = 1999999999) {
 
@@ -412,18 +452,23 @@ const prepareClient = (opts: ClientOptions) => {
 }
 
 const blueberryGraph = prepareClient({
-  fetch: fetch as any,
+  fetch: fetch,
   url: 'https://api.thegraph.com/subgraphs/name/nissoh/blueberry-club',
+})
+
+const blueberryGraphV2 = prepareClient({
+  fetch: fetch,
+  url: 'https://api.thegraph.com/subgraphs/name/nissoh/blueberry-club-rinkeby',
 })
 
 
 const gmxAvalancheStats = prepareClient({
-  fetch: fetch as any,
+  fetch: fetch,
   url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-staking-avalanche',
 })
 
 const gmxArbitrumStats = prepareClient({
-  fetch: fetch as any,
+  fetch: fetch,
   url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-rewards',
 })
 
@@ -435,17 +480,17 @@ export const queryOwnerTrasnferNfts = async (account: string) => {
     return []
   }
 
-  return Object.entries(groupByMapMany(owner.ownedTokens, token => token.transfers[0].transactionHash))
+  return Object.entries(groupByMapMany(owner.ownedTokens, token => token.transfers[0].transaction.id))
 }
 
-export const queryOwnerOwnedTokens = async (account: string) => {
-  const owner = (await blueberryGraph(ownerDoc, { account })).owner
+export const queryOwnerV2 = async (account: string, closet = closetGlobal): Promise<IOwner | null> => {
+  const owner = (await blueberryGraphV2(ownerV2, { account: account.toLowerCase() })).owner
 
   if (owner === null) {
-    return []
+    return null
   }
 
-  return owner.ownedTokens
+  return fromOwnerJson(owner, closet)
 }
  
 export const queryToken = async (id: string) => {
@@ -492,7 +537,7 @@ export const queryLatestPrices = async (): Promise<ILatestPriceMap> => {
   }
 }
 
-export const queryArbitrumRewards = async (config: IAccountQueryParamApi & Partial<ITimerange>) => {
+export const queryArbitrumRewards = async (config: IAccountQueryParamApi & Partial<ITimerangeParamApi>) => {
   const data = (await gmxArbitrumStats(rewardsTrackerDoc, config))
 
 
@@ -507,7 +552,7 @@ export const queryArbitrumRewards = async (config: IAccountQueryParamApi & Parti
 }
 
 
-export const queryAvalancheRewards = async (config: IAccountQueryParamApi & Partial<ITimerange>) => {
+export const queryAvalancheRewards = async (config: IAccountQueryParamApi & Partial<ITimerangeParamApi>) => {
   const data = (await gmxAvalancheStats(rewardsTrackerDoc, config))
 
   const stakedGlpTrackerClaims = data.stakedGlpTrackerClaims.map(fromYieldSourceJson)
@@ -521,6 +566,30 @@ export const queryAvalancheRewards = async (config: IAccountQueryParamApi & Part
 }
 
 
+
+
+async function fromTokenJson<T extends IToken>(obj: T, closet: Closet): Promise<T> {
+  const labItems = await getTokenSlots(obj.id, closetGlobal)
+  return {
+    ...obj,
+    owner: obj.owner ? fromOwnerJson(obj.owner, closet) : null,
+    id: Number(obj.id),
+    ...labItems,
+    // background: obj.background ? Number(obj.background) : undefined,
+    // custom: obj.custom ? Number(obj.custom) : undefined,
+    // special: obj.special ? Number(obj.special) : undefined,
+  }
+}
+
+async function fromOwnerJson<T extends IOwner>(obj: T, closet: Closet): Promise<T> {
+  const ownedTokens = await Promise.all(obj.ownedTokens.map(t => fromTokenJson(t, closet)))
+  return {
+    ...obj,
+    main: obj.main ? await fromTokenJson(obj.main, closet) : null,
+    ownedTokens,
+    ownedLabItems: obj.ownedLabItems.map(json => ({ ...json, balance: BigInt(json.balance), item: { id: Number(json.item.id) } }))
+  }
+}
 
 
 function fromYieldSourceJson<K extends string, T extends IStakeSource<K>>(obj: T): T {

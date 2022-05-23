@@ -1,86 +1,22 @@
-import { combineArray, replayLatest } from "@aelea/core"
-import { intervalInMsMap } from "@gambitdao/gmx-middleware"
-import { awaitPromises, map, multicast, periodic } from "@most/core"
+import { combineArray, O, replayLatest } from "@aelea/core"
+import { intervalListFillOrderMap, NETWORK_METADATA } from "@gambitdao/gmx-middleware"
+import { awaitPromises, continueWith, fromPromise, map, multicast, now, periodic, switchLatest, takeWhile, tap } from "@most/core"
 import { Stream } from "@most/types"
-import { $DisplayBerry } from "../components/$DisplayBerry"
+import { $loadBerry } from "../components/$DisplayBerry"
 import { IValueInterval } from "../components/$StakingGraph"
-import { attributeMappings } from "./gbcMappings"
+import { IAttributeBody, IBerryDisplayTupleMap, getLabItemTupleIndex, IAttributeExpression, GBC_ADDRESS, USE_CHAIN, IAttributeBackground, IAttributeMappings, IBerry } from "@gambitdao/gbc-middleware"
+import tokenIdAttributeTuple from "./mappings/tokenIdAttributeTuple"
 import { IPricefeed, IStakeSource, queryLatestPrices } from "./query"
+import { $Node, $svg, attr, style } from "@aelea/dom"
+import { web3ProviderTestnet } from "./provider"
+import { colorAlpha, pallete } from "@aelea/ui-components-theme"
+import { IWalletLink } from "@gambitdao/wallet-link"
+import { Closet } from "@gambitdao/gbc-contracts"
+import { BigNumberish } from "@ethersproject/bignumber"
 
 
 export const latestTokenPriceMap = replayLatest(multicast(awaitPromises(map(() => queryLatestPrices(), periodic(5000)))))
 
-
-
-
-export type TimelineTime = {
-  time: number
-}
-
-export interface IFillGap<T, R, RTime extends R & TimelineTime = R & TimelineTime> {
-  interval: intervalInMsMap
-  getTime: (t: T) => number
-  seed: R & TimelineTime
-  source: T[]
-  
-  fillMap: (prev: RTime, next: T) => R
-  fillGapMap?: (prev: RTime, next: T) => R
-  squashMap?: (prev: RTime, next: T) => R
-}
-
-
-export function intervalListFillOrderMap<T, R, RTime extends R & TimelineTime = R & TimelineTime>({
-  source, getTime, seed, interval,
-
-  fillMap, squashMap = fillMap, fillGapMap = (prev, _next) => prev
-}: IFillGap<T, R, RTime>) {
-
-  const sortedSource = [...source].sort((a, b) => getTime(a) - getTime(b))
-  const slot = Math.floor(seed.time / interval)
-  const normalizedSeed = { ...seed, time: slot * interval } as RTime
-
-  const timeslotMap: { [k: number]: RTime } = {
-    [slot]: normalizedSeed
-  }
-
-  return sortedSource.reduce((timeline: RTime[], next: T) => {
-    const lastIdx = timeline.length - 1
-    const slot = Math.floor(getTime(next) / interval)
-    const squashPrev = timeslotMap[slot]
-
-    if (squashPrev) {
-      const newSqush = { ...squashMap(squashPrev, next), time: squashPrev.time } as RTime
-      timeslotMap[slot] = newSqush
-      timeline.splice(lastIdx, 1, newSqush)
-    } else {
-      const prev = timeline[timeline.length - 1]
-
-      const time = slot * interval
-      const barSpan = (time - prev.time) / interval
-      const barSpanCeil = barSpan - 1
-
-      for (let index = 1; index <= barSpanCeil; index++) {
-        const fillNext = fillGapMap(timeline[timeline.length - 1], next)
-        const gapTime = interval * index
-        const newTime = prev.time + gapTime
-        const newTick = { ...fillNext, time: newTime } as RTime
-        const newSlot = Math.floor(newTime / interval)
-
-        timeslotMap[newSlot] ??= newTick
-        timeline.push(newTick)
-      }
-
-      const lastTick = fillMap(prev, next)
-      const item = { ...lastTick, time: time } as RTime
-
-      timeslotMap[slot] = item
-      timeline.push(item)
-    }
-
-    return timeline
-  },
-  [normalizedSeed])
-}
 
 
 function getByAmoutFromFeed(amount: bigint, priceUsd: bigint, decimals: number) {
@@ -88,6 +24,34 @@ function getByAmoutFromFeed(amount: bigint, priceUsd: bigint, decimals: number) 
 
   return amount * priceUsd / denominator
 }
+
+
+export function takeUntilLast<T>(fn: (t: T) => boolean, s: Stream<T>) {
+  let last: T
+
+  return continueWith(() => now(last), takeWhile(x => {
+
+    const res = !fn(x)
+    last = x
+
+    return res
+  }, s))
+}
+
+export function getWalletProvider(wallet: IWalletLink,) {
+  return replayLatest(multicast(awaitPromises(combineArray(async w3p => {
+    if (w3p === null) {
+      throw new Error('no Ethereum Provider available')
+    }
+
+    if (w3p?.network?.chainId !== USE_CHAIN) {
+      throw new Error(`Please connect to ${NETWORK_METADATA[USE_CHAIN].chainName} network`)
+    }
+
+    return w3p
+  }, wallet.provider))))
+}
+
 
 
 export function priceFeedHistoryInterval<T extends string>(interval: number, gmxPriceHistoryQuery: Stream<IPricefeed[]>, yieldSource: Stream<IStakeSource<T>[]>): Stream<IValueInterval[]> {
@@ -129,21 +93,83 @@ export function priceFeedHistoryInterval<T extends string>(interval: number, gmx
   }, gmxPriceHistoryQuery, yieldSource)
 }
 
-export const $berryById = (id: number, size = '85px') => {
-  const metaTuple = attributeMappings[id - 1]
 
-  if (!metaTuple) {
-    throw new Error('Could not find berry #' + id)
+
+export const $berryById = (id: number, berry: IBerry | null = null, size = 85) => {
+  return $berryByLabItems(id, berry?.background, berry?.custom, size)
+}
+
+export const $berryByLabItems = (berryId: number, backgroundId?: IAttributeBackground, labItemId?: IAttributeMappings, size = 85) => {
+  const matchTuple: Partial<IBerryDisplayTupleMap> = [...tokenIdAttributeTuple[berryId - 1]]
+
+  if (labItemId) {
+    const customIdx = getLabItemTupleIndex(labItemId)
+
+    // @ts-ignore
+    matchTuple.splice(customIdx, 1, labItemId)
   }
 
-  const [background, clothes, body, expression, faceAccessory, hat] = metaTuple
+  if (backgroundId) {
+    matchTuple.splice(0, 1, backgroundId)
+  }
 
-  return $DisplayBerry({
-    size,
-    background,
-    clothes,
-    expression,
-    faceAccessory,
-    hat
-  })({})
+
+  return $loadBerry(matchTuple, size)
 }
+
+
+
+export const $labItem = (id: number, size = 85, background = true, showFace = false): $Node => {
+  const state = getLabItemTupleIndex(id)
+  const newLocal = Array(5).fill(undefined) as IBerryDisplayTupleMap
+  newLocal.splice(state, 1, id)
+
+  if (showFace) {
+    newLocal.splice(3, 1, IAttributeExpression.HAPPY)
+  }
+
+  const backgroundStyle = O(
+    style({ placeContent: 'center', maxWidth: size + 'px', overflow: 'hidden', borderRadius: 85 * 0.15 + 'px' }),
+    background ? style({ backgroundColor: state === 0 ? '' : colorAlpha(pallete.message, .95) }) : O()
+  )
+
+  // @ts-ignore
+  return backgroundStyle($loadBerry(newLocal, size))
+}
+
+export const $labItemAlone = (id: number, size = 80) => {
+  const state = getLabItemTupleIndex(id)
+
+  return $svg('svg')(
+    attr({ xmlns: 'http://www.w3.org/2000/svg', preserveAspectRatio: 'none', fill: 'none', viewBox: `0 0 1500 1500` }),
+    style({ width: `${size}px`, height: `${size}px`, })
+  )(
+    tap(async ({ element }) => {
+      const svgParts = (await import("../logic/mappings/svgParts")).default
+
+      // @ts-ignore
+      element.innerHTML = svgParts[state][id]
+    })
+  )()
+}
+
+export async function getTokenSlots(token: BigNumberish, closet: Closet) {
+  const seedObj = { background: 0, special: 0, custom: 0, }
+
+  return (await closet.get(token, 0, 2)).reduce((seed, next) => {
+
+    const itemId = next.toNumber()
+    const ndx = getLabItemTupleIndex(itemId)
+
+    if (ndx === 0) {
+      seed.background = itemId
+    } else if (ndx === 7) {
+      seed.special = itemId
+    } else {
+      seed.custom = itemId
+    }
+
+    return seed
+  }, seedObj)
+}
+

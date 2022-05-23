@@ -1,33 +1,76 @@
 type Token @entity {
   id: ID!
-  owner: Owner
+  owner: Owner!
   uri: String!
   transfers: [Transfer!]! @derivedFrom(field: "token")
-  contract: Contract
+  operator: String!
+  background: BigInt!
+  custom: BigInt!
+  special: BigInt!
+}                  
+
+type LabItemOwnership @entity {
+  id: ID!
+  owner: Owner!
+  item: LabItem!
+  balance: BigInt!
+}
+
+type LabItem @entity {
+  id: ID!
+  supply: BigInt!
+  uri: String!
+  owners: [LabItemOwnership!]! @derivedFrom(field: "item")
+  transfers: [TransferSingle!]! @derivedFrom(field: "item")
+  operator: String!
 }
 
 type Owner @entity {
   id: ID!
   ownedTokens: [Token!]! @derivedFrom(field: "owner")
+  ownedLabItems: [LabItemOwnership!]! @derivedFrom(field: "owner")
+  main: Token
+  displayName: String
   balance: BigInt!
-}
-
-type Contract @entity {
-  id: ID!
-  name: String
-  symbol: String
-  totalSupply: BigInt
-  mintedTokens: [Token!]! @derivedFrom(field: "contract")
+  rewardClaimedCumulative: BigInt!
 }
 
 type Transfer @entity {
   id: ID!
   token: Token!
-  # Empty from is minting
-  from: Owner
-  # Empty to is burning
-  to: Owner
+  from: Owner!
+  to: Owner!
   timestamp: BigInt!
-  block: BigInt!
-  transactionHash: String!
+  operator: String!
+  transaction: Transaction!
 }
+
+type TransferSingle @entity {
+  id: ID!
+  operator: String!
+  from: Owner!
+  to: Owner!
+  timestamp: BigInt!
+  item: LabItem!
+  transaction: Transaction!
+}
+
+type TransferBatch @entity {
+  id: ID!
+  operator: String!
+  from: Owner!
+  to: Owner!
+  timestamp: BigInt!
+  ids: [BigInt!]
+  amounts: [BigInt!]
+  transaction: Transaction!
+}
+
+type Transaction @entity {
+  id: ID!
+  blockNumber: Int!
+  timestamp: Int!
+  from: String!
+  to: String
+}
+

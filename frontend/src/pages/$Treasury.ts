@@ -3,24 +3,24 @@ import { $element, $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { TREASURY_ARBITRUM, TREASURY_AVALANCHE, USD_PRECISION } from "@gambitdao/gbc-middleware"
-import { intervalInMsMap, formatFixed, ARBITRUM_CONTRACT, BASIS_POINTS_DIVISOR, IAccountQueryParamApi, ITimerange } from "@gambitdao/gmx-middleware"
-import { CHAIN, getAccountExplorerUrl, IWalletLink } from "@gambitdao/wallet-link"
+import { GBC_ADDRESS, BI_18_PRECISION } from "@gambitdao/gbc-middleware"
+import { intervalInMsMap, formatFixed, ARBITRUM_ADDRESS, BASIS_POINTS_DIVISOR, IAccountQueryParamApi, ITimerangeParamApi, CHAIN, getAccountExplorerUrl, TOKEN_SYMBOL } from "@gambitdao/gmx-middleware"
+import { IWalletLink } from "@gambitdao/wallet-link"
+import { $anchor, $tokenIconMap } from "@gambitdao/ui-components"
 import { combine, empty, fromPromise, map, multicast, switchLatest, take } from "@most/core"
-import { $anchor, $responsiveFlex } from "../elements/$common"
+import { $responsiveFlex } from "../elements/$common"
 import { gmxGlpPriceHistory, queryArbitrumRewards, queryAvalancheRewards, StakedTokenArbitrum, StakedTokenAvalanche } from "../logic/query"
 
-import { $tokenIconMap } from "../common/$icons"
 import { $AssetDetails, readableNumber } from "../components/$AssetDetails"
-import { IAsset, ITreasuryStore } from "../types"
+import { IAsset, ITreasuryStore } from "@gambitdao/gbc-middleware"
 import { $StakingGraph } from "../components/$StakingGraph"
 import { arbitrumContract, avalancheContract } from "../logic/gbcTreasury"
 import { Stream } from "@most/types"
 import { latestTokenPriceMap, priceFeedHistoryInterval } from "../logic/common"
-import { $AccountPreview } from "../components/$AccountProfile"
+import { $accountPreview } from "../components/$AccountProfile"
 import { $metricEntry, $seperator2 } from "./common"
 
-const GRAPHS_INTERVAL = Math.floor(intervalInMsMap.HR4 / 1000)
+const GRAPHS_INTERVAL = Math.floor(intervalInMsMap.HR4)
 
 export interface ITreasury {
   walletLink: IWalletLink
@@ -36,9 +36,9 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
 ) => {
 
 
-  const queryParams: IAccountQueryParamApi & Partial<ITimerange> = {
+  const queryParams: IAccountQueryParamApi & Partial<ITimerangeParamApi> = {
     from: treasuryStore.state.startedStakingGmxTimestamp || undefined,
-    account: TREASURY_ARBITRUM
+    account: GBC_ADDRESS.TREASURY_ARBITRUM
   }
 
 
@@ -47,17 +47,16 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
   const pricefeedQuery = replayLatest(multicast(fromPromise(gmxGlpPriceHistory(queryParams))))
  
   const arbitrumYieldSourceMap = replayLatest(multicast(fromPromise(queryArbitrumRewards(queryParams))))
-  const avalancheYieldSourceMap = replayLatest(multicast(fromPromise(queryAvalancheRewards({ ...queryParams, account: TREASURY_AVALANCHE }))))
+  const avalancheYieldSourceMap = replayLatest(multicast(fromPromise(queryAvalancheRewards({ ...queryParams, account: GBC_ADDRESS.TREASURY_AVALANCHE }))))
 
 
 
-  const ethAsset: Stream<IAsset> = combine((bn, priceMap) => ({ balance: bn.gmxInStakedGmxUsd, balanceUsd: bn.gmxInStakedGmxUsd * priceMap.gmx.value / USD_PRECISION }), arbitrumStakingRewards, latestTokenPriceMap)
+  const ethAsset: Stream<IAsset> = combine((bn, priceMap) => ({ balance: bn.gmxInStakedGmxUsd, balanceUsd: bn.gmxInStakedGmxUsd * priceMap.gmx.value / BI_18_PRECISION }), arbitrumStakingRewards, latestTokenPriceMap)
   const gmxAsset: Stream<IAsset> = combine((bn, priceMap) => {
-    return { balance: bn.gmxInStakedGmx, balanceUsd: bn.gmxInStakedGmx * priceMap.gmx.value / USD_PRECISION }
+    return { balance: bn.gmxInStakedGmx, balanceUsd: bn.gmxInStakedGmx * priceMap.gmx.value / BI_18_PRECISION }
   }, arbitrumStakingRewards, latestTokenPriceMap)
-  const glpArbiAsset: Stream<IAsset> = combine((bn, priceMap) => ({ balance: bn.glpBalance, balanceUsd: priceMap.glpArbitrum.value * bn.glpBalance / USD_PRECISION }), arbitrumStakingRewards, latestTokenPriceMap)
-  const glpAvaxAsset: Stream<IAsset> = combine((bn, priceMap) => ({ balance: bn.glpBalance, balanceUsd: priceMap.glpArbitrum.value * bn.glpBalance / USD_PRECISION }), avalancheStakingRewards, latestTokenPriceMap)
-
+  const glpArbiAsset: Stream<IAsset> = combine((bn, priceMap) => ({ balance: bn.glpBalance, balanceUsd: priceMap.glpArbitrum.value * bn.glpBalance / BI_18_PRECISION }), arbitrumStakingRewards, latestTokenPriceMap)
+  const glpAvaxAsset: Stream<IAsset> = combine((bn, priceMap) => ({ balance: bn.glpBalance, balanceUsd: priceMap.glpArbitrum.value * bn.glpBalance / BI_18_PRECISION }), avalancheStakingRewards, latestTokenPriceMap)
 
 
 
@@ -67,7 +66,7 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
     // amountUsd from avalanche is not reflecting the real amount because the subraph's gmx price is 0
     // to fix this, we'll fetch arbitrum's price of GMX instead
     const avaxYieldGmx = [...avaxStaking.stakedGlpTrackerClaims, ...avaxStaking.stakedGmxTrackerClaims]
-      .map(y => ({ ...y, amountUsd: y.amount * priceMap.gmx.value / USD_PRECISION }))
+      .map(y => ({ ...y, amountUsd: y.amount * priceMap.gmx.value / BI_18_PRECISION }))
 
     return [
       ...yieldFeeList,
@@ -142,7 +141,7 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
                   $metricEntry(`Compounding Multiplier`, `${readableNumber(formatFixed(bnGmxInFeeGmx, 18))}`),
                 )
               }, arbitrumStakingRewards)),
-              $iconPath: $tokenIconMap[ARBITRUM_CONTRACT.GMX],
+              $iconPath: $tokenIconMap[TOKEN_SYMBOL.GMX],
             })({}),
             $seperator2,
             $AssetDetails({
@@ -158,7 +157,7 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
                   $metricEntry(`ETH`, `${formatFixed(glpAprForEthPercentage, 2)}%`),
                 )
               }, arbitrumStakingRewards)),
-              $iconPath: $tokenIconMap[ARBITRUM_CONTRACT.GLP],
+              $iconPath: $tokenIconMap[TOKEN_SYMBOL.GLP],
             })({}),
             $seperator2,
             $AssetDetails({
@@ -174,7 +173,7 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
                   $metricEntry(`AVAX`, `${formatFixed(glpAprForEthPercentage, 2)}%`),
                 )
               }, avalancheStakingRewards)),
-              $iconPath: $tokenIconMap[ARBITRUM_CONTRACT.GLP],
+              $iconPath: $tokenIconMap[TOKEN_SYMBOL.GLP],
             })({}),
           ),
         ),
@@ -194,10 +193,10 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
 
         $responsiveFlex(layoutSheet.spacing, style({ alignItems: 'center', placeContent: 'space-between' }))(
           $row(layoutSheet.spacingSmall)(
-            $AccountPreview({
-              address: TREASURY_ARBITRUM,
-            })({}),
-            $anchor(attr({ href: getAccountExplorerUrl(CHAIN.ARBITRUM, TREASURY_ARBITRUM) }))(
+            $accountPreview({
+              address: GBC_ADDRESS.TREASURY_ARBITRUM,
+            }),
+            $anchor(attr({ href: getAccountExplorerUrl(CHAIN.ARBITRUM, GBC_ADDRESS.TREASURY_ARBITRUM) }))(
               $element('img')(attr({ src: `/assets/arbitrum.svg` }), style({ width: '28px', padding: '3px', borderRadius: '50%', backgroundColor: pallete.background }))()
             ),
           ),
@@ -226,10 +225,10 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
 
         $responsiveFlex(layoutSheet.spacing, style({ alignItems: 'center', placeContent: 'space-between' }))(
           $row(layoutSheet.spacingSmall)(
-            $AccountPreview({
-              address: TREASURY_AVALANCHE,
-            })({}),
-            $anchor(attr({ href: getAccountExplorerUrl(CHAIN.AVALANCHE, TREASURY_AVALANCHE) }))(
+            $accountPreview({
+              address: GBC_ADDRESS.TREASURY_AVALANCHE,
+            }),
+            $anchor(attr({ href: getAccountExplorerUrl(CHAIN.AVALANCHE, GBC_ADDRESS.TREASURY_AVALANCHE) }))(
               $element('img')(attr({ src: `/assets/avalanche.svg` }), style({ width: '28px', padding: '3px', borderRadius: '50%', backgroundColor: pallete.background }))()
             )
           ),

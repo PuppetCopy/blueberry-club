@@ -1,14 +1,15 @@
 {
-  "extends": "./tsconfig",
+  "extends": "../tsconfig",
   "compilerOptions": {
     "outDir": ".dist/esm",
     "module": "CommonJS",
+    "lib": [
+      "DOM"
+    ],
     "declarationDir": ".dist/types",
-    "esModuleInterop": true,
-    "rootDir": "typechain-types",
+    "rootDir": "./typechain-types",
   },
   "include": [
-    "./typechain-types",
-  ],
-  "files": []
+    "./typechain-types"
+  ]
 }

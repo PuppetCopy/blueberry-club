@@ -1,25 +1,22 @@
-import { Behavior, O, Op } from "@aelea/core"
-import { $element, $text, attr, component, INode, style } from "@aelea/dom"
-import { Route } from "@aelea/router"
+import { $element, $node, $text, attr, style } from "@aelea/dom"
 import { $column, $icon, $row, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { BaseProvider } from "@ethersproject/providers"
 import { Stream } from "@most/types"
-import { getGatewayUrl, getIdentityFromENS, IClaim, IClaimSource, IEnsClaim, intervalInMsMap } from "@gambitdao/gmx-middleware"
-import * as wallet from "@gambitdao/wallet-link"
-import { getAccountExplorerUrl, IWalletLink } from "@gambitdao/wallet-link"
+import { CHAIN, getAccountExplorerUrl, IClaim, IClaimSource, intervalInMsMap } from "@gambitdao/gmx-middleware"
+import { IWalletLink } from "@gambitdao/wallet-link"
 import { $jazzicon } from "../common/$avatar"
-import { $anchor } from "../elements/$common"
-import { $ethScan, $twitter } from "../elements/$icons"
-import { $Link } from "./$Link"
-import { isAddress } from "@ethersproject/address"
+import { getGatewayUrl, getIdentityFromENS, IEnsClaim } from "@gambitdao/gbc-middleware"
+import { $anchor, $ethScan, $twitter } from "@gambitdao/ui-components"
+import { getProfile } from "../logic/contract/manager"
+import { $berryByLabItems } from "../logic/common"
+import { fromPromise, map, switchLatest } from "@most/core"
 
 
 export interface IAccountPreview {
   address: string
   labelSize?: string
-  avatarSize?: string
-  parentRoute?: Route
+  avatarSize?: number
   claim?: IClaim
 }
 
@@ -35,54 +32,61 @@ export interface IProfile extends IAccountClaim {
 
 const $photoContainer = $element('img')(style({ display: 'block', backgroundColor: pallete.background, position: 'relative', backgroundSize: 'cover', borderRadius: '50%', overflow: 'hidden' }))
 
-export const $AccountPhoto = (address: string, claim?: IClaim, size = '42px') => {
+export const $AccountPhoto = (address: string, claim?: IClaim, size = 42) => {
   const claimType = claim?.sourceType
+  const sizePx = size + 'px'
 
-  if (claimType) {
-    const isTwitter = claimType === IClaimSource.TWITTER
+  const $wrapper = $node(style({ width: sizePx, height: sizePx, minWidth: sizePx, minHeight: sizePx, borderRadius: '50%' }))
 
-    if (isTwitter) {
-      return $photoContainer(
-        style({ width: size, height: size, minWidth: size }),
-        attr({ src: `https://unavatar.vercel.app/twitter/${claim.name}` })
-      )()
-    } else {
-      const data: IEnsClaim = claim.data ? JSON.parse(claim.data) : {}
-      const imageUrl = data.imageUrl
+ 
 
-      return imageUrl
-        ? $photoContainer(attr({ src: getGatewayUrl(imageUrl) }), style({ minWidth: size, height: size }))()
-        : $jazzicon(address, size)
-    }
+  const profile = fromPromise(getProfile(address).catch(() => null))
+  return $wrapper(
+    switchLatest(map(profile => {
+      if (profile === null || profile.tokenId === null) {
+        if (claimType) {
+          const isTwitter = claimType === IClaimSource.TWITTER
 
-  }
+          if (isTwitter) {
+            return $photoContainer(
+              style({ width: sizePx, height: sizePx, minWidth: sizePx }),
+              attr({ src: `https://unavatar.vercel.app/twitter/${claim.name}` })
+            )()
+          } else {
+            const data: IEnsClaim = claim.data ? JSON.parse(claim.data) : {}
+            const imageUrl = data.imageUrl
 
-  return $jazzicon(address, size)
-}
+            if (imageUrl) {
+              return $photoContainer(attr({ src: getGatewayUrl(imageUrl) }), style({ minWidth: sizePx, width: sizePx, minHeight: sizePx, height: sizePx }))()
+            }
+          }
+        }
 
-export const $AccountLabel = (address: string, claim?: IClaim, adressOp: Op<INode, INode> = O()) => {
-  const isAddressValid = isAddress(address)
+        return $jazzicon(address, sizePx)
+      }
 
-  if (!isAddressValid) {
-    return $column(
-      $text(style({ fontSize: '.75em' }))('0x----'),
-      $text(adressOp, style({ fontSize: '1em' }))('----')
-    )
-  }
-
-  if (claim) {
-    return $text(style({ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }), adressOp)(claim.name)
-  }
-
-  return $column(
-    $text(style({ fontSize: '.75em' }))(address.slice(0, 6)),
-    $text(adressOp, style({ fontSize: '1em' }))(address.slice(address.length -4, address.length))
+      return style({ borderRadius: '50%' }, $berryByLabItems(Number(profile.tokenId), profile.background, profile.custom, size))
+    }, profile))
   )
 }
 
 
+
+export const $AccountLabel = (address: string, claim?: IClaim, fontSize = '1em') => {
+  if (claim) {
+    return $text(style({ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', fontSize }))(claim.name)
+  }
+
+  return $column(style({ fontSize }))(
+    $text(style({ fontSize: '.75em' }))(address.slice(0, 6)),
+    $text(style({ fontSize: '1em' }))(address.slice(address.length -4, address.length))
+  )
+
+}
+
+
 export const $ProfileLinks = (address: string, claim?: IClaim) => {
-  const $explorer = $anchor(attr({ href: getAccountExplorerUrl(wallet.CHAIN.ARBITRUM, address) }))(
+  const $explorer = $anchor(attr({ href: getAccountExplorerUrl(CHAIN.ARBITRUM, address) }))(
     $icon({ $content: $ethScan, width: '16px', viewBox: '0 0 24 24' })
   )
 
@@ -106,33 +110,31 @@ export const $ProfileLinks = (address: string, claim?: IClaim) => {
 
 
 
-export const $AccountPreview = ({
-  address, labelSize = '16px', avatarSize = '38px',
-  parentRoute, claim,
-}: IAccountPreview) => component((
-  [profileClick, profileClickTether]: Behavior<string, string>
-) => {
+export const $accountPreview = ({
+  labelSize = '16px', avatarSize = 38, claim, address,
+}: IAccountPreview) => {
 
-  const $preview = $row(layoutSheet.row, layoutSheet.spacingSmall, style({ alignItems: 'center', pointerEvents: 'none', textDecoration: 'none' }))(
+  return $row(layoutSheet.row, layoutSheet.spacingSmall, style({ alignItems: 'center', pointerEvents: 'none', textDecoration: 'none' }))(
     $AccountPhoto(address, claim, avatarSize),
-    $AccountLabel(address, claim, parentRoute ? style({ color: pallete.primary, fontSize: labelSize }) : style({ fontSize: labelSize }))
+    $AccountLabel(address, claim, labelSize)
   )
-  return [
+}
 
-    $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
-      parentRoute
-        ? $Link({ route: parentRoute.create({ fragment: '2121212' }),
-          $content: $preview,
-          anchorOp: style({ minWidth: 0, overflow: 'hidden' }),
-          url: `/p/account/${address}`,
-        })({ click: profileClickTether() })
-        : $preview,
-      // parentRoute ? $ProfileLinks(address) : empty()
+
+export const $walletAccountDisplay = (avatarSize = 38) => {
+  const sizePx = avatarSize + 'px'
+  const $wrapper = $node(style({ width: sizePx, height: sizePx, minWidth: sizePx, minHeight: sizePx, borderRadius: '50%' }))
+
+  return $row(layoutSheet.row, layoutSheet.spacingSmall, style({ alignItems: 'center', textDecoration: 'none' }))(
+    $wrapper(style({ display: 'flex', border: `1px solid ${pallete.foreground}`, placeContent: 'center', alignItems: 'center' }))(
+      $text(style({ fontWeight: 800, color: pallete.foreground }))('?')
     ),
-
-    { profileClick }
-  ]
-})
+    $column(
+      $text(style({ fontSize: '.75em' }))('0x----'),
+      $text(style({ fontSize: '1em' }))('----')
+    )
+  )
+}
 
 
 

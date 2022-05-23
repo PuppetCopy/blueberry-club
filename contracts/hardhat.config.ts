@@ -1,58 +1,34 @@
 
-import '@nomiclabs/hardhat-etherscan'
-import 'hardhat-contract-sizer'
-import '@typechain/hardhat'
-import '@nomiclabs/hardhat-waffle'
-import { HardhatUserConfig } from "hardhat/config"
+import { HardhatUserConfig, task } from "hardhat/config"
+import "@nomiclabs/hardhat-etherscan"
+import "@nomiclabs/hardhat-waffle"
+import "@typechain/hardhat"
+
 import dotenv from "dotenv"
+import { CHAIN, NETWORK_METADATA } from '@gambitdao/gmx-middleware'
 dotenv.config({ path: '../.env' })
 
-
-const ROPSTEN_RPC_URL = process.env.ROPSTEN_RPC_URL
-const ETHERSCAN_APIKEY = process.env.ETHERSCAN_APIKEY
-
-const devkey = process.env.DEV_KEY
-const accounts = devkey ? [devkey] : []
+const key = process.env.ACCOUNT
+const accounts = key ? [key] : []
 
 
-// You need to export an object to set up your config
-// Go to https://hardhat.org/config/ to learn more
-
-/**
- * @type import('hardhat/config').HardhatUserConfig
- */
 const config: HardhatUserConfig = {
   networks: {
     arbitrumTestnet: {
-      url: 'https://rinkeby.arbitrum.io/rpc',
-      // gasPrice: 10000000000,
-      // chainId: 421611,
+      chainId: CHAIN.ARBITRUM_RINKBY,
+      url: NETWORK_METADATA[CHAIN.ARBITRUM_RINKBY].rpcUrls[0],
       accounts
     },
     ropsten: {
-      url: ROPSTEN_RPC_URL || '',
+      chainId: CHAIN.ETH_ROPSTEN,
+      url: NETWORK_METADATA[CHAIN.ETH_ROPSTEN].rpcUrls[0],
       accounts
     },
     arbitrum: {
-      url: "https://arb1.arbitrum.io/rpc",
-      gasPrice: 30000000000,
-      chainId: 42161,
-      accounts: accounts
+      chainId: CHAIN.ARBITRUM,
+      url: NETWORK_METADATA[CHAIN.ARBITRUM].rpcUrls[0],
+      accounts
     },
-    //   polygon: {
-    //     url: POLYGON_URL,
-    //     gasPrice: 100000000000,
-    //     chainId: 137,
-    //     accounts: [POLYGON_DEPLOY_KEY]
-    //   },
-    //   mainnet: {
-    //     url: MAINNET_URL,
-    //     gasPrice: 50000000000,
-    //     accounts: [MAINNET_DEPLOY_KEY]
-    //   }
-    // },
-    // etherscan: {
-    //   apiKey: BSCSCAN_API_KEY
   },
   solidity: {
     compilers: [
@@ -77,7 +53,7 @@ const config: HardhatUserConfig = {
     ]
   },
   etherscan: {
-    apiKey: ETHERSCAN_APIKEY
+    apiKey: process.env.ARBISCAN
   }
 }
 

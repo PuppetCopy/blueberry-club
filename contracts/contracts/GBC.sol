@@ -10,7 +10,6 @@ import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-
 contract GBC is
     Context,
     Ownable,
@@ -42,7 +41,7 @@ contract GBC is
     function _baseURI() internal view virtual override returns (string memory) {
         return _baseTokenURI;
     }
-    
+
     function adminMint(uint256 _mintAmount, address _to) external onlyOwner{
         for (uint256 i = 1; i <= _mintAmount; i++) {
             require(_tokenIdTracker.current() <= max, "Transaction exceeds max mint amount");
@@ -84,18 +83,18 @@ contract GBC is
         }
     }
     function withdraw(address token, uint256 amount) external onlyOwner {
-        if(token == address(0)) { 
+        if(token == address(0)) {
             payable(_msgSender()).transfer(amount);
         } else {
             IERC20(token).transfer(_msgSender(), amount);
         }
     }
-    
+
     function setBaseTokenURI(string memory uri) external onlyOwner {
         require(tokenURIFrozen == false, "Token URIs are frozen");
         _baseTokenURI = uri;
     }
-    
+
     function setWLSigner(address signer) external onlyOwner {
         require(signer != 0x0000000000000000000000000000000000000000, "Can't set WL signer as 0x00 address");
         wlSigner = signer;
@@ -104,11 +103,11 @@ contract GBC is
     function setCost(uint256 price) external onlyOwner {
         cost = price;
     }
-    
+
     function freezeBaseURI() external onlyOwner {
         tokenURIFrozen = true;
     }
-    
+
     function startPublicSale() external onlyOwner {
         publicSaleStarted = true;
     }
@@ -154,7 +153,7 @@ contract GBC is
         address signer = recover(hash, sig);
         return(wlSigner == signer);
     }
-    
+
     function recover(bytes32 hash, bytes memory sig) private pure returns (address) {
         bytes32 r;
         bytes32 s;
@@ -176,10 +175,10 @@ contract GBC is
         if (v < 27) {
             v += 27;
         }
-    
+
         bytes memory prefix = "\x19Ethereum Signed Message:\n32";
         bytes32 prefixedHash = keccak256(abi.encodePacked(prefix, hash));
-    
+
         // If the version is correct return the signer address
         if (v != 27 && v != 28) {
             return (address(0));

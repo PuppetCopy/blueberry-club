@@ -15,5 +15,9 @@
       "dom"
     ],
   },
-  "references": []
+  "references": [
+    {
+      "path": "../@gambitdao-gmx-middleware"
+    }
+  ]
 }

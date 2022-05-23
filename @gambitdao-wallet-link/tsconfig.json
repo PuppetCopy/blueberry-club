@@ -1,0 +1,19 @@
+{
+  "extends": "../tsconfig",
+  "compilerOptions": {
+    "outDir": ".dist/esm",
+    "rootDir": "src",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "lib": [
+      "DOM",
+      "es2020",
+    ],
+    "declarationDir": ".dist/types"
+  },
+  "references": [
+    {
+      "path": "../@gambitdao-gmx-middleware"
+    }
+  ]
+}
