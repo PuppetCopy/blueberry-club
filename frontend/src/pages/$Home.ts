@@ -344,7 +344,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
         $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '878px' }))(`Powered by the community`),
         $row(layoutSheet.spacingBig, style({ alignSelf: 'stretch', placeContent: 'space-evenly', flexWrap: 'wrap' }))(
           $teamMember({ name: 'xm92boi', title: "Founder & Designer", tokenId: 16 }),
-          $teamMember({ name: '0xAppodial', title: "Marketing", tokenId: 11 }),
+          $teamMember({ name: 'APP0D14L', title: "Marketing", tokenId: 11 }),
           $teamMember({ name: 'itburnzz', title: "Dev", tokenId: 12 }),
           $teamMember({ name: 'B2F_zer', title: "Pleb", tokenId: 22 }),
           $teamMember({ name: 'IrvingDev_', title: "Dev", tokenId: 140 }),
