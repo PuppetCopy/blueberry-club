@@ -8,7 +8,7 @@ import { IWalletLink } from "@gambitdao/wallet-link"
 import { at, combine, constant, filter, join, map, merge, mergeArray, multicast, now, periodic, skipRepeats, snapshot, startWith, switchLatest, tap, until } from "@most/core"
 import { $card } from "../elements/$common"
 import { pallete } from "@aelea/ui-components-theme"
-import { $tokenIconMap, $tokenLabelFromSummary, getPricefeedVisibleColumns } from "@gambitdao/ui-components"
+import { $alert, $tokenIconMap, $tokenLabelFromSummary, getPricefeedVisibleColumns } from "@gambitdao/ui-components"
 import { CrosshairMode, LineStyle, MouseEventParams, PriceScaleMode, SeriesMarker, Time } from "lightweight-charts"
 import { IEthereumProvider } from "eip1193-provider"
 import { Stream } from "@most/types"
@@ -146,6 +146,8 @@ export const $Trade = (config: ITradeComponent) => component((
   return [
     $container(
       $column(layoutSheet.spacingBig, style({ flex: 1 }))(
+
+        $alert($text('GBC Trading. Work in Progress (;')),
 
         $TradeBox({})({}),
 

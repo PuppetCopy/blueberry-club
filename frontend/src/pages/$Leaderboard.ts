@@ -15,7 +15,7 @@ import { $accountPreview } from "../components/$AccountProfile"
 import { ContractTransaction } from "@ethersproject/contracts"
 import { $Table2 } from "../common/$Table2"
 import { Stream } from "@most/types"
-import { $ProfitLossText, $risk } from "@gambitdao/ui-components"
+import { $alert, $ProfitLossText, $risk } from "@gambitdao/ui-components"
 import { connectRewardDistributor } from "../logic/contract/rewardDistributor"
 
 
@@ -70,7 +70,7 @@ export const $Leaderboard = ({ walletLink, leaderboardTopList, parentRoute, acco
 
   const priceMap = fromPromise(queryLatestPrices())
 
-  
+
   // const isApprovedForAll = replayLatest(multicast(rewardDistributor.isApprovedForAll))
 
   // Promise<ContractReceipt>
@@ -82,7 +82,12 @@ export const $Leaderboard = ({ walletLink, leaderboardTopList, parentRoute, acco
   return [
     $responsiveFlex(layoutSheet.spacingBig)(
 
-      $column(style({ width: '500px' }))(
+
+      $column(layoutSheet.spacingBig, style({ width: '500px' }))(
+
+        $alert($text('Trading Leaderboard. Work in Progress (;')),
+
+
         $accountPreview({
           address: accountAddress,
           avatarSize: 150,

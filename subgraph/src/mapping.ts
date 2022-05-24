@@ -1,6 +1,6 @@
 import * as generated from '../generated/ERC721/ERC721'
 import * as lab from "../generated/ERC1155/ERC1155"
-import * as manager from "../generated/Closet/Closet"
+// import * as manager from "../generated/Closet/Closet"
 import * as profile from "../generated/Profile/Profile"
 import { Owner, Transfer, Token } from "../generated/schema"
 import { handleLabItemTransfer, _createNewOwner } from "./common"

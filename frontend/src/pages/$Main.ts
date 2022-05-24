@@ -189,7 +189,7 @@ export default ({ baseRoute = '' }: Website) => component((
                 fadeIn($Profile({ walletLink, parentRoute: pagesRoute, accountStakingStore })({}))
               ),
               router.match(profileWalletRoute)(
-                fadeIn($ProfileWallet({ walletLink, parentRoute: pagesRoute, accountStakingStore })({}))
+                fadeIn($ProfileWallet({ walletLink, parentRoute: pagesRoute, accountStakingStore })({ changeRoute: linkClickTether() }))
               ),
               router.match(tradeRoute)(
                 $Trade({

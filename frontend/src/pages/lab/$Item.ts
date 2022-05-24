@@ -1,7 +1,7 @@
 import { Behavior } from "@aelea/core"
-import { $text, component, style } from "@aelea/dom"
+import { $text, attr, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
-import { $column, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
+import { $column, $icon, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $responsiveFlex } from "../../elements/$common"
 import { getLabItemTupleIndex, labItemDescriptionListMap } from "@gambitdao/gbc-middleware"
@@ -14,6 +14,8 @@ import { attributeIndexToLabel } from "../../logic/mappings/label"
 import { getMintCount } from "../../logic/contract/sale"
 import { map } from "@most/core"
 import { readableNumber } from "../../../../@gambitdao-gmx-middleware/src"
+import { $anchor } from "@gambitdao/ui-components"
+import { $tofunft } from "../../elements/$icons"
 
 
 
@@ -60,6 +62,16 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
             )
           ),
           $text(style({ lineHeight: '1.5em', whiteSpace: 'pre-wrap' }))(item.description.trim()),
+
+          $row(layoutSheet.spacingSmall)(
+            $icon({
+              $content: $tofunft,
+              viewBox: '0 0 32 32'
+            }),
+            $anchor(attr({ href: `https://tofunft.com/nft/arbi/0x000/` }))(
+              $text('Lab Marketplace')
+            ),
+          ),
         ),
 
         $seperator2,
