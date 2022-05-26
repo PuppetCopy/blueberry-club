@@ -1,6 +1,6 @@
 import { Behavior, O, Op } from "@aelea/core"
 import { $element, $Node, $text, attr, component, eventElementTarget, IBranch, INode, NodeComposeFn, nodeEvent, style, styleBehavior, stylePseudo } from "@aelea/dom"
-import { $column, $icon, $row, Input, layoutSheet } from "@aelea/ui-components"
+import { $column, $icon, $row, Input, layoutSheet, observer } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { $xCross } from "@gambitdao/ui-components"
 import { constant, empty, map, merge, mergeArray, multicast, now, scan, skip, startWith, switchLatest, tap } from "@most/core"
@@ -97,6 +97,8 @@ export const $Dropdown = <T>({
 }: IDropdown<T>) => component((
   [pick, pickTether]: Behavior<T, T>,
   [openMenu, openMenuTether]: Behavior<INode, any>,
+  [targetIntersection, targetIntersectionTether]: Behavior<INode, IntersectionObserverEntry[]>,
+
 ) => {
 
   const isOpenState = multicast(switchLatest(map(isOpen => {
@@ -106,10 +108,16 @@ export const $Dropdown = <T>({
     return now(false)
   }, mergeArray([constant(false, pick), openMenu]))))
 
-  const openMenuBehavior = openMenuTether(
-    nodeEvent('click'),
-    openMenuOp
+  const openMenuBehavior = O(
+    openMenuTether(
+      nodeEvent('click'),
+      openMenuOp
+    ),
+    targetIntersectionTether(
+      observer.intersection(),
+    ),
   )
+
 
 
   
@@ -124,14 +132,33 @@ export const $Dropdown = <T>({
           return empty()
         }
 
-        return $Select({
-          ...select,
-          $container: select.$container(style({
-            zIndex: 50,
-            position: 'absolute', top: 'calc(100% + 5px)'
-          })),
-          $$option: O(select.$$option, map($option)),
-        })({ select: pickTether() })
+        const dropBehavior = O(
+          styleBehavior(
+            map(([rect]) => {
+              const { bottom } = rect.intersectionRect
+
+              const bottomSpcace = window.innerHeight - bottom
+              const goDown = bottomSpcace > bottom
+
+              return {
+                [goDown ? 'top' : 'bottom']: 'calc(100% + 5px)',
+                display: 'flex'
+              }
+            }, targetIntersection)
+          ),
+        )
+
+        return dropBehavior(
+          $Select({
+            ...select,
+            $container: select.$container(style({
+              zIndex: 50,
+              position: 'absolute',
+              display: 'none'
+            })),
+            $$option: O(select.$$option, map($option)),
+          })({ select: pickTether() })
+        )
         
       }, isOpenState))
     ),
@@ -182,9 +209,8 @@ export const $DropMultiSelect = <T>({
 ) => component((
   [pick, pickTether]: Behavior<T, T>,
   [openMenu, openMenuTether]: Behavior<INode, any>,
+  [targetIntersection, targetIntersectionTether]: Behavior<INode, IntersectionObserverEntry[]>,
 
-  [focusStyle, interactionTether]: Behavior<IBranch, true>,
-  [dismissstyle, dismissTether]: Behavior<IBranch, false>,
   [blur, blurTether]: Behavior<IBranch, FocusEvent>,
   [focusField, focusFieldTether]: Behavior<IBranch, FocusEvent>,
   [inputSearch, inputSearchTether]: Behavior<IBranch<HTMLInputElement>, string>,
@@ -195,8 +221,7 @@ export const $DropMultiSelect = <T>({
     focusField,
     openMenu
   ])
-
-  
+ 
 
   const isOpenState = multicast(switchLatest(map(isOpen => {
     if (isOpen) {
@@ -205,10 +230,6 @@ export const $DropMultiSelect = <T>({
     return now(false)
   }, mergeArray([constant(false, pick), openTrigger]))))
 
-  const openMenuBehavior = openMenuTether(
-    nodeEvent('click'),
-    openMenuOp
-  )
 
   const selection = multicast(switchLatest(
     map(initSeedList => {
@@ -233,7 +254,12 @@ export const $DropMultiSelect = <T>({
       ),
 
       switchLatest(map(valueList => {
-        const $content = $container(layoutSheet.flex, layoutSheet.spacing, style({ alignItems: 'center', position: 'relative', flexWrap: 'wrap' }))(
+        const $content = $container(
+          targetIntersectionTether(
+            observer.intersection(),
+          ),
+          layoutSheet.flex, layoutSheet.spacing, style({ alignItems: 'center', position: 'relative', flexWrap: 'wrap' })
+        )(
           ...valueList.map(token => {
 
             return $chip(
@@ -293,7 +319,7 @@ export const $DropMultiSelect = <T>({
             const $floatingContainer = selectDrop.$container(
               style({
                 padding: '8px', zIndex: 50, left: 0,
-                position: 'absolute', top: 'calc(100% + 1px)'
+                position: 'absolute'
               })
             )
 
@@ -303,17 +329,34 @@ export const $DropMultiSelect = <T>({
               return $floatingContainer($text('Nothing to select'))
             }
 
+            const dropBehavior = O(
+              styleBehavior(
+                map(([rect]) => {
+                  const { bottom } = rect.intersectionRect
+
+                  const bottomSpcace = window.innerHeight - bottom
+                  const goDown = bottomSpcace > bottom
+
+                  return {
+                    [goDown ? 'top' : 'bottom']: 'calc(100% + 5px)',
+                    display: 'flex'
+                  }
+                }, targetIntersection)
+              ),
+            )
             
-            return $Select({
-              ...selectDrop,
-              $container: $floatingContainer,
-              list: optionSelection,
-              value: empty(),
-              // $container: ,
-              // $option: map(x => $selectableOption($text(String(x))))
-            })({
-              select: pickTether()
-            })
+            return dropBehavior(
+              $Select({
+                ...selectDrop,
+                $container: $floatingContainer,
+                list: optionSelection,
+                value: empty(),
+                // $container: ,
+                // $option: map(x => $selectableOption($text(String(x))))
+              })({
+                select: pickTether()
+              })
+            )
           }, isOpenState))
         )
 
