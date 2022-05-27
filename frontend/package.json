@@ -8,7 +8,7 @@
         ".dist"
     ],
     "scripts": {
-        "build": "webpack --mode production",
+        "build": "webpack --mode production --devtool source-map",
         "dev": "webpack serve"
     },
     "sideEffects": false,
