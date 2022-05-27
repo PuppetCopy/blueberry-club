@@ -95,11 +95,11 @@ export function priceFeedHistoryInterval<T extends string>(interval: number, gmx
 
 
 
-export const $berryById = (id: number, berry: IBerry | null = null, size = 85) => {
+export const $berryById = (id: number, berry: IBerry | null = null, size: string | number = 85) => {
   return $berryByLabItems(id, berry?.background, berry?.custom, size)
 }
 
-export const $berryByLabItems = (berryId: number, backgroundId?: IAttributeBackground, labItemId?: IAttributeMappings, size = 85) => {
+export const $berryByLabItems = (berryId: number, backgroundId?: IAttributeBackground, labItemId?: IAttributeMappings, size: string | number = 85) => {
   const matchTuple: Partial<IBerryDisplayTupleMap> = [...tokenIdAttributeTuple[berryId - 1]]
 
   if (labItemId) {

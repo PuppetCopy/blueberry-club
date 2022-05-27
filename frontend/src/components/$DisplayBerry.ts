@@ -25,12 +25,12 @@ export function $svgContent(content: string): $Node[] {
 export const $berry = (
   svgParts: SvgPartsMap,
   [background, clothes, body, expression, faceAccessory, hat]: Partial<IBerryDisplayTupleMap>,
-  size = 250
+  size: string | number = 250
 ) => {
-  const sizePx = size + 'px'
+  const sizeNorm = typeof size === 'number' ?  size + 'px' : size
 
   return $svg('svg')(
-    style({ minWidth: sizePx, height: sizePx }),
+    style({ minWidth: sizeNorm, height: sizeNorm }),
     attr({ xmlns: 'http://www.w3.org/2000/svg', preserveAspectRatio: "xMidYMin meet", fill: 'none', viewBox: `0 0 1500 1500` })
   )(
     tap(async ({ element }) => {
@@ -48,7 +48,7 @@ export const $berry = (
 
 export const $loadBerry = (
   attributeTuple: Partial<IBerryDisplayTupleMap>,
-  size = 250
+  size: string | number = 250
 ) => {
 
   const query = now(import("../logic/mappings/svgParts").then(({ "default": svgParts }) => svgParts))

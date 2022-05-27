@@ -9,7 +9,7 @@ import { $berryById } from "../logic/common"
 
 export const $TrashBtn = $ButtonIcon($trash)
 
-export const $card = $column(layoutSheet.spacing, style({ backgroundColor: pallete.horizon, padding: '30px', borderRadius: '20px', flex: 1 }))
+export const $card = $column(layoutSheet.spacing, style({ backgroundColor: pallete.horizon, padding: '22px', borderRadius: '20px', flex: 1 }))
 
 export const $seperator = $text(style({ color: pallete.foreground, pointerEvents: 'none' }))('|')
 export const $responsiveFlex = screenUtils.isDesktopScreen ? $row : $column
