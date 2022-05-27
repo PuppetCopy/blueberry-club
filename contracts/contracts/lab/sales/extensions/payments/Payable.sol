@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {Sale} from "../../Sale.sol";
 import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";
 
-abstract contract SalePay is Sale {
+abstract contract Payable is Sale {
 
     event Rescue(address indexed token, address indexed to, uint256 amount);
     event Paied(address indexed payeer, uint256 amount);
