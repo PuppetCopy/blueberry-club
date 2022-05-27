@@ -11,7 +11,6 @@ struct HolderState {
     uint208 cost;
     uint64 start;
     uint120 transaction;
-    uint120 amount;
 }
 
 error TooManyTokens();
@@ -32,6 +31,26 @@ abstract contract Holder is Private {
     constructor(IERC721 _nft, HolderState memory state) {
         NFT = _nft;
         _state = state;
+    }
+
+    function maxMintableNft() external view returns (uint256) {
+        return _state.totalMintable;
+    }
+
+    function maxWalletNft() external view returns (uint256) {
+        return _state.walletMintable;
+    }
+
+    function maxTransactionNft() external view returns (uint256) {
+        return _state.walletMintable;
+    }
+
+    function startNft() external view returns (uint256) {
+        return _state.start;
+    }
+
+    function costNft() external view returns (uint256) {
+        return _state.cost;
     }
 
     function nftMint(uint256[] calldata tokensId) external {
@@ -60,5 +79,9 @@ abstract contract Holder is Private {
         }
 
         _mint(msg.sender, amount, MintRule(state_.cost, state_.start, state_.transaction, amount));
+    }
+
+    function setHolderState(HolderState memory newState) external onlyOwner {
+        _state = newState;
     }
 }
