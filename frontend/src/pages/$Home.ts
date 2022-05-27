@@ -1,29 +1,27 @@
 import { Behavior, combineArray, replayLatest } from "@aelea/core"
-import { $Branch, $element, $node, $svg, $text, attr, component, eventElementTarget, INode, style, StyleCSS, styleInline, stylePseudo } from "@aelea/dom"
+import { $Branch, $element, $node, $svg, $text, attr, component, eventElementTarget, INode, style, styleInline, stylePseudo } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, observer, screenUtils, state } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { IAccountQueryParamApi, IClaim, intervalInMsMap, ITimerangeParamApi } from "@gambitdao/gmx-middleware"
+import { IAccountQueryParamApi, intervalInMsMap, ITimerangeParamApi } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { $anchor, $discord, $gitbook, $github, $glp, $instagram, $Link, $twitter } from "@gambitdao/ui-components"
-import { empty, fromPromise, map, multicast, snapshot, take, tap } from "@most/core"
-import { $card, $responsiveFlex, $teamMember } from "../elements/$common"
+import { $anchor, $gitbook, $Link } from "@gambitdao/ui-components"
+import { fromPromise, map, multicast, snapshot, take, tap } from "@most/core"
+import { $card, $teamMember } from "../elements/$common"
 
-import { BI_18_PRECISION, GBC_ADDRESS, IAttributeBackground, IAttributeBody, IAttributeClothes, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat, ITreasuryStore } from "@gambitdao/gbc-middleware"
+import { BI_18_PRECISION, GBC_ADDRESS, IAttributeBody, IAttributeClothes, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat, ITreasuryStore } from "@gambitdao/gbc-middleware"
 import { $StakingGraph } from "../components/$StakingGraph"
 import { $seperator2 } from "./common"
-import { $Breadcrumbs } from "../components/$Breadcrumbs"
 import { $buttonAnchor, $ButtonSecondary } from "../components/form/$Button"
-import { $bagOfCoins, $discount, $stackedCoins, $tofunft } from "../elements/$icons"
+import { $tofunft } from "../elements/$icons"
 import { Stream } from "@most/types"
 import { $loadBerry } from "../components/$DisplayBerry"
-import { priceFeedHistoryInterval, latestTokenPriceMap, $berryById, $berryByLabItems } from "../logic/common"
+import { priceFeedHistoryInterval, latestTokenPriceMap, $berryById } from "../logic/common"
 import { arbitrumContract, avalancheContract } from "../logic/gbcTreasury"
 import tokenIdAttributeTuple from "../logic/mappings/tokenIdAttributeTuple"
 import { gmxGlpPriceHistory, queryArbitrumRewards, queryAvalancheRewards, StakedTokenArbitrum, StakedTokenAvalanche } from "../logic/query"
 import { IEthereumProvider } from "eip1193-provider"
 import { WALLET } from "../logic/provider"
-import { $berryTileId } from "../components/$common"
 
 
 export interface ITreasury {
@@ -155,12 +153,12 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
   }, arbitrumYieldSourceMap, avalancheYieldSourceMap, feeYieldClaim, newLocal)
 
 
-  const randomGBCList = randomIntList(15, 0, 9999)
+  const randomGBCList = randomIntList(14, 0, 9999)
 
   const $mosaicItem = (id: number) => {
 
     return $column(style({ position: 'relative' }))(
-      style({ borderRadius: '15px' }, $berryById(id, null, screenUtils.isDesktopScreen ? 167.5 : '15vw')),
+      style({ borderRadius: '15px' }, $berryById(id, null, screenUtils.isDesktopScreen ? 167.5 : '27vw')),
       $text(style({ textAlign: 'left', padding: screenUtils.isDesktopScreen ? '8px 0 0 8px' : '5px 0 0 5px', color: '#fff', textShadow: '#0000005e 0px 0px 5px', fontSize: screenUtils.isDesktopScreen ? '.7em' : '.6em', position: 'absolute', fontWeight: 'bold' }))(String(id))
     )
   }
@@ -168,7 +166,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
   // const mosaicStyle: StyleCSS = { flexWrap: 'wrap', borderRadius: '15px', overflow: 'hidden', fontSize: '1.2em' }
 
   return [
-    $column(style({ gap: '125px' }))(
+    $column(style({ gap: screenUtils.isDesktopScreen ? '125px' : '90px' }))(
 
       screenUtils.isDesktopScreen
         ? $row(
@@ -239,14 +237,14 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
           ),
         )
         : $row(style({ flexWrap: 'wrap', gap: '10px', placeContent: 'center', flex: 1 }))(
-          ...randomGBCList.slice(0, 15).map(id => {
+          ...randomGBCList.slice(0, 12).map(id => {
             return $mosaicItem(id)
           }),
         ),
 
       $row(gutterSpacingStyle, style({ display: 'flex', gap: '36px', placeContent: 'center', alignItems: 'center' }))(
         $column(layoutSheet.spacingBig, style({ maxWidth: '820px', alignSelf: 'center' }))(
-          $column(style({ fontSize: '2.1em' }))(
+          $column(style({ fontSize: '1.5em' }))(
             $text(style({ fontWeight: 'bold' }))(`Welcome to the GMX Blueberry Club`),
           ),
 
@@ -434,10 +432,10 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
 
 
 const $ecosystemCard = (title: string, desc: string, img: string) => {
-  return $card(style({ width: screenUtils.isDesktopScreen ? '342px' : '', flex: 'none' }))(
-    $element('img')(attr({ maxWidth: '100%', src: img }))(),
+  return $card(style({ width: screenUtils.isDesktopScreen ? '342px' : '100%', flex: 'none' }))(
+    $element('img')(style({ borderRadius: '16px' }), attr({ maxWidth: '100%', src: img }))(),
     $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(title),
-    $column(
+    $column(style({ fontSize: '.9em' }))(
       $text(desc),
     )
   )
