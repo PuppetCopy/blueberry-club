@@ -16,7 +16,7 @@ struct MerkleMintRule {
 error LeafClaimed();
 error InvalidProof();
 
-abstract contract Merkle is Private {
+abstract contract PrivateMerkle is Private {
 
     bytes32 public immutable root;
 

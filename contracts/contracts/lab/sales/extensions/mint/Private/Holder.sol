@@ -17,7 +17,7 @@ error TooManyTokens();
 error NftMaxMintable();
 error NftAlreadyUsed();
 
-abstract contract Holder is Private {
+abstract contract PrivateHolder is Private {
 
     IERC721 public immutable NFT;
 

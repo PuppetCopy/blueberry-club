@@ -16,7 +16,7 @@ struct SignedMintRule {
 error WrongSigner();
 error InvalidHash();
 
-abstract contract Signature is Private {
+abstract contract PrivateSignature is Private {
 
     address public signer;
 
