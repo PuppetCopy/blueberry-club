@@ -29,11 +29,11 @@ export const $labeledDivider = (label: string) => {
 
 
 
-export const $iconCircular = ($iconPath: $Branch<SVGPathElement>) => {
+export const $iconCircular = ($iconPath: $Branch<SVGPathElement>, backgroundColor = pallete.middleground) => {
   return $icon({
     $content: $iconPath,
     svgOps: style({
-      backgroundColor: pallete.middleground, position: 'absolute', zIndex: 10, borderRadius: '50%', cursor: 'pointer',
+      backgroundColor: backgroundColor, position: 'absolute', zIndex: 10, borderRadius: '50%', cursor: 'pointer',
       height: '22px', width: '22px', fontSize: '11px', textAlign: 'center', lineHeight: '15px', fontWeight: 'bold', color: pallete.message,
     }),
     width: '18px', viewBox: '0 0 32 32'

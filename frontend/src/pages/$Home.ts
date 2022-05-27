@@ -403,10 +403,10 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
 
         $node(),
 
-        $card(layoutSheet.spacingBig, style({ flexDirection: 'row', alignItems: 'center', position: 'relative', padding: '40px' }))(
+        $card(layoutSheet.spacingBig, style({ flexDirection: screenUtils.isDesktopScreen ? 'row' : 'column-reverse', alignItems: 'center', position: 'relative', padding: '40px' }))(
 
           $row(style({ width: screenUtils.isDesktopScreen ? '280px' : '' }))(
-            style({ position: 'absolute', bottom: 0, left: 0 }, $loadBerry([undefined, IAttributeClothes.BUILDER, IAttributeBody.BLUEBERRY, IAttributeExpression.HAPPY, IAttributeFaceAccessory.RICH, IAttributeHat.BRAIN], screenUtils.isDesktopScreen ? 350 : 150)),
+            style({ margin: '-40px' }, $loadBerry([undefined, IAttributeClothes.BUILDER, IAttributeBody.BLUEBERRY, IAttributeExpression.HAPPY, IAttributeFaceAccessory.RICH, IAttributeHat.BRAIN], screenUtils.isDesktopScreen ? 350 : 200))
           ),
 
           $column(layoutSheet.spacing)(
@@ -434,7 +434,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
 const $ecosystemCard = (title: string, desc: string, img: string) => {
   return $card(style({ width: screenUtils.isDesktopScreen ? '342px' : '100%', flex: 'none' }))(
     $element('img')(style({ borderRadius: '16px' }), attr({ maxWidth: '100%', src: img }))(),
-    $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(title),
+    $text(style({ fontWeight: 'bold', fontSize: '1.25em', textAlign: 'center' }))(title),
     $column(style({ fontSize: '.9em' }))(
       $text(desc),
     )
