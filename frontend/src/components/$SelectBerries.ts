@@ -3,7 +3,7 @@ import { $text, component, style } from "@aelea/dom"
 import { $row } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { IBerryIdentifable } from "@gambitdao/gbc-middleware"
-import { constant, map, merge, startWith } from "@most/core"
+import { constant, empty, map, merge, multicast, startWith, tap } from "@most/core"
 import { $berryById } from "../logic/common"
 import { $berryTileId } from "./$common"
 import { $ButtonSecondary } from "./form/$Button"
@@ -24,7 +24,7 @@ export const $SelectBerries = (config: ISelectBerries) => component((
 
   const $selectAllOption = $text(style({ paddingLeft: '15px' }))('All')
 
-  const allSelection = constant(config.options, selectAll)
+  const allSelection = tap(console.log, constant(config.options, selectAll))
   const value = startWith([], allSelection)
 
   return [
@@ -36,7 +36,7 @@ export const $SelectBerries = (config: ISelectBerries) => component((
       $$chip: map(token => {
 
         if (token === 'ALL') {
-          return $selectAllOption
+          return empty()
         }
 
         return $row(style({ alignItems: 'center', gap: '8px', color: pallete.message }))(
@@ -45,14 +45,11 @@ export const $SelectBerries = (config: ISelectBerries) => component((
         )
       }),
       selectDrop: {
-        $container: $defaultSelectContainer(style({ padding: '10px', gap: 0, borderTopLeftRadius: 0, borderTopRightRadius: 0, borderTop: 0, flexWrap: 'wrap', width: '100%', maxHeight: '400px', overflow: 'auto', flexDirection: 'row' })),
+        $container: $defaultSelectContainer(style({ padding: '10px', borderTopLeftRadius: 0, borderTopRightRadius: 0, borderTop: 0, flexWrap: 'wrap', width: '100%', maxHeight: '400px', overflow: 'auto', flexDirection: 'row' })),
         $$option: map((token) => {
 
           if (token === 'ALL') {
-            return $ButtonSecondary({
-              buttonOp: O(style({ marginRight: '10px' })),
-              $content: $text('Select All')
-            })({
+            return $ButtonSecondary({ $content: $text('Select All') })({
               click: selectAllTether()
             })
           }

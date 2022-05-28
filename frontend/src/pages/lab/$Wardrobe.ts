@@ -85,25 +85,24 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
   const tokenList = map(xz => xz ? xz.ownedTokens : [], owner)
   const ownedItemList = multicast(map(xz => xz ? xz.ownedLabItems : [], owner))
 
-  const afterSaveTxSucceed = multicast(awaitPromises(map(async txc => {
-    return (await txc).wait()
+  const afterSaveTxSucceed = filter(res => res !== null, awaitPromises(map(async txc => {
+    const res = await txc.catch(() => null)
+
+    if (res === null) {
+      return null
+    }
+
+    return res.wait()
   }, clickSave)))
 
 
   const changeBerryWithInitial = mergeArray([constant(null, owner), changeBerry])
 
   const selectedBerry = merge(
-    snapshot((berry) => berry, changeBerryWithInitial, afterSaveTxSucceed),
+    snapshot(berry => berry, changeBerryWithInitial, afterSaveTxSucceed),
     changeBerryWithInitial
   )
 
-  // const selectedBerry = multicast(awaitPromises(combine(async (token, contract): Promise<ExchangeState['selectedBerry'] | null> => {
-  //   if (token === null) {
-  //     return null
-  //   }
-
-  //   return { ...await getTokenSlots(token.id, contract), id: token.id }
-  // }, changeBerrys, closet.contract)))
 
   const isClosetApproved = awaitPromises(combineArray(async (c, acc) => {
     if (acc === null) {
@@ -118,16 +117,16 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
     return isClosetApproved
   }, setApproval)))])
 
-  const resetItemOnBerryChange = startWith(null, constant(null, afterSaveTxSucceed))
+  const resetItemOnBerryChange = constant(null, afterSaveTxSucceed)
 
-  const itemChangeState = merge(resetItemOnBerryChange, changeItemState)
-  const backgroundChangeState = merge(resetItemOnBerryChange, changeBackgroundState)
+  const itemChangeState = startWith(null, merge(resetItemOnBerryChange, changeItemState)) 
+  const backgroundChangeState = startWith(null, merge(resetItemOnBerryChange, changeBackgroundState)) 
 
 
   const exchangeState: Stream<ExchangeState> = multicast(combineObject({
     updateItemState: itemChangeState,
     updateBackgroundState: backgroundChangeState,
-    selectedBerry,
+    selectedBerry: changeBerryWithInitial,
     contract: closet.contract,
     lab: lab.contract,
     account: walletLink.account
@@ -242,7 +241,7 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
               }),
               $option: $row,
               select: {
-                $container: $defaultSelectContainer(style({ gap: 0, padding: '15px', flexWrap: 'wrap', width: '300px', maxHeight: '400px', overflow: 'auto', flexDirection: 'row' })),
+                $container: $defaultSelectContainer(style({ padding: '15px', flexWrap: 'wrap', width: '304px', maxHeight: '400px', overflow: 'auto', flexDirection: 'row' })),
                 value: now(initialBerry || null),
                 $$option: map(token => {
 
@@ -313,8 +312,8 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
                 itemOwned && account
                   ? $text(style({ position: 'absolute', top: '1px', right: '4px', fontSize: '.75em', fontWeight: 'bold', color: pallete.background }))(
                     awaitPromises(map(async (delta) => {
-                      const count = ((await lab.balanceOf(account, id)).toNumber() + delta)
-                      return `${count < 0 ? 0 : count}x`
+                      // const count = ((await lab.balanceOf(account, id)).toNumber() + delta)
+                      return `${Number(itemOwned.balance) + delta}x`
                     }, itemBalance))
                   )
                   : $ButtonSecondary({
@@ -342,7 +341,7 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
 
         $row(style({ placeContent: 'center' }))(
           switchLatest(map(list => {
-            return list.length === 0 ? style({ alignSelf: 'center' }, $alert($text(`Connected account does not own any GBC's`))) : empty()
+            return list.length === 0 ? style({ alignSelf: 'center' }, $alert($text(`Connect account with owned GBC's`))) : empty()
           }, tokenList))
         ),
 
@@ -375,11 +374,11 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
 
 
 
-            switchLatest(map(isApproved => {
+            $IntermediateConnectButton({
+              $display: map(() => {
+                return switchLatest(map(isApproved => {
 
-              if (isApproved === true) {
-                return $IntermediateConnectButton({
-                  $display: map(() => {
+                  if (isApproved === true) {
                     return $ButtonPrimary({
                       $content: $text(startWith('Save', primaryActionLabel as Stream<string>)),
                       disabled: combineArray(({ selectedBerry, updateBackgroundState, updateItemState }) => {
@@ -418,25 +417,26 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
                         multicast
                       )
                     })
-                  }),
-                  walletLink,
-                  walletStore,
-                })({})
-              }
+                  }
 
-              if (isApproved || isApproved === null) {
-                return empty()
-              }
+                  if (isApproved || isApproved === null) {
+                    return empty()
+                  }
 
-              return $ButtonPrimary({
-                $content: $text('Approve Contract'),
-              })({
-                click: setApprovalTether(
-                  snapshot(contract => contract.setApprovalForAll(GBC_ADDRESS.CLOSET, true), lab.contract),
-                  multicast
-                )
-              })
-            }, isClosetApprovedState)),
+                  return $ButtonPrimary({
+                    $content: $text('Approve Contract'),
+                  })({
+                    click: setApprovalTether(
+                      snapshot(contract => contract.setApprovalForAll(GBC_ADDRESS.CLOSET, true), lab.contract),
+                      multicast
+                    )
+                  })
+                }, isClosetApprovedState))
+              }),
+              walletLink,
+              walletStore,
+            })({}),
+            
           ),
 
           $row(layoutSheet.spacing, style({ placeContent: 'flex-end' }))(

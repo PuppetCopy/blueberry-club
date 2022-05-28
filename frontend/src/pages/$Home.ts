@@ -102,10 +102,8 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
   const berryDayId = dailyRandom(Date.now() / (intervalInMsMap.HR24 * 1000))
   const [background, clothes, body, expression, faceAccessory, hat] = tokenIdAttributeTuple[berryDayId]
 
-  const berrySize = screenUtils.isDesktopScreen ? 350 : 100
+  const berrySize = screenUtils.isDesktopScreen ? 340 : 100
   const berrySizePx = berrySize + 'px'
-
-  const $randomBerry = $loadBerry([background, clothes, undefined, IAttributeExpression.HAPPY, undefined, undefined], berrySize)
 
   const arbitrumStakingRewards = replayLatest(multicast(arbitrumContract.stakingRewards))
   const avalancheStakingRewards = replayLatest(multicast(avalancheContract.stakingRewards))
@@ -153,13 +151,15 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
   }, arbitrumYieldSourceMap, avalancheYieldSourceMap, feeYieldClaim, newLocal)
 
 
-  const randomGBCList = randomIntList(14, 0, 9999)
+  const randomGBCList = randomIntList(35, 0, 9999)
+
+  const mosiacBerry = 100
 
   const $mosaicItem = (id: number) => {
 
     return $column(style({ position: 'relative' }))(
-      style({ borderRadius: '15px' }, $berryById(id, null, screenUtils.isDesktopScreen ? 167.5 : '27vw')),
-      $text(style({ textAlign: 'left', padding: screenUtils.isDesktopScreen ? '8px 0 0 8px' : '5px 0 0 5px', color: '#fff', textShadow: '#0000005e 0px 0px 5px', fontSize: screenUtils.isDesktopScreen ? '.7em' : '.6em', position: 'absolute', fontWeight: 'bold' }))(String(id))
+      style({ borderRadius: '10px' }, $berryById(id, null, screenUtils.isDesktopScreen ? mosiacBerry : '27vw')),
+      $text(style({ textAlign: 'left', padding: screenUtils.isDesktopScreen ? '8px 0 0 8px' : '5px 0 0 5px', color: '#fff', textShadow: '#0000005e 0px 0px 5px', fontSize: screenUtils.isDesktopScreen ? '.6em' : '.6em', position: 'absolute', fontWeight: 'bold' }))(String(id))
     )
   }
 
@@ -169,114 +169,111 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
     $column(style({ gap: screenUtils.isDesktopScreen ? '125px' : '90px' }))(
 
       screenUtils.isDesktopScreen
-        ? $row(
-          $row(style({ flexWrap: 'wrap', gap: '15px', flex: 1 }))(
-            ...randomGBCList.slice(0, 6).map(id => {
-              return $mosaicItem(id)
-            }),
-          ),
-          $row(style({ flexWrap: 'wrap', gap: '15px', flex: 1 }))(
-            ...randomGBCList.slice(6, 8).map(id => {
-              return $mosaicItem(id)
-            }),
-            $column(
-              $Link({
-                url: `/p/berry/${berryDayId + 1}`,
-                route: parentRoute.create({ fragment: 'fefe' }),
-                $content: $row(style({ maxWidth: berrySizePx, borderRadius: '38px', overflow: 'hidden', width: '100%', height: berrySizePx, transformStyle: 'preserve-3d', perspective: '100px', position: 'relative', placeContent: 'center', alignItems: 'flex-end' }))(
-                  $row(style({ alignSelf: 'flex-end', color: `${pallete.message}!important`, fontWeight: 'bold', position: 'absolute', left: '34px', top: '16px' }))(
-                    $text(style({ paddingTop: '19px', paddingRight: '3px' }))('#'),
-                    $text(style({ fontSize: '38px', textShadow: '#0000005e 0px 0px 5px' }))(String(berryDayId))
-                  ),
+        ? $node(style({ display: 'grid', gap: '20px', justifyContent: 'center', gridTemplateColumns: `repeat(auto-fit, ${mosiacBerry}px)`, gridAutoRows: mosiacBerry + 'px' }))(
+          ...randomGBCList.slice(0, 9).map(id => {
+            return $mosaicItem(id)
+          }),
+          $row(style({ gridRow: 'span 3 / auto', gridColumn: 'span 7 / auto', gap: '20px' }))(
+            $Link({
+              url: `/p/berry/${berryDayId + 1}`,
+              route: parentRoute.create({ fragment: 'fefe' }),
+              $content: $row(style({ maxWidth: berrySizePx, borderRadius: '30px', overflow: 'hidden', width: '100%', height: berrySizePx, transformStyle: 'preserve-3d', perspective: '100px', position: 'relative', placeContent: 'center', alignItems: 'flex-end' }))(
+                $row(style({ alignSelf: 'flex-end', color: `${pallete.message}!important`, fontWeight: 'bold', position: 'absolute', left: '34px', top: '16px' }))(
+                  $text(style({ paddingTop: '19px', paddingRight: '3px' }))('#'),
+                  $text(style({ fontSize: '38px', textShadow: '#0000005e 0px 0px 5px' }))(String(berryDayId))
+                ),
+                tap(async ({ element }) => {
+                  await import("../logic/mappings/svgParts")
+
+                  element.querySelectorAll('.wakka').forEach(el => el.remove())
+                }, $loadBerry([background, clothes, undefined, IAttributeExpression.HAPPY, undefined, undefined], berrySize) as $Branch),
+                $svg('svg')(
+                  attr({ xmlns: 'http://www.w3.org/2000/svg', fill: 'none', viewBox: `0 0 1500 1500` }),
+                  style({ width: berrySizePx, height: berrySizePx, position: 'absolute', zIndex: 1, })
+                )(
                   tap(async ({ element }) => {
-                    await import("../logic/mappings/svgParts")
+                    const svgParts = (await import("../logic/mappings/svgParts")).default
 
-                    element.querySelectorAll('.wakka').forEach(el => el.remove())
-                  }, $randomBerry as $Branch),
-                  $svg('svg')(
-                    attr({ xmlns: 'http://www.w3.org/2000/svg', fill: 'none', viewBox: `0 0 1500 1500` }),
-                    style({ width: berrySizePx, height: berrySizePx, position: 'absolute', zIndex: 1, })
-                  )(
-                    tap(async ({ element }) => {
-                      const svgParts = (await import("../logic/mappings/svgParts")).default
-
-                      element.innerHTML = `${svgParts[4][faceAccessory]}${svgParts[5][hat]}`
-                    })
-                  )(),
-                  $row(style({ position: 'absolute', width: '96px', left: '165px', placeContent: 'space-between', top: '168px' }))(
-                    $eyeBall(leftEyeContainerPerspectiveTether(observer.resize()), eyeStylePosition(leftEyeContainerPerspective))(
-                      $eyeInner()
-                    ),
-                    $eyeBall(rightEyeContainerPerspectiveTether(observer.resize()), eyeStylePosition(rightEyeContainerPerspective))(
-                      $eyeInner()
-                    ),
+                    element.innerHTML = `${svgParts[4][faceAccessory]}${svgParts[5][hat]}`
+                  })
+                )(),
+                $row(style({ position: 'absolute', width: '93px', left: '162px', placeContent: 'space-between', top: '163px' }))(
+                  $eyeBall(leftEyeContainerPerspectiveTether(observer.resize()), eyeStylePosition(leftEyeContainerPerspective))(
+                    $eyeInner()
                   ),
-                  $text(
-                    style({ color: '#000', backgroundColor: pallete.message, textAlign: 'center', padding: '9px 13px', fontWeight: 'bold', borderRadius: '15px', position: 'absolute', top: '17px', right: '30px' }),
-                    stylePseudo(':after', {
-                      border: '11px solid transparent',
-                      borderTop: `5px solid ${pallete.message}`,
-                      content: "''",
-                      position: 'absolute',
-                      top: '100%',
-                      left: '56%',
-                      width: 0,
-                      height: 0
-                    })
-                  )('gm anon')
-                )
-              })({
-                click: linkClickTether()
-              }),
-            )
-          ),
-          $row(style({ flexWrap: 'wrap', gap: '15px', flex: 1 }))(
-            ...randomGBCList.slice(8, 14).map(id => {
-              return $mosaicItem(id)
+                  $eyeBall(rightEyeContainerPerspectiveTether(observer.resize()), eyeStylePosition(rightEyeContainerPerspective))(
+                    $eyeInner()
+                  ),
+                ),
+                $text(
+                  style({ color: '#000', backgroundColor: pallete.message, textAlign: 'center', padding: '9px 13px', fontWeight: 'bold', borderRadius: '15px', position: 'absolute', top: '17px', right: '30px' }),
+                  stylePseudo(':after', {
+                    border: '11px solid transparent',
+                    borderTop: `5px solid ${pallete.message}`,
+                    content: "''",
+                    position: 'absolute',
+                    top: '100%',
+                    left: '56%',
+                    width: 0,
+                    height: 0
+                  })
+                )('gm anon')
+              )
+            })({
+              click: linkClickTether()
             }),
+
+            $row(gutterSpacingStyle, style({ display: 'flex', gap: '36px', placeContent: 'center', alignItems: 'center' }))(
+              $column(layoutSheet.spacingBig, style({ maxWidth: '820px', alignSelf: 'center' }))(
+                $column(style({ fontSize: '1.5em' }))(
+                  $text(style({ fontWeight: 'bold' }))(`GMX Blueberry Club`),
+                ),
+
+                $node(
+                  $text(style({ lineHeight: '1.5em' }))(`10,000 Blueberries NFT Collection on Arbitrum, building a community driven `),
+                  $anchor(style({ display: 'inline' }), attr({ href: `https://twitter.com/GMX_IO`, target: '_blank' }))(
+                    $text('@GMX_io')
+                  ),
+                  $text(' products')
+                ),
+
+                // $node(),
+
+                $seperator2,
+
+                $row(layoutSheet.spacingBig, style({}))(
+                  $anchor(layoutSheet.spacingSmall, style({ alignItems: 'center' }), attr({ href: `https://tofunft.com/collection/blueberryclub/items?category=fixed-price`, target: '_blank' }))(
+                    $icon({
+                      width: '40px',
+                      $content: $tofunft,
+                      viewBox: '0 0 32 32'
+                    }),
+                    $text(style({ paddingBottom: '6px' }))('Trade On TofuNFT')
+                  ),
+                  $anchor(layoutSheet.spacingSmall, style({ alignItems: 'center' }), attr({ href: `https://docs.blueberry.club`, target: '_blank' }))(
+                    $icon({
+                      width: '40px',
+                      $content: $gitbook,
+                      viewBox: '0 0 32 32'
+                    }),
+                    $text(style({ paddingBottom: '6px' }))('Documentation')
+                  ),
+                )
+
+              ),
+
+
+            ),
           ),
+          ...randomGBCList.slice(9, 33).map(id => {
+            return $mosaicItem(id)
+          }),
         )
         : $row(style({ flexWrap: 'wrap', gap: '10px', placeContent: 'center', flex: 1 }))(
           ...randomGBCList.slice(0, 12).map(id => {
             return $mosaicItem(id)
           }),
         ),
-
-      $row(gutterSpacingStyle, style({ display: 'flex', gap: '36px', placeContent: 'center', alignItems: 'center' }))(
-        $column(layoutSheet.spacingBig, style({ maxWidth: '820px', alignSelf: 'center' }))(
-          $column(style({ fontSize: '1.5em' }))(
-            $text(style({ fontWeight: 'bold' }))(`Welcome to the GMX Blueberry Club`),
-          ),
-
-          $text(style({ lineHeight: '1.5em' }))(`GBC is a generative NFTfi Collection of 10,000 Blueberries on Arbitrum dedicated to the GMX Decentralized Exchange and its amazing community. Each GBC is unique and algorithmically generated from 130+ hand drawn traits.`),
-
-          // $node(),
-
-          $seperator2,
-
-          $row(layoutSheet.spacingBig)(
-            $anchor(layoutSheet.spacingSmall, style({ alignItems: 'center' }), attr({ href: `https://tofunft.com/collection/blueberryclub/items?category=fixed-price`, target: '_blank' }))(
-              $icon({
-                width: '40px',
-                $content: $tofunft,
-                viewBox: '0 0 32 32'
-              }),
-              $text(style({ paddingBottom: '6px' }))('Trade On TofuNFT')
-            ),
-            $anchor(layoutSheet.spacingSmall, style({ alignItems: 'center' }), attr({ href: `https://docs.blueberry.club`, target: '_blank' }))(
-              $icon({
-                width: '40px',
-                $content: $gitbook,
-                viewBox: '0 0 32 32'
-              }),
-              $text(style({ paddingBottom: '6px' }))('Documentation')
-            ),
-          )
-
-        ),
-
-
-      ),
 
 
       $column(style({ alignItems: 'center', gap: '26px' }))(
