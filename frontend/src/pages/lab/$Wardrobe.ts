@@ -16,7 +16,7 @@ import { $loadBerry } from "../../components/$DisplayBerry"
 import tokenIdAttributeTuple from "../../logic/mappings/tokenIdAttributeTuple"
 import { $caretDown } from "../../elements/$icons"
 import { $alert, $arrowsFlip, $IntermediateTx, $xCross } from "@gambitdao/ui-components"
-import { ContractTransaction } from "@ethersproject/contracts"
+import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
 import { Stream } from "@most/types"
 import { $iconCircular, $responsiveFlex } from "../../elements/$common"
 import { connectManager } from "../../logic/contract/manager"
@@ -85,7 +85,7 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
   const tokenList = map(xz => xz ? xz.ownedTokens : [], owner)
   const ownedItemList = multicast(map(xz => xz ? xz.ownedLabItems : [], owner))
 
-  const afterSaveTxSucceed = filter(res => res !== null, awaitPromises(map(async txc => {
+  const savedItemsTxSucceed: Stream<ContractReceipt> = filter(res => res !== null, awaitPromises(map(async txc => {
     const res = await txc.catch(() => null)
 
     if (res === null) {
@@ -99,7 +99,14 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
   const changeBerryWithInitial = mergeArray([constant(null, owner), changeBerry])
 
   const selectedBerry = merge(
-    snapshot(berry => berry, changeBerryWithInitial, afterSaveTxSucceed),
+    awaitPromises(snapshot(async ({ berry, closet }) => {
+      if (berry === null) {
+        return null
+      }
+
+      const slots = await getTokenSlots(berry.id, closet)
+      return { ...berry, ...slots }
+    }, combineObject({ closet: closet.contract, berry: changeBerryWithInitial }), savedItemsTxSucceed)),
     changeBerryWithInitial
   )
 
@@ -117,16 +124,16 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
     return isClosetApproved
   }, setApproval)))])
 
-  const resetItemOnBerryChange = constant(null, afterSaveTxSucceed)
+  const resetItemOnBerryChange = constant(null, savedItemsTxSucceed)
 
-  const itemChangeState = startWith(null, merge(resetItemOnBerryChange, changeItemState)) 
-  const backgroundChangeState = startWith(null, merge(resetItemOnBerryChange, changeBackgroundState)) 
+  const itemChangeState = startWith(null, merge(resetItemOnBerryChange, changeItemState))
+  const backgroundChangeState = startWith(null, merge(resetItemOnBerryChange, changeBackgroundState))
 
 
   const exchangeState: Stream<ExchangeState> = multicast(combineObject({
     updateItemState: itemChangeState,
     updateBackgroundState: backgroundChangeState,
-    selectedBerry: changeBerryWithInitial,
+    selectedBerry,
     contract: closet.contract,
     lab: lab.contract,
     account: walletLink.account
@@ -436,7 +443,7 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
               walletLink,
               walletStore,
             })({}),
-            
+
           ),
 
           $row(layoutSheet.spacing, style({ placeContent: 'flex-end' }))(

@@ -154,7 +154,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
   const berryWallRowCount = Math.floor((document.body.clientWidth + 20) / 120)
   const headlineSize = 3 * 7
 
-  const aboutHalf = Math.floor((berryWallRowCount - 7) / 2) 
+  const aboutHalf = Math.floor((berryWallRowCount - 7) / 2)
 
 
 
@@ -166,7 +166,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
 
   const $mosaicItem = (id: number) => {
 
-    return $column(style({ position: 'relative' }))(
+    return $anchor(style({ position: 'relative' }), attr({ href: '/p/berry/' + id }))(
       style({ borderRadius: '10px' }, $berryById(id, null, screenUtils.isDesktopScreen ? mosiacBerry : '27vw')),
       $text(style({ textAlign: 'left', padding: screenUtils.isDesktopScreen ? '8px 0 0 8px' : '5px 0 0 5px', color: '#fff', textShadow: '#0000005e 0px 0px 5px', fontSize: screenUtils.isDesktopScreen ? '.6em' : '.6em', position: 'absolute', fontWeight: 'bold' }))(String(id))
     )
@@ -243,7 +243,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
                   $anchor(style({ display: 'inline' }), attr({ href: `https://twitter.com/GMX_IO`, target: '_blank' }))(
                     $text('@GMX_io')
                   ),
-                  $text(' products')
+                  $text(' products and having fun together')
                 ),
 
                 // $node(),
