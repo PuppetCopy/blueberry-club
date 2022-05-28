@@ -151,9 +151,18 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
   }, arbitrumYieldSourceMap, avalancheYieldSourceMap, feeYieldClaim, newLocal)
 
 
-  const randomGBCList = randomIntList(35, 0, 9999)
+  const berryWallRowCount = Math.floor((document.body.clientWidth + 20) / 120)
+  const headlineSize = 3 * 7
+
+  const aboutHalf = Math.floor((berryWallRowCount - 7) / 2) 
+
+
+
+  const wallCount = berryWallRowCount * 5 - headlineSize
+  const randomGBCList = randomIntList(wallCount, 0, 9999)
 
   const mosiacBerry = 100
+
 
   const $mosaicItem = (id: number) => {
 
@@ -169,8 +178,8 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
     $column(style({ gap: screenUtils.isDesktopScreen ? '125px' : '90px' }))(
 
       screenUtils.isDesktopScreen
-        ? $node(style({ display: 'grid', gap: '20px', justifyContent: 'center', gridTemplateColumns: `repeat(auto-fit, ${mosiacBerry}px)`, gridAutoRows: mosiacBerry + 'px' }))(
-          ...randomGBCList.slice(0, 9).map(id => {
+        ? $node(style({ width: '100vw', marginLeft: 'calc(-50vw + 50%)', display: 'grid', gap: '20px', justifyContent: 'center', gridTemplateColumns: `repeat(auto-fit, ${mosiacBerry}px)`, gridAutoRows: mosiacBerry + 'px' }))(
+          ...randomGBCList.slice(0, berryWallRowCount + aboutHalf).map(id => {
             return $mosaicItem(id)
           }),
           $row(style({ gridRow: 'span 3 / auto', gridColumn: 'span 7 / auto', gap: '20px' }))(
@@ -265,7 +274,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
 
             ),
           ),
-          ...randomGBCList.slice(9, 33).map(id => {
+          ...randomGBCList.slice(berryWallRowCount + aboutHalf, wallCount).map(id => {
             return $mosaicItem(id)
           }),
         )
