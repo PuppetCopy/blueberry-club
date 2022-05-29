@@ -183,7 +183,10 @@ export default ({ baseRoute = '' }: Website) => component((
                 }))
               ),
               router.match(wardrobeRoute)(
-                fadeIn($Wardrobe({ walletLink: walletLink, parentRoute: wardrobeRoute, walletStore })({ changeRoute: linkClickTether() }))
+                fadeIn($Wardrobe({ walletLink: walletLink, parentRoute: wardrobeRoute, walletStore })({
+                  changeRoute: linkClickTether(),
+                  
+                }))
               ),
               router.match(profileRoute)(
                 fadeIn($Profile({ walletLink, parentRoute: pagesRoute, accountStakingStore })({}))

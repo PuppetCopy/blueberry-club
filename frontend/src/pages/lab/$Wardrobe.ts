@@ -1,4 +1,4 @@
-import { Behavior, combineArray, combineObject, O, Op, replayLatest } from "@aelea/core"
+import { Behavior, combineArray, combineObject, Op } from "@aelea/core"
 import { $node, $Node, $text, attr, attrBehavior, component, INode, nodeEvent, style, stylePseudo } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
@@ -8,7 +8,7 @@ import { awaitPromises, combine, constant, empty, filter, map, merge, mergeArray
 import { $berryTileId } from "../../components/$common"
 import { $buttonAnchor, $ButtonPrimary, $ButtonSecondary } from "../../components/form/$Button"
 import { $defaultSelectContainer, $Dropdown } from "../../components/form/$Dropdown"
-import { IBerryDisplayTupleMap, getLabItemTupleIndex, saleDescriptionList, LabItemSaleDescription, IBerry, USE_CHAIN, IToken, SaleType, GBC_ADDRESS } from "@gambitdao/gbc-middleware"
+import { IBerryDisplayTupleMap, getLabItemTupleIndex, saleDescriptionList, LabItemSaleDescription, IBerry, USE_CHAIN, IToken, SaleType, GBC_ADDRESS, ILabItemOwnership } from "@gambitdao/gbc-middleware"
 import { $labItem, getTokenSlots } from "../../logic/common"
 import { fadeIn } from "../../transitions/enter"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
@@ -16,13 +16,13 @@ import { $loadBerry } from "../../components/$DisplayBerry"
 import tokenIdAttributeTuple from "../../logic/mappings/tokenIdAttributeTuple"
 import { $caretDown } from "../../elements/$icons"
 import { $alert, $arrowsFlip, $IntermediateTx, $xCross } from "@gambitdao/ui-components"
-import { ContractTransaction } from "@ethersproject/contracts"
+import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
 import { Stream } from "@most/types"
 import { $iconCircular, $responsiveFlex } from "../../elements/$common"
 import { connectManager } from "../../logic/contract/manager"
 import { connectLab } from "../../logic/contract/lab"
 import { $seperator2 } from "../common"
-import { replayState, unixTimestampNow } from "@gambitdao/gmx-middleware"
+import { unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { WALLET } from "../../logic/provider"
 import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 import { queryOwnerV2 } from "../../logic/query"
@@ -85,22 +85,31 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
   const tokenList = map(xz => xz ? xz.ownedTokens : [], owner)
   const ownedItemList = multicast(map(xz => xz ? xz.ownedLabItems : [], owner))
 
-  const afterSaveTxSucceed = awaitPromises(map(async txc => (await txc).wait(), clickSave))
+  const savedItemsTxSucceed: Stream<ContractReceipt> = filter(res => res !== null, awaitPromises(map(async txc => {
+    const res = await txc.catch(() => null)
 
-  const reEmitBerryAfterSave = snapshot((berry) => berry, changeBerry, afterSaveTxSucceed)
-
-  const berryState = mergeArray([now(initialBerry || null), changeBerry])
-
-
-  // const berryState = merge(berryChangeState, reEmitBerryAfterSave)
-
-  const selectedBerry = multicast(awaitPromises(combine(async (token, contract): Promise<ExchangeState['selectedBerry'] | null> => {
-    if (token === null) {
+    if (res === null) {
       return null
     }
 
-    return { ...await getTokenSlots(token.id, contract), id: token.id }
-  }, berryState, closet.contract)))
+    return res.wait()
+  }, clickSave)))
+
+
+  const changeBerryWithInitial = mergeArray([constant(null, owner), changeBerry])
+
+  const selectedBerry: Stream<IToken> = merge(
+    awaitPromises(snapshot(async ({ berry, closet }) => {
+      if (berry === null) {
+        return null
+      }
+
+      const slots = await getTokenSlots(berry.id, closet)
+      return { ...berry, ...slots }
+    }, combineObject({ closet: closet.contract, berry: changeBerryWithInitial }), savedItemsTxSucceed)),
+    changeBerryWithInitial
+  )
+
 
   const isClosetApproved = awaitPromises(combineArray(async (c, acc) => {
     if (acc === null) {
@@ -115,9 +124,10 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
     return isClosetApproved
   }, setApproval)))])
 
-  const itemChangeState = startWith(null, changeItemState)
-  const backgroundChangeState = startWith(null, changeBackgroundState)
-  // const selectedTabState = startWith(IAttributeHat, selectedAttribute)
+  const resetItemOnBerryChange = constant(null, savedItemsTxSucceed)
+
+  const itemChangeState = startWith(null, merge(resetItemOnBerryChange, changeItemState))
+  const backgroundChangeState = startWith(null, merge(resetItemOnBerryChange, changeBackgroundState))
 
 
   const exchangeState: Stream<ExchangeState> = multicast(combineObject({
@@ -133,7 +143,7 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
 
   const previewSize = screenUtils.isDesktopScreen ? 475 : 350
 
-  const mustBerry = filter((b): b is NonNullable<ExchangeState['selectedBerry']> => b !== null, selectedBerry)
+  const mustBerry = filter(<T extends NonNullable<ExchangeState['selectedBerry']>>(b: T | null): b is T => b !== null, selectedBerry)
 
   const primaryActionLabel = combineArray((updateItemState, updateBackgroundState, berry) => {
 
@@ -169,20 +179,30 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
         $row(style({ alignItems: 'center', alignSelf: 'center', borderRadius: '30px', backgroundColor: pallete.middleground, position: 'relative', placeContent: 'center', minWidth: previewSize + 'px', width: previewSize + 'px', height: previewSize + 'px' }))(
 
           $node(style({ display: 'flex', flexDirection: 'column', position: 'absolute', gap: '16px', alignItems: 'center', placeContent: 'center', ...screenUtils.isDesktopScreen ? { width: '0px', right: 0, top: 0, bottom: 0 } : { height: 0, bottom: '-15px', flexDirection: 'row' } }))(
-            switchLatest(combineArray(((a, b, c) => $ItemSlot({
-              id: null,
-              slotLabel: 'Item',
-              gbcItemId: b,
-              change: a,
-              selectedSlot: c
-            })({ remove: changeItemStateTether(), select: selectedSlotTether() })), itemChangeState, berrySel, selectedSlotState)),
-            switchLatest(combineArray(((a, b, c) => $ItemSlot({
-              id: 0,
-              slotLabel: 'Background',
-              gbcItemId: b,
-              change: a,
-              selectedSlot: c
-            })({ remove: changeBackgroundStateTether(), select: selectedSlotTether() })), backgroundChangeState, berryBgSel, selectedSlotState)),
+            switchLatest(combineArray(((a, b, c) => {
+              return $ItemSlot({
+                id: null,
+                slotLabel: 'Item',
+                gbcItemId: b,
+                change: a,
+                selectedSlot: c
+              })({
+                remove: changeItemStateTether(),
+                select: selectedSlotTether()
+              })
+            }), itemChangeState, berrySel, selectedSlotState)),
+            switchLatest(combineArray(((a, b, c) => {
+              return $ItemSlot({
+                id: 0,
+                slotLabel: 'Background',
+                gbcItemId: b,
+                change: a,
+                selectedSlot: c
+              })({
+                remove: changeBackgroundStateTether(),
+                select: selectedSlotTether()
+              })
+            }), backgroundChangeState, berryBgSel, selectedSlotState)),
             // style({ opacity: '0.2', pointerEvents: 'none' }, switchLatest(combineArray(((a, b, c) => $ItemSlot(7, c, a, b)({ remove: changeDecoStateTether(), select: selectedSlotTether() })), backgroundChangeState, berryBgSel, selectedSlotState)),)
           ),
 
@@ -206,7 +226,7 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
             }
 
             return $berry ? $row(
-              attr({ id: 'BERRY' }, style({ cursor: 'pointer' }, $berry))
+              attr({ id: 'BERRY' }, $berry)
             ) : $row(style({}))()
 
           }, exchangeState)),
@@ -215,20 +235,18 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
         $row(layoutSheet.spacing, style({ placeContent: 'center' }))(
           switchLatest(map(tokenList => {
             return $Dropdown({
-              $selection: map(s => {
-                const $content = $row(style({ alignItems: 'center' }))(
-                  style({}, s ? $text(`GBC #` + s.id) : $text('Pick GBC')),
+              $selection: $ButtonSecondary({
+                disabled: now(tokenList.length === 0),
+                $content: $row(style({ alignItems: 'center' }))(
+                  $text(map(s => {
+                    return s ? `GBC #` + s.id : 'Pick GBC'
+                  }, mergeArray([now(null), selectedBerry]))),
                   $icon({ $content: $caretDown, width: '16px', svgOps: style({ marginTop: '3px', marginLeft: '6px' }), viewBox: '0 0 32 32' }),
-                )
-
-                return $ButtonSecondary({
-                  disabled: now(tokenList.length === 0),
-                  $content,
-                })({})
-              }),
+                ),
+              })({}),
               $option: $row,
-              select: {
-                $container: $defaultSelectContainer(style({ gap: 0, padding: '15px', flexWrap: 'wrap', width: '300px', maxHeight: '400px', overflow: 'auto', flexDirection: 'row' })),
+              value: {
+                $container: $defaultSelectContainer(style({ padding: '15px', flexWrap: 'wrap', width: '304px', maxHeight: '400px', overflow: 'auto', flexDirection: 'row' })),
                 value: now(initialBerry || null),
                 $$option: map(token => {
 
@@ -278,7 +296,7 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
 
               const isWhitelist = item.type === SaleType.whitelist
               const upcommingSaleDate = isWhitelist ? item.whitelistStartDate : item.publicStartDate
-              const itemOwned = ownedItems.find(ownedItem => ownedItem.item.id === id)
+              const itemOwned: ILabItemOwnership | undefined = ownedItems.find(ownedItem => ownedItem.item.id === id)
 
               const isSaleUpcomming = upcommingSaleDate > unixTime
 
@@ -293,14 +311,14 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
               return $row(style({ position: 'relative' }))(
                 $row(style({ cursor: 'pointer', overflow: 'hidden', borderRadius: '8px', backgroundColor: colorAlpha(pallete.message, .95) }))(
                   fadeIn(
-                    style({ filter: itemOwned ? '' : 'grayscale(1)' }, selectBehavior($labItem(id, 100)))
+                    style({ filter: itemOwned && itemOwned.balance > 0n ? '' : 'grayscale(1)' }, selectBehavior($labItem(id, 100)))
                   )
                 ),
                 itemOwned && account
                   ? $text(style({ position: 'absolute', top: '1px', right: '4px', fontSize: '.75em', fontWeight: 'bold', color: pallete.background }))(
                     awaitPromises(map(async (delta) => {
-                      const count = ((await lab.balanceOf(account, id)).toNumber() + delta)
-                      return `${count < 0 ? 0 : count}x`
+                      // const count = ((await lab.balanceOf(account, id)).toNumber() + delta)
+                      return `${Number(itemOwned.balance) + delta}x`
                     }, itemBalance))
                   )
                   : $ButtonSecondary({
@@ -328,7 +346,7 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
 
         $row(style({ placeContent: 'center' }))(
           switchLatest(map(list => {
-            return list.length === 0 ? style({ alignSelf: 'center' }, $alert($text(`Connected account does not own any GBC's`))) : empty()
+            return list.length === 0 ? style({ alignSelf: 'center' }, $alert($text(`Connect account with owned GBC's`))) : empty()
           }, tokenList))
         ),
 
@@ -340,14 +358,16 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
             $row(style({ flex: 1 }))(),
 
 
-            switchLatest(map(s => {
+            switchLatest(combineArray(exchState => {
+
+              const isDisabled = exchState.updateBackgroundState === null && exchState.updateItemState === null && exchState.selectedBerry
 
               return $buttonAnchor(
                 hoverDownloadBtnTether(
                   nodeEvent('pointerenter')
                 ),
-                style(s.selectedBerry ? {} : { opacity: '.4' }),
-                attr({ target: '_blank', download: `GBC-${s.selectedBerry?.id}.png` }),
+                style(isDisabled ? {} : { opacity: '.4', pointerEvents: 'none' }),
+                attr({ target: '_blank', download: `GBC-${exchState.selectedBerry?.id}.png` }),
                 attrBehavior(awaitPromises(map(async x => {
                   const svg = document.querySelector('#BERRY')! as SVGElement
                   const href = await getGbcDownloadableUrl(svg)
@@ -359,11 +379,11 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
 
 
 
-            switchLatest(map(isApproved => {
+            $IntermediateConnectButton({
+              $display: map(() => {
+                return switchLatest(map(isApproved => {
 
-              if (isApproved === true) {
-                return $IntermediateConnectButton({
-                  $display: map(() => {
+                  if (isApproved === true) {
                     return $ButtonPrimary({
                       $content: $text(startWith('Save', primaryActionLabel as Stream<string>)),
                       disabled: combineArray(({ selectedBerry, updateBackgroundState, updateItemState }) => {
@@ -402,25 +422,26 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
                         multicast
                       )
                     })
-                  }),
-                  walletLink,
-                  walletStore,
-                })({})
-              }
+                  }
 
-              if (isApproved || isApproved === null) {
-                return empty()
-              }
+                  if (isApproved || isApproved === null) {
+                    return empty()
+                  }
 
-              return $ButtonPrimary({
-                $content: $text('Approve Contract'),
-              })({
-                click: setApprovalTether(
-                  snapshot(contract => contract.setApprovalForAll(GBC_ADDRESS.CLOSET, true), lab.contract),
-                  multicast
-                )
-              })
-            }, isClosetApprovedState)),
+                  return $ButtonPrimary({
+                    $content: $text('Approve Contract'),
+                  })({
+                    click: setApprovalTether(
+                      snapshot(contract => contract.setApprovalForAll(GBC_ADDRESS.CLOSET, true), lab.contract),
+                      multicast
+                    )
+                  })
+                }, isClosetApprovedState))
+              }),
+              walletLink,
+              walletStore,
+            })({}),
+
           ),
 
           $row(layoutSheet.spacing, style({ placeContent: 'flex-end' }))(
@@ -488,7 +509,7 @@ const $ItemSlot = ({ selectedSlot, change, gbcItemId, id, slotLabel }: ItemSlotC
         : empty(),
       $tradeBox(selectTether(nodeEvent('click'), constant(id)))(
         gbcItemId && isSwap && !isGbcItemRemove ? $itemWrapper($labItem(gbcItemId, itemSize)) : empty(),
-        gbcItemId && isSwap && !isGbcItemRemove ? style({ left: '50%', top: '50%', marginLeft: '-12px', marginTop: '-12px' })($iconCircular($arrowsFlip)) : empty(),
+        gbcItemId && isSwap && !isGbcItemRemove ? style({ left: '50%', top: '50%', marginLeft: '-12px', marginTop: '-12px', pointerEvents: 'none' })($iconCircular($arrowsFlip, pallete.background)) : empty(),
         $itemWrapper(style({ width: isSwap && canRemove ? '65px' : itemSizePx }))(
           item ? style({ borderRadius: 0, filter: change?.isRemove ? 'saturate(0) brightness(0.2)' : '' }, $labItem(item, itemSize)) : $row(style({ flex: 1, alignItems: 'center', placeContent: 'center', color: pallete.middleground, fontSize: '.65em' }))($text(slotLabel))
         )

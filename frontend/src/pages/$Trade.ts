@@ -360,17 +360,15 @@ const $TradeBox = (config: ITradeBox) => component((
 
         $Dropdown<ARBITRUM_ADDRESS_LEVERAGE | typeof AddressZero>({
           $container: $row(style({ position: 'relative', alignSelf: 'center', padding: '0 15px' })),
-          // disabled: accountChange,
-          // $noneSelected: $text('Choose Amount'),
-          $selection: map(option => {
-            const tokenDesc = option === AddressZero ? TOKEN_DESCRIPTION_MAP.ETH : TOKEN_DESCRIPTION_MAP[CHAIN_TOKEN_ADDRESS_TO_SYMBOL[option]]
+          $selection: $row(style({ alignItems: 'center', cursor: 'pointer' }))(
+            switchLatest(map(option => {
+              const tokenDesc = option === AddressZero ? TOKEN_DESCRIPTION_MAP.ETH : TOKEN_DESCRIPTION_MAP[CHAIN_TOKEN_ADDRESS_TO_SYMBOL[option]]
 
-            return $row(style({ alignItems: 'center', cursor: 'pointer' }))(
-              $icon({ $content: $tokenIconMap[tokenDesc.symbol], width: '34px', viewBox: '0 0 32 32' }),
-              $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginTop: '3px', marginLeft: '5px' }), viewBox: '0 0 32 32' }),
-            )
-          }),
-          select: {
+              return $icon({ $content: $tokenIconMap[tokenDesc.symbol], width: '34px', viewBox: '0 0 32 32' })
+            }, selectInput)),
+            $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginTop: '3px', marginLeft: '5px' }), viewBox: '0 0 32 32' }),
+          ),
+          value: {
             value: now(ARBITRUM_ADDRESS.NATIVE_TOKEN),
             $container: $defaultSelectContainer(style({ minWidth:'300px', right: 0 })),
             $$option: map(option => {

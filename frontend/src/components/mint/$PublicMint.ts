@@ -32,7 +32,7 @@ export const $PublicMint = (item: LabItemSalePublicDescription, walletLink: IWal
 ) => {
 
   const hasAccount = map(address => address && !ETH_ADDRESS_REGEXP.test(address), walletLink.account)
-  
+
   const supportedNetwork = map(x => x !== USE_CHAIN, walletLink.network)
   const mintCount = getMintCount(item.contractAddress)
 
@@ -69,45 +69,43 @@ export const $PublicMint = (item: LabItemSalePublicDescription, walletLink: IWal
               sel.addRange(range)
             }
           }),
-          $selection: map(amount =>
-            $row(
-              layoutSheet.spacingSmall, style({ alignItems: 'center', borderBottom: `2px solid ${pallete.message}` }),
-              styleInline(map(isDisabled => isDisabled ? { opacity: ".15", pointerEvents: 'none' } : { opacity: "1", pointerEvents: 'all' }, accountChange))
+          $selection: $row(
+            layoutSheet.spacingSmall, style({ alignItems: 'center', borderBottom: `2px solid ${pallete.message}` }),
+            styleInline(map(isDisabled => isDisabled ? { opacity: ".15", pointerEvents: 'none' } : { opacity: "1", pointerEvents: 'all' }, accountChange))
+          )(
+            $text(
+              attr({ contenteditable: 'true', placeholder: 'Set Amount' }), style({ padding: '15px 0 15px 10px', minWidth: '50px', backgroundColor: 'transparent', cursor: 'text', outline: '0' }),
+              stylePseudo(':empty:before', {
+                content: 'attr(placeholder)',
+                color: pallete.foreground
+              }),
+              customNftAmountTether(
+                nodeEvent('blur'),
+                snapshot((state, event) => {
+                  const target = event.target
+
+
+                  if (target instanceof HTMLElement) {
+                    const val = Number(target.innerText)
+
+                    return target.innerText !== '' && isFinite(val) && val > 0 && val <= item.maxPerTx ? val : state
+                  }
+
+                  if (state === null) {
+                    return ''
+                  }
+
+                  return state
+                }, startWith(null, selectMintAmount)),
+                multicast
+              )
             )(
-              $text(
-                attr({ contenteditable: 'true', placeholder: 'Set Amount' }), style({ padding: '15px 0 15px 10px', minWidth: '50px', backgroundColor: 'transparent', cursor: 'text', outline: '0' }),
-                stylePseudo(':empty:before', {
-                  content: 'attr(placeholder)',
-                  color: pallete.foreground
-                }),
-                customNftAmountTether(
-                  nodeEvent('blur'),
-                  snapshot((state, event) => {
-                    const target = event.target
-
-
-                    if (target instanceof HTMLElement) {
-                      const val = Number(target.innerText)
-
-                      return target.innerText !== '' && isFinite(val) && val > 0 && val <= item.maxPerTx ? val : state
-                    }
-
-                    if (state === null) {
-                      return ''
-                    }
-
-                    return state
-                  }, startWith(null, selectMintAmount)),
-                  multicast
-                )
-              )(
-                amount === null ? '' : String(amount)
-              ),
-              $icon({ viewBox: '0 0 32 32', $content: $caretDown, width: '13px', svgOps: style({ marginTop: '2px', marginRight: '10px' }) })
-            )
+              map(amount => amount === null ? '' : String(amount), selectMintAmount)
+            ),
+            $icon({ viewBox: '0 0 32 32', $content: $caretDown, width: '13px', svgOps: style({ marginTop: '2px', marginRight: '10px' }) })
           ),
-          select: {
-            $container: $defaultSelectContainer(style({  })),
+          value: {
+            $container: $defaultSelectContainer(style({})),
             value: startWith(null, customNftAmount),
             $$option: map(option => $text(String(option))),
             list: [1, 2, 3, 5, 10, 20].filter(n => Number(item.maxPerTx) >= n),
