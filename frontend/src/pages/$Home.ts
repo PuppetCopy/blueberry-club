@@ -102,8 +102,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
   const berryDayId = dailyRandom(Date.now() / (intervalInMsMap.HR24 * 1000))
   const [background, clothes, body, expression, faceAccessory, hat] = tokenIdAttributeTuple[berryDayId]
 
-  const berrySize = screenUtils.isDesktopScreen ? 340 : 100
-  const berrySizePx = berrySize + 'px'
+  const berrySize = screenUtils.isDesktopScreen ? 100 : 70
 
   const arbitrumStakingRewards = replayLatest(multicast(arbitrumContract.stakingRewards))
   const avalancheStakingRewards = replayLatest(multicast(avalancheContract.stakingRewards))
@@ -151,7 +150,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
   }, arbitrumYieldSourceMap, avalancheYieldSourceMap, feeYieldClaim, newLocal)
 
 
-  const berryWallRowCount = Math.floor((document.body.clientWidth + 20) / 120)
+  const berryWallRowCount = Math.floor((document.body.clientWidth + 20) / (berrySize + 20))
   const headlineSize = 3 * 7
 
   const aboutHalf = Math.floor((berryWallRowCount - 7) / 2)
@@ -161,13 +160,11 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
   const wallCount = berryWallRowCount * 5 - headlineSize
   const randomGBCList = randomIntList(wallCount, 0, 9999)
 
-  const mosiacBerry = 100
-
 
   const $mosaicItem = (id: number) => {
 
     return $anchor(style({ position: 'relative' }), attr({ href: '/p/berry/' + id }))(
-      style({ borderRadius: '10px' }, $berryById(id, null, screenUtils.isDesktopScreen ? mosiacBerry : '27vw')),
+      style({ borderRadius: '10px' }, $berryById(id, null, berrySize)),
       $text(style({ textAlign: 'left', padding: screenUtils.isDesktopScreen ? '8px 0 0 8px' : '5px 0 0 5px', color: '#fff', textShadow: '#0000005e 0px 0px 5px', fontSize: screenUtils.isDesktopScreen ? '.6em' : '.6em', position: 'absolute', fontWeight: 'bold' }))(String(id))
     )
   }
@@ -178,7 +175,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
     $column(style({ gap: screenUtils.isDesktopScreen ? '125px' : '90px' }))(
 
       screenUtils.isDesktopScreen
-        ? $node(style({ width: '100vw', marginLeft: 'calc(-50vw + 50%)', display: 'grid', gap: '20px', justifyContent: 'center', gridTemplateColumns: `repeat(auto-fit, ${mosiacBerry}px)`, gridAutoRows: mosiacBerry + 'px' }))(
+        ? $node(style({ width: '100vw', marginLeft: 'calc(-50vw + 50%)', display: 'grid', gap: '20px', justifyContent: 'center', gridTemplateColumns: `repeat(auto-fit, ${berrySize}px)`, gridAutoRows: berrySize + 'px' }))(
           ...randomGBCList.slice(0, berryWallRowCount + aboutHalf).map(id => {
             return $mosaicItem(id)
           }),
@@ -186,7 +183,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
             $Link({
               url: `/p/berry/${berryDayId + 1}`,
               route: parentRoute.create({ fragment: 'fefe' }),
-              $content: $row(style({ maxWidth: berrySizePx, borderRadius: '30px', overflow: 'hidden', width: '100%', height: berrySizePx, transformStyle: 'preserve-3d', perspective: '100px', position: 'relative', placeContent: 'center', alignItems: 'flex-end' }))(
+              $content: $row(style({ maxWidth: 340 + 'px', borderRadius: '30px', overflow: 'hidden', width: '100%', height: 340 + 'px', transformStyle: 'preserve-3d', perspective: '100px', position: 'relative', placeContent: 'center', alignItems: 'flex-end' }))(
                 $row(style({ alignSelf: 'flex-end', color: `${pallete.message}!important`, fontWeight: 'bold', position: 'absolute', left: '34px', top: '16px' }))(
                   $text(style({ paddingTop: '19px', paddingRight: '3px' }))('#'),
                   $text(style({ fontSize: '38px', textShadow: '#0000005e 0px 0px 5px' }))(String(berryDayId))
@@ -195,10 +192,10 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
                   await import("../logic/mappings/svgParts")
 
                   element.querySelectorAll('.wakka').forEach(el => el.remove())
-                }, $loadBerry([background, clothes, undefined, IAttributeExpression.HAPPY, undefined, undefined], berrySize) as $Branch),
+                }, $loadBerry([background, clothes, undefined, IAttributeExpression.HAPPY, undefined, undefined], 360) as $Branch),
                 $svg('svg')(
                   attr({ xmlns: 'http://www.w3.org/2000/svg', fill: 'none', viewBox: `0 0 1500 1500` }),
-                  style({ width: berrySizePx, height: berrySizePx, position: 'absolute', zIndex: 1, })
+                  style({ width: 360 + 'px', height: 360 + 'px', position: 'absolute', zIndex: 1, })
                 )(
                   tap(async ({ element }) => {
                     const svgParts = (await import("../logic/mappings/svgParts")).default
@@ -279,7 +276,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
           }),
         )
         : $row(style({ flexWrap: 'wrap', gap: '10px', placeContent: 'center', flex: 1 }))(
-          ...randomGBCList.slice(0, 12).map(id => {
+          ...randomGBCList.slice(0, berryWallRowCount).map(id => {
             return $mosaicItem(id)
           }),
         ),
