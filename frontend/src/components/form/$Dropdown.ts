@@ -1,12 +1,11 @@
 import { Behavior, O, Op } from "@aelea/core"
-import { $element, $Node, $text, attr, component, eventElementTarget, IBranch, INode, NodeComposeFn, nodeEvent, style, styleBehavior, stylePseudo } from "@aelea/dom"
+import { $element, $Node, $text, attr, component, eventElementTarget, IBranch, INode, NodeComposeFn, nodeEvent, style, styleBehavior, styleInline, stylePseudo } from "@aelea/dom"
 import { $column, $icon, $row, Input, layoutSheet, observer } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { $xCross } from "@gambitdao/ui-components"
-import { constant, empty, map, merge, mergeArray, multicast, now, scan, skip, skipRepeats, snapshot, startWith, switchLatest, tap } from "@most/core"
+import { constant, delay, empty, map, merge, mergeArray, multicast, now, scan, skip, skipRepeats, snapshot, switchLatest, take, tap } from "@most/core"
 import { append, remove } from "@most/prelude"
 import { Stream } from "@most/types"
-import { $label as $LabelNode } from "../../common/$TextField"
 import { $caretDown } from "../../elements/$icons"
 
 
@@ -70,8 +69,8 @@ export interface IMultiselect<T> extends ISelect<T> {
 
 export interface IDropdown<T> {
   multiselect?: boolean
-  select: ISelect<T>
-  $selection: Op<T, $Node>
+  value: ISelect<T>
+  $selection: $Node
   $container?: NodeComposeFn<$Node>
   $option?: NodeComposeFn<$Node>
 
@@ -93,40 +92,36 @@ export const $Dropdown = <T>({
   $container = $column(layoutSheet.spacingTiny, style({ position: 'relative' })),
   $selection,
   $option = $defaultOptionContainer,
-  select,
+  value,
   openMenuOp = O()
 }: IDropdown<T>) => component((
-  [pick, pickTether]: Behavior<T, T>,
+  [select, selectTether]: Behavior<T, T>,
   [openMenu, openMenuTether]: Behavior<INode, any>,
   [targetIntersection, targetIntersectionTether]: Behavior<INode, IntersectionObserverEntry[]>,
 
 ) => {
 
-  const isOpenState = multicast(switchLatest(map(isOpen => {
-    if (isOpen) {
-      return startWith(true, skip(1, constant(false, eventElementTarget('click', window))))
-    }
-    return now(false)
-  }, mergeArray([constant(false, pick), openMenu]))))
 
-  const openMenuBehavior = O(
+  const openTrigger = constant(true, mergeArray([openMenu]))
+  const windowClick = switchLatest(map(open => take(1, skip(1, eventElementTarget('click', window))), openTrigger))
+
+  const closeTrigger = constant(false, mergeArray([windowClick]))
+
+  const isOpen = skipRepeats(merge(closeTrigger, openTrigger))
+
+  const clickBehavior = O(
     openMenuTether(
       nodeEvent('click'),
-      openMenuOp
+      openMenuOp,
     ),
     targetIntersectionTether(
       observer.intersection(),
-    ),
+    )
   )
-
-
-
 
   return [
     $container(
-      openMenuBehavior(switchLatest(
-        $selection(merge(pick, select.value))
-      )),
+      clickBehavior($selection),
 
       switchLatest(map(show => {
         if (!show) {
@@ -134,7 +129,7 @@ export const $Dropdown = <T>({
         }
 
         const dropBehavior = O(
-          styleBehavior(
+          styleInline(
             map(([rect]) => {
               const { bottom } = rect.intersectionRect
 
@@ -151,21 +146,23 @@ export const $Dropdown = <T>({
 
         return dropBehavior(
           $Select({
-            ...select,
-            $container: select.$container(style({
+            ...value,
+            $container: value.$container(style({
               zIndex: 50,
               position: 'absolute',
               display: 'none'
             })),
-            $$option: O(select.$$option, map($option)),
-          })({ select: pickTether() })
+            $$option: O(value.$$option, map($option)),
+          })({
+            select: selectTether()
+          })
         )
 
-      }, isOpenState))
+      }, isOpen))
     ),
 
     {
-      select: pick
+      select
     }
   ]
 })
@@ -221,14 +218,11 @@ export const $DropMultiSelect = <T>({
   const windowClick = eventElementTarget('click', window)
 
 
-  const openTrigger = constant(true, mergeArray([
-    focusField,
-    openMenu
-  ]))
+  const openTrigger = constant(true, openMenu)
 
   const closeTrigger = constant(false, closeOnSelect ? pick : empty())
 
-  const isOpen = skipRepeats(merge(closeTrigger, openTrigger))
+  const isOpen = skipRepeats(openTrigger)
 
 
 
@@ -332,18 +326,20 @@ export const $DropMultiSelect = <T>({
         }
 
         const dropBehavior = O(
-          styleBehavior(
+          styleInline(
             map(([rect]) => {
               const { bottom } = rect.intersectionRect
 
               const bottomSpcace = window.innerHeight - bottom
               const goDown = bottomSpcace > bottom
+              console.log(goDown)
 
               return {
                 [goDown ? 'top' : 'bottom']: 'calc(100% + 5px)',
                 display: 'flex'
               }
-            }, targetIntersection)
+            }, targetIntersection),
+            
           ),
         )
 

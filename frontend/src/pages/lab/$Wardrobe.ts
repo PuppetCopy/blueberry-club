@@ -98,7 +98,7 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
 
   const changeBerryWithInitial = mergeArray([constant(null, owner), changeBerry])
 
-  const selectedBerry = merge(
+  const selectedBerry: Stream<IToken> = merge(
     awaitPromises(snapshot(async ({ berry, closet }) => {
       if (berry === null) {
         return null
@@ -235,19 +235,17 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
         $row(layoutSheet.spacing, style({ placeContent: 'center' }))(
           switchLatest(map(tokenList => {
             return $Dropdown({
-              $selection: map(s => {
-                const $content = $row(style({ alignItems: 'center' }))(
-                  style({}, s ? $text(`GBC #` + s.id) : $text('Pick GBC')),
+              $selection: $ButtonSecondary({
+                disabled: now(tokenList.length === 0),
+                $content: $row(style({ alignItems: 'center' }))(
+                  $text(map(s => {
+                    return s ? `GBC #` + s.id : 'Pick GBC'
+                  }, mergeArray([now(null), selectedBerry]))),
                   $icon({ $content: $caretDown, width: '16px', svgOps: style({ marginTop: '3px', marginLeft: '6px' }), viewBox: '0 0 32 32' }),
-                )
-
-                return $ButtonSecondary({
-                  disabled: now(tokenList.length === 0),
-                  $content,
-                })({})
-              }),
+                ),
+              })({}),
               $option: $row,
-              select: {
+              value: {
                 $container: $defaultSelectContainer(style({ padding: '15px', flexWrap: 'wrap', width: '304px', maxHeight: '400px', overflow: 'auto', flexDirection: 'row' })),
                 value: now(initialBerry || null),
                 $$option: map(token => {
