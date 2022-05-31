@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {GBCLab} from "../GBCLab.sol";
-import {Owned} from "@rari-capital/solmate/src/auth/Owned.sol";
+import {Auth, Authority} from "@rari-capital/solmate/src/auth/Auth.sol";
 
 struct SaleState {
     uint120 minted;
@@ -13,8 +13,7 @@ struct SaleState {
 error SalePaused();
 error MaxSupplyReached();
 
-contract Sale is Owned {
-
+contract Sale is Auth {
     event Paused(address executor);
     event Unpaused(address executor);
 
@@ -23,7 +22,12 @@ contract Sale is Owned {
 
     SaleState private state;
 
-    constructor(uint256 item_, GBCLab lab_, SaleState memory state_, address _owner) Owned(_owner)  {
+    constructor(
+        uint256 item_,
+        GBCLab lab_,
+        SaleState memory state_,
+        address _owner
+    ) Auth(_owner, Authority(address(0))) {
         ITEM = item_;
         LAB = lab_;
         state = state_;
@@ -50,7 +54,7 @@ contract Sale is Owned {
         LAB.mint(to, ITEM, amount, "");
     }
 
-    function setPaused(bool isPaused_) external onlyOwner {
+    function setPaused(bool isPaused_) external requiresAuth {
         if (isPaused_) {
             state.paused = 2;
             emit Paused(msg.sender);

@@ -7,7 +7,6 @@ import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 struct HolderState {
     uint128 totalMintable;
     uint128 walletMintable;
-
     uint208 cost;
     uint64 start;
     uint120 transaction;
@@ -16,9 +15,9 @@ struct HolderState {
 error TooManyTokens();
 error NftMaxMintable();
 error NftAlreadyUsed();
+error NotOwner();
 
 abstract contract PrivateHolder is Private {
-
     IERC721 public immutable NFT;
 
     HolderState private _state;
@@ -55,13 +54,12 @@ abstract contract PrivateHolder is Private {
 
     function nftMint(uint256[] calldata tokensId) external {
         HolderState memory state_ = _state;
-        if (tokensId.length < type(uint120).max) revert TooManyTokens();
+        if (tokensId.length > type(uint120).max) revert TooManyTokens();
 
         uint120 amount = uint120(tokensId.length);
 
         uint256 nftMinted_ = nftMinted[msg.sender] + amount;
         uint256 totalNftMinted_ = totalNftMinted + amount;
-
 
         if (state_.totalMintable < totalNftMinted_) revert NftMaxMintable();
         if (state_.walletMintable < nftMinted_) revert NftMaxMintable();
@@ -69,7 +67,8 @@ abstract contract PrivateHolder is Private {
         nftMinted[msg.sender] = nftMinted_;
         totalNftMinted = totalNftMinted_;
 
-        for (uint256 i = 0; i < amount;) {
+        for (uint256 i = 0; i < amount; ) {
+            if (NFT.ownerOf(tokensId[i]) != msg.sender) revert NotOwner();
             if (isNftUsed[tokensId[i]]) revert NftAlreadyUsed();
             isNftUsed[tokensId[i]] = true;
 
@@ -78,10 +77,49 @@ abstract contract PrivateHolder is Private {
             }
         }
 
-        _mint(msg.sender, amount, MintRule(state_.cost, state_.start, state_.transaction, amount));
+        _mint(
+            msg.sender,
+            amount,
+            MintRule(state_.cost, state_.start, state_.transaction, amount)
+        );
     }
 
-    function setHolderState(HolderState memory newState) external onlyOwner {
+    function nftMintFor(address to, uint256[] calldata tokensId)
+        external
+        requiresAuth
+    {
+        HolderState memory state_ = _state;
+        if (tokensId.length > type(uint120).max) revert TooManyTokens();
+
+        uint120 amount = uint120(tokensId.length);
+
+        uint256 nftMinted_ = nftMinted[to] + amount;
+        uint256 totalNftMinted_ = totalNftMinted + amount;
+
+        if (state_.totalMintable < totalNftMinted_) revert NftMaxMintable();
+        if (state_.walletMintable < nftMinted_) revert NftMaxMintable();
+
+        nftMinted[to] = nftMinted_;
+        totalNftMinted = totalNftMinted_;
+
+        for (uint256 i = 0; i < amount; ) {
+            if (NFT.ownerOf(tokensId[i]) != to) revert NotOwner();
+            if (isNftUsed[tokensId[i]]) revert NftAlreadyUsed();
+            isNftUsed[tokensId[i]] = true;
+
+            unchecked {
+                i++;
+            }
+        }
+
+        _mint(
+            to,
+            amount,
+            MintRule(state_.cost, state_.start, state_.transaction, amount)
+        );
+    }
+
+    function setHolderState(HolderState memory newState) external requiresAuth {
         _state = newState;
     }
 }
