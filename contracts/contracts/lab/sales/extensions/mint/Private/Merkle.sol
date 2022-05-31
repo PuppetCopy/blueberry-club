@@ -29,18 +29,19 @@ abstract contract PrivateMerkle is Private {
     function getMerkleHash(MerkleMintRule memory _rule)
         public
         pure
-        returns (bytes32 h)
+        returns (bytes32)
     {
-        h = keccak256(
-            abi.encodePacked(
-                _rule.to,
-                _rule.cost,
-                _rule.start,
-                _rule.transaction,
-                _rule.amount,
-                _rule.nonce
-            )
-        );
+        return
+            keccak256(
+                abi.encodePacked(
+                    _rule.to,
+                    _rule.cost,
+                    _rule.start,
+                    _rule.transaction,
+                    _rule.amount,
+                    _rule.nonce
+                )
+            );
     }
 
     function merkleMint(
