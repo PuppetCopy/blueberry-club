@@ -11,7 +11,7 @@ abstract contract Private is Mintable {
         address account,
         uint256 amount,
         uint256 start
-    ) external view returns (MintRule[] memory result) {
+    ) external payable returns (MintRule[] memory result) {
         uint256 length = rulesAmountOf[account];
 
         if (start < length) {
@@ -43,7 +43,7 @@ abstract contract Private is Mintable {
         address account,
         uint120 amount,
         uint256 index
-    ) external requiresAuth {
+    ) external payable requiresAuth {
         MintRule memory rule_ = privateMintable[account][index];
         rule_.amount -= amount;
         privateMintable[account][index] = rule_;

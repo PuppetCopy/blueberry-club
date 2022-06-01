@@ -8,7 +8,7 @@ abstract contract PrivateClassic is Private {
         address to,
         uint120 amount,
         MintRule memory rule
-    ) external requiresAuth {
+    ) external payable requiresAuth {
         _mint(to, amount, rule);
         rule.amount -= amount;
         _addRuleTo(to, rule);

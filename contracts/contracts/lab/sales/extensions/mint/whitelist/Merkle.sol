@@ -48,7 +48,7 @@ abstract contract PrivateMerkle is Private {
         MerkleMintRule memory _mrule,
         bytes32[] calldata merkleProof,
         uint120 amount
-    ) external {
+    ) external payable {
         if (_mrule.to == msg.sender) revert WrongSender();
         bytes32 leaf = getMerkleHash(_mrule);
         if (leafClaimed[leaf]) revert LeafClaimed();
@@ -73,7 +73,7 @@ abstract contract PrivateMerkle is Private {
         MerkleMintRule memory _mrule,
         bytes32[] calldata merkleProof,
         uint120 amount
-    ) external requiresAuth {
+    ) external payable requiresAuth {
         bytes32 leaf = getMerkleHash(_mrule);
         if (leafClaimed[leaf]) revert LeafClaimed();
 

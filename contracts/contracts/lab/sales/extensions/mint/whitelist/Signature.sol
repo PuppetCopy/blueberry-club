@@ -43,7 +43,7 @@ abstract contract PrivateSignature is Private {
         bytes32 signedHash,
         bytes memory signature,
         uint120 amount
-    ) external {
+    ) external payable {
         if (_srule.to != msg.sender) revert WrongSender();
         bytes32 hash_ = getSignatureHash(_srule);
         if (hash_ != signedHash) revert InvalidHash();
@@ -68,7 +68,7 @@ abstract contract PrivateSignature is Private {
         bytes32 signedHash,
         bytes memory signature,
         uint120 amount
-    ) external {
+    ) external payable {
         bytes32 hash_ = getSignatureHash(_srule);
         if (hash_ != signedHash) revert InvalidHash();
 

@@ -52,7 +52,7 @@ abstract contract PrivateHolder is Private {
         return _state.cost;
     }
 
-    function nftMint(uint256[] calldata tokensId) external {
+    function nftMint(uint256[] calldata tokensId) external payable {
         HolderState memory state_ = _state;
         if (tokensId.length > type(uint120).max) revert TooManyTokens();
 
@@ -86,6 +86,7 @@ abstract contract PrivateHolder is Private {
 
     function nftMintFor(address to, uint256[] calldata tokensId)
         external
+        payable
         requiresAuth
     {
         HolderState memory state_ = _state;
