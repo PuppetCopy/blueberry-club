@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {Payable} from "../payments/Payable.sol";
+import {Payable} from "../../payments/Payable.sol";
 
 struct MintRule {
     uint208 cost;
