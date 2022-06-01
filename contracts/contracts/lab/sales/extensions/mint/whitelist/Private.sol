@@ -4,11 +4,14 @@ pragma solidity ^0.8.0;
 import {Mintable, MintRule} from "../Mintable.sol";
 
 abstract contract Private is Mintable {
-
     mapping(address => mapping(uint256 => MintRule)) public privateMintable;
     mapping(address => uint256) public rulesAmountOf;
 
-    function privateMintbles(address account, uint256 amount, uint256 start) external view returns(MintRule[] memory result) {
+    function privateMintbles(
+        address account,
+        uint256 amount,
+        uint256 start
+    ) external payable returns (MintRule[] memory result) {
         uint256 length = rulesAmountOf[account];
 
         if (start < length) {
@@ -32,12 +35,30 @@ abstract contract Private is Mintable {
         MintRule memory rule_ = privateMintable[msg.sender][index];
         rule_.amount -= amount;
         privateMintable[msg.sender][index] = rule_;
+
         _mint(msg.sender, amount, rule_);
     }
 
-    function _addRuleTo(address account, MintRule memory _rule) internal returns(uint256 index) {
-        index = rulesAmountOf[account];
-        privateMintable[account][index] = _rule;
-        rulesAmountOf[account] = index + 1;
+    function privateMintFor(
+        address account,
+        uint120 amount,
+        uint256 index
+    ) external payable requiresAuth {
+        MintRule memory rule_ = privateMintable[account][index];
+        rule_.amount -= amount;
+        privateMintable[account][index] = rule_;
+
+        _mint(account, amount, rule_);
+    }
+
+    function _addRuleTo(address account, MintRule memory _rule)
+        internal
+        returns (uint256 index)
+    {
+        if (_rule.amount > 0) {
+            index = rulesAmountOf[account];
+            privateMintable[account][index] = _rule;
+            rulesAmountOf[account] = index + 1;
+        }
     }
 }

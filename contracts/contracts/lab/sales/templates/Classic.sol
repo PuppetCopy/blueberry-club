@@ -28,6 +28,13 @@ contract ClassicSale is Sale, Native, Public, PrivateClassic {
         Sale(item_, lab_, SaleState(0, 5000, 1), msg.sender)
         Native(payable(msg.sender))
         Mintable(MintState(~uint64(0), 200))
-        Public(MintRule(0.02 ether, uint64(block.timestamp + 3600 * 24 * 10), 10, 100))
+        Public(
+            MintRule(
+                0.02 ether,
+                uint64(block.timestamp + 3600 * 24 * 10),
+                10,
+                100
+            )
+        )
     {}
 }
