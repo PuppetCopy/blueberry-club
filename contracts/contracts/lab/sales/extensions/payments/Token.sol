@@ -7,7 +7,6 @@ import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import {SafeTransferLib} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 abstract contract Token is Payable {
-
     using SafeTransferLib for ERC20;
 
     ERC20 public immutable token;
