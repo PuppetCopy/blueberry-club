@@ -5,7 +5,7 @@ import {Sale, GBCLab, SaleState} from "../Sale.sol";
 import {Native} from "../extensions/payments/Native.sol";
 import {Mintable, MintState} from "../extensions/mint/Mintable.sol";
 import {Public, MintRule} from "../extensions/mint/Public.sol";
-import {PrivateClassic} from "../extensions/mint/Private/Classic.sol";
+import {PrivateClassic} from "../extensions/mint/whitelist/Classic.sol";
 
 /**
  * Classic Sale of 5000 items with Public and Private Sale in ETH
