@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {SalePay} from "./SalePay.sol";
+import {Payable} from "./Payable.sol";
 
-abstract contract SaleNative is SalePay {
+error InvalidPaidAmount();
 
+abstract contract Native is Payable {
     address payable public immutable receiver;
 
     constructor(address payable receiver_) {
@@ -12,11 +13,13 @@ abstract contract SaleNative is SalePay {
     }
 
     function _takeMoney() internal {
-        receiver.transfer(msg.value);
-        emit Paied(msg.sender, msg.value);
+        uint256 paid = msg.value;
+        receiver.transfer(paid);
+        emit Paied(msg.sender, paid);
     }
 
     function _takeMoney(uint256 amount) internal override {
+        if (amount != msg.value) revert InvalidPaidAmount();
         receiver.transfer(amount);
         emit Paied(msg.sender, amount);
     }

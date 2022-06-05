@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {SalePay} from "./SalePay.sol";
+import {Payable} from "./Payable.sol";
 
 import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import {SafeTransferLib} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
-abstract contract SaleToken is SalePay {
+abstract contract Token is Payable {
 
     using SafeTransferLib for ERC20;
 

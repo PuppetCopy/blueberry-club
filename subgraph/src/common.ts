@@ -1,5 +1,5 @@
 import { Address, ethereum, BigInt } from "@graphprotocol/graph-ts"
-import { Owner, TransferSingle, LabItem, LabItemOwnership } from "../generated/schema"
+import { Owner, TransferSingle, LabItem, LabItemOwnership, Profile } from "../generated/schema"
 import * as lab from "../generated/ERC1155/ERC1155"
 import { AddressZero, ZERO_BI, _createTransactionIfNotExist } from "./helpers"
 
@@ -25,14 +25,15 @@ export function handleLabItemTransfer(fromAddress: Address, toAddress: Address, 
   let transfer = TransferSingle.load(transferId)
   let newLabItemOwner = LabItemOwnership.load(newLabItemOwnerId)
   let previousLabItemOwner = LabItemOwnership.load(previousLabItemOwnerId)
+  const profile = Profile.load(from)
 
 
   const instance = lab.ERC1155.bind(event.address)
 
   if (previousOwner == null) {
     previousOwner = _createNewOwner(from)
-  } else if (previousOwner.main === tokenId) {
-    previousOwner.main = null
+  } else if (profile && profile.token === tokenId) {
+    profile.token = null
   }
 
   if (newOwner == null) {

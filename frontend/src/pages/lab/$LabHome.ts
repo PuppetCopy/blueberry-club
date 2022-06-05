@@ -1,22 +1,26 @@
 import { Behavior } from "@aelea/core"
-import { $node, $text, attr, component, style } from "@aelea/dom"
+import { $Branch, $node, $svg, $text, attr, component, style, stylePseudo } from "@aelea/dom"
 import { Route } from "@aelea/router"
-import { $column, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
-import { $anchor, $IntermediateTx, $Link } from "@gambitdao/ui-components"
+import { $column, $icon, $row, layoutSheet, observer, screenUtils, state } from "@aelea/ui-components"
+import { $anchor, $gitbook, $IntermediatePromise, $IntermediateTx, $Link } from "@gambitdao/ui-components"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $loadBerry } from "../../components/$DisplayBerry"
 import { $buttonAnchor, $ButtonPrimary, $ButtonSecondary } from "../../components/form/$Button"
 import { $responsiveFlex } from "../../elements/$common"
-import { IAttributeHat, IAttributeFaceAccessory, IAttributeClothes, IAttributeExpression, USE_CHAIN } from "@gambitdao/gbc-middleware"
+import { IAttributeHat, IAttributeFaceAccessory, IAttributeClothes, IAttributeExpression, USE_CHAIN, IProfile } from "@gambitdao/gbc-middleware"
 import { $seperator2 } from "../common"
-import { constant, empty, map, merge, mergeArray, multicast, now, switchLatest } from "@most/core"
+import { constant, empty, map, merge, mergeArray, multicast, now, switchLatest, tap } from "@most/core"
 import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
 import { pallete } from "@aelea/ui-components-theme"
 import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 import { WALLET } from "../../logic/provider"
 import { IEthereumProvider } from "eip1193-provider"
 import { connectGbc } from "../../logic/contract/gbc"
+import { queryProfileList } from "../../logic/query"
+import { $tofunft } from "../../elements/$icons"
+import { $berryByToken } from "../../logic/common"
+import { $accountPreview } from "../../components/$AccountProfile"
 
 
 
@@ -69,7 +73,7 @@ interface IBerry {
 
 }
 
-export const $LabLanding = ({ walletLink, parentRoute, walletStore }: IBerry) => component((
+export const $LabHome = ({ walletLink, parentRoute, walletStore }: IBerry) => component((
   [walletChange, walletChangeTether]: Behavior<IEthereumProvider | null, IEthereumProvider | null>,
   [changeRoute, changeRouteTether]: Behavior<string, string>,
   [mintTestGbc, mintTestGbcTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
@@ -195,6 +199,34 @@ export const $LabLanding = ({ walletLink, parentRoute, walletStore }: IBerry) =>
         ),
       ),
 
+      $column(layoutSheet.spacingBig, style({ alignItems: 'center', textAlign: 'center' }))(
+        $text(style({ fontWeight: 'bold', fontSize: '2.5em' }))(`Latest Lab PFP's`),
+        $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '878px' }))(`Latest Identities that were picked by GBC Owners`),
+        $node(),
+        $row(
+          $IntermediatePromise({
+            query: now(queryProfileList({ pageSize: 12 })),
+            $$done: map((berryWallList) => {
+
+              if (berryWallList.length === 0) {
+                return $text('No Identiees have been chosen yet. help us get this section filled using the Wardrobe or Profile section')
+              }
+
+              return $node(style({ display: 'flex', flexWrap: 'wrap', width: '100%', gap: `3vw 1%` }))(
+                ...berryWallList.map(profile => {
+                  return $Link({
+                    route: parentRoute.create({ fragment: 'df2f23f' }),
+                    $content: $accountPreview({ address: profile.id, avatarSize: 80, labelSize: '1em' }),
+                    anchorOp: style({ minWidth: '15.6%', overflow: 'hidden' }),
+                    url: `/p/profile/${profile.id}`,
+                  })({ click: changeRouteTether() })
+                })
+              )
+            })
+          })({}),
+        ),
+      ),
+
       $column(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
         $text(style({ fontWeight: 'bold', fontSize: screenUtils.isDesktopScreen ? '2.5em' : '1.45em', textAlign: 'center' }))('Want to get featured?'),
         $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '678px' }))('Are you an artist, a project or an influencer? It is possible to collaborate with us to create items that fit your art or your brand in the Blueberry Lab'),
@@ -207,3 +239,15 @@ export const $LabLanding = ({ walletLink, parentRoute, walletStore }: IBerry) =>
     { changeRoute, walletChange }
   ]
 })
+
+const $mosaicProfile = (profile: IProfile, size: number) => {
+  const token = profile.token!
+
+  return $anchor(style({ position: 'relative' }), attr({ href: '/p/berry/' + token.id }))(
+    style({ borderRadius: '10px' }, $berryByToken(token, size)),
+    $text(style({ textAlign: 'left', padding: screenUtils.isDesktopScreen ? '8px 0 0 8px' : '5px 0 0 5px', color: '#fff', textShadow: '#0000005e 0px 0px 5px', fontSize: screenUtils.isDesktopScreen ? '.6em' : '.6em', position: 'absolute', fontWeight: 'bold' }))(
+      String(Number(token.id))
+    )
+  )
+}
+

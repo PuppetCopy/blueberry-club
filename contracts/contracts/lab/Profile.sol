@@ -42,12 +42,17 @@ contract Profile is Auth {
 
     function chooseUsername(string memory newUsername) external {
         uint length = bytes(newUsername).length;
-        if (length < 4 || length > 15 || isUsernameUsed[newUsername]) revert InvalidUsername();
+        if (length < 1 || length > 8 || isUsernameUsed[newUsername]) revert InvalidUsername();
 
         isUsernameUsed[usernameOf[msg.sender]] = false;
         isUsernameUsed[newUsername] = true;
         usernameOf[msg.sender] = newUsername;
         emit SetUsername(msg.sender, newUsername);
+    }
+
+    function chooseMainAndUsername(uint tokenId, string memory newUsername) external {
+        this.chooseMain(tokenId);
+        this.chooseUsername(newUsername);
     }
 
     function getDataOf(address account) external view returns(uint tokenId, string memory username) {

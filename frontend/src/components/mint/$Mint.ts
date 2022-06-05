@@ -2,7 +2,7 @@ import { Behavior } from "@aelea/core"
 import { $element, $text, component, style } from "@aelea/dom"
 import { $column, $icon, $row, layoutSheet, state } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { hasWhitelistSale, LabItemSaleDescription } from "@gambitdao/gbc-middleware"
+import { LabItemSale, SaleType } from "@gambitdao/gbc-middleware"
 import { countdownFn } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { awaitPromises, empty, map, switchLatest } from "@most/core"
@@ -21,7 +21,7 @@ import { $PublicMint } from "./$PublicMint"
 export interface IMint {
   walletLink: IWalletLink
   walletStore: state.BrowserStore<WALLET, "walletStore">
-  item: LabItemSaleDescription
+  item: LabItemSale
 }
 
 
@@ -30,14 +30,6 @@ export const $Mint = ({ walletStore, walletLink, item }: IMint) => component((
 
 ) => {
 
-
-
-  const publicSaleTimeDelta = takeUntilLast(delta => delta === null, awaitPromises(map(async (time) => {
-    const deltaTime = item.publicStartDate - time
-    return deltaTime > 0 ? deltaTime : null
-  }, timeChange)))
-
-  // const timer = hasWhitelistSale(item) && item.publicStartDate > item.whitelistStartDate ? whitelistTimeDelta : publicSaleTimeDelta
 
 
   return [
@@ -49,11 +41,20 @@ export const $Mint = ({ walletStore, walletLink, item }: IMint) => component((
         return $column(layoutSheet.spacingBig)(
           $column(style({ gap: '50px' }))(
 
-            ...hasWhitelistSale(item)
-              ? [
-                $GbcWhitelist(item, walletLink)({}),
-                $seperator2
-              ] : [
+            ...item.mintRuleList.flatMap(mintRule => {
+
+              const publicSaleTimeDelta = takeUntilLast(delta => delta === null, awaitPromises(map(async (time) => {
+                const deltaTime = mintRule.start - time
+                return deltaTime > 0 ? deltaTime : null
+              }, timeChange)))
+
+              const sale = mintRule.type === SaleType.Public
+                ? $PublicMint(item, mintRule, walletLink)({})
+                : mintRule.type === SaleType.holderWhitelist
+                  ? $GbcWhitelist(item, mintRule, walletLink)({}) : mintRule.type === SaleType.whitelist
+                    ? $GbcWhitelist(item, mintRule, walletLink)({}) : empty()
+
+              return [
                 switchLatest(map(timeDelta => {
                   const hasEnded = timeDelta === null
 
@@ -68,10 +69,12 @@ export const $Mint = ({ walletStore, walletLink, item }: IMint) => component((
                           // $text(map(count => `${item.whitelistMax - count.toBigInt()}/${item.whitelistMax} left`, saleWallet.whitelistMinted)),
                         ],
                     ),
-                    hasEnded ? $PublicMint(item, walletLink)({}) : empty()
+                    hasEnded ? sale : empty()
                   )
-                }, publicSaleTimeDelta))
-              ],
+                }, publicSaleTimeDelta)),
+                $seperator2
+              ]
+            })
 
           ),
 
