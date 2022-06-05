@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {GBCLab} from "../GBCLab.sol";
+import {GBCLab} from "../../GBCL.sol";
 import {Auth, Authority} from "@rari-capital/solmate/src/auth/Auth.sol";
 
 struct SaleState {

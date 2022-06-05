@@ -1,6 +1,6 @@
 import {
-  GbcWhitelist__factory, Profile__factory, GBCLab__factory,
-  Police__factory, Closet__factory, GBC__factory, PermissionedWhitelist__factory, SaleBasic__factory, SaleBasic,
+  Profile__factory, GBCLab__factory,
+  Police__factory, Closet__factory, GBC__factory, MerkleTpl__factory, PublicTpl__factory, HolderWhitelistTpl__factory, Sale,
 } from "../typechain-types"
 import { AddressZero } from "@gambitdao/gmx-middleware"
 
@@ -8,7 +8,7 @@ import { ethers } from "hardhat"
 
 import getAddress, { ZERO_ADDRESS } from "../utils/getAddress"
 import { connectOrDeploy } from "../utils/deploy"
-import { GBC_ADDRESS, saleDescriptionList, SaleType } from "@gambitdao/gbc-middleware"
+import { GBC_ADDRESS, saleConfig, saleDescriptionList, saleLastDate, saleMaxSupply, SaleType } from "@gambitdao/gbc-middleware"
 import { createWhitelistProofs } from "../utils/whitelist"
 
 export enum ROLES {
@@ -105,18 +105,30 @@ const main = async () => {
   for (const config of saleDescriptionList) {
     console.log(`------------------------------------------------------------------------------\n`)
 
-    let sale: SaleBasic
+    let sale: Sale
 
-    if (config.type === SaleType.Public) {
-      sale = await connectOrDeploy(config.contractAddress, SaleBasic__factory, lab.address, owner, config.id, config.publicCost, config.maxSupply, config.maxPerTx, config.publicStartDate)
-    } else if (config.type === SaleType.GbcWhitelist) {
-      sale = await connectOrDeploy(config.contractAddress, GbcWhitelist__factory, gbc.address, lab.address, owner, config.id, config.publicCost, config.maxSupply, config.maxPerTx, config.publicStartDate, config.whitelistStartDate, config.whitelistCost, config.whitelistMax)
+    const fstMintRule = config.mintRuleList[0]
+    const lastDateRule = saleLastDate(config)
+    const max = saleMaxSupply(config)
+    const finish = lastDateRule.start + saleConfig.saleDuration
+    const { maxMintable } = saleConfig
+    const saleState = { paused: 1, minted: 0, max }
+    const mintState = { finish, maxMintable }
+
+    if (fstMintRule.type === SaleType.Public) {
+      const { amount, cost, start, transaction } = fstMintRule
+
+      sale = await connectOrDeploy(config.contractAddress, PublicTpl__factory, config.id, owner, lab.address, saleState, mintState, { amount, cost, start, transaction })
+    } else if (fstMintRule.type === SaleType.holderWhitelist) {
+      const { amount, cost, start, transaction, walletMintable } = fstMintRule
+      sale = await connectOrDeploy(config.contractAddress, HolderWhitelistTpl__factory, config.id, owner, gbc.address, lab.address, saleState, mintState, { totalMintable: amount, cost, start, transaction, walletMintable })
     } else {
-      const res = createWhitelistProofs(config.whitelist)
+      const res = createWhitelistProofs(fstMintRule.addressList)
       console.log(res.whitelist)
       console.log('root: ', res.merkleRoot)
+      const { amount, cost, start, transaction } = fstMintRule
 
-      sale = await connectOrDeploy(config.contractAddress, PermissionedWhitelist__factory, lab.address, owner, config.id, config.publicCost, config.maxSupply, config.maxPerTx, config.publicStartDate, res.merkleRoot)
+      sale = await connectOrDeploy(config.contractAddress, MerkleTpl__factory, config.id, owner, gbc.address, lab.address, saleState, mintState, { amount, cost, start, transaction }, res.merkleRoot)
     }
 
 

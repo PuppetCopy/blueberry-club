@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {Mintable, MintRule} from "./Mintable.sol";
+import {Mintable, MintRule} from "./utils/Mintable.sol";
 
 abstract contract Public is Mintable {
     MintRule public publicRule;

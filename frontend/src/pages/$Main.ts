@@ -24,7 +24,7 @@ import { $BerryPage } from "./$Berry"
 import { $Profile } from "./$Profile"
 import { $Treasury } from "./$Treasury"
 import { $seperator2 } from "./common"
-import { $LabLanding } from "./lab/$Landing"
+import { $LabHome } from "./lab/$LabHome"
 import { fadeIn } from "../transitions/enter"
 import { $Wardrobe } from "./lab/$Wardrobe"
 import { $LabStore } from "./lab/$Store"
@@ -168,7 +168,7 @@ export default ({ baseRoute = '' }: Website) => component((
                 $BerryPage({ walletLink, parentRoute: pagesRoute })({})
               ),
               router.match(labRoute)(
-                fadeIn($LabLanding({ walletLink, parentRoute: labRoute, walletStore })({
+                fadeIn($LabHome({ walletLink, parentRoute: labRoute, walletStore })({
                   changeRoute: linkClickTether(), walletChange: walletChangeTether()
                 }))
               ),

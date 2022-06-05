@@ -15,6 +15,7 @@ import { $accountPreview } from "../components/$AccountProfile"
 import { ContractTransaction } from "@ethersproject/contracts"
 import { $berryTileId } from "../components/$common"
 import { $ButtonSecondary } from "../components/form/$Button"
+import { $berryByToken } from "../logic/common"
 
 
 export interface IAccount {
@@ -101,9 +102,7 @@ export const $Profile = (owner: IOwner) => component((
         })),
 
         $row(style({ flexWrap: 'wrap' }))(...owner.ownedTokens.map(token => {
-          const tokenId = Number(BigInt(token.id))
-
-          return $berryTileId(tokenId, token, 75)
+          return $berryByToken(token, 75)
         })),
 
 
