@@ -4,7 +4,7 @@ import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $responsiveFlex } from "../../elements/$common"
-import { getLabItemTupleIndex, labItemDescriptionListMap } from "@gambitdao/gbc-middleware"
+import { getLabItemTupleIndex, labItemDescriptionListMap, saleMaxSupply } from "@gambitdao/gbc-middleware"
 import { pallete } from "@aelea/ui-components-theme"
 import { $Mint } from "../../components/mint/$Mint"
 import { WALLET } from "../../logic/provider"
@@ -51,11 +51,13 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
               $text(style({ color: pallete.foreground }))(attributeIndexToLabel[getLabItemTupleIndex(item.id)]),
               $text(style({}))(
                 map(amount => {
-                  const count = item.maxSupply - amount
+                  const max = saleMaxSupply(item)
+                  const count = max - Number(amount)
+
                   return count
                     ? amount
-                      ? `${readableNumber(count)}/${readableNumber(item.maxSupply)} left`
-                      : `${readableNumber(item.maxSupply)} in total`
+                      ? `${readableNumber(count)}/${readableNumber(max)} left`
+                      : `${readableNumber(max)} in total`
                     : 'Sold Out'
                 }, getMintCount(item.contractAddress, 3500))
               ),

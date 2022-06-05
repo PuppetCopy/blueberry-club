@@ -24,8 +24,8 @@ import {PrivateClassic} from "../mint/Classic.sol";
  * everything is possible: free mint, discount mint, admin mint...
  */
 contract PublicTpl is Sale, Native, Public, PrivateClassic {
-    constructor(uint256 item_, address _owner, GBCLab lab_, MintState memory _mintState, SaleState memory _mintSale, MintRule memory _mintRule)
-        Sale(item_, lab_, _mintSale, _owner)
+    constructor(uint256 item_, address _owner, GBCLab lab_, SaleState memory _saleState, MintState memory _mintState, MintRule memory _mintRule)
+        Sale(item_, lab_, _saleState, _owner)
         Native(payable(_owner))
         Mintable(_mintState)
 

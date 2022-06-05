@@ -2,7 +2,7 @@ import { Behavior, replayLatest, combineArray, combineObject } from "@aelea/core
 import { component, style, $text } from "@aelea/dom"
 import { $column, layoutSheet, $row } from "@aelea/ui-components"
 import { formatFixed } from "@ethersproject/bignumber"
-import { LabSaleWhitelistDescription, IBerryIdentifable, hasWhitelistSale } from "@gambitdao/gbc-middleware"
+import { IToken, LabItemSale, MintRule, saleMaxSupply } from "@gambitdao/gbc-middleware"
 import { countdownFn } from "@gambitdao/gmx-middleware"
 import { $alert } from "@gambitdao/ui-components"
 import { IWalletLink } from "@gambitdao/wallet-link"
@@ -12,22 +12,31 @@ import { getTokenSlots, takeUntilLast } from "../../logic/common"
 import { connectGbc } from "../../logic/contract/gbc"
 import { connectLab } from "../../logic/contract/lab"
 import { connectManager } from "../../logic/contract/manager"
-import { connectGbcWhitelistSale } from "../../logic/contract/sale"
+import { connectHolderWhitelistSale } from "../../logic/contract/sale"
+import { queryOwnerV2 } from "../../logic/query"
 import { $ButtonPrimary } from "../form/$Button"
 import { $displayMintEvents, IMintEvent, timeChange } from "./mintUtils2"
 
-export const $GbcWhitelist = <T extends LabSaleWhitelistDescription>(item: T, walletLink: IWalletLink) => component((
+export const $GbcWhitelist = (item: LabItemSale, mintRule: MintRule, walletLink: IWalletLink) => component((
   [clickMintWhitelist, clickMintWhitelistTether]: Behavior<PointerEvent, Promise<IMintEvent>>,
-  [selectTokensForWhitelist, selectTokensForWhitelistTether]: Behavior<IBerryIdentifable[], IBerryIdentifable[]>,
+  [selectTokensForWhitelist, selectTokensForWhitelistTether]: Behavior<IToken[], IToken[]>,
 ) => {
 
-  const saleWallet = connectGbcWhitelistSale(walletLink, item.contractAddress)
+  const saleWallet = connectHolderWhitelistSale(walletLink, item.contractAddress)
   const gbcWallet = connectGbc(walletLink)
   const managerWallet = connectManager(walletLink)
   const labWallet = connectLab(walletLink)
+  const max = saleMaxSupply(item)
+
+  const owner = multicast(awaitPromises(map(async n => {
+    if (n === null) {
+      return null
+    }
+    return queryOwnerV2(n)
+  }, walletLink.account)))
 
   const whitelistTimeDelta = takeUntilLast(delta => delta === null, awaitPromises(map(async (time) => {
-    const deltaTime = item.whitelistStartDate - time
+    const deltaTime = mintRule.start - time
     return deltaTime > 0 ? deltaTime : null
   }, timeChange)))
 
@@ -41,9 +50,9 @@ export const $GbcWhitelist = <T extends LabSaleWhitelistDescription>(item: T, wa
             const hasEnded = timeDelta === null
 
             return hasEnded
-              ? map(amount => {
-                const count = item.whitelistMax - amount.toBigInt()
-                return count ? `${count}/${item.whitelistMax} left` : 'Sold Out'
+              ? map(totalMinted => {
+                const count = max - totalMinted.toNumber()
+                return count ? `${mintRule.amount}/${mintRule.amount} left` : 'Sold Out'
               }, saleWallet.whitelistMinted)
               : now(countdownFn(Date.now() + timeDelta * 1000, Date.now()))
 
@@ -61,23 +70,19 @@ export const $GbcWhitelist = <T extends LabSaleWhitelistDescription>(item: T, wa
           const $noBerriesOwnedMsg = $alert($text(`Connected account does not own any GBC's`))
           const chosenTokens = replayLatest(multicast(startWith([], selectTokensForWhitelist)))
 
-          const ownerTokenList = awaitPromises(combineArray(async (manager, sale) => {
-
+          const ownerTokenList = awaitPromises(combineArray(async (owner, sale) => {
+            if (owner === null) {
+              return []
+            }
             const items = (await Promise.all(
-              tokenList.map(async id => {
-                const queryItems = (await manager.get(id, 0, 3)).map(n => n.toBigInt())
-                const queryIsUsed = sale.isAlreadyUsed(id)
-
-                const [isUsed, res] = await Promise.all([queryIsUsed, queryItems])
-
-                const slots = await getTokenSlots(id, manager)
-
-                return { isUsed, ...slots, id }
+              owner?.ownedTokens.map(async token => {
+                const isUsed = await sale.isNftUsed(token.id)
+                return { token, isUsed }
               })
-            )).filter(x => x.isUsed === false)
+            )).filter(x => x.isUsed === false).map(x => x.token)
 
             return items
-          }, managerWallet.contract, saleWallet.contract))
+          }, owner, saleWallet.contract))
 
 
           return $column(layoutSheet.spacing)(
@@ -99,12 +104,12 @@ export const $GbcWhitelist = <T extends LabSaleWhitelistDescription>(item: T, wa
                 buttonOp: style({ alignSelf: 'flex-end' }),
                 $content: switchLatest(
                   map(({ chosenTokens }) => {
-                    if (!hasWhitelistSale(item) || chosenTokens.length === 0) {
+                    if (chosenTokens.length === 0) {
                       return $text('Select amount')
                     }
 
 
-                    const cost = BigInt(chosenTokens.length) * item.whitelistCost
+                    const cost = BigInt(chosenTokens.length) * mintRule.cost
                     const costUsd = formatFixed(cost, 18)
 
 
@@ -115,9 +120,7 @@ export const $GbcWhitelist = <T extends LabSaleWhitelistDescription>(item: T, wa
               })({
                 click: clickMintWhitelistTether(
                   snapshot(async ({ selectTokensForWhitelist, saleContract, account }): Promise<IMintEvent> => {
-                    if (!hasWhitelistSale(item)) {
-                      throw new Error(`Unable to resolve contract`)
-                    }
+
                     if ((saleContract === null || !account)) {
                       throw new Error(`Unable to resolve contract`)
                     }
@@ -125,8 +128,8 @@ export const $GbcWhitelist = <T extends LabSaleWhitelistDescription>(item: T, wa
 
                     const idList = selectTokensForWhitelist.map(x => x.id)
 
-                    const cost = BigInt(selectTokensForWhitelist.length) * item.whitelistCost
-                    const contractAction = saleContract.mintWhitelist(idList, { value: cost })
+                    const cost = BigInt(selectTokensForWhitelist.length) * mintRule.cost
+                    const contractAction = saleContract.nftMint(idList, { value: cost })
                     const contractReceipt = contractAction.then(recp => recp.wait())
 
                     return {

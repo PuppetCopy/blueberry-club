@@ -1,10 +1,10 @@
-import { Behavior, O } from "@aelea/core"
+import { Behavior } from "@aelea/core"
 import { $text, component, style } from "@aelea/dom"
 import { $row } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { IBerryIdentifable } from "@gambitdao/gbc-middleware"
-import { constant, empty, map, merge, multicast, startWith, tap } from "@most/core"
-import { $berryById } from "../logic/common"
+import { IToken } from "@gambitdao/gbc-middleware"
+import { constant, empty, map, merge, startWith, tap } from "@most/core"
+import { $berryByToken } from "../logic/common"
 import { $berryTileId } from "./$common"
 import { $ButtonSecondary } from "./form/$Button"
 import { $DropMultiSelect, $defaultSelectContainer, $defaultChip } from "./form/$Dropdown"
@@ -14,11 +14,11 @@ export interface ISelectBerries {
   label?: string
   placeholder?: string
 
-  options: IBerryIdentifable[]
+  options: IToken[]
 }
 
 export const $SelectBerries = (config: ISelectBerries) => component((
-  [select, selectTether]: Behavior<(IBerryIdentifable | 'ALL')[], (IBerryIdentifable | 'ALL')[]>,
+  [select, selectTether]: Behavior<(IToken | 'ALL')[], (IToken | 'ALL')[]>,
   [selectAll, selectAllTether]: Behavior<any, any>
 ) => {
 
@@ -40,7 +40,7 @@ export const $SelectBerries = (config: ISelectBerries) => component((
         }
 
         return $row(style({ alignItems: 'center', gap: '8px', color: pallete.message }))(
-          style({ borderRadius: '50%' }, $berryById(token.id, token, 34)),
+          style({ borderRadius: '50%' }, $berryByToken(token, 34)),
           $text(String(token.id)),
         )
       }),
@@ -54,7 +54,7 @@ export const $SelectBerries = (config: ISelectBerries) => component((
             })
           }
 
-          return $berryTileId(token.id, token)
+          return $berryTileId(token)
         }),
         list: [
           'ALL' as const,

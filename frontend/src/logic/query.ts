@@ -1,9 +1,6 @@
-import { groupByMapMany, IAccountQueryParamApi, intervalInMsMap, ITimerangeParamApi } from "@gambitdao/gmx-middleware"
+import { groupByMapMany, IAccountQueryParamApi, intervalInMsMap, IPagePositionParamApi, ITimerangeParamApi } from "@gambitdao/gmx-middleware"
 import { ClientOptions, createClient, gql, TypedDocumentNode } from "@urql/core"
-import { IOwner, IPriceInterval, IToken } from "@gambitdao/gbc-middleware"
-import { Closet } from "@gambitdao/gbc-contracts"
-import { closetGlobal } from "./contract/manager"
-import { getTokenSlots } from "./common"
+import { ILabItemOwnership, IOwner, IPriceInterval, IProfile, IToken } from "@gambitdao/gbc-middleware"
 
 
 export interface ITypename<T extends string> {
@@ -129,6 +126,7 @@ fragment tokenFields on Token {
   owner { ...ownerFields }
   uri
   transfers { ...transferFields }
+  
   contract { ...contractFields }
 }
 
@@ -151,7 +149,6 @@ fragment transferFields on Transfer {
   from {...ownerFields}
   to {...ownerFields}
   timestamp
-  block
   transactionHash
 }
 
@@ -174,7 +171,12 @@ ${schemaFragments}
 
 query ($id: String) {
   token(id: $id) {
-    ...tokenFields
+    ...tokenFields,
+    labItems {
+      item {
+        id
+      }
+    }
   }
 }
 
@@ -284,21 +286,6 @@ query {
 `
 
 
-const ownerDoc: TypedDocumentNode<{owner: IOwner}, QueryAccountOwnerNfts> = gql` 
-${schemaFragments}
-
-query ($account: String) {
-  owner(id: $account) {
-    ownedTokens {
-      uri
-      id
-    }
-    balance
-  }
-}
-
-`
-
 const ownerTransferList: TypedDocumentNode<{owner: IOwner}, QueryAccountOwnerNfts> = gql`
 ${schemaFragments}
 
@@ -341,21 +328,60 @@ query ($account: String) {
     rewardClaimedCumulative
     ownedTokens {
       id
-      background
-      custom
-      special
+      labItems {
+        id
+        item {
+          id
+        }
+      }
     }
-    ownedLabItems {
-      id
-    }
-    main {
-      id
-      background
-      custom
-      special
+    profile {
+      token {
+        id
+        labItems {
+          item {
+            id
+          }
+        }
+      }
+      name
     }
   }
 }
+`
+
+const tokenV2: TypedDocumentNode<{ token: IToken }, QueryIdentifiable> = gql`
+${schemaFragments}
+
+query ($id: String) {
+  token(id: $id) {
+    id
+    labItems {
+      id
+      item {
+        id
+      }
+    }
+  }
+}
+`
+const profileList: TypedDocumentNode<{ profiles: IProfile[] }, Partial<IPagePositionParamApi>> = gql`
+
+query ($pageSize: Int = 1000, $skip: Int = 0) {
+  profiles(first: $pageSize, skip: $skip) {
+    id
+    token {
+      id
+      labItems {
+        item {
+          id
+        }
+      }
+    }
+    name
+  }
+}
+
 `
 
 
@@ -473,6 +499,13 @@ const gmxArbitrumStats = prepareClient({
 })
 
 
+export const queryProfileList = async (queryParams: Partial<IPagePositionParamApi> = {}) => {
+  const owner = (await blueberryGraphV2(profileList, queryParams)).profiles
+
+  return owner.map(fromProfileJson)
+}
+
+
 export const queryOwnerTrasnferNfts = async (account: string) => {
   const owner = (await blueberryGraph(ownerTransferList, { account: account.toLowerCase() })).owner
 
@@ -483,14 +516,14 @@ export const queryOwnerTrasnferNfts = async (account: string) => {
   return Object.entries(groupByMapMany(owner.ownedTokens, token => token.transfers[0].transaction.id))
 }
 
-export const queryOwnerV2 = async (account: string, closet = closetGlobal): Promise<IOwner | null> => {
+export const queryOwnerV2 = async (account: string): Promise<IOwner | null> => {
   const owner = (await blueberryGraphV2(ownerV2, { account: account.toLowerCase() })).owner
 
   if (owner === null) {
     return null
   }
 
-  return fromOwnerJson(owner, closet)
+  return fromOwnerJson(owner)
 }
  
 export const queryToken = async (id: string) => {
@@ -503,6 +536,15 @@ export const queryToken = async (id: string) => {
   return owner
 }
 
+export const queryTokenv2 = async (id: string) => {
+  const owner = (await blueberryGraphV2(tokenV2, { id })).token
+
+  if (owner === null) {
+    throw new Error(`Token #${id} not found`)
+  }
+
+  return owner
+}
 
 
 
@@ -566,26 +608,37 @@ export const queryAvalancheRewards = async (config: IAccountQueryParamApi & Part
 }
 
 
-
-
-async function fromTokenJson<T extends IToken>(obj: T, closet: Closet): Promise<T> {
-  const labItems = await getTokenSlots(obj.id, closetGlobal)
+function fromProfileJson(obj: IProfile): IProfile {
   return {
     ...obj,
-    owner: obj.owner ? fromOwnerJson(obj.owner, closet) : null,
-    id: Number(obj.id),
-    ...labItems,
-    // background: obj.background ? Number(obj.background) : undefined,
-    // custom: obj.custom ? Number(obj.custom) : undefined,
-    // special: obj.special ? Number(obj.special) : undefined,
+    token: obj.token ? fromTokenJson(obj.token) : null
   }
 }
 
-async function fromOwnerJson<T extends IOwner>(obj: T, closet: Closet): Promise<T> {
-  const ownedTokens = await Promise.all(obj.ownedTokens.map(t => fromTokenJson(t, closet)))
+function fromLabItemOwnershipJson(obj: ILabItemOwnership): ILabItemOwnership {
   return {
     ...obj,
-    main: obj.main ? await fromTokenJson(obj.main, closet) : null,
+    item: {
+      ...obj.item,
+      id: Number(obj.item.id)
+    }
+  }
+}
+
+function fromTokenJson<T extends IToken>(obj: T): T {
+  return {
+    ...obj,
+    labItems: obj.labItems.map(fromLabItemOwnershipJson),
+    owner: obj.owner ? fromOwnerJson(obj.owner) : null,
+    id: Number(obj.id)
+  }
+}
+
+function fromOwnerJson<T extends IOwner>(obj: T): T {
+  const ownedTokens = obj.ownedTokens.map(t => fromTokenJson(t))
+  return {
+    ...obj,
+    main: obj.profile ? fromProfileJson(obj.profile) : null,
     ownedTokens,
     ownedLabItems: obj.ownedLabItems.map(json => ({ ...json, balance: BigInt(json.balance), item: { id: Number(json.item.id) } }))
   }

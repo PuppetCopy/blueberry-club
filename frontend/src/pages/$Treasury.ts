@@ -209,7 +209,7 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
             $teamSigner('kingblockchain', 4825),
             $teamSigner('itburnzz', 12),
             $teamSigner('B2F_zer', 22),
-            $teamSigner('xdev_10', 4),
+            $teamSigner('xdev_10', 6),
           )
         ),
 
@@ -247,7 +247,7 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
 })
 
 export const $teamSigner = (name: string, id: number) => $row(layoutSheet.spacingTiny, style({ alignItems: 'center', fontSize: screenUtils.isDesktopScreen ? '' : '65%' }))(
-  $berryById(id, null, 22),
+  $berryById(id, 22),
   $anchor(attr(({ href: `https://twitter.com/${name}` })), style({ fontWeight: 900, textDecoration: 'none', fontSize: '.75em' }))($text(`@${name}`)),
 )
 

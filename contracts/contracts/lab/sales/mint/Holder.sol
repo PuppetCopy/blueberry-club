@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {Private, MintRule} from "./Private.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
-struct HolderRule {
+struct HolderState {
     uint128 totalMintable;
     uint128 walletMintable;
     uint208 cost;
@@ -20,14 +20,14 @@ error NotOwner();
 abstract contract PrivateHolder is Private {
     IERC721 public immutable NFT;
 
-    HolderRule private _state;
+    HolderState private _state;
 
     mapping(uint256 => bool) public isNftUsed;
     mapping(address => uint256) public nftMinted;
 
     uint256 public totalNftMinted;
 
-    constructor(IERC721 _nft, HolderRule memory state) {
+    constructor(IERC721 _nft, HolderState memory state) {
         NFT = _nft;
         _state = state;
     }
@@ -53,7 +53,7 @@ abstract contract PrivateHolder is Private {
     }
 
     function nftMint(uint256[] calldata tokensId) external payable {
-        HolderRule memory state_ = _state;
+        HolderState memory state_ = _state;
         if (tokensId.length > type(uint120).max) revert TooManyTokens();
 
         uint120 amount = uint120(tokensId.length);
@@ -89,7 +89,7 @@ abstract contract PrivateHolder is Private {
         payable
         requiresAuth
     {
-        HolderRule memory state_ = _state;
+        HolderState memory state_ = _state;
         if (tokensId.length > type(uint120).max) revert TooManyTokens();
 
         uint120 amount = uint120(tokensId.length);
@@ -120,7 +120,7 @@ abstract contract PrivateHolder is Private {
         );
     }
 
-    function setHolderRule(HolderRule memory newRule) external requiresAuth {
-        _state = newRule;
+    function setHolderState(HolderState memory newState) external requiresAuth {
+        _state = newState;
     }
 }
