@@ -15,6 +15,7 @@ import { $seperator2 } from "../../pages/common"
 import { $GbcWhitelist } from "./$GbcWhitelist"
 import { timeChange } from "./mintUtils2"
 import { $PublicMint } from "./$PublicMint"
+import { mintLabelMap } from "../../logic/mappings/label"
 
 
 
@@ -48,11 +49,13 @@ export const $Mint = ({ walletStore, walletLink, item }: IMint) => component((
                 return deltaTime > 0 ? deltaTime : null
               }, timeChange)))
 
+
               const sale = mintRule.type === SaleType.Public
                 ? $PublicMint(item, mintRule, walletLink)({})
                 : mintRule.type === SaleType.holderWhitelist
                   ? $GbcWhitelist(item, mintRule, walletLink)({}) : mintRule.type === SaleType.whitelist
                     ? $GbcWhitelist(item, mintRule, walletLink)({}) : empty()
+              const currentSaleType = mintLabelMap[mintRule.type]
 
               return [
                 switchLatest(map(timeDelta => {
@@ -60,7 +63,7 @@ export const $Mint = ({ walletStore, walletLink, item }: IMint) => component((
 
                   return $column(layoutSheet.spacing)(
                     $row(layoutSheet.spacing, style({ alignItems: 'baseline' }))(
-                      $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(`Public`),
+                      $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(currentSaleType),
                       ...!hasEnded
                         ? [
                           $text(countdownFn(Date.now() + timeDelta * 1000, Date.now()))

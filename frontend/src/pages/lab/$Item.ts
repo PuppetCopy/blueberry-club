@@ -35,16 +35,16 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
   const item = labItemDescriptionListMap[itemId]
 
 
- 
-  
+
+
   return [
-    $responsiveFlex(screenUtils.isDesktopScreen ? style({ gap: '50px' }): layoutSheet.spacingBig)(
-      $labItem(item.id, 415, true, true),
+    $responsiveFlex(screenUtils.isDesktopScreen ? style({ gap: '50px' }) : layoutSheet.spacingBig)(
+      $row(style({ minWidth: '415px' }))($labItem(item.id, 415, true, true)),
 
       $column(style({ gap: '50px', flex: 1 }))(
 
         $column(layoutSheet.spacingBig)(
-          $column(style({  }))(
+          $column(style({}))(
             $text(style({ fontSize: screenUtils.isMobileScreen ? '2.1em' : '3.1em', fontWeight: 'bold' }))(item.name),
 
             $row(layoutSheet.spacingTiny)(

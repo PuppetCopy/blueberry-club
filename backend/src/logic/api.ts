@@ -1,6 +1,6 @@
 import { awaitPromises, map } from "@most/core"
 import { accountTradeListQuery, latestPriceTimelineQuery, pricefeed, tradeListQuery } from './document'
-import { unixTimestampNow, cacheMap, ILeaderboardRequest, CHAIN, fromJson, intervalInMsMap, ITrade, pagingQuery, toAccountSummary, IChainParamApi, IPriceLatestMap, groupByMap, IAccountTradeListParamApi, IPricefeedParamApi } from '@gambitdao/gmx-middleware'
+import { unixTimestampNow, cacheMap, ILeaderboardRequest, CHAIN, fromJson, ITrade, pagingQuery, toAccountSummary, IChainParamApi, IPriceLatestMap, groupByMap, IAccountTradeListParamApi, IPricefeedParamApi, intervalTimeMap } from '@gambitdao/gmx-middleware'
 import { O } from "@aelea/core"
 import { ClientOptions, createClient, OperationContext, TypedDocumentNode } from "@urql/core"
 import fetch from 'isomorphic-fetch'
@@ -48,7 +48,7 @@ const fetchTrades = async (chain: CHAIN.ARBITRUM | CHAIN.AVALANCHE, offset: numb
   const deltaTime = to - from
 
   // splits the queries because the-graph's result limit of 5k items
-  if (deltaTime >= intervalInMsMap.DAY7) {
+  if (deltaTime >= intervalTimeMap.DAY7) {
     const splitDelta = deltaTime / 2
     const query0 = fetchTrades(chain, 0, from, to - splitDelta).then(list => list.map(fromJson.toTradeJson))
     const query1 = fetchTrades(chain, 0, from + splitDelta, to).then(list => list.map(fromJson.toTradeJson))
@@ -69,9 +69,9 @@ const fetchTrades = async (chain: CHAIN.ARBITRUM | CHAIN.AVALANCHE, offset: numb
 
 
 const cacheLifeMap = {
-  [intervalInMsMap.HR24]: intervalInMsMap.MIN5,
-  [intervalInMsMap.DAY7]: intervalInMsMap.MIN30,
-  [intervalInMsMap.MONTH]: intervalInMsMap.MIN60,
+  [intervalTimeMap.HR24]: intervalTimeMap.MIN5,
+  [intervalTimeMap.DAY7]: intervalTimeMap.MIN30,
+  [intervalTimeMap.MONTH]: intervalTimeMap.MIN60,
 }
 
 export const requestLeaderboardTopList = O(

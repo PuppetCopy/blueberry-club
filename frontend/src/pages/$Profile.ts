@@ -57,7 +57,7 @@ export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAcco
   // const arbitrumStakingRewards = replayLatest(multicast(arbitrumContract.stakingRewards))
   // const avalancheStakingRewards = replayLatest(multicast(avalancheContract.stakingRewards))
   // const pricefeedQuery = replayLatest(multicast(fromPromise(gmxGlpPriceHistory(queryParams))))
- 
+
   // const arbitrumYieldSourceMap = replayLatest(multicast(fromPromise(queryArbitrumRewards(queryParams))))
   // const avalancheYieldSourceMap = replayLatest(multicast(fromPromise(queryAvalancheRewards({ ...queryParams, account: accountAddress }))))
 
@@ -79,7 +79,7 @@ export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAcco
 
   //   return [...yieldFeeList, ...gmx, ...arbiStaking.stakedGlpTrackerClaims, ...arbiStaking.stakedGmxTrackerClaims]
   // }, arbitrumYieldSourceMap, avalancheYieldSourceMap, feeYieldClaim, newLocal)
-  // const GRAPHS_INTERVAL = Math.floor(intervalInMsMap.HR4)
+  // const GRAPHS_INTERVAL = Math.floor(intervalTimeMap.HR4)
 
   // const gmxArbitrumRS = priceFeedHistoryInterval(
   //   GRAPHS_INTERVAL,
