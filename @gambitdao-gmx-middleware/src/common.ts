@@ -1,15 +1,15 @@
 import { map, periodic } from "@most/core"
-import { intervalInMsMap } from "./constant"
+import { intervalTimeMap } from "./constant"
 import { unixTimestampNow } from "./utils"
 
 
 const intervals = [
-  { label: 'year', seconds: intervalInMsMap.MONTH * 12 },
-  { label: 'month', seconds: intervalInMsMap.MONTH },
-  { label: 'day', seconds: intervalInMsMap.HR24 },
-  { label: 'hour', seconds: intervalInMsMap.MIN * 60 },
-  { label: 'minute', seconds: intervalInMsMap.MIN },
-  { label: 'second', seconds: intervalInMsMap.SEC }
+  { label: 'year', seconds: intervalTimeMap.MONTH * 12 },
+  { label: 'month', seconds: intervalTimeMap.MONTH },
+  { label: 'day', seconds: intervalTimeMap.HR24 },
+  { label: 'hour', seconds: intervalTimeMap.MIN * 60 },
+  { label: 'minute', seconds: intervalTimeMap.MIN },
+  { label: 'second', seconds: intervalTimeMap.SEC }
 ] as const
 
 export function timeSince(time: number) {

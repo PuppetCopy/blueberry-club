@@ -47,7 +47,7 @@ dataSources:
         - Transaction
       abis:
         - name: ERC1155
-          file: ../contracts/artifacts/contracts/lab/GBCLab.sol/GBCLab.json
+          file: ../contracts/artifacts/contracts/GBCL.sol/GBCLab.json
       eventHandlers:
         - event: TransferSingle(indexed address,indexed address,indexed address,uint256,uint256)
           handler: handleTransferSingle
@@ -93,7 +93,7 @@ dataSources:
         - Token
       abis:
         - name: Closet
-          file: ../contracts/artifacts/contracts/lab/closet/Closet.sol/Closet.json
+          file: ../contracts/artifacts/contracts/lab/Closet.sol/Closet.json
       eventHandlers:
         - event: Set(indexed uint256,uint256[],uint256[])
           handler: handleSetItems

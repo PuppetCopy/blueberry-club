@@ -5,12 +5,13 @@ import { $column, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $labItem } from "../../logic/common"
-import { LabItemSaleDescription, saleDescriptionList, SaleType } from "@gambitdao/gbc-middleware"
+import { LabItemSale, saleMaxSupply, saleDescriptionList, SaleType, saleLastDate } from "@gambitdao/gbc-middleware"
 import { pallete } from "@aelea/ui-components-theme"
 import { $Link } from "@gambitdao/ui-components"
 import { empty, map } from "@most/core"
 import { formatFixed, readableNumber, timeSince, unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { getMintCount } from "../../logic/contract/sale"
+import { mintLabelMap } from "../../logic/mappings/label"
 
 
 
@@ -36,9 +37,9 @@ export const $LabStore = ({ walletLink, parentRoute }: ILabStore) => component((
 
       $column(layoutSheet.spacingBig, style({ justifyContent: 'space-between' }))(
         $text(style({ fontWeight: 'bold', fontSize: '1.8em' }))('Items'),
-        $row(screenUtils.isDesktopScreen ? style({ gap: '57px', placeContent: 'center', flexWrap: 'wrap' }) : O(layoutSheet.spacingBig, style({ overflow: 'hidden', placeContent: 'space-evenly', flexWrap: 'wrap' })))(
+        $row(screenUtils.isDesktopScreen ? style({ gap: '50px', placeContent: 'center', flexWrap: 'wrap' }) : O(layoutSheet.spacingBig, style({ overflow: 'hidden', placeContent: 'space-evenly', flexWrap: 'wrap' })))(
           ...saleDescriptionList.map(item =>
-            $labStoreItem(item, parentRoute, changeRouteTether)
+            $StoreItemPreview(item, parentRoute, changeRouteTether)
           )
         ),
       ),
@@ -50,18 +51,21 @@ export const $LabStore = ({ walletLink, parentRoute }: ILabStore) => component((
   ]
 })
 
-const $labStoreItem = (item: LabItemSaleDescription, parentRoute: Route, changeRouteTether: Tether<string, string>) => {
+const $StoreItemPreview = (item: LabItemSale, parentRoute: Route, changeRouteTether: Tether<string, string>) => {
+  const max = saleMaxSupply(item)
+
+  const activeMint = saleLastDate(item)
 
   const supplyLeft = map(amount => {
-    const count = item.maxSupply - amount
+    const count = max - Number(amount)
     return count ? `${count} left` : 'Sold Out'
   }, getMintCount(item.contractAddress, 15000))
 
   const unixTime = unixTimestampNow()
 
-  const isWhitelist = item.type === SaleType.GbcWhitelist
-  const currentSaleType = isWhitelist ? 'Whitelist' : 'Public'
-  const upcommingSaleDate = isWhitelist ? item.whitelistStartDate : item.publicStartDate
+  const mintLabel = mintLabelMap[activeMint.type]
+  const currentSaleType = activeMint.type ? 'Whitelist' : 'Public'
+  const upcommingSaleDate = activeMint.start
 
   const isSaleUpcomming = upcommingSaleDate > unixTime
 
@@ -69,7 +73,7 @@ const $labStoreItem = (item: LabItemSaleDescription, parentRoute: Route, changeR
     `${currentSaleType} in ` + timeSince(upcommingSaleDate)
     : currentSaleType
     
-  const price = isWhitelist ? item.whitelistCost : item.publicCost
+  const price = activeMint.cost
 
   const mintPriceEth = price === 0n ? 'Free' : readableNumber(formatFixed(price, 18)) + ' ETH'
 
@@ -81,7 +85,7 @@ const $labStoreItem = (item: LabItemSaleDescription, parentRoute: Route, changeR
     route: parentRoute.create({ fragment: 'fefef' }),
     $content: $column(layoutSheet.spacingSmall, style({ position: 'relative', flexDirection: 'column' }))(
       $column(style({ position: 'relative' }))(
-        $labItem(item.id, screenUtils.isDesktopScreen ? 185 : 160, true, true),
+        $labItem(item.id, screenUtils.isDesktopScreen ? 173 : 160, true, true),
         statusLabel ? $text(style({ fontWeight: 'bold', position: 'absolute', top:  screenUtils.isDesktopScreen ? '15px' : '8px', left: screenUtils.isDesktopScreen ? '15px' : '8px', fontSize: '.75em', padding: '5px 10px', color: pallete.message, borderRadius: '8px', backgroundColor: pallete.background }))(
           statusLabel
         ) : empty(),

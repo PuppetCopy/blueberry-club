@@ -69,14 +69,12 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
         $Dropdown({
           // disabled: accountChange,
           // $noneSelected: $text('Choose Amount'),
-          $selection: map(amount => {
-            return $row(style({ alignItems: 'center', cursor: 'pointer' }))(
-              screenUtils.isDesktopScreen ? $text(style({ marginRight: '8px' }))('Treasury: ') : empty(),
-              switchLatest(map(x => $text('$' + formatReadableUSD(x)), totalWalletHoldingsUsd)),
-              $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginTop: '3px', marginLeft: '5px' }), viewBox: '0 0 32 32' }),
-            )
-          }),
-          select: {
+          $selection: $row(style({ alignItems: 'center', cursor: 'pointer' }))(
+            screenUtils.isDesktopScreen ? $text(style({ marginRight: '8px' }))('Treasury: ') : empty(),
+            switchLatest(map(x => $text('$' + formatReadableUSD(x)), totalWalletHoldingsUsd)),
+            $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginTop: '3px', marginLeft: '5px' }), viewBox: '0 0 32 32' }),
+          ),
+          value: {
             value: now(null),
             $container: $defaultSelectContainer(style({ minWidth: '300px' })),
             $$option: map(option => option),

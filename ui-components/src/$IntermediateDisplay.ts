@@ -10,27 +10,16 @@ import { CHAIN } from "../../@gambitdao-gmx-middleware/src"
 import { $alert, $txHashRef,  } from "./$common"
 
 
-const styleEl = document.createElement('style')
-
-const spinnerId = (Math.random() + 1).toString(36).substring(7)
-
-const keyFrames = `
-@keyframes id${spinnerId} {
-  0% { transform:rotate(0deg);}
-  100% {transform:rotate(360deg)}   
-}
-`
-styleEl.innerHTML = keyFrames.replace(/A_DYNAMIC_VALUE/g, "180deg")
-document.getElementsByTagName('head')[0].appendChild(styleEl)
-
 export const $spinner = $node(style({
-  width: '45px',
+  width: '70px',
   height: '45px',
   borderRadius: '50%',
-  border: '4px #fff dashed',
-  boxShadow: 'inset 0px 0px 0px 3px #fff',
-  backgroundColor: 'transparent',
-  animation: `id${spinnerId} 5s linear infinite`,
+  backgroundImage: 'url(/assets/gbc-loop.gif)',
+  backgroundPosition: 'center',
+  backgroundSize: 'contain',
+  backgroundRepeat: 'no-repeat',
+  filter: 'drop-shadow(0px 0px 16px black)',
+  backgroundColor: 'black',
 }))()
 
 

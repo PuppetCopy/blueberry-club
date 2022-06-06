@@ -1,10 +1,10 @@
-import { Behavior, O } from "@aelea/core"
+import { Behavior } from "@aelea/core"
 import { $text, component, style } from "@aelea/dom"
 import { $row } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { IBerryIdentifable } from "@gambitdao/gbc-middleware"
-import { constant, map, merge, startWith } from "@most/core"
-import { $berryById } from "../logic/common"
+import { IToken } from "@gambitdao/gbc-middleware"
+import { constant, empty, map, merge, startWith, tap } from "@most/core"
+import { $berryByToken } from "../logic/common"
 import { $berryTileId } from "./$common"
 import { $ButtonSecondary } from "./form/$Button"
 import { $DropMultiSelect, $defaultSelectContainer, $defaultChip } from "./form/$Dropdown"
@@ -14,17 +14,17 @@ export interface ISelectBerries {
   label?: string
   placeholder?: string
 
-  options: IBerryIdentifable[]
+  options: IToken[]
 }
 
 export const $SelectBerries = (config: ISelectBerries) => component((
-  [select, selectTether]: Behavior<(IBerryIdentifable | 'ALL')[], (IBerryIdentifable | 'ALL')[]>,
+  [select, selectTether]: Behavior<(IToken | 'ALL')[], (IToken | 'ALL')[]>,
   [selectAll, selectAllTether]: Behavior<any, any>
 ) => {
 
   const $selectAllOption = $text(style({ paddingLeft: '15px' }))('All')
 
-  const allSelection = constant(config.options, selectAll)
+  const allSelection = tap(console.log, constant(config.options, selectAll))
   const value = startWith([], allSelection)
 
   return [
@@ -36,28 +36,25 @@ export const $SelectBerries = (config: ISelectBerries) => component((
       $$chip: map(token => {
 
         if (token === 'ALL') {
-          return $selectAllOption
+          return empty()
         }
 
         return $row(style({ alignItems: 'center', gap: '8px', color: pallete.message }))(
-          style({ borderRadius: '50%' }, $berryById(token.id, token, 34)),
+          style({ borderRadius: '50%' }, $berryByToken(token, 34)),
           $text(String(token.id)),
         )
       }),
       selectDrop: {
-        $container: $defaultSelectContainer(style({ padding: '10px', gap: 0, borderTopLeftRadius: 0, borderTopRightRadius: 0, borderTop: 0, flexWrap: 'wrap', width: '100%', maxHeight: '400px', overflow: 'auto', flexDirection: 'row' })),
+        $container: $defaultSelectContainer(style({ padding: '10px', borderTopLeftRadius: 0, borderTopRightRadius: 0, borderTop: 0, flexWrap: 'wrap', width: '100%', maxHeight: '400px', overflow: 'auto', flexDirection: 'row' })),
         $$option: map((token) => {
 
           if (token === 'ALL') {
-            return $ButtonSecondary({
-              buttonOp: O(style({ marginRight: '10px' })),
-              $content: $text('Select All')
-            })({
+            return $ButtonSecondary({ $content: $text('Select All') })({
               click: selectAllTether()
             })
           }
 
-          return $berryTileId(token.id, token)
+          return $berryTileId(token)
         }),
         list: [
           'ALL' as const,

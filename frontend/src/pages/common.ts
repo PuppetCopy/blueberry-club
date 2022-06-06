@@ -9,3 +9,4 @@ export const $metricEntry = (label: string, value: string) => $row(style({ fontS
 )
 
 export const $seperator2 = style({ backgroundColor: colorAlpha(pallete.foreground, .15), alignSelf: 'stretch', display: 'block' }, $seperator)
+

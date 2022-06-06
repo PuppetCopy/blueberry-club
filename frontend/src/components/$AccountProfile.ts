@@ -3,7 +3,7 @@ import { $column, $icon, $row, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { BaseProvider } from "@ethersproject/providers"
 import { Stream } from "@most/types"
-import { CHAIN, getAccountExplorerUrl, IClaim, IClaimSource, intervalInMsMap } from "@gambitdao/gmx-middleware"
+import { CHAIN, getAccountExplorerUrl, IClaim, IClaimSource, intervalTimeMap } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $jazzicon } from "../common/$avatar"
 import { getGatewayUrl, getIdentityFromENS, IEnsClaim } from "@gambitdao/gbc-middleware"
@@ -140,7 +140,7 @@ export const $walletAccountDisplay = (avatarSize = 38) => {
 
 
 
-const CACHE_TTL = intervalInMsMap.DAY7
+const CACHE_TTL = intervalTimeMap.DAY7
 
 
 type ICachedId = IEnsClaim & { createdAt: number }

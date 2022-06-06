@@ -1,4 +1,4 @@
-import { IAttributeBackground, IAttributeClothes, IAttributeBody, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat, LabItemSaleDescription, LabItemSaleGbcWhitelistDescription, LabItemSalePermissionedWhitelistDescription, LabSaleWhitelistDescription, LabItemSalePublicDescription } from "./types"
+import { IAttributeBackground, IAttributeClothes, IAttributeBody, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat, LabItemSale, MintRule } from "./types"
 
 
 const labAttributeTuple = [IAttributeBackground, IAttributeClothes, IAttributeBody, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat] as const
@@ -17,7 +17,29 @@ export const getLabItemTupleIndex = (itemId: number) => {
   return labAttributeTuple.indexOf(attrMap)
 }
 
+export function saleMaxSupply(sale: LabItemSale): number {
+  return sale.mintRuleList.reduce((seed, next) => seed + next.amount, 0)
+}
 
-export function hasWhitelistSale<T extends LabSaleWhitelistDescription>(sale: T | LabItemSalePublicDescription): sale is T {
-  return 'whitelistStartDate' in sale
+export function saleLastDate(sale: LabItemSale): MintRule {
+  const l = sale.mintRuleList.length
+
+  if (!l) {
+    throw new Error('Sale contain no mint rules')
+  }
+
+  let match = sale.mintRuleList[0]
+
+  if (l === 1) {
+    return match
+  }
+
+  for (let index = 1; index < l; index++) {
+    const element = sale.mintRuleList[index]
+    if (element.start > match.start) {
+      match = element
+    }
+  }
+
+  return match
 }

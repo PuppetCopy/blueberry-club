@@ -5,7 +5,7 @@ import { $column, designSheet, layoutSheet, screenUtils, state } from '@aelea/ui
 import {
   ADDRESS_LEVERAGE,
   ETH_ADDRESS_REGEXP, fromJson, groupByMap, IAccountSummary, IAccountTradeListParamApi, IChainParamApi,
-  ILeaderboardRequest, intervalInMsMap, IPageParapApi, IPricefeed, IPricefeedParamApi, IPriceLatestMap, ITradeOpen
+  ILeaderboardRequest, intervalTimeMap, IPageParapApi, IPricefeed, IPricefeedParamApi, IPriceLatestMap, ITradeOpen
 } from '@gambitdao/gmx-middleware'
 import { initWalletLink } from "@gambitdao/wallet-link"
 import {
@@ -23,7 +23,7 @@ import { $BerryPage } from "./$Berry"
 import { $Profile } from "./$Profile"
 import { $Treasury } from "./$Treasury"
 import { $seperator2 } from "./common"
-import { $LabLanding } from "./lab/$Landing"
+import { $LabHome } from "./lab/$LabHome"
 import { fadeIn } from "../transitions/enter"
 import { $Wardrobe } from "./lab/$Wardrobe"
 import { $LabStore } from "./lab/$Store"
@@ -99,7 +99,7 @@ export default ({ baseRoute = '' }: Website) => component((
   // localstorage
   const rootStore = state.createLocalStorageChain('ROOT')
   const walletStore = rootStore<WALLET, 'walletStore'>('walletStore', WALLET.none)
-  const treasuryStore = rootStore<ITreasuryStore, 'treasuryStore'>('treasuryStore', { startedStakingGlpTimestamp: 1639431367, startedStakingGmxTimestamp: 1639432924 - intervalInMsMap.MIN5 })
+  const treasuryStore = rootStore<ITreasuryStore, 'treasuryStore'>('treasuryStore', { startedStakingGlpTimestamp: 1639431367, startedStakingGmxTimestamp: 1639432924 - intervalTimeMap.MIN5 })
   const accountStakingStore = rootStore<IAccountStakingStore, 'treasuryStore'>('treasuryStore', {})
 
   const chosenWalletName = now(walletStore.state)
@@ -167,7 +167,7 @@ export default ({ baseRoute = '' }: Website) => component((
                 $BerryPage({ walletLink, parentRoute: pagesRoute })({})
               ),
               router.match(labRoute)(
-                fadeIn($LabLanding({ walletLink, parentRoute: labRoute, walletStore })({
+                fadeIn($LabHome({ walletLink, parentRoute: labRoute, walletStore })({
                   changeRoute: linkClickTether(), walletChange: walletChangeTether()
                 }))
               ),
@@ -182,13 +182,16 @@ export default ({ baseRoute = '' }: Website) => component((
                 }))
               ),
               router.match(wardrobeRoute)(
-                fadeIn($Wardrobe({ walletLink: walletLink, parentRoute: wardrobeRoute, walletStore })({ changeRoute: linkClickTether() }))
+                fadeIn($Wardrobe({ walletLink: walletLink, parentRoute: wardrobeRoute, walletStore })({
+                  changeRoute: linkClickTether(),
+                  
+                }))
               ),
               router.match(profileRoute)(
                 fadeIn($Profile({ walletLink, parentRoute: pagesRoute, accountStakingStore })({}))
               ),
               router.match(profileWalletRoute)(
-                fadeIn($ProfileWallet({ walletLink, parentRoute: pagesRoute, accountStakingStore })({}))
+                fadeIn($ProfileWallet({ walletLink, parentRoute: pagesRoute, accountStakingStore })({ changeRoute: linkClickTether() }))
               ),
               router.match(tradeRoute)(
                 $Trade({

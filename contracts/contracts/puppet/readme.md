@@ -1,13 +1,18 @@
-# GBC Mirror Trading, Powered by Puppet
+# Introducing Puppet
 
-Day Trading is one of world's hardest skill to ascertain, it requires the knowledge and understanding in risk, research, cycles/patterns, Price Action and mitigating trading decisions based on emotions or crowd following
+Puppet, Mirror Trading
 
-There are 2 participant types. Trader and Puppet, traders gets additional profit and clout based on their performance while Puppets search for traders that are likley to generate profit using the leaderboard by mirroring their trading strategy.
+Day Trading is one of world's hardest skill to ascertain, it requires the thorough understanding of risk, cycles/patterns, Price Action/discovery and mitigate trading decisions based on emotions
+
+We propose a new kind of utility in defi, a project that will be birthed and owned by our community. 
+
+There are 2 participant types. Trader and Puppet, traders get additional profit and clout based on their leveraged trading performance while Puppets search for traders that are likely to generate profit using the leaderboard by mirroring their trading strategy
+
+the platform will index all of the trading activity will happen on <https://blueberry.club>, this allows the visibility of any trader's historic performance, we use the data to build a platform that allow users the ability to pick and choo
+
 we propose a utility that attempts to share the benefits between both participants, we think it's possible using GMX as protocol
 
-our platform will accesses all of the trading activity that is happening on <https://blueberry.club> through <https://gmx.io> contracts, this allows the visibility of any trader's historic performance, we use the data to build a platform that allow users the ability to pick and choose traders that are likely to give them profit by mirroring their trading strategy
 
-We will also launch monthly tournaments, is an on-going draft, see(needs update to reflect Mirror Trading) <https://docs.google.com/document/d/1raoPyVwOSWPdy7HWzEuFt__2KNHigSC-sVYJ8tkJZSY/edit?usp=sharing>
 
 ## Trader
 

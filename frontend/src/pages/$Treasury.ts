@@ -4,7 +4,7 @@ import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { GBC_ADDRESS, BI_18_PRECISION } from "@gambitdao/gbc-middleware"
-import { intervalInMsMap, formatFixed, ARBITRUM_ADDRESS, BASIS_POINTS_DIVISOR, IAccountQueryParamApi, ITimerangeParamApi, CHAIN, getAccountExplorerUrl, TOKEN_SYMBOL } from "@gambitdao/gmx-middleware"
+import { intervalTimeMap, formatFixed, ARBITRUM_ADDRESS, BASIS_POINTS_DIVISOR, IAccountQueryParamApi, ITimerangeParamApi, CHAIN, getAccountExplorerUrl, TOKEN_SYMBOL } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $anchor, $tokenIconMap } from "@gambitdao/ui-components"
 import { combine, empty, fromPromise, map, multicast, switchLatest, take } from "@most/core"
@@ -16,11 +16,11 @@ import { IAsset, ITreasuryStore } from "@gambitdao/gbc-middleware"
 import { $StakingGraph } from "../components/$StakingGraph"
 import { arbitrumContract, avalancheContract } from "../logic/gbcTreasury"
 import { Stream } from "@most/types"
-import { latestTokenPriceMap, priceFeedHistoryInterval } from "../logic/common"
+import { $berryById, latestTokenPriceMap, priceFeedHistoryInterval } from "../logic/common"
 import { $accountPreview } from "../components/$AccountProfile"
 import { $metricEntry, $seperator2 } from "./common"
 
-const GRAPHS_INTERVAL = Math.floor(intervalInMsMap.HR4)
+const GRAPHS_INTERVAL = Math.floor(intervalTimeMap.HR4)
 
 export interface ITreasury {
   walletLink: IWalletLink
@@ -45,7 +45,7 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
   const arbitrumStakingRewards = replayLatest(multicast(arbitrumContract.stakingRewards))
   const avalancheStakingRewards = replayLatest(multicast(avalancheContract.stakingRewards))
   const pricefeedQuery = replayLatest(multicast(fromPromise(gmxGlpPriceHistory(queryParams))))
- 
+
   const arbitrumYieldSourceMap = replayLatest(multicast(fromPromise(queryArbitrumRewards(queryParams))))
   const avalancheYieldSourceMap = replayLatest(multicast(fromPromise(queryAvalancheRewards({ ...queryParams, account: GBC_ADDRESS.TREASURY_AVALANCHE }))))
 
@@ -75,7 +75,7 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
       ...arbiStaking.stakedGmxTrackerClaims
     ]
   }, arbitrumYieldSourceMap, avalancheYieldSourceMap, feeYieldClaim, newLocal)
-  
+
 
   const gmxArbitrumRS = priceFeedHistoryInterval(
     GRAPHS_INTERVAL,
@@ -108,7 +108,7 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
         priceFeedHistoryMap: pricefeedQuery,
         graphInterval: GRAPHS_INTERVAL,
       })({}),
-      
+
       $node(),
 
 
@@ -131,9 +131,9 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
               chain: CHAIN.ARBITRUM,
               asset: gmxAsset,
               priceChart: gmxArbitrumRS,
-              $distribution: switchLatest(map(({  bnGmxInFeeGmx, bonusGmxInFeeGmx, gmxAprForEthPercentage, gmxAprForEsGmxPercentage }) => {
+              $distribution: switchLatest(map(({ bnGmxInFeeGmx, bonusGmxInFeeGmx, gmxAprForEthPercentage, gmxAprForEsGmxPercentage }) => {
                 const boostBasisPoints = formatFixed(bnGmxInFeeGmx * BASIS_POINTS_DIVISOR / bonusGmxInFeeGmx, 2)
-          
+
                 return $column(layoutSheet.spacingSmall, style({ flex: 1, }))(
                   $metricEntry(`esGMX`, `${formatFixed(gmxAprForEsGmxPercentage, 2)}%`),
                   $metricEntry(`ETH`, `${formatFixed(gmxAprForEthPercentage, 2)}%`),
@@ -150,7 +150,7 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
               chain: CHAIN.ARBITRUM,
               asset: glpArbiAsset,
               priceChart: glpArbitrumRS,
-              $distribution: switchLatest(map(({ glpAprForEsGmxPercentage, glpAprForEthPercentage,   }) => {
+              $distribution: switchLatest(map(({ glpAprForEsGmxPercentage, glpAprForEthPercentage, }) => {
 
                 return $column(layoutSheet.spacingSmall, style({ flex: 1 }))(
                   $metricEntry(`esGMX`, `${formatFixed(glpAprForEsGmxPercentage, 2)}%`),
@@ -166,7 +166,7 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
               chain: CHAIN.AVALANCHE,
               asset: glpAvaxAsset,
               priceChart: glpAvalancheRS,
-              $distribution: switchLatest(map(({ glpAprForEsGmxPercentage, glpAprForEthPercentage,   }) => {
+              $distribution: switchLatest(map(({ glpAprForEsGmxPercentage, glpAprForEthPercentage, }) => {
 
                 return $column(layoutSheet.spacingSmall, style({ flex: 1 }))(
                   $metricEntry(`esGMX`, `${formatFixed(glpAprForEsGmxPercentage, 2)}%`),
@@ -185,10 +185,10 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
       $column(layoutSheet.spacing)(
         $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))('Treasury Vaults'),
         $node(
-          $text('The Treasury Vaults are secured using a Multi-Signature using a 3/5 threshold allowing full control to perform actions like Staking for yield, Asset Rebalancing and more. powered by '),
+          $text('The Treasury Vaults are secured using a Multi-Signature using a 4/7 threshold allowing full control to perform actions like Staking for yield, Asset Rebalancing and more. powered by '),
           $anchor(style({ display: 'inline' }), attr({ href: 'https://gnosis.io/safe/' }))($text('Gnosis Safe')),
         ),
-        
+
         $node(),
 
         $responsiveFlex(layoutSheet.spacing, style({ alignItems: 'center', placeContent: 'space-between' }))(
@@ -203,21 +203,13 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
 
           $row(layoutSheet.spacingBig)(
             $text(style({ color: pallete.foreground }))('Signers:'),
-            $teamSigner({
-              name :'xm92boi'
-            }),
-            $teamSigner({
-              name :'0xAppodial'
-            }),
-            $teamSigner({
-              name :'itburnzz'
-            }),
-            $teamSigner({
-              name :'B2F_zer'
-            }),
-            $teamSigner({
-              name :'xdev_10'
-            }),
+            $teamSigner('xm92boi', 16),
+            $teamSigner('IrvingDev_', 140),
+            $teamSigner('APP0D14L', 11),
+            $teamSigner('kingblockchain', 4825),
+            $teamSigner('itburnzz', 12),
+            $teamSigner('B2F_zer', 22),
+            $teamSigner('xdev_10', 6),
           )
         ),
 
@@ -236,34 +228,26 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
 
           $row(layoutSheet.spacingBig)(
             $text(style({ color: pallete.foreground }))('Signers:'),
-            $teamSigner({
-              name :'xm92boi'
-            }),
-            $teamSigner({
-              name :'0xAppodial'
-            }),
-            $teamSigner({
-              name :'itburnzz'
-            }),
-            $teamSigner({
-              name :'B2F_zer'
-            }),
-            $teamSigner({
-              name :'xdev_10'
-            }),
+            $teamSigner('xm92boi', 16),
+            $teamSigner('IrvingDev_', 140),
+            $teamSigner('APP0D14L', 11),
+            $teamSigner('kingblockchain', 4825),
+            $teamSigner('itburnzz', 12),
+            $teamSigner('B2F_zer', 22),
+            $teamSigner('xdev_10', 6),
           )
         ),
 
 
-   
+
       ),
-      
+
     )
   ]
 })
 
-export const $teamSigner = ({ name }: {name: string}) => $row(layoutSheet.spacingTiny, style({ alignItems: 'center', fontSize: screenUtils.isDesktopScreen ? '' : '65%' }))(
-  $element('img')(style({ width: '20px', borderRadius: '22px' }), attr({ src: `https://unavatar.vercel.app/twitter/${name}`, }))(),
+export const $teamSigner = (name: string, id: number) => $row(layoutSheet.spacingTiny, style({ alignItems: 'center', fontSize: screenUtils.isDesktopScreen ? '' : '65%' }))(
+  $berryById(id, 22),
   $anchor(attr(({ href: `https://twitter.com/${name}` })), style({ fontWeight: 900, textDecoration: 'none', fontSize: '.75em' }))($text(`@${name}`)),
 )
 
