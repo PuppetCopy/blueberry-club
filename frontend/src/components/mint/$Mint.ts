@@ -12,10 +12,11 @@ import { $IntermediateConnectButton } from "../$ConnectAccount"
 import { WALLET } from "../../logic/provider"
 import { takeUntilLast } from "../../logic/common"
 import { $seperator2 } from "../../pages/common"
-import { $GbcWhitelist } from "./$GbcWhitelist"
+import { $GbcWhitelist } from "./$HolderMint"
 import { timeChange } from "./mintUtils2"
 import { $PublicMint } from "./$PublicMint"
 import { mintLabelMap } from "../../logic/mappings/label"
+import { $PrivateMint } from "./$Private"
 
 
 
@@ -52,9 +53,9 @@ export const $Mint = ({ walletStore, walletLink, item }: IMint) => component((
 
               const sale = mintRule.type === SaleType.Public
                 ? $PublicMint(item, mintRule, walletLink)({})
-                : mintRule.type === SaleType.holderWhitelist
-                  ? $GbcWhitelist(item, mintRule, walletLink)({}) : mintRule.type === SaleType.whitelist
-                    ? $GbcWhitelist(item, mintRule, walletLink)({}) : empty()
+                : mintRule.type === SaleType.holder
+                  ? $GbcWhitelist(item, mintRule, walletLink)({}) : mintRule.type === SaleType.private
+                    ? $PrivateMint(item, mintRule, walletLink)({}) : empty()
               const currentSaleType = mintLabelMap[mintRule.type]
 
               return [

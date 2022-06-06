@@ -15,7 +15,7 @@ export function connectSale(wallet: IWalletLink, saleAddress: string) {
   return { contract }
 }
 
-export function connectHolderWhitelistSale(wallet: IWalletLink, saleAddress: string) {
+export function connectHolderSale(wallet: IWalletLink, saleAddress: string) {
   const provider = getWalletProvider(wallet)
 
   const contract = map(w3p => HolderWhitelistTpl__factory.connect(saleAddress, w3p.getSigner()), provider)
@@ -26,7 +26,7 @@ export function connectHolderWhitelistSale(wallet: IWalletLink, saleAddress: str
   return { contract, hasTokenUsed, whitelistMinted }
 }
 
-export function connectWhitelistSale(wallet: IWalletLink, saleAddress: string) {
+export function connectPrivateSale(wallet: IWalletLink, saleAddress: string) {
   const provider = getWalletProvider(wallet)
 
   const contract = map(w3p => MerkleTpl__factory.connect(saleAddress, w3p.getSigner()), provider)

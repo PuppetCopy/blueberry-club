@@ -3,7 +3,7 @@ import { $text, component, style } from "@aelea/dom"
 import { $row } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { IToken } from "@gambitdao/gbc-middleware"
-import { constant, empty, map, merge, startWith, tap } from "@most/core"
+import { constant, delay, empty, map, merge, startWith, tap } from "@most/core"
 import { $berryByToken } from "../logic/common"
 import { $berryTileId } from "./$common"
 import { $ButtonSecondary } from "./form/$Button"
@@ -24,8 +24,8 @@ export const $SelectBerries = (config: ISelectBerries) => component((
 
   const $selectAllOption = $text(style({ paddingLeft: '15px' }))('All')
 
-  const allSelection = tap(console.log, constant(config.options, selectAll))
-  const value = startWith([], allSelection)
+  const allSelection = constant(config.options, selectAll)
+  const value = delay(100, startWith([], allSelection))
 
   return [
     $DropMultiSelect({

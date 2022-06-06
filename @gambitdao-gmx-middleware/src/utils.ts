@@ -453,7 +453,7 @@ export function groupByMap<A, B extends string | symbol | number>(list: A[], get
     const key = getKey(item)
 
     if (map[key]) {
-      console.warn(new Error(`${groupByMap.name}() is overwriting property: ${key}`))
+      console.warn(new Error(`${groupByMap.name}() is overwriting property: ${String(key)}`))
     }
 
     map[key] = item

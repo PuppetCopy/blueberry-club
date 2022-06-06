@@ -6,7 +6,6 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 struct SignedMintRule {
     address to;
-    uint96 nonce;
     uint208 cost;
     uint64 start;
     uint120 transaction;
@@ -32,8 +31,7 @@ abstract contract PrivateSignature is Private {
                     _rule.cost,
                     _rule.start,
                     _rule.transaction,
-                    _rule.amount,
-                    _rule.nonce
+                    _rule.amount
                 )
             );
     }

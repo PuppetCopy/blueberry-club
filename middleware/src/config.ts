@@ -1,4 +1,4 @@
-import { CHAIN, groupByMap, intervalTimeMap } from "@gambitdao/gmx-middleware"
+import { CHAIN, groupByMap, intervalTimeMap, unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { IAttributeMappings, LabItemSale, SaleType } from "./types"
 
 
@@ -47,7 +47,7 @@ export const saleDescriptionList: LabItemSale[] = [
     mintRuleList: [
       {
         amount: 2,
-        type: SaleType.whitelist,
+        type: SaleType.private,
         cost: 0n,
         start: toTime(2022, 5, 7, 22),
         transaction: 1,
@@ -66,7 +66,7 @@ export const saleDescriptionList: LabItemSale[] = [
     mintRuleList: [
       {
         amount: 2,
-        type: SaleType.whitelist,
+        type: SaleType.private,
         cost: 0n,
         start: toTime(2022, 5, 7, 22),
         transaction: 1,
@@ -94,7 +94,7 @@ export const saleDescriptionList: LabItemSale[] = [
     mintRuleList: [
       {
         amount: 800,
-        type: SaleType.holderWhitelist,
+        type: SaleType.holder,
         walletMintable: 50,
         cost: 0n,
         start: toTime(2022, 5, 7, 22),
