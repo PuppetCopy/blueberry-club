@@ -39,58 +39,58 @@ export const saleConfig = {
 }
 
 export const saleDescriptionList: LabItemSale[] = [
-  {
-    name: "Lab Flask",
-    description: `To celebrate the Blueberry Lab, we are offering this Lab Flask to those who have used the Blueberry Lab Testnet.`,
-    id: IAttributeMappings["Lab Flask"],
-    contractAddress: "0xac2e53510b7fDD951e04Dd04E6992223Db15fF92",
-    mintRuleList: [
-      {
-        amount: 2,
-        type: SaleType.private,
-        cost: 0n,
-        start: toTime(2022, 5, 7, 22),
-        transaction: 1,
-        addressList: [
-        ],
-        signatureList: [
-        ],
-      }
-    ]
-  },
-  {
-    name: "GBC x Giorgio Balbi",
-    description: `Abstract Generative Background by the Talented Giorgio Balbi.`,
-    id: IAttributeMappings["GBC x Giorgio Balbi"],
-    contractAddress: "",
-    mintRuleList: [
-      {
-        amount: 2,
-        type: SaleType.private,
-        cost: 0n,
-        start: toTime(2022, 5, 7, 22),
-        transaction: 1,
-        addressList: [
+  // {
+  //   name: "Lab Flask",
+  //   description: `To celebrate the Blueberry Lab, we are offering this Lab Flask to those who have used the Blueberry Lab Testnet.`,
+  //   id: IAttributeMappings["Lab Flask"],
+  //   contractAddress: "0xac2e53510b7fDD951e04Dd04E6992223Db15fF92",
+  //   mintRuleList: [
+  //     {
+  //       amount: 2,
+  //       type: SaleType.private,
+  //       cost: 0n,
+  //       start: toTime(2022, 5, 7, 22),
+  //       transaction: 1,
+  //       addressList: [
+  //       ],
+  //       signatureList: [
+  //       ],
+  //     }
+  //   ]
+  // },
+  // {
+  //   name: "GBC x Giorgio Balbi",
+  //   description: `Abstract Generative Background by the Talented Giorgio Balbi.`,
+  //   id: IAttributeMappings["GBC x Giorgio Balbi"],
+  //   contractAddress: "",
+  //   mintRuleList: [
+  //     {
+  //       amount: 2,
+  //       type: SaleType.private,
+  //       cost: 0n,
+  //       start: toTime(2022, 5, 7, 22),
+  //       transaction: 1,
+  //       addressList: [
 
-        ],
-        signatureList: [
+  //       ],
+  //       signatureList: [
     
-        ],
-      },
-      {
-        amount: 20,
-        type: SaleType.Public,
-        cost: 10000000000000000n,
-        start: toTime(2022, 5, 7, 22),
-        transaction: 1
-      }
-    ]
-  },
+  //       ],
+  //     },
+  //     {
+  //       amount: 20,
+  //       type: SaleType.Public,
+  //       cost: 10000000000000000n,
+  //       start: toTime(2022, 5, 7, 22),
+  //       transaction: 1
+  //     }
+  //   ]
+  // },
   {
     name: "GLP Shirt",
     description: "The perfect shirt for chilling out while GLP gives you passive income. Free claim for the Blueberry Lab Day 1",
     id: IAttributeMappings["GLP Shirt"],
-    contractAddress: "0xA6C7405Abfc4F0fEf4582De32E0a8f77cDbD90fe",
+    contractAddress: "0xe1822ABcF26A86151651449d7122220dC07d8301",
     mintRuleList: [
       {
         amount: 800,

@@ -3,10 +3,10 @@ import { Closet__factory, Profile__factory } from "@gambitdao/gbc-contracts"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { awaitPromises, filter, map } from "@most/core"
 import { getTokenSlots, getWalletProvider } from "../common"
-import { web3ProviderTestnet } from "../provider"
+import { web3Provider, web3ProviderTestnet } from "../provider"
 
-export const closetGlobal = Closet__factory.connect(GBC_ADDRESS.CLOSET, web3ProviderTestnet)
-export const profile = Profile__factory.connect(GBC_ADDRESS.PROFILE, web3ProviderTestnet)
+export const closetGlobal = Closet__factory.connect(GBC_ADDRESS.CLOSET, web3Provider)
+export const profile = Profile__factory.connect(GBC_ADDRESS.PROFILE, web3Provider)
 
 
 export const getProfile = async (address: string) => {

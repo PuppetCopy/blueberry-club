@@ -11,7 +11,7 @@ import {PrivateMerkle} from "../mint/Merkle.sol";
 
 
 contract MerkleTpl is Sale, Native, Public, PrivateMerkle {
-    constructor(uint256 item_, address _owner, GBCLab lab_, SaleState memory _saleState, MintState memory _mintState, MintRule memory _mintRule, bytes32 _merkleRoot)
+    constructor(uint256 item_, address _owner, address _treasury, GBCLab lab_, SaleState memory _saleState, MintState memory _mintState, MintRule memory _mintRule, bytes32 _merkleRoot)
         Sale(item_, lab_, _saleState, _owner)
         Native(payable(_owner))
         Mintable(_mintState)

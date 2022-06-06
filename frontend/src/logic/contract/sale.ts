@@ -5,7 +5,7 @@ import { periodicRun } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { awaitPromises, map, multicast } from "@most/core"
 import { getWalletProvider } from "../common"
-import { web3ProviderTestnet } from "../provider"
+import { web3Provider, web3ProviderTestnet } from "../provider"
 
 
 export function connectSale(wallet: IWalletLink, saleAddress: string) {
@@ -35,7 +35,7 @@ export function connectPrivateSale(wallet: IWalletLink, saleAddress: string) {
   return { contract }
 }
 
-const sale = (address: string) => Sale__factory.connect(address, web3ProviderTestnet)
+const sale = (address: string) => Sale__factory.connect(address, web3Provider)
 
 
 export const getMintCount = (address: string, updateInterval = 3500) => {

@@ -29,17 +29,17 @@ export enum ROLES {
  */
 
 // This contract/address can be used on other contracts
-const TREASURY = "" // Multisig or you personal address (if you leave it blank it will be the owner address)
+const TREASURY = GBC_ADDRESS.TREASURY_ARBITRUM // Multisig or you personal address (if you leave it blank it will be the owner address)
 const GBC = GBC_ADDRESS.GBC // The GBC ERC721 (NFT) contract
 // const POLICE = "" // Police contract
-const POLICE = "0x6082Ba2c841c50a01267306927150da9DA798D21" // Police contract
+const POLICE = GBC_ADDRESS.POLICE // Police contract
 // const LAB = "" // The Lab items ERC1155 contract
-const LAB = "0x3eaBD423D21DC2CE90aA982fB7D1939EA2Ec16ED" // The Lab items ERC1155 contract
+const LAB = GBC_ADDRESS.LAB // The Lab items ERC1155 contract
 
 // This contract can be redeployed safely they are not required
 // on others contract (for now)
-const PROFILE = "0x13F82f192cB2A8746Aede30e23479B6Ff8FbcE2b"
-const CLOSET = "0x227995578643a9c4E5EceF49AbA461EF74df1085"
+const PROFILE = GBC_ADDRESS.PROFILE
+const CLOSET = GBC_ADDRESS.CLOSET
 
 
 const main = async () => {
@@ -61,7 +61,7 @@ const main = async () => {
 
 
   console.log(`------------------------------------------------------------------------------\n`)
-  const police = await connectOrDeploy(POLICE, Police__factory, owner)
+  const police = await connectOrDeploy(POLICE, Police__factory, creator.address)
   console.log(`------------------------------------------------------------------------------\n`)
 
   const lab = await connectOrDeploy(LAB, GBCLab__factory, owner, police.address)
@@ -119,17 +119,17 @@ const main = async () => {
     if (fstMintRule.type === SaleType.Public) {
       const { amount, cost, start, transaction } = fstMintRule
 
-      sale = await connectOrDeploy(config.contractAddress, PublicTpl__factory, config.id, owner, lab.address, saleState, mintState, { amount, cost, start, transaction })
+      sale = await connectOrDeploy(config.contractAddress, PublicTpl__factory, config.id, owner, TREASURY, lab.address, saleState, mintState, { amount, cost, start, transaction })
     } else if (fstMintRule.type === SaleType.holder) {
       const { amount, cost, start, transaction, walletMintable } = fstMintRule
-      sale = await connectOrDeploy(config.contractAddress, HolderWhitelistTpl__factory, config.id, owner, gbc.address, lab.address, saleState, mintState, { totalMintable: amount, cost, start, transaction, walletMintable })
+      sale = await connectOrDeploy(config.contractAddress, HolderWhitelistTpl__factory, config.id, owner, TREASURY, gbc.address, lab.address, saleState, mintState, { totalMintable: amount, cost, start, transaction, walletMintable })
     } else {
       const res = getMerkleProofs(fstMintRule.addressList, fstMintRule)
       console.log(res.leaves)
       console.log('root: ', res.merkleRoot)
       const { amount, cost, start, transaction } = fstMintRule
 
-      sale = await connectOrDeploy(config.contractAddress, MerkleTpl__factory, config.id, owner, lab.address, saleState, mintState, { amount, cost, start, transaction }, res.merkleRoot)
+      sale = await connectOrDeploy(config.contractAddress, MerkleTpl__factory, config.id, owner, TREASURY, lab.address, saleState, mintState, { amount, cost, start, transaction }, res.merkleRoot)
     }
 
 
