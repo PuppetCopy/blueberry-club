@@ -1,4 +1,4 @@
-import { Behavior } from "@aelea/core"
+import { Behavior, O } from "@aelea/core"
 import { $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
@@ -8,7 +8,7 @@ import { IWalletLink } from "@gambitdao/wallet-link"
 import { $loadBerry } from "../../components/$DisplayBerry"
 import { $buttonAnchor, $ButtonPrimary, $ButtonSecondary } from "../../components/form/$Button"
 import { $responsiveFlex } from "../../elements/$common"
-import { IAttributeHat, IAttributeFaceAccessory, IAttributeClothes, IAttributeExpression, USE_CHAIN, IProfile } from "@gambitdao/gbc-middleware"
+import { IAttributeHat, IAttributeFaceAccessory, IAttributeClothes, IAttributeExpression, USE_CHAIN, IProfile, saleDescriptionList } from "@gambitdao/gbc-middleware"
 import { $seperator2 } from "../common"
 import { constant, empty, map, mergeArray, multicast, now, switchLatest } from "@most/core"
 import { ContractTransaction } from "@ethersproject/contracts"
@@ -20,6 +20,9 @@ import { connectGbc } from "../../logic/contract/gbc"
 import { queryProfileList } from "../../logic/query"
 import { $berryByToken } from "../../logic/common"
 import { $accountPreview } from "../../components/$AccountProfile"
+import { countdownFn } from "@gambitdao/gmx-middleware"
+import { timeChange } from "../../components/mint/mintUtils2"
+import { $StoreItemPreview } from "./$StoreItem"
 
 
 
@@ -103,69 +106,30 @@ export const $LabHome = ({ walletLink, parentRoute, walletStore }: IBerry) => co
             $text(style({ fontSize: '1.5em', fontWeight: 'bold' }))(map(t => countdownFn(Date.UTC(2022, 5, 7, 22), t * 1000), timeChange)),
           ),
 
-
-          // $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
-          //   $IntermediateConnectButton({
-          //     walletStore,
-          //     $container: $column,
-          //     $display: map(() => {
-          //       return $ButtonPrimary({
-          //         $content: $text(`Mint 2 GBC's`)
-          //       })({
-          //         click: mintTestGbcTether(
-          //           map(() => {
-          //             const walletGbc = connectGbc(walletLink)
-          //             return map(async contract => {
-          //               const ctx = await contract.mint(2, { value: 2n * 30000000000000000n })
-          //               return ctx
-          //             }, walletGbc.contract)
-          //           }),
-          //           switchLatest,
-          //           multicast
-          //         )
-          //       })
-          //     }),
-
-          //     walletLink: walletLink
-          //   })({
-          //     walletChange: walletChangeTether()
-          //   }),
-
-
-          //   switchLatest(mergeArray([
-          //     now($text(style({ color: pallete.positive }))(`<- Hey anon, Start by minting test GBC's`)),
-          //     constant(empty(), mintTestGbc)
-          //   ])),
-
-          //   $IntermediateTx({
-          //     $$success: map(() => $text(`Minted 2 test GBC's`)),
-          //     chain: USE_CHAIN,
-          //     query: mintTestGbc
-          //   })({}),
-          // ),
-          // $seperator2,
-          // $row(layoutSheet.spacingBig)(
-          //   $Link({
-          //     $content: $anchor(
-          //       $ButtonSecondary({
-          //         $content: $text('Customize my GBC')
-          //       })({}),
-          //     ),
-          //     url: '/p/wardrobe', route: parentRoute
-          //   })({
-          //     click: changeRouteTether()
-          //   }),
-          //   $Link({
-          //     $content: $anchor(
-          //       $ButtonPrimary({
-          //         $content: $text('View Store')
-          //       })({}),
-          //     ),
-          //     url: '/p/lab-store', route: parentRoute
-          //   })({
-          //     click: changeRouteTether()
-          //   }),
-          // ),
+          
+          $seperator2,
+          $row(layoutSheet.spacingBig)(
+            $Link({
+              $content: $anchor(
+                $ButtonSecondary({
+                  $content: $text('Customize my GBC')
+                })({}),
+              ),
+              url: '/p/wardrobe', route: parentRoute
+            })({
+              click: changeRouteTether()
+            }),
+            $Link({
+              $content: $anchor(
+                $ButtonPrimary({
+                  $content: $text('View Store')
+                })({}),
+              ),
+              url: '/p/lab-store', route: parentRoute
+            })({
+              click: changeRouteTether()
+            }),
+          ),
 
 
         ),
@@ -234,6 +198,26 @@ export const $LabHome = ({ walletLink, parentRoute, walletStore }: IBerry) => co
           })({}),
         ),
       ),
+
+
+      // $column(layoutSheet.spacingBig)(
+
+      //   $column(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
+      //     $text(style({ fontWeight: 'bold', fontSize: '2.5em' }))('Blueberry Lab Store'),
+      //     $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '678px' }))('You will find here the different items available to customize your GBC'),
+      //   ),
+
+      //   $column(layoutSheet.spacingBig, style({ justifyContent: 'space-between' }))(
+      //     $text(style({ fontWeight: 'bold', fontSize: '1.8em' }))('Items'),
+      //     $row(screenUtils.isDesktopScreen ? style({ gap: '50px', placeContent: 'center', flexWrap: 'wrap' }) : O(layoutSheet.spacingBig, style({ overflow: 'hidden', placeContent: 'space-evenly', flexWrap: 'wrap' })))(
+      //       ...saleDescriptionList.map(item =>
+      //         $StoreItemPreview(item, parentRoute, changeRouteTether)
+      //       )
+      //     ),
+      //   ),
+
+      //   $node(),
+      // ),
 
       $column(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
         $text(style({ fontWeight: 'bold', fontSize: screenUtils.isDesktopScreen ? '2.5em' : '1.45em', textAlign: 'center' }))('Want to get featured?'),

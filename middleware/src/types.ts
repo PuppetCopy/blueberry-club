@@ -143,6 +143,9 @@ export enum IAttributeMappings {
   "Christmas Hat" = 203,
   "Beard White" = 204,
   "Camo Background" = 205,
+  "Lab Flask" = 207,
+  "GLP Shirt" = 208,
+  "GBC x Giorgio Balbi" = 209,
 }
 
 
@@ -235,6 +238,7 @@ export enum IAttributeClothes {
   // lab
   BUILDER = IAttributeMappings.Builder,
   AVALANCHE_HOODIE = IAttributeMappings["Avalanche Hoodie"],
+  GLP_SHIRT = IAttributeMappings["GLP Shirt"],
 }
 
 export enum IAttributeFaceAccessory {
@@ -336,6 +340,7 @@ export enum IAttributeHat {
   LAB_HEAD = IAttributeMappings['Lab Head'],
   CHRISTMAS_HAT = IAttributeMappings['Christmas Hat'],
   FAST_FOOD_CAP = IAttributeMappings['Fast Food Cap'],
+  LAB_FLASK = IAttributeMappings["Lab Flask"],
 }
 
 export enum IAttributeBackground {
@@ -355,7 +360,7 @@ export enum IAttributeBackground {
 
 
   CAMO = IAttributeMappings['Camo Background'],
-
+  GIORGIO_BALBI_BG = IAttributeMappings["GBC x Giorgio Balbi"],
 }
 
 export enum SaleType {
