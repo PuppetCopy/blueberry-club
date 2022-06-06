@@ -251,7 +251,7 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
               })({}),
               $option: $row,
               value: {
-                $container: $defaultSelectContainer(style({ padding: '15px', flexWrap: 'wrap', width: '304px', maxHeight: '400px', overflow: 'auto', flexDirection: 'row' })),
+                $container: $defaultSelectContainer(style({ padding: '15px', flexWrap: 'wrap', width: '310px', maxHeight: '400px', overflow: 'auto', flexDirection: 'row' })),
                 value: now(initialBerry || null),
                 $$option: map(token => {
 

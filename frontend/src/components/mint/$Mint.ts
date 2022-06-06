@@ -16,6 +16,7 @@ import { $GbcWhitelist } from "./$GbcWhitelist"
 import { timeChange } from "./mintUtils2"
 import { $PublicMint } from "./$PublicMint"
 import { mintLabelMap } from "../../logic/mappings/label"
+import { $PrivateMint } from "./$Private"
 
 
 
@@ -52,9 +53,9 @@ export const $Mint = ({ walletStore, walletLink, item }: IMint) => component((
 
               const sale = mintRule.type === SaleType.Public
                 ? $PublicMint(item, mintRule, walletLink)({})
-                : mintRule.type === SaleType.holderWhitelist
-                  ? $GbcWhitelist(item, mintRule, walletLink)({}) : mintRule.type === SaleType.whitelist
-                    ? $GbcWhitelist(item, mintRule, walletLink)({}) : empty()
+                : mintRule.type === SaleType.holder
+                  ? $GbcWhitelist(item, mintRule, walletLink)({}) : mintRule.type === SaleType.private
+                    ? $PrivateMint(item, mintRule, walletLink)({}) : empty()
               const currentSaleType = mintLabelMap[mintRule.type]
 
               return [

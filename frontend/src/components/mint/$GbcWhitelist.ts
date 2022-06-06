@@ -12,7 +12,7 @@ import { getTokenSlots, takeUntilLast } from "../../logic/common"
 import { connectGbc } from "../../logic/contract/gbc"
 import { connectLab } from "../../logic/contract/lab"
 import { connectManager } from "../../logic/contract/manager"
-import { connectHolderWhitelistSale } from "../../logic/contract/sale"
+import { connectHolderSale } from "../../logic/contract/sale"
 import { queryOwnerV2 } from "../../logic/query"
 import { $ButtonPrimary } from "../form/$Button"
 import { $displayMintEvents, IMintEvent, timeChange } from "./mintUtils2"
@@ -22,7 +22,7 @@ export const $GbcWhitelist = (item: LabItemSale, mintRule: MintRule, walletLink:
   [selectTokensForWhitelist, selectTokensForWhitelistTether]: Behavior<IToken[], IToken[]>,
 ) => {
 
-  const saleWallet = connectHolderWhitelistSale(walletLink, item.contractAddress)
+  const saleWallet = connectHolderSale(walletLink, item.contractAddress)
   const gbcWallet = connectGbc(walletLink)
   const managerWallet = connectManager(walletLink)
   const labWallet = connectLab(walletLink)

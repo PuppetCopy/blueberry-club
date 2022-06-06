@@ -365,8 +365,8 @@ export enum IAttributeBackground {
 
 export enum SaleType {
   Public,
-  holderWhitelist,
-  whitelist,
+  holder,
+  private,
 }
 
 export type IBerryDisplayTupleMap = [
@@ -403,18 +403,18 @@ export interface MintPublic extends MintRuleStruct {
   type: SaleType.Public,
 }
 
-export interface MintHolderWhitelist extends MintRuleStruct {
-  type: SaleType.holderWhitelist,
+export interface MintHolder extends MintRuleStruct {
+  type: SaleType.holder,
   walletMintable: number
 }
 
-export interface MintWhitelist extends MintRuleStruct {
-  type: SaleType.whitelist
+export interface MintPrivate extends MintRuleStruct {
+  type: SaleType.private
   addressList: string[]
   signatureList: string[]
 }
 
-export type MintRule = MintPublic | MintHolderWhitelist | MintWhitelist
+export type MintRule = MintPublic | MintHolder | MintPrivate
 
 export interface LabItemSale {
   contractAddress: string

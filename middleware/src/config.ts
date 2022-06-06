@@ -1,4 +1,4 @@
-import { CHAIN, groupByMap, intervalTimeMap } from "@gambitdao/gmx-middleware"
+import { CHAIN, groupByMap, intervalTimeMap, unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { IAttributeMappings, LabItemSale, SaleType } from "./types"
 
 
@@ -34,7 +34,7 @@ export const REWARD_DISTRIBUTOR = {
 const toTime = (...params: Parameters<typeof Date.UTC>) => Math.floor(Date.UTC(...params) / 1000)
 
 export const saleConfig = {
-  saleDuration: intervalTimeMap.DAY7 * 2, // 2 weeks
+  saleDuration: intervalTimeMap.MONTH, // 2 weeks
   maxMintable: 50
 }
 
@@ -43,15 +43,15 @@ export const saleDescriptionList: LabItemSale[] = [
     name: "Builder Vest",
     description: `This vest is only for true builders, whitelist `,
     id: IAttributeMappings['Builder'],
-    contractAddress: "0xac2e53510b7fDD951e04Dd04E6992223Db15fF92",
+    contractAddress: "0xcDE625CB5d633E64d0A0b716516b224dd2c9fA50",
     mintRuleList: [
       {
         walletMintable: 5,
-        type: SaleType.holderWhitelist,
+        type: SaleType.holder,
         cost: 10000000000000000n,
-        start: toTime(2022, 5, 4, 22),
-        amount: 5,
-        transaction: 1
+        start: unixTimestampNow(),
+        amount: 20,
+        transaction: 5
       }
     ]
   },
@@ -59,13 +59,13 @@ export const saleDescriptionList: LabItemSale[] = [
     name: "Santa Claus Hat",
     description: "GBC holders will be able to mint this item for free on Christmas Day\n\nBut, since Christmas date will be far too long for a test, we shall celebrate an early Ho ho ho! Merry Christmas!",
     id: IAttributeMappings['Christmas Hat'],
-    contractAddress: "0xA6C7405Abfc4F0fEf4582De32E0a8f77cDbD90fe",
+    contractAddress: "0x8fce85C9DC0D77205B07BAd41C1fe43033738CDd",
     mintRuleList: [
       {
         amount: 4,
         type: SaleType.Public,
         cost: 10000000000000000n,
-        start: toTime(2022, 3, 25, 22),
+        start: unixTimestampNow(),
         transaction: 1
       }
     ]
@@ -74,13 +74,13 @@ export const saleDescriptionList: LabItemSale[] = [
     name: "Santa Claus Beard",
     description: "Just an overpriced beard, it's not worth it!",
     id: IAttributeMappings['Beard White'],
-    contractAddress: "0x8330540bE7B1710BD4449882397C53513C1Ee177",
+    contractAddress: "0xd4988B8fd036986eE1Bd5de223144c4C74629683",
     mintRuleList: [
       {
-        amount: 500,
+        amount: 133,
         type: SaleType.Public,
         cost: 10000000000000000n,
-        start: 0,
+        start: unixTimestampNow() + intervalTimeMap.HR4,
         transaction: 10
       }
     ]
@@ -89,13 +89,13 @@ export const saleDescriptionList: LabItemSale[] = [
     name: "Avalanche Hoodie",
     description: `A possible partnership could be a GBC Treasury paid promotion\n\none example would be, anyone who mints this item and wears as a profile(on-chain) would be eligible for an air-drop or allowed for an entry to a special event`,
     id: IAttributeMappings["Avalanche Hoodie"],
-    contractAddress: "0xdd801Fe5002d84Cd5931AfBb8bBdd6Ae6b939E08",
+    contractAddress: "0xbAcEcd0A65056D72B84887a801E02a8CC81d651f",
     mintRuleList: [
       {
         amount: 2023,
         type: SaleType.Public,
         cost: 10000000000000000n,
-        start: 0,
+        start: unixTimestampNow(),
         transaction: 10
       }
     ]
@@ -104,28 +104,28 @@ export const saleDescriptionList: LabItemSale[] = [
     name: "Abstract Background",
     description: `GBC Members are whitelisted and can mint on ${new Date(toTime(2022, 3, 7, 22) * 1000).toLocaleString()} . Public Mint is highly delayed`,
     id: IAttributeMappings['Camo Background'],
-    contractAddress: "0x09e25b9F5916B15c827389512678C730fA96a7A2",
+    contractAddress: "0x301393E63b17F9f30f577E278dAeE521b5500419",
     mintRuleList: [
       {
         amount: 2,
-        type: SaleType.whitelist,
+        type: SaleType.private,
         cost: 3000000000000000n,
-        start: 0,
+        start: 1654537183,
         transaction: 1,
         addressList: [
           "0xDfB24A3aEB768F623e3fD50865Cf9A39b90f719b",
           "0x9E7f78EafAEBaf1094202FFA0835157fC5C3ADe0"
         ],
         signatureList: [
-          "0xd648781d0748116d90df29c20b08da46386ec30ac3e08c8b2e5996bf618e812a",
-          "0x84c123be8234d5d6ace90e19a891527a6ee084d73e434a8c8ecc624d6f1c0175",
+          '0x612310f5de224744a547fc8ce10dd961f75eeaca0c03fd346c53bf5169cdc5a1',
+          '0x675b25ed8b0d2ed6438609c7cb12e3054f736cb3e23c16d1bad6e4075be03b0a',
         ],
       },
       {
         amount: 2,
         type: SaleType.Public,
         cost: 1000000000000000n,
-        start: 0,
+        start: unixTimestampNow(),
         transaction: 10
       },
     ]
@@ -135,13 +135,13 @@ export const saleDescriptionList: LabItemSale[] = [
     name: "Fast Food Cap",
     description: "Because every GMX bottom seller needs one (;",
     id: IAttributeMappings["Fast Food Cap"],
-    contractAddress: "0x326c4d5CF8a89E4006ec7cc717EDcd6cf4A6a46A",
+    contractAddress: "0x759D662D2842454Ad0234d20E0b5e9c1E76754CA",
     mintRuleList: [
       {
         amount: 33,
         type: SaleType.Public,
         cost: 20000000000000000n,
-        start: toTime(2022, 3, 9, 22),
+        start: unixTimestampNow(),
         transaction: 2
       }
     ]
