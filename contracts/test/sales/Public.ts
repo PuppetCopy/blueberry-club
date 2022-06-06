@@ -1,7 +1,7 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { expect } from "chai"
 import { BigNumber } from "ethers"
-import { ethers } from "hardhat"
+import { ethers, network } from "hardhat"
 import {
   GBC,
   GBC__factory,
@@ -9,9 +9,10 @@ import {
   GBCLab,
   Police,
   Police__factory,
-  SaleTest,
-  SaleTest__factory,
+  SalePublicTest,
+  SalePublicTest__factory,
 } from "../../typechain-types"
+import { now } from "../utils"
 
 export enum ROLES {
   MINTER,
@@ -21,7 +22,7 @@ export enum ROLES {
 
 const MINTED_TOKEN = 100
 
-describe.skip("Sale.sol", function () {
+describe("Public.sol", function () {
   let owner: SignerWithAddress
   let bob: SignerWithAddress
   let alice: SignerWithAddress
@@ -29,7 +30,9 @@ describe.skip("Sale.sol", function () {
   let gbc: GBC
   let lab: GBCLab
   let police: Police
-  let sale: SaleTest
+  let sale: SalePublicTest
+
+  let start: number
 
   this.beforeAll(async () => {
     const [owner_, user1_, user2_] = await ethers.getSigners()
@@ -63,7 +66,9 @@ describe.skip("Sale.sol", function () {
     lab = await itemsFactory.deploy(owner.address, police.address)
     await lab.deployed()
 
-    const saleFactory = new SaleTest__factory(owner)
+    start = await now()
+
+    const saleFactory = new SalePublicTest__factory(owner)
     sale = await saleFactory.deploy(
       MINTED_TOKEN,
       lab.address,
@@ -72,7 +77,9 @@ describe.skip("Sale.sol", function () {
         minted: 0,
         paused: 1,
       },
-      owner.address
+      owner.address,
+      start,
+      start + 3600
     )
     await sale.deployed()
 
@@ -91,28 +98,20 @@ describe.skip("Sale.sol", function () {
 
   it("Should be possible to mint items", async () => {
     expect(await sale.totalMinted()).to.be.equal(BigNumber.from(0))
-    await sale.mint(owner.address, 1)
+    await sale.publicMint(1, { value: ethers.utils.parseEther("0.02") })
     expect(await sale.totalMinted()).to.be.equal(BigNumber.from(1))
     expect(await lab.balanceOf(owner.address, MINTED_TOKEN)).to.be.equal(
       BigNumber.from(1)
     )
   })
 
-  it("Should be possible to pause the contract", async () => {
-    await sale.setPaused(true)
-
-    await expect(sale.mint(owner.address, 1)).to.be.revertedWith("")
-  })
-
-  it("Should not be possible to mint hover the max supply", async () => {
-    await sale.setPaused(false)
-    const maxSupply = await sale.maxSupply()
-
-    await expect(sale.mint(owner.address, maxSupply)).to.be.revertedWith("")
-    await sale.mint(owner.address, maxSupply.sub(1))
-    expect(await sale.totalMinted()).to.be.equal(maxSupply)
-    expect(await lab.balanceOf(owner.address, MINTED_TOKEN)).to.be.equal(
-      maxSupply
+  it("mintable amount should decrease at each mint", async () => {
+    expect(await sale.publicMintable(owner.address)).to.be.equal(
+      BigNumber.from(99)
+    )
+    await sale.publicMint(5, { value: ethers.utils.parseEther("0.02").mul(5) })
+    expect(await sale.publicMintable(owner.address)).to.be.equal(
+      BigNumber.from(94)
     )
   })
 })

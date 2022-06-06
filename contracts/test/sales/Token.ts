@@ -25,7 +25,7 @@ export enum ROLES {
 
 const MINTED_TOKEN = 100
 
-describe("Token.sol", function () {
+describe.skip("Token.sol", function () {
   let owner: SignerWithAddress
   let bob: SignerWithAddress
   let alice: SignerWithAddress
@@ -116,7 +116,7 @@ describe("Token.sol", function () {
   })
 })
 
-describe("Native.sol", function () {
+describe.skip("Native.sol", function () {
   let owner: SignerWithAddress
   let bob: SignerWithAddress
   let alice: SignerWithAddress

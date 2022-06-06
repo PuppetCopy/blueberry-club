@@ -20,15 +20,7 @@ abstract contract Public is Mintable {
     }
 
     function publicMint(uint120 amount) external payable {
-        MintRule memory rule_ = publicRule;
-        uint120 minted_ = publicMintedOf[msg.sender];
-        unchecked {
-            rule_.amount -= minted_;
-        }
-
-        publicMintedOf[msg.sender] = minted_ + amount;
-
-        _mint(msg.sender, amount, rule_);
+        _publicMintFor(msg.sender, amount);
     }
 
     function publicMintFor(address to, uint120 amount)
@@ -36,6 +28,10 @@ abstract contract Public is Mintable {
         payable
         requiresAuth
     {
+        _publicMintFor(to, amount);
+    }
+
+    function _publicMintFor(address to, uint120 amount) internal {
         MintRule memory rule_ = publicRule;
         uint120 minted_ = publicMintedOf[to];
         unchecked {
