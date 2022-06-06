@@ -1,4 +1,4 @@
-import { groupByMapMany, IAccountQueryParamApi, intervalInMsMap, IPagePositionParamApi, ITimerangeParamApi } from "@gambitdao/gmx-middleware"
+import { groupByMapMany, IAccountQueryParamApi, intervalTimeMap, IPagePositionParamApi, ITimerangeParamApi } from "@gambitdao/gmx-middleware"
 import { ClientOptions, createClient, gql, TypedDocumentNode } from "@urql/core"
 import { ILabItemOwnership, IOwner, IPriceInterval, IProfile, IToken } from "@gambitdao/gbc-middleware"
 
@@ -164,7 +164,7 @@ export type QueryIdentifiable = {
   id: string
 }
 
-export type IQueryGmxEthHistoricPrice = Partial<ITimerangeParamApi & { period: intervalInMsMap }>
+export type IQueryGmxEthHistoricPrice = Partial<ITimerangeParamApi & { period: intervalTimeMap }>
 
 const tokenDoc: TypedDocumentNode<{token: IToken | null}, QueryIdentifiable> = gql`
 ${schemaFragments}
@@ -185,7 +185,7 @@ query ($id: String) {
 
 
 const gmxGlpEthHistoricPriceDoc: TypedDocumentNode<{ gmx: IPricefeed[], glpArbitrum: IPricefeed[], eth: IPricefeed[] }, IQueryGmxEthHistoricPrice> = gql`
-query ($first: Int = 1000, $period: IntervalTime = _14400, $from: Int = 0, $to: Int = 1999999999) {
+query ($first: Int = 1000, $period: IntervalTime = _86400, $from: Int = 0, $to: Int = 1999999999) {
   glpArbitrum: pricefeeds(first: $first, where: {timestamp_gt: $from, timestamp_lt: $to, interval: $period, feed: _0x321F653eED006AD1C29D174e17d96351BDe22649}) {
     id
     feed
@@ -221,7 +221,7 @@ query ($first: Int = 1000, $period: IntervalTime = _14400, $from: Int = 0, $to: 
 
 const avalancheHistoricPriceDoc: TypedDocumentNode<{ avax: IPricefeed[], glpAvalanche: IPricefeed[] }, IQueryGmxEthHistoricPrice> = gql`
 
-query ($first: Int = 1000, $period: IntervalTime = _14400, $from: Int = 0, $to: Int = 1999999999) {
+query ($first: Int = 1000, $period: IntervalTime = _86400, $from: Int = 0, $to: Int = 1999999999) {
   avax: pricefeeds(first: $first, where: {timestamp_gt: $from, timestamp_lt: $to, interval: $period, feed: _0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7}) {
     id
     feed

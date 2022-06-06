@@ -1,7 +1,7 @@
 import { ARBITRUM_ADDRESS_LEVERAGE, ARBITRUM_ADDRESS_STABLE, ARBITRUM_ADDRESS_TRADE } from "./address/arbitrum"
 import { AVALANCHE_ADDRESS_LEVERAGE, AVALANCHE_ADDRESS_STABLE, AVALANCHE_ADDRESS_TRADE } from "./address/avalanche"
 import { TOKEN_SYMBOL } from "./address/symbol"
-import { CHAIN, intervalInMsMap } from "./constant"
+import { CHAIN, intervalTimeMap } from "./constant"
 
 
 
@@ -181,7 +181,7 @@ export interface IAccountQueryParamApi {
 }
 
 export interface AccountHistoricalDataApi extends IAccountQueryParamApi {
-  timeInterval: intervalInMsMap
+  timeInterval: intervalTimeMap
 }
 
 export interface ITimerangeParamApi {
@@ -205,7 +205,7 @@ export interface IPageParapApi<T> extends IPagePositionParamApi {
 
 
 export interface ILeaderboardRequest extends IPagePositionParamApi, IChainParamApi, ISortParamApi<keyof IAccountSummary> {
-  timeInterval: intervalInMsMap.HR24 | intervalInMsMap.DAY7 | intervalInMsMap.MONTH
+  timeInterval: intervalTimeMap.HR24 | intervalTimeMap.DAY7 | intervalTimeMap.MONTH
 }
 
 
@@ -213,7 +213,7 @@ export type IPriceTimelineParamApi = IChainParamApi & ITimerangeParamApi & { tok
 
 export type IOpenTradesParamApi = IChainParamApi & IPagePositionParamApi & ISortParamApi<keyof ITradeOpen>
 export type IAccountTradeListParamApi = IChainParamApi & IAccountQueryParamApi
-export type IPricefeedParamApi = IChainParamApi & ITimerangeParamApi & { interval: intervalInMsMap, tokenAddress: ADDRESS_LEVERAGE }
+export type IPricefeedParamApi = IChainParamApi & ITimerangeParamApi & { interval: intervalTimeMap, tokenAddress: ADDRESS_LEVERAGE }
 
 
 

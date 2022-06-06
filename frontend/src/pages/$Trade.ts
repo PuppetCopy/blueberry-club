@@ -2,7 +2,7 @@ import { Behavior, combineArray, combineObject, O, replayLatest } from "@aelea/c
 import { $element, $node, $text, attr, component, eventElementTarget, IBranch, INode, nodeEvent, style, StyleCSS, styleInline } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, Input, layoutSheet, observer, screenUtils, state } from "@aelea/ui-components"
-import { AddressZero, ADDRESS_LEVERAGE, ARBITRUM_ADDRESS, ARBITRUM_ADDRESS_LEVERAGE, CHAIN, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, formatFixed, formatReadableUSD, getMappedKeyByValue, getTokenDescription, IAccountTradeListParamApi, intervalInMsMap, intervalListFillOrderMap, IPricefeed, IPricefeedParamApi, IPriceLatestMap, isTradeClosed, isTradeLiquidated, isTradeOpen, isTradeSettled, ITrade, readableNumber, TOKEN_DESCRIPTION_MAP, TOKEN_SYMBOL, unixTimestampNow, unixTimeTzOffset } from "@gambitdao/gmx-middleware"
+import { AddressZero, ADDRESS_LEVERAGE, ARBITRUM_ADDRESS, ARBITRUM_ADDRESS_LEVERAGE, CHAIN, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, formatFixed, formatReadableUSD, getMappedKeyByValue, getTokenDescription, IAccountTradeListParamApi, intervalTimeMap, intervalListFillOrderMap, IPricefeed, IPricefeedParamApi, IPriceLatestMap, isTradeClosed, isTradeLiquidated, isTradeOpen, isTradeSettled, ITrade, readableNumber, TOKEN_DESCRIPTION_MAP, TOKEN_SYMBOL, unixTimestampNow, unixTimeTzOffset } from "@gambitdao/gmx-middleware"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { at, combine, constant, filter, join, map, merge, mergeArray, multicast, now, periodic, skipRepeats, snapshot, startWith, switchLatest, tap, until } from "@most/core"
@@ -34,9 +34,9 @@ export interface ITradeComponent {
 
 export const $Trade = (config: ITradeComponent) => component((
   [pnlCrosshairMove, pnlCrosshairMoveTether]: Behavior<MouseEventParams, MouseEventParams>,
-  [timeFrame, timeFrameTether]: Behavior<INode, intervalInMsMap>,
+  [timeFrame, timeFrameTether]: Behavior<INode, intervalTimeMap>,
   [selectedTokenChange, selectedTokenChangeTether]: Behavior<IBranch, ADDRESS_LEVERAGE>,
-  [selectOtherTimeframe, selectOtherTimeframeTether]: Behavior<IBranch, intervalInMsMap>,
+  [selectOtherTimeframe, selectOtherTimeframeTether]: Behavior<IBranch, intervalTimeMap>,
   [changeRoute, changeRouteTether]: Behavior<string, string>,
   [walletChange, walletChangeTether]: Behavior<IEthereumProvider, IEthereumProvider>,
 
@@ -61,7 +61,7 @@ export const $Trade = (config: ITradeComponent) => component((
   }, config.walletLink.account)
 
 
-  const timeFrameStore = config.parentStore('portfolio-chart-interval', intervalInMsMap.DAY7)
+  const timeFrameStore = config.parentStore('portfolio-chart-interval', intervalTimeMap.DAY7)
   const chartInterval = startWith(timeFrameStore.state, replayLatest(timeFrameStore.store(timeFrame, map(x => x))))
 
   const accountTradeList = multicast(filter(list => list.length > 0, config.accountTradeList))
@@ -265,8 +265,8 @@ export const $Trade = (config: ITradeComponent) => component((
                 // visible: false
                 },
                 timeScale: {
-                  timeVisible: chartInterval <= intervalInMsMap.DAY7,
-                  secondsVisible: chartInterval <= intervalInMsMap.MIN60,
+                  timeVisible: chartInterval <= intervalTimeMap.DAY7,
+                  secondsVisible: chartInterval <= intervalTimeMap.MIN60,
                   borderVisible: true,
                   borderColor: pallete.horizon,
                   rightOffset: 3,

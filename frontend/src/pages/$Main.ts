@@ -5,7 +5,7 @@ import { $column, designSheet, layoutSheet, screenUtils, state } from '@aelea/ui
 import {
   ADDRESS_LEVERAGE,
   ETH_ADDRESS_REGEXP, fromJson, groupByMap, IAccountSummary, IAccountTradeListParamApi, IChainParamApi,
-  ILeaderboardRequest, intervalInMsMap, IPageParapApi, IPricefeed, IPricefeedParamApi, IPriceLatestMap, ITradeOpen
+  ILeaderboardRequest, intervalTimeMap, IPageParapApi, IPricefeed, IPricefeedParamApi, IPriceLatestMap, ITradeOpen
 } from '@gambitdao/gmx-middleware'
 import { initWalletLink } from "@gambitdao/wallet-link"
 import {
@@ -100,7 +100,7 @@ export default ({ baseRoute = '' }: Website) => component((
   // localstorage
   const rootStore = state.createLocalStorageChain('ROOT')
   const walletStore = rootStore<WALLET, 'walletStore'>('walletStore', WALLET.none)
-  const treasuryStore = rootStore<ITreasuryStore, 'treasuryStore'>('treasuryStore', { startedStakingGlpTimestamp: 1639431367, startedStakingGmxTimestamp: 1639432924 - intervalInMsMap.MIN5 })
+  const treasuryStore = rootStore<ITreasuryStore, 'treasuryStore'>('treasuryStore', { startedStakingGlpTimestamp: 1639431367, startedStakingGmxTimestamp: 1639432924 - intervalTimeMap.MIN5 })
   const accountStakingStore = rootStore<IAccountStakingStore, 'treasuryStore'>('treasuryStore', {})
 
   const chosenWalletName = now(walletStore.state)

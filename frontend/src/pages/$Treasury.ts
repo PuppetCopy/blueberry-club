@@ -4,7 +4,7 @@ import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { GBC_ADDRESS, BI_18_PRECISION } from "@gambitdao/gbc-middleware"
-import { intervalInMsMap, formatFixed, ARBITRUM_ADDRESS, BASIS_POINTS_DIVISOR, IAccountQueryParamApi, ITimerangeParamApi, CHAIN, getAccountExplorerUrl, TOKEN_SYMBOL } from "@gambitdao/gmx-middleware"
+import { intervalTimeMap, formatFixed, ARBITRUM_ADDRESS, BASIS_POINTS_DIVISOR, IAccountQueryParamApi, ITimerangeParamApi, CHAIN, getAccountExplorerUrl, TOKEN_SYMBOL } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $anchor, $tokenIconMap } from "@gambitdao/ui-components"
 import { combine, empty, fromPromise, map, multicast, switchLatest, take } from "@most/core"
@@ -20,7 +20,7 @@ import { $berryById, latestTokenPriceMap, priceFeedHistoryInterval } from "../lo
 import { $accountPreview } from "../components/$AccountProfile"
 import { $metricEntry, $seperator2 } from "./common"
 
-const GRAPHS_INTERVAL = Math.floor(intervalInMsMap.HR4)
+const GRAPHS_INTERVAL = Math.floor(intervalTimeMap.HR4)
 
 export interface ITreasury {
   walletLink: IWalletLink

@@ -2,7 +2,7 @@ import { Behavior, replayLatest, combineArray, combineObject } from "@aelea/core
 import { $text, component, motion, MOTION_NO_WOBBLE, style } from "@aelea/dom"
 import { $column, $NumberTicker, $row, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { intervalInMsMap, readableNumber, formatFixed, formatReadableUSD, ITimerangeParamApi, unixTimestampNow, intervalListFillOrderMap } from "@gambitdao/gmx-middleware"
+import { intervalTimeMap, readableNumber, formatFixed, formatReadableUSD, ITimerangeParamApi, unixTimestampNow, intervalListFillOrderMap } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { map, multicast, now, skipRepeats,  skipRepeatsWith, startWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
@@ -70,7 +70,7 @@ export const $StakingGraph = <T>(config: ITreasuryChart<T>)  => component((
 
     const oldestTick = filledGap[filledGap.length - 1]
 
-    const yearInMs = intervalInMsMap.MONTH * 12
+    const yearInMs = intervalTimeMap.MONTH * 12
     const endForecast = {
       ...oldestTick,
       time: unixTimestampNow() + yearInMs
@@ -232,7 +232,7 @@ export const $StakingGraph = <T>(config: ITreasuryChart<T>)  => component((
               })
 
 
-              const markerInterval = Math.floor(intervalInMsMap.DAY7)
+              const markerInterval = Math.floor(intervalTimeMap.DAY7)
 
 
               if (yieldList.length) {

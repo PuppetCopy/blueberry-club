@@ -3,7 +3,7 @@ import { $Branch, $element, $node, $svg, $text, attr, component, eventElementTar
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, observer, screenUtils, state } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { IAccountQueryParamApi, intervalInMsMap, ITimerangeParamApi } from "@gambitdao/gmx-middleware"
+import { IAccountQueryParamApi, intervalTimeMap, ITimerangeParamApi } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $anchor, $gitbook, $IntermediatePromise, $Link } from "@gambitdao/ui-components"
 import { fromPromise, map, multicast, now, snapshot, take, tap } from "@most/core"
@@ -100,7 +100,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
     return n
   }
 
-  const berryDayId = dailyRandom(Date.now() / (intervalInMsMap.HR24 * 1000))
+  const berryDayId = dailyRandom(Date.now() / (intervalTimeMap.HR24 * 1000))
   const [background, clothes, body, expression, faceAccessory, hat] = tokenIdAttributeTuple[berryDayId]
 
   const berrySize = screenUtils.isDesktopScreen ? 100 : 70
@@ -114,7 +114,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
 
 
 
-  const GRAPHS_INTERVAL = intervalInMsMap.HR4
+  const GRAPHS_INTERVAL = intervalTimeMap.HR4
 
   const gmxArbitrumRS = priceFeedHistoryInterval(
     GRAPHS_INTERVAL,
@@ -270,7 +270,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
                   return $mosaicItem(id, svgParts, berrySize)
                 }),
                 style({ padding: '25px' }, $introHeadline),
-                ...randomGBCList.slice(0, berryWallRowCount * 2).map(id => {
+                ...randomGBCList.slice(berryWallRowCount * 2, berryWallRowCount * 4).map(id => {
                   return $mosaicItem(id, svgParts, berrySize)
                 }),
               )
@@ -438,7 +438,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
 
 const $ecosystemCard = (title: string, desc: string, img: string) => {
   return $card(style({ width: screenUtils.isDesktopScreen ? '342px' : '100%', flex: 'none' }))(
-    $element('img')(style({ borderRadius: '16px' }), attr({ maxWidth: '100%', src: img }))(),
+    $element('img')(style({ borderRadius: '16px', maxWidth: '100%' }), attr({ src: img }))(),
     $text(style({ fontWeight: 'bold', fontSize: '1.25em', textAlign: 'center' }))(title),
     $column(style({ fontSize: '.9em' }))(
       $text(desc),

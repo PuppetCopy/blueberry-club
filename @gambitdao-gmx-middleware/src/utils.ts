@@ -1,7 +1,7 @@
 import { O, Op, replayLatest } from "@aelea/core"
 import { Stream } from "@most/types"
 import { at, awaitPromises, combineArray as combineArrayMost, constant, continueWith, merge, now, recoverWith } from "@most/core"
-import { CHAIN, EXPLORER_URL, intervalInMsMap, NETWORK_METADATA, USD_DECIMALS } from "./constant"
+import { CHAIN, EXPLORER_URL, intervalTimeMap, NETWORK_METADATA, USD_DECIMALS } from "./constant"
 import { IPageParapApi, IPagePositionParamApi, ISortParamApi } from "./types"
 
 export const ETH_ADDRESS_REGEXP = /^0x[a-fA-F0-9]{40}$/i
@@ -240,7 +240,7 @@ export type TimelineTime = {
 }
 
 export interface IFillGap<T, R, RTime extends R & TimelineTime = R & TimelineTime> {
-  interval: intervalInMsMap
+  interval: intervalTimeMap
   getTime: (t: T) => number
   seed: R & TimelineTime
   source: T[]

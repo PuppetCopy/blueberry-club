@@ -11,7 +11,7 @@ export const MARGIN_FEE_BASIS_POINTS = 10n
 export const FUNDING_RATE_PRECISION = 1000000n
 
 
-export enum intervalInMsMap {
+export enum intervalTimeMap {
   SEC = 1,
   MIN = 60,
   MIN5 = 300,
