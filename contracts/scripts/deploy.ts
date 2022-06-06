@@ -9,7 +9,7 @@ import { ethers } from "hardhat"
 import getAddress, { ZERO_ADDRESS } from "../utils/getAddress"
 import { connectOrDeploy } from "../utils/deploy"
 import { GBC_ADDRESS, saleConfig, saleDescriptionList, saleLastDate, saleMaxSupply, SaleType } from "@gambitdao/gbc-middleware"
-import { createWhitelistProofs } from "../utils/whitelist"
+import { getMerkleProofs } from "../utils/whitelist"
 
 export enum ROLES {
   MINTER,
@@ -43,6 +43,7 @@ const CLOSET = "0x227995578643a9c4E5EceF49AbA461EF74df1085"
 
 
 const main = async () => {
+
   const [creator] = (await ethers.getSigners())
   console.clear()
 
@@ -119,12 +120,12 @@ const main = async () => {
       const { amount, cost, start, transaction } = fstMintRule
 
       sale = await connectOrDeploy(config.contractAddress, PublicTpl__factory, config.id, owner, lab.address, saleState, mintState, { amount, cost, start, transaction })
-    } else if (fstMintRule.type === SaleType.holderWhitelist) {
+    } else if (fstMintRule.type === SaleType.holder) {
       const { amount, cost, start, transaction, walletMintable } = fstMintRule
       sale = await connectOrDeploy(config.contractAddress, HolderWhitelistTpl__factory, config.id, owner, gbc.address, lab.address, saleState, mintState, { totalMintable: amount, cost, start, transaction, walletMintable })
     } else {
-      const res = createWhitelistProofs(fstMintRule.addressList)
-      console.log(res.whitelist)
+      const res = getMerkleProofs(fstMintRule.addressList, fstMintRule)
+      console.log(res.leaves)
       console.log('root: ', res.merkleRoot)
       const { amount, cost, start, transaction } = fstMintRule
 

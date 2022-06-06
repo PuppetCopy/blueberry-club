@@ -7,7 +7,6 @@ import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 struct MerkleMintRule {
     address to;
-    uint96 nonce;
     uint208 cost;
     uint64 start;
     uint120 transaction;
@@ -43,8 +42,7 @@ abstract contract PrivateMerkle is Private {
                     _rule.cost,
                     _rule.start,
                     _rule.transaction,
-                    _rule.amount,
-                    _rule.nonce
+                    _rule.amount
                 )
             );
     }

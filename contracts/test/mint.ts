@@ -1,4 +1,5 @@
-import { expect } from "chai"
+/**
+ * import { expect } from "chai"
 import { ethers } from "hardhat"
 import { Police, GBC, PermissionedWhitelist__factory, GBCLab, GBCLab__factory, GBC__factory, Police__factory, SaleBasic__factory } from "../typechain-types"
 import { MerkleTree } from 'merkletreejs'
@@ -129,3 +130,5 @@ describe("Minting through contracts", function () {
 
 })
 
+
+ */
