@@ -1,5 +1,6 @@
 {
   "name": "@gambitdao/gbc-contracts",
+  "version": "0.0.0",
   "sideEffects": false,
   "files": [
     ".dist"
