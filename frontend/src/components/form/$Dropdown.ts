@@ -203,7 +203,7 @@ export const $DropMultiSelect = <T>({
   $chip = $defaultChip,
   selectDrop,
   value,
-  closeOnSelect = false,
+  closeOnSelect = true,
   openMenu = empty()
 }: IMultiselectDrop<T>
 ) => component((
@@ -218,12 +218,11 @@ export const $DropMultiSelect = <T>({
   const windowClick = eventElementTarget('click', window)
 
 
-  const openTrigger = constant(true, openMenu)
+  const openTrigger = mergeArray([focusField, constant(true, openMenu)])
 
   const closeTrigger = constant(false, closeOnSelect ? pick : empty())
 
-  const isOpen = skipRepeats(openTrigger)
-
+  const isOpen = mergeArray([openTrigger, closeTrigger])
 
 
   const selection = switchLatest(

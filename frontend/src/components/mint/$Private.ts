@@ -147,7 +147,7 @@ export const $PrivateMint = (item: LabItemSale, mintRule: MintPrivate, walletLin
 
               const proof = mintRule.signatureList[mintRule.addressList.map(s => s.toLowerCase()).indexOf(account.toLowerCase())]
 
-              const contractAction = saleContract.merkleMint({ cost, start, transaction, amount, to: account.toLowerCase() }, [proof], selectedMintAmount, { value })
+              const contractAction = saleContract.merkleMint({ cost, start, transaction, amount, to: account.toLowerCase(), nonce: 0 }, [proof], selectedMintAmount, { value })
               const contractReceipt = contractAction.then(recp => recp.wait())
 
               return {

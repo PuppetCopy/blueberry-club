@@ -129,7 +129,7 @@ const main = async () => {
       console.log('root: ', res.merkleRoot)
       const { amount, cost, start, transaction } = fstMintRule
 
-      sale = await connectOrDeploy(config.contractAddress, MerkleTpl__factory, config.id, owner, gbc.address, lab.address, saleState, mintState, { amount, cost, start, transaction }, res.merkleRoot)
+      sale = await connectOrDeploy(config.contractAddress, MerkleTpl__factory, config.id, owner, lab.address, saleState, mintState, { amount, cost, start, transaction }, res.merkleRoot)
     }
 
 

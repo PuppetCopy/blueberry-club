@@ -104,7 +104,7 @@ export const saleDescriptionList: LabItemSale[] = [
     name: "Abstract Background",
     description: `GBC Members are whitelisted and can mint on ${new Date(toTime(2022, 3, 7, 22) * 1000).toLocaleString()} . Public Mint is highly delayed`,
     id: IAttributeMappings['Camo Background'],
-    contractAddress: "0x301393E63b17F9f30f577E278dAeE521b5500419",
+    contractAddress: "0x1D2cbA6e8bF6FB3c263101c3e69514f838B6Fcf6",
     mintRuleList: [
       {
         amount: 2,
@@ -117,8 +117,8 @@ export const saleDescriptionList: LabItemSale[] = [
           "0x9E7f78EafAEBaf1094202FFA0835157fC5C3ADe0"
         ],
         signatureList: [
-          '0x612310f5de224744a547fc8ce10dd961f75eeaca0c03fd346c53bf5169cdc5a1',
-          '0x675b25ed8b0d2ed6438609c7cb12e3054f736cb3e23c16d1bad6e4075be03b0a',
+          '0x9265e3e12d26dd379cc4671597a38c762335d88df7a6caefbdc3b6c152bb62d7',
+          '0xaf69f858d5c312b0dc80fdd76cdced12c2c631196704477ea48aac8d4e489d11'
         ],
       },
       {
