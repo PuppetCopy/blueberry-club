@@ -5,6 +5,6 @@ export const attributeIndexToLabel = ['Background', 'Clothes', 'Body', 'Expressi
 
 export const mintLabelMap = {
   [SaleType.Public]: 'Public',
-  [SaleType.holderWhitelist]: 'GBC Mint',
-  [SaleType.whitelist]: 'Whitelist',
+  [SaleType.holderWhitelist]: 'Holder',
+  [SaleType.whitelist]: 'Private',
 }

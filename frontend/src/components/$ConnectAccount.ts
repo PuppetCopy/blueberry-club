@@ -2,7 +2,7 @@ import { Behavior, combineArray, Op } from "@aelea/core"
 import { $element, $Node, $text, attr, component, NodeComposeFn, nodeEvent, style } from "@aelea/dom"
 import { $column, $icon, $Popover, $row, layoutSheet, state } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { awaitPromises, constant, empty, fromPromise, map, multicast, now, skipRepeats, snapshot, switchLatest } from "@most/core"
+import { awaitPromises, constant, empty, fromPromise, map, multicast, now, skipRepeats, snapshot, switchLatest, tap } from "@most/core"
 import { IEthereumProvider } from "eip1193-provider"
 import { IWalletLink, attemptToSwitchNetwork } from "@gambitdao/wallet-link"
 import { $walletConnectLogo } from "../common/$icons"
@@ -21,6 +21,8 @@ export interface IConnectWalletPopover {
   walletLink: IWalletLink
   walletStore: state.BrowserStore<WALLET, "walletStore">
 
+  ensureNetwork?: boolean
+
   $button: $Node
 }
 export interface IIntermediateDisplay {
@@ -28,10 +30,12 @@ export interface IIntermediateDisplay {
   walletLink: IWalletLink
   walletStore: state.BrowserStore<WALLET, "walletStore">
 
+  ensureNetwork?: boolean
+
   $container?: NodeComposeFn<$Node>
 }
 
-export const $IntermediateConnectButton = ({ $display, walletLink, walletStore, $container }: IIntermediateDisplay) => component((
+export const $IntermediateConnectButton = ({ $display, walletLink, walletStore, $container, ensureNetwork = true }: IIntermediateDisplay) => component((
   [switchNetwork, switchNetworkTether]: Behavior<Promise<any>, Promise<any>>,
   [walletChange, walletChangeTether]: Behavior<IEthereumProvider | null, IEthereumProvider | null>,
 ) => {
@@ -40,6 +44,7 @@ export const $IntermediateConnectButton = ({ $display, walletLink, walletStore, 
   return [
     ($container || $row)(
       $IntermediateConnectPopover({
+        ensureNetwork,
         $button: $ButtonPrimary({
           $content: $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
             $text('Connect Wallet'),
@@ -62,7 +67,7 @@ export const $IntermediateConnectButton = ({ $display, walletLink, walletStore, 
 })
 
 
-export const $IntermediateConnectPopover = ({ $display, walletLink, walletStore, $button }: IConnectWalletPopover) => component((
+export const $IntermediateConnectPopover = ({ $display, walletLink, walletStore, $button, ensureNetwork = false }: IConnectWalletPopover) => component((
   [clickOpenPopover, clickOpenPopoverTether]: Behavior<any, any>,
   [switchNetwork, switchNetworkTether]: Behavior<PointerEvent, Promise<any>>,
   [walletChange, walletChangeTether]: Behavior<PointerEvent, IEthereumProvider | null>,
@@ -134,7 +139,7 @@ export const $IntermediateConnectPopover = ({ $display, walletLink, walletStore,
     
       }
 
-      return $column(
+      return ensureNetwork ? $column(
         switchLatest(map(empty, switchNetwork)), // side effect
         switchLatest(map((chain) => {
           if (chain !== USE_CHAIN) {
@@ -150,13 +155,14 @@ export const $IntermediateConnectPopover = ({ $display, walletLink, walletStore,
                     return error
                   }) : null
                 }, walletLink.wallet),
+                multicast
               )
             })
           }
                 
           return switchLatest($display(now(account)))
         }, walletLink.network))
-      )
+      ) : switchLatest($display(now(account)))
     }, fromPromise(wallet.metamaskQuery), walletLink.provider, noAccount)),
 
     {
