@@ -2,7 +2,7 @@ import { CHAIN, groupByMap, intervalTimeMap, unixTimestampNow } from "@gambitdao
 import { IAttributeMappings, LabItemSale, SaleType } from "./types"
 
 
-export const USE_CHAIN = CHAIN.ARBITRUM_RINKBY
+export const USE_CHAIN = CHAIN.ARBITRUM
 
 export const GLOBAL_W3P = 'wss://arb-mainnet.g.alchemy.com/v2/RBsflxWv6IhITsLxAWcQlhCqSuxV7Low'
 export const GLOBAL_W3P_HTTP = 'https://arbitrum-mainnet.infura.io/v3/6d7e461ad6644743b92327579860b662'
