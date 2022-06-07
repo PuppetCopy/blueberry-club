@@ -1,19 +1,19 @@
 import { Behavior } from "@aelea/core"
-import { $text, attr, component, style } from "@aelea/dom"
+import { $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { $responsiveFlex } from "../../elements/$common"
-import { getLabItemTupleIndex, labItemDescriptionListMap, saleMaxSupply } from "@gambitdao/gbc-middleware"
+import { $accountIconLink, $responsiveFlex } from "../../elements/$common"
+import { getLabItemTupleIndex, labItemDescriptionListMap, saleConfig, saleLastDate, saleMaxSupply } from "@gambitdao/gbc-middleware"
 import { pallete } from "@aelea/ui-components-theme"
 import { $Mint } from "../../components/mint/$Mint"
 import { WALLET } from "../../logic/provider"
 import { $labItem } from "../../logic/common"
 import { $seperator2 } from "../common"
 import { attributeIndexToLabel } from "../../logic/mappings/label"
-import { getMintCount } from "../../logic/contract/sale"
-import { map } from "@most/core"
-import { readableNumber } from "../../../../@gambitdao-gmx-middleware/src"
+import { connectMintable, getMintCount } from "../../logic/contract/sale"
+import { awaitPromises, map, switchLatest } from "@most/core"
+import { countdown, countdownFn, readableNumber, unixTimestampNow } from "../../../../@gambitdao-gmx-middleware/src"
 import { $anchor } from "@gambitdao/ui-components"
 import { $tofunft } from "../../elements/$icons"
 
@@ -35,7 +35,10 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
   const item = labItemDescriptionListMap[itemId]
 
 
+  const mintable = connectMintable(walletLink, item.contractAddress)
 
+  const endDate = saleLastDate(item).start + saleConfig.saleDuration
+  const isFinished = unixTimestampNow() > endDate
 
   return [
     $responsiveFlex(screenUtils.isDesktopScreen ? style({ gap: '50px' }) : layoutSheet.spacingBig)(
@@ -54,11 +57,7 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
                   const max = saleMaxSupply(item)
                   const count = max - Number(amount)
 
-                  return count
-                    ? amount
-                      ? `${readableNumber(count)}/${readableNumber(max)} left`
-                      : `${readableNumber(max)} in total`
-                    : 'Sold Out'
+                  return `${amount}/${readableNumber(max)} sold`
                 }, getMintCount(item.contractAddress, 3500))
               ),
             )
@@ -74,6 +73,16 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
               $text('Lab Marketplace')
             ),
           ),
+
+
+          $row(layoutSheet.spacing)(
+            $accountIconLink(item.contractAddress),
+            $node(
+              $text(style({ color: pallete.foreground }))(isFinished ? `Ended on ` : `Sale ends in `),
+              isFinished ? $text(`${new Date(endDate * 1000)}`) : $text(countdown(endDate))
+            )
+          ),
+
         ),
 
         $seperator2,

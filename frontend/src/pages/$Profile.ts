@@ -40,8 +40,8 @@ export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAcco
 
 ) => {
 
-  
-  
+
+
   // const saleWallet = connectSale(walletLink, item.contractAddress)
 
   // const arbitrumContract: IGmxContractInfo = initContractChain(web3Provider, accountAddress, ARBITRUM_CONTRACT)
@@ -117,7 +117,7 @@ export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAcco
 
   const priceMap = fromPromise(queryLatestPrices())
 
-  
+
   // const isApprovedForAll = replayLatest(multicast(rewardDistributor.isApprovedForAll))
 
   // // Promise<ContractReceipt>
@@ -125,7 +125,7 @@ export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAcco
   // const chosenTokens = startWith([], selectTokensForWhitelist)
 
   // const withdrawTxn = snapshot(async ({ selection, contract, account }) => {
-     
+
   //   if ((contract === null || !account)) {
   //     throw new Error(`Unable to resolve contract`)
   //   }
@@ -157,8 +157,8 @@ export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAcco
             return $alert($text(style({ alignSelf: 'center' }))(`Connected account does not own any GBC's`))
           }
 
-          return $row(style({ flexWrap: 'wrap' }))(...owner.ownedTokens.map(token => {
-            return $berryByToken(token)
+          $row(layoutSheet.spacingSmall, style({ flexWrap: 'wrap' }))(...owner.ownedTokens.map(token => {
+            return $berryTileId(token, 85)
           }))
         }),
       })({}),

@@ -95,7 +95,7 @@ export const $LabHome = ({ walletLink, parentRoute, walletStore }: IBerry) => co
             ),
           ),
 
-          $text(style({ lineHeight: '1.5em' }))(`Take your GBC to the next level with the Blueberry Lab... Customize your Berry with brand new NFT Accessories (hats, backgrounds and much more). Some of the new accessories will be airdropped to GBC Members over time and others will be available in the Blueberry Lab Store or on secondary sales for purchase.`),
+          $text(style({ lineHeight: '1.5em' }))(`The Blueberry Lab is a tool that allows GBC owners to customize their Berries with new attributes which must be owned on-chain. Stay tuned for upcoming item releases on the Blueberry Lab Store or on our Twitter.`),
 
           $seperator2,
 

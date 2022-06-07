@@ -3,7 +3,7 @@ import { component, style, $text } from "@aelea/dom"
 import { $column, layoutSheet, $row } from "@aelea/ui-components"
 import { formatFixed } from "@ethersproject/bignumber"
 import { IToken, LabItemSale, MintRule, saleMaxSupply } from "@gambitdao/gbc-middleware"
-import { countdownFn } from "@gambitdao/gmx-middleware"
+import { countdownFn, unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { $alert } from "@gambitdao/ui-components"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { awaitPromises, switchLatest, now, empty, multicast, startWith, snapshot, map } from "@most/core"
@@ -54,7 +54,7 @@ export const $GbcWhitelist = (item: LabItemSale, mintRule: MintRule, walletLink:
                 const count = max - totalMinted.toNumber()
                 return count ? `${mintRule.amount}/${mintRule.amount} left` : 'Sold Out'
               }, saleWallet.whitelistMinted)
-              : now(countdownFn(Date.now() + timeDelta * 1000, Date.now()))
+              : now(countdownFn(unixTimestampNow() + timeDelta, unixTimestampNow()))
 
           }, whitelistTimeDelta))
         ),

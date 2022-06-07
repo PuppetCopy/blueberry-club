@@ -25,7 +25,7 @@ export function timeSince(time: number) {
 }
 
 
-const everySec = map(Date.now, periodic(1000))
+const everySec = map(unixTimestampNow, periodic(1000))
 
 export const countdown = (targetDate: number) => {
   return map(now => countdownFn(targetDate, now), everySec)
@@ -34,10 +34,10 @@ export const countdown = (targetDate: number) => {
 export function countdownFn(targetDate: number, now: number) {
   const distance = targetDate - now
 
-  const days = Math.floor(distance / (1000 * 60 * 60 * 24))
-  const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-  const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))
-  const seconds = Math.floor((distance % (1000 * 60)) / 1000)
+  const days = Math.floor(distance / (60 * 60 * 24))
+  const hours = Math.floor((distance % (60 * 60 * 24)) / (60 * 60))
+  const minutes = Math.floor((distance % (60 * 60)) / 60)
+  const seconds = Math.floor(distance % 60)
 
   return `${days ? days + "d " : ''} ${hours ? hours + "h " : ''} ${minutes ? minutes + "m " : ''} ${seconds ? seconds + "s " : ''}`
 }
