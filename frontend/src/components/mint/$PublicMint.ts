@@ -123,10 +123,6 @@ export const $PublicMint = (item: LabItemSale, mintRule: MintRule, walletLink: I
                 return $text('Select amount')
               }
 
-              // if (!hasPublicSaleStarted && hasWhitelistSaleStarted) {
-              //   return accountCanMintPresale ? $freeClaimBtn : $container($giftIcon, $text('Connected Account is not eligible'))
-              // }
-
               const priceFormated = formatFixed(mintRule.cost, 18)
               const total = selectedMintAmount * priceFormated
 

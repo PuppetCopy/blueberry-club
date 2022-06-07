@@ -6,6 +6,7 @@ import { LabItemSale, MintRule, MintPrivate, USE_CHAIN } from "@gambitdao/gbc-mi
 import { ETH_ADDRESS_REGEXP, formatFixed, replayState } from "@gambitdao/gmx-middleware"
 import { $alert } from "@gambitdao/ui-components"
 import { IWalletLink } from "@gambitdao/wallet-link"
+import { filterNull } from "@gambitdao/wallet-link/src/common"
 import { switchLatest, multicast, startWith, snapshot, map, tap, skipRepeats, merge, mergeArray, empty } from "@most/core"
 import { $caretDown } from "../../elements/$icons"
 import { takeUntilLast } from "../../logic/common"
@@ -53,7 +54,7 @@ export const $PrivateMint = (item: LabItemSale, mintRule: MintPrivate, walletLin
 
     const proof = mintRule.signatureList[mintRule.addressList.map(s => s.toLowerCase()).indexOf(address.toLowerCase())]
     return !!proof
-  }, walletLink.account)
+  }, filterNull(walletLink.account))
 
   const isPrimaryDisabled = combineArray((isEligible, selectedAmount) => {
     return selectedAmount === null || isEligible === false
@@ -133,9 +134,6 @@ export const $PrivateMint = (item: LabItemSale, mintRule: MintPrivate, walletLin
                 return $text('Select amount')
               }
 
-              // if (!hasPublicSaleStarted && hasWhitelistSaleStarted) {
-              //   return accountCanMintPresale ? $freeClaimBtn : $container($giftIcon, $text('Connected Account is not eligible'))
-              // }
 
               const priceFormated = formatFixed(mintRule.cost, 18)
               const total = selectedMintAmount * priceFormated
@@ -156,10 +154,10 @@ export const $PrivateMint = (item: LabItemSale, mintRule: MintPrivate, walletLin
 
               const value = BigInt(selectedMintAmount) * mintRule.cost
 
-              const { cost, start, transaction, amount } = mintRule
+              const { cost, start, transaction, amount, nonce } = mintRule
 
 
-              const contractAction = saleContract.merkleMint({ cost, start, transaction, amount, to: account.toLowerCase(), nonce: 0 }, [proof], selectedMintAmount, { value })
+              const contractAction = saleContract.merkleMint({ cost, start, transaction, amount, to: account.toLowerCase(), nonce }, proof, selectedMintAmount, { value })
               const contractReceipt = contractAction.then(recp => recp.wait())
 
               return {

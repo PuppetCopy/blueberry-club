@@ -125,7 +125,7 @@ const main = async () => {
       sale = await connectOrDeploy(config.contractAddress, HolderWhitelistTpl__factory, config.id, owner, gbc.address, lab.address, saleState, mintState, { totalMintable: amount, cost, start, transaction, walletMintable })
     } else {
       const res = getMerkleProofs(fstMintRule.addressList, fstMintRule)
-      console.log(res.leaves)
+      console.log(res.proofs)
       console.log('root: ', res.merkleRoot)
       const { amount, cost, start, transaction } = fstMintRule
 

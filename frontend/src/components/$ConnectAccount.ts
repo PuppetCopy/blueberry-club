@@ -48,7 +48,7 @@ export const $IntermediateConnectButton = ({ $display, walletLink, walletStore, 
         $button: $ButtonPrimary({
           $content: $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
             $text('Connect Wallet'),
-            $icon({ $content: $caretDown, width: '13px', fill: pallete.background, svgOps: style({ marginTop: '2px' }) }),
+            $icon({ $content: $caretDown, viewBox: '0 0 32 32', width: '16px', fill: pallete.background, svgOps: style({ marginTop: '2px' }) }),
           )
         })({}),
         $display,

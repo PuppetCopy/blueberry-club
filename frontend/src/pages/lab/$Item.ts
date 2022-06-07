@@ -4,18 +4,23 @@ import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $accountIconLink, $responsiveFlex } from "../../elements/$common"
-import { getLabItemTupleIndex, labItemDescriptionListMap, saleConfig, saleLastDate, saleMaxSupply } from "@gambitdao/gbc-middleware"
+import { GBC_ADDRESS, getLabItemTupleIndex, labItemDescriptionListMap, saleConfig, saleLastDate, saleMaxSupply, SaleType } from "@gambitdao/gbc-middleware"
+import { countdownFn, displayDate, unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { pallete } from "@aelea/ui-components-theme"
-import { $Mint } from "../../components/mint/$Mint"
 import { WALLET } from "../../logic/provider"
-import { $labItem } from "../../logic/common"
+import { $labItem, takeUntilLast } from "../../logic/common"
 import { $seperator2 } from "../common"
-import { attributeIndexToLabel } from "../../logic/mappings/label"
+import { attributeIndexToLabel, mintLabelMap } from "../../logic/mappings/label"
 import { connectMintable, getMintCount } from "../../logic/contract/sale"
-import { awaitPromises, map, switchLatest } from "@most/core"
-import { countdown, countdownFn, readableNumber, unixTimestampNow } from "../../../../@gambitdao-gmx-middleware/src"
-import { $anchor } from "@gambitdao/ui-components"
+import { awaitPromises, constant, empty, map, switchLatest } from "@most/core"
+import { $alert, $anchor } from "@gambitdao/ui-components"
 import { $tofunft } from "../../elements/$icons"
+import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
+import { $GbcWhitelist } from "../../components/mint/$HolderMint"
+import { $PrivateMint } from "../../components/mint/$PrivateMint"
+import { $PublicMint } from "../../components/mint/$PublicMint"
+import { timeChange } from "../../components/mint/mintUtils2"
+import { IEthereumProvider } from "eip1193-provider"
 
 
 
@@ -27,7 +32,9 @@ interface ILabItem {
 
 export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => component((
   [changeRoute, changeRouteTether]: Behavior<string, string>,
+  [walletChange, walletChangeTether]: Behavior<IEthereumProvider | null, IEthereumProvider | null>,
 ) => {
+
   const urlFragments = document.location.pathname.split('/')
   const [itemIdUrl] = urlFragments.slice(3)
   const itemId = Number(itemIdUrl)
@@ -57,7 +64,7 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
                   const max = saleMaxSupply(item)
                   const count = max - Number(amount)
 
-                  return `${amount}/${readableNumber(max)} sold`
+                  return `${amount} sold`
                 }, getMintCount(item.contractAddress, 3500))
               ),
             )
@@ -69,7 +76,9 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
               $content: $tofunft,
               viewBox: '0 0 32 32'
             }),
-            $anchor(attr({ href: `https://tofunft.com/nft/arbi/0x000/` }))(
+            $anchor(attr({
+              href: `https://tofunft.com/nft/arbi/${GBC_ADDRESS.LAB}`
+            }))(
               $text('Lab Marketplace')
             ),
           ),
@@ -78,8 +87,8 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
           $row(layoutSheet.spacing)(
             $accountIconLink(item.contractAddress),
             $node(
-              $text(style({ color: pallete.foreground }))(isFinished ? `Ended on ` : `Sale ends in `),
-              isFinished ? $text(`${new Date(endDate * 1000)}`) : $text(countdown(endDate))
+              $text(style({ color: pallete.foreground }))(isFinished ? `Ended on ` : `Sale will close in `),
+              $text(displayDate(endDate))
             )
           ),
 
@@ -87,16 +96,75 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
 
         $seperator2,
 
-        $Mint({
-          walletLink,
-          walletStore,
-          item,
-        })({})
+
+        switchLatest(map((address => {
+          if (!address) {
+            return $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
+              $IntermediateConnectButton({
+                walletStore,
+                $container: $column(layoutSheet.spacingBig),
+                $display: constant(empty()),
+
+                walletLink: walletLink
+              })({
+                walletChange: walletChangeTether()
+              }),
+
+              style({ alignSelf: 'center' }, $alert($text('No wallet connected')))
+            )
+          }
+
+          return empty()
+        }), walletLink.account)),
+
+        $column(layoutSheet.spacingBig)(
+          $column(style({ gap: '50px' }))(
+
+            ...item.mintRuleList.flatMap(mintRule => {
+
+              const publicSaleTimeDelta = takeUntilLast(delta => delta === null, awaitPromises(map(async (time) => {
+                const deltaTime = mintRule.start - time
+                return deltaTime > 0 ? deltaTime : null
+              }, timeChange)))
+
+              const currentSaleType = mintLabelMap[mintRule.type]
+
+              const sale = mintRule.type === SaleType.Public
+                ? $PublicMint(item, mintRule, walletLink)({})
+                : mintRule.type === SaleType.holder
+                  ? $GbcWhitelist(item, mintRule, walletLink)({}) : mintRule.type === SaleType.private
+                    ? $PrivateMint(item, mintRule, walletLink)({}) : empty()
+
+
+              return [
+                switchLatest(map(timeDelta => {
+                  const hasEnded = timeDelta === null
+
+                  return $column(layoutSheet.spacing)(
+                    $row(layoutSheet.spacing, style({ alignItems: 'baseline' }))(
+                      $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(currentSaleType),
+                      ...!hasEnded
+                        ? [
+                          $text(countdownFn(unixTimestampNow() + timeDelta, unixTimestampNow()))
+                        ]
+                        : [
+                          // $text(map(count => `${item.whitelistMax - count.toBigInt()}/${item.whitelistMax} left`, saleWallet.whitelistMinted)),
+                        ],
+                    ),
+                    hasEnded ? sale : empty()
+                  )
+                }, publicSaleTimeDelta)),
+                $seperator2
+              ]
+            })
+
+          ),
+        )
 
       ),
     ),
 
-    { changeRoute }
+    { changeRoute, walletChange }
   ]
 })
 

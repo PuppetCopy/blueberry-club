@@ -49,7 +49,7 @@ abstract contract PrivateMerkle is Private {
         bytes32[] calldata merkleProof,
         uint120 amount
     ) external payable {
-        if (_mrule.to == msg.sender) revert WrongSender();
+        if (_mrule.to != msg.sender) revert WrongSender();
         bytes32 leaf = getMerkleHash(_mrule);
 
         require(leafClaimed[leaf] == false, "LeafClaimed");
