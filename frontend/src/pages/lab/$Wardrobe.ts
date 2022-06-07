@@ -8,7 +8,7 @@ import { awaitPromises, constant, empty, filter, map, merge, mergeArray, multica
 import { $buttonAnchor, $ButtonPrimary, $ButtonSecondary } from "../../components/form/$Button"
 import { $defaultSelectContainer, $Dropdown } from "../../components/form/$Dropdown"
 import { IBerryDisplayTupleMap, getLabItemTupleIndex, saleDescriptionList, LabItemSale, IBerryLabItems, USE_CHAIN, IToken, GBC_ADDRESS, ILabItemOwnership, saleLastDate } from "@gambitdao/gbc-middleware"
-import { $labItem, getBerryFromToken } from "../../logic/common"
+import { $labItem, getBerryFromToken, getTokenSlots } from "../../logic/common"
 import { $berryTileId } from "../../components/$common"
 import { fadeIn } from "../../transitions/enter"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
@@ -98,18 +98,16 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
     return res.wait()
   }, clickSave)))
 
-  const changeBerryWithInitial = mergeArray([constant(null, owner), changeBerry])
+  const selectedBerry = mergeArray([constant(null, owner), changeBerry])
 
-  const selectedBerry = merge(
-    snapshot(berry => berry, changeBerryWithInitial, savedItemsTxSucceed),
-    changeBerryWithInitial
-  ) 
+  // const selectedBerry = merge(
+  //   snapshot(berry => berry, changeBerryWithInitial, savedItemsTxSucceed),
+  //   changeBerryWithInitial
+  // ) 
 
 
   const isClosetApproved = awaitPromises(combineArray(async (c, acc) => {
-    if (acc === null) {
-      return null
-    }
+    if (acc === null) return null
 
     return c.isApprovedForAll(acc, GBC_ADDRESS.CLOSET)
   }, lab.contract, walletLink.account))
@@ -119,19 +117,29 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
     return isClosetApproved
   }, setApproval)))])
 
-  const resetItemOnBerryChange = constant(null, savedItemsTxSucceed)
+  const resetItemOnSave = constant(null, savedItemsTxSucceed)
 
-  const itemChangeState = startWith(null, merge(resetItemOnBerryChange, changeItemState))
-  const backgroundChangeState = startWith(null, merge(resetItemOnBerryChange, changeBackgroundState))
+  const itemChangeState = startWith(null, merge(resetItemOnSave, changeItemState))
+  const backgroundChangeState = startWith(null, merge(resetItemOnSave, changeBackgroundState))
+
+  const berryItemState = mergeArray([snapshot((berry) => berry, selectedBerry, savedItemsTxSucceed), changeBerry])
 
 
-  const selectedBerryItems = awaitPromises(snapshot(async (closet, token) => {
-    if (token === null) {
-      return null
-    }
+  const selectedBerryItems = multicast(awaitPromises(snapshot(async (closet, token) => {
+    if (token === null) return null
 
-    return getBerryFromToken(token)
-  }, closet.contract, selectedBerry))
+    const newLocal = await getTokenSlots(token.id, closet)
+    
+    return newLocal
+  }, closet.contract, berryItemState)))
+
+  // const selectedBerryItems = multicast(awaitPromises(snapshot(async (closet, token) => {
+  //   if (token === null) return null
+
+  //   const newLocal = await getTokenSlots(token.id, closet)
+    
+  //   return newLocal
+  // }, closet.contract, berryItemState)))
 
 
   const exchangeState: Stream<ExchangeState> = multicast(combineObject({
