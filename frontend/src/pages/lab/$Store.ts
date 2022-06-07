@@ -8,7 +8,7 @@ import { saleDescriptionList, GBC_ADDRESS } from "@gambitdao/gbc-middleware"
 import { $anchor } from "@gambitdao/ui-components"
 import { $StoreItemPreview } from "./$StoreItem"
 import { $tofunft } from "../../elements/$icons"
-import { $accountIconLink } from "../../elements/$common"
+import { $accountIconLink, $responsiveFlex } from "../../elements/$common"
 import { $seperator2 } from "../common"
 
 
@@ -28,14 +28,14 @@ export const $LabStore = ({ walletLink, parentRoute }: ILabStore) => component((
     $column(layoutSheet.spacingBig)(
 
       $column(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
-        $text(style({ fontWeight: 'bold', fontSize: '2.5em' }))('Blueberry Lab Store'),
+        $text(style({ fontWeight: 'bold', fontSize: '2.5em', textAlign: 'center' }))(screenUtils.isDesktopScreen ? 'Blueberry Lab Store' : 'Lab Store'),
         $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '678px' }))('You will find here the different items available to customize your GBC'),
       ),
 
       $node(style({ flex: 1 }))(),
 
-      $column(layoutSheet.spacing, style({ justifyContent: 'space-between' }))(
-        $row(style({ alignItems: 'center' }))(
+      $column(layoutSheet.spacingBig, style({ justifyContent: 'space-between' }))(
+        $responsiveFlex(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
           $text(style({ fontWeight: 'bold', fontSize: '1.8em' }))('Items'),
 
           $node(style({ flex: 1 }))(),

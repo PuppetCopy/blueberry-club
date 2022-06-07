@@ -125,21 +125,12 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
   const berryItemState = mergeArray([snapshot((berry) => berry, selectedBerry, savedItemsTxSucceed), changeBerry])
 
 
-  const selectedBerryItems = multicast(awaitPromises(snapshot(async (closet, token) => {
+  const selectedBerryItems = multicast(startWith(null, awaitPromises(snapshot(async (closet, token) => {
     if (token === null) return null
 
     const newLocal = await getTokenSlots(token.id, closet)
-    
     return newLocal
-  }, closet.contract, berryItemState)))
-
-  // const selectedBerryItems = multicast(awaitPromises(snapshot(async (closet, token) => {
-  //   if (token === null) return null
-
-  //   const newLocal = await getTokenSlots(token.id, closet)
-    
-  //   return newLocal
-  // }, closet.contract, berryItemState)))
+  }, closet.contract, berryItemState))))
 
 
   const exchangeState: Stream<ExchangeState> = multicast(combineObject({
