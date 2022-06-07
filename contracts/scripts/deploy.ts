@@ -109,13 +109,14 @@ const main = async () => {
     let sale: Sale
 
     const fstMintRule = config.mintRuleList[0]
-    const sndMintRule = config.mintRuleList[1]
     const lastDateRule = saleLastDate(config)
     const max = saleMaxSupply(config)
     const finish = lastDateRule.start + saleConfig.saleDuration
     const { maxMintable } = saleConfig
     const saleState = { paused: 1, minted: 0, max }
     const mintState = { finish, maxMintable }
+
+    const createMode = getAddress(config.contractAddress) === AddressZero
 
     if (fstMintRule.type === SaleType.Public) {
       const { amount, cost, start, transaction } = fstMintRule
@@ -125,17 +126,20 @@ const main = async () => {
       const { amount, cost, start, transaction, walletMintable } = fstMintRule
       sale = await connectOrDeploy(config.contractAddress, HolderWhitelistTpl__factory, config.id, owner, TREASURY, gbc.address, lab.address, saleState, mintState, { totalMintable: amount, cost, start, transaction, walletMintable })
     } else {
-      const res = getMerkleProofs(fstMintRule.addressList, fstMintRule)
-      console.log(res.proofs)
-      console.log('root: ', res.merkleRoot)
+      if (createMode) {
+        const res = getMerkleProofs(fstMintRule.addressList, fstMintRule)
+        console.log(res.proofs)
+        console.log('root: ', res.merkleRoot)
 
-      sale = await connectOrDeploy(config.contractAddress, MerkleTpl__factory, config.id, owner, lab.address, saleState, mintState, sndMintRule, res.merkleRoot)
+        sale = await connectOrDeploy(config.contractAddress, MerkleTpl__factory, config.id, owner, TREASURY, lab.address, saleState, mintState, res.merkleRoot)
+      } else {
+        sale = MerkleTpl__factory.connect(config.contractAddress, creator)
+      }
     }
-
 
     console.log(`🎩 Set roles from LAB to ${config.name} SALE`)
 
-    if (getAddress(config.contractAddress) === AddressZero) {
+    if (createMode) {
       try {
         await police.setUserRole(sale.address, ROLES.MINTER, true)
         console.log(`  - MINTER role setted !`)
