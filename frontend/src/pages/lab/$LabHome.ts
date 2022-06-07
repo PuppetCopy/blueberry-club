@@ -10,13 +10,13 @@ import { $buttonAnchor, $ButtonPrimary, $ButtonSecondary } from "../../component
 import { $responsiveFlex } from "../../elements/$common"
 import { IAttributeHat, IAttributeFaceAccessory, IAttributeClothes, IAttributeExpression, IProfile } from "@gambitdao/gbc-middleware"
 import { $seperator2 } from "../common"
-import { map, mergeArray, now } from "@most/core"
+import { empty, map, mergeArray, now } from "@most/core"
 import { ContractTransaction } from "@ethersproject/contracts"
 import { pallete } from "@aelea/ui-components-theme"
 import { WALLET } from "../../logic/provider"
 import { IEthereumProvider } from "eip1193-provider"
 import { queryProfileList } from "../../logic/query"
-import { $berryByToken } from "../../logic/common"
+import { $berryByToken, takeUntilLast } from "../../logic/common"
 import { $profilePreview } from "../../components/$AccountProfile"
 import { countdownFn } from "@gambitdao/gmx-middleware"
 import { timeChange } from "../../components/mint/mintUtils2"
@@ -79,8 +79,6 @@ export const $LabHome = ({ walletLink, parentRoute, walletStore }: IBerry) => co
 ) => {
 
 
-
-
   return [
     mergeArray([
       $responsiveFlex(style({ gap: '75px', justifyContent: 'space-between' }))(
@@ -96,15 +94,6 @@ export const $LabHome = ({ walletLink, parentRoute, walletStore }: IBerry) => co
 
           $seperator2,
 
-          // $text(style({ lineHeight: '1.5em' }))(`Bootstraping the lab`),
-
-          $node(style({ fontSize: '1.7em' }))(
-            $text(style({ color: pallete.foreground, paddingRight: '15px' }))(`Launching in`),
-            $text(style({ fontSize: '1.5em', fontWeight: 'bold' }))(map(t => countdownFn(Date.UTC(2022, 5, 7, 22) / 1000, t), timeChange)),
-          ),
-
-          
-          $seperator2,
           $row(layoutSheet.spacingBig)(
             $Link({
               $content: $anchor(
