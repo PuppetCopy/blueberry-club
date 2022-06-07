@@ -149,7 +149,10 @@ fragment transferFields on Transfer {
   from {...ownerFields}
   to {...ownerFields}
   timestamp
-  transactionHash
+
+  transaction {
+    id
+  }
 }
 
 `
@@ -317,7 +320,7 @@ query ($account: String) {
   owner(id: $account) {
     id
     balance
-    ownedLabItems {
+    ownedLabItems(first: 1000) {
       balance
       item {
         id
@@ -326,7 +329,7 @@ query ($account: String) {
     }
     displayName
     rewardClaimedCumulative
-    ownedTokens {
+    ownedTokens(first: 1000) {
       id
       labItems {
         id
@@ -356,6 +359,12 @@ ${schemaFragments}
 query ($id: String) {
   token(id: $id) {
     id
+    owner {
+      ...ownerFields
+    }
+    transfers {
+      ...transferFields
+    }
     labItems {
       id
       item {

@@ -5,8 +5,8 @@ import { $column, $icon, $Popover, $row, $seperator, $TextField, layoutSheet } f
 import { pallete } from "@aelea/ui-components-theme"
 import { USE_CHAIN, GBC_ADDRESS, IAttributeBody, IAttributeMappings } from "@gambitdao/gbc-middleware"
 import { GBC__factory } from "@gambitdao/gbc-contracts"
-import { isAddress, timeSince } from "@gambitdao/gmx-middleware"
-import { $anchor, $caretDblDown, $IntermediateTx } from "@gambitdao/ui-components"
+import { isAddress, shortenAddress, timeSince } from "@gambitdao/gmx-middleware"
+import { $anchor, $Link, $caretDblDown, $IntermediateTx } from "@gambitdao/ui-components"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { awaitPromises, empty, filter, fromPromise, map, merge, multicast, skipRepeats, snapshot, startWith, switchLatest } from "@most/core"
@@ -17,7 +17,7 @@ import { $ButtonPrimary, $ButtonSecondary } from "../components/form/$Button"
 import { $accountRef, $card, $responsiveFlex, $txnIconLink } from "../elements/$common"
 import { $tofunft } from "../elements/$icons"
 import tokenIdAttributeTuple from "../logic/mappings/tokenIdAttributeTuple"
-import { queryToken } from "../logic/query"
+import { queryToken, queryTokenv2 } from "../logic/query"
 import { IToken, ITransfer } from "@gambitdao/gbc-middleware"
 import { attributeIndexToLabel } from "../logic/mappings/label"
 
@@ -36,15 +36,17 @@ interface IBerry {
 
 export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
   [trasnferPopup, trasnferPopupTether]: Behavior<any, any>,
+  [changeRoute, changeRouteTether]: Behavior<string, string>,
+
 ) => {
 
 
   const urlFragments = document.location.pathname.split('/')
   const berryId = urlFragments[urlFragments.length - 1]
-  
+
   const tokenId = bnToHex(BigInt(berryId))
-  const token = fromPromise(queryToken(tokenId))
-  
+  const token = fromPromise(queryTokenv2(tokenId))
+
   const berryMetadata = tokenIdAttributeTuple[Number(tokenId) - 1]
   const [background, clothes, body, expression, faceAccessory, hat] = berryMetadata
 
@@ -59,8 +61,12 @@ export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
           return $column(layoutSheet.spacingBig)(
             $text(style({ fontWeight: 800, fontSize: '2.25em' }))(`GBC #${berryId}`),
             $row(layoutSheet.spacingSmall)(
-              $text(style({  }))(`Owned by `),
-              $accountRef(token.owner.id),
+              $text(style({ color: pallete.foreground }))(`Owned by `),
+              $Link({
+                route: parentRoute.create({ fragment: 'df2f23f' }),
+                $content: $accountPreview({ address: token.owner.id, avatarSize: 40, labelSize: '1em' }),
+                url: `/p/profile/${token.owner.id}`,
+              })({ click: changeRouteTether() }),
             ),
 
             $row(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
@@ -89,7 +95,7 @@ export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
                   )({})
                 )
               }, walletLink.account)),
-                
+
               $row(layoutSheet.spacingSmall)(
                 $icon({
                   $content: $tofunft,
@@ -100,7 +106,7 @@ export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
                 ),
               ),
             ),
-              
+
             $row(layoutSheet.spacing, style({ flexWrap: 'wrap' }))(
               ...berryMetadata.map((val, idx) => {
 
@@ -110,7 +116,7 @@ export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
                 )
               })
             ),
-              
+
           )
         }, token)),
       ),
@@ -152,7 +158,11 @@ export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
           ]
         })({})
       )
-    )
+    ),
+
+    {
+      changeRoute
+    }
   ]
 })
 
@@ -237,6 +247,6 @@ const $TrasnferOwnership = (address: string, token: IToken, walletLink: IWalletL
       })({}),
     ),
 
-    {  }
+    {}
   ]
 })

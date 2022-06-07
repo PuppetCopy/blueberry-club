@@ -393,7 +393,7 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
                     return $ButtonPrimary({
                       $content: $text(startWith('Save', primaryActionLabel as Stream<string>)),
                       disabled: combineArray(({ selectedBerry, updateBackgroundState, updateItemState, selectedBerryItems }) => {
-                        if (selectedBerry === null || updateItemState === null && updateBackgroundState === null) {
+                        if (selectedBerryItems === null || selectedBerry === null || updateItemState === null && updateBackgroundState === null) {
                           return true
                         }
 

@@ -164,7 +164,9 @@ export default ({ baseRoute = '' }: Website) => component((
           router.contains(pagesRoute)(
             $column(layoutSheet.spacingBig, style({ margin: '0 auto', maxWidth: '1080px', gap: screenUtils.isDesktopScreen ? '85px' : '55px', width: '100%', paddingBottom: '145px' }))(
               router.match(berryRoute)(
-                $BerryPage({ walletLink, parentRoute: pagesRoute })({})
+                $BerryPage({ walletLink, parentRoute: pagesRoute })({
+                  changeRoute: linkClickTether()
+                })
               ),
               router.match(labRoute)(
                 fadeIn($LabHome({ walletLink, parentRoute: labRoute, walletStore })({

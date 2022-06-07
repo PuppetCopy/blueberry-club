@@ -171,9 +171,9 @@ export const $LabHome = ({ walletLink, parentRoute, walletStore }: IBerry) => co
         ),
       ),
 
-      $column(layoutSheet.spacingBig, style({ alignItems: 'center', textAlign: 'center' }))(
-        $text(style({ fontWeight: 'bold', fontSize: '2.5em' }))(`Latest Lab PFP's`),
-        $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '878px' }))(`Latest Identities that were picked by GBC Owners`),
+      $column(layoutSheet.spacingBig)(
+        $text(style({ fontWeight: 'bold', textAlign: 'center', fontSize: '2.5em' }))(`Latest Lab PFP's`),
+        $text(style({ textAlign: 'center' }))(`Latest Identities that were picked by GBC Owners`),
         $node(),
         $row(
           $IntermediatePromise({
