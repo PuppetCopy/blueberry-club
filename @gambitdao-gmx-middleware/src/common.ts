@@ -27,6 +27,10 @@ export function timeSince(time: number) {
 
 const everySec = map(unixTimestampNow, periodic(1000))
 
+export const displayDate = (unixTime: number) => {
+  return `${new Date(unixTime * 1000).toDateString()} ${new Date(unixTime * 1000).toLocaleTimeString() }`
+}
+
 export const countdown = (targetDate: number) => {
   return map(now => countdownFn(targetDate, now), everySec)
 }

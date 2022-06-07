@@ -1,105 +1,91 @@
 import { Behavior, replayLatest, combineArray, combineObject } from "@aelea/core"
 import { component, style, $text } from "@aelea/dom"
-import { $column, layoutSheet, $row } from "@aelea/ui-components"
+import { $column, layoutSheet, $row, state } from "@aelea/ui-components"
 import { formatFixed } from "@ethersproject/bignumber"
-import { IToken, LabItemSale, MintRule, saleMaxSupply } from "@gambitdao/gbc-middleware"
-import { countdownFn, unixTimestampNow } from "@gambitdao/gmx-middleware"
+import { ContractTransaction } from "@ethersproject/contracts"
+import { IToken, LabItemSale, MintRule } from "@gambitdao/gbc-middleware"
 import { $alert } from "@gambitdao/ui-components"
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { awaitPromises, switchLatest, now, empty, multicast, startWith, snapshot, map } from "@most/core"
+import { awaitPromises, switchLatest, empty, multicast, startWith, snapshot, map } from "@most/core"
 import { $SelectBerries } from "../$SelectBerries"
-import { getTokenSlots, takeUntilLast } from "../../logic/common"
 import { connectGbc } from "../../logic/contract/gbc"
 import { connectLab } from "../../logic/contract/lab"
 import { connectManager } from "../../logic/contract/manager"
 import { connectHolderSale } from "../../logic/contract/sale"
+import { WALLET } from "../../logic/provider"
 import { queryOwnerV2 } from "../../logic/query"
 import { $ButtonPrimary } from "../form/$Button"
-import { $displayMintEvents, IMintEvent, timeChange } from "./mintUtils2"
+import { $displayMintEvents } from "./mintUtils2"
+import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
+import { IEthereumProvider } from "eip1193-provider"
 
-export const $GbcWhitelist = (item: LabItemSale, mintRule: MintRule, walletLink: IWalletLink) => component((
-  [clickMintWhitelist, clickMintWhitelistTether]: Behavior<PointerEvent, Promise<IMintEvent>>,
+interface MintCmp {
+  item: LabItemSale
+  mintRule: MintRule
+  walletLink: IWalletLink
+  walletStore: state.BrowserStore<WALLET, "walletStore">
+}
+
+export const $GbcWhitelist = (config: MintCmp) => component((
+  [clickMintWhitelist, clickMintWhitelistTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
   [selectTokensForWhitelist, selectTokensForWhitelistTether]: Behavior<IToken[], IToken[]>,
+  [walletChange, walletChangeTether]: Behavior<IEthereumProvider | null, IEthereumProvider | null>,
+
 ) => {
 
-  const saleWallet = connectHolderSale(walletLink, item.contractAddress)
-  const gbcWallet = connectGbc(walletLink)
-  const managerWallet = connectManager(walletLink)
-  const labWallet = connectLab(walletLink)
-  const max = saleMaxSupply(item)
+  const saleWallet = connectHolderSale(config.walletLink, config.item.contractAddress)
+  const gbcWallet = connectGbc(config.walletLink)
+  const managerWallet = connectManager(config.walletLink)
+  const labWallet = connectLab(config.walletLink)
 
   const owner = multicast(awaitPromises(map(async n => {
     if (n === null) {
       return null
     }
     return queryOwnerV2(n)
-  }, walletLink.account)))
+  }, config.walletLink.account)))
 
-  const whitelistTimeDelta = takeUntilLast(delta => delta === null, awaitPromises(map(async (time) => {
-    const deltaTime = mintRule.start - time
-    return deltaTime > 0 ? deltaTime : null
-  }, timeChange)))
 
   return [
-    $column(layoutSheet.spacing)(
-      $row(layoutSheet.spacing, style({ alignItems: 'baseline' }))(
-        $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(`Whitelist`),
+    switchLatest(map(tokenList => {
+      const $noBerriesOwnedMsg = $alert($text(`Connected account does not own any GBC's`))
+      const chosenTokens = replayLatest(multicast(startWith([], selectTokensForWhitelist)))
 
-        $text(
-          switchLatest(map(timeDelta => {
-            const hasEnded = timeDelta === null
-
-            return hasEnded
-              ? map(totalMinted => {
-                const count = max - totalMinted.toNumber()
-                return count ? `${mintRule.amount}/${mintRule.amount} left` : 'Sold Out'
-              }, saleWallet.whitelistMinted)
-              : now(countdownFn(unixTimestampNow() + timeDelta, unixTimestampNow()))
-
-          }, whitelistTimeDelta))
-        ),
-      ),
-
-      switchLatest(map(timeDelta => {
-        if (typeof timeDelta === 'number') {
-          return empty()
+      const ownerTokenList = awaitPromises(combineArray(async (owner, sale) => {
+        if (owner === null) {
+          return []
         }
+        const items = (await Promise.all(
+          owner?.ownedTokens.map(async token => {
+            const isUsed = await sale.isNftUsed(token.id)
+            return { token, isUsed }
+          })
+        )).filter(x => x.isUsed === false).map(x => x.token)
 
-        return switchLatest(map(tokenList => {
-
-          const $noBerriesOwnedMsg = $alert($text(`Connected account does not own any GBC's`))
-          const chosenTokens = replayLatest(multicast(startWith([], selectTokensForWhitelist)))
-
-          const ownerTokenList = awaitPromises(combineArray(async (owner, sale) => {
-            if (owner === null) {
-              return []
-            }
-            const items = (await Promise.all(
-              owner?.ownedTokens.map(async token => {
-                const isUsed = await sale.isNftUsed(token.id)
-                return { token, isUsed }
-              })
-            )).filter(x => x.isUsed === false).map(x => x.token)
-
-            return items
-          }, owner, saleWallet.contract))
+        return items
+      }, owner, saleWallet.contract))
 
 
-          return $column(layoutSheet.spacing)(
-            $row(layoutSheet.spacing, style({ alignItems: 'flex-start' }))(
+      return $column(layoutSheet.spacing)(
+        $row(layoutSheet.spacing, style({ alignItems: 'flex-start' }))(
 
-              switchLatest(map(list => {
+          switchLatest(map(list => {
 
-                return $SelectBerries({
-                  placeholder: 'Select Berries',
-                  options: list
-                })({
-                  select: selectTokensForWhitelistTether()
-                })
-              }, ownerTokenList)),
+            return $SelectBerries({
+              placeholder: 'Select Berries',
+              options: list
+            })({
+              select: selectTokensForWhitelistTether()
+            })
+          }, ownerTokenList)),
 
 
-              $ButtonPrimary({
+          $IntermediateConnectButton({
+            walletStore: config.walletStore,
+            $container: $column(layoutSheet.spacingBig),
+            $display: map(() => {
+
+              return $ButtonPrimary({
                 disabled: map(s => s.length === 0, chosenTokens),
                 buttonOp: style({ alignSelf: 'flex-end' }),
                 $content: switchLatest(
@@ -109,7 +95,7 @@ export const $GbcWhitelist = (item: LabItemSale, mintRule: MintRule, walletLink:
                     }
 
 
-                    const cost = BigInt(chosenTokens.length) * mintRule.cost
+                    const cost = BigInt(chosenTokens.length) * config.mintRule.cost
                     const costUsd = formatFixed(cost, 18)
 
 
@@ -119,37 +105,37 @@ export const $GbcWhitelist = (item: LabItemSale, mintRule: MintRule, walletLink:
                 ),
               })({
                 click: clickMintWhitelistTether(
-                  snapshot(async ({ selectTokensForWhitelist, saleContract, account }): Promise<IMintEvent> => {
+                  snapshot(async ({ selectTokensForWhitelist, saleContract, account }) => {
 
                     if ((saleContract === null || !account)) {
                       throw new Error(`Unable to resolve contract`)
                     }
 
-
                     const idList = selectTokensForWhitelist.map(x => x.id)
 
-                    const cost = BigInt(selectTokensForWhitelist.length) * mintRule.cost
+                    const cost = BigInt(selectTokensForWhitelist.length) * config.mintRule.cost
                     const contractAction = saleContract.nftMint(idList, { value: cost })
-                    const contractReceipt = contractAction.then(recp => recp.wait())
 
-                    return {
-                      amount: selectTokensForWhitelist.length,
-                      contractReceipt,
-                      txHash: contractAction.then(t => t.hash),
-                    }
-
-                  }, combineObject({ selectTokensForWhitelist: chosenTokens, saleContract: saleWallet.contract, account: walletLink.account })),
+                    return contractAction
+                  }, combineObject({ selectTokensForWhitelist: chosenTokens, saleContract: saleWallet.contract, account: config.walletLink.account })),
                 )
               })
-            ),
-            tokenList.length === 0 ? $noBerriesOwnedMsg : empty(),
+            }),
+            ensureNetwork: true,
+            walletLink: config.walletLink
+          })({
+            walletChange: walletChangeTether(),
+          })
 
-            $displayMintEvents(labWallet.contract, clickMintWhitelist)
-          )
+        ),
+        tokenList.length === 0 ? $noBerriesOwnedMsg : empty(),
 
-        }, gbcWallet.tokenList))
+        $displayMintEvents(labWallet.contract, clickMintWhitelist)
+      )
 
-      }, whitelistTimeDelta)),
-    )
+    }, gbcWallet.tokenList)),
+
+
+    { walletChange }
   ]
 })

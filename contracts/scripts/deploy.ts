@@ -109,6 +109,7 @@ const main = async () => {
     let sale: Sale
 
     const fstMintRule = config.mintRuleList[0]
+    const sndMintRule = config.mintRuleList[1]
     const lastDateRule = saleLastDate(config)
     const max = saleMaxSupply(config)
     const finish = lastDateRule.start + saleConfig.saleDuration
@@ -125,11 +126,10 @@ const main = async () => {
       sale = await connectOrDeploy(config.contractAddress, HolderWhitelistTpl__factory, config.id, owner, TREASURY, gbc.address, lab.address, saleState, mintState, { totalMintable: amount, cost, start, transaction, walletMintable })
     } else {
       const res = getMerkleProofs(fstMintRule.addressList, fstMintRule)
-      console.log(res.leaves)
+      console.log(res.proofs)
       console.log('root: ', res.merkleRoot)
-      const { amount, cost, start, transaction } = fstMintRule
 
-      sale = await connectOrDeploy(config.contractAddress, MerkleTpl__factory, config.id, owner, TREASURY, lab.address, saleState, mintState, { amount, cost, start, transaction }, res.merkleRoot)
+      sale = await connectOrDeploy(config.contractAddress, MerkleTpl__factory, config.id, owner, lab.address, saleState, mintState, sndMintRule, res.merkleRoot)
     }
 
 

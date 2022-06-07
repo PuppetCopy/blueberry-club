@@ -1,22 +1,24 @@
-import { Behavior, combineObject } from "@aelea/core"
+import { Behavior, combineArray, combineObject } from "@aelea/core"
 import { component, style, $text, attr, nodeEvent, styleInline, stylePseudo, INode } from "@aelea/dom"
 import { $column, layoutSheet, $row, $icon, state } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { ContractTransaction } from "@ethersproject/contracts"
-import { LabItemSale, MintRule, USE_CHAIN } from "@gambitdao/gbc-middleware"
+import { LabItemSale, MintPrivate, USE_CHAIN } from "@gambitdao/gbc-middleware"
 import { ETH_ADDRESS_REGEXP, formatFixed, replayState } from "@gambitdao/gmx-middleware"
+import { $alert } from "@gambitdao/ui-components"
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { switchLatest, multicast, startWith, snapshot, map, tap, skipRepeats, merge } from "@most/core"
+import { filterNull } from "@gambitdao/wallet-link/src/common"
+import { switchLatest, multicast, startWith, snapshot, map, tap, skipRepeats, merge, empty } from "@most/core"
+import { IEthereumProvider } from "eip1193-provider"
 import { $caretDown } from "../../elements/$icons"
 import { takeUntilLast } from "../../logic/common"
 import { connectLab } from "../../logic/contract/lab"
-import { connectPublic, getMintCount } from "../../logic/contract/sale"
+import { connectPrivateSale, getMintCount } from "../../logic/contract/sale"
+import { WALLET } from "../../logic/provider"
 import { $ButtonPrimary } from "../form/$Button"
 import { $Dropdown, $defaultSelectContainer } from "../form/$Dropdown"
 import { $displayMintEvents } from "./mintUtils2"
 import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
-import { IEthereumProvider } from "eip1193-provider"
-import { WALLET } from "../../logic/provider"
 
 
 
@@ -26,14 +28,16 @@ interface IFormState {
   account: string | null
 }
 
+
 interface MintCmp {
   item: LabItemSale
-  mintRule: MintRule
+  mintRule: MintPrivate
   walletLink: IWalletLink
   walletStore: state.BrowserStore<WALLET, "walletStore">
 }
 
-export const $PublicMint = (config: MintCmp) => component((
+
+export const $PrivateMint = (config: MintCmp) => component((
   [clickMintPublic, clickMintPublicTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
   [customNftAmount, customNftAmountTether]: Behavior<INode, number>,
   [selectMintAmount, selectMintAmountTether]: Behavior<number, number>,
@@ -48,17 +52,25 @@ export const $PublicMint = (config: MintCmp) => component((
 
   const totalMintedChange = takeUntilLast(isLive => Number(isLive) === config.mintRule.amount, mintCount)
 
-  const saleWallet = connectPublic(config.walletLink, config.item.contractAddress)
-  
+  const saleWallet = connectPrivateSale(config.walletLink, config.item.contractAddress)
   const labWallet = connectLab(config.walletLink)
 
   const hasMintEnded = skipRepeats(map(amount => Number(amount) === config.mintRule.amount, totalMintedChange))
   const accountChange = merge(hasAccount, supportedNetwork)
   const selectedMintAmount = merge(customNftAmount, selectMintAmount)
 
-  const buttonState = multicast(map(amount => {
-    return amount === null
-  }, selectedMintAmount))
+  const isConnectedAccountEligible = map(address => {
+    if (address === null) {
+      return false
+    }
+
+    const proof = config.mintRule.signatureList[config.mintRule.addressList.map(s => s.toLowerCase()).indexOf(address.toLowerCase())]
+    return !!proof
+  }, filterNull(config.walletLink.account))
+
+  const isPrimaryDisabled = combineArray((isEligible, selectedAmount) => {
+    return selectedAmount === null || isEligible === false
+  }, isConnectedAccountEligible, selectedMintAmount)
 
   const formState = replayState({ selectedMintAmount, account: config.walletLink.account }, {
     selectedMintAmount: null, account: null
@@ -131,7 +143,7 @@ export const $PublicMint = (config: MintCmp) => component((
           $display: map(() => {
 
             return $ButtonPrimary({
-              disabled: startWith(true, buttonState),
+              disabled: startWith(true, isPrimaryDisabled),
               buttonOp: style({ alignSelf: 'flex-end' }),
               $content: switchLatest(
                 map(({ selectedMintAmount, account }) => {
@@ -139,6 +151,7 @@ export const $PublicMint = (config: MintCmp) => component((
                   if (selectedMintAmount === null) {
                     return $text('Select amount')
                   }
+
 
                   const priceFormated = formatFixed(config.mintRule.cost, 18)
                   const total = selectedMintAmount * priceFormated
@@ -151,14 +164,21 @@ export const $PublicMint = (config: MintCmp) => component((
               click: clickMintPublicTether(
                 snapshot(async ({ formState: { selectedMintAmount }, saleContract, account }) => {
 
-                  if (saleContract === null || selectedMintAmount === null) {
+                  if (saleContract === null || selectedMintAmount === null || account === null) {
                     throw new Error('could not resolve sales contract')
                   }
+
+                  const proof = config.mintRule.signatureList[config.mintRule.addressList.map(s => s.toLowerCase()).indexOf(account.toLowerCase())]
+
                   const value = BigInt(selectedMintAmount) * config.mintRule.cost
 
-                  const contractAction = saleContract.publicMint(selectedMintAmount, { value })
+                  const { cost, start, transaction, amount, nonce } = config.mintRule
+
+
+                  const contractAction = saleContract.merkleMint({ cost, start, transaction, amount, to: account.toLowerCase(), nonce }, proof, selectedMintAmount, { value })
 
                   return contractAction
+
                 }, combineObject({ formState, saleContract: saleWallet.contract, account: config.walletLink.account })),
               )
             })
@@ -168,11 +188,13 @@ export const $PublicMint = (config: MintCmp) => component((
         })({
           walletChange: walletChangeTether(),
         })
+
+        
       ),
 
-      $displayMintEvents(labWallet.contract, clickMintPublic)
-    ),
+      switchLatest(map(isEligible => isEligible ? empty() : $alert($text('Connected Account is not eligible')), isConnectedAccountEligible)),
 
-    { walletChange }
+      $displayMintEvents(labWallet.contract, clickMintPublic)
+    )
   ]
 })

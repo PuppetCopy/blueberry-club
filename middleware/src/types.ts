@@ -410,8 +410,10 @@ export interface MintHolder extends MintRuleStruct {
 
 export interface MintPrivate extends MintRuleStruct {
   type: SaleType.private
+
+  nonce: number // uint120
   addressList: string[]
-  signatureList: string[]
+  signatureList: string[][]
 }
 
 export type MintRule = MintPublic | MintHolder | MintPrivate

@@ -1,19 +1,15 @@
-import { Behavior, O, Tether } from "@aelea/core"
-import { $node, $text, component, style } from "@aelea/dom"
+import { Behavior, O } from "@aelea/core"
+import { $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
-import { $column, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
+import { $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { $labItem } from "../../logic/common"
-import { LabItemSale, saleMaxSupply, saleDescriptionList, SaleType, saleLastDate } from "@gambitdao/gbc-middleware"
-import { pallete } from "@aelea/ui-components-theme"
-import { $Link } from "@gambitdao/ui-components"
-import { empty, map } from "@most/core"
-import { formatFixed, readableNumber, timeSince, unixTimestampNow } from "@gambitdao/gmx-middleware"
-import { getMintCount } from "../../logic/contract/sale"
-import { mintLabelMap } from "../../logic/mappings/label"
+import { saleDescriptionList, GBC_ADDRESS } from "@gambitdao/gbc-middleware"
+import { $anchor } from "@gambitdao/ui-components"
 import { $StoreItemPreview } from "./$StoreItem"
-
+import { $tofunft } from "../../elements/$icons"
+import { $accountIconLink } from "../../elements/$common"
+import { $seperator2 } from "../common"
 
 
 interface ILabStore {
@@ -26,7 +22,7 @@ export const $LabStore = ({ walletLink, parentRoute }: ILabStore) => component((
   [changeRoute, changeRouteTether]: Behavior<string, string>,
 
 ) => {
-  
+
 
   return [
     $column(layoutSheet.spacingBig)(
@@ -36,8 +32,27 @@ export const $LabStore = ({ walletLink, parentRoute }: ILabStore) => component((
         $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '678px' }))('You will find here the different items available to customize your GBC'),
       ),
 
-      $column(layoutSheet.spacingBig, style({ justifyContent: 'space-between' }))(
-        $text(style({ fontWeight: 'bold', fontSize: '1.8em' }))('Items'),
+      $node(style({ flex: 1 }))(),
+
+      $column(layoutSheet.spacing, style({ justifyContent: 'space-between' }))(
+        $row(style({ alignItems: 'center' }))(
+          $text(style({ fontWeight: 'bold', fontSize: '1.8em' }))('Items'),
+
+          $node(style({ flex: 1 }))(),
+
+          $row(layoutSheet.spacing)(
+            $accountIconLink(GBC_ADDRESS.LAB),
+            $seperator2,
+            $anchor(layoutSheet.spacingTiny, attr({ href: `https://tofunft.com/nft/arbi/${GBC_ADDRESS.LAB}/` }))(
+              $icon({
+                $content: $tofunft,
+                viewBox: '0 0 32 32'
+              }),
+              $text('Lab Marketplace')
+            ),
+          ),
+        ),
+
         $row(screenUtils.isDesktopScreen ? style({ gap: '50px', placeContent: 'center', flexWrap: 'wrap' }) : O(layoutSheet.spacingBig, style({ overflow: 'hidden', placeContent: 'space-evenly', flexWrap: 'wrap' })))(
           ...saleDescriptionList.map(item =>
             $StoreItemPreview(item, parentRoute, changeRouteTether)
