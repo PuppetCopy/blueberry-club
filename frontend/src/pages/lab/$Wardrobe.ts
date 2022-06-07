@@ -1,4 +1,4 @@
-import { Behavior, combineArray, combineObject, Op, replayLatest } from "@aelea/core"
+import { Behavior, combineArray, combineObject, Op } from "@aelea/core"
 import { $node, $Node, $text, attr, attrBehavior, component, INode, nodeEvent, style, stylePseudo } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
@@ -8,7 +8,8 @@ import { awaitPromises, constant, empty, filter, map, merge, mergeArray, multica
 import { $buttonAnchor, $ButtonPrimary, $ButtonSecondary } from "../../components/form/$Button"
 import { $defaultSelectContainer, $Dropdown } from "../../components/form/$Dropdown"
 import { IBerryDisplayTupleMap, getLabItemTupleIndex, saleDescriptionList, LabItemSale, IBerryLabItems, USE_CHAIN, IToken, GBC_ADDRESS, ILabItemOwnership, saleLastDate } from "@gambitdao/gbc-middleware"
-import { $berryByToken, $labItem, getBerryFromToken, getTokenSlots } from "../../logic/common"
+import { $labItem, getBerryFromToken } from "../../logic/common"
+import { $berryTileId } from "../../components/$common"
 import { fadeIn } from "../../transitions/enter"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { $loadBerry } from "../../components/$DisplayBerry"
@@ -259,7 +260,7 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
                     throw new Error(`No berry id:${token} exists`)
                   }
 
-                  return style({ cursor: 'pointer' }, $berryByToken(token))
+                  return style({ cursor: 'pointer' }, $berryTileId(token, 85))
                 }),
                 list: tokenList
               }

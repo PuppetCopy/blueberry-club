@@ -1,5 +1,5 @@
 import { Behavior, replayLatest } from "@aelea/core"
-import { $text, component, style } from "@aelea/dom"
+import { $node, $text, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet, state } from "@aelea/ui-components"
 import { IOwner, IToken } from "@gambitdao/gbc-middleware"
@@ -54,7 +54,8 @@ export const $ProfileWallet = ({ walletLink, parentRoute, accountStakingStore }:
   return [
     $responsiveFlex(layoutSheet.spacingBig)(
 
-      $column(layoutSheet.spacingBig)(
+      $row(layoutSheet.spacingBig, style({ width: '100%', placeContent: 'center' }))(
+
         $IntermediatePromise({
           query: queryOwner,
           $$done: map(owner => {
@@ -62,20 +63,39 @@ export const $ProfileWallet = ({ walletLink, parentRoute, accountStakingStore }:
               return null
             }
 
-            return $Profile(owner)({})
+            return $responsiveFlex(layoutSheet.spacingBig)(
+
+              $column(layoutSheet.spacingBig, style({ width: '550px', placeContent: 'center' }))(
+                $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
+                  $accountPreview({
+                    labelSize: '2em',
+                    avatarSize: 130,
+                    address: owner.id
+                  }),
+
+                  $node(style({ flex: 1 }))(),
+
+                  $Link({
+                    $content: $anchor(
+                      $ButtonSecondary({
+                        $content: $text('Customize my GBC')
+                      })({}),
+                    ),
+                    url: '/p/wardrobe', route: parentRoute
+                  })({
+                    click: changeRouteTether()
+                  }),
+                ),
+
+                $row(layoutSheet.spacingSmall, style({ flexWrap: 'wrap' }))(...owner.ownedTokens.map(token => {
+                  return $berryTileId(token, 85)
+                })),
+
+
+              ),
+            )
           }),
         })({}),
-
-        $Link({
-          $content: $anchor(
-            $ButtonSecondary({
-              $content: $text('Customize my GBC')
-            })({}),
-          ),
-          url: '/p/wardrobe', route: parentRoute
-        })({
-          click: changeRouteTether()
-        }),
       )
 
     ),
@@ -85,29 +105,4 @@ export const $ProfileWallet = ({ walletLink, parentRoute, accountStakingStore }:
 })
 
 
-export const $Profile = (owner: IOwner) => component((
-  [selectTokensForWhitelist, selectTokensForWhitelistTether]: Behavior<IToken[], IToken[]>,
 
-) => {
-
-
-  return [
-    $responsiveFlex(layoutSheet.spacingBig)(
-
-      $column(layoutSheet.spacingBig, style({ width: '300px' }))(
-        style({ placeContent: 'center' }, $accountPreview({
-          labelSize: '2em',
-          avatarSize: 130,
-          address: owner.id
-        })),
-
-        $row(style({ flexWrap: 'wrap' }))(...owner.ownedTokens.map(token => {
-          return $berryByToken(token, 75)
-        })),
-
-
-      ),
-
-    )
-  ]
-})

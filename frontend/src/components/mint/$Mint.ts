@@ -3,7 +3,7 @@ import { $element, $text, component, style } from "@aelea/dom"
 import { $column, $icon, $row, layoutSheet, state } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { LabItemSale, SaleType } from "@gambitdao/gbc-middleware"
-import { countdownFn } from "@gambitdao/gmx-middleware"
+import { countdownFn, unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { awaitPromises, empty, map, switchLatest } from "@most/core"
 import { IEthereumProvider } from "eip1193-provider"
@@ -67,7 +67,7 @@ export const $Mint = ({ walletStore, walletLink, item }: IMint) => component((
                       $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(currentSaleType),
                       ...!hasEnded
                         ? [
-                          $text(countdownFn(Date.now() + timeDelta * 1000, Date.now()))
+                          $text(countdownFn(unixTimestampNow() + timeDelta, unixTimestampNow()))
                         ]
                         : [
                           // $text(map(count => `${item.whitelistMax - count.toBigInt()}/${item.whitelistMax} left`, saleWallet.whitelistMinted)),

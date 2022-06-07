@@ -1,15 +1,16 @@
-import { Behavior, combineObject } from "@aelea/core"
+import { Behavior, combineArray, combineObject } from "@aelea/core"
 import { component, style, $text, attr, nodeEvent, styleInline, stylePseudo, INode } from "@aelea/dom"
 import { $column, layoutSheet, $row, $icon } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { LabItemSale, MintRule, MintPrivate, USE_CHAIN } from "@gambitdao/gbc-middleware"
 import { ETH_ADDRESS_REGEXP, formatFixed, replayState } from "@gambitdao/gmx-middleware"
+import { $alert } from "@gambitdao/ui-components"
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { switchLatest, multicast, startWith, snapshot, map, tap, skipRepeats, merge } from "@most/core"
+import { switchLatest, multicast, startWith, snapshot, map, tap, skipRepeats, merge, mergeArray, empty } from "@most/core"
 import { $caretDown } from "../../elements/$icons"
 import { takeUntilLast } from "../../logic/common"
 import { connectLab } from "../../logic/contract/lab"
-import { connectPrivateSale, connectSale, getMintCount } from "../../logic/contract/sale"
+import { connectPrivateSale, connectPublic, getMintCount } from "../../logic/contract/sale"
 import { $ButtonPrimary } from "../form/$Button"
 import { $Dropdown, $defaultSelectContainer } from "../form/$Dropdown"
 import { $displayMintEvents, IMintEvent } from "./mintUtils2"
@@ -45,9 +46,18 @@ export const $PrivateMint = (item: LabItemSale, mintRule: MintPrivate, walletLin
   const accountChange = merge(hasAccount, supportedNetwork)
   const selectedMintAmount = merge(customNftAmount, selectMintAmount)
 
-  const buttonState = multicast(map(amount => {
-    return amount === null
-  }, selectedMintAmount))
+  const isConnectedAccountEligible = map(address => {
+    if (address === null) {
+      return false
+    }
+
+    const proof = mintRule.signatureList[mintRule.addressList.map(s => s.toLowerCase()).indexOf(address.toLowerCase())]
+    return !!proof
+  }, walletLink.account)
+
+  const isPrimaryDisabled = combineArray((isEligible, selectedAmount) => {
+    return selectedAmount === null || isEligible === false
+  }, isConnectedAccountEligible, selectedMintAmount)
 
   const formState = replayState({ selectedMintAmount, account: walletLink.account }, {
     selectedMintAmount: null, account: null
@@ -114,7 +124,7 @@ export const $PrivateMint = (item: LabItemSale, mintRule: MintPrivate, walletLin
           select: selectMintAmountTether()
         }),
         $ButtonPrimary({
-          disabled: buttonState,
+          disabled: startWith(true, isPrimaryDisabled),
           buttonOp: style({ alignSelf: 'flex-end' }),
           $content: switchLatest(
             map(({ selectedMintAmount, account }) => {
@@ -141,11 +151,13 @@ export const $PrivateMint = (item: LabItemSale, mintRule: MintPrivate, walletLin
               if (saleContract === null || selectedMintAmount === null || account === null) {
                 throw new Error('could not resolve sales contract')
               }
+
+              const proof = mintRule.signatureList[mintRule.addressList.map(s => s.toLowerCase()).indexOf(account.toLowerCase())]
+
               const value = BigInt(selectedMintAmount) * mintRule.cost
 
               const { cost, start, transaction, amount } = mintRule
 
-              const proof = mintRule.signatureList[mintRule.addressList.map(s => s.toLowerCase()).indexOf(account.toLowerCase())]
 
               const contractAction = saleContract.merkleMint({ cost, start, transaction, amount, to: account.toLowerCase(), nonce: 0 }, [proof], selectedMintAmount, { value })
               const contractReceipt = contractAction.then(recp => recp.wait())
@@ -160,6 +172,8 @@ export const $PrivateMint = (item: LabItemSale, mintRule: MintPrivate, walletLin
           )
         })
       ),
+
+      switchLatest(map(isEligible => isEligible ? empty() : $alert($text('Connected Account is not eligible')), isConnectedAccountEligible)),
 
       $displayMintEvents(labWallet.contract, clickMintPublic)
     )
