@@ -350,6 +350,46 @@ query ($account: String) {
 }
 `
 
+const ownerListDoc: TypedDocumentNode<{owners: IOwner[]}, {}> = gql`
+${schemaFragments}
+
+query {
+  owners(first: 1000) {
+    id
+    balance
+    ownedLabItems {
+      balance
+      item {
+        id
+      }
+      id
+    }
+    displayName
+    rewardClaimedCumulative
+    ownedTokens {
+      id
+      labItems {
+        id
+        item {
+          id
+        }
+      }
+    }
+    profile {
+      token {
+        id
+        labItems {
+          item {
+            id
+          }
+        }
+      }
+      name
+    }
+  }
+}
+`
+
 const tokenV2: TypedDocumentNode<{ token: IToken }, QueryIdentifiable> = gql`
 ${schemaFragments}
 
@@ -514,6 +554,13 @@ export const queryOwnerTrasnferNfts = async (account: string) => {
   }
 
   return Object.entries(groupByMapMany(owner.ownedTokens, token => token.transfers[0].transaction.id))
+}
+
+export const queryOwnerList = async (): Promise<IOwner[]> => {
+  const owners = (await blueberryGraphV2(ownerListDoc, {  })).owners
+
+
+  return owners.map(fromOwnerJson)
 }
 
 export const queryOwnerV2 = async (account: string): Promise<IOwner | null> => {

@@ -1,7 +1,8 @@
 import { Behavior, combineObject } from "@aelea/core"
 import { component, style, $text, attr, nodeEvent, styleInline, stylePseudo, INode } from "@aelea/dom"
-import { $column, layoutSheet, $row, $icon } from "@aelea/ui-components"
+import { $column, layoutSheet, $row, $icon, state } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
+import { ContractTransaction } from "@ethersproject/contracts"
 import { LabItemSale, MintRule, USE_CHAIN } from "@gambitdao/gbc-middleware"
 import { ETH_ADDRESS_REGEXP, formatFixed, replayState } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
@@ -12,7 +13,10 @@ import { connectLab } from "../../logic/contract/lab"
 import { connectPublic, getMintCount } from "../../logic/contract/sale"
 import { $ButtonPrimary } from "../form/$Button"
 import { $Dropdown, $defaultSelectContainer } from "../form/$Dropdown"
-import { $displayMintEvents, IMintEvent } from "./mintUtils2"
+import { $displayMintEvents } from "./mintUtils2"
+import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
+import { IEthereumProvider } from "eip1193-provider"
+import { WALLET } from "../../logic/provider"
 
 
 
@@ -22,26 +26,33 @@ interface IFormState {
   account: string | null
 }
 
+interface MintCmp {
+  item: LabItemSale
+  mintRule: MintRule
+  walletLink: IWalletLink
+  walletStore: state.BrowserStore<WALLET, "walletStore">
+}
 
-
-export const $PublicMint = (item: LabItemSale, mintRule: MintRule, walletLink: IWalletLink) => component((
-  [clickMintPublic, clickMintPublicTether]: Behavior<PointerEvent, Promise<IMintEvent>>,
+export const $PublicMint = (config: MintCmp) => component((
+  [clickMintPublic, clickMintPublicTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
   [customNftAmount, customNftAmountTether]: Behavior<INode, number>,
   [selectMintAmount, selectMintAmountTether]: Behavior<number, number>,
+  [walletChange, walletChangeTether]: Behavior<IEthereumProvider | null, IEthereumProvider | null>,
 
 ) => {
 
-  const hasAccount = map(address => address && !ETH_ADDRESS_REGEXP.test(address), walletLink.account)
+  const hasAccount = map(address => address && !ETH_ADDRESS_REGEXP.test(address), config.walletLink.account)
 
-  const supportedNetwork = map(x => x !== USE_CHAIN, walletLink.network)
-  const mintCount = getMintCount(item.contractAddress)
+  const supportedNetwork = map(x => x !== USE_CHAIN, config.walletLink.network)
+  const mintCount = getMintCount(config.item.contractAddress)
 
-  const totalMintedChange = takeUntilLast(isLive => Number(isLive) === mintRule.amount, mintCount)
+  const totalMintedChange = takeUntilLast(isLive => Number(isLive) === config.mintRule.amount, mintCount)
 
-  const saleWallet = connectPublic(walletLink, item.contractAddress)
-  const labWallet = connectLab(walletLink)
+  const saleWallet = connectPublic(config.walletLink, config.item.contractAddress)
+  
+  const labWallet = connectLab(config.walletLink)
 
-  const hasMintEnded = skipRepeats(map(amount => Number(amount) === mintRule.amount, totalMintedChange))
+  const hasMintEnded = skipRepeats(map(amount => Number(amount) === config.mintRule.amount, totalMintedChange))
   const accountChange = merge(hasAccount, supportedNetwork)
   const selectedMintAmount = merge(customNftAmount, selectMintAmount)
 
@@ -49,7 +60,7 @@ export const $PublicMint = (item: LabItemSale, mintRule: MintRule, walletLink: I
     return amount === null
   }, selectedMintAmount))
 
-  const formState = replayState({ selectedMintAmount, account: walletLink.account }, {
+  const formState = replayState({ selectedMintAmount, account: config.walletLink.account }, {
     selectedMintAmount: null, account: null
   } as IFormState)
 
@@ -88,7 +99,7 @@ export const $PublicMint = (item: LabItemSale, mintRule: MintRule, walletLink: I
                   if (target instanceof HTMLElement) {
                     const val = Number(target.innerText)
 
-                    return target.innerText !== '' && isFinite(val) && val > 0 && val <= mintRule.transaction ? val : state
+                    return target.innerText !== '' && isFinite(val) && val > 0 && val <= config.mintRule.transaction ? val : state
                   }
 
                   if (state === null) {
@@ -108,52 +119,60 @@ export const $PublicMint = (item: LabItemSale, mintRule: MintRule, walletLink: I
             $container: $defaultSelectContainer(style({})),
             value: startWith(null, customNftAmount),
             $$option: map(option => $text(String(option))),
-            list: [1, 2, 3, 5, 10, 20].filter(n => Number(mintRule.transaction) >= n),
+            list: [1, 2, 3, 5, 10, 20].filter(n => Number(config.mintRule.transaction) >= n),
           }
         })({
           select: selectMintAmountTether()
         }),
-        $ButtonPrimary({
-          disabled: startWith(true, buttonState),
-          buttonOp: style({ alignSelf: 'flex-end' }),
-          $content: switchLatest(
-            map(({ selectedMintAmount, account }) => {
 
-              if (selectedMintAmount === null) {
-                return $text('Select amount')
-              }
+        $IntermediateConnectButton({
+          walletStore: config.walletStore,
+          $container: $column(layoutSheet.spacingBig),
+          $display: map(() => {
 
-              const priceFormated = formatFixed(mintRule.cost, 18)
-              const total = selectedMintAmount * priceFormated
+            return $ButtonPrimary({
+              disabled: startWith(true, buttonState),
+              buttonOp: style({ alignSelf: 'flex-end' }),
+              $content: switchLatest(
+                map(({ selectedMintAmount, account }) => {
 
-              return $text(`Mint ${selectedMintAmount} (${total > 0n ? total + 'ETH' : 'Free'})`)
+                  if (selectedMintAmount === null) {
+                    return $text('Select amount')
+                  }
 
-            }, formState)
-          ),
+                  const priceFormated = formatFixed(config.mintRule.cost, 18)
+                  const total = selectedMintAmount * priceFormated
+
+                  return $text(`Mint ${selectedMintAmount} (${total > 0n ? total + 'ETH' : 'Free'})`)
+
+                }, formState)
+              ),
+            })({
+              click: clickMintPublicTether(
+                snapshot(async ({ formState: { selectedMintAmount }, saleContract, account }) => {
+
+                  if (saleContract === null || selectedMintAmount === null) {
+                    throw new Error('could not resolve sales contract')
+                  }
+                  const value = BigInt(selectedMintAmount) * config.mintRule.cost
+
+                  const contractAction = saleContract.publicMint(selectedMintAmount, { value })
+
+                  return contractAction
+                }, combineObject({ formState, saleContract: saleWallet.contract, account: config.walletLink.account })),
+              )
+            })
+          }),
+          ensureNetwork: true,
+          walletLink: config.walletLink
         })({
-          click: clickMintPublicTether(
-            snapshot(async ({ formState: { selectedMintAmount }, saleContract, account }): Promise<IMintEvent> => {
-
-              if (saleContract === null || selectedMintAmount === null) {
-                throw new Error('could not resolve sales contract')
-              }
-              const value = BigInt(selectedMintAmount) * mintRule.cost
-
-              const contractAction = saleContract.publicMint(selectedMintAmount, { value })
-              const contractReceipt = contractAction.then(recp => recp.wait())
-
-              return {
-                amount: selectedMintAmount,
-                contractReceipt,
-                txHash: contractAction.then(t => t.hash),
-              }
-
-            }, combineObject({ formState, saleContract: saleWallet.contract, account: walletLink.account })),
-          )
+          walletChange: walletChangeTether(),
         })
       ),
 
       $displayMintEvents(labWallet.contract, clickMintPublic)
-    )
+    ),
+
+    { walletChange }
   ]
 })
