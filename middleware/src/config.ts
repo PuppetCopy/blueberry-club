@@ -1,4 +1,5 @@
 import { CHAIN, groupByMap, intervalTimeMap, unixTimestampNow } from "@gambitdao/gmx-middleware"
+import { parseEther } from "ethers/lib/utils"
 import { IAttributeMappings, LabItemSale, SaleType } from "./types"
 
 
@@ -99,6 +100,13 @@ export const saleDescriptionList: LabItemSale[] = [
         cost: 0n,
         start: toTime(2022, 5, 7, 22),
         transaction: 50
+      },
+      {
+        amount: 800,
+        type: SaleType.Public,
+        cost: parseEther('0.0057').toBigInt(),
+        start: toTime(2022, 6, 7, 22),
+        transaction: 10
       }
     ]
   },
