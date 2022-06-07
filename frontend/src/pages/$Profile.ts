@@ -40,8 +40,8 @@ export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAcco
 
 ) => {
 
-  
-  
+
+
   // const saleWallet = connectSale(walletLink, item.contractAddress)
 
   // const arbitrumContract: IGmxContractInfo = initContractChain(web3Provider, accountAddress, ARBITRUM_CONTRACT)
@@ -117,7 +117,7 @@ export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAcco
 
   const priceMap = fromPromise(queryLatestPrices())
 
-  
+
   // const isApprovedForAll = replayLatest(multicast(rewardDistributor.isApprovedForAll))
 
   // // Promise<ContractReceipt>
@@ -125,7 +125,7 @@ export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAcco
   // const chosenTokens = startWith([], selectTokensForWhitelist)
 
   // const withdrawTxn = snapshot(async ({ selection, contract, account }) => {
-     
+
   //   if ((contract === null || !account)) {
   //     throw new Error(`Unable to resolve contract`)
   //   }
@@ -140,28 +140,31 @@ export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAcco
 
 
   return [
-    $column(layoutSheet.spacingBig)(
+    $responsiveFlex(layoutSheet.spacingBig, style({ placeContent: 'center' }))(
 
-      $column(style({ width: '500px' }))(
-        $accountPreview({
-          address: accountAddress,
-          avatarSize: 150,
-          labelSize: '2em'
-        }),
-      ),
 
-      $IntermediatePromise({
-        query: now(queryOwnerV2(accountAddress.toLowerCase())),
-        $$done: map(owner => {
-          if (owner == null) {
-            return $alert($text(style({ alignSelf: 'center' }))(`Connected account does not own any GBC's`))
-          }
+      $column(layoutSheet.spacingBig, style({ width: '550px' }))(
+        $column(style({ width: '500px' }))(
+          $accountPreview({
+            address: accountAddress,
+            avatarSize: 150,
+            labelSize: '2em'
+          }),
+        ),
 
-          return $row(style({ flexWrap: 'wrap' }))(...owner.ownedTokens.map(token => {
-            return $berryByToken(token)
-          }))
-        }),
-      })({}),
+        $IntermediatePromise({
+          query: now(queryOwnerV2(accountAddress.toLowerCase())),
+          $$done: map(owner => {
+            if (owner == null) {
+              return $alert($text(style({ alignSelf: 'center' }))(`Connected account does not own any GBC's`))
+            }
+
+            return $row(layoutSheet.spacingSmall, style({ flexWrap: 'wrap' }))(...owner.ownedTokens.map(token => {
+              return $berryTileId(token, 85)
+            }))
+          }),
+        })({}),
+      )
 
     )
   ]

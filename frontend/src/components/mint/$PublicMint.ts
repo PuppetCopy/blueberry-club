@@ -9,7 +9,7 @@ import { switchLatest, multicast, startWith, snapshot, map, tap, skipRepeats, me
 import { $caretDown } from "../../elements/$icons"
 import { takeUntilLast } from "../../logic/common"
 import { connectLab } from "../../logic/contract/lab"
-import { connectSale, getMintCount } from "../../logic/contract/sale"
+import { connectPublic, getMintCount } from "../../logic/contract/sale"
 import { $ButtonPrimary } from "../form/$Button"
 import { $Dropdown, $defaultSelectContainer } from "../form/$Dropdown"
 import { $displayMintEvents, IMintEvent } from "./mintUtils2"
@@ -38,7 +38,7 @@ export const $PublicMint = (item: LabItemSale, mintRule: MintRule, walletLink: I
 
   const totalMintedChange = takeUntilLast(isLive => Number(isLive) === mintRule.amount, mintCount)
 
-  const saleWallet = connectSale(walletLink, item.contractAddress)
+  const saleWallet = connectPublic(walletLink, item.contractAddress)
   const labWallet = connectLab(walletLink)
 
   const hasMintEnded = skipRepeats(map(amount => Number(amount) === mintRule.amount, totalMintedChange))
@@ -114,7 +114,7 @@ export const $PublicMint = (item: LabItemSale, mintRule: MintRule, walletLink: I
           select: selectMintAmountTether()
         }),
         $ButtonPrimary({
-          disabled: buttonState,
+          disabled: startWith(true, buttonState),
           buttonOp: style({ alignSelf: 'flex-end' }),
           $content: switchLatest(
             map(({ selectedMintAmount, account }) => {

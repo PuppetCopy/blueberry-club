@@ -143,7 +143,6 @@ export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
               $body: map(x => {
                 const time = Number(BigInt(x.timestamp))
                 const dateStr = new Date(Math.floor(time * 1000)).toLocaleDateString()
-
                 const timeAgo = timeSince(time)
 
                 return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(

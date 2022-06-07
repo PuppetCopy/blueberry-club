@@ -1,4 +1,4 @@
-import { $Branch, $text, attr, style } from "@aelea/dom"
+import { $Branch, $node, $text, attr, style } from "@aelea/dom"
 import { $ButtonIcon, $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { getAccountExplorerUrl, getTxExplorerUrl, shortenAddress } from "@gambitdao/gmx-middleware"
@@ -48,7 +48,8 @@ export const $accountRef = (id: string) => $anchor(attr({ href: getAccountExplor
 
 
 export const $accountIconLink = (address: string) => $anchor(attr({ href: getAccountExplorerUrl(USE_CHAIN, address) }))(
-  $icon({ $content: $ethScan, width: '16px', viewBox: '0 0 24 24' })
+  $icon({ $content: $ethScan, width: '16px', viewBox: '0 0 24 24', svgOps: style({ margin: '3px 4px 0 0' }) }),
+  $text(style({}))(` ${shortenAddress(address)} `),
 )
 
 export const $txnIconLink = (address: string) => $anchor(attr({ href: getTxExplorerUrl(USE_CHAIN, address) }))(
