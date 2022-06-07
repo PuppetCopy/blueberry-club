@@ -103,7 +103,7 @@ export const $accountPreview = ({
   labelSize = '16px', avatarSize = 38, claim, address,
 }: IAccountPreview) => {
 
-  const profile = fromPromise(queryProfile({ id: address.toLowerCase() }))
+  const profile = fromPromise(queryProfile({ id: address.toLowerCase() }).catch(() => null))
 
   return switchLatest(map(p => {
     return p ? $profilePreview({ labelSize, avatarSize, profile: p }) : $row(layoutSheet.row, layoutSheet.spacingSmall, style({ alignItems: 'center', pointerEvents: 'none', textDecoration: 'none' }))(
