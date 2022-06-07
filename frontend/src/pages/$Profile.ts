@@ -140,28 +140,31 @@ export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAcco
 
 
   return [
-    $column(layoutSheet.spacingBig)(
+    $responsiveFlex(layoutSheet.spacingBig, style({ placeContent: 'center' }))(
 
-      $column(style({ width: '500px' }))(
-        $accountPreview({
-          address: accountAddress,
-          avatarSize: 150,
-          labelSize: '2em'
-        }),
-      ),
 
-      $IntermediatePromise({
-        query: now(queryOwnerV2(accountAddress.toLowerCase())),
-        $$done: map(owner => {
-          if (owner == null) {
-            return $alert($text(style({ alignSelf: 'center' }))(`Connected account does not own any GBC's`))
-          }
+      $column(layoutSheet.spacingBig, style({ width: '550px' }))(
+        $column(style({ width: '500px' }))(
+          $accountPreview({
+            address: accountAddress,
+            avatarSize: 150,
+            labelSize: '2em'
+          }),
+        ),
 
-          $row(layoutSheet.spacingSmall, style({ flexWrap: 'wrap' }))(...owner.ownedTokens.map(token => {
-            return $berryTileId(token, 85)
-          }))
-        }),
-      })({}),
+        $IntermediatePromise({
+          query: now(queryOwnerV2(accountAddress.toLowerCase())),
+          $$done: map(owner => {
+            if (owner == null) {
+              return $alert($text(style({ alignSelf: 'center' }))(`Connected account does not own any GBC's`))
+            }
+
+            return $row(layoutSheet.spacingSmall, style({ flexWrap: 'wrap' }))(...owner.ownedTokens.map(token => {
+              return $berryTileId(token, 85)
+            }))
+          }),
+        })({}),
+      )
 
     )
   ]
