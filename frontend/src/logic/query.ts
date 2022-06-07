@@ -551,7 +551,7 @@ const gmxArbitrumStats = prepareClient({
 export const queryProfileList = async (queryParams: Partial<IPagePositionParamApi> = {}) => {
   const owner = (await blueberryGraphV2(profileList, queryParams)).profiles
 
-  return owner.map(fromProfileJson)
+  return owner.map(fromProfileJson).reverse()
 }
 
 

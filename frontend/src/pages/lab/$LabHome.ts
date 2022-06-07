@@ -103,7 +103,7 @@ export const $LabHome = ({ walletLink, parentRoute, walletStore }: IBerry) => co
 
           $node(style({ fontSize: '1.7em' }))(
             $text(style({ color: pallete.foreground, paddingRight: '15px' }))(`Launching in`),
-            $text(style({ fontSize: '1.5em', fontWeight: 'bold' }))(map(t => countdownFn(Date.UTC(2022, 5, 7, 22), t * 1000), timeChange)),
+            $text(style({ fontSize: '1.5em', fontWeight: 'bold' }))(map(t => countdownFn(Date.UTC(2022, 5, 7, 22) / 1000, t), timeChange)),
           ),
 
           
