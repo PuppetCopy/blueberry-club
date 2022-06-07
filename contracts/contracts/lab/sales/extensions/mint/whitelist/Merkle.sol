@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 import {Private, MintRule} from "./Private.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
+import "hardhat/console.sol";
+
 struct MerkleMintRule {
     address to;
     uint96 nonce;
@@ -49,7 +51,7 @@ abstract contract PrivateMerkle is Private {
         bytes32[] calldata merkleProof,
         uint120 amount
     ) external payable {
-        if (_mrule.to == msg.sender) revert WrongSender();
+        if (_mrule.to != msg.sender) revert WrongSender();
         bytes32 leaf = getMerkleHash(_mrule);
         if (leafClaimed[leaf]) revert LeafClaimed();
 

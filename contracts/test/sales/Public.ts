@@ -22,7 +22,7 @@ export enum ROLES {
 
 const MINTED_TOKEN = 100
 
-describe("Public.sol", function () {
+describe.skip("Public.sol", function () {
   let owner: SignerWithAddress
   let bob: SignerWithAddress
   let alice: SignerWithAddress
