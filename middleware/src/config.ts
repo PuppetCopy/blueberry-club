@@ -350,7 +350,7 @@ export const saleDescriptionList: LabItemSale[] = [
   },
   {
     name: "GLP Shirt",
-    description: "The perfect shirt for chilling out while GLP gives you passive income. Free claim for the Blueberry Lab Day 1",
+    description: "The perfect shirt for chilling out while GLP gives you passive income. Free claim for the first Blueberry Lab Item",
     id: IAttributeMappings["GLP Shirt"],
     contractAddress: "0xe1822ABcF26A86151651449d7122220dC07d8301",
     mintRuleList: [
