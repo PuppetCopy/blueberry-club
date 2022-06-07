@@ -31,6 +31,8 @@ const getHash = (
   )
 }
 
+import { MerkleSale } from "../../utils/merkle"
+
 export enum ROLES {
   MINTER,
   BURNER,
@@ -50,10 +52,7 @@ describe("Merkle.sol", function () {
   let sale: SaleMerkleTest
 
   let end: number
-  let root: string
-  let leaves: string[]
-  let rules: MerkleMintRuleStruct[]
-  let tree: MerkleTree
+  let merkle: MerkleSale
 
   this.beforeAll(async () => {
     const [owner_, user1_, user2_] = await ethers.getSigners()
@@ -62,7 +61,7 @@ describe("Merkle.sol", function () {
     alice = user2_
     const gbcFactory = new GBC__factory(owner)
 
-    rules = [
+    const rules = [
       {
         to: owner.address,
         cost: ethers.utils.parseEther("0.02"),
@@ -105,20 +104,7 @@ describe("Merkle.sol", function () {
       },
     ]
 
-    leaves = rules.map((rule) => {
-      return getHash(
-        rule.to,
-        BigNumber.from(rule.cost),
-        rule.start,
-        rule.transaction,
-        rule.amount,
-        rule.nonce
-      )
-    })
-
-    tree = new MerkleTree(leaves, keccak256)
-
-    root = tree.getHexRoot()
+    merkle = new MerkleSale(rules)
 
     gbc = await gbcFactory.deploy("Blueberry Club", "GBC", "")
     await gbc.deployed()
@@ -158,7 +144,7 @@ describe("Merkle.sol", function () {
       },
       owner.address,
       end,
-      root
+      merkle.root
     )
     await sale.deployed()
 
@@ -176,17 +162,9 @@ describe("Merkle.sol", function () {
   })
 
   it("Should be possible to mint items", async () => {
-    const hashes_ = await Promise.all(
-      rules.map((rule) => {
-        return sale.getMerkleHash(rule)
-      })
-    )
-    hashes_.forEach((hash) => {
-      expect(leaves.includes(hash)).to.be.true
-    })
     expect(await sale.totalMinted()).to.be.equal(BigNumber.from(0))
 
-    await sale.merkleMint(rules[2], tree.getHexProof(leaves[2]), 1)
+    await sale.merkleMint(merkle.rule(2), merkle.proof(2), 1)
     expect(await sale.totalMinted()).to.be.equal(BigNumber.from(1))
     expect(await lab.balanceOf(owner.address, MINTED_TOKEN)).to.be.equal(
       BigNumber.from(1)
@@ -195,7 +173,7 @@ describe("Merkle.sol", function () {
 
   it("Should not be possible to use 2 times the same leaf", async () => {
     expect(
-      sale.merkleMint(rules[2], tree.getHexProof(leaves[2]), 1)
+      sale.merkleMint(merkle.rule(2), merkle.proof(2), 1)
     ).to.be.revertedWith("")
   })
 })
