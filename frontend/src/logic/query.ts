@@ -433,6 +433,25 @@ query ($pageSize: Int = 1000, $skip: Int = 0) {
 
 `
 
+const profileDoc: TypedDocumentNode<{ profile: IProfile }, QueryIdentifiable> = gql`
+
+query ($id: String) {
+  profile(id: $id) {
+    id
+    token {
+      id
+      labItems {
+        item {
+          id
+        }
+      }
+    }
+    name
+  }
+}
+
+`
+
 
 const trasnfer = `
   from
@@ -552,6 +571,12 @@ export const queryProfileList = async (queryParams: Partial<IPagePositionParamAp
   const owner = (await blueberryGraphV2(profileList, queryParams)).profiles
 
   return owner.map(fromProfileJson).reverse()
+}
+
+export const queryProfile = async (queryParams: QueryIdentifiable) => {
+  const owner = (await blueberryGraphV2(profileDoc, queryParams)).profile
+
+  return fromProfileJson(owner)
 }
 
 

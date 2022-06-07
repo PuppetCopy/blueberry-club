@@ -1,28 +1,25 @@
-import { Behavior, O } from "@aelea/core"
+import { Behavior } from "@aelea/core"
 import { $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
-import { $anchor, $IntermediatePromise, $IntermediateTx, $Link } from "@gambitdao/ui-components"
+import { $anchor, $IntermediatePromise, $Link } from "@gambitdao/ui-components"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $loadBerry } from "../../components/$DisplayBerry"
 import { $buttonAnchor, $ButtonPrimary, $ButtonSecondary } from "../../components/form/$Button"
 import { $responsiveFlex } from "../../elements/$common"
-import { IAttributeHat, IAttributeFaceAccessory, IAttributeClothes, IAttributeExpression, USE_CHAIN, IProfile, saleDescriptionList } from "@gambitdao/gbc-middleware"
+import { IAttributeHat, IAttributeFaceAccessory, IAttributeClothes, IAttributeExpression, IProfile } from "@gambitdao/gbc-middleware"
 import { $seperator2 } from "../common"
-import { constant, empty, map, mergeArray, multicast, now, switchLatest } from "@most/core"
+import { map, mergeArray, now } from "@most/core"
 import { ContractTransaction } from "@ethersproject/contracts"
 import { pallete } from "@aelea/ui-components-theme"
-import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 import { WALLET } from "../../logic/provider"
 import { IEthereumProvider } from "eip1193-provider"
-import { connectGbc } from "../../logic/contract/gbc"
 import { queryProfileList } from "../../logic/query"
 import { $berryByToken } from "../../logic/common"
-import { $accountPreview } from "../../components/$AccountProfile"
+import { $profilePreview } from "../../components/$AccountProfile"
 import { countdownFn } from "@gambitdao/gmx-middleware"
 import { timeChange } from "../../components/mint/mintUtils2"
-import { $StoreItemPreview } from "./$StoreItem"
 
 
 
@@ -187,7 +184,7 @@ export const $LabHome = ({ walletLink, parentRoute, walletStore }: IBerry) => co
                 ...berryWallList.map(profile => {
                   return $Link({
                     route: parentRoute.create({ fragment: 'df2f23f' }),
-                    $content: $accountPreview({ address: profile.id, avatarSize: 80, labelSize: '1em' }),
+                    $content: $profilePreview({ profile, avatarSize: 80, labelSize: '1em' }),
                     anchorOp: style({ minWidth: '15.6%', overflow: 'hidden' }),
                     url: `/p/profile/${profile.id}`,
                   })({ click: changeRouteTether() })

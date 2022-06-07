@@ -1,5 +1,4 @@
-import { CHAIN, groupByMap, intervalTimeMap, unixTimestampNow } from "@gambitdao/gmx-middleware"
-import { parseEther } from "ethers/lib/utils"
+import { CHAIN, groupByMap, intervalTimeMap } from "@gambitdao/gmx-middleware"
 import { IAttributeMappings, LabItemSale, SaleType } from "./types"
 
 

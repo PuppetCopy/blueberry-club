@@ -2,15 +2,14 @@ import { $element, $node, $text, attr, style } from "@aelea/dom"
 import { $column, $icon, $row, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { BaseProvider } from "@ethersproject/providers"
-import { Stream } from "@most/types"
 import { CHAIN, getAccountExplorerUrl, IClaim, IClaimSource, intervalTimeMap } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $jazzicon } from "../common/$avatar"
-import { getGatewayUrl, getIdentityFromENS, IEnsClaim } from "@gambitdao/gbc-middleware"
+import { getGatewayUrl, getIdentityFromENS, IEnsClaim, IProfile } from "@gambitdao/gbc-middleware"
 import { $anchor, $ethScan, $twitter } from "@gambitdao/ui-components"
-import { getProfile } from "../logic/contract/manager"
-import { $berryByLabItems } from "../logic/common"
+import { $berryByToken } from "../logic/common"
 import { fromPromise, map, switchLatest } from "@most/core"
+import { queryProfile } from "../logic/query"
 
 
 export interface IAccountPreview {
@@ -20,13 +19,15 @@ export interface IAccountPreview {
   claim?: IClaim
 }
 
-export interface IAccountClaim extends IAccountPreview {
-  walletLink: IWalletLink
+export interface IProfilePreview {
+  profile: IProfile
+  labelSize?: string
+  avatarSize?: number
+  claim?: IClaim
 }
 
-export interface IProfile extends IAccountClaim {
-  tempFix?: boolean
-  claimMap: Stream<Map<string, IClaim>>
+export interface IAccountClaim extends IAccountPreview {
+  walletLink: IWalletLink
 }
 
 
@@ -38,36 +39,25 @@ export const $AccountPhoto = (address: string, claim?: IClaim, size = 42) => {
 
   const $wrapper = $node(style({ width: sizePx, height: sizePx, minWidth: sizePx, minHeight: sizePx, borderRadius: '50%' }))
 
- 
+  if (claimType) {
+    const isTwitter = claimType === IClaimSource.TWITTER
 
-  const profile = fromPromise(getProfile(address).catch(() => null))
-  return $wrapper(
-    switchLatest(map(profile => {
-      if (profile === null || profile.tokenId === null) {
-        if (claimType) {
-          const isTwitter = claimType === IClaimSource.TWITTER
+    if (isTwitter) {
+      return $photoContainer(
+        style({ width: sizePx, height: sizePx, minWidth: sizePx }),
+        attr({ src: `https://unavatar.vercel.app/twitter/${claim.name}` })
+      )()
+    } else {
+      const data: IEnsClaim = claim.data ? JSON.parse(claim.data) : {}
+      const imageUrl = data.imageUrl
 
-          if (isTwitter) {
-            return $photoContainer(
-              style({ width: sizePx, height: sizePx, minWidth: sizePx }),
-              attr({ src: `https://unavatar.vercel.app/twitter/${claim.name}` })
-            )()
-          } else {
-            const data: IEnsClaim = claim.data ? JSON.parse(claim.data) : {}
-            const imageUrl = data.imageUrl
-
-            if (imageUrl) {
-              return $photoContainer(attr({ src: getGatewayUrl(imageUrl) }), style({ minWidth: sizePx, width: sizePx, minHeight: sizePx, height: sizePx }))()
-            }
-          }
-        }
-
-        return $jazzicon(address, sizePx)
+      if (imageUrl) {
+        return $photoContainer(attr({ src: getGatewayUrl(imageUrl) }), style({ minWidth: sizePx, width: sizePx, minHeight: sizePx, height: sizePx }))()
       }
+    }
+  }
 
-      return style({ borderRadius: '50%' }, $berryByLabItems(Number(profile.tokenId), profile.background, profile.custom, size))
-    }, profile))
-  )
+  return $jazzicon(address, sizePx)
 }
 
 
@@ -79,9 +69,8 @@ export const $AccountLabel = (address: string, claim?: IClaim, fontSize = '1em')
 
   return $column(style({ fontSize }))(
     $text(style({ fontSize: '.75em' }))(address.slice(0, 6)),
-    $text(style({ fontSize: '1em' }))(address.slice(address.length -4, address.length))
+    $text(style({ fontSize: '1em' }))(address.slice(address.length - 4, address.length))
   )
-
 }
 
 
@@ -114,9 +103,26 @@ export const $accountPreview = ({
   labelSize = '16px', avatarSize = 38, claim, address,
 }: IAccountPreview) => {
 
+  const profile = fromPromise(queryProfile({ id: address.toLowerCase() }))
+
+  return switchLatest(map(p => {
+    return p ? $profilePreview({ labelSize, avatarSize, profile: p }) : $row(layoutSheet.row, layoutSheet.spacingSmall, style({ alignItems: 'center', pointerEvents: 'none', textDecoration: 'none' }))(
+      $AccountPhoto(address, claim, avatarSize),
+      $AccountLabel(address, claim, labelSize)
+    )
+  }, profile))
+}
+
+
+export const $profilePreview = ({
+  labelSize = '16px', avatarSize = 38, claim, profile,
+}: IProfilePreview) => {
+
   return $row(layoutSheet.row, layoutSheet.spacingSmall, style({ alignItems: 'center', pointerEvents: 'none', textDecoration: 'none' }))(
-    $AccountPhoto(address, claim, avatarSize),
-    $AccountLabel(address, claim, labelSize)
+    profile.token ? style({ borderRadius: '50%' }, $berryByToken(profile.token, avatarSize)) : $AccountPhoto(profile.id, claim, avatarSize),
+    profile.name
+      ? $text(style({ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', fontSize: labelSize }))(profile.name)
+      : $AccountLabel(profile.id, claim, labelSize)
   )
 }
 
@@ -144,7 +150,7 @@ const CACHE_TTL = intervalTimeMap.DAY7
 
 
 type ICachedId = IEnsClaim & { createdAt: number }
-export async function getCachedMetadata (address: string, provider: BaseProvider) {
+export async function getCachedMetadata(address: string, provider: BaseProvider) {
   const normalizedAddress = address.toLowerCase()
 
   const cachedItem = window.localStorage.getItem(`ens-${normalizedAddress}`)
