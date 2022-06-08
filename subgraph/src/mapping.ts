@@ -67,6 +67,7 @@ export function handleSetMain(event: profile.SetMain): void {
   if (profileDto === null) {
     profileDto = new Profile(assigner)
     profileDto.owner = assigner
+    profileDto.timestamp = event.block.timestamp
     owner.profile = assigner
   }
 

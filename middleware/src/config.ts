@@ -10,7 +10,6 @@ export const GLOBAL_W3P_AVALANCHE = 'https://api.avax.network/ext/bc/C/rpc'
 
 export const MINT_WHITELIST_START = Date.UTC(2021, 11, 5, 22, 0, 0)
 export const MINT_PUBLIC_START = Date.UTC(2021, 11, 7, 22, 0, 0)
-export const ADDRESS_ZERO = "0x0000000000000000000000000000000000000000"
 
 
 export const GBC_DESCRIPTION = {

@@ -447,8 +447,9 @@ query ($id: String) {
 const profileList: TypedDocumentNode<{ profiles: IProfile[] }, Partial<IPagePositionParamApi>> = gql`
 
 query ($pageSize: Int = 1000, $skip: Int = 0) {
-  profiles(first: $pageSize, skip: $skip) {
+  profiles(first: $pageSize, skip: $skip, orderBy: timestamp, orderDirection: desc) {
     id
+    timestamp
     token {
       id
       labItems {
@@ -468,6 +469,7 @@ const profileDoc: TypedDocumentNode<{ profile: IProfile }, QueryIdentifiable> = 
 query ($id: String) {
   profile(id: $id) {
     id
+    timestamp
     token {
       id
       labItems {

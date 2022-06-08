@@ -163,13 +163,13 @@ export const $LabHome = ({ walletLink, parentRoute, walletStore }: IBerry) => co
         $node(),
         $row(
           $IntermediatePromise({
-            query: now(queryProfileList({ pageSize: 12 })),
+            query: now(queryProfileList({ pageSize: screenUtils.isDesktopScreen ? 12 : 8 })),
             $$done: map(berryWallList => {
               if (berryWallList.length === 0) {
                 return $text('No Identiees have been chosen yet. help us get this section filled using the Wardrobe or Profile section')
               }
 
-              return $node(style({ display: 'flex', flexWrap: 'wrap', width: '100%', gap: `3vw 1%` }))(
+              return $node(style({ display: 'flex', flexWrap: 'wrap', width: '100%', placeContent: 'space-evenly', gap: screenUtils.isDesktopScreen ? '20px 3px' : `15px` }))(
                 ...berryWallList.map(profile => {
                   return $Link({
                     route: parentRoute.create({ fragment: 'df2f23f' }),
