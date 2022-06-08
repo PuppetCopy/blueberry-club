@@ -170,7 +170,7 @@ export const $LabHome = ({ walletLink, parentRoute, walletStore }: IBerry) => co
               }
 
               return $node(style({ display: 'flex', flexWrap: 'wrap', width: '100%', placeContent: 'space-evenly', gap: screenUtils.isDesktopScreen ? '20px 3px' : `15px` }))(
-                ...berryWallList.map(profile => {
+                ...berryWallList.reverse().map(profile => {
                   return $Link({
                     route: parentRoute.create({ fragment: 'df2f23f' }),
                     $content: $profilePreview({ profile, avatarSize: 80, labelSize: '1em' }),
