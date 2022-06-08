@@ -329,7 +329,7 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
                   )
                   : $ButtonSecondary({
                     buttonOp: style({
-                      zoom: .6,
+                      placeContent: 'center', alignItems: 'center',
                       position: 'absolute',
                       top: '-15px',
                       width: '50px',
@@ -337,7 +337,7 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
                       right: '-15px',
                       padding: '4px'
                     }),
-                    $content: $text(style({ padding: '4px 6px' }))('Buy'),
+                    $content: $text('Buy'),
                   })({
                     click: changeRouteTether(
                       constant(`/p/item/${id}`),
@@ -529,6 +529,9 @@ const $ItemSlot = ({ selectedSlot, change, gbcItemId, slot, slotLabel }: ItemSlo
 function getGbcDownloadableUrl(svg: SVGElement): Promise<string> {
   const blob = new Blob([svg.outerHTML], { type: 'image/svg+xml' })
   const url = URL.createObjectURL(blob)
+
+  svg.setAttribute('width', svg.clientWidth + 'px')
+  svg.setAttribute('height', svg.clientWidth + 'px')
 
   const image = new Image()
 

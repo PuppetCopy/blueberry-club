@@ -86,22 +86,7 @@ const main = async () => {
 
   console.log(`------------------------------------------------------------------------------\n`)
 
-  const closet = await connectOrDeploy(CLOSET, Closet__factory, gbc.address, lab.address)
-
-  if (getAddress(CLOSET) == AddressZero) {
-    console.log(`🎩 Set LAB isApprovedForAll to CLOSET`)
-    console.log(`✋ Adding roles for CLOSET`)
-    await police.setRoleCapability(ROLES.DESIGNER, closet.address, closet.interface.getSighash(closet.interface.functions["get(uint256,uint256,uint256)"]), true)
-
-    try {
-      console.log(`🎩 Set roles from LAB to CLOSET`)
-      await police.setUserRole(closet.address, ROLES.MINTER, true)
-      console.log(`  - MINTER role setted !`)
-    } catch (error) {
-      console.log(`❌ Actual deployer is not owner of previous police contract`)
-    }
-  }
-
+  await connectOrDeploy(CLOSET, Closet__factory, gbc.address, lab.address)
 
   for (const config of saleDescriptionList) {
     console.log(`------------------------------------------------------------------------------\n`)

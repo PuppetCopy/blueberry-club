@@ -44,12 +44,17 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
 
   const endDate = saleLastDate(item).start + saleConfig.saleDuration
   const isFinished = unixTimestampNow() > endDate
+  
+
+  const berrySize = screenUtils.isDesktopScreen ? '415px' : '100%'
 
   return [
     $responsiveFlex(screenUtils.isDesktopScreen ? style({ gap: '50px' }) : layoutSheet.spacingBig)(
-      $row(style({ minWidth: '415px' }))($labItem(item.id, 415, true, true)),
+      $column(style({ width: berrySize, minHeight: berrySize }))(
+        $labItem(item.id, berrySize, true, true)
+      ),
 
-      $column(style({ gap: '50px', flex: 1 }))(
+      $column(style({ gap: '50px', flex: 5 }))(
 
         $column(layoutSheet.spacingBig)(
           $column(style({}))(
@@ -60,9 +65,8 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
               $text(style({}))(
                 map(amount => {
                   const max = saleMaxSupply(item)
-                  const count = max - Number(amount)
 
-                  return `${amount} sold`
+                  return `${amount}/${max} minted`
                 }, getMintCount(item.contractAddress, 3500))
               ),
             )
@@ -127,6 +131,8 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
                     $row(layoutSheet.spacing, style({ alignItems: 'baseline' }))(
                       $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
                         $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(currentSaleType),
+                        $node(),
+                        $text(style({ color: pallete.foreground }))('Supply'),
                         $text(style({}))(String(mintRule.amount)),
                       ),
                     ),

@@ -339,7 +339,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
       $column(layoutSheet.spacingBig)(
         $column(layoutSheet.spacingBig, style({ alignItems: 'center', textAlign: 'center' }))(
           $text(style({ fontWeight: 'bold', fontSize: '2.5em' }))('Discover our Ecosystem'),
-          $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '878px' }))('The collection is based on a treasury that grows exponentially over time'),
+          $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '878px' }))('The collection is based on a treasury receive revenue thorugh different Products'),
         ),
         $node(),
 

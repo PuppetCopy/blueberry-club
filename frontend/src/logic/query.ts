@@ -400,7 +400,37 @@ query ($id: String) {
   token(id: $id) {
     id
     owner {
-      ...ownerFields
+      id
+      balance
+      ownedLabItems(first: 1000) {
+        balance
+        item {
+          id
+        }
+        id
+      }
+      displayName
+      rewardClaimedCumulative
+      ownedTokens(first: 1000) {
+        id
+        labItems {
+          id
+          item {
+            id
+          }
+        }
+      }
+      profile {
+        token {
+          id
+          labItems {
+            item {
+              id
+            }
+          }
+        }
+        name
+      }
     }
     transfers {
       ...transferFields
@@ -624,7 +654,7 @@ export const queryTokenv2 = async (id: string) => {
     throw new Error(`Token #${id} not found`)
   }
 
-  return owner
+  return fromTokenJson(owner)
 }
 
 

@@ -94,6 +94,7 @@ export function priceFeedHistoryInterval<T extends string>(interval: number, gmx
 
 export const $berryById = (id: number, size: string | number = 85) => {
   const tokenQuery = queryTokenv2(bnToHex(BigInt(id)))
+
   return switchLatest(map(token => $berryByToken(token, size), fromPromise(tokenQuery)))
 }
 
@@ -121,7 +122,7 @@ export const $berryByLabItems = (berryId: number, backgroundId: IAttributeBackgr
   return $loadBerry(matchTuple, size)
 }
 
-export const $labItem = (id: number, size = 85, background = true, showFace = false): $Node => {
+export const $labItem = (id: number, size: string | number = 85, background = true, showFace = false): $Node => {
   const state = getLabItemTupleIndex(id)
   const localTuple = Array(5).fill(undefined) as IBerryDisplayTupleMap
   localTuple.splice(state, 1, id)
@@ -129,21 +130,23 @@ export const $labItem = (id: number, size = 85, background = true, showFace = fa
   if (showFace) {
     localTuple.splice(3, 1, IAttributeExpression.HAPPY)
   }
+  const sizeNorm = typeof size === 'number' ? size + 'px' : size
 
   const backgroundStyle = O(
-    style({ placeContent: 'center', maxWidth: size + 'px', overflow: 'hidden', borderRadius: 85 * 0.15 + 'px' }),
-    background ? style({ backgroundColor: state === 0 ? '' : colorAlpha(pallete.message, .95) }) : O()
+    style({ placeContent: 'center', maxWidth: sizeNorm, overflow: 'hidden', borderRadius: 85 * 0.15 + 'px' }),
+    background ? style({ backgroundColor: state === 0 ? '' : colorAlpha(pallete.message, .92) }) : O()
   )
 
-  return backgroundStyle($loadBerry(localTuple, size))
+
+  return backgroundStyle($loadBerry(localTuple, sizeNorm))
 }
 
 export const $labItemAlone = (id: number, size = 80) => {
   const state = getLabItemTupleIndex(id)
 
   return $svg('svg')(
-    attr({ xmlns: 'http://www.w3.org/2000/svg', preserveAspectRatio: 'none', fill: 'none', viewBox: `0 0 1500 1500` }),
-    style({ width: `${size}px`, height: `${size}px`, })
+    attr({ width: `${size}px`, height: `${size}px`, xmlns: 'http://www.w3.org/2000/svg', preserveAspectRatio: 'none', fill: 'none', viewBox: `0 0 1500 1500` }),
+    style({  })
   )(
     tap(async ({ element }) => {
       const svgParts = (await import("../logic/mappings/svgParts")).default
