@@ -86,7 +86,6 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
   }, walletLink.account)))
 
   const tokenList = map(xz => xz ? xz.ownedTokens : [], owner)
-  const ownedItemList = multicast(map(xz => xz ? xz.ownedLabItems : [], owner))
 
   const savedItemsTxSucceed: Stream<ContractReceipt> = filter(res => res !== null, awaitPromises(map(async txc => {
     const res = await txc.catch(() => null)
@@ -100,11 +99,10 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
 
   const selectedBerry = mergeArray([constant(null, owner), changeBerry])
 
-  // const selectedBerry = merge(
-  //   snapshot(berry => berry, changeBerryWithInitial, savedItemsTxSucceed),
-  //   changeBerryWithInitial
-  // ) 
-
+  const ownedItemList = mergeArray([
+    lab.accountListBalance(saleDescriptionList.map(x => x.id)),
+    switchLatest(map(() => lab.accountListBalance(saleDescriptionList.map(x => x.id)), savedItemsTxSucceed))
+  ])
 
   const isClosetApproved = awaitPromises(combineArray(async (c, acc) => {
     if (acc === null) return null
@@ -301,7 +299,7 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
 
 
               const upcommingSaleDate = activeMint.start
-              const itemOwned: ILabItemOwnership | undefined = ownedItems.find(ownedItem => ownedItem.item.id === id)
+              const itemBalance = ownedItems.find(ownedItem => ownedItem.id === id)
 
               const isSaleUpcomming = upcommingSaleDate > unixTime
 
@@ -309,23 +307,23 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
               const selectBehavior: Op<any, any> = wearBehavior(nodeEvent('click'), constant({ isRemove: false, id }))
 
 
-              const itemBalance = map(slot => {
+              const itemBalanceChange = map(slot => {
                 return slot?.id === id ? slot.isRemove ? 1 : -1 : 0
               }, mergeArray([itemChangeState, backgroundChangeState]))
 
               return $row(style({ position: 'relative' }))(
                 $row(style({ cursor: 'pointer', overflow: 'hidden', borderRadius: '8px', backgroundColor: colorAlpha(pallete.message, theme.name === 'light' ? .12 : .92) }))(
                   fadeIn(
-                    style({ filter: itemOwned && itemOwned.balance > 0n ? '' : 'grayscale(1)' }, selectBehavior($labItem(id, 100)))
+                    style({ filter: itemBalance && itemBalance?.amount > 0n ? '' : 'grayscale(1)' }, selectBehavior($labItem(id, 100)))
                   )
                 ),
-                itemOwned?.balance && account
+                itemBalance?.amount && account
                   ? $text(style({ position: 'absolute', top: '1px', right: '4px', fontSize: '.75em', fontWeight: 'bold', color: pallete.background }))(
                     awaitPromises(map(async (delta) => {
-                      const count = Number(itemOwned.balance) + delta
+                      const count = itemBalance.amount + delta
                       // const count = ((await lab.balanceOf(account, id)).toNumber() + delta)
                       return `${Math.max(0, count)}x`
-                    }, itemBalance))
+                    }, itemBalanceChange))
                   )
                   : $ButtonSecondary({
                     buttonOp: style({
@@ -373,7 +371,7 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
                   nodeEvent('pointerenter')
                 ),
                 style(isDisabled ? {} : { opacity: '.4', pointerEvents: 'none' }),
-                attr({ target: '_blank' }),
+                attr({ download: `GBC-${exchState.selectedBerry?.id}.png` }),
                 attrBehavior(awaitPromises(map(async x => {
                   const svg = document.querySelector('#BERRY')! as SVGElement
                   const href = await getGbcDownloadableUrl(svg)
@@ -517,7 +515,7 @@ const $ItemSlot = ({ selectedSlot, change, gbcItemId, slot, slotLabel }: ItemSlo
         gbcItemId && isSwap && !isGbcItemRemove ? $itemWrapper($labItem(gbcItemId, itemSize)) : empty(),
         gbcItemId && isSwap && !isGbcItemRemove ? style({ left: '50%', top: '50%', marginLeft: '-12px', marginTop: '-12px', pointerEvents: 'none' })($iconCircular($arrowsFlip, pallete.background)) : empty(),
         $itemWrapper(style({ width: isSwap && canRemove ? '65px' : itemSizePx }))(
-          item ? style({ borderRadius: 0, filter: change?.isRemove ? 'saturate(0) brightness(0.2)' : '' }, $labItem(item, itemSize)) : $row(style({ flex: 1, alignItems: 'center', placeContent: 'center', color: pallete.middleground, fontSize: '.65em' }))($text(slotLabel))
+          item ? style({ borderRadius: 0, filter: change?.isRemove ? 'saturate(0) brightness(0.2)' : '' }, $labItem(item, itemSize, false)) : $row(style({ flex: 1, alignItems: 'center', placeContent: 'center', color: pallete.middleground, fontSize: '.65em' }))($text(slotLabel))
         )
       )
     ),
