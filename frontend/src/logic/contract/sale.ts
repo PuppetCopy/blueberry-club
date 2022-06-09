@@ -5,7 +5,7 @@ import { periodicRun } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { awaitPromises, map, multicast } from "@most/core"
 import { getWalletProvider } from "../common"
-import { web3Provider, web3ProviderTestnet } from "../provider"
+import { web3Provider } from "../provider"
 
 
 export function connectMintable(wallet: IWalletLink, saleAddress: string) {

@@ -4,15 +4,14 @@ import { awaitPromises, continueWith, fromPromise, map, multicast, now, periodic
 import { Stream } from "@most/types"
 import { $loadBerry } from "../components/$DisplayBerry"
 import { IValueInterval } from "../components/$StakingGraph"
-import { IAttributeBody, IBerryDisplayTupleMap, getLabItemTupleIndex, IAttributeExpression, GBC_ADDRESS, USE_CHAIN, IAttributeBackground, IAttributeMappings, IBerryLabItems, IToken } from "@gambitdao/gbc-middleware"
+import { IBerryDisplayTupleMap, getLabItemTupleIndex, IAttributeExpression, USE_CHAIN, IAttributeBackground, IAttributeMappings, IBerryLabItems, IToken } from "@gambitdao/gbc-middleware"
 import tokenIdAttributeTuple from "./mappings/tokenIdAttributeTuple"
-import { IPricefeed, IStakeSource, queryLatestPrices, queryToken, queryTokenv2 } from "./query"
+import { IPricefeed, IStakeSource, queryLatestPrices, queryTokenv2 } from "./query"
 import { $Node, $svg, attr, style } from "@aelea/dom"
-import { web3ProviderTestnet } from "./provider"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { Closet } from "@gambitdao/gbc-contracts"
-import { BigNumber, BigNumberish } from "@ethersproject/bignumber"
+import { BigNumberish } from "@ethersproject/bignumber"
 import { bnToHex } from "../pages/$Berry"
 
 
