@@ -533,6 +533,7 @@ function getGbcDownloadableUrl(svg: SVGElement): Promise<string> {
   svg.setAttribute('width', svg.clientWidth + 'px')
   svg.setAttribute('height', svg.clientWidth + 'px')
 
+
   const image = new Image()
 
   image.src = url
@@ -540,16 +541,11 @@ function getGbcDownloadableUrl(svg: SVGElement): Promise<string> {
 
   image.width = 1500
   image.height = 1500
-
-  // image.style.display = 'none'
-
-  // svg.append(image)
+  document.body.appendChild(image)
 
   return new Promise(resolve => {
     image.onload = () => {
       image.onload = null
-
-      image.remove()
 
       const canvas = document.createElement('canvas')
 
@@ -565,6 +561,8 @@ function getGbcDownloadableUrl(svg: SVGElement): Promise<string> {
         const downloadableLink = URL.createObjectURL(blob)
         resolve(downloadableLink)
       })
+
+      image.remove()
     }
   })
 }
