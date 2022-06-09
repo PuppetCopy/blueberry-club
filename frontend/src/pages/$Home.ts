@@ -217,7 +217,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
                     url: `/p/berry/${berryDayId + 1}`,
                     route: parentRoute.create({ fragment: 'fefe' }),
                     $content: $row(style({ maxWidth: 340 + 'px', borderRadius: '30px', overflow: 'hidden', width: '100%', height: 340 + 'px', transformStyle: 'preserve-3d', perspective: '100px', position: 'relative', placeContent: 'center', alignItems: 'flex-end' }))(
-                      $row(style({ alignSelf: 'flex-end', zIndex: 10, color: `${pallete.message}!important`, fontWeight: 'bold', position: 'absolute', left: '20px', top: '16px' }))(
+                      $row(style({ alignSelf: 'flex-end', zIndex: 10, color: `white!important`, fontWeight: 'bold', position: 'absolute', left: '20px', top: '16px' }))(
                         $text(style({ fontSize: '38px', textShadow: '#0000005e 0px 0px 5px' }))(String(berryDayId))
                       ),
                       tap(({ element }) => {
@@ -240,7 +240,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
                         )
                       ),
                       $text(
-                        style({ zIndex: 1, color: '#000', backgroundColor: pallete.message, textAlign: 'center', padding: '9px 13px', fontWeight: 'bold', borderRadius: '15px', position: 'absolute', top: '17px', right: '20px' }),
+                        style({ zIndex: 1, color: pallete.background, backgroundColor: pallete.message, textAlign: 'center', padding: '9px 13px', fontWeight: 'bold', borderRadius: '15px', position: 'absolute', top: '17px', right: '20px' }),
                         stylePseudo(':after', {
                           border: '11px solid transparent',
                           borderTop: `5px solid ${pallete.message}`,

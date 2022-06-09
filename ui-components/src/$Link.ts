@@ -26,7 +26,7 @@ export const $Link = ({ url, route, $content, anchorOp, disabled = empty() }: IL
     styleBehavior(
       combineArray((isActive, isFocus): StyleCSS | null => {
         return isActive ? { color: pallete.primary, fill: pallete.primary }
-          : isFocus ? { color: `${pallete.primary} !important`, fill: pallete.primary }
+          : isFocus ? { color: `${pallete.middleground} !important`, fill: pallete.middleground }
             : null
       }, active, focus)
     ),

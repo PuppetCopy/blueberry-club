@@ -9,7 +9,7 @@ import tokenIdAttributeTuple from "./mappings/tokenIdAttributeTuple"
 import { IPricefeed, IStakeSource, queryLatestPrices, queryToken, queryTokenv2 } from "./query"
 import { $Node, $svg, attr, style } from "@aelea/dom"
 import { web3ProviderTestnet } from "./provider"
-import { colorAlpha, pallete } from "@aelea/ui-components-theme"
+import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { Closet } from "@gambitdao/gbc-contracts"
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber"
@@ -134,7 +134,7 @@ export const $labItem = (id: number, size: string | number = 85, background = tr
 
   const backgroundStyle = O(
     style({ placeContent: 'center', maxWidth: sizeNorm, overflow: 'hidden', borderRadius: 85 * 0.15 + 'px' }),
-    background ? style({ backgroundColor: state === 0 ? '' : colorAlpha(pallete.message, .92) }) : O()
+    background ? style({ backgroundColor: state === 0 ? '' : colorAlpha(pallete.message, theme.name === 'light' ? .12 : .92) }) : O()
   )
 
 

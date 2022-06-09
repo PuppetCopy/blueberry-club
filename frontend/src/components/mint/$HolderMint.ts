@@ -83,9 +83,9 @@ export const $GbcWhitelist = (config: MintCmp) => component((
 
           $IntermediatePromise({
             query: ownerTokenList,
-            $loader: $row(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
+            $loader: $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
               $spinner,
-              $text('Loading used tokens...')
+              $text(style({ fontSize: '.75em' }))('Loading unused tokens...')
             ),
             $$done: map(list => {
               return $SelectBerries({

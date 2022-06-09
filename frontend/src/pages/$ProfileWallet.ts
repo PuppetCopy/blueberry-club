@@ -65,8 +65,8 @@ export const $ProfileWallet = ({ walletLink, parentRoute, accountStakingStore }:
 
             return $responsiveFlex(layoutSheet.spacingBig)(
 
-              $column(layoutSheet.spacingBig, style({ width: '550px', placeContent: 'center' }))(
-                $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
+              $column(layoutSheet.spacingBig, style({ maxWidth: '550px', placeContent: 'center' }))(
+                $responsiveFlex(layoutSheet.spacing, style({ alignItems: 'center' }))(
                   $accountPreview({
                     labelSize: '2em',
                     avatarSize: 130,
@@ -87,7 +87,10 @@ export const $ProfileWallet = ({ walletLink, parentRoute, accountStakingStore }:
                   }),
                 ),
 
-                $row(layoutSheet.spacingSmall, style({ flexWrap: 'wrap' }))(...owner.ownedTokens.map(token => {
+                $node(style({ flex: 1 }))(),
+
+
+                $row(layoutSheet.spacingSmall, style({ flexWrap: 'wrap', placeContent: 'center' }))(...owner.ownedTokens.map(token => {
                   return $berryTileId(token, 85)
                 })),
 

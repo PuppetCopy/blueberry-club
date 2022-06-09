@@ -11,7 +11,7 @@ import { IBerryDisplayTupleMap, getLabItemTupleIndex, saleDescriptionList, LabIt
 import { $labItem, getBerryFromToken, getTokenSlots } from "../../logic/common"
 import { $berryTileId } from "../../components/$common"
 import { fadeIn } from "../../transitions/enter"
-import { colorAlpha, pallete } from "@aelea/ui-components-theme"
+import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
 import { $loadBerry } from "../../components/$DisplayBerry"
 import tokenIdAttributeTuple from "../../logic/mappings/tokenIdAttributeTuple"
 import { $caretDown } from "../../elements/$icons"
@@ -246,7 +246,7 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
                   $text(map((s: IToken | null) => {
                     return s ? `GBC #` + s.id : 'Pick GBC'
                   }, mergeArray([now(null), selectedBerry]))),
-                  $icon({ $content: $caretDown, width: '16px', svgOps: style({ marginTop: '3px', marginLeft: '6px' }), viewBox: '0 0 32 32' }),
+                  $icon({ $content: $caretDown, width: '16px', fill: pallete.message, svgOps: style({ marginTop: '3px', marginLeft: '6px' }), viewBox: '0 0 32 32' }),
                 ),
               })({}),
               $option: $row,
@@ -314,7 +314,7 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
               }, mergeArray([itemChangeState, backgroundChangeState]))
 
               return $row(style({ position: 'relative' }))(
-                $row(style({ cursor: 'pointer', overflow: 'hidden', borderRadius: '8px', backgroundColor: colorAlpha(pallete.message, .95) }))(
+                $row(style({ cursor: 'pointer', overflow: 'hidden', borderRadius: '8px', backgroundColor: colorAlpha(pallete.message, theme.name === 'light' ? .12 : .92) }))(
                   fadeIn(
                     style({ filter: itemOwned && itemOwned.balance > 0n ? '' : 'grayscale(1)' }, selectBehavior($labItem(id, 100)))
                   )
@@ -373,7 +373,7 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
                   nodeEvent('pointerenter')
                 ),
                 style(isDisabled ? {} : { opacity: '.4', pointerEvents: 'none' }),
-                attr({ target: '_blank', download: `GBC-${exchState.selectedBerry?.id}.png` }),
+                attr({ target: '_blank' }),
                 attrBehavior(awaitPromises(map(async x => {
                   const svg = document.querySelector('#BERRY')! as SVGElement
                   const href = await getGbcDownloadableUrl(svg)
@@ -501,7 +501,7 @@ const $ItemSlot = ({ selectedSlot, change, gbcItemId, slot, slotLabel }: ItemSlo
       position: 'relative', backgroundColor: pallete.background, border: `2px solid`, cursor: 'pointer'
     }),
     stylePseudo(':hover', { borderColor: pallete.primary }),
-    style(selectedSlot === slot ? { borderColor: pallete.primary, cursor: 'default' } : { borderColor: pallete.message })
+    style(selectedSlot === slot ? { borderColor: pallete.primary, cursor: 'default' } : { borderColor: pallete.middleground })
   )
 
   const canRemove = item && change?.isRemove !== true

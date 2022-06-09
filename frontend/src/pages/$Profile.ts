@@ -143,8 +143,8 @@ export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAcco
     $responsiveFlex(layoutSheet.spacingBig, style({ placeContent: 'center' }))(
 
 
-      $column(layoutSheet.spacingBig, style({ width: '550px' }))(
-        $column(style({ width: '500px' }))(
+      $column(layoutSheet.spacingBig, style({ maxWidth: '550px' }))(
+        $column(
           $accountPreview({
             address: accountAddress,
             avatarSize: 150,
