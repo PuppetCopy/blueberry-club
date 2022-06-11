@@ -3,9 +3,9 @@ pragma solidity ^0.8.0;
 
 import {Sale, GBCLab, SaleState} from "../Sale.sol";
 import {Native} from "../payments/Native.sol";
-import {Mintable, MintState} from "../mint/utils/Mintable.sol";
+import {Mintable, MintState} from "../mint/Mintable.sol";
 import {Public, MintRule} from "../mint/Public.sol";
-import {PrivateClassic} from "../mint/Classic.sol";
+import {PrivateClassic} from "../mint/private/Classic.sol";
 
 /**
  * Classic Sale of 5000 items with Public and Private Sale in ETH
@@ -24,12 +24,18 @@ import {PrivateClassic} from "../mint/Classic.sol";
  * everything is possible: free mint, discount mint, admin mint...
  */
 contract PublicTpl is Sale, Native, Public, PrivateClassic {
-    constructor(uint256 item_, address _owner, address _treasury, GBCLab lab_, SaleState memory _saleState, MintState memory _mintState, MintRule memory _mintRule)
+    constructor(
+        uint256 item_,
+        address _owner,
+        address _treasury,
+        GBCLab lab_,
+        SaleState memory _saleState,
+        MintState memory _mintState,
+        MintRule memory _mintRule
+    )
         Sale(item_, lab_, _saleState, _owner)
         Native(payable(_treasury))
         Mintable(_mintState)
-
         Public(_mintRule)
     {}
 }
-
