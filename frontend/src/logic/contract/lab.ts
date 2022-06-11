@@ -11,6 +11,18 @@ export function connectLab(wallet: IWalletLink) {
   const contract = map(w3p => GBCLab__factory.connect(GBC_ADDRESS.LAB, w3p.getSigner()), provider)
   const account = filter((a): a is string => a !== null, wallet.account)
 
+  const ownersListBalance = (owners: string[], idList: number[]) => {
+    return awaitPromises(map(lab => lab.balanceOfBatch(owners, idList), contract))
+  }
 
-  return { contract }
+  const accountListBalance = (idList: number[]) => {
+    return awaitPromises(combineArray(async (address, lab) => {
+      const newLocal = [...idList].fill(address as any) as any as string[]
+      const amountList = await lab.balanceOfBatch(newLocal, idList)
+
+      return amountList.map((amount, idx) => ({ amount: Number(amount), id: idList[idx] }))
+    }, account, contract))
+  }
+
+  return { contract, ownersListBalance, accountListBalance }
 }

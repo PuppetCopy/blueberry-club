@@ -1,5 +1,5 @@
 import { Address, ethereum, BigInt } from "@graphprotocol/graph-ts"
-import { Owner, TransferSingle, LabItem, LabItemOwnership } from "../generated/schema"
+import { Owner, TransferSingle, LabItem, LabItemOwnership, Profile } from "../generated/schema"
 import * as lab from "../generated/ERC1155/ERC1155"
 import { AddressZero, ZERO_BI, _createTransactionIfNotExist } from "./helpers"
 
@@ -12,26 +12,28 @@ export function _createNewOwner(address: string): Owner {
 }
 
 export function handleLabItemTransfer(fromAddress: Address, toAddress: Address, id: BigInt, amount: BigInt, event: ethereum.Event): void {
-  const transferId = event.transaction.hash
-    .toHex()
-    .concat(':'.concat(event.transactionLogIndex.toHex()))
+  const transferId = event.transaction.hash.toHex() + ':' + event.transactionLogIndex.toHex()
   const tokenId = id.toHex()
   const from = fromAddress.toHex()
   const to = toAddress.toHex()
+  const newLabItemOwnerId = tokenId + ':' + to
+  const previousLabItemOwnerId = tokenId + ':' + from
 
   let previousOwner = Owner.load(from)
   let newOwner = Owner.load(to)
   let labItem = LabItem.load(tokenId)
   let transfer = TransferSingle.load(transferId)
-  const newLabItemOwnerId = tokenId + ':' + to
-  const previousLabItemOwnerId = tokenId + ':' + from
   let newLabItemOwner = LabItemOwnership.load(newLabItemOwnerId)
   let previousLabItemOwner = LabItemOwnership.load(previousLabItemOwnerId)
+  const profile = Profile.load(from)
+
 
   const instance = lab.ERC1155.bind(event.address)
 
   if (previousOwner == null) {
     previousOwner = _createNewOwner(from)
+  } else if (profile && profile.token === tokenId) {
+    profile.token = null
   }
 
   if (newOwner == null) {
@@ -45,9 +47,9 @@ export function handleLabItemTransfer(fromAddress: Address, toAddress: Address, 
   }
 
 
-  if (previousLabItemOwner === null) { 
+  if (previousLabItemOwner === null) {
     previousLabItemOwner = new LabItemOwnership(previousLabItemOwnerId)
-    previousLabItemOwner.owner = previousLabItemOwnerId
+    previousLabItemOwner.owner = from
     previousLabItemOwner.item = labItem.id
     previousLabItemOwner.balance = ZERO_BI
   }
@@ -56,7 +58,7 @@ export function handleLabItemTransfer(fromAddress: Address, toAddress: Address, 
 
   if (newLabItemOwner === null) {
     newLabItemOwner = new LabItemOwnership(newLabItemOwnerId)
-    newLabItemOwner.owner = newOwner.id
+    newLabItemOwner.owner = to
     newLabItemOwner.item = labItem.id
     newLabItemOwner.balance = ZERO_BI
   }
@@ -64,9 +66,7 @@ export function handleLabItemTransfer(fromAddress: Address, toAddress: Address, 
   newLabItemOwner.balance = newLabItemOwner.balance.plus(amount)
 
 
-  if (to === AddressZero) {
-    labItem.supply = labItem.supply.minus(amount)
-  } else {
+  if (from === AddressZero) {
     labItem.supply = labItem.supply.plus(amount)
   }
 

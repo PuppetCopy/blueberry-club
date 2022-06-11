@@ -19,19 +19,7 @@ export async function deploy<T extends ContractFactory>(contractFactory: T, ...c
     return contract
   }
 
-  const explorerUrl = getAccountExplorerUrl(network.config.chainId, address)
-
-  await run("verify:verify", { address, constructorArguments, })
-    .then(() => {
-      console.log(`🏁 ${network.name} Verified: ${explorerUrl}\n`)
-    })
-    .catch(err => {
-      if (err.message.indexOf('Already Verified')) {
-        console.warn(`🏁 ${network.name} Already Verified: ${explorerUrl}\n`)
-      } else {
-        console.error(err)
-      }
-    })
+  await verify(address, ...constructorArguments)
   
   await contract.deployed()
 
@@ -54,4 +42,25 @@ export async function connectOrDeploy<T extends typeof ContractFactory, RT exten
 
   // @ts-ignore
   return ctor.connect(contractAddress, signer)
+}
+
+
+export async function verify<T extends ContractFactory>(address: string, ...constructorArguments: Parameters<T['deploy']>) {
+  if (network.config.chainId == 31337 || network.config.chainId == undefined) {
+    throw new Error('Unable to verify on chain: ' + network.config.chainId)
+  }
+
+  const explorerUrl = getAccountExplorerUrl(network.config.chainId, address)
+
+  await run("verify:verify", { address, constructorArguments, })
+    .then(() => {
+      console.log(`🏁 ${network.name} Verified: ${explorerUrl}\n`)
+    })
+    .catch(err => {
+      if (err.message.indexOf('Already Verified')) {
+        console.warn(`🏁 ${network.name} Already Verified: ${explorerUrl}\n`)
+      } else {
+        console.error(err)
+      }
+    })
 }

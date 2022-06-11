@@ -9,7 +9,7 @@ import { $alertIcon, $caretDblDown, $skull, $tokenIconMap } from "./$icons"
 
 
 export const $anchor = $element('a')(
-  stylePseudo(':hover', { color: pallete.primary + '!important', fill: pallete.primary }),
+  stylePseudo(':hover', { color: pallete.middleground + '!important', fill: pallete.middleground }),
   style({
     display: 'flex',
     cursor: 'pointer',

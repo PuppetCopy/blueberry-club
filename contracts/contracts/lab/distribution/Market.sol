@@ -5,7 +5,7 @@ import {SafeTransferLib} from "@rari-capital/solmate/src/utils/SafeTransferLib.s
 import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";
 
 import {Airdrop} from "./Airdrop.sol";
-import {Public} from "../sales/extensions/mint/Public.sol";
+import {Public} from "../sales/mint/Public.sol";
 
 /**
  * @title Shop

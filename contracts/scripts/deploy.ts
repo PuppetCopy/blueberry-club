@@ -1,6 +1,6 @@
 import {
-  GbcWhitelist__factory, Profile__factory, GBCLab__factory,
-  Police__factory, Closet__factory, GBC__factory, PermissionedWhitelist__factory, SaleBasic__factory,
+  Profile__factory, GBCLab__factory,
+  Police__factory, Closet__factory, GBC__factory, MerkleTpl__factory, PublicTpl__factory, HolderWhitelistTpl__factory, Sale,
 } from "../typechain-types"
 import { AddressZero } from "@gambitdao/gmx-middleware"
 
@@ -8,7 +8,10 @@ import { ethers } from "hardhat"
 
 import getAddress, { ZERO_ADDRESS } from "../utils/getAddress"
 import { connectOrDeploy } from "../utils/deploy"
-import { GBC_ADDRESS, saleDescriptionList, SaleType } from "@gambitdao/gbc-middleware"
+import { GBC_ADDRESS, saleConfig, saleDescriptionList, saleLastDate, saleMaxSupply, SaleType } from "@gambitdao/gbc-middleware"
+import { getMerkleProofs } from "../utils/whitelist"
+import * as IPFS from 'ipfs-core'
+
 
 export enum ROLES {
   MINTER,
@@ -28,7 +31,7 @@ export enum ROLES {
  */
 
 // This contract/address can be used on other contracts
-const TREASURY = "" // Multisig or you personal address (if you leave it blank it will be the owner address)
+const TREASURY = GBC_ADDRESS.TREASURY_ARBITRUM // Multisig or you personal address (if you leave it blank it will be the owner address)
 const GBC = GBC_ADDRESS.GBC // The GBC ERC721 (NFT) contract
 // const POLICE = "" // Police contract
 const POLICE = GBC_ADDRESS.POLICE // Police contract
@@ -42,92 +45,104 @@ const CLOSET = GBC_ADDRESS.CLOSET
 
 
 const main = async () => {
+
   const [creator] = (await ethers.getSigners())
   console.clear()
 
   console.log(`DEPLOYER WIZARD 🧙‍♂️ (by IrvingDev)`)
 
-  console.log(`------------------------------------------------------------------------------\n`)
-  console.log(`🔑 Deployer: ${creator.address}`)
+  const ipfs = await IPFS.create()
+  const { cid } = await ipfs.add('EPLOYER WIZARD 🧙‍♂️ (by IrvingDe')
+  console.info(cid)
 
-  const owner = getAddress(TREASURY) == ZERO_ADDRESS ? creator.address : getAddress(TREASURY)
+  // console.log(`------------------------------------------------------------------------------\n`)
+  // console.log(`🔑 Deployer: ${creator.address}`)
 
-  console.log(`💰 Treasury address: ${owner}\n`)
-  console.log(`------------------------------------------------------------------------------\n`)
+  // const owner = getAddress(TREASURY) == ZERO_ADDRESS ? creator.address : getAddress(TREASURY)
 
-  const gbc = await connectOrDeploy(GBC, GBC__factory, "Blueberry Club", "GBC", "")
+  // console.log(`💰 Treasury address: ${owner}\n`)
+  // console.log(`------------------------------------------------------------------------------\n`)
 
-
-  console.log(`------------------------------------------------------------------------------\n`)
-  const police = await connectOrDeploy(POLICE, Police__factory, owner)
-  console.log(`------------------------------------------------------------------------------\n`)
-
-  const lab = await connectOrDeploy(LAB, GBCLab__factory, owner, police.address)
-
-  if (getAddress(LAB) == AddressZero) {
-    try {
-      console.log(`✋ Adding roles for LAB`)
-      await police.setRoleCapability(ROLES.MINTER, lab.address, lab.interface.getSighash(lab.interface.functions["mint(address,uint256,uint256,bytes)"]), true)
-      await police.setRoleCapability(ROLES.MINTER, lab.address, lab.interface.getSighash(lab.interface.functions["batchMint(address,uint256[],uint256[],bytes)"]), true)
-      console.log(`  - MINTER role created !`)
-      await police.setRoleCapability(ROLES.BURNER, lab.address, lab.interface.getSighash(lab.interface.functions["burn(address,uint256,uint256)"]), true)
-      await police.setRoleCapability(ROLES.BURNER, lab.address, lab.interface.getSighash(lab.interface.functions["batchBurn(address,uint256[],uint256[])"]), true)
-      console.log(`  - BURNER role created !`)
-    } catch (error) {
-      console.log(`❌ Actual deployer is not owner of previous police contract`)
-    }
-  }
-
-  console.log(`------------------------------------------------------------------------------\n`)
-
-  await connectOrDeploy(PROFILE, Profile__factory, gbc.address, owner, police.address)
-
-  console.log(`------------------------------------------------------------------------------\n`)
-
-  const closet = await connectOrDeploy(CLOSET, Closet__factory, gbc.address, lab.address)
-
-  if (getAddress(CLOSET) == AddressZero) {
-    console.log(`✋ Adding roles for CLOSET`)
-    await police.setRoleCapability(ROLES.DESIGNER, closet.address, closet.interface.getSighash(closet.interface.functions["get(uint256,uint256,uint256)"]), true)
-
-    console.log(`🎩 Set roles from LAB to CLOSET`)
-    try {
-
-      await police.setUserRole(closet.address, ROLES.MINTER, true)
-      console.log(`  - MINTER role setted !`)
-    } catch (error) {
-      console.log(`❌ Actual deployer is not owner of previous police contract`)
-    }
-  }
+  // const gbc = await connectOrDeploy(GBC, GBC__factory, "Blueberry Club", "GBC", "")
 
 
-  for (const config of saleDescriptionList) {
-    console.log(`------------------------------------------------------------------------------\n`)
+  // console.log(`------------------------------------------------------------------------------\n`)
+  // const police = await connectOrDeploy(POLICE, Police__factory, creator.address)
+  // console.log(`------------------------------------------------------------------------------\n`)
 
+  // const lab = await connectOrDeploy(LAB, GBCLab__factory, owner, police.address)
 
+  // if (getAddress(LAB) == AddressZero) {
+  //   try {
+  //     console.log(`✋ Adding roles for LAB`)
+  //     await police.setRoleCapability(ROLES.MINTER, lab.address, lab.interface.getSighash(lab.interface.functions["mint(address,uint256,uint256,bytes)"]), true)
+  //     await police.setRoleCapability(ROLES.MINTER, lab.address, lab.interface.getSighash(lab.interface.functions["batchMint(address,uint256[],uint256[],bytes)"]), true)
+  //     console.log(`  - MINTER role created !`)
+  //     await police.setRoleCapability(ROLES.BURNER, lab.address, lab.interface.getSighash(lab.interface.functions["burn(address,uint256,uint256)"]), true)
+  //     await police.setRoleCapability(ROLES.BURNER, lab.address, lab.interface.getSighash(lab.interface.functions["batchBurn(address,uint256[],uint256[])"]), true)
+  //     console.log(`  - BURNER role created !`)
+  //   } catch (error) {
+  //     console.log(`❌ Actual deployer is not owner of previous police contract`)
+  //   }
+  // }
 
-    const sale = config.type === SaleType.Public ?
-      await connectOrDeploy(config.contractAddress, SaleBasic__factory, lab.address, owner, config.id, config.publicCost, config.maxSupply, config.maxPerTx, config.publicStartDate)
-      : config.type === SaleType.GbcWhitelist
-        ? await connectOrDeploy(config.contractAddress, GbcWhitelist__factory, gbc.address, lab.address, owner, config.id, config.publicCost, config.maxSupply, config.maxPerTx, config.publicStartDate, config.whitelistStartDate, config.whitelistCost, config.whitelistMax)
-        : await connectOrDeploy(config.contractAddress, PermissionedWhitelist__factory, lab.address, owner, config.id, config.publicCost, config.maxSupply, config.maxPerTx, config.publicStartDate, config.merkleRoot)
+  // console.log(`------------------------------------------------------------------------------\n`)
 
-    console.log(`🎩 Set roles from LAB to ${config.name} SALE`)
+  // await connectOrDeploy(PROFILE, Profile__factory, gbc.address, owner, police.address)
 
+  // console.log(`------------------------------------------------------------------------------\n`)
 
-    if (getAddress(config.contractAddress) !== AddressZero) {
-      try {
-        await police.setUserRole(sale.address, ROLES.MINTER, true)
-        console.log(`  - MINTER role setted !`)
-      } catch (error) {
-        console.log(error)
-        console.log(`❌ Actual deployer is not owner of previous police contract`)
-      }
-    }
+  // await connectOrDeploy(CLOSET, Closet__factory, gbc.address, lab.address)
 
-    console.log()
-    console.log(`------------------------------------------------------------------------------\n`)
-  }
+  // for (const config of saleDescriptionList) {
+  //   console.log(`------------------------------------------------------------------------------\n`)
+
+  //   let sale: Sale
+
+  //   const fstMintRule = config.mintRuleList[0]
+  //   const lastDateRule = saleLastDate(config)
+  //   const max = saleMaxSupply(config)
+  //   const finish = lastDateRule.start + saleConfig.saleDuration
+  //   const { maxMintable } = saleConfig
+  //   const saleState = { paused: 1, minted: 0, max }
+  //   const mintState = { finish, maxMintable }
+
+  //   const createMode = getAddress(config.contractAddress) === AddressZero
+
+  //   if (fstMintRule.type === SaleType.Public) {
+  //     const { amount, cost, start, transaction } = fstMintRule
+
+  //     sale = await connectOrDeploy(config.contractAddress, PublicTpl__factory, config.id, owner, TREASURY, lab.address, saleState, mintState, { amount, cost, start, transaction })
+  //   } else if (fstMintRule.type === SaleType.holder) {
+  //     const { amount, cost, start, transaction, walletMintable } = fstMintRule
+  //     sale = await connectOrDeploy(config.contractAddress, HolderWhitelistTpl__factory, config.id, owner, TREASURY, gbc.address, lab.address, saleState, mintState, { totalMintable: amount, cost, start, transaction, walletMintable })
+  //   } else {
+  //     if (createMode) {
+  //       const res = getMerkleProofs(fstMintRule.addressList, fstMintRule)
+  //       console.log(res.proofs)
+  //       console.log('root: ', res.merkleRoot)
+
+  //       sale = await connectOrDeploy(config.contractAddress, MerkleTpl__factory, config.id, owner, TREASURY, lab.address, saleState, mintState, res.merkleRoot)
+  //     } else {
+  //       sale = MerkleTpl__factory.connect(config.contractAddress, creator)
+  //     }
+  //   }
+
+  //   console.log(`🎩 Set roles from LAB to ${config.name} SALE`)
+
+  //   if (createMode) {
+  //     try {
+  //       await police.setUserRole(sale.address, ROLES.MINTER, true)
+  //       console.log(`  - MINTER role setted !`)
+  //     } catch (error) {
+  //       console.log(error)
+  //       console.log(`❌ Actual deployer is not owner of previous police contract`)
+  //     }
+  //   }
+
+  //   console.log()
+  //   console.log(`------------------------------------------------------------------------------\n`)
+  // }
 
 }
 

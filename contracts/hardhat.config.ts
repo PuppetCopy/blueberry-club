@@ -31,13 +31,26 @@ const config: HardhatUserConfig = {
     },
   },
   solidity: {
-    version: "0.8.4",
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 1000
+    compilers: [
+      {
+        version: '0.8.4',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1
+          }
+        }
+      },
+      {
+        version: "0.8.1",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1
+          }
+        }
       }
-    }
+    ]
   },
   etherscan: {
     apiKey: process.env.ARBISCAN

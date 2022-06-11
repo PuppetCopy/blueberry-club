@@ -1,11 +1,11 @@
-import { Behavior, O, Op } from "@aelea/core"
-import { $element, $Node, $text, attr, component, eventElementTarget, IBranch, INode, NodeComposeFn, nodeEvent, style, styleBehavior, stylePseudo } from "@aelea/dom"
-import { $column, $icon, $row, Input, layoutSheet } from "@aelea/ui-components"
+import { Behavior, combineObject, O, Op, replayLatest } from "@aelea/core"
+import { $element, $Node, $text, attr, component, eventElementTarget, IBranch, INode, NodeComposeFn, nodeEvent, style, styleBehavior, styleInline, stylePseudo } from "@aelea/dom"
+import { $column, $Field, $icon, $row, Field, Input, layoutSheet, observer } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { $xCross } from "@gambitdao/ui-components"
-import { constant, empty, map, merge, mergeArray, multicast, now, scan, skip, startWith, switchLatest, tap } from "@most/core"
+import { constant, delay, empty, filter, map, merge, mergeArray, multicast, never, now, scan, skip, skipRepeats, snapshot, startWith, switchLatest, take, tap } from "@most/core"
 import { append, remove } from "@most/prelude"
-import { $label as $LabelNode } from "../../common/$TextField"
+import { Stream } from "@most/types"
 import { $caretDown } from "../../elements/$icons"
 
 
@@ -23,15 +23,16 @@ export const secondaryButtonStyle = style({
   borderRadius: '50px'
 })
 
-export interface ISelect<T> extends Input<T> {
+export interface ISelect<T> {
   list: T[]
+  value: Stream<T>;
 
   $container: NodeComposeFn<$Node>
   $$option: Op<T, $Node>
 }
 
 
-export const $Select = <T>({ list, $$option, disabled, $container, value, validation }: ISelect<T>) => component((
+export const $Select = <T>({ list, $$option, $container }: ISelect<T>) => component((
   [select, selectTether]: Behavior<IBranch, T>
 ) => {
 
@@ -45,10 +46,8 @@ export const $Select = <T>({ list, $$option, disabled, $container, value, valida
         )
 
         const $opt = switchLatest($$option(now(item)))
-        const disableStyleBehavior = styleBehavior(map(isDisabled => ({ pointerEvents: isDisabled ? 'none' : 'all' }), disabled || empty()))
-        const $val = disableStyleBehavior($opt)
 
-        return selectBehavior($val)
+        return selectBehavior($opt)
       })
     ),
 
@@ -69,8 +68,8 @@ export interface IMultiselect<T> extends ISelect<T> {
 
 export interface IDropdown<T> {
   multiselect?: boolean
-  select: ISelect<T>
-  $selection: Op<T, $Node>
+  value: ISelect<T>
+  $selection: $Node
   $container?: NodeComposeFn<$Node>
   $option?: NodeComposeFn<$Node>
 
@@ -92,52 +91,77 @@ export const $Dropdown = <T>({
   $container = $column(layoutSheet.spacingTiny, style({ position: 'relative' })),
   $selection,
   $option = $defaultOptionContainer,
-  select,
+  value,
   openMenuOp = O()
 }: IDropdown<T>) => component((
-  [pick, pickTether]: Behavior<T, T>,
+  [select, selectTether]: Behavior<T, T>,
   [openMenu, openMenuTether]: Behavior<INode, any>,
+  [targetIntersection, targetIntersectionTether]: Behavior<INode, IntersectionObserverEntry[]>,
+
 ) => {
 
-  const isOpenState = multicast(switchLatest(map(isOpen => {
-    if (isOpen) {
-      return startWith(true, skip(1, constant(false, eventElementTarget('click', window))))
-    }
-    return now(false)
-  }, mergeArray([constant(false, pick), openMenu]))))
 
-  const openMenuBehavior = openMenuTether(
-    nodeEvent('click'),
-    openMenuOp
+  const openTrigger = constant(true, mergeArray([openMenu]))
+  const windowClick = switchLatest(map(open => take(1, skip(1, eventElementTarget('click', window))), openTrigger))
+
+  const closeTrigger = constant(false, mergeArray([windowClick]))
+
+  const isOpen = skipRepeats(merge(closeTrigger, openTrigger))
+
+  const clickBehavior = O(
+    openMenuTether(
+      nodeEvent('click'),
+      openMenuOp,
+    ),
+    targetIntersectionTether(
+      observer.intersection(),
+    )
   )
 
-
-  
   return [
     $container(
-      openMenuBehavior(switchLatest(
-        $selection(merge(pick, select.value))
-      )),
+      clickBehavior($selection),
 
       switchLatest(map(show => {
         if (!show) {
           return empty()
         }
 
-        return $Select({
-          ...select,
-          $container: select.$container(style({
-            zIndex: 50,
-            position: 'absolute', top: 'calc(100% + 5px)'
-          })),
-          $$option: O(select.$$option, map($option)),
-        })({ select: pickTether() })
-        
-      }, isOpenState))
+        const dropBehavior = O(
+          styleInline(
+            map(([rect]) => {
+              const { bottom } = rect.intersectionRect
+
+              const bottomSpcace = window.innerHeight - bottom
+              const goDown = bottomSpcace > bottom
+
+              return {
+                [goDown ? 'top' : 'bottom']: 'calc(100% + 5px)',
+                display: 'flex'
+              }
+            }, targetIntersection)
+          ),
+        )
+
+        return dropBehavior(
+          $Select({
+            ...value,
+            $container: value.$container(style({
+              zIndex: 50,
+              position: 'absolute',
+              display: 'none'
+            })),
+            $$option: O(value.$$option, map($option)),
+          })({
+            select: selectTether()
+          })
+        )
+
+      }, isOpen))
     ),
 
     {
-      select: pick
+      select
     }
   ]
 })
@@ -146,7 +170,7 @@ export const $Dropdown = <T>({
 export const $defaultDropMultiSelectContainer = $row(layoutSheet.spacingTiny, style({ padding: `15px`, borderBottom: `1px solid ${pallete.message}` }))
 export const $defaultDropMultiSelectOption = $row(layoutSheet.spacingSmall,
   style({
-    borderRadius: '15px', overflow: 'hidden', border: `1px solid ${pallete.message}`,
+    overflow: 'hidden', border: `1px solid ${pallete.message}`,
     alignItems: 'center', padding: '8px', width: '100%'
   }),
   stylePseudo(':hover', { backgroundColor: pallete.middleground })
@@ -156,61 +180,59 @@ export const $defaultChip = $row(style({ border: `1px solid ${pallete.foreground
 
 
 export interface IMultiselectDrop<T> extends Input<T[]> {
-  selectDrop: Omit<IMultiselect<T>, 'value'>
-  $label?: $Node
   placeholder?: string
+  closeOnSelect?: boolean
+
+  selectDrop: Omit<IMultiselect<T>, 'value'>
+
+  $label?: $Node
 
   $container?: NodeComposeFn<$Node>
   $dropdownContainer?: NodeComposeFn<$Node>
 
   $chip?: NodeComposeFn<$Node>
   $$chip: Op<T, $Node>
-
-  openMenuOp?: Op<MouseEvent, MouseEvent>
+  openMenu?: Stream<any>
 }
 
 export const $DropMultiSelect = <T>({
   $container = $defaultDropMultiSelectContainer,
   $$chip,
-  placeholder,
   $label = empty(),
   $chip = $defaultChip,
   selectDrop,
-  openMenuOp = O(),
-  value
+  placeholder,
+  validation = never,
+  value,
+  closeOnSelect = true,
+  openMenu = empty()
 }: IMultiselectDrop<T>
 ) => component((
   [pick, pickTether]: Behavior<T, T>,
-  [openMenu, openMenuTether]: Behavior<INode, any>,
+  [targetIntersection, targetIntersectionTether]: Behavior<INode, IntersectionObserverEntry[]>,
 
-  [focusStyle, interactionTether]: Behavior<IBranch, true>,
-  [dismissstyle, dismissTether]: Behavior<IBranch, false>,
-  [blur, blurTether]: Behavior<IBranch, FocusEvent>,
+  [interaction, interactionTether]: Behavior<IBranch, true>,
+  [blur, blurTether]: Behavior<IBranch, false>,
+
   [focusField, focusFieldTether]: Behavior<IBranch, FocusEvent>,
   [inputSearch, inputSearchTether]: Behavior<IBranch<HTMLInputElement>, string>,
   [clickOptionRemove, clickOptionRemoveTether]: Behavior<INode, T>,
 ) => {
 
-  const openTrigger = mergeArray([
-    focusField,
-    openMenu
-  ])
 
-  
+  const openTrigger = mergeArray([focusField, constant(true, openMenu)])
 
-  const isOpenState = multicast(switchLatest(map(isOpen => {
-    if (isOpen) {
-      return startWith(true, skip(1, constant(false, eventElementTarget('click', window))))
-    }
-    return now(false)
-  }, mergeArray([constant(false, pick), openTrigger]))))
+  const closeTrigger = constant(false, mergeArray([delay(300, blur), closeOnSelect ? pick : empty(),]))
 
-  const openMenuBehavior = openMenuTether(
-    nodeEvent('click'),
-    openMenuOp
-  )
+  const isOpen = mergeArray([openTrigger, closeTrigger])
 
-  const selection = multicast(switchLatest(
+  const multicastValidation = O(validation, multicast)
+
+
+  const focus = startWith(false, merge(interaction, blur))
+
+
+  const selection = switchLatest(
     map(initSeedList => {
       return skip(1, scan((seed, next) => {
         const matchedIndex = seed.indexOf(next)
@@ -222,37 +244,62 @@ export const $DropMultiSelect = <T>({
         return remove(matchedIndex, seed)
       }, initSeedList, mergeArray([pick, clickOptionRemove])))
     }, value)
-  ))
-  
-  const sl = tap(console.log, merge(selection, value))
+  )
+
+  const selectionChange = merge(selection, value)
+
+  const alert = validation(selectionChange)
+
+  const state = combineObject({ focus, alert })
+
 
   return [
-    $LabelNode(layoutSheet.flex, layoutSheet.spacingTiny, style({ display: 'flex', flex: 1, flexDirection: 'row' }))(
-      $row(style({ alignSelf: 'flex-start', cursor: 'pointer', paddingBottom: '1px' }))(
-        $label
-      ),
+    $column(layoutSheet.flex, layoutSheet.spacingTiny, style({ display: 'flex', flex: 1,  position: 'relative' }))(
 
-      switchLatest(map(valueList => {
-        const $content = $container(layoutSheet.flex, layoutSheet.spacing, style({ alignItems: 'center', position: 'relative', flexWrap: 'wrap' }))(
-          ...valueList.map(token => {
+      $column(layoutSheet.flex, layoutSheet.spacingTiny, style({ display: 'flex', flexDirection: 'row', position: 'relative' }))(
+        $row(style({ alignSelf: 'flex-start', cursor: 'pointer', paddingBottom: '1px' }))(
+          $label
+        ),
 
-            return $chip(
-              switchLatest($$chip(now(token))),
-              $icon({
-                  
-                $content: $xCross, width: '32px',
-                svgOps: O(
-                  style({ padding: '6px', cursor: 'pointer' }),
-                  clickOptionRemoveTether(nodeEvent('click'), tap(x => x.preventDefault()), constant(token))
-                ),
-                viewBox: '0 0 32 32'
-              })
-            )
-          }),
-            
+        $container(
+          styleBehavior(
+            map(({ focus, alert }) => {
+              if (alert) {
+                return { borderColor: pallete.negative }
+              }
+
+              return focus ? { borderColor: pallete.primary } : null
+            }, state)
+          ),
+          targetIntersectionTether(
+            observer.intersection(),
+            multicast
+          ),
+          layoutSheet.flex, layoutSheet.spacing, style({ alignItems: 'center', position: 'relative', flexWrap: 'wrap' })
+        )(
+          switchLatest(map(valueList => {
+            return mergeArray(valueList.map(token => {
+
+              return $chip(
+                switchLatest($$chip(now(token))),
+                $icon({
+                  $content: $xCross, width: '32px',
+                  svgOps: O(
+                    style({ padding: '6px', cursor: 'pointer' }),
+                    clickOptionRemoveTether(nodeEvent('click'), tap(x => x.preventDefault()), constant(token))
+                  ),
+                  viewBox: '0 0 32 32'
+                })
+              )
+            }))
+          }, selectionChange)),
+
           $row(style({ alignItems: 'center', flex: '1', alignSelf: 'stretch' }))(
             $element('input')(
               placeholder ? attr({ placeholder }) : O(),
+
+              interactionTether(interactionOp),
+              blurTether(dismissOp),
 
               style({
                 border: 'none',
@@ -276,55 +323,93 @@ export const $DropMultiSelect = <T>({
                 })
               ),
 
-              blurTether(nodeEvent('blur')),
-              focusFieldTether(nodeEvent('focus')),
+              focusFieldTether(
+                nodeEvent('pointerdown')
+              ),
 
             )(),
             $icon({ $content: $caretDown, width: '18px', svgOps: style({ marginTop: '3px', minWidth: '18px', marginLeft: '6px' }), viewBox: '0 0 32 32' }),
           ),
 
+        ),
+
+        switchLatest(snapshot((selectedList, show) => {
+          if (!show) {
+            return empty()
+          }
+
+          const $floatingContainer = selectDrop.$container(
+            style({
+              padding: '8px', zIndex: 50, left: 0,
+              position: 'absolute'
+            })
+          )
+
+          const optionSelection = selectDrop.list.filter(n => selectedList.indexOf(n) === -1)
+
+          if (optionSelection.length === 0) {
+            return $floatingContainer($text('Nothing to select'))
+          }
+
+          const dropBehavior = O(
+            styleInline(
+              map(([rect]) => {
+                const { bottom } = rect.intersectionRect
+
+                const bottomSpcace = window.innerHeight - bottom
+                const goDown = bottomSpcace > bottom
+                console.log(goDown)
 
 
-          switchLatest(map((show) => {
-            if (!show) {
-              return empty()
-            }
 
-            const $floatingContainer = selectDrop.$container(
-              style({
-                padding: '8px', zIndex: 50, left: 0,
-                position: 'absolute', top: 'calc(100% + 1px)'
-              })
-            )
+                return goDown
+                  ? {
+                    top: 'calc(100% + -1px)',
+                    borderTopLeftRadius: 0, borderTopRightRadius: 0,
+                    display: 'flex'
+                  } : {
+                    bottom: 'calc(100% + -1px)',
+                    borderBottomLeftRadius: 0, borderBottomRightRadius: 0,
+                    display: 'flex'
+                  }
+              }, targetIntersection),
 
-            const optionSelection = selectDrop.list.filter(n => valueList.indexOf(n) === -1)
+            ),
+          )
 
-            if (optionSelection.length === 0) {
-              return $floatingContainer($text('Nothing to select'))
-            }
-
-            
-            return $Select({
+          return dropBehavior(
+            $Select({
               ...selectDrop,
               $container: $floatingContainer,
               list: optionSelection,
               value: empty(),
-              // $container: ,
-              // $option: map(x => $selectableOption($text(String(x))))
             })({
               select: pickTether()
             })
-          }, isOpenState))
-        )
+          )
+        }, selectionChange, isOpen)),
+      ),
 
-        return $content
-      }, sl)),
-        
+      $text(style({ color: pallete.negative, fontSize: '.75em', minHeight: '17px' }))(
+        map(msg => msg ? msg : '', alert)
+      )
     ),
 
     {
-      selection 
+      selection, alert
     }
   ]
 })
+
+
+export const interactionOp = O(
+  (src: $Node) => merge(nodeEvent('focus', src), nodeEvent('pointerover', src)),
+  constant(true)
+)
+
+export const dismissOp = O(
+  (src: $Node) => merge(nodeEvent('blur', src), nodeEvent('pointerout', src)),
+  filter(x => document.activeElement !== x.target,), // focused elements cannot be dismissed
+  constant(false)
+)
 

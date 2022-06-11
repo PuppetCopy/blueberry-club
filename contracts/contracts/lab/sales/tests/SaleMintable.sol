@@ -2,9 +2,9 @@
 pragma solidity ^0.8.0;
 
 import {Sale, SaleState, GBCLab} from "../Sale.sol";
-import {Native} from "../extensions/payments/Native.sol";
-import {Token} from "../extensions/payments/Token.sol";
-import {Mintable, MintState, MintRule} from "../extensions/mint/Mintable.sol";
+import {Native} from "../payments/Native.sol";
+import {Token} from "../payments/Token.sol";
+import {Mintable, MintState, MintRule} from "../mint/utils/Mintable.sol";
 
 import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";
 

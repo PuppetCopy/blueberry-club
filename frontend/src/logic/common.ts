@@ -4,15 +4,15 @@ import { awaitPromises, continueWith, fromPromise, map, multicast, now, periodic
 import { Stream } from "@most/types"
 import { $loadBerry } from "../components/$DisplayBerry"
 import { IValueInterval } from "../components/$StakingGraph"
-import { IAttributeBody, IBerryDisplayTupleMap, getLabItemTupleIndex, IAttributeExpression, GBC_ADDRESS, USE_CHAIN, IAttributeBackground, IAttributeMappings, IBerry } from "@gambitdao/gbc-middleware"
+import { IBerryDisplayTupleMap, getLabItemTupleIndex, IAttributeExpression, USE_CHAIN, IAttributeBackground, IAttributeMappings, IBerryLabItems, IToken } from "@gambitdao/gbc-middleware"
 import tokenIdAttributeTuple from "./mappings/tokenIdAttributeTuple"
-import { IPricefeed, IStakeSource, queryLatestPrices } from "./query"
+import { IPricefeed, IStakeSource, queryLatestPrices, queryTokenv2 } from "./query"
 import { $Node, $svg, attr, style } from "@aelea/dom"
-import { web3ProviderTestnet } from "./provider"
-import { colorAlpha, pallete } from "@aelea/ui-components-theme"
+import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { Closet } from "@gambitdao/gbc-contracts"
 import { BigNumberish } from "@ethersproject/bignumber"
+import { bnToHex } from "../pages/$Berry"
 
 
 export const latestTokenPriceMap = replayLatest(multicast(awaitPromises(map(() => queryLatestPrices(), periodic(5000)))))
@@ -51,8 +51,6 @@ export function getWalletProvider(wallet: IWalletLink,) {
     return w3p
   }, wallet.provider))))
 }
-
-
 
 export function priceFeedHistoryInterval<T extends string>(interval: number, gmxPriceHistoryQuery: Stream<IPricefeed[]>, yieldSource: Stream<IStakeSource<T>[]>): Stream<IValueInterval[]> {
   return combineArray((feed, yieldList) => {
@@ -93,13 +91,19 @@ export function priceFeedHistoryInterval<T extends string>(interval: number, gmx
   }, gmxPriceHistoryQuery, yieldSource)
 }
 
+export const $berryById = (id: number, size: string | number = 85) => {
+  const tokenQuery = queryTokenv2(bnToHex(BigInt(id)))
 
-
-export const $berryById = (id: number, berry: IBerry | null = null, size = 85) => {
-  return $berryByLabItems(id, berry?.background, berry?.custom, size)
+  return switchLatest(map(token => $berryByToken(token, size), fromPromise(tokenQuery)))
 }
 
-export const $berryByLabItems = (berryId: number, backgroundId?: IAttributeBackground, labItemId?: IAttributeMappings, size = 85) => {
+export const $berryByToken = (token: IToken, size: string | number = 85) => {
+  const display = getBerryFromItems(token.labItems.map(li => li.item.id))
+
+  return $berryByLabItems(token.id, display.background, display.custom, size)
+}
+
+export const $berryByLabItems = (berryId: number, backgroundId: IAttributeBackground, labItemId: IAttributeMappings, size: string | number = 85) => {
   const matchTuple: Partial<IBerryDisplayTupleMap> = [...tokenIdAttributeTuple[berryId - 1]]
 
   if (labItemId) {
@@ -117,32 +121,31 @@ export const $berryByLabItems = (berryId: number, backgroundId?: IAttributeBackg
   return $loadBerry(matchTuple, size)
 }
 
-
-
-export const $labItem = (id: number, size = 85, background = true, showFace = false): $Node => {
+export const $labItem = (id: number, size: string | number = 85, background = true, showFace = false): $Node => {
   const state = getLabItemTupleIndex(id)
-  const newLocal = Array(5).fill(undefined) as IBerryDisplayTupleMap
-  newLocal.splice(state, 1, id)
+  const localTuple = Array(5).fill(undefined) as IBerryDisplayTupleMap
+  localTuple.splice(state, 1, id)
 
   if (showFace) {
-    newLocal.splice(3, 1, IAttributeExpression.HAPPY)
+    localTuple.splice(3, 1, IAttributeExpression.HAPPY)
   }
+  const sizeNorm = typeof size === 'number' ? size + 'px' : size
 
   const backgroundStyle = O(
-    style({ placeContent: 'center', maxWidth: size + 'px', overflow: 'hidden', borderRadius: 85 * 0.15 + 'px' }),
-    background ? style({ backgroundColor: state === 0 ? '' : colorAlpha(pallete.message, .95) }) : O()
+    style({ placeContent: 'center', maxWidth: sizeNorm, overflow: 'hidden', borderRadius: 85 * 0.15 + 'px' }),
+    background ? style({ backgroundColor: state === 0 ? '' : colorAlpha(pallete.message, theme.name === 'light' ? .12 : .92) }) : O()
   )
 
-  // @ts-ignore
-  return backgroundStyle($loadBerry(newLocal, size))
+
+  return backgroundStyle($loadBerry(localTuple, sizeNorm))
 }
 
 export const $labItemAlone = (id: number, size = 80) => {
   const state = getLabItemTupleIndex(id)
 
   return $svg('svg')(
-    attr({ xmlns: 'http://www.w3.org/2000/svg', preserveAspectRatio: 'none', fill: 'none', viewBox: `0 0 1500 1500` }),
-    style({ width: `${size}px`, height: `${size}px`, })
+    attr({ width: `${size}px`, height: `${size}px`, xmlns: 'http://www.w3.org/2000/svg', preserveAspectRatio: 'none', fill: 'none', viewBox: `0 0 1500 1500` }),
+    style({  })
   )(
     tap(async ({ element }) => {
       const svgParts = (await import("../logic/mappings/svgParts")).default
@@ -153,22 +156,30 @@ export const $labItemAlone = (id: number, size = 80) => {
   )()
 }
 
-export async function getTokenSlots(token: BigNumberish, closet: Closet) {
+export async function getTokenSlots(token: BigNumberish, closet: Closet): Promise<IBerryLabItems> {
+  const items = await closet.get(token, 0, 2)
+  return getBerryFromItems(items.map(it => it.toNumber()))
+}
+
+export function getBerryFromItems(items: number[]) {
   const seedObj = { background: 0, special: 0, custom: 0, }
 
-  return (await closet.get(token, 0, 2)).reduce((seed, next) => {
-
-    const ndx = getLabItemTupleIndex(next.toNumber())
+  return items.reduce((seed, next) => {
+    const ndx = getLabItemTupleIndex(next)
 
     if (ndx === 0) {
-      seed.background = ndx
+      seed.background = next
     } else if (ndx === 7) {
-      seed.special = ndx
+      seed.special = next
     } else {
-      seed.custom = ndx
+      seed.custom = next
     }
 
     return seed
   }, seedObj)
+}
+
+export function getBerryFromToken(token: IToken) {
+  return getBerryFromItems(token.labItems.map(it => it.item.id))
 }
 

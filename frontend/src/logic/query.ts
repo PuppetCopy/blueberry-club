@@ -1,6 +1,6 @@
-import { groupByMapMany, IAccountQueryParamApi, intervalInMsMap, ITimerangeParamApi } from "@gambitdao/gmx-middleware"
+import { groupByMapMany, IAccountQueryParamApi, intervalTimeMap, IPagePositionParamApi, ITimerangeParamApi } from "@gambitdao/gmx-middleware"
 import { ClientOptions, createClient, gql, TypedDocumentNode } from "@urql/core"
-import { IOwner, IPriceInterval, IToken } from "@gambitdao/gbc-middleware"
+import { ILabItemOwnership, IOwner, IPriceInterval, IProfile, IToken } from "@gambitdao/gbc-middleware"
 
 
 export interface ITypename<T extends string> {
@@ -126,6 +126,7 @@ fragment tokenFields on Token {
   owner { ...ownerFields }
   uri
   transfers { ...transferFields }
+  
   contract { ...contractFields }
 }
 
@@ -148,8 +149,10 @@ fragment transferFields on Transfer {
   from {...ownerFields}
   to {...ownerFields}
   timestamp
-  block
-  transactionHash
+
+  transaction {
+    id
+  }
 }
 
 `
@@ -164,14 +167,19 @@ export type QueryIdentifiable = {
   id: string
 }
 
-export type IQueryGmxEthHistoricPrice = Partial<ITimerangeParamApi & { period: intervalInMsMap }>
+export type IQueryGmxEthHistoricPrice = Partial<ITimerangeParamApi & { period: intervalTimeMap }>
 
 const tokenDoc: TypedDocumentNode<{token: IToken | null}, QueryIdentifiable> = gql`
 ${schemaFragments}
 
 query ($id: String) {
   token(id: $id) {
-    ...tokenFields
+    ...tokenFields,
+    labItems {
+      item {
+        id
+      }
+    }
   }
 }
 
@@ -180,7 +188,7 @@ query ($id: String) {
 
 
 const gmxGlpEthHistoricPriceDoc: TypedDocumentNode<{ gmx: IPricefeed[], glpArbitrum: IPricefeed[], eth: IPricefeed[] }, IQueryGmxEthHistoricPrice> = gql`
-query ($first: Int = 1000, $period: IntervalTime = _14400, $from: Int = 0, $to: Int = 1999999999) {
+query ($first: Int = 1000, $period: IntervalTime = _86400, $from: Int = 0, $to: Int = 1999999999) {
   glpArbitrum: pricefeeds(first: $first, where: {timestamp_gt: $from, timestamp_lt: $to, interval: $period, feed: _0x321F653eED006AD1C29D174e17d96351BDe22649}) {
     id
     feed
@@ -216,7 +224,7 @@ query ($first: Int = 1000, $period: IntervalTime = _14400, $from: Int = 0, $to: 
 
 const avalancheHistoricPriceDoc: TypedDocumentNode<{ avax: IPricefeed[], glpAvalanche: IPricefeed[] }, IQueryGmxEthHistoricPrice> = gql`
 
-query ($first: Int = 1000, $period: IntervalTime = _14400, $from: Int = 0, $to: Int = 1999999999) {
+query ($first: Int = 1000, $period: IntervalTime = _86400, $from: Int = 0, $to: Int = 1999999999) {
   avax: pricefeeds(first: $first, where: {timestamp_gt: $from, timestamp_lt: $to, interval: $period, feed: _0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7}) {
     id
     feed
@@ -281,21 +289,6 @@ query {
 `
 
 
-const ownerDoc: TypedDocumentNode<{owner: IOwner}, QueryAccountOwnerNfts> = gql` 
-${schemaFragments}
-
-query ($account: String) {
-  owner(id: $account) {
-    ownedTokens {
-      uri
-      id
-    }
-    balance
-  }
-}
-
-`
-
 const ownerTransferList: TypedDocumentNode<{owner: IOwner}, QueryAccountOwnerNfts> = gql`
 ${schemaFragments}
 
@@ -327,6 +320,46 @@ query ($account: String) {
   owner(id: $account) {
     id
     balance
+    ownedLabItems(first: 1000) {
+      balance
+      item {
+        id
+      }
+      id
+    }
+    displayName
+    rewardClaimedCumulative
+    ownedTokens(first: 1000) {
+      id
+      labItems {
+        id
+        item {
+          id
+        }
+      }
+    }
+    profile {
+      token {
+        id
+        labItems {
+          item {
+            id
+          }
+        }
+      }
+      name
+    }
+  }
+}
+`
+
+const ownerListDoc: TypedDocumentNode<{owners: IOwner[]}, {}> = gql`
+${schemaFragments}
+
+query {
+  owners(first: 1000) {
+    id
+    balance
     ownedLabItems {
       balance
       item {
@@ -338,21 +371,117 @@ query ($account: String) {
     rewardClaimedCumulative
     ownedTokens {
       id
-      background
-      custom
-      special
+      labItems {
+        id
+        item {
+          id
+        }
+      }
     }
-    ownedLabItems {
-      id
-    }
-    main {
-      id
-      background
-      custom
-      special
+    profile {
+      token {
+        id
+        labItems {
+          item {
+            id
+          }
+        }
+      }
+      name
     }
   }
 }
+`
+
+const tokenV2: TypedDocumentNode<{ token: IToken }, QueryIdentifiable> = gql`
+${schemaFragments}
+
+query ($id: String) {
+  token(id: $id) {
+    id
+    owner {
+      id
+      balance
+      ownedLabItems(first: 1000) {
+        balance
+        item {
+          id
+        }
+        id
+      }
+      displayName
+      rewardClaimedCumulative
+      ownedTokens(first: 1000) {
+        id
+        labItems {
+          id
+          item {
+            id
+          }
+        }
+      }
+      profile {
+        token {
+          id
+          labItems {
+            item {
+              id
+            }
+          }
+        }
+        name
+      }
+    }
+    transfers {
+      ...transferFields
+    }
+    labItems {
+      id
+      item {
+        id
+      }
+    }
+  }
+}
+`
+const profileList: TypedDocumentNode<{ profiles: IProfile[] }, Partial<IPagePositionParamApi>> = gql`
+
+query ($pageSize: Int = 1000, $skip: Int = 0) {
+  profiles(first: $pageSize, skip: $skip, orderBy: timestamp, orderDirection: desc) {
+    id
+    timestamp
+    token {
+      id
+      labItems {
+        item {
+          id
+        }
+      }
+    }
+    name
+  }
+}
+
+`
+
+const profileDoc: TypedDocumentNode<{ profile: IProfile }, QueryIdentifiable> = gql`
+
+query ($id: String) {
+  profile(id: $id) {
+    id
+    timestamp
+    token {
+      id
+      labItems {
+        item {
+          id
+        }
+      }
+    }
+    name
+  }
+}
+
 `
 
 
@@ -455,7 +584,7 @@ const blueberryGraph = prepareClient({
 
 const blueberryGraphV2 = prepareClient({
   fetch: fetch,
-  url: 'https://api.thegraph.com/subgraphs/name/nissoh/blueberry-club-rinkeby',
+  url: 'https://api.thegraph.com/subgraphs/name/nissoh/blueberry-club-arbitrum',
 })
 
 
@@ -470,6 +599,19 @@ const gmxArbitrumStats = prepareClient({
 })
 
 
+export const queryProfileList = async (queryParams: Partial<IPagePositionParamApi> = {}) => {
+  const owner = (await blueberryGraphV2(profileList, queryParams)).profiles
+
+  return owner.map(fromProfileJson).reverse()
+}
+
+export const queryProfile = async (queryParams: QueryIdentifiable) => {
+  const owner = (await blueberryGraphV2(profileDoc, queryParams)).profile
+
+  return fromProfileJson(owner)
+}
+
+
 export const queryOwnerTrasnferNfts = async (account: string) => {
   const owner = (await blueberryGraph(ownerTransferList, { account: account.toLowerCase() })).owner
 
@@ -478,6 +620,13 @@ export const queryOwnerTrasnferNfts = async (account: string) => {
   }
 
   return Object.entries(groupByMapMany(owner.ownedTokens, token => token.transfers[0].transaction.id))
+}
+
+export const queryOwnerList = async (): Promise<IOwner[]> => {
+  const owners = (await blueberryGraphV2(ownerListDoc, {  })).owners
+
+
+  return owners.map(fromOwnerJson)
 }
 
 export const queryOwnerV2 = async (account: string): Promise<IOwner | null> => {
@@ -500,6 +649,15 @@ export const queryToken = async (id: string) => {
   return owner
 }
 
+export const queryTokenv2 = async (id: string) => {
+  const owner = (await blueberryGraphV2(tokenV2, { id })).token
+
+  if (owner === null) {
+    throw new Error(`Token #${id} not found`)
+  }
+
+  return fromTokenJson(owner)
+}
 
 
 
@@ -563,24 +721,38 @@ export const queryAvalancheRewards = async (config: IAccountQueryParamApi & Part
 }
 
 
+function fromProfileJson(obj: IProfile): IProfile {
+  return {
+    ...obj,
+    token: obj.token ? fromTokenJson(obj.token) : null
+  }
+}
 
+function fromLabItemOwnershipJson(obj: ILabItemOwnership): ILabItemOwnership {
+  return {
+    ...obj,
+    item: {
+      ...obj.item,
+      id: Number(obj.item.id)
+    }
+  }
+}
 
 function fromTokenJson<T extends IToken>(obj: T): T {
   return {
     ...obj,
+    labItems: obj.labItems.map(fromLabItemOwnershipJson),
     owner: obj.owner ? fromOwnerJson(obj.owner) : null,
-    id: Number(obj.id),
-    background: obj.background ? Number(obj.background) : undefined,
-    custom: obj.custom ? Number(obj.custom) : undefined,
-    special: obj.special ? Number(obj.special) : undefined,
+    id: Number(obj.id)
   }
 }
 
 function fromOwnerJson<T extends IOwner>(obj: T): T {
+  const ownedTokens = obj.ownedTokens.map(t => fromTokenJson(t))
   return {
     ...obj,
-    main: obj.main ? fromTokenJson(obj.main) : null,
-    ownedTokens: obj.ownedTokens.map(fromTokenJson),
+    main: obj.profile ? fromProfileJson(obj.profile) : null,
+    ownedTokens,
     ownedLabItems: obj.ownedLabItems.map(json => ({ ...json, balance: BigInt(json.balance), item: { id: Number(json.item.id) } }))
   }
 }

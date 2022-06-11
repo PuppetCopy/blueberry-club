@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {Sale} from "../../Sale.sol";
+import {Sale} from "../Sale.sol";
 import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";
 
 abstract contract Payable is Sale {

@@ -10,11 +10,11 @@ export const buttonPrimaryStyle = style({
   color: pallete.background, whiteSpace: 'nowrap', fill: 'white', borderRadius: '30px',
   boxShadow: `0px 0px 0px 0 ${pallete.primary} inset`, position: 'relative',
   transition: 'ease-in', alignSelf: 'flex-start',
-  padding: '15px 24px', fontWeight: 'bold', borderWidth: '0px', backgroundColor: pallete.message,
+  padding: '15px 24px', fontWeight: 'bold', borderWidth: '0px', backgroundColor: pallete.primary,
 })
 
 export const secondaryButtonStyle = style({
-  color: 'white', whiteSpace: 'nowrap', fill: 'white', borderRadius: '30px', borderStyle: 'solid', backgroundColor: pallete.background,
+  color: pallete.message, whiteSpace: 'nowrap', fill: 'white', borderRadius: '30px', borderStyle: 'solid', backgroundColor: pallete.background,
   alignSelf: 'flex-start',
   padding: '15px 24px', fontWeight: 'bold', borderWidth: '1px', borderColor: pallete.message
 })
@@ -25,7 +25,7 @@ export const $ButtonPrimary = (config: IButton) => {
     ...config,
     buttonOp: O(
       buttonPrimaryStyle,
-      stylePseudo(':hover', { backgroundColor: colorAlpha(pallete.message, .75) }),
+      stylePseudo(':hover', { backgroundColor: pallete.middleground }),
       config.buttonOp || O()
     )
   })
@@ -34,7 +34,7 @@ export const $ButtonPrimary = (config: IButton) => {
 export const $ButtonSecondary = (config: IButton) => {
   return $Button({
     ...config,
-    buttonOp: O(secondaryButtonStyle, stylePseudo(':hover', { borderColor: pallete.primary }), style({ fontSize: '.85em' }), config.buttonOp || O())
+    buttonOp: O(secondaryButtonStyle, stylePseudo(':hover', { borderColor: pallete.middleground }), style({ fontSize: '.85em' }), config.buttonOp || O())
   })
 }
 

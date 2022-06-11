@@ -23,12 +23,13 @@ export interface ILabItem {
   transfers?: ITransfer[]
 }
 
-export interface IToken extends IBerry {
+export interface IToken {
   id: number
-  uri: string
+  operator: string
   owner: IOwner
   transfers: ITransfer[]
   contract: IContract
+  labItems: ILabItemOwnership[]
 }
 
 export interface IContract {
@@ -56,14 +57,16 @@ export type ITransaction = {
   to: string
 }
 
-export type IBerry = {
+export type IBerryLabItems = {
   background: number;
   special: number;
   custom: number;
 }
 
-export type IBerryIdentifable = IBerry & {
-  id: number
+export type IProfile = {
+  id: string
+  token: IToken | null
+  name: string | null
 }
 
 export type ILabItemOwnership = {
@@ -81,7 +84,7 @@ export interface IOwner {
   ownedTokens: IToken[]
   ownedLabItems: ILabItemOwnership[]
 
-  main: IToken | null
+  profile: IProfile | null
   displayName: string | null
 }
 
@@ -140,6 +143,9 @@ export enum IAttributeMappings {
   "Christmas Hat" = 203,
   "Beard White" = 204,
   "Camo Background" = 205,
+  "Lab Flask" = 207,
+  "GLP Shirt" = 208,
+  "GBC x Giorgio Balbi" = 209,
 }
 
 
@@ -232,6 +238,7 @@ export enum IAttributeClothes {
   // lab
   BUILDER = IAttributeMappings.Builder,
   AVALANCHE_HOODIE = IAttributeMappings["Avalanche Hoodie"],
+  GLP_SHIRT = IAttributeMappings["GLP Shirt"],
 }
 
 export enum IAttributeFaceAccessory {
@@ -333,6 +340,7 @@ export enum IAttributeHat {
   LAB_HEAD = IAttributeMappings['Lab Head'],
   CHRISTMAS_HAT = IAttributeMappings['Christmas Hat'],
   FAST_FOOD_CAP = IAttributeMappings['Fast Food Cap'],
+  LAB_FLASK = IAttributeMappings["Lab Flask"],
 }
 
 export enum IAttributeBackground {
@@ -352,13 +360,13 @@ export enum IAttributeBackground {
 
 
   CAMO = IAttributeMappings['Camo Background'],
-
+  GIORGIO_BALBI_BG = IAttributeMappings["GBC x Giorgio Balbi"],
 }
 
 export enum SaleType {
   Public,
-  GbcWhitelist,
-  whitelist,
+  holder,
+  private,
 }
 
 export type IBerryDisplayTupleMap = [
@@ -373,39 +381,50 @@ export type IBerryDisplayTupleMap = [
 export type ILabAttributeOptions = typeof IAttributeBackground | typeof IAttributeClothes | typeof IAttributeHat | typeof IAttributeFaceAccessory
 
 
-export interface LabItemDescription {
+export interface MintRuleStruct {
+  cost: bigint // uint208
+  start: number // uint64
+  transaction: number // uint120
+  amount: number // uint120
+}
+
+export interface SaleState {
+  minted: number // uint120
+  max: number // uint120
+  paused: number // uint8
+}
+
+export interface MintState {
+  maxMintable: number
+  finish: number // uint64
+}
+
+export interface MintPublic extends MintRuleStruct {
+  type: SaleType.Public,
+}
+
+export interface MintHolder extends MintRuleStruct {
+  type: SaleType.holder,
+  walletMintable: number
+}
+
+export interface MintPrivate extends MintRuleStruct {
+  type: SaleType.private
+
+  nonce: number // uint120
+  addressList: string[]
+  signatureList: string[][]
+}
+
+export type MintRule = MintPublic | MintHolder | MintPrivate
+
+export interface LabItemSale {
+  contractAddress: string
+  id: number // mapped to global unique ID
   name: string // displays in UI
   description: string // dispolays in UI
 
-  id: number // mapped to global unique ID
-
-  maxSupply: bigint // maximum items that can be minted
-  maxPerTx: bigint // limit amount of mint per transaction
-
-  publicCost: bigint // public mint price
-  publicStartDate: number // start of public sale
-
-  contractAddress: string
+  mintRuleList: MintRule[]
 }
 
 
-export interface LabItemSalePublicDescription extends LabItemDescription {
-  type: SaleType.Public
-}
-
-export interface LabSaleWhitelistDescription extends LabItemDescription {
-  whitelistStartDate: number  // start date of whitelist sale
-  whitelistMax: bigint // limited amount of whitelist items that can be minted
-  whitelistCost: bigint // specify the mint price, 0 = free, most likley could be set at the same public mint price
-}
-
-export interface LabItemSaleGbcWhitelistDescription extends LabSaleWhitelistDescription {
-  type: SaleType.GbcWhitelist
-}
-
-export interface LabItemSalePermissionedWhitelistDescription extends LabSaleWhitelistDescription {
-  type: SaleType.whitelist
-  merkleRoot: string  // start date of whitelist sale
-}
-
-export type LabItemSaleDescription = LabItemSalePublicDescription | LabItemSaleGbcWhitelistDescription | LabItemSalePermissionedWhitelistDescription

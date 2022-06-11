@@ -53,9 +53,9 @@ abstract contract PrivateMerkle is Private {
     ) external payable {
         if (_mrule.to != msg.sender) revert WrongSender();
         bytes32 leaf = getMerkleHash(_mrule);
-        if (leafClaimed[leaf]) revert LeafClaimed();
 
-        if (!MerkleProof.verify(merkleProof, root, leaf)) revert InvalidProof();
+        require(leafClaimed[leaf] == false, "Already Claimed");
+        require(MerkleProof.verify(merkleProof, root, leaf), "InvalidProof");
 
         leafClaimed[leaf] = true;
 

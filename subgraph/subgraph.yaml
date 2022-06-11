@@ -5,11 +5,11 @@ schema:
 dataSources:
   - kind: ethereum/contract
     name: ERC721
-    network: arbitrum-rinkeby
+    network: arbitrum-one
     source:
-      address: '0x6B921AB88d93C93758C55E102aE58F8267f8b299'
+      address: '0x17f4baa9d35ee54ffbcb2608e20786473c7aa49f'
       abi: ERC721
-      startBlock: 10753033
+      startBlock: 3572696
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -30,11 +30,11 @@ dataSources:
 
   - kind: ethereum/contract
     name: ERC1155
-    network: arbitrum-rinkeby
+    network: arbitrum-one
     source:
-      address: '0x559699eB95cf92126FAD35505ED18d989a0484eA'
+      address: '0xF4f935F4272e6FD9C779cF0036589A63b48d77A7'
       abi: ERC1155
-      startBlock: 12011408 
+      startBlock: 13910680 
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -47,7 +47,7 @@ dataSources:
         - Transaction
       abis:
         - name: ERC1155
-          file: ../contracts/artifacts/contracts/lab/GBCLab.sol/GBCLab.json
+          file: ../contracts/artifacts/contracts/GBCL.sol/GBCLab.json
       eventHandlers:
         - event: TransferSingle(indexed address,indexed address,indexed address,uint256,uint256)
           handler: handleTransferSingle
@@ -57,11 +57,11 @@ dataSources:
 
   - kind: ethereum/contract
     name: Profile
-    network: arbitrum-rinkeby
+    network: arbitrum-one
     source:
-      address: '0xcEbAf0C363e30e151Dd8dDa880286c6d9b17087a'
+      address: '0xE23316331e0717E5353F2Fbe710248B295f5BA7f'
       abi: Profile
-      startBlock: 12011416
+      startBlock: 13910680
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -78,25 +78,25 @@ dataSources:
           handler: handleSetUsername
       file: ./src/mapping.ts
 
-  # - kind: ethereum/contract
-  #   name: Closet
-  #   network: arbitrum-rinkeby
-  #   source:
-  #     address: '0x554849110aB32Acd4D2D71e26Ff2Fb538057BCE4'
-  #     abi: Closet
-  #     startBlock: 12011419
-  #   mapping:
-  #     kind: ethereum/events
-  #     apiVersion: 0.0.6
-  #     language: wasm/assemblyscript
-  #     entities:
-  #       - Token
-  #     abis:
-  #       - name: Closet
-  #         file: ../contracts/artifacts/contracts/lab/Closet.sol/Closet.json
-  #     eventHandlers:
-  #       - event: Set(address,indexed uint256,uint256[],uint256[])
-  #         handler: handleSetItems
-  #     file: ./src/mapping.ts
+  - kind: ethereum/contract
+    name: Closet
+    network: arbitrum-one
+    source:
+      address: '0xb3598b108F59AfEc664974DfD96330DE48eF2D4D'
+      abi: Closet
+      startBlock: 13910680
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Token
+      abis:
+        - name: Closet
+          file: ../contracts/artifacts/contracts/lab/Closet.sol/Closet.json
+      eventHandlers:
+        - event: Set(indexed uint256,uint256[],uint256[])
+          handler: handleSetItems
+      file: ./src/mapping.ts
 
 
