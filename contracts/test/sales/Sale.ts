@@ -9,9 +9,10 @@ import {
   GBCLab,
   Police,
   Police__factory,
-  SaleTest,
-  SaleTest__factory,
+  PublicSale,
+  PublicSale__factory,
 } from "../../typechain-types"
+import { now } from "../utils"
 
 export enum ROLES {
   MINTER,
@@ -21,7 +22,7 @@ export enum ROLES {
 
 const MINTED_TOKEN = 100
 
-describe.skip("Sale.sol", function () {
+describe("Sale.sol", function () {
   let owner: SignerWithAddress
   let bob: SignerWithAddress
   let alice: SignerWithAddress
@@ -29,7 +30,7 @@ describe.skip("Sale.sol", function () {
   let gbc: GBC
   let lab: GBCLab
   let police: Police
-  let sale: SaleTest
+  let sale: PublicSale
 
   this.beforeAll(async () => {
     const [owner_, user1_, user2_] = await ethers.getSigners()
@@ -63,16 +64,17 @@ describe.skip("Sale.sol", function () {
     lab = await itemsFactory.deploy(owner.address, police.address)
     await lab.deployed()
 
-    const saleFactory = new SaleTest__factory(owner)
+    const start = await now()
+
+    const saleFactory = new PublicSale__factory(owner)
     sale = await saleFactory.deploy(
       MINTED_TOKEN,
       lab.address,
-      {
-        max: 1000,
-        minted: 0,
-        paused: 1,
-      },
-      owner.address
+      { supply: 5000, paused: 1, minted: 0 },
+      owner.address,
+      owner.address,
+      { start, finish: start + 3600, wallet: 6000, transaction: 6000 },
+      0
     )
     await sale.deployed()
 
@@ -90,9 +92,9 @@ describe.skip("Sale.sol", function () {
   })
 
   it("Should be possible to mint items", async () => {
-    expect(await sale.totalMinted()).to.be.equal(BigNumber.from(0))
-    await sale.mint(owner.address, 1)
-    expect(await sale.totalMinted()).to.be.equal(BigNumber.from(1))
+    expect(await sale.minted()).to.be.equal(BigNumber.from(0))
+    await sale.mint(1)
+    expect(await sale.minted()).to.be.equal(BigNumber.from(1))
     expect(await lab.balanceOf(owner.address, MINTED_TOKEN)).to.be.equal(
       BigNumber.from(1)
     )
@@ -101,18 +103,16 @@ describe.skip("Sale.sol", function () {
   it("Should be possible to pause the contract", async () => {
     await sale.setPaused(true)
 
-    await expect(sale.mint(owner.address, 1)).to.be.revertedWith("")
+    await expect(sale.mint(1)).to.be.revertedWith("IS_PAUSED")
   })
 
   it("Should not be possible to mint hover the max supply", async () => {
     await sale.setPaused(false)
-    const maxSupply = await sale.maxSupply()
+    const supply = await sale.supply()
 
-    await expect(sale.mint(owner.address, maxSupply)).to.be.revertedWith("")
-    await sale.mint(owner.address, maxSupply.sub(1))
-    expect(await sale.totalMinted()).to.be.equal(maxSupply)
-    expect(await lab.balanceOf(owner.address, MINTED_TOKEN)).to.be.equal(
-      maxSupply
-    )
+    await expect(sale.mint(supply)).to.be.revertedWith("MAX_SUPPLY")
+    await sale.mint(supply.sub(1))
+    expect(await sale.minted()).to.be.equal(supply)
+    expect(await lab.balanceOf(owner.address, MINTED_TOKEN)).to.be.equal(supply)
   })
 })

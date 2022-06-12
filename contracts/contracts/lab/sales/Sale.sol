@@ -41,11 +41,7 @@ abstract contract Sale is Auth {
         return state.paused == 2;
     }
 
-    function mint(uint120 amount) external payable virtual;
-
-    function mintFor(address to, uint120 amount) external payable virtual;
-
-    function _mint(address to, uint120 amount) internal {
+    function _mint(address to, uint120 amount) internal virtual {
         SaleState memory state_ = state;
         require(state.paused != 2, "IS_PAUSED");
         uint120 minted_ = state_.minted + amount;

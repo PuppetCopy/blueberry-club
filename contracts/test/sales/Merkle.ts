@@ -1,8 +1,7 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { expect } from "chai"
-import { BigNumber, BigNumberish } from "ethers"
+import { BigNumber } from "ethers"
 import { ethers } from "hardhat"
-import { MerkleTree } from "merkletreejs"
 import {
   GBC,
   GBC__factory,
@@ -10,26 +9,10 @@ import {
   GBCLab,
   Police,
   Police__factory,
-  SaleMerkleTest,
-  SaleMerkleTest__factory,
+  MerkleSale as IMerkleSale,
+  MerkleSale__factory as IMerkleSale__factory,
 } from "../../typechain-types"
-import { MerkleMintRuleStruct } from "../../typechain-types/contracts/lab/sales/extensions/mint/whitelist/Merkle.sol/PrivateMerkle"
 import { now } from "../utils"
-import keccak256 from "keccak256"
-
-const getHash = (
-  to: string,
-  cost: BigNumberish,
-  start: BigNumberish,
-  transaction: BigNumberish,
-  amount: BigNumberish,
-  nonce: BigNumberish
-) => {
-  return ethers.utils.solidityKeccak256(
-    ["address", "uint208", "uint64", "uint120", "uint120", "uint96"],
-    [to, cost, start, transaction, amount, nonce]
-  )
-}
 
 import { MerkleSale } from "../../utils/merkle"
 
@@ -49,7 +32,7 @@ describe("Merkle.sol", function () {
   let gbc: GBC
   let lab: GBCLab
   let police: Police
-  let sale: SaleMerkleTest
+  let sale: IMerkleSale
 
   let end: number
   let merkle: MerkleSale
@@ -61,50 +44,9 @@ describe("Merkle.sol", function () {
     alice = user2_
     const gbcFactory = new GBC__factory(owner)
 
-    const rules = [
-      {
-        to: owner.address,
-        cost: ethers.utils.parseEther("0.02"),
-        start: 0,
-        transaction: 10,
-        amount: 100,
-        nonce: 0,
-      },
-      {
-        to: owner.address,
-        cost: ethers.utils.parseEther("0.02"),
-        start: 0,
-        transaction: 10,
-        amount: 100,
-        nonce: 1,
-      },
-      {
-        to: owner.address,
-        cost: 0,
-        start: 0,
-        transaction: 1,
-        amount: 1,
-        nonce: 2,
-      },
-      {
-        to: alice.address,
-        cost: 0,
-        start: 0,
-        transaction: 1,
-        amount: 1,
-        nonce: 0,
-      },
-      {
-        to: bob.address,
-        cost: 0,
-        start: 0,
-        transaction: 1,
-        amount: 1,
-        nonce: 0,
-      },
-    ]
+    const whitelist = [owner.address, alice.address, bob.address]
 
-    merkle = new MerkleSale(rules)
+    merkle = new MerkleSale(whitelist)
 
     gbc = await gbcFactory.deploy("Blueberry Club", "GBC", "")
     await gbc.deployed()
@@ -133,17 +75,15 @@ describe("Merkle.sol", function () {
 
     end = (await now()) + 3600
 
-    const saleFactory = new SaleMerkleTest__factory(owner)
+    const saleFactory = new IMerkleSale__factory(owner)
     sale = await saleFactory.deploy(
       MINTED_TOKEN,
       lab.address,
-      {
-        max: 1000,
-        minted: 0,
-        paused: 1,
-      },
+      { supply: 5000, paused: 1, minted: 0 },
       owner.address,
-      end,
+      owner.address,
+      { start: end - 3600, finish: end, wallet: 2, transaction: 2 },
+      0,
       merkle.root
     )
     await sale.deployed()
@@ -162,18 +102,16 @@ describe("Merkle.sol", function () {
   })
 
   it("Should be possible to mint items", async () => {
-    expect(await sale.totalMinted()).to.be.equal(BigNumber.from(0))
+    expect(await sale.minted()).to.be.equal(BigNumber.from(0))
 
-    await sale.merkleMint(merkle.rule(2), merkle.proof(2), 1)
-    expect(await sale.totalMinted()).to.be.equal(BigNumber.from(1))
+    await sale.mint(1, merkle.proof(0))
+    expect(await sale.minted()).to.be.equal(BigNumber.from(1))
     expect(await lab.balanceOf(owner.address, MINTED_TOKEN)).to.be.equal(
       BigNumber.from(1)
     )
   })
 
   it("Should not be possible to use 2 times the same leaf", async () => {
-    expect(
-      sale.merkleMint(merkle.rule(2), merkle.proof(2), 1)
-    ).to.be.revertedWith("")
+    expect(sale.mint(1, merkle.proof(0))).to.be.revertedWith("LEAF_USED")
   })
 })

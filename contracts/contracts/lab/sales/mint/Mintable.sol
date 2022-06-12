@@ -37,7 +37,7 @@ abstract contract Mintable is Payable {
         return _state().transaction;
     }
 
-    function _mint(address to, uint120 amount) internal override {
+    function _mint(address to, uint120 amount) internal virtual override {
         MintState memory state_ = _state();
         uint256 totalMinted_ = totalMintedOf[to] + amount;
 
@@ -53,7 +53,7 @@ abstract contract Mintable is Payable {
         super._mint(to, amount);
     }
 
-    function _state() private pure returns (MintState memory state_) {
+    function _state() private view returns (MintState memory state_) {
         return _uintToState(_state_slot);
     }
 

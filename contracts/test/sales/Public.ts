@@ -9,8 +9,8 @@ import {
   GBCLab,
   Police,
   Police__factory,
-  SalePublicTest,
-  SalePublicTest__factory,
+  PublicSale,
+  PublicSale__factory,
 } from "../../typechain-types"
 import { now } from "../utils"
 
@@ -22,7 +22,7 @@ export enum ROLES {
 
 const MINTED_TOKEN = 100
 
-describe.skip("Public.sol", function () {
+describe("Public.sol", function () {
   let owner: SignerWithAddress
   let bob: SignerWithAddress
   let alice: SignerWithAddress
@@ -30,7 +30,7 @@ describe.skip("Public.sol", function () {
   let gbc: GBC
   let lab: GBCLab
   let police: Police
-  let sale: SalePublicTest
+  let sale: PublicSale
 
   let start: number
 
@@ -68,18 +68,15 @@ describe.skip("Public.sol", function () {
 
     start = await now()
 
-    const saleFactory = new SalePublicTest__factory(owner)
+    const saleFactory = new PublicSale__factory(owner)
     sale = await saleFactory.deploy(
       MINTED_TOKEN,
       lab.address,
-      {
-        max: 1000,
-        minted: 0,
-        paused: 1,
-      },
+      { supply: 5000, paused: 1, minted: 0 },
       owner.address,
-      start,
-      start + 3600
+      owner.address,
+      { start, finish: start + 3600, wallet: 2, transaction: 2 },
+      ethers.utils.parseEther("0.02")
     )
     await sale.deployed()
 
@@ -97,21 +94,11 @@ describe.skip("Public.sol", function () {
   })
 
   it("Should be possible to mint items", async () => {
-    expect(await sale.totalMinted()).to.be.equal(BigNumber.from(0))
-    await sale.publicMint(1, { value: ethers.utils.parseEther("0.02") })
-    expect(await sale.totalMinted()).to.be.equal(BigNumber.from(1))
+    expect(await sale.minted()).to.be.equal(BigNumber.from(0))
+    await sale.mint(1, { value: ethers.utils.parseEther("0.02") })
+    expect(await sale.minted()).to.be.equal(BigNumber.from(1))
     expect(await lab.balanceOf(owner.address, MINTED_TOKEN)).to.be.equal(
       BigNumber.from(1)
-    )
-  })
-
-  it("mintable amount should decrease at each mint", async () => {
-    expect(await sale.publicMintable(owner.address)).to.be.equal(
-      BigNumber.from(99)
-    )
-    await sale.publicMint(5, { value: ethers.utils.parseEther("0.02").mul(5) })
-    expect(await sale.publicMintable(owner.address)).to.be.equal(
-      BigNumber.from(94)
     )
   })
 })
