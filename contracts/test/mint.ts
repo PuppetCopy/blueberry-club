@@ -1,9 +1,7 @@
-/**
- * import { expect } from "chai"
+
+import { expect } from "chai"
 import { ethers } from "hardhat"
-import { Police, GBC, PermissionedWhitelist__factory, GBCLab, GBCLab__factory, GBC__factory, Police__factory, SaleBasic__factory } from "../typechain-types"
-import { MerkleTree } from 'merkletreejs'
-import { keccak256, parseEther } from "ethers/lib/utils"
+import { Police, GBC, GBCLab, GBCLab__factory, GBC__factory, Police__factory } from "../typechain-types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 
 // TODO: (aling to custom errors) https://github.com/dethcrypto/TypeChain/pull/682
@@ -74,61 +72,6 @@ describe("Minting through contracts", function () {
     expect(await hardhatToken.totalSupply()).to.equal(ownerBalance)
   })
 
-  describe.only("Mint different Sales", () => {
-
-    it('public sale', async () => {
-
-      const saleFactory = new SaleBasic__factory(owner)
-      const sale = await saleFactory.deploy(lab.address, owner.address, 12, parseEther("0.3"), 100, 20, 0)
-      await sale.deployed()
-      await police.setUserRole(sale.address, ROLES.MINTER, true)
-
-      const user1connect = sale.connect(user1)
-
-      const cost = parseEther("0.3")
-
-
-      expect(await user1connect.publicMint(1, { value: cost })).ok
-      expect(await lab.balanceOf(user1.address, 12)).eq(1)
-      await expect(user1connect.publicMint(1, { value: cost.mul(2) })).revertedWith("Error_Cost")
-      await expect(user1connect.publicMint(2, { value: cost })).revertedWith("Error_Cost")
-
-      expect(await sale.cancel()).ok
-
-      await expect(user1connect.publicMint(1, { value: cost })).revertedWith('Error_Canceled')
-    })
-
-    it('allow only whitelisted accounts to mint', async () => {
-      const accounts = await ethers.getSigners()
-      const whitelisted = accounts.slice(0, 5)
-      const notWhitelisted = accounts.slice(5, 10)
-
-      const leaves = whitelisted.map(account => keccak256(account.address))
-      const tree = new MerkleTree(leaves, keccak256, { sort: true })
-      const merkleRoot = tree.getHexRoot()
-
-      const wlFactory = new PermissionedWhitelist__factory(owner)
-      const sale = await wlFactory.deploy(lab.address, owner.address, 12, parseEther("0.3"), 100, 20, 0, merkleRoot)
-      await police.setUserRole(sale.address, ROLES.MINTER, true)
-
-      const wlUser1Connect = sale.connect(whitelisted[0])
-      const nonWlUser1Connect = sale.connect(notWhitelisted[0])
-
-      const merkleProof = tree.getHexProof(keccak256(whitelisted[0].address))
-      const invalidMerkleProof = tree.getHexProof(keccak256(notWhitelisted[0].address))
-
-      expect(await wlUser1Connect.whitelistMint(merkleProof)).ok
-      await expect(wlUser1Connect.whitelistMint(merkleProof)).revertedWith('Error_Claimed')
-      await expect(nonWlUser1Connect.whitelistMint(invalidMerkleProof)).revertedWith('Error_InvalidProof')
-      expect(await wlUser1Connect.publicMint(1, { value: parseEther("0.3") })).ok
-      expect(await nonWlUser1Connect.publicMint(1, { value: parseEther("0.3") })).ok
-
-    })
-
-  })
-
 
 })
 
-
- */

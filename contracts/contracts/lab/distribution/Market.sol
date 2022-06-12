@@ -1,11 +1,11 @@
-//SPDX-License-Identifier: Unlicense
+//SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import {SafeTransferLib} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";
 
 import {Airdrop} from "./Airdrop.sol";
-import {Public} from "../sales/mint/Public.sol";
+import {Public} from "../mint/template/Public.sol";
 
 /**
  * @title Shop
@@ -25,7 +25,7 @@ contract Market {
     function mintNative(
         uint256[] memory tokensId,
         uint120 amount,
-        Public sale
+        Public mint
     ) external payable {
         uint256 claimed = airdrop.claim(
             msg.sender,
@@ -33,7 +33,7 @@ contract Market {
             address(0),
             tokensId
         );
-        sale.publicMintFor{value: msg.value + claimed}(msg.sender, amount);
+        mint.mintFor{value: msg.value + claimed}(msg.sender, amount);
     }
 
     function mintToken(
@@ -41,7 +41,7 @@ contract Market {
         address token,
         uint256 bill,
         uint120 amount,
-        Public sale
+        Public mint
     ) external payable {
         uint256 claimed = airdrop.claim(
             msg.sender,
@@ -52,9 +52,9 @@ contract Market {
 
         ERC20 token_ = ERC20(token);
 
-        token_.safeApprove(address(sale), bill + claimed);
+        token_.safeApprove(address(mint), bill + claimed);
         token_.safeTransferFrom(msg.sender, address(this), bill);
 
-        sale.publicMintFor(msg.sender, amount);
+        mint.mintFor(msg.sender, amount);
     }
 }

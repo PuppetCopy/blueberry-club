@@ -9,17 +9,14 @@ import {SafeTransferLib} from "@rari-capital/solmate/src/utils/SafeTransferLib.s
 abstract contract Token is Payable {
     using SafeTransferLib for ERC20;
 
-    ERC20 public immutable token;
+    ERC20 public immutable TOKEN;
 
-    address public immutable receiver;
-
-    constructor(ERC20 token_, address receiver_) {
-        token = token_;
-        receiver = receiver_;
+    constructor(ERC20 token_) {
+        TOKEN = token_;
     }
 
     function _takeMoney(uint256 amount) internal override {
-        token.safeTransferFrom(msg.sender, receiver, amount);
+        TOKEN.safeTransferFrom(msg.sender, RECEIVER, amount);
         emit Paied(msg.sender, amount);
     }
 }

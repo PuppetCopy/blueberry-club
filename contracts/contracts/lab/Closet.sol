@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "hardhat/console.sol";
 
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {GBCLab} from "../GBCL.sol";
+import {GBCLab} from "../token/GBCL.sol";
 import {Auth, Authority} from "@rari-capital/solmate/src/auth/Auth.sol";
 import {ERC1155TokenReceiver} from "@rari-capital/solmate/src/tokens/ERC1155.sol";
 

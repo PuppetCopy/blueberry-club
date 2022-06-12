@@ -381,34 +381,34 @@ export type IBerryDisplayTupleMap = [
 export type ILabAttributeOptions = typeof IAttributeBackground | typeof IAttributeClothes | typeof IAttributeHat | typeof IAttributeFaceAccessory
 
 
-export interface MintRuleStruct {
+export interface MintAccountRule {
+  maxMintable: number
+}
+
+export interface MintRuleConfig extends MintAccountRule {
   cost: bigint // uint208
   start: number // uint64
   transaction: number // uint120
   amount: number // uint120
+  finish: number // uint64
 }
 
-export interface SaleState {
+export interface MintState {
   minted: number // uint120
   max: number // uint120
   paused: number // uint8
 }
 
-export interface MintState {
-  maxMintable: number
-  finish: number // uint64
-}
-
-export interface MintPublic extends MintRuleStruct {
+export interface MintPublic extends MintRuleConfig {
   type: SaleType.Public,
 }
 
-export interface MintHolder extends MintRuleStruct {
+export interface MintHolder extends MintRuleConfig {
   type: SaleType.holder,
   walletMintable: number
 }
 
-export interface MintPrivate extends MintRuleStruct {
+export interface MintPrivate extends MintRuleConfig {
   type: SaleType.private
 
   nonce: number // uint120
