@@ -16,7 +16,7 @@ abstract contract Auth {
 
     Authority public authority;
 
-    constructor(address _owner, Authority _authority) {
+    function __Auth_init(address _owner, Authority _authority) internal {
         owner = _owner;
         authority = _authority;
 
