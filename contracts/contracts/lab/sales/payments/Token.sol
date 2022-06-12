@@ -11,15 +11,11 @@ abstract contract Token is Payable {
 
     ERC20 public immutable token;
 
-    address public immutable receiver;
-
-    constructor(ERC20 token_, address receiver_) {
+    constructor(ERC20 token_) {
         token = token_;
-        receiver = receiver_;
     }
 
     function _takeMoney(uint256 amount) internal override {
         token.safeTransferFrom(msg.sender, receiver, amount);
-        emit Paied(msg.sender, amount);
     }
 }

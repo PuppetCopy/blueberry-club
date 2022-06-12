@@ -6,16 +6,12 @@ import {Auth, Authority} from "@rari-capital/solmate/src/auth/Auth.sol";
 
 struct SaleState {
     uint120 minted;
-    uint120 max;
+    uint120 supply;
     uint8 paused;
 }
 
-error SalePaused();
-error MaxSupplyReached();
-
-contract Sale is Auth {
-    event Paused(address executor);
-    event Unpaused(address executor);
+abstract contract Sale is Auth {
+    event Pause(address executor, bool isPaused);
 
     uint256 public immutable ITEM;
     GBCLab public immutable LAB;
@@ -33,11 +29,11 @@ contract Sale is Auth {
         state = state_;
     }
 
-    function maxSupply() external view returns (uint256) {
-        return state.max;
+    function supply() external view returns (uint256) {
+        return state.supply;
     }
 
-    function totalMinted() external view returns (uint256) {
+    function minted() external view returns (uint256) {
         return state.minted;
     }
 
@@ -45,22 +41,25 @@ contract Sale is Auth {
         return state.paused == 2;
     }
 
+    function mint(uint120 amount) external payable virtual;
+
+    function mintFor(address to, uint120 amount) external payable virtual;
+
     function _mint(address to, uint120 amount) internal {
         SaleState memory state_ = state;
-        if (state.paused == 2) revert SalePaused();
-        uint120 totalMinted_ = state_.minted + amount;
-        if (totalMinted_ > state_.max) revert MaxSupplyReached();
-        state.minted = totalMinted_;
+        require(state.paused != 2, "IS_PAUSED");
+        uint120 minted_ = state_.minted + amount;
+        require(minted_ <= state_.supply, "MAX_SUPPLY");
+        state.minted = minted_;
         LAB.mint(to, ITEM, amount, "");
     }
 
     function setPaused(bool isPaused_) external requiresAuth {
         if (isPaused_) {
             state.paused = 2;
-            emit Paused(msg.sender);
         } else {
             state.paused = 1;
-            emit Unpaused(msg.sender);
         }
+        emit Pause(msg.sender, isPaused_);
     }
 }

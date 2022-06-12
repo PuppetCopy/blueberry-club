@@ -12,11 +12,6 @@ struct HolderState {
     uint120 transaction;
 }
 
-error TooManyTokens();
-error NftMaxMintable();
-error NftAlreadyUsed();
-error NotOwner();
-
 abstract contract PrivateHolder is Private {
     IERC721 public immutable NFT;
 

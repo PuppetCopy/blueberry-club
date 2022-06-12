@@ -6,9 +6,14 @@ import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";
 
 abstract contract Payable is Sale {
     event Rescue(address indexed token, address indexed to, uint256 amount);
-    event Paied(address indexed payeer, uint256 amount);
+
+    address payable public immutable receiver;
 
     function _takeMoney(uint256 amount) internal virtual;
+
+    constructor(address payable receiver_) {
+        receiver = receiver_;
+    }
 
     function rescueTokens(
         ERC20 token,
