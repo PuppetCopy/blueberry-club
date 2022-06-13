@@ -44,35 +44,77 @@ contract HolderSale is HolderData, Auth {
     }
 
     function _mint(address to, uint256[] memory tokens) internal {
-        require(tokens.length <= type(uint128).max, "INVALID_TOKENS");
-        uint128 amount = uint128(tokens.length);
-
-        SaleState memory state_ = state;
-        uint128 minted_ = state_.minted + amount;
-        uint256 mintOf_ = mintOf[to] + amount;
-
         (
-            Lab lab,
-            uint96 wallet,
-            address payable receiver,
-            uint96 transaction,
-            ERC20 token,
-            uint96 finish,
-            ERC721 checker,
-            uint96 start,
-            uint128 supply,
-            uint128 cost,
-            uint256 item
-        ) = data();
+            uint256 c1,
+            uint256 c2,
+            uint256 c3,
+            uint256 c4,
+            uint256 c5,
+            uint256 c6
+        ) = _chunks();
+
+        uint256 amount = tokens.length;
+
+        _required(amount, c2, c3, c4, c5);
+
+        _check(to, tokens, c4);
+
+        _pay(amount, c2, c3, c5);
+
+        _mint(to, amount, c1, c6);
+    }
+
+    function _required(
+        uint256 amount,
+        uint256 c2,
+        uint256 c3,
+        uint256 c4,
+        uint256 c5
+    ) internal {
+        SaleState memory state_ = state;
+        uint256 minted_ = state_.minted + amount;
+
+        (, uint96 transaction) = chunk2(c2);
+        (, uint96 finish) = chunk3(c3);
+        (, uint96 start) = chunk4(c4);
+        (uint128 supply, ) = chunk5(c5);
 
         require(start == 0 || block.timestamp >= start, "NOT_STARTED");
         require(finish == 0 || block.timestamp < finish, "SALE_ENDED");
         require(transaction == 0 || amount <= transaction, "MAX_TRANSACTION");
-        require(wallet == 0 || mintOf_ <= wallet, "MAX_WALLET");
-        require(supply == 0 || minted_ <= supply, "MAX_WALLET");
+        require(supply == 0 || minted_ <= supply, "MAX_SUPPLY");
         require(state_.paused == 1, "SALE_PAUSED");
 
-        for (uint256 i = 0; i < amount; ) {
+        state = SaleState(uint128(minted_), 1);
+    }
+
+    function _pay(
+        uint256 amount,
+        uint256 c2,
+        uint256 c3,
+        uint256 c5
+    ) internal {
+        (address payable receiver, ) = chunk2(c2);
+        (, uint128 cost) = chunk5(c5);
+        (ERC20 token, ) = chunk3(c3);
+
+        if (cost > 0) {
+            if (address(token) == address(0)) {
+                receiver.transfer(cost * amount);
+            } else {
+                token.safeTransferFrom(msg.sender, receiver, cost * amount);
+            }
+        }
+    }
+
+    function _check(
+        address to,
+        uint256[] memory tokens,
+        uint256 c4
+    ) internal {
+        (ERC721 checker, ) = chunk4(c4);
+
+        for (uint256 i = 0; i < tokens.length; ) {
             uint256 token_ = tokens[i];
             require(checker.ownerOf(token_) == to, "NOT_OWNER");
             require(!isTokenUsed[token_], "ALREADY_USED");
@@ -83,17 +125,22 @@ contract HolderSale is HolderData, Auth {
                 i++;
             }
         }
+    }
 
-        state = SaleState(minted_, 1);
+    function _mint(
+        address to,
+        uint256 amount,
+        uint256 c1,
+        uint256 c6
+    ) internal {
+        (Lab lab, uint96 wallet) = chunk1(c1);
+        uint256 item = chunk6(c6);
+
+        uint256 mintOf_ = mintOf[to] + amount;
+
+        require(wallet == 0 || mintOf_ <= wallet, "MAX_WALLET");
+
         mintOf[to] = mintOf_;
-
-        if (cost > 0) {
-            if (address(token) == address(0)) {
-                receiver.transfer(cost * amount);
-            } else {
-                token.safeTransferFrom(msg.sender, receiver, cost * amount);
-            }
-        }
 
         lab.mint(to, item, amount, "");
     }

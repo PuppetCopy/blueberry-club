@@ -9,63 +9,54 @@ import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import {GBCLab as Lab} from "../../Lab.sol";
 
 contract HolderData is Clone {
-    /// @notice Chunk1
-    /// @return lab             : address
-    /// @return wallet          : uint96
-    function _chunk1() private pure returns (Lab lab, uint96 wallet) {
-        uint256 i = _getArgUint256(0);
-        lab = Lab(address(uint160(i)));
-        wallet = uint96(i >> 160);
+    function _chunk1() internal pure returns (uint256) {
+        return _getArgUint256(0);
     }
 
-    /// @notice Chunk2
-    /// @return receiver        : address
-    /// @return transaction     : uint96
-    function _chunk2()
-        private
-        pure
-        returns (address payable receiver, uint96 transaction)
-    {
-        uint256 i = _getArgUint256(32);
-        receiver = payable(address(uint160(i)));
-        transaction = uint96(i >> 160);
+    function _chunk2() internal pure returns (uint256) {
+        return _getArgUint256(32);
     }
 
-    /// @notice Chunk3
-    /// @return token           : address
-    /// @return finish          : uint96
-    function _chunk3() private pure returns (ERC20 token, uint96 finish) {
-        uint256 i = _getArgUint256(64);
-        token = ERC20(address(uint160(i)));
-        finish = uint96(i >> 160);
+    function _chunk3() internal pure returns (uint256) {
+        return _getArgUint256(64);
     }
 
-    /// @notice Chunk4
-    /// @return checker         : address
-    /// @return start           : uint96
-    function _chunk4() private pure returns (ERC721 checker, uint96 start) {
-        uint256 i = _getArgUint256(96);
-        checker = ERC721(address(uint160(i)));
-        start = uint96(i >> 160);
+    function _chunk4() internal pure returns (uint256) {
+        return _getArgUint256(96);
     }
 
-    /// @notice Chunk5
-    /// @return supply         : uint128
-    /// @return cost           : uint128
-    function _chunk5() private pure returns (uint128 supply, uint128 cost) {
-        uint256 i = _getArgUint256(128);
-        supply = uint128(i);
-        cost = uint128(i >> 128);
+    function _chunk5() internal pure returns (uint256) {
+        return _getArgUint256(128);
     }
 
-    /// @notice Chunk6
-    /// @return item         : uint256
-    function _chunk6() private pure returns (uint256) {
+    function _chunk6() internal pure returns (uint256) {
         return _getArgUint256(160);
     }
 
+    function _chunks()
+        internal
+        pure
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        return (
+            _chunk1(),
+            _chunk2(),
+            _chunk3(),
+            _chunk4(),
+            _chunk5(),
+            _chunk6()
+        );
+    }
+
     function chunk1() external pure returns (Lab lab, uint96 wallet) {
-        return _chunk1();
+        return chunk1(_chunk1());
     }
 
     function chunk2()
@@ -73,47 +64,84 @@ contract HolderData is Clone {
         pure
         returns (address payable receiver, uint96 transaction)
     {
-        return _chunk2();
+        return chunk2(_chunk2());
     }
 
     function chunk3() external pure returns (ERC20 token, uint96 finish) {
-        return _chunk3();
+        return chunk3(_chunk3());
     }
 
     function chunk4() external pure returns (ERC721 checker, uint96 start) {
-        return _chunk4();
+        return chunk4(_chunk4());
     }
 
     function chunk5() external pure returns (uint128 supply, uint128 cost) {
-        return _chunk5();
+        return chunk5(_chunk5());
     }
 
     function chunk6() external pure returns (uint256) {
-        return _chunk6();
+        return chunk6(_chunk6());
     }
 
-    function data()
+    /// @notice Chunk1
+    /// @return lab             : address
+    /// @return wallet          : uint96
+    function chunk1(uint256 i) public pure returns (Lab lab, uint96 wallet) {
+        lab = Lab(address(uint160(i)));
+        wallet = uint96(i >> 160);
+    }
+
+    /// @notice Chunk2
+    /// @return receiver        : address
+    /// @return transaction     : uint96
+    function chunk2(uint256 i)
         public
         pure
-        returns (
-            Lab lab,
-            uint96 wallet,
-            address payable receiver,
-            uint96 transaction,
-            ERC20 token,
-            uint96 finish,
-            ERC721 checker,
-            uint96 start,
-            uint128 supply,
-            uint128 cost,
-            uint256 item
-        )
+        returns (address payable receiver, uint96 transaction)
     {
-        (lab, wallet) = _chunk1();
-        (receiver, transaction) = _chunk2();
-        (token, finish) = _chunk3();
-        (checker, start) = _chunk4();
-        (supply, cost) = _chunk5();
-        item = _chunk6();
+        receiver = payable(address(uint160(i)));
+        transaction = uint96(i >> 160);
+    }
+
+    /// @notice Chunk3
+    /// @return token           : address
+    /// @return finish          : uint96
+    function chunk3(uint256 i)
+        public
+        pure
+        returns (ERC20 token, uint96 finish)
+    {
+        token = ERC20(address(uint160(i)));
+        finish = uint96(i >> 160);
+    }
+
+    /// @notice Chunk4
+    /// @return checker         : address
+    /// @return start           : uint96
+    function chunk4(uint256 i)
+        public
+        pure
+        returns (ERC721 checker, uint96 start)
+    {
+        checker = ERC721(address(uint160(i)));
+        start = uint96(i >> 160);
+    }
+
+    /// @notice Chunk5
+    /// @return supply         : uint128
+    /// @return cost           : uint128
+    function chunk5(uint256 i)
+        public
+        pure
+        returns (uint128 supply, uint128 cost)
+    {
+        supply = uint128(i);
+        cost = uint128(i >> 128);
+    }
+
+    /// @notice Chunk6
+    /// @return item         : uint256
+    function chunk6(uint256 i) public pure returns (uint256) {
+        return i;
     }
 }
