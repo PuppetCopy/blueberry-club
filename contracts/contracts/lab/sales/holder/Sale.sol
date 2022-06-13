@@ -65,11 +65,11 @@ contract HolderSale is HolderData, Auth {
             uint256 item
         ) = data();
 
-        require(block.timestamp >= start, "NOT_STARTED");
-        require(block.timestamp < finish, "SALE_ENDED");
-        require(amount <= transaction, "MAX_TRANSACTION");
-        require(mintOf_ <= wallet, "MAX_WALLET");
-        require(minted_ <= supply, "MAX_WALLET");
+        require(start == 0 || block.timestamp >= start, "NOT_STARTED");
+        require(finish == 0 || block.timestamp < finish, "SALE_ENDED");
+        require(transaction == 0 || amount <= transaction, "MAX_TRANSACTION");
+        require(wallet == 0 || mintOf_ <= wallet, "MAX_WALLET");
+        require(supply == 0 || minted_ <= supply, "MAX_WALLET");
         require(state_.paused == 1, "SALE_PAUSED");
 
         for (uint256 i = 0; i < amount; ) {
@@ -87,10 +87,12 @@ contract HolderSale is HolderData, Auth {
         state = SaleState(minted_, 1);
         mintOf[to] = mintOf_;
 
-        if (address(token) == address(0)) {
-            receiver.transfer(cost * amount);
-        } else {
-            token.safeTransferFrom(msg.sender, receiver, cost * amount);
+        if (cost > 0) {
+            if (address(token) == address(0)) {
+                receiver.transfer(cost * amount);
+            } else {
+                token.safeTransferFrom(msg.sender, receiver, cost * amount);
+            }
         }
 
         lab.mint(to, item, amount, "");
