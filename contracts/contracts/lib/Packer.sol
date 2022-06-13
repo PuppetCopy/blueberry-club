@@ -20,6 +20,16 @@ library Packer {
         packed = _pack(packed, uint128_, 128);
     }
 
+    function pack(
+        uint64 _uint64,
+        uint96 _uint96,
+        uint96 __uint96
+    ) internal pure returns (uint256 packed) {
+        packed = uint256(_uint64);
+        packed = _pack(packed, _uint96, 64);
+        packed = _pack(packed, __uint96, 160);
+    }
+
     function _pack(
         uint256 word,
         uint256 value,

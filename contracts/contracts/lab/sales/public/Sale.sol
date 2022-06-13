@@ -52,9 +52,9 @@ contract PublicSale is PublicData, Auth {
             uint96 transaction,
             ERC20 token,
             uint96 finish,
-            uint96 start,
-            uint128 supply,
-            uint128 cost,
+            uint64 start,
+            uint96 supply,
+            uint96 cost,
             uint256 item
         ) = data();
 

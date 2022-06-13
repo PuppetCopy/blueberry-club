@@ -6,6 +6,8 @@ import {Auth, Authority} from "@rari-capital/solmate/src/auth/Auth.sol";
 
 import {HolderSale} from "./Sale.sol";
 
+import {Packer} from "../../../lib/Packer.sol";
+
 contract HolderFactory is Auth {
     event CreateSale(HolderSale indexed sale);
 
@@ -34,16 +36,11 @@ contract HolderFactory is Auth {
         address _owner
     ) external requiresAuth returns (HolderSale sale) {
         bytes memory data = abi.encodePacked(
-            lab,
-            wallet,
-            receiver,
-            transaction,
-            token,
-            finish,
-            checker,
-            start,
-            supply,
-            cost,
+            Packer.pack(lab, wallet),
+            Packer.pack(receiver, transaction),
+            Packer.pack(token, finish),
+            Packer.pack(checker, start),
+            Packer.pack(supply, cost),
             item
         );
 
