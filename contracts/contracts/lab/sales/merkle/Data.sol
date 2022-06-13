@@ -65,6 +65,12 @@ contract PublicData is Clone {
         return _getArgUint256(128);
     }
 
+    /// @notice Chunk6
+    /// @return root         : bytes32
+    function _chunk6() private pure returns (bytes32) {
+        return bytes32(_getArgUint256(160));
+    }
+
     function chunk1() external pure returns (Lab lab, uint96 wallet) {
         return _chunk1();
     }
@@ -97,6 +103,10 @@ contract PublicData is Clone {
         return _chunk5();
     }
 
+    function chunk6() external pure returns (bytes32) {
+        return _chunk6();
+    }
+
     function data()
         public
         pure
@@ -110,7 +120,8 @@ contract PublicData is Clone {
             uint64 start,
             uint96 supply,
             uint96 cost,
-            uint256 item
+            uint256 item,
+            bytes32 root
         )
     {
         (lab, wallet) = _chunk1();
@@ -118,5 +129,6 @@ contract PublicData is Clone {
         (token, finish) = _chunk3();
         (start, supply, cost) = _chunk4();
         item = _chunk5();
+        root = _chunk6();
     }
 }
