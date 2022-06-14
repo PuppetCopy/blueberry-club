@@ -9,10 +9,10 @@ import {
   GBCLab,
   Police,
   Police__factory,
-  HolderSale,
   HolderSale__factory,
-  HolderFactory,
+  HolderSale,
   HolderFactory__factory,
+  HolderFactory,
 } from "../../typechain-types"
 import { ZERO_ADDRESS } from "../../utils/getAddress"
 import { now } from "../utils"
@@ -127,28 +127,20 @@ describe("HolderSale.sol", function () {
       }
     })
 
+    // @ts-ignore
     sale = await ethers.getContractAt("HolderSale", sale_)
 
-    const chunks = {
-      1: await sale["chunk1()"](),
-      2: await sale["chunk2()"](),
-      3: await sale["chunk3()"](),
-      4: await sale["chunk4()"](),
-      5: await sale["chunk5()"](),
-      6: await sale["chunk6()"](),
-    }
-
-    expect(chunks[1][0]).to.be.equal(lab.address)
-    expect(chunks[1][1]).to.be.equal(BigNumber.from(100))
-    expect(chunks[2][0]).to.be.equal(owner.address)
-    expect(chunks[2][1]).to.be.equal(BigNumber.from(10))
-    expect(chunks[3][0]).to.be.equal(ZERO_ADDRESS)
-    expect(chunks[3][1]).to.be.equal(BigNumber.from(0))
-    expect(chunks[4][0]).to.be.equal(gbc.address)
-    expect(chunks[4][1]).to.be.equal(BigNumber.from(0))
-    expect(chunks[5][0]).to.be.equal(BigNumber.from(10000))
-    expect(chunks[5][1]).to.be.equal(ethers.utils.parseEther("0.02"))
-    expect(chunks[6]).to.be.equal(BigNumber.from(MINTED_TOKEN))
+    expect(await sale.lab()).to.be.equal(lab.address)
+    expect(await sale.wallet()).to.be.equal(BigNumber.from(100))
+    expect(await sale.receiver()).to.be.equal(owner.address)
+    expect(await sale.transaction()).to.be.equal(BigNumber.from(10))
+    expect(await sale.token()).to.be.equal(ZERO_ADDRESS)
+    expect(await sale.finish()).to.be.equal(BigNumber.from(0))
+    expect(await sale.checker()).to.be.equal(gbc.address)
+    expect(await sale.start()).to.be.equal(BigNumber.from(0))
+    expect(await sale.supply()).to.be.equal(BigNumber.from(10000))
+    expect(await sale.cost()).to.be.equal(ethers.utils.parseEther("0.02"))
+    expect(await sale.item()).to.be.equal(BigNumber.from(MINTED_TOKEN))
 
     await grant(sale.address)
   })
