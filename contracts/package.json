@@ -50,6 +50,7 @@
   },
   "dependencies": {
     "@gambitdao/gmx-middleware": "workspace:*",
+    "hardhat-gas-reporter": "^1.0.8",
     "keccak256": "^1.0.6"
   }
 }

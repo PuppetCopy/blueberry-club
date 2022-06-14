@@ -1,4 +1,5 @@
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
+/**
+ * import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { expect } from "chai"
 import { BigNumber } from "ethers"
 import { ethers, network } from "hardhat"
@@ -22,7 +23,7 @@ export enum ROLES {
 
 const MINTED_TOKEN = 100
 
-describe("Public.sol", function () {
+describe.skip("Public.sol", function () {
   let owner: SignerWithAddress
   let bob: SignerWithAddress
   let alice: SignerWithAddress
@@ -102,3 +103,5 @@ describe("Public.sol", function () {
     )
   })
 })
+
+ */

@@ -1,4 +1,5 @@
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
+/**
+ * import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { expect } from "chai"
 import { BigNumber } from "ethers"
 import { ethers } from "hardhat"
@@ -9,8 +10,6 @@ import {
   GBCLab,
   Police,
   Police__factory,
-  MerkleSale as IMerkleSale,
-  MerkleSale__factory as IMerkleSale__factory,
 } from "../../typechain-types"
 import { now } from "../utils"
 
@@ -24,7 +23,7 @@ export enum ROLES {
 
 const MINTED_TOKEN = 100
 
-describe("Merkle.sol", function () {
+describe.skip("Merkle.sol", function () {
   let owner: SignerWithAddress
   let bob: SignerWithAddress
   let alice: SignerWithAddress
@@ -115,3 +114,5 @@ describe("Merkle.sol", function () {
     expect(sale.mint(1, merkle.proof(0))).to.be.revertedWith("LEAF_USED")
   })
 })
+
+ */
