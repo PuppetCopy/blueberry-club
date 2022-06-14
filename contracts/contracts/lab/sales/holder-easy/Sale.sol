@@ -12,6 +12,8 @@ import {GBCLab as Lab} from "../../Lab.sol";
 
 import {SafeTransferLib} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
+import "hardhat/console.sol";
+
 struct SaleState {
     uint128 minted;
     uint8 paused;
@@ -32,18 +34,20 @@ contract HolderSaleEasy is HolderDataEasy, Auth {
         state.paused = 1;
     }
 
-    function mint(uint256[] memory tokens) external {
+    function mint(uint256[] memory tokens) external payable {
         _mint(msg.sender, tokens);
     }
 
     function mintFor(address to, uint256[] memory tokens)
         external
+        payable
         requiresAuth
     {
         _mint(to, tokens);
     }
 
     function _mint(address to, uint256[] memory tokens) internal {
+        console.log("MINT HolderSaleEasy");
         require(tokens.length <= type(uint128).max, "INVALID_TOKENS");
         uint128 amount = uint128(tokens.length);
 

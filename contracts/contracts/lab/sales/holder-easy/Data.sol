@@ -46,10 +46,10 @@ contract HolderDataEasy is Clone {
     }
 
     function cost() public pure returns (uint128) {
-        return uint128(_getArgUint256(228));
+        return uint128(_getArgUint256(240));
     }
 
     function item() public pure returns (uint256) {
-        return _getArgUint256(292);
+        return _getArgUint256(272);
     }
 }
