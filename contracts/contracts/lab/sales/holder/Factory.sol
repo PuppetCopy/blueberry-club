@@ -9,13 +9,13 @@ import {HolderSale} from "./Sale.sol";
 import {Packer} from "../../../lib/Packer.sol";
 
 contract HolderFactory is Auth {
-    event CreateSale(HolderSale indexed sale);
+    event CreateSale(HolderSaleEasy indexed sale);
 
     using ClonesWithImmutableArgs for address;
 
-    HolderSale public immutable saleImplementation;
+    HolderSaleEasy public immutable saleImplementation;
 
-    constructor(HolderSale _saleImplementation, address _owner)
+    constructor(HolderSaleEasy _saleImplementation, address _owner)
         Auth(_owner, Authority(address(0)))
     {
         saleImplementation = _saleImplementation;
@@ -34,17 +34,22 @@ contract HolderFactory is Auth {
         uint128 cost,
         uint256 item,
         address _owner
-    ) external requiresAuth returns (HolderSale sale) {
+    ) external requiresAuth returns (HolderSaleEasy sale) {
         bytes memory data = abi.encodePacked(
-            Packer.pack(lab, wallet),
-            Packer.pack(receiver, transaction),
-            Packer.pack(token, finish),
-            Packer.pack(checker, start),
-            Packer.pack(supply, cost),
+            lab,
+            uint256(wallet),
+            receiver,
+            uint256(transaction),
+            token,
+            uint256(finish),
+            checker,
+            uint256(start),
+            uint256(supply),
+            uint256(cost),
             item
         );
 
-        sale = HolderSale(address(saleImplementation).clone(data));
+        sale = HolderSaleEasy(address(saleImplementation).clone(data));
         sale.initialize(_owner);
 
         emit CreateSale(sale);
