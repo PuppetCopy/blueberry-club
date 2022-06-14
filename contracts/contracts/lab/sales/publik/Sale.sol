@@ -13,7 +13,7 @@ import {GBCLab as Lab} from "../../Lab.sol";
 import {SafeTransferLib} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 struct SaleState {
-    uint128 minted;
+    uint248 minted;
     uint8 paused;
 }
 
@@ -31,17 +31,17 @@ contract PublicSale is PublicData, Auth {
         state.paused = 1;
     }
 
-    function mint(uint128 amount) external payable {
+    function mint(uint248 amount) external payable {
         _mint(msg.sender, amount);
     }
 
-    function mintFor(address to, uint128 amount) external payable requiresAuth {
+    function mintFor(address to, uint248 amount) external payable requiresAuth {
         _mint(to, amount);
     }
 
-    function _mint(address to, uint128 amount) internal {
+    function _mint(address to, uint248 amount) internal {
         SaleState memory state_ = state;
-        uint128 minted_ = state_.minted + amount;
+        uint248 minted_ = state_.minted + amount;
         uint256 mintOf_ = mintOf[to] + amount;
 
         require(start() == 0 || block.timestamp >= start(), "NOT_STARTED");

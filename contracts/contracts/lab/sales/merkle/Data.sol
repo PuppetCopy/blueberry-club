@@ -21,20 +21,20 @@ contract MerkleData is Clone {
         return ERC20(_getArgAddress(40));
     }
 
-    function finish() public pure returns (uint96) {
-        return uint96(_getArgUint256(60));
+    function finish() public pure returns (uint256) {
+        return _getArgUint256(60);
     }
 
-    function start() public pure returns (uint96) {
-        return uint96(_getArgUint256(92));
+    function start() public pure returns (uint256) {
+        return _getArgUint256(92);
     }
 
-    function supply() public pure returns (uint128) {
-        return uint128(_getArgUint256(124));
+    function supply() public pure returns (uint256) {
+        return _getArgUint256(124);
     }
 
-    function cost() public pure returns (uint128) {
-        return uint128(_getArgUint256(156));
+    function cost() public pure returns (uint256) {
+        return _getArgUint256(156);
     }
 
     function item() public pure returns (uint256) {

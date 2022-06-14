@@ -13,7 +13,7 @@ import {GBCLab as Lab} from "../../Lab.sol";
 import {SafeTransferLib} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 struct SaleState {
-    uint128 minted;
+    uint248 minted;
     uint8 paused;
 }
 
@@ -45,11 +45,11 @@ contract HolderSale is HolderData, Auth {
     }
 
     function _mint(address to, uint256[] memory tokens) internal {
-        require(tokens.length <= type(uint128).max, "INVALID_TOKENS");
-        uint128 amount = uint128(tokens.length);
+        require(tokens.length <= type(uint248).max, "INVALID_TOKENS");
+        uint248 amount = uint248(tokens.length);
 
         SaleState memory state_ = state;
-        uint128 minted_ = state_.minted + amount;
+        uint248 minted_ = state_.minted + amount;
         uint256 mintOf_ = mintOf[to] + amount;
 
         require(start() == 0 || block.timestamp >= start(), "NOT_STARTED");

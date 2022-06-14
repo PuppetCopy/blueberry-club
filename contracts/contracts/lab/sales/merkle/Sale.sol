@@ -23,7 +23,7 @@ struct MerkleRule {
 }
 
 struct SaleState {
-    uint128 minted;
+    uint248 minted;
     uint8 paused;
 }
 
@@ -68,9 +68,9 @@ contract MerkleSale is MerkleData, Auth {
         require(!isLeafUsed[leaf], "LEAF_USED");
         require(MerkleProof.verify(proof, root(), leaf), "INVALID_PROOF");
 
-        uint128 amount = rule.amount;
+        uint248 amount = rule.amount;
         address to = rule.to;
-        uint128 cost_;
+        uint256 cost_;
         if (rule.cost > 0) {
             cost_ = rule.cost - 1;
         } else {
@@ -78,7 +78,7 @@ contract MerkleSale is MerkleData, Auth {
         }
 
         SaleState memory state_ = state;
-        uint128 minted_ = state_.minted + amount;
+        uint248 minted_ = state_.minted + amount;
 
         require(start() == 0 || block.timestamp >= start(), "NOT_STARTED");
         require(finish() == 0 || block.timestamp < finish(), "SALE_ENDED");

@@ -13,40 +13,40 @@ contract HolderData is Clone {
         return Lab(_getArgAddress(0));
     }
 
-    function wallet() public pure returns (uint96) {
-        return uint96(_getArgUint256(20));
+    function wallet() public pure returns (uint256) {
+        return _getArgUint256(20);
     }
 
     function receiver() public pure returns (address payable) {
         return payable(_getArgAddress(52));
     }
 
-    function transaction() public pure returns (uint96) {
-        return uint96(_getArgUint256(72));
+    function transaction() public pure returns (uint256) {
+        return _getArgUint256(72);
     }
 
     function token() public pure returns (ERC20) {
         return ERC20(_getArgAddress(104));
     }
 
-    function finish() public pure returns (uint96) {
-        return uint96(_getArgUint256(124));
+    function finish() public pure returns (uint256) {
+        return _getArgUint256(124);
     }
 
     function checker() public pure returns (ERC721) {
         return ERC721(_getArgAddress(156));
     }
 
-    function start() public pure returns (uint96) {
-        return uint96(_getArgUint256(176));
+    function start() public pure returns (uint256) {
+        return _getArgUint256(176);
     }
 
-    function supply() public pure returns (uint128) {
-        return uint128(_getArgUint256(208));
+    function supply() public pure returns (uint256) {
+        return _getArgUint256(208);
     }
 
-    function cost() public pure returns (uint128) {
-        return uint128(_getArgUint256(240));
+    function cost() public pure returns (uint256) {
+        return _getArgUint256(240);
     }
 
     function item() public pure returns (uint256) {

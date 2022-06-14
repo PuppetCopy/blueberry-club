@@ -42,6 +42,10 @@ export class MerkleSale {
     return this.rules[index]
   }
 
+  verify(index: number) {
+    return this.tree.verify(this.proof(index), this.leaf(index), this.root)
+  }
+
   static hash(rule: MerkleRuleStruct) {
     return ethers.utils.solidityKeccak256(
       ["address", "uint128", "uint128"],

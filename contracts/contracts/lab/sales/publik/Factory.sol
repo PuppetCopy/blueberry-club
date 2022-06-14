@@ -23,27 +23,27 @@ contract PublicFactory is Auth {
 
     function deploy(
         address lab,
-        uint96 wallet,
+        uint256 wallet,
         address receiver,
-        uint96 transaction,
+        uint256 transaction,
         address token,
-        uint96 finish,
-        uint96 start,
-        uint128 supply,
-        uint128 cost,
+        uint256 finish,
+        uint256 start,
+        uint256 supply,
+        uint256 cost,
         uint256 item,
         address _owner
     ) external requiresAuth returns (PublicSale sale) {
         bytes memory data = abi.encodePacked(
             lab,
-            uint256(wallet),
+            wallet,
             receiver,
-            uint256(transaction),
+            transaction,
             token,
-            uint256(finish),
-            uint256(start),
-            uint256(supply),
-            uint256(cost),
+            finish,
+            start,
+            supply,
+            cost,
             item
         );
 
