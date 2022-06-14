@@ -2,16 +2,30 @@ import { MerkleTree } from "merkletreejs"
 import keccak256 from "keccak256"
 
 import { ethers } from "hardhat"
+import { MerkleRuleStruct } from "../typechain-types/contracts/lab/sales/merkle/Sale.sol/MerkleSale"
+import { BigNumber, BigNumberish } from "ethers"
+
+type MerkleSaleDefault = {
+  to: string
+  amount?: BigNumberish
+  cost?: BigNumberish
+}
 
 export class MerkleSale {
   tree: MerkleTree
   leaves: string[]
-  whitelist: string[]
+  rules: MerkleRuleStruct[]
   root: string
 
-  constructor(whitelist: string[]) {
-    this.whitelist = whitelist
-    this.leaves = this.whitelist.map((r) => MerkleSale.hash(r))
+  constructor(whitelist: MerkleSaleDefault[]) {
+    this.rules = whitelist.map((d) => {
+      return {
+        to: d.to,
+        amount: d.amount || 1,
+        cost: d.cost != undefined ? BigNumber.from(d.cost).add(1) : 0,
+      }
+    })
+    this.leaves = this.rules.map((r) => MerkleSale.hash(r))
     this.tree = new MerkleTree(this.leaves, keccak256)
     this.root = this.tree.getHexRoot()
   }
@@ -24,11 +38,14 @@ export class MerkleSale {
     return this.leaves[index]
   }
 
-  account(index: number) {
-    return this.whitelist[index]
+  rule(index: number) {
+    return this.rules[index]
   }
 
-  static hash(account: string) {
-    return ethers.utils.solidityKeccak256(["address"], [account])
+  static hash(rule: MerkleRuleStruct) {
+    return ethers.utils.solidityKeccak256(
+      ["address", "uint128", "uint128"],
+      [rule.to, rule.amount, rule.cost]
+    )
   }
 }

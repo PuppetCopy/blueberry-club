@@ -59,7 +59,7 @@ contract HolderSale is HolderData, Auth {
             "MAX_TRANSACTION"
         );
         require(wallet() == 0 || mintOf_ <= wallet(), "MAX_WALLET");
-        require(supply() == 0 || minted_ <= supply(), "MAX_WALLET");
+        require(supply() == 0 || minted_ <= supply(), "MAX_SUPPLY");
         require(state_.paused == 1, "SALE_PAUSED");
 
         for (uint256 i = 0; i < amount; ) {

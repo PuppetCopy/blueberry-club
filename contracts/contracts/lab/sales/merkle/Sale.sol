@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import {Auth, Authority} from "../../../lib/Auth.sol";
 
-import {PublicData} from "./Data.sol";
+import {MerkleData} from "./Data.sol";
 
 import {ERC721} from "@rari-capital/solmate/src/tokens/ERC721.sol";
 import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";
@@ -12,12 +12,22 @@ import {GBCLab as Lab} from "../../Lab.sol";
 
 import {SafeTransferLib} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
+import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+
+import "hardhat/console.sol";
+
+struct MerkleRule {
+    address to;
+    uint128 amount;
+    uint128 cost;
+}
+
 struct SaleState {
     uint128 minted;
     uint8 paused;
 }
 
-contract PublicSale is PublicData, Auth {
+contract MerkleSale is MerkleData, Auth {
     using SafeTransferLib for ERC20;
 
     event Pause(address executor, bool isPaused);
@@ -25,46 +35,66 @@ contract PublicSale is PublicData, Auth {
     SaleState public state;
 
     mapping(address => uint256) public mintOf;
+    mapping(bytes32 => bool) public isLeafUsed;
 
     function initialize(address _owner) external {
         __Auth_init(_owner, Authority(address(0)));
         state.paused = 1;
     }
 
-    function mint(uint128 amount) external payable {
-        _mint(msg.sender, amount);
+    function hash(MerkleRule memory rule) public pure returns (bytes32) {
+        return keccak256(abi.encodePacked(rule.to, rule.amount, rule.cost));
     }
 
-    function mintFor(address to, uint128 amount) external payable requiresAuth {
-        _mint(to, amount);
+    function mint(MerkleRule memory rule, bytes32[] memory proof)
+        external
+        payable
+    {
+        require(rule.to == msg.sender, "INVALID_SENDER");
+        _mint(rule, proof);
     }
 
-    function _mint(address to, uint128 amount) internal {
+    function mintFor(MerkleRule memory rule, bytes32[] memory proof)
+        external
+        payable
+        requiresAuth
+    {
+        _mint(rule, proof);
+    }
+
+    function _mint(MerkleRule memory rule, bytes32[] memory proof) internal {
+        bytes32 leaf = hash(rule);
+
+        require(!isLeafUsed[leaf], "LEAF_USED");
+        require(MerkleProof.verify(proof, root(), leaf), "INVALID_PROOF");
+
+        uint128 amount = rule.amount;
+        address to = rule.to;
+        uint128 cost_;
+        if (rule.cost > 0) {
+            cost_ = rule.cost - 1;
+        } else {
+            cost_ = cost();
+        }
+
         SaleState memory state_ = state;
         uint128 minted_ = state_.minted + amount;
-        uint256 mintOf_ = mintOf[to] + amount;
 
         require(start() == 0 || block.timestamp >= start(), "NOT_STARTED");
         require(finish() == 0 || block.timestamp < finish(), "SALE_ENDED");
-        require(
-            transaction() == 0 || amount <= transaction(),
-            "MAX_TRANSACTION"
-        );
-        require(wallet() == 0 || mintOf_ <= wallet(), "MAX_WALLET");
         require(supply() == 0 || minted_ <= supply(), "MAX_SUPPLY");
         require(state_.paused == 1, "SALE_PAUSED");
 
         state = SaleState(minted_, 1);
-        mintOf[to] = mintOf_;
 
-        if (cost() > 0) {
+        if (cost_ > 0) {
             if (address(token()) == address(0)) {
-                receiver().transfer(cost() * amount);
+                receiver().transfer(cost_ * amount);
             } else {
                 token().safeTransferFrom(
                     msg.sender,
                     receiver(),
-                    cost() * amount
+                    cost_ * amount
                 );
             }
         }
