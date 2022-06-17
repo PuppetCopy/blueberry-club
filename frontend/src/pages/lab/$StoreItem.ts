@@ -3,39 +3,46 @@ import { style, $text } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { screenUtils, $column, layoutSheet, $row } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { LabItemSale, saleMaxSupply, saleLastDate } from "@gambitdao/gbc-middleware"
+import { LabItemSale, saleMaxSupply, MintRule } from "@gambitdao/gbc-middleware"
 import { unixTimestampNow, timeSince, readableNumber, formatFixed } from "@gambitdao/gmx-middleware"
 import { $Link } from "@gambitdao/ui-components"
-import { empty, map } from "@most/core"
+import { map, multicast } from "@most/core"
 import { $labItem } from "../../logic/common"
 import { getMintCount } from "../../logic/contract/sale"
-import { mintLabelMap } from "../../logic/mappings/label"
+import { mintLabelMap } from "@gambitdao/gbc-middleware/src/mappings/label"
 
-export const $StoreItemPreview = (item: LabItemSale, parentRoute: Route, changeRouteTether: Tether<string, string>) => {
+export const $StoreItemPreview = (item: LabItemSale, rule: MintRule, parentRoute: Route, changeRouteTether: Tether<string, string>) => {
   const max = saleMaxSupply(item)
 
-  const activeMint = saleLastDate(item)
+  const mintCount = multicast(getMintCount(rule, 15000))
 
   const supplyLeft = map(amount => {
     const count = max - Number(amount)
     return count ? `${count} left` : 'Sold Out'
-  }, getMintCount(item.contractAddress, 15000))
+  }, mintCount)
 
   const unixTime = unixTimestampNow()
-  const currentSaleType = mintLabelMap[activeMint.type]
-  const upcommingSaleDate = activeMint.start
+  const upcommingSaleDate = rule.start
 
   const isSaleUpcomming = upcommingSaleDate > unixTime
+  const price = rule.cost
+
+  const mintPriceEth = price === 0n ? 'Free' : formatFixed(price, 18) + ' ETH'
+
+  const currentSaleType = mintLabelMap[rule.type]
 
   const statusLabel = isSaleUpcomming ?
     `${currentSaleType} in ` + timeSince(upcommingSaleDate)
     : currentSaleType
 
-  const price = activeMint.cost
 
-  const mintPriceEth = price === 0n ? 'Free' : readableNumber(formatFixed(price, 18)) + ' ETH'
-
-
+  const $saleRuleType = $row(style({ borderRadius: '8px', overflow: 'hidden', position: 'absolute', top: screenUtils.isDesktopScreen ? '15px' : '8px', left: screenUtils.isDesktopScreen ? '15px' : '8px', }))(
+    $text(
+      style({ fontWeight: 'bold', backgroundColor: pallete.background, fontSize: '.65em', padding: '5px 10px', color: pallete.message }),
+    )(
+      statusLabel
+    )
+  )
 
   return $Link({
     url: `/p/item/${item.id}`,
@@ -44,9 +51,7 @@ export const $StoreItemPreview = (item: LabItemSale, parentRoute: Route, changeR
     $content: $column(layoutSheet.spacingSmall, style({ position: 'relative', flexDirection: 'column' }))(
       $column(style({ position: 'relative' }))(
         $labItem(item.id, screenUtils.isDesktopScreen ? 173 : 160, true, true),
-        statusLabel ? $text(style({ fontWeight: 'bold', position: 'absolute', top: screenUtils.isDesktopScreen ? '15px' : '8px', left: screenUtils.isDesktopScreen ? '15px' : '8px', fontSize: '.75em', padding: '5px 10px', color: pallete.message, borderRadius: '8px', backgroundColor: pallete.background }))(
-          statusLabel
-        ) : empty(),
+        $saleRuleType,
       ),
       $text(style({ fontWeight: 'bold' }))(item.name),
 

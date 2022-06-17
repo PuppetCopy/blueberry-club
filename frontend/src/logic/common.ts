@@ -5,7 +5,7 @@ import { Stream } from "@most/types"
 import { $loadBerry } from "../components/$DisplayBerry"
 import { IValueInterval } from "../components/$StakingGraph"
 import { IBerryDisplayTupleMap, getLabItemTupleIndex, IAttributeExpression, USE_CHAIN, IAttributeBackground, IAttributeMappings, IBerryLabItems, IToken } from "@gambitdao/gbc-middleware"
-import tokenIdAttributeTuple from "./mappings/tokenIdAttributeTuple"
+import tokenIdAttributeTuple from "@gambitdao/gbc-middleware/src/mappings/tokenIdAttributeTuple"
 import { IPricefeed, IStakeSource, queryLatestPrices, queryTokenv2 } from "./query"
 import { $Node, $svg, attr, style } from "@aelea/dom"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
@@ -148,7 +148,7 @@ export const $labItemAlone = (id: number, size = 80) => {
     style({  })
   )(
     tap(async ({ element }) => {
-      const svgParts = (await import("../logic/mappings/svgParts")).default
+      const svgParts = (await import("@gambitdao/gbc-middleware/src/mappings/svgParts")).default
 
       // @ts-ignore
       element.innerHTML = svgParts[state][id]

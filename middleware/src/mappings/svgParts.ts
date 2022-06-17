@@ -1,14 +1,4 @@
-import { IAttributeBody, IAttributeBackground, IAttributeClothes, IAttributeFaceAccessory, IAttributeHat, IAttributeExpression } from "@gambitdao/gbc-middleware"
-
-export type SvgPartsMap = [
-  { [p in IAttributeBackground]: string },
-  { [p in IAttributeClothes]: string },
-  { [p in IAttributeBody]: string },
-  { [p in IAttributeExpression]: string },
-  { [p in IAttributeFaceAccessory]: string },
-  { [p in IAttributeHat]: string },
-]
-
+import { IAttributeBackground, IAttributeBody, IAttributeClothes, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat, SvgPartsMap } from "../types"
 
 const blueberryBody = `<path d="M775 1185c231.41 0 419-168.12 419-375.5 0-207.383-187.59-375.5-419-375.5-231.407 0-419 168.117-419 375.5 0 207.38 187.593 375.5 419 375.5z" fill="url(#prefix__body)"/><path d="M775 1185c231.41 0 419-168.12 419-375.5 0-207.383-187.59-375.5-419-375.5-231.407 0-419 168.117-419 375.5 0 207.38 187.593 375.5 419 375.5z" stroke="#000" stroke-width="20"/><defs><linearGradient id="prefix__body" x1="417" y1="495.5" x2="1096" y2="1147" gradientUnits="userSpaceOnUse"><stop stop-color="#BFC7FF"/><stop offset="1" stop-color="#8C95CF"/></linearGradient></defs>`
 

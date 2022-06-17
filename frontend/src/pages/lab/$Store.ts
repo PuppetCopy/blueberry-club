@@ -54,8 +54,8 @@ export const $LabStore = ({ walletLink, parentRoute }: ILabStore) => component((
         ),
 
         $row(screenUtils.isDesktopScreen ? style({ gap: '50px', placeContent: 'center', flexWrap: 'wrap' }) : O(layoutSheet.spacingBig, style({ overflow: 'hidden', placeContent: 'space-evenly', flexWrap: 'wrap' })))(
-          ...saleDescriptionList.map(item =>
-            $StoreItemPreview(item, parentRoute, changeRouteTether)
+          ...saleDescriptionList.flatMap(item => item.mintRuleList.map(rule => ({ rule, item }))).map(({ item, rule }) =>
+            $StoreItemPreview(item, rule, parentRoute, changeRouteTether)
           )
         ),
       ),

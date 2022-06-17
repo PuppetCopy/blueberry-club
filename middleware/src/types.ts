@@ -366,7 +366,7 @@ export enum IAttributeBackground {
 export enum SaleType {
   Public,
   holder,
-  private,
+  whitelist,
 }
 
 export type IBerryDisplayTupleMap = [
@@ -380,24 +380,37 @@ export type IBerryDisplayTupleMap = [
 
 export type ILabAttributeOptions = typeof IAttributeBackground | typeof IAttributeClothes | typeof IAttributeHat | typeof IAttributeFaceAccessory
 
+export type SvgPartsMap = [
+  { [p in IAttributeBackground]: string },
+  { [p in IAttributeClothes]: string },
+  { [p in IAttributeBody]: string },
+  { [p in IAttributeExpression]: string },
+  { [p in IAttributeFaceAccessory]: string },
+  { [p in IAttributeHat]: string },
+]
 
 export interface MintAccountRule {
-  maxMintable: number
-}
-
-export interface MintRuleConfig extends MintAccountRule {
+  supply: number // uint120
   cost: bigint // uint208
+  accountLimit: number // uint120
   start: number // uint64
-  transaction: number // uint120
-  amount: number // uint120
   finish: number // uint64
 }
 
-export interface MintState {
-  minted: number // uint120
-  max: number // uint120
-  paused: number // uint8
+
+export interface LabItemSale {
+  id: number // mapped to global unique ID
+  name: string // displays in UI
+  description: string // dispolays in UI
+
+  mintRuleList: MintRule[]
 }
+
+
+export interface MintRuleConfig extends MintAccountRule {
+  contractAddress: string
+}
+
 
 export interface MintPublic extends MintRuleConfig {
   type: SaleType.Public,
@@ -409,7 +422,7 @@ export interface MintHolder extends MintRuleConfig {
 }
 
 export interface MintPrivate extends MintRuleConfig {
-  type: SaleType.private
+  type: SaleType.whitelist
 
   nonce: number // uint120
   addressList: string[]
@@ -417,14 +430,5 @@ export interface MintPrivate extends MintRuleConfig {
 }
 
 export type MintRule = MintPublic | MintHolder | MintPrivate
-
-export interface LabItemSale {
-  contractAddress: string
-  id: number // mapped to global unique ID
-  name: string // displays in UI
-  description: string // dispolays in UI
-
-  mintRuleList: MintRule[]
-}
 
 

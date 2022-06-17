@@ -18,7 +18,7 @@ import { WALLET } from "../../logic/provider"
 import { $ButtonPrimary } from "../form/$Button"
 import { $Dropdown, $defaultSelectContainer } from "../form/$Dropdown"
 import { $displayMintEvents } from "./mintUtils2"
-import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
+import { $IntermediateConnectButton } from "../$ConnectAccount"
 
 
 
@@ -37,7 +37,7 @@ interface MintCmp {
 }
 
 
-export const $PrivateMint = (config: MintCmp) => component((
+export const $WhitelistMint = (config: MintCmp) => component((
   [clickMintPublic, clickMintPublicTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
   [customNftAmount, customNftAmountTether]: Behavior<INode, number>,
   [selectMintAmount, selectMintAmountTether]: Behavior<number, number>,
@@ -48,14 +48,14 @@ export const $PrivateMint = (config: MintCmp) => component((
   const hasAccount = map(address => address && !ETH_ADDRESS_REGEXP.test(address), config.walletLink.account)
 
   const supportedNetwork = map(x => x !== USE_CHAIN, config.walletLink.network)
-  const mintCount = getMintCount(config.item.contractAddress)
+  const mintCount = getMintCount(config.mintRule)
 
-  const totalMintedChange = takeUntilLast(isLive => Number(isLive) === config.mintRule.amount, mintCount)
+  const totalMintedChange = takeUntilLast(isLive => Number(isLive) === config.mintRule.supply, mintCount)
 
-  const saleWallet = connectPrivateSale(config.walletLink, config.item.contractAddress)
+  const saleWallet = connectPrivateSale(config.walletLink, config.mintRule.contractAddress)
   const labWallet = connectLab(config.walletLink)
 
-  const hasMintEnded = skipRepeats(map(amount => Number(amount) === config.mintRule.amount, totalMintedChange))
+  const hasMintEnded = skipRepeats(map(amount => Number(amount) === config.mintRule.supply, totalMintedChange))
   const accountChange = merge(hasAccount, supportedNetwork)
   const selectedMintAmount = merge(customNftAmount, selectMintAmount)
 
@@ -111,7 +111,7 @@ export const $PrivateMint = (config: MintCmp) => component((
                   if (target instanceof HTMLElement) {
                     const val = Number(target.innerText)
 
-                    return target.innerText !== '' && isFinite(val) && val > 0 && val <= config.mintRule.transaction ? val : state
+                    return target.innerText !== '' && isFinite(val) && val > 0 && val <= config.mintRule.accountLimit ? val : state
                   }
 
                   if (state === null) {
@@ -131,7 +131,7 @@ export const $PrivateMint = (config: MintCmp) => component((
             $container: $defaultSelectContainer(style({})),
             value: startWith(null, customNftAmount),
             $$option: map(option => $text(String(option))),
-            list: [1, 2, 3, 5, 10, 20].filter(n => Number(config.mintRule.transaction) >= n),
+            list: [1, 2, 3, 5, 10, 20].filter(n => Number(config.mintRule.accountLimit) >= n),
           }
         })({
           select: selectMintAmountTether()
@@ -172,10 +172,10 @@ export const $PrivateMint = (config: MintCmp) => component((
 
                   const value = BigInt(selectedMintAmount) * config.mintRule.cost
 
-                  const { cost, start, transaction, amount, nonce } = config.mintRule
+                  const { cost, start, accountLimit, finish, nonce, supply } = config.mintRule
 
 
-                  const contractAction = saleContract.merkleMint({ cost, start, transaction, amount, to: account.toLowerCase(), nonce }, proof, selectedMintAmount, { value })
+                  const contractAction = saleContract.mint(nonce, { cost, start, accountLimit, finish, supply }, proof, selectedMintAmount, { value })
 
                   return contractAction
 

@@ -13,7 +13,7 @@ import { $berryTileId } from "../../components/$common"
 import { fadeIn } from "../../transitions/enter"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
 import { $loadBerry } from "../../components/$DisplayBerry"
-import tokenIdAttributeTuple from "../../logic/mappings/tokenIdAttributeTuple"
+import tokenIdAttributeTuple from "@gambitdao/gbc-middleware/src/mappings/tokenIdAttributeTuple"
 import { $caretDown } from "../../elements/$icons"
 import { $alert, $arrowsFlip, $IntermediateTx, $xCross } from "@gambitdao/ui-components"
 import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
@@ -179,7 +179,7 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
     $responsiveFlex(style({ placeContent: 'space-between' }), style(screenUtils.isDesktopScreen ? { gap: '125px' } : { gap: '105px' }))(
 
       $column(layoutSheet.spacing, style({ flexDirection: screenUtils.isMobileScreen ? 'column-reverse' : 'column' }))(
-        $row(style({ alignItems: 'center', alignSelf: 'center', borderRadius: '30px', backgroundColor: pallete.middleground, position: 'relative', placeContent: 'center', minWidth: previewSize + 'px', width: previewSize + 'px', height: previewSize + 'px' }))(
+        $row(style({ alignItems: 'center', alignSelf: 'center', borderRadius: '30px', backgroundColor: pallete.horizon, position: 'relative', placeContent: 'center', minWidth: previewSize + 'px', width: previewSize + 'px', height: previewSize + 'px' }))(
 
           $node(style({ display: 'flex', flexDirection: 'column', position: 'absolute', gap: '16px', alignItems: 'center', placeContent: 'center', ...screenUtils.isDesktopScreen ? { width: '0px', right: 0, top: 0, bottom: 0 } : { height: 0, bottom: '-15px', flexDirection: 'row' } }))(
             switchLatest(combineArray(((a, b, c) => {
@@ -498,8 +498,8 @@ const $ItemSlot = ({ selectedSlot, change, gbcItemId, slot, slotLabel }: ItemSlo
       height: itemSizePx, minWidth: itemSizePx, borderRadius: '12.75px', gap: '1px', overflow: 'hidden', boxShadow: '-1px 2px 7px 2px #0000002e',
       position: 'relative', backgroundColor: pallete.background, border: `2px solid`, cursor: 'pointer'
     }),
-    stylePseudo(':hover', { borderColor: pallete.primary }),
-    style(selectedSlot === slot ? { borderColor: pallete.primary, cursor: 'default' } : { borderColor: pallete.middleground })
+    stylePseudo(':hover', { borderColor: pallete.middleground }),
+    style(selectedSlot === slot ? { borderColor: pallete.primary, pointerEvents: 'none' } : { borderColor: pallete.horizon })
   )
 
   const canRemove = item && change?.isRemove !== true
@@ -515,7 +515,7 @@ const $ItemSlot = ({ selectedSlot, change, gbcItemId, slot, slotLabel }: ItemSlo
         gbcItemId && isSwap && !isGbcItemRemove ? $itemWrapper($labItem(gbcItemId, itemSize)) : empty(),
         gbcItemId && isSwap && !isGbcItemRemove ? style({ left: '50%', top: '50%', marginLeft: '-12px', marginTop: '-12px', pointerEvents: 'none' })($iconCircular($arrowsFlip, pallete.background)) : empty(),
         $itemWrapper(style({ width: isSwap && canRemove ? '65px' : itemSizePx }))(
-          item ? style({ borderRadius: 0, filter: change?.isRemove ? 'saturate(0) brightness(0.2)' : '' }, $labItem(item, itemSize, false)) : $row(style({ flex: 1, alignItems: 'center', placeContent: 'center', color: pallete.middleground, fontSize: '.65em' }))($text(slotLabel))
+          item ? style({ borderRadius: 0, filter: change?.isRemove ? 'saturate(0) brightness(0.2)' : '' }, $labItem(item, itemSize, false)) : $row(style({ flex: 1, alignItems: 'center', placeContent: 'center', color: pallete.horizon, fontSize: '.65em' }))($text(slotLabel))
         )
       )
     ),

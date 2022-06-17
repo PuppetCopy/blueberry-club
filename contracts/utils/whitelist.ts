@@ -11,7 +11,7 @@ export function getMerkleProofs(addressList: string[], mintRules: MintPrivate) {
   const leaves = addressListNormalized.map(account => {
     const leaf = solidityKeccak256(
       ['address', 'uint208', 'uint64', 'uint120', 'uint120', 'uint96'],
-      [account, mintRules.cost, mintRules.start, mintRules.transaction, mintRules.amount, mintRules.nonce]
+      [account, mintRules.accountLimit, mintRules.start, mintRules.transaction, mintRules.amount, mintRules.nonce]
     )
 
     return { account, leaf }

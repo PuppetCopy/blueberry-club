@@ -16,10 +16,10 @@ import { $loadBerry } from "../components/$DisplayBerry"
 import { $ButtonPrimary, $ButtonSecondary } from "../components/form/$Button"
 import { $accountRef, $card, $responsiveFlex, $txnIconLink } from "../elements/$common"
 import { $tofunft } from "../elements/$icons"
-import tokenIdAttributeTuple from "../logic/mappings/tokenIdAttributeTuple"
+import tokenIdAttributeTuple from "@gambitdao/gbc-middleware/src/mappings/tokenIdAttributeTuple"
 import { queryToken, queryTokenv2 } from "../logic/query"
 import { IToken, ITransfer } from "@gambitdao/gbc-middleware"
-import { attributeIndexToLabel } from "../logic/mappings/label"
+import { attributeIndexToLabel } from "@gambitdao/gbc-middleware/src/mappings/label"
 
 export function bnToHex(n: bigint) {
   return '0x' + n.toString(16)

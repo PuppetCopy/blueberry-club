@@ -42,15 +42,16 @@ export const saleDescriptionList: LabItemSale[] = [
     name: "Lab Flask",
     description: `To celebrate the Blueberry Lab, we are offering this Lab Flask to those who have used the Blueberry Lab Testnet.`,
     id: IAttributeMappings["Lab Flask"],
-    contractAddress: "0x555de9Ced3F1d854751b4D3d3676Cfa3bA54BDFb",
     mintRuleList: [
       {
-        amount: 171,
-        type: SaleType.private,
+        supply: 171,
+        type: SaleType.whitelist,
         cost: 0n,
         nonce: 0,
+        contractAddress: "0x555de9Ced3F1d854751b4D3d3676Cfa3bA54BDFb",
         start: toTime(2022, 5, 7, 22),
-        transaction: 1,
+        finish: toTime(2022, 6, 7, 22),
+        accountLimit: 1,
         addressList: [
           "0x0043f8113eb1257bc6314fe0434eec0d9bac3837",
           "0x0065058668b350bee2763d43d14ff293d916b106",
@@ -232,15 +233,16 @@ export const saleDescriptionList: LabItemSale[] = [
     name: "GBC x Giorgio Balbi",
     description: `Abstract Generative Background by the Talented Giorgio Balbi.`,
     id: IAttributeMappings["GBC x Giorgio Balbi"],
-    contractAddress: "0x89991C609A04970141d0a88e6179f862b34c0303",
     mintRuleList: [
       {
-        amount: 100,
-        type: SaleType.private,
+        supply: 100,
+        type: SaleType.whitelist,
         cost: 0n,
         nonce: 0,
+        contractAddress: "0x89991C609A04970141d0a88e6179f862b34c0303",
         start: toTime(2022, 5, 7, 22),
-        transaction: 1,
+        finish: toTime(2022, 6, 7, 22),
+        accountLimit: 1,
         addressList: [
           "0xDD1E0799211d06217d4DdF34586f994CC9B4e6F0",
           "0x959cf04483aF209A5E5e8592FeaF94c848382dfd",
@@ -350,15 +352,16 @@ export const saleDescriptionList: LabItemSale[] = [
     name: "GLP Shirt",
     description: "The perfect shirt for chilling out while GLP gives you passive income. Free claim for the first Blueberry Lab Item",
     id: IAttributeMappings["GLP Shirt"],
-    contractAddress: "0xe1822ABcF26A86151651449d7122220dC07d8301",
     mintRuleList: [
       {
-        amount: 800,
+        supply: 800,
         type: SaleType.holder,
         walletMintable: 50,
         cost: 0n,
+        contractAddress: "0xe1822ABcF26A86151651449d7122220dC07d8301",
         start: toTime(2022, 5, 7, 22),
-        transaction: 50
+        finish: toTime(2022, 6, 7, 22),
+        accountLimit: 50
       }
     ]
   },

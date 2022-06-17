@@ -44,15 +44,15 @@ export const $PublicMint = (config: MintCmp) => component((
   const hasAccount = map(address => address && !ETH_ADDRESS_REGEXP.test(address), config.walletLink.account)
 
   const supportedNetwork = map(x => x !== USE_CHAIN, config.walletLink.network)
-  const mintCount = getMintCount(config.item.contractAddress)
+  const mintCount = getMintCount(config.mintRule)
 
-  const totalMintedChange = takeUntilLast(isLive => Number(isLive) === config.mintRule.amount, mintCount)
+  const totalMintedChange = takeUntilLast(isLive => Number(isLive) === config.mintRule.supply, mintCount)
 
-  const saleWallet = connectPublic(config.walletLink, config.item.contractAddress)
+  const saleWallet = connectPublic(config.walletLink, config.mintRule.contractAddress)
   
   const labWallet = connectLab(config.walletLink)
 
-  const hasMintEnded = skipRepeats(map(amount => Number(amount) === config.mintRule.amount, totalMintedChange))
+  const hasMintEnded = skipRepeats(map(amount => Number(amount) === config.mintRule.supply, totalMintedChange))
   const accountChange = merge(hasAccount, supportedNetwork)
   const selectedMintAmount = merge(customNftAmount, selectMintAmount)
 
@@ -64,8 +64,10 @@ export const $PublicMint = (config: MintCmp) => component((
     selectedMintAmount: null, account: null
   } as IFormState)
 
+
   return [
     $column(layoutSheet.spacing)(
+
       $row(layoutSheet.spacing, style({ flexWrap: 'wrap', alignItems: 'center' }))(
         $Dropdown({
           openMenuOp: tap(event => {
@@ -99,7 +101,7 @@ export const $PublicMint = (config: MintCmp) => component((
                   if (target instanceof HTMLElement) {
                     const val = Number(target.innerText)
 
-                    return target.innerText !== '' && isFinite(val) && val > 0 && val <= config.mintRule.transaction ? val : state
+                    return target.innerText !== '' && isFinite(val) && val > 0 && val <= config.mintRule.accountLimit ? val : state
                   }
 
                   if (state === null) {
@@ -119,7 +121,7 @@ export const $PublicMint = (config: MintCmp) => component((
             $container: $defaultSelectContainer(style({})),
             value: startWith(null, customNftAmount),
             $$option: map(option => $text(String(option))),
-            list: [1, 2, 3, 5, 10, 20].filter(n => Number(config.mintRule.transaction) >= n),
+            list: [...[1, 2, 3, 5, 10, 20].filter(n => Number(config.mintRule.accountLimit) > n), config.mintRule.accountLimit],
           }
         })({
           select: selectMintAmountTether()
@@ -156,7 +158,7 @@ export const $PublicMint = (config: MintCmp) => component((
                   }
                   const value = BigInt(selectedMintAmount) * config.mintRule.cost
 
-                  const contractAction = saleContract.publicMint(selectedMintAmount, { value })
+                  const contractAction = saleContract.mint(selectedMintAmount, { value })
 
                   return contractAction
                 }, combineObject({ formState, saleContract: saleWallet.contract, account: config.walletLink.account })),

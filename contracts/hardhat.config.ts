@@ -1,11 +1,12 @@
 
+import { CHAIN, NETWORK_METADATA } from '@gambitdao/gmx-middleware'
+
 import { HardhatUserConfig, task } from "hardhat/config"
 import "@nomiclabs/hardhat-etherscan"
 import "@nomiclabs/hardhat-waffle"
 import "@typechain/hardhat"
 
 import dotenv from "dotenv"
-import { CHAIN, NETWORK_METADATA } from '@gambitdao/gmx-middleware'
 dotenv.config({ path: '../.env' })
 
 const key = process.env.ACCOUNT

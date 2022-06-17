@@ -97,12 +97,12 @@ export const $RiskLiquidator = (pos: ITradeOpen, markPrice: Stream<bigint>) => c
 
 export const $labeledDivider = (label: string) => {
   return $row(layoutSheet.spacing, style({ placeContent: 'center', alignItems: 'center' }))(
-    $column(style({ flex: 1, borderBottom: `1px solid ${pallete.middleground}` }))(),
+    $column(style({ flex: 1, borderBottom: `1px solid ${pallete.horizon}` }))(),
     $row(layoutSheet.spacingSmall, style({ color: pallete.foreground, alignItems: 'center' }))(
       $text(style({ fontSize: '75%' }))(label),
       $icon({ $content: $caretDblDown, width: '10px', viewBox: '0 0 32 32', fill: pallete.foreground }),
     ),
-    $column(style({ flex: 1, borderBottom: `1px solid ${pallete.middleground}` }))(),
+    $column(style({ flex: 1, borderBottom: `1px solid ${pallete.horizon}` }))(),
   )
 }
 
