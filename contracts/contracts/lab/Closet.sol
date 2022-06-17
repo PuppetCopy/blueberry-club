@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "hardhat/console.sol";
 
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {GBCLab} from "../token/GBCL.sol";
+import {GBCLab} from "./Lab.sol";
 import {Auth, Authority} from "@rari-capital/solmate/src/auth/Auth.sol";
 import {ERC1155TokenReceiver} from "@rari-capital/solmate/src/tokens/ERC1155.sol";
 
@@ -14,7 +14,6 @@ import {ERC1155TokenReceiver} from "@rari-capital/solmate/src/tokens/ERC1155.sol
  * @notice Permit GBC holders add and remove items from lab to their GBC
  */
 contract Closet is ERC1155TokenReceiver {
-
     uint256 constant DEAD_INDEX = type(uint256).max;
 
     event Set(uint256 indexed token, uint256[] deposits, uint256[] whithdraws);
@@ -35,16 +34,19 @@ contract Closet is ERC1155TokenReceiver {
     /// @notice Let user appove plugin
     mapping(address => mapping(address => bool)) public pluginApproval;
 
-
-    IERC721 immutable public GBC;
-    GBCLab immutable public LAB;
+    IERC721 public immutable GBC;
+    GBCLab public immutable LAB;
 
     constructor(IERC721 _gbc, GBCLab _lab) {
         GBC = _gbc;
         LAB = _lab;
     }
 
-    function get(uint256 token, uint256 start, uint256 size) external view returns (uint256[] memory) {
+    function get(
+        uint256 token,
+        uint256 start,
+        uint256 size
+    ) external view returns (uint256[] memory) {
         uint256 length = ownedLength[token];
 
         if (start >= length) {
@@ -66,12 +68,20 @@ contract Closet is ERC1155TokenReceiver {
         return owned;
     }
 
-    function isWearing(uint256 token, uint256 item) external view returns(bool) {
+    function isWearing(uint256 token, uint256 item)
+        external
+        view
+        returns (bool)
+    {
         uint256 index = itemsIndex[token][item];
         return (index != 0 && index != DEAD_INDEX);
     }
 
-    function isWearing(uint256 token, uint256[] memory items) external view returns(bool[] memory) {
+    function isWearing(uint256 token, uint256[] memory items)
+        external
+        view
+        returns (bool[] memory)
+    {
         uint256 length = items.length;
         bool[] memory wearings = new bool[](length);
         for (uint256 i = 0; i < length; i++) {
@@ -81,7 +91,12 @@ contract Closet is ERC1155TokenReceiver {
         return wearings;
     }
 
-    function set(uint256 token, uint256[] calldata deposits, uint256[] calldata withdraws, address receiver) external {
+    function set(
+        uint256 token,
+        uint256[] calldata deposits,
+        uint256[] calldata withdraws,
+        address receiver
+    ) external {
         if (GBC.ownerOf(token) != msg.sender) revert NotOwner();
         _deposit(msg.sender, token, deposits);
         _withdraw(receiver, token, withdraws);
@@ -89,7 +104,13 @@ contract Closet is ERC1155TokenReceiver {
         emit Set(token, deposits, withdraws);
     }
 
-    function setForAccount(address account, uint256 token, uint256[] calldata deposits, uint256[] calldata withdraws, address receiver) external {
+    function setForAccount(
+        address account,
+        uint256 token,
+        uint256[] calldata deposits,
+        uint256[] calldata withdraws,
+        address receiver
+    ) external {
         if (!pluginApproval[account][msg.sender]) revert PluginNotApproved();
         if (GBC.ownerOf(token) != account) revert NotOwner();
 
@@ -103,11 +124,15 @@ contract Closet is ERC1155TokenReceiver {
         pluginApproval[msg.sender][plugin] = approved;
     }
 
-    function _deposit(address owner, uint256 token, uint256[] calldata items) internal {
+    function _deposit(
+        address owner,
+        uint256 token,
+        uint256[] calldata items
+    ) internal {
         uint256 nextIndex = ownedLength[token];
         uint256 length = items.length;
         uint256[] memory amounts = new uint256[](length);
-        for (uint256 i = 0; i < length;) {
+        for (uint256 i = 0; i < length; ) {
             uint256 item = items[i];
 
             _validDeposit(itemsIndex[token][item]);
@@ -126,11 +151,15 @@ contract Closet is ERC1155TokenReceiver {
         LAB.safeBatchTransferFrom(owner, address(this), items, amounts, "");
     }
 
-    function _withdraw(address receiver, uint256 token, uint256[] calldata items) internal {
+    function _withdraw(
+        address receiver,
+        uint256 token,
+        uint256[] calldata items
+    ) internal {
         uint256 lastIndex = ownedLength[token];
         uint256 length = items.length;
         uint256[] memory amounts = new uint256[](length);
-        for (uint256 i = 0; i < length;) {
+        for (uint256 i = 0; i < length; ) {
             uint256 item = items[i];
             uint256 index = itemsIndex[token][item];
 
