@@ -1,6 +1,6 @@
-import { SaleType } from "../types"
+import { SaleType, TraitAppearanceValue } from "../types"
 
-export const attributeIndexToLabel = ['Background', 'Clothes', 'Body', 'Expression', 'Face Accessory', 'Hat']
+export const attributeIndexToLabel: TraitAppearanceValue[] = ['Background', 'Clothes', 'Body', 'Expression', 'Face Accessory', 'Hat']
 
 export const mintLabelMap = {
   [SaleType.Public]: 'Public',

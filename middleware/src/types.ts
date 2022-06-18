@@ -397,6 +397,13 @@ export interface MintAccountRule {
   finish: number // uint64
 }
 
+export type TraitAppearanceValue = 'Background' | 'Clothes' | 'Body' | 'Expression' | 'Face Accessory' | 'Hat'
+export type TraitType = {
+  trait_type: TraitAppearanceValue | 'Slot',
+  value: string
+}
+
+
 
 export interface LabItemSale {
   id: number // mapped to global unique ID
@@ -404,6 +411,7 @@ export interface LabItemSale {
   description: string // dispolays in UI
 
   mintRuleList: MintRule[]
+  attributes: (TraitType)[]
 }
 
 
