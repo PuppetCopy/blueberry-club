@@ -44,14 +44,11 @@ contract PublicSale is PublicData, Auth {
         uint248 minted_ = state_.minted + amount;
         uint256 mintOf_ = mintOf[to] + amount;
 
-        require(start() == 0 || block.timestamp >= start(), "NOT_STARTED");
-        require(finish() == 0 || block.timestamp < finish(), "SALE_ENDED");
-        require(
-            transaction() == 0 || amount <= transaction(),
-            "MAX_TRANSACTION"
-        );
-        require(wallet() == 0 || mintOf_ <= wallet(), "MAX_WALLET");
-        require(supply() == 0 || minted_ <= supply(), "MAX_SUPPLY");
+        require(block.timestamp >= start(), "NOT_STARTED");
+        require(block.timestamp < finish(), "SALE_ENDED");
+        require(amount <= transaction(), "MAX_TRANSACTION");
+        require(mintOf_ <= wallet(), "MAX_WALLET");
+        require(minted_ <= supply(), "MAX_SUPPLY");
         require(state_.paused == 1, "SALE_PAUSED");
 
         state = SaleState(minted_, 1);

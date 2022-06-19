@@ -1,6 +1,6 @@
 import {
   Profile__factory, GBCLab__factory,
-  Police__factory, Closet__factory, GBC__factory
+  Police__factory, Closet__factory, GBC__factory, PublicSale__factory, PublicFactory__factory
 } from "../typechain-types"
 import { AddressZero } from "@gambitdao/gmx-middleware"
 
@@ -42,6 +42,13 @@ const LAB = GBC_ADDRESS.LAB // The Lab items ERC1155 contract
 // on others contract (for now)
 const PROFILE = GBC_ADDRESS.PROFILE
 const CLOSET = GBC_ADDRESS.CLOSET
+
+const PUBLIC_SALE_IMPL = GBC_ADDRESS.PUBLIC_SALE_IMPL
+const PUBLIC_SALE_FACTORY = GBC_ADDRESS.PUBLIC_SALE_FACTORY
+const PRIVATE_SALE_IMPL = GBC_ADDRESS.PRIVATE_SALE_IMPL
+const PRIVATE_SALE_FACTORY = GBC_ADDRESS.PRIVATE_SALE_FACTORY
+const HOLDER_SALE_IMPL = GBC_ADDRESS.HOLDER_SALE_IMPL
+const HOLDER_SALE_FACTORY = GBC_ADDRESS.HOLDER_SALE_FACTORY
 
 
 const main = async () => {
@@ -90,6 +97,20 @@ const main = async () => {
 
   await connectOrDeploy(CLOSET, Closet__factory, gbc.address, lab.address)
 
+  const publicImpl = await connectOrDeploy(PUBLIC_SALE_IMPL, PublicSale__factory)
+  const publicFactory = await connectOrDeploy(PUBLIC_SALE_FACTORY, PublicFactory__factory, publicImpl.address, owner)
+
+  if (getAddress(PUBLIC_SALE_IMPL) === AddressZero) {
+    try {
+      await police.setUserRole(publicImpl.address, ROLES.MINTER, true)
+      console.log(`  - MINTER role setted !`)
+    } catch (error) {
+      console.log(error)
+      console.log(`❌ Actual deployer is not owner of previous police contract`)
+    }
+  }
+
+
   // for (const config of saleDescriptionList) {
   //   console.log(`------------------------------------------------------------------------------\n`)
 
@@ -126,15 +147,7 @@ const main = async () => {
 
   //   console.log(`🎩 Set roles from LAB to ${config.name} SALE`)
 
-  //   if (createMode) {
-  //     try {
-  //       await police.setUserRole(sale.address, ROLES.MINTER, true)
-  //       console.log(`  - MINTER role setted !`)
-  //     } catch (error) {
-  //       console.log(error)
-  //       console.log(`❌ Actual deployer is not owner of previous police contract`)
-  //     }
-  //   }
+
 
   //   console.log()
   //   console.log(`------------------------------------------------------------------------------\n`)

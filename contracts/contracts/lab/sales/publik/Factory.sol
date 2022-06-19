@@ -5,6 +5,7 @@ import {ClonesWithImmutableArgs} from "clones-with-immutable-args/ClonesWithImmu
 import {Auth, Authority} from "@rari-capital/solmate/src/auth/Auth.sol";
 
 import {PublicSale} from "./Sale.sol";
+import {GBCLab} from "../../Lab.sol";
 
 import {Packer} from "../../../lib/Packer.sol";
 
@@ -14,17 +15,16 @@ contract PublicFactory is Auth {
     using ClonesWithImmutableArgs for address;
 
     PublicSale public immutable saleImplementation;
+    GBCLab public immutable LAB;
 
-    constructor(PublicSale _saleImplementation, address _owner)
+    constructor(PublicSale _saleImplementation, address _owner, GBCLab _lab)
         Auth(_owner, Authority(address(0)))
     {
         saleImplementation = _saleImplementation;
+        LAB = _lab;
     }
 
     function deploy(
-        address lab,
-        uint256 wallet,
-        address receiver,
         uint256 transaction,
         address token,
         uint256 finish,
@@ -35,9 +35,9 @@ contract PublicFactory is Auth {
         address _owner
     ) external requiresAuth returns (PublicSale sale) {
         bytes memory data = abi.encodePacked(
-            lab,
-            wallet,
-            receiver,
+            LAB,
+            _owner,
+            _owner,
             transaction,
             token,
             finish,
