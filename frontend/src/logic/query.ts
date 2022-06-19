@@ -584,7 +584,7 @@ const blueberryGraph = prepareClient({
 
 const blueberryGraphV2 = prepareClient({
   fetch: fetch,
-  url: 'https://api.thegraph.com/subgraphs/name/nissoh/blueberry-club-arbitrum',
+  url: 'https://api.thegraph.com/subgraphs/name/nissoh/blueberry-club-rinkeby',
 })
 
 
