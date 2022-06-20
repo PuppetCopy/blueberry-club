@@ -6,7 +6,8 @@
     "codegen": "graph codegen",
     "build": "graph build",
     "build-pre-deploy": "yarn run codegen && yarn run build",
-    "deploy": "yarn run build-pre-deploy && graph deploy --product hosted-service nissoh/blueberry-club-arbitrum"
+    "deploy": "yarn run build-pre-deploy && graph deploy --product hosted-service nissoh/blueberry-club-arbitrum",
+    "deploy:testnet": "yarn run build-pre-deploy && graph deploy --product hosted-service nissoh/blueberry-club-rinkeby subgraph.testnet.yaml"
   },
   "dependencies": {
     "@graphprotocol/graph-ts": "0.27.0"

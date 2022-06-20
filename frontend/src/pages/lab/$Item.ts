@@ -19,6 +19,7 @@ import { $WhitelistMint } from "../../components/mint/$WhitelistMint"
 import { $PublicMint } from "../../components/mint/$PublicMint"
 import { timeChange } from "../../components/mint/mintUtils2"
 import { IEthereumProvider } from "eip1193-provider"
+import { $logo } from "../../common/$icons"
 
 
 interface ILabItem {
@@ -68,11 +69,11 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
 
           $row(layoutSheet.spacingSmall)(
             $icon({
-              $content: $tofunft,
+              $content: $logo,
               viewBox: '0 0 32 32'
             }),
             $anchor(attr({
-              href: `https://tofunft.com/nft/arbi/${GBC_ADDRESS.LAB}`
+              href: `https://stratosnft.io/collection/blueberrylab`
             }))(
               $text('Lab Marketplace')
             ),
@@ -151,15 +152,14 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
                   switchLatest(map(amount => {
                     const count = Number(amount)
                     const isSoldOut = count === mintRule.supply
-                    const $endDateDisplay = isFinished || isSoldOut ? null : $text(displayDate(mintRule.finish))
-
-                    if ($endDateDisplay === null) {
-                      return empty()
-                    }
 
                     return $row(layoutSheet.spacingTiny, style({ fontSize: '.75em' }))(
-                      $text(style({ color: pallete.foreground }))('Sale will automatically settle in'),
-                      $endDateDisplay,
+                      ...isSoldOut
+                        ? [$text(style({ color: pallete.foreground }))('Sale has sold out!')]
+                        : [
+                          $text(style({ color: pallete.foreground }))(isFinished ? 'Sale Settled on' : 'Sale will automatically settle in'),
+                          $text(displayDate(mintRule.finish)),
+                        ]
                     )
                   }, mintCount))
                 ),
