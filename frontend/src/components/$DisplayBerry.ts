@@ -3,10 +3,10 @@ import { map, now, tap } from "@most/core"
 
 import {
   IAttributeBody, IAttributeHat,
-  IAttributeClothes, IBerryDisplayTupleMap
+  IAttributeClothes, IBerryDisplayTupleMap, berryPartsToSvg
 } from "@gambitdao/gbc-middleware"
 import { $IntermediatePromise } from "@gambitdao/ui-components"
-import { SvgPartsMap } from "../logic/mappings/svgParts"
+import { SvgPartsMap } from "@gambitdao/gbc-middleware"
 
 
 
@@ -25,7 +25,7 @@ export function $svgContent(content: string): $Node[] {
 
 export const $berry = (
   svgParts: SvgPartsMap,
-  [background, clothes, body, expression, faceAccessory, hat]: Partial<IBerryDisplayTupleMap>,
+  displayTuple: Partial<IBerryDisplayTupleMap>,
   size: string | number = 250
 ) => {
   const sizeNorm = typeof size === 'number' ?  size + 'px' : size
@@ -35,14 +35,7 @@ export const $berry = (
     attr({ xmlns: 'http://www.w3.org/2000/svg', preserveAspectRatio: "xMidYMin meet", fill: 'none', viewBox: `0 0 1500 1500` })
   )(
     tap(async ({ element }) => {
-      element.innerHTML = `
-        ${background ? svgParts[0][background] : ''}
-        ${svgParts[1][clothes ? clothes : IAttributeClothes.NUDE]}
-        ${svgParts[2][body ? body : IAttributeBody.BLUEBERRY]}
-        ${expression ? svgParts[3][expression] : ''}
-        ${faceAccessory ? svgParts[4][faceAccessory] : ''}
-        ${svgParts[5][hat ? hat : IAttributeHat.NUDE]}
-      `
+      element.innerHTML = berryPartsToSvg(svgParts, displayTuple)
     })
   )()
 }
@@ -52,7 +45,7 @@ export const $loadBerry = (
   size: string | number = 250
 ) => {
 
-  const query = now(import("../logic/mappings/svgParts").then(({ "default": svgParts }) => svgParts))
+  const query = now(import("@gambitdao/gbc-middleware/src/mappings/svgParts").then(({ "default": svgParts }) => svgParts))
 
   return $IntermediatePromise({
     query,

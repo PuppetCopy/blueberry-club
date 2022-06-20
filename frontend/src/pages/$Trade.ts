@@ -268,7 +268,7 @@ export const $Trade = (config: ITradeComponent) => component((
                   timeVisible: chartInterval <= intervalTimeMap.DAY7,
                   secondsVisible: chartInterval <= intervalTimeMap.MIN60,
                   borderVisible: true,
-                  borderColor: pallete.horizon,
+                  borderColor: pallete.middleground,
                   rightOffset: 3,
                 },
                 crosshair: {

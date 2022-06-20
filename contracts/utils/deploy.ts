@@ -27,7 +27,8 @@ export async function deploy<T extends ContractFactory>(contractFactory: T, ...c
 }
 
 
-export async function connectOrDeploy<T extends typeof ContractFactory, RT extends InstanceType<T>>(givenAddress: any, ctor: T, ...constructorArguments: Parameters<RT['deploy']>): Promise<ReturnType<RT['deploy']>> {
+// @ts-ignore
+export async function connectOrDeploy<T extends typeof ContractFactory, RT extends InstanceType<T>>(givenAddress: any, ctor: T, ...constructorArguments: Parameters<RT['deploy']>): ReturnType<RT['deploy']> {
   const contractAddress = getAddress(givenAddress)
   const [signer] = await ethers.getSigners()
 

@@ -18,11 +18,9 @@ import { Stream } from "@most/types"
 import { $berry, $loadBerry } from "../components/$DisplayBerry"
 import { priceFeedHistoryInterval, latestTokenPriceMap } from "../logic/common"
 import { arbitrumContract, avalancheContract } from "../logic/gbcTreasury"
-import tokenIdAttributeTuple from "../logic/mappings/tokenIdAttributeTuple"
 import { gmxGlpPriceHistory, queryArbitrumRewards, queryAvalancheRewards, StakedTokenArbitrum, StakedTokenAvalanche } from "../logic/query"
-import { IEthereumProvider } from "eip1193-provider"
 import { WALLET } from "../logic/provider"
-import { SvgPartsMap } from "../logic/mappings/svgParts"
+import { SvgPartsMap } from "@gambitdao/gbc-middleware"
 
 
 export interface ITreasury {
@@ -56,8 +54,6 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
   [leftEyeContainerPerspective, leftEyeContainerPerspectiveTether]: Behavior<INode, ResizeObserverEntry[]>,
   [rightEyeContainerPerspective, rightEyeContainerPerspectiveTether]: Behavior<INode, ResizeObserverEntry[]>,
   [intersectionObserver, intersectionObserverTether]: Behavior<INode, IntersectionObserverEntry[]>,
-  [walletChange, walletChangeTether]: Behavior<IEthereumProvider | null, IEthereumProvider | null>,
-
 ) => {
 
 
@@ -100,10 +96,6 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
     return n
   }
 
-  const berryDayId = dailyRandom(Date.now() / (intervalTimeMap.HR24 * 1000))
-  const [background, clothes, body, expression, faceAccessory, hat] = tokenIdAttributeTuple[berryDayId]
-
-  const berrySize = screenUtils.isDesktopScreen ? 100 : 70
 
   const arbitrumStakingRewards = replayLatest(multicast(arbitrumContract.stakingRewards))
   const avalancheStakingRewards = replayLatest(multicast(avalancheContract.stakingRewards))
@@ -152,7 +144,8 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
 
 
   const queryParts = now(Promise.all([
-    import("../logic/mappings/svgParts").then(({ "default": svgParts }) => svgParts)
+    import("@gambitdao/gbc-middleware/src/mappings/tokenIdAttributeTuple").then(res => res.default),
+    import("@gambitdao/gbc-middleware/src/mappings/svgParts").then(res => res.default)
   ]))
 
   
@@ -164,7 +157,13 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
       $row(style({ width: '100vw', marginLeft: 'calc(-50vw + 50%)', height: screenUtils.isDesktopScreen ? '580px' : '', alignItems: 'center', placeContent: 'center' }))(
         $IntermediatePromise({
           query: queryParts,
-          $$done: map(([svgParts]) => {
+          $$done: map(([tokenIdAttributeTuple, svgParts]) => {
+
+            const berryDayId = dailyRandom(Date.now() / (intervalTimeMap.HR24 * 1000))
+            const [background, clothes, body, expression, faceAccessory, hat] = tokenIdAttributeTuple[berryDayId]
+
+            const berrySize = screenUtils.isDesktopScreen ? 100 : 70
+
             const berryWallRowCount = Math.floor((document.body.clientWidth + 20) / (berrySize + 20))
             const headlineSize = screenUtils.isDesktopScreen ? 3 * 7 : 0
 
@@ -206,6 +205,15 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
                 )
               )
             )
+
+            const $mosaicItem = (id: number, svgBody: SvgPartsMap, size: number) => {
+              const matchTuple: Partial<IBerryDisplayTupleMap> = tokenIdAttributeTuple[id - 1]
+
+              return $anchor(style({ position: 'relative' }), attr({ href: '/p/berry/' + id }))(
+                style({ borderRadius: '10px' }, $berry(svgBody, matchTuple, size)),
+                $text(style({ textAlign: 'left', padding: screenUtils.isDesktopScreen ? '8px 0 0 8px' : '5px 0 0 5px', color: '#fff', textShadow: '#0000005e 0px 0px 5px', fontSize: screenUtils.isDesktopScreen ? '.6em' : '.6em', position: 'absolute', fontWeight: 'bold' }))(String(id))
+              )
+            }
 
             return screenUtils.isDesktopScreen
               ? $node(style({ display: 'grid', width: '100%', gap: '20px', justifyContent: 'center', gridTemplateColumns: `repeat(auto-fit, ${berrySize}px)`, gridAutoRows: berrySize + 'px' }))(
@@ -429,8 +437,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
     ),
 
     {
-      routeChanges,
-      walletChange
+      routeChanges
     }
   ]
 })
@@ -460,13 +467,4 @@ function buildThresholdList(numSteps = 20) {
 }
 
 
-const $mosaicItem = (id: number, svgBody: SvgPartsMap, size: number) => {
-  const matchTuple: Partial<IBerryDisplayTupleMap> = tokenIdAttributeTuple[id - 1]
-
-
-  return $anchor(style({ position: 'relative' }), attr({ href: '/p/berry/' + id }))(
-    style({ borderRadius: '10px' }, $berry(svgBody, matchTuple, size)),
-    $text(style({ textAlign: 'left', padding: screenUtils.isDesktopScreen ? '8px 0 0 8px' : '5px 0 0 5px', color: '#fff', textShadow: '#0000005e 0px 0px 5px', fontSize: screenUtils.isDesktopScreen ? '.6em' : '.6em', position: 'absolute', fontWeight: 'bold' }))(String(id))
-  )
-}
 

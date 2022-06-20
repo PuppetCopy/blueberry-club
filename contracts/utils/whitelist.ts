@@ -1,30 +1,39 @@
-import { MintPrivate } from "@gambitdao/gbc-middleware"
+import { LabItemSale, MintPrivate } from "@gambitdao/gbc-middleware"
 import { keccak256, solidityKeccak256 } from "ethers/lib/utils"
 import MerkleTree from "merkletreejs"
-import fs from 'fs'
-import path from "path"
+import fs from "fs"
 
-
-export function getMerkleProofs(addressList: string[], mintRules: MintPrivate) {
-
-  const addressListNormalized = addressList.map(address => address.toLowerCase())
-  const leaves = addressListNormalized.map(account => {
+export function getMerkleProofs(addressList: string[], sale: LabItemSale, mintRules: MintPrivate) {
+  const addressListNormalized = addressList.map((address) =>
+    address.toLowerCase()
+  )
+  const leaves = addressListNormalized.map((account) => {
     const leaf = solidityKeccak256(
-      ['address', 'uint208', 'uint64', 'uint120', 'uint120', 'uint96'],
-      [account, mintRules.cost, mintRules.start, mintRules.transaction, mintRules.amount, mintRules.nonce]
+      ["address", "uint120", "uint120", "uint208", "uint192", "uint64", "uint64"],
+      [
+        account,
+        mintRules.nonce,
+        mintRules.supply,
+        mintRules.cost,
+        mintRules.accountLimit,
+        mintRules.start,
+        mintRules.finish,
+      ]
     )
 
     return { account, leaf }
   })
 
-  const tree = new MerkleTree(leaves.map(x => x.leaf), keccak256, { sort: true })
+  const tree = new MerkleTree(
+    leaves.map((x) => x.leaf),
+    keccak256,
+    { sort: true }
+  )
   const merkleRoot = tree.getHexRoot()
 
   const proofs = leaves.map(({ account, leaf }) => tree.getHexProof(leaf))
 
-  const filePath = 'whitelist.json'
-  fs.writeFileSync(filePath, JSON.stringify(proofs))
+  fs.writeFileSync(`private-${sale.name}.json`, JSON.stringify(proofs))
 
   return { merkleRoot, proofs }
 }
-

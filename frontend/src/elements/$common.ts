@@ -1,6 +1,6 @@
 import { $Branch, $node, $text, attr, style } from "@aelea/dom"
 import { $ButtonIcon, $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
-import { pallete } from "@aelea/ui-components-theme"
+import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
 import { getAccountExplorerUrl, getTxExplorerUrl, shortenAddress } from "@gambitdao/gmx-middleware"
 import { $trash } from "./$icons"
 import { USE_CHAIN } from "@gambitdao/gbc-middleware"
@@ -9,7 +9,7 @@ import { $berryById } from "../logic/common"
 
 export const $TrashBtn = $ButtonIcon($trash)
 
-export const $card = $column(layoutSheet.spacing, style({ backgroundColor: pallete.horizon, padding: '22px', borderRadius: '20px', flex: 1 }))
+export const $card = $column(layoutSheet.spacing, style({ backgroundColor: theme.name === 'dark' ? pallete.horizon : colorAlpha(pallete.horizon, .3), padding: '22px', borderRadius: '20px', flex: 1 }))
 
 export const $seperator = $text(style({ color: pallete.foreground, pointerEvents: 'none' }))('|')
 export const $responsiveFlex = screenUtils.isDesktopScreen ? $row : $column
@@ -18,18 +18,18 @@ export const $responsiveFlex = screenUtils.isDesktopScreen ? $row : $column
 
 export const $labeledDivider = (label: string) => {
   return $row(layoutSheet.spacing, style({ placeContent: 'center', alignItems: 'center' }))(
-    $column(style({ flex: 1, borderBottom: `1px solid ${pallete.middleground}` }))(),
+    $column(style({ flex: 1, borderBottom: `1px solid ${pallete.horizon}` }))(),
     $row(layoutSheet.spacingSmall, style({ color: pallete.foreground, alignItems: 'center' }))(
       $text(style({ fontSize: '75%' }))(label),
       $icon({ $content: $caretDblDown, width: '10px', viewBox: '0 0 32 32', fill: pallete.foreground }),
     ),
-    $column(style({ flex: 1, borderBottom: `1px solid ${pallete.middleground}` }))(),
+    $column(style({ flex: 1, borderBottom: `1px solid ${pallete.horizon}` }))(),
   )
 }
 
 
 
-export const $iconCircular = ($iconPath: $Branch<SVGPathElement>, backgroundColor = pallete.middleground) => {
+export const $iconCircular = ($iconPath: $Branch<SVGPathElement>, backgroundColor = pallete.horizon) => {
   return $icon({
     $content: $iconPath,
     svgOps: style({

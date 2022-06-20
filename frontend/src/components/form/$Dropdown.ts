@@ -1,6 +1,6 @@
-import { Behavior, combineObject, O, Op, replayLatest } from "@aelea/core"
+import { Behavior, combineObject, isEmpty, O, Op } from "@aelea/core"
 import { $element, $Node, $text, attr, component, eventElementTarget, IBranch, INode, NodeComposeFn, nodeEvent, style, styleBehavior, styleInline, stylePseudo } from "@aelea/dom"
-import { $column, $Field, $icon, $row, Field, Input, layoutSheet, observer } from "@aelea/ui-components"
+import { $column, $icon, $row, Input, layoutSheet, observer } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { $xCross } from "@gambitdao/ui-components"
 import { constant, delay, empty, filter, map, merge, mergeArray, multicast, never, now, scan, skip, skipRepeats, snapshot, startWith, switchLatest, take, tap } from "@most/core"
@@ -78,10 +78,10 @@ export interface IDropdown<T> {
 
 
 
-export const $defaultOptionContainer = $row(layoutSheet.spacingSmall, style({ alignItems: 'center', padding: '15px 25px', width: '100%' }), style({ cursor: 'pointer' }), stylePseudo(':hover', { backgroundColor: pallete.middleground }))
+export const $defaultOptionContainer = $row(layoutSheet.spacingSmall, style({ alignItems: 'center', padding: '15px 25px', width: '100%' }), style({ cursor: 'pointer' }), stylePseudo(':hover', { backgroundColor: pallete.horizon }))
 export const $defaultSelectContainer = $column(layoutSheet.spacingTiny, style({
   minWidth: '80px', overflow: 'hidden',
-  border: `1px solid ${pallete.middleground}`, borderRadius: '20px',
+  border: `1px solid ${pallete.horizon}`, borderRadius: '20px',
   backgroundColor: pallete.background,
   boxShadow: `rgb(0 0 0 / 21%) 1px 1px 14px`
 }))
@@ -173,7 +173,7 @@ export const $defaultDropMultiSelectOption = $row(layoutSheet.spacingSmall,
     overflow: 'hidden', border: `1px solid ${pallete.message}`,
     alignItems: 'center', padding: '8px', width: '100%'
   }),
-  stylePseudo(':hover', { backgroundColor: pallete.middleground })
+  stylePseudo(':hover', { backgroundColor: pallete.horizon })
 )
 export const $defaultChip = $row(style({ border: `1px solid ${pallete.foreground}`, padding: '8px', cursor: 'default', alignItems: 'center', borderRadius: '22px' }))
 
@@ -254,12 +254,14 @@ export const $DropMultiSelect = <T>({
 
 
   return [
-    $column(layoutSheet.flex, layoutSheet.spacingTiny, style({ display: 'flex', flex: 1,  position: 'relative' }))(
+    $column(layoutSheet.flex, layoutSheet.spacingTiny, style({ display: 'flex', flex: 1, position: 'relative' }))(
 
       $column(layoutSheet.flex, layoutSheet.spacingTiny, style({ display: 'flex', flexDirection: 'row', position: 'relative' }))(
-        $row(style({ alignSelf: 'flex-start', cursor: 'pointer', paddingBottom: '1px' }))(
-          $label
-        ),
+        isEmpty($label)
+          ? empty()
+          : $row(style({ alignSelf: 'flex-start', cursor: 'pointer', paddingBottom: '1px' }))(
+            $label
+          ),
 
         $container(
           styleBehavior(
@@ -390,9 +392,15 @@ export const $DropMultiSelect = <T>({
         }, selectionChange, isOpen)),
       ),
 
-      $text(style({ color: pallete.negative, fontSize: '.75em', minHeight: '17px' }))(
-        map(msg => msg ? msg : '', alert)
-      )
+
+      switchLatest(map(msg => {
+        if (!msg) {
+          return empty()
+        }
+
+        return $text(style({ color: pallete.negative, fontSize: '.75em', minHeight: '17px' }))(msg)
+      }, alert))
+
     ),
 
     {

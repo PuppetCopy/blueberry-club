@@ -5,3 +5,4 @@ export const now = async () => {
   const block = await ethers.provider.getBlock(blockNumber)
   return block.timestamp
 }
+

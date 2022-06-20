@@ -146,6 +146,8 @@ export enum IAttributeMappings {
   "Lab Flask" = 207,
   "GLP Shirt" = 208,
   "GBC x Giorgio Balbi" = 209,
+  "GBC x Wine bottle Club" = 210,
+  "Summer Buoy" = 211,
 }
 
 
@@ -239,6 +241,7 @@ export enum IAttributeClothes {
   BUILDER = IAttributeMappings.Builder,
   AVALANCHE_HOODIE = IAttributeMappings["Avalanche Hoodie"],
   GLP_SHIRT = IAttributeMappings["GLP Shirt"],
+  SUMMER_BUOY = IAttributeMappings["Summer Buoy"],
 }
 
 export enum IAttributeFaceAccessory {
@@ -341,6 +344,7 @@ export enum IAttributeHat {
   CHRISTMAS_HAT = IAttributeMappings['Christmas Hat'],
   FAST_FOOD_CAP = IAttributeMappings['Fast Food Cap'],
   LAB_FLASK = IAttributeMappings["Lab Flask"],
+  GBC_WINE_BOTTLE_CLUB = IAttributeMappings["GBC x Wine bottle Club"],
 }
 
 export enum IAttributeBackground {
@@ -366,7 +370,7 @@ export enum IAttributeBackground {
 export enum SaleType {
   Public,
   holder,
-  private,
+  whitelist,
 }
 
 export type IBerryDisplayTupleMap = [
@@ -380,36 +384,55 @@ export type IBerryDisplayTupleMap = [
 
 export type ILabAttributeOptions = typeof IAttributeBackground | typeof IAttributeClothes | typeof IAttributeHat | typeof IAttributeFaceAccessory
 
+export type SvgPartsMap = [
+  { [p in IAttributeBackground]: string },
+  { [p in IAttributeClothes]: string },
+  { [p in IAttributeBody]: string },
+  { [p in IAttributeExpression]: string },
+  { [p in IAttributeFaceAccessory]: string },
+  { [p in IAttributeHat]: string },
+]
 
-export interface MintRuleStruct {
+export interface MintAccountRule {
+  supply: number // uint120
   cost: bigint // uint208
+  accountLimit: number // uint120
   start: number // uint64
-  transaction: number // uint120
-  amount: number // uint120
-}
-
-export interface SaleState {
-  minted: number // uint120
-  max: number // uint120
-  paused: number // uint8
-}
-
-export interface MintState {
-  maxMintable: number
   finish: number // uint64
 }
 
-export interface MintPublic extends MintRuleStruct {
+export type TraitAppearanceValue = 'Background' | 'Clothes' | 'Body' | 'Expression' | 'Face Accessory' | 'Hat'
+export type TraitType = {
+  trait_type: TraitAppearanceValue | 'Slot',
+  value: string
+}
+
+
+
+export interface LabItemSale {
+  id: number // mapped to global unique ID
+  name: string // displays in UI
+  description: string // dispolays in UI
+
+  mintRuleList: MintRule[]
+}
+
+
+export interface MintRuleConfig extends MintAccountRule {
+  contractAddress: string
+}
+
+
+export interface MintPublic extends MintRuleConfig {
   type: SaleType.Public,
 }
 
-export interface MintHolder extends MintRuleStruct {
-  type: SaleType.holder,
-  walletMintable: number
+export interface MintHolder extends MintRuleConfig {
+  type: SaleType.holder
 }
 
-export interface MintPrivate extends MintRuleStruct {
-  type: SaleType.private
+export interface MintPrivate extends MintRuleConfig {
+  type: SaleType.whitelist
 
   nonce: number // uint120
   addressList: string[]
@@ -417,14 +440,5 @@ export interface MintPrivate extends MintRuleStruct {
 }
 
 export type MintRule = MintPublic | MintHolder | MintPrivate
-
-export interface LabItemSale {
-  contractAddress: string
-  id: number // mapped to global unique ID
-  name: string // displays in UI
-  description: string // dispolays in UI
-
-  mintRuleList: MintRule[]
-}
 
 
