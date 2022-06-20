@@ -1,5 +1,5 @@
 import { Behavior } from "@aelea/core"
-import { $node, $text, attr, component, style } from "@aelea/dom"
+import { $element, $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
 import { IWalletLink } from "@gambitdao/wallet-link"
@@ -154,12 +154,19 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
                     const isSoldOut = count === mintRule.supply
 
                     return $row(layoutSheet.spacingTiny, style({ fontSize: '.75em' }))(
-                      ...isSoldOut
-                        ? [$text(style({ color: pallete.foreground }))('Sale has sold out!')]
-                        : [
-                          $text(style({ color: pallete.foreground }))(isFinished ? 'Sale Settled on' : 'Sale will automatically settle in'),
-                          $text(displayDate(mintRule.finish)),
-                        ]
+                      isSoldOut
+                        ? $text(style({ color: pallete.foreground }))('Sale has sold out!')
+                        : $element('ul')(style({ lineHeight: '1.5em' }))(
+                          $element('li')(
+                            $text(style({ color: pallete.foreground }))(`limit of `),
+                            $text(`${mintRule.accountLimit}`),
+                            $text(style({ color: pallete.foreground }))(` tokens per address`),
+                          ),
+                          $element('li')(
+                            $text(style({ color: pallete.foreground }))(isFinished ? 'Sale Settled on' : 'Sale will automatically settle in '),
+                            $text(displayDate(mintRule.finish))
+                          ),
+                        )
                     )
                   }, mintCount))
                 ),

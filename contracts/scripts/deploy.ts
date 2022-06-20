@@ -8,7 +8,7 @@ import { ethers, network } from "hardhat"
 
 import getAddress, { ZERO_ADDRESS } from "../utils/getAddress"
 import { connectOrDeploy } from "../utils/deploy"
-import { attributeIndexToLabel, GBC_ADDRESS, getLabItemTupleIndex, saleDescriptionList, SaleType } from "@gambitdao/gbc-middleware"
+import { attributeIndexToLabel, GBC_ADDRESS, getLabItemTupleIndex, mintLabelMap, saleDescriptionList, SaleType } from "@gambitdao/gbc-middleware"
 import { getMerkleProofs } from "../utils/whitelist"
 import { NFTStorage, File, Token as NFTToken } from "nft.storage"
 import { labItemSvg } from "../utils/image"
@@ -166,7 +166,7 @@ const main = async () => {
       const saleContract = await saleContractQuery
 
       if (owner == creator.address) {
-        console.log(`🎩 Set roles from LAB to ${rule.type} ${saleContract.address} SALE`)
+        console.log(`🎩 Set roles from LAB to name: ${sale.name} sale: ${mintLabelMap[rule.type]} SALE`)
         await police.setUserRole(saleContract.address, ROLES.MINTER, true)
         console.log(`  - MINTER role setted !`)
       }

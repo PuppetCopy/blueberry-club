@@ -158,9 +158,9 @@ export const saleDescriptionList: LabItemSale[] = [
         supply: 99,
         type: SaleType.holder,
         cost: 0n,
-        contractAddress: "0xe3ec3547F9c877F9c4B769e20319a23250F73e50",
-        start: toTime(2022, 5, 21, 18),
-        finish: toTime(2022, 6, 21, 18),
+        contractAddress: "0x6b5D7E536BB5c36B8fFb6C004F156cE1eE0da72F",
+        start: toTime(2022, 5, 25, 18),
+        finish: toTime(2022, 6, 25, 18),
         accountLimit: 1
       }
     ]
