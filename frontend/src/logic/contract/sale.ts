@@ -1,6 +1,6 @@
 import { replayLatest } from "@aelea/core"
 import { BigNumberish } from "@ethersproject/bignumber"
-import { Private__factory, Holder__factory, Public__factory, Mintable__factory } from "@gambitdao/gbc-contracts"
+import { Whitelist__factory, Holder__factory, Public__factory, Mintable__factory } from "@gambitdao/gbc-contracts"
 import { MintRule } from "@gambitdao/gbc-middleware"
 import { periodicRun } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
@@ -37,7 +37,7 @@ export function connectHolderSale(wallet: IWalletLink, saleAddress: string) {
 export function connectPrivateSale(wallet: IWalletLink, saleAddress: string) {
   const provider = getWalletProvider(wallet)
 
-  const contract = map(w3p => Private__factory.connect(saleAddress, w3p.getSigner()), provider)
+  const contract = map(w3p => Whitelist__factory.connect(saleAddress, w3p.getSigner()), provider)
 
 
   return { contract }

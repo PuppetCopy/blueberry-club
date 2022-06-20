@@ -495,7 +495,7 @@ const $ItemSlot = ({ selectedSlot, change, gbcItemId, slot, slotLabel }: ItemSlo
   const $itemWrapper = $row(style({ overflow: 'hidden', placeContent: 'center', width: '65px' }))
   const $tradeBox = $row(
     style({
-      height: itemSizePx, minWidth: itemSizePx, borderRadius: '12.75px', gap: '1px', overflow: 'hidden', boxShadow: '-1px 2px 7px 2px #0000002e',
+      height: itemSizePx, boxSizing: 'content-box', minWidth: itemSizePx, borderRadius: '12.75px', gap: '1px', overflow: 'hidden', boxShadow: '-1px 2px 7px 2px #0000002e',
       position: 'relative', backgroundColor: pallete.background, border: `2px solid`, cursor: 'pointer'
     }),
     stylePseudo(':hover', { borderColor: pallete.middleground }),

@@ -40,6 +40,71 @@ export const saleConfig = {
 
 export const saleDescriptionList: LabItemSale[] = [
   {
+    name: "GBC x Wine bottle Club",
+    description: `For all members present at the Wine Bottle Club x GBC event in Bordeaux`,
+    id: IAttributeMappings["GBC x Wine bottle Club"],
+    mintRuleList: [
+      {
+        supply: 11,
+        type: SaleType.whitelist,
+        cost: 0n,
+        nonce: 0,
+        contractAddress: "",
+        start: toTime(2022, 5, 24, 18),
+        finish: toTime(2022, 6, 24, 18),
+        accountLimit: 1,
+        addressList: [
+          "0x100c9e74D265767D308A15d39DF8A6Db91580cea",
+          "0x03430A8D4997fC42035c51EE052EC776bc980495",
+          "0xc30941B621BB69Eb43B0DdCdB00AFFDa95a52581",
+          "0x03fbe58b62d538847cac7BB6026E4B03d4aE9D3B",
+          "0x5b1a073657E4B2B14Ff4200428d7733a32F3B3D0",
+          "0xE99bc74DB1dACca4b6CB785029c4738D184001C5",
+          "0xA4E8b4EEc97643676ed87f413e9A63Dcf3f4D985",
+          "0x8642214d3cb4Eb38EE618Be37f78DD74a3093869",
+          "0xF6B9d7E76F982Bc326464785Eda3360aACbDc784",
+          "0x0fc59e181244aC9bA1DaAC47fc4C7888FfefA391",
+          "0x4fa34185f848F83449706bF37b0A59F8d0c73D1a",
+        ],
+        signatureList: [],
+      }
+    ]
+  },
+  {
+    name: "Summer Buoy",
+    description: "The perfect accessory for summer time",
+    id: IAttributeMappings["Summer Buoy"],
+    mintRuleList: [
+      {
+        supply: 77,
+        type: SaleType.holder,
+        cost: parseEther('0.03').toBigInt(),
+        contractAddress: "",
+        start: toTime(2022, 5, 22, 18),
+        finish: toTime(2022, 6, 22, 18),
+        accountLimit: 2
+      }
+    ]
+  },
+  {
+    name: "Fast Food Cap",
+    description: "Strap on the cap that ensures you the job security that you never wanted, it has a the magical powers to turn things around when you least expect it",
+    id: IAttributeMappings["Fast Food Cap"],
+    mintRuleList: [
+      {
+        supply: 99,
+        type: SaleType.holder,
+        cost: 0n,
+        contractAddress: "",
+        start: toTime(2022, 5, 20, 18),
+        finish: toTime(2022, 6, 20, 18),
+        accountLimit: 1
+      }
+    ]
+  },
+
+
+  {
     name: "Lab Flask",
     description: `To celebrate the Blueberry Lab, we are offering this Lab Flask to those who have used the Blueberry Lab Testnet.`,
     id: IAttributeMappings["Lab Flask"],
@@ -75,16 +140,6 @@ export const saleDescriptionList: LabItemSale[] = [
         finish: toTime(2022, 6, 7, 22),
         accountLimit: 2
       }
-    ],
-    attributes: [
-      {
-        trait_type: "Hat",
-        value: "Lab Flask"
-      },
-      {
-        trait_type: "Slot",
-        value: "Wear"
-      },
     ]
   },
   // {
@@ -224,7 +279,6 @@ export const saleDescriptionList: LabItemSale[] = [
       {
         supply: 800,
         type: SaleType.holder,
-        walletMintable: 50,
         cost: 0n,
         contractAddress: "0xACc3B960122e38BaccEBb6d7161534CEc8776258",
         start: toTime(2022, 5, 7, 22),
@@ -240,16 +294,6 @@ export const saleDescriptionList: LabItemSale[] = [
         finish: toTime(2022, 6, 7, 22),
         accountLimit: 50
       }
-    ],
-    attributes: [
-      {
-        trait_type: "Clothes",
-        value: "GLP Shirt"
-      },
-      {
-        trait_type: "Slot",
-        value: "Wear"
-      },
     ]
   },
 

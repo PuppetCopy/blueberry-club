@@ -1,5 +1,4 @@
-/**
- * import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { expect } from "chai"
 import { BigNumber } from "ethers"
 import { ethers } from "hardhat"
@@ -88,7 +87,7 @@ describe("Closet test", function () {
     await lab.connect(owner).mint(user1.address, 2, 1, "0x00")
     await lab.connect(owner).mint(user1.address, 3, 1, "0x00")
     await lab.connect(user1).setApprovalForAll(closet.address, true)
-    await closet.connect(user1).set(1, [1, 2, 3], [])
+    await closet.connect(user1).set(1, [1, 2, 3], [], user1.address)
     const result = await closet.get(1, 0, 10)
     expect(result[0]).to.be.equal(BigNumber.from(1))
     expect(result[1]).to.be.equal(BigNumber.from(2))
@@ -97,17 +96,16 @@ describe("Closet test", function () {
 
   it("Should be possible to withdraw item to an NFT", async () => {
     await lab.connect(user1).setApprovalForAll(closet.address, true)
-    await closet.connect(user1).set(1, [], [2, 1])
+    await closet.connect(user1).set(1, [], [2, 1], user1.address)
     const result = await closet.get(1, 0, 10)
     expect(result[0]).to.be.equal(BigNumber.from(3))
   })
 
   it("Should be possible to deposit and withdraw item to an NFT in 1 transaction", async () => {
     await lab.connect(user1).setApprovalForAll(closet.address, true)
-    await closet.connect(user1).set(1, [2], [3])
+    await closet.connect(user1).set(1, [2], [3], user1.address)
     const result = await closet.get(1, 0, 10)
     expect(result[0]).to.be.equal(BigNumber.from(2))
   })
 })
 
- */

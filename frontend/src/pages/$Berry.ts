@@ -3,9 +3,9 @@ import { $node, $text, attr, component, IBranch, nodeEvent, style } from "@aelea
 import { Route } from "@aelea/router"
 import { $column, $icon, $Popover, $row, $seperator, $TextField, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { USE_CHAIN, GBC_ADDRESS, IAttributeBody, IAttributeMappings } from "@gambitdao/gbc-middleware"
+import { USE_CHAIN, GBC_ADDRESS, IAttributeBody, IAttributeMappings, attributeIndexToLabel } from "@gambitdao/gbc-middleware"
 import { GBC__factory } from "@gambitdao/gbc-contracts"
-import { isAddress, shortenAddress, timeSince } from "@gambitdao/gmx-middleware"
+import { isAddress, timeSince } from "@gambitdao/gmx-middleware"
 import { $anchor, $Link, $caretDblDown, $IntermediateTx } from "@gambitdao/ui-components"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
@@ -17,9 +17,8 @@ import { $ButtonPrimary, $ButtonSecondary } from "../components/form/$Button"
 import { $accountRef, $card, $responsiveFlex, $txnIconLink } from "../elements/$common"
 import { $tofunft } from "../elements/$icons"
 import tokenIdAttributeTuple from "@gambitdao/gbc-middleware/src/mappings/tokenIdAttributeTuple"
-import { queryToken, queryTokenv2 } from "../logic/query"
+import { queryTokenv2 } from "../logic/query"
 import { IToken, ITransfer } from "@gambitdao/gbc-middleware"
-import { attributeIndexToLabel } from "@gambitdao/gbc-middleware/src/mappings/label"
 
 export function bnToHex(n: bigint) {
   return '0x' + n.toString(16)

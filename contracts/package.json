@@ -18,9 +18,7 @@
     "build": "yarn hardhat clean && yarn hardhat compile && concurrently 'yarn run build:project' 'yarn run build:cjs'",
     "build:project": "tsc -b tsconfig.typechain.json",
     "build:cjs": "tsc --project tsconfig.typechain.json  --outDir .dist/cjs --module CommonJS --declarationMap false --composite false --declaration false --declarationDir null",
-    "deploy:lab": "yarn run build && yarn hardhat run scripts/deploy.ts --network arbitrum",
-    "ipfs:upload": "ts-node ./scripts/ipfs-image",
-    "ipfs:item": "hardhat publish-items"
+    "deploy:lab": "yarn run build && yarn hardhat run scripts/deploy.ts --network arbitrumTestnet > .dist/log-file.txt"
   },
   "devDependencies": {
     "@ethersproject/abi": "^5.6.3",
