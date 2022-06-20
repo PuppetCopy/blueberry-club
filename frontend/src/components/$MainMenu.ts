@@ -106,19 +106,19 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
 
               ...screenUtils.isMobileScreen ? $menuItemList : [],
               $row(layoutSheet.spacingBig, style({ flexWrap: 'wrap', width: '210px' }))(
-                $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://discord.com/invite/7ZMmeU3z9j' }))(
+                $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://discord.com/invite/7ZMmeU3z9j' }))(
                   $icon({ $content: $discord, width: '22px', viewBox: `0 0 32 32` })
                 ),
-                $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://docs.blueberry.club/' }))(
+                $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://docs.blueberry.club/' }))(
                   $icon({ $content: $gitbook, width: '22px', viewBox: `0 0 32 32` })
                 ),
-                $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://twitter.com/GBlueberryClub' }))(
+                $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://twitter.com/GBlueberryClub' }))(
                   $icon({ $content: $twitter, width: '22px', viewBox: `0 0 24 24` })
                 ),
-                $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://www.instagram.com/blueberryclub.eth' }))(
+                $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://www.instagram.com/blueberryclub.eth' }))(
                   $icon({ $content: $instagram, width: '18px', viewBox: `0 0 32 32` })
                 ),
-                $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://github.com/nissoh/blueberry-club' }))(
+                $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://github.com/nissoh/blueberry-club' }))(
                   $icon({ $content: $github, width: '22px', viewBox: `0 0 32 32` })
                 ),
               ),
@@ -139,7 +139,7 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
             )
           }, clickPopoverClaim),
         })(
-          $row(style({ border: `2px solid ${pallete.middleground}`, borderRadius: '30px' }))(
+          $row(style({ border: `2px solid ${pallete.horizon}`, borderRadius: '30px' }))(
 
             $IntermediateConnectPopover({
               $button: profileLinkClickTether()(style({ cursor: 'pointer' }, $walletAccountDisplay())),
@@ -156,7 +156,7 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
             })({
               walletChange: walletChangeTether()
             }),
-            style({ marginLeft: '6px', backgroundColor: pallete.middleground, width: '2px' }, $seperator2),
+            style({ marginLeft: '6px', backgroundColor: pallete.horizon, width: '2px' }, $seperator2),
             $icon({
               svgOps: O(
                 clickPopoverClaimTether(nodeEvent('click')),
@@ -181,19 +181,19 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
       $row(style({ flex: 1, placeContent: 'flex-end' }))(
         ...screenUtils.isDesktopScreen ? [
           $row(layoutSheet.spacingBig)(
-            $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://discord.com/invite/7ZMmeU3z9j' }))(
+            $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://discord.com/invite/7ZMmeU3z9j' }))(
               $icon({ $content: $discord, width: '22px', viewBox: `0 0 32 32` })
             ),
-            $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://docs.blueberry.club/' }))(
+            $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://docs.blueberry.club/' }))(
               $icon({ $content: $gitbook, width: '22px', viewBox: `0 0 32 32` })
             ),
-            $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://twitter.com/GBlueberryClub' }))(
+            $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://twitter.com/GBlueberryClub' }))(
               $icon({ $content: $twitter, width: '22px', viewBox: `0 0 24 24` })
             ),
-            // $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://www.instagram.com/blueberryclub.eth' }))(
+            // $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://www.instagram.com/blueberryclub.eth' }))(
             //   $icon({ $content: $instagram, width: '18px', viewBox: `0 0 32 32` })
             // ),
-            // $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://github.com/nissoh/blueberry-club' }))(
+            // $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://github.com/nissoh/blueberry-club' }))(
             //   $icon({ $content: $github, width: '22px', viewBox: `0 0 32 32` })
             // ),
           )

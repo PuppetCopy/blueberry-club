@@ -1,24 +1,27 @@
 import {
   Profile__factory, GBCLab__factory,
-  Police__factory, Closet__factory, GBC__factory, MerkleTpl__factory, PublicTpl__factory, HolderWhitelistTpl__factory, Sale,
+  Police__factory, Closet__factory, GBC__factory, Public__factory, Holder__factory, Mintable, Whitelist__factory
 } from "../typechain-types"
-import { AddressZero } from "@gambitdao/gmx-middleware"
+import { AddressZero, CHAIN } from "@gambitdao/gmx-middleware"
 
-import { ethers } from "hardhat"
+import { ethers, network } from "hardhat"
 
 import getAddress, { ZERO_ADDRESS } from "../utils/getAddress"
 import { connectOrDeploy } from "../utils/deploy"
-import { GBC_ADDRESS, saleConfig, saleDescriptionList, saleLastDate, saleMaxSupply, SaleType } from "@gambitdao/gbc-middleware"
+import { attributeIndexToLabel, GBC_ADDRESS, getLabItemTupleIndex, saleDescriptionList, SaleType } from "@gambitdao/gbc-middleware"
 import { getMerkleProofs } from "../utils/whitelist"
-import * as IPFS from 'ipfs-core'
+import { NFTStorage, File, Token as NFTToken } from "nft.storage"
+import { labItemSvg } from "../utils/image"
+import { Resvg } from "@resvg/resvg-js"
 
 
-export enum ROLES {
+
+enum ROLES {
   MINTER,
   BURNER,
   DESIGNER
 }
-
+export default ROLES
 
 
 /**
@@ -31,7 +34,7 @@ export enum ROLES {
  */
 
 // This contract/address can be used on other contracts
-const TREASURY = GBC_ADDRESS.TREASURY_ARBITRUM // Multisig or you personal address (if you leave it blank it will be the owner address)
+const TREASURY = '' // Multisig or you personal address (if you leave it blank it will be the owner address)
 const GBC = GBC_ADDRESS.GBC // The GBC ERC721 (NFT) contract
 // const POLICE = "" // Police contract
 const POLICE = GBC_ADDRESS.POLICE // Police contract
@@ -44,105 +47,142 @@ const PROFILE = GBC_ADDRESS.PROFILE
 const CLOSET = GBC_ADDRESS.CLOSET
 
 
+
 const main = async () => {
 
   const [creator] = (await ethers.getSigners())
+
   console.clear()
 
   console.log(`DEPLOYER WIZARD 🧙‍♂️ (by IrvingDev)`)
 
-  const ipfs = await IPFS.create()
-  const { cid } = await ipfs.add('EPLOYER WIZARD 🧙‍♂️ (by IrvingDe')
-  console.info(cid)
 
-  // console.log(`------------------------------------------------------------------------------\n`)
-  // console.log(`🔑 Deployer: ${creator.address}`)
+  console.log(`------------------------------------------------------------------------------\n`)
+  console.log(`🔑 Deployer: ${creator.address}`)
 
-  // const owner = getAddress(TREASURY) == ZERO_ADDRESS ? creator.address : getAddress(TREASURY)
+  const owner = getAddress(TREASURY) == ZERO_ADDRESS ? creator.address : getAddress(TREASURY)
 
-  // console.log(`💰 Treasury address: ${owner}\n`)
-  // console.log(`------------------------------------------------------------------------------\n`)
+  console.log(`💰 Treasury address: ${owner}\n`)
+  console.log(`------------------------------------------------------------------------------\n`)
 
-  // const gbc = await connectOrDeploy(GBC, GBC__factory, "Blueberry Club", "GBC", "")
+  const gbc = await connectOrDeploy(GBC, GBC__factory, "Blueberry Club", "GBC", "")
 
 
-  // console.log(`------------------------------------------------------------------------------\n`)
-  // const police = await connectOrDeploy(POLICE, Police__factory, creator.address)
-  // console.log(`------------------------------------------------------------------------------\n`)
+  console.log(`------------------------------------------------------------------------------\n`)
+  const police = await connectOrDeploy(POLICE, Police__factory, creator.address)
+  console.log(`------------------------------------------------------------------------------\n`)
 
-  // const lab = await connectOrDeploy(LAB, GBCLab__factory, owner, police.address)
+  const lab = await connectOrDeploy(LAB, GBCLab__factory, owner, police.address)
 
-  // if (getAddress(LAB) == AddressZero) {
-  //   try {
-  //     console.log(`✋ Adding roles for LAB`)
-  //     await police.setRoleCapability(ROLES.MINTER, lab.address, lab.interface.getSighash(lab.interface.functions["mint(address,uint256,uint256,bytes)"]), true)
-  //     await police.setRoleCapability(ROLES.MINTER, lab.address, lab.interface.getSighash(lab.interface.functions["batchMint(address,uint256[],uint256[],bytes)"]), true)
-  //     console.log(`  - MINTER role created !`)
-  //     await police.setRoleCapability(ROLES.BURNER, lab.address, lab.interface.getSighash(lab.interface.functions["burn(address,uint256,uint256)"]), true)
-  //     await police.setRoleCapability(ROLES.BURNER, lab.address, lab.interface.getSighash(lab.interface.functions["batchBurn(address,uint256[],uint256[])"]), true)
-  //     console.log(`  - BURNER role created !`)
-  //   } catch (error) {
-  //     console.log(`❌ Actual deployer is not owner of previous police contract`)
-  //   }
-  // }
+  if (getAddress(LAB) == AddressZero) {
+    try {
+      console.log(`✋ Adding roles for LAB`)
+      await police.setRoleCapability(ROLES.MINTER, lab.address, lab.interface.getSighash(lab.interface.functions["mint(address,uint256,uint256,bytes)"]), true)
+      await police.setRoleCapability(ROLES.MINTER, lab.address, lab.interface.getSighash(lab.interface.functions["batchMint(address,uint256[],uint256[],bytes)"]), true)
+      console.log(`  - MINTER role created !`)
+      await police.setRoleCapability(ROLES.BURNER, lab.address, lab.interface.getSighash(lab.interface.functions["burn(address,uint256,uint256)"]), true)
+      await police.setRoleCapability(ROLES.BURNER, lab.address, lab.interface.getSighash(lab.interface.functions["batchBurn(address,uint256[],uint256[])"]), true)
+      console.log(`  - BURNER role created !`)
+    } catch (error) {
+      console.log(`❌ Actual deployer is not owner of previous police contract`)
+    }
+  }
 
-  // console.log(`------------------------------------------------------------------------------\n`)
+  console.log(`------------------------------------------------------------------------------\n`)
 
-  // await connectOrDeploy(PROFILE, Profile__factory, gbc.address, owner, police.address)
+  await connectOrDeploy(PROFILE, Profile__factory, gbc.address, owner, police.address)
 
-  // console.log(`------------------------------------------------------------------------------\n`)
+  console.log(`------------------------------------------------------------------------------\n`)
 
-  // await connectOrDeploy(CLOSET, Closet__factory, gbc.address, lab.address)
+  await connectOrDeploy(CLOSET, Closet__factory, gbc.address, lab.address)
 
-  // for (const config of saleDescriptionList) {
-  //   console.log(`------------------------------------------------------------------------------\n`)
 
-  //   let sale: Sale
+  for (const sale of saleDescriptionList) {
+    if (!process.env.NFT_STORAGE) {
+      throw new Error('nft.storage api key is required')
+    }
 
-  //   const fstMintRule = config.mintRuleList[0]
-  //   const lastDateRule = saleLastDate(config)
-  //   const max = saleMaxSupply(config)
-  //   const finish = lastDateRule.start + saleConfig.saleDuration
-  //   const { maxMintable } = saleConfig
-  //   const saleState = { paused: 1, minted: 0, max }
-  //   const mintState = { finish, maxMintable }
+    let storeIpfsQuery: any
+    const noContractDeployed = sale.mintRuleList.every(rule => rule.contractAddress === '')
 
-  //   const createMode = getAddress(config.contractAddress) === AddressZero
 
-  //   if (fstMintRule.type === SaleType.Public) {
-  //     const { amount, cost, start, transaction } = fstMintRule
+    if (noContractDeployed && network.config.chainId === CHAIN.ARBITRUM) {
+      const client = new NFTStorage({ token: process.env.NFT_STORAGE })
+      const svg = labItemSvg(sale.id)
 
-  //     sale = await connectOrDeploy(config.contractAddress, PublicTpl__factory, config.id, owner, TREASURY, lab.address, saleState, mintState, { amount, cost, start, transaction })
-  //   } else if (fstMintRule.type === SaleType.holder) {
-  //     const { amount, cost, start, transaction, walletMintable } = fstMintRule
-  //     sale = await connectOrDeploy(config.contractAddress, HolderWhitelistTpl__factory, config.id, owner, TREASURY, gbc.address, lab.address, saleState, mintState, { totalMintable: amount, cost, start, transaction, walletMintable })
-  //   } else {
-  //     if (createMode) {
-  //       const res = getMerkleProofs(fstMintRule.addressList, fstMintRule)
-  //       console.log(res.proofs)
-  //       console.log('root: ', res.merkleRoot)
+      const resvg = new Resvg(svg)
+      const pngData = resvg.render()
+      const pngBuffer = pngData.asPng()
 
-  //       sale = await connectOrDeploy(config.contractAddress, MerkleTpl__factory, config.id, owner, TREASURY, lab.address, saleState, mintState, res.merkleRoot)
-  //     } else {
-  //       sale = MerkleTpl__factory.connect(config.contractAddress, creator)
-  //     }
-  //   }
+      console.info('Original SVG Size:', `${resvg.width} x ${resvg.height}`)
+      console.info('Output PNG Size  :', `${pngData.width} x ${pngData.height}`)
 
-  //   console.log(`🎩 Set roles from LAB to ${config.name} SALE`)
+      const image = new File([pngBuffer], `lab-${sale.id}.png`, { type: 'image/png' })
 
-  //   if (createMode) {
-  //     try {
-  //       await police.setUserRole(sale.address, ROLES.MINTER, true)
-  //       console.log(`  - MINTER role setted !`)
-  //     } catch (error) {
-  //       console.log(error)
-  //       console.log(`❌ Actual deployer is not owner of previous police contract`)
-  //     }
-  //   }
+      const index = getLabItemTupleIndex(sale.id)
 
-  //   console.log()
-  //   console.log(`------------------------------------------------------------------------------\n`)
-  // }
+      const attributes = [
+        {
+          trait_type: attributeIndexToLabel[index],
+          value: sale.name
+        },
+        {
+          trait_type: "Slot",
+          value: index === 0 ? "Background" : index === 8 ? 'Special' : 'Wear'
+        },
+      ]
+
+
+      storeIpfsQuery = client.store({ name: sale.name, description: sale.description, image, attributes })
+    }
+
+
+    for (const rule of sale.mintRuleList) {
+
+      console.log(`------------------------------------------------------------------------------\n`)
+
+      if (rule.contractAddress) {
+        break
+      }
+
+      let saleContractQuery: Promise<Mintable>
+
+      if (rule.type === SaleType.Public) {
+        saleContractQuery = connectOrDeploy(rule.contractAddress, Public__factory, sale.id, 0, owner, lab.address, rule)
+      } else if (rule.type === SaleType.holder) {
+        const { cost, start, finish, supply, accountLimit } = rule
+        saleContractQuery = connectOrDeploy(rule.contractAddress, Holder__factory, sale.id, 0, owner, lab.address, { cost, start, finish, supply, accountLimit }, gbc.address)
+      } else {
+        const { cost, start, supply, finish, accountLimit } = rule
+
+        const res = getMerkleProofs(rule.addressList, sale, rule)
+        console.log(res.proofs)
+        console.log('root: ', res.merkleRoot)
+
+        saleContractQuery = connectOrDeploy(rule.contractAddress, Whitelist__factory, sale.id, 0, owner, lab.address, { accountLimit, cost, finish, start, supply }, res.merkleRoot)
+      }
+
+
+      const saleContract = await saleContractQuery
+
+      if (owner == creator.address) {
+        console.log(`🎩 Set roles from LAB to ${rule.type} ${saleContract.address} SALE`)
+        await police.setUserRole(saleContract.address, ROLES.MINTER, true)
+        console.log(`  - MINTER role setted !`)
+      }
+
+
+      console.log()
+      console.log(`------------------------------------------------------------------------------\n`)
+    }
+
+    if (storeIpfsQuery) {
+      const { url, data } = await storeIpfsQuery
+      console.log(data, url)
+    }
+    
+  }
+  
 
 }
 

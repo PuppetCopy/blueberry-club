@@ -7,9 +7,9 @@ import { IWalletLink } from "@gambitdao/wallet-link"
 import { saleDescriptionList, GBC_ADDRESS } from "@gambitdao/gbc-middleware"
 import { $anchor } from "@gambitdao/ui-components"
 import { $StoreItemPreview } from "./$StoreItem"
-import { $tofunft } from "../../elements/$icons"
 import { $accountIconLink, $responsiveFlex } from "../../elements/$common"
 import { $seperator2 } from "../common"
+import { $logo } from "../../common/$icons"
 
 
 interface ILabStore {
@@ -43,9 +43,9 @@ export const $LabStore = ({ walletLink, parentRoute }: ILabStore) => component((
           $row(layoutSheet.spacing)(
             $accountIconLink(GBC_ADDRESS.LAB),
             $seperator2,
-            $anchor(layoutSheet.spacingTiny, attr({ href: `https://tofunft.com/nft/arbi/${GBC_ADDRESS.LAB}/` }))(
+            $anchor(layoutSheet.spacingTiny, attr({ href: `https://stratosnft.io/collection/blueberrylab` }))(
               $icon({
-                $content: $tofunft,
+                $content: $logo,
                 viewBox: '0 0 32 32'
               }),
               $text('Lab Marketplace')
@@ -54,8 +54,8 @@ export const $LabStore = ({ walletLink, parentRoute }: ILabStore) => component((
         ),
 
         $row(screenUtils.isDesktopScreen ? style({ gap: '50px', placeContent: 'center', flexWrap: 'wrap' }) : O(layoutSheet.spacingBig, style({ overflow: 'hidden', placeContent: 'space-evenly', flexWrap: 'wrap' })))(
-          ...saleDescriptionList.map(item =>
-            $StoreItemPreview(item, parentRoute, changeRouteTether)
+          ...saleDescriptionList.flatMap(item => item.mintRuleList.map(rule => ({ rule, item }))).map(({ item, rule }) =>
+            $StoreItemPreview(item, rule, parentRoute, changeRouteTether)
           )
         ),
       ),
