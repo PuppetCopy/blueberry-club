@@ -16,7 +16,7 @@ export const $StoreItemPreview = (item: LabItemSale, rule: MintRule, parentRoute
 
   const supplyLeft = map(amount => {
     const count = rule.supply - Number(amount)
-    return count ? `${count} left` : 'Sold Out'
+    return count === 0 ? 'Sold Out' : unixTime > rule.finish ? 'Finished' : `${count} left`
   }, mintCount)
 
   const unixTime = unixTimestampNow()

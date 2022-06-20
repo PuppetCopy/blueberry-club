@@ -2,9 +2,9 @@ import {
   Profile__factory, GBCLab__factory,
   Police__factory, Closet__factory, GBC__factory, Public__factory, Holder__factory, Mintable, Whitelist__factory
 } from "../typechain-types"
-import { AddressZero } from "@gambitdao/gmx-middleware"
+import { AddressZero, CHAIN } from "@gambitdao/gmx-middleware"
 
-import { ethers } from "hardhat"
+import { ethers, network } from "hardhat"
 
 import getAddress, { ZERO_ADDRESS } from "../utils/getAddress"
 import { connectOrDeploy } from "../utils/deploy"
@@ -105,7 +105,8 @@ const main = async () => {
     let storeIpfsQuery: any
     const noContractDeployed = sale.mintRuleList.every(rule => rule.contractAddress === '')
 
-    if (noContractDeployed) {
+
+    if (noContractDeployed && network.config.chainId === CHAIN.ARBITRUM) {
       const client = new NFTStorage({ token: process.env.NFT_STORAGE })
       const svg = labItemSvg(sale.id)
 
@@ -140,9 +141,10 @@ const main = async () => {
 
       console.log(`------------------------------------------------------------------------------\n`)
 
-      if (!(getAddress(rule.contractAddress) === AddressZero)) {
-        return
+      if (rule.contractAddress) {
+        break
       }
+
       let saleContractQuery: Promise<Mintable>
 
       if (rule.type === SaleType.Public) {
@@ -174,9 +176,11 @@ const main = async () => {
       console.log(`------------------------------------------------------------------------------\n`)
     }
 
-    const { url, data } = await storeIpfsQuery
-    console.log(data, url)
-
+    if (storeIpfsQuery) {
+      const { url, data } = await storeIpfsQuery
+      console.log(data, url)
+    }
+    
   }
   
 
