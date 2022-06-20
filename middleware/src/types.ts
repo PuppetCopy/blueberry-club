@@ -146,6 +146,8 @@ export enum IAttributeMappings {
   "Lab Flask" = 207,
   "GLP Shirt" = 208,
   "GBC x Giorgio Balbi" = 209,
+  "GBC x Wine bottle Club" = 210,
+  "Summer Buoy" = 211,
 }
 
 
@@ -239,6 +241,7 @@ export enum IAttributeClothes {
   BUILDER = IAttributeMappings.Builder,
   AVALANCHE_HOODIE = IAttributeMappings["Avalanche Hoodie"],
   GLP_SHIRT = IAttributeMappings["GLP Shirt"],
+  SUMMER_BUOY = IAttributeMappings["Summer Buoy"],
 }
 
 export enum IAttributeFaceAccessory {
@@ -341,6 +344,7 @@ export enum IAttributeHat {
   CHRISTMAS_HAT = IAttributeMappings['Christmas Hat'],
   FAST_FOOD_CAP = IAttributeMappings['Fast Food Cap'],
   LAB_FLASK = IAttributeMappings["Lab Flask"],
+  GBC_WINE_BOTTLE_CLUB = IAttributeMappings["GBC x Wine bottle Club"],
 }
 
 export enum IAttributeBackground {
@@ -411,7 +415,6 @@ export interface LabItemSale {
   description: string // dispolays in UI
 
   mintRuleList: MintRule[]
-  attributes: (TraitType)[]
 }
 
 
@@ -425,8 +428,7 @@ export interface MintPublic extends MintRuleConfig {
 }
 
 export interface MintHolder extends MintRuleConfig {
-  type: SaleType.holder,
-  walletMintable: number
+  type: SaleType.holder
 }
 
 export interface MintPrivate extends MintRuleConfig {

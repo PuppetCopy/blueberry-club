@@ -1,6 +1,6 @@
 import {
   Profile__factory, GBCLab__factory,
-  Police__factory, Closet__factory, GBC__factory, PublicSale__factory, PublicFactory__factory
+  Police__factory, Closet__factory, GBC__factory, Public__factory, Holder__factory, Mintable, Whitelist__factory
 } from "../typechain-types"
 import { AddressZero } from "@gambitdao/gmx-middleware"
 
@@ -8,7 +8,11 @@ import { ethers } from "hardhat"
 
 import getAddress, { ZERO_ADDRESS } from "../utils/getAddress"
 import { connectOrDeploy } from "../utils/deploy"
-import { GBC_ADDRESS } from "@gambitdao/gbc-middleware"
+import { attributeIndexToLabel, GBC_ADDRESS, getLabItemTupleIndex, saleDescriptionList, SaleType } from "@gambitdao/gbc-middleware"
+import { getMerkleProofs } from "../utils/whitelist"
+import { NFTStorage, File, Token as NFTToken } from "nft.storage"
+import { labItemSvg } from "../utils/image"
+import { Resvg } from "@resvg/resvg-js"
 
 
 
@@ -18,7 +22,6 @@ enum ROLES {
   DESIGNER
 }
 export default ROLES
-
 
 
 /**
@@ -31,7 +34,7 @@ export default ROLES
  */
 
 // This contract/address can be used on other contracts
-const TREASURY = GBC_ADDRESS.TREASURY_ARBITRUM // Multisig or you personal address (if you leave it blank it will be the owner address)
+const TREASURY = '' // Multisig or you personal address (if you leave it blank it will be the owner address)
 const GBC = GBC_ADDRESS.GBC // The GBC ERC721 (NFT) contract
 // const POLICE = "" // Police contract
 const POLICE = GBC_ADDRESS.POLICE // Police contract
@@ -43,17 +46,13 @@ const LAB = GBC_ADDRESS.LAB // The Lab items ERC1155 contract
 const PROFILE = GBC_ADDRESS.PROFILE
 const CLOSET = GBC_ADDRESS.CLOSET
 
-const PUBLIC_SALE_IMPL = GBC_ADDRESS.PUBLIC_SALE_IMPL
-const PUBLIC_SALE_FACTORY = GBC_ADDRESS.PUBLIC_SALE_FACTORY
-const PRIVATE_SALE_IMPL = GBC_ADDRESS.PRIVATE_SALE_IMPL
-const PRIVATE_SALE_FACTORY = GBC_ADDRESS.PRIVATE_SALE_FACTORY
-const HOLDER_SALE_IMPL = GBC_ADDRESS.HOLDER_SALE_IMPL
-const HOLDER_SALE_FACTORY = GBC_ADDRESS.HOLDER_SALE_FACTORY
 
 
 const main = async () => {
 
   const [creator] = (await ethers.getSigners())
+
+  console.clear()
 
   console.log(`DEPLOYER WIZARD 🧙‍♂️ (by IrvingDev)`)
 
@@ -97,61 +96,89 @@ const main = async () => {
 
   await connectOrDeploy(CLOSET, Closet__factory, gbc.address, lab.address)
 
-  const publicImpl = await connectOrDeploy(PUBLIC_SALE_IMPL, PublicSale__factory)
-  const publicFactory = await connectOrDeploy(PUBLIC_SALE_FACTORY, PublicFactory__factory, publicImpl.address, owner)
 
-  if (getAddress(PUBLIC_SALE_IMPL) === AddressZero) {
-    try {
-      await police.setUserRole(publicImpl.address, ROLES.MINTER, true)
-      console.log(`  - MINTER role setted !`)
-    } catch (error) {
-      console.log(error)
-      console.log(`❌ Actual deployer is not owner of previous police contract`)
+  for (const sale of saleDescriptionList) {
+    if (!process.env.NFT_STORAGE) {
+      throw new Error('nft.storage api key is required')
     }
+
+    let storeIpfsQuery: any
+    const noContractDeployed = sale.mintRuleList.every(rule => rule.contractAddress === '')
+
+    if (noContractDeployed) {
+      const client = new NFTStorage({ token: process.env.NFT_STORAGE })
+      const svg = labItemSvg(sale.id)
+
+      const resvg = new Resvg(svg)
+      const pngData = resvg.render()
+      const pngBuffer = pngData.asPng()
+
+      console.info('Original SVG Size:', `${resvg.width} x ${resvg.height}`)
+      console.info('Output PNG Size  :', `${pngData.width} x ${pngData.height}`)
+
+      const image = new File([pngBuffer], `lab-${sale.id}.png`, { type: 'image/png' })
+
+      const index = getLabItemTupleIndex(sale.id)
+
+      const attributes = [
+        {
+          trait_type: attributeIndexToLabel[index],
+          value: sale.name
+        },
+        {
+          trait_type: "Slot",
+          value: index === 0 ? "Background" : index === 8 ? 'Special' : 'Wear'
+        },
+      ]
+
+
+      storeIpfsQuery = client.store({ name: sale.name, description: sale.description, image, attributes })
+    }
+
+
+    for (const rule of sale.mintRuleList) {
+
+      console.log(`------------------------------------------------------------------------------\n`)
+
+      if (!(getAddress(rule.contractAddress) === AddressZero)) {
+        return
+      }
+      let saleContractQuery: Promise<Mintable>
+
+      if (rule.type === SaleType.Public) {
+        saleContractQuery = connectOrDeploy(rule.contractAddress, Public__factory, sale.id, 0, owner, lab.address, rule)
+      } else if (rule.type === SaleType.holder) {
+        const { cost, start, finish, supply, accountLimit } = rule
+        saleContractQuery = connectOrDeploy(rule.contractAddress, Holder__factory, sale.id, 0, owner, lab.address, { cost, start, finish, supply, accountLimit }, gbc.address)
+      } else {
+        const { cost, start, supply, finish, accountLimit } = rule
+
+        const res = getMerkleProofs(rule.addressList, sale, rule)
+        console.log(res.proofs)
+        console.log('root: ', res.merkleRoot)
+
+        saleContractQuery = connectOrDeploy(rule.contractAddress, Whitelist__factory, sale.id, 0, owner, lab.address, { accountLimit, cost, finish, start, supply }, res.merkleRoot)
+      }
+
+
+      const saleContract = await saleContractQuery
+
+      if (owner == creator.address) {
+        console.log(`🎩 Set roles from LAB to ${rule.type} ${saleContract.address} SALE`)
+        await police.setUserRole(saleContract.address, ROLES.MINTER, true)
+        console.log(`  - MINTER role setted !`)
+      }
+
+
+      console.log()
+      console.log(`------------------------------------------------------------------------------\n`)
+    }
+
+    const { url, data } = await storeIpfsQuery
+    console.log(data, url)
+
   }
-
-
-  // for (const config of saleDescriptionList) {
-  //   console.log(`------------------------------------------------------------------------------\n`)
-
-  //   let sale: Sale
-
-  //   const fstMintRule = config.mintRuleList[0]
-  //   const lastDateRule = saleLastDate(config)
-  //   const max = saleMaxSupply(config)
-  //   const finish = lastDateRule.start + saleConfig.saleDuration
-  //   const { maxMintable } = saleConfig
-  //   const saleState = { paused: 1, minted: 0, max }
-  //   const mintState = { finish, maxMintable }
-
-  //   const createMode = getAddress(config.contractAddress) === AddressZero
-
-  //   if (fstMintRule.type === SaleType.Public) {
-  //     const { amount, cost, start, transaction } = fstMintRule
-
-  //     sale = await connectOrDeploy(config.contractAddress, PublicTpl__factory, config.id, owner, TREASURY, lab.address, saleState, mintState, { amount, cost, start, transaction })
-  //   } else if (fstMintRule.type === SaleType.holder) {
-  //     const { amount, cost, start, transaction, walletMintable } = fstMintRule
-  //     sale = await connectOrDeploy(config.contractAddress, HolderWhitelistTpl__factory, config.id, owner, TREASURY, gbc.address, lab.address, saleState, mintState, { totalMintable: amount, cost, start, transaction, walletMintable })
-  //   } else {
-  //     if (createMode) {
-  //       const res = getMerkleProofs(fstMintRule.addressList, fstMintRule)
-  //       console.log(res.proofs)
-  //       console.log('root: ', res.merkleRoot)
-
-  //       sale = await connectOrDeploy(config.contractAddress, MerkleTpl__factory, config.id, owner, TREASURY, lab.address, saleState, mintState, res.merkleRoot)
-  //     } else {
-  //       sale = MerkleTpl__factory.connect(config.contractAddress, creator)
-  //     }
-  //   }
-
-  //   console.log(`🎩 Set roles from LAB to ${config.name} SALE`)
-
-
-
-  //   console.log()
-  //   console.log(`------------------------------------------------------------------------------\n`)
-  // }
+  
 
 }
 

@@ -3,21 +3,19 @@ import { style, $text } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { screenUtils, $column, layoutSheet, $row } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { LabItemSale, saleMaxSupply, MintRule } from "@gambitdao/gbc-middleware"
-import { unixTimestampNow, timeSince, readableNumber, formatFixed } from "@gambitdao/gmx-middleware"
+import { LabItemSale, MintRule, mintLabelMap } from "@gambitdao/gbc-middleware"
+import { unixTimestampNow, timeSince, formatFixed } from "@gambitdao/gmx-middleware"
 import { $Link } from "@gambitdao/ui-components"
 import { map, multicast } from "@most/core"
 import { $labItem } from "../../logic/common"
 import { getMintCount } from "../../logic/contract/sale"
-import { mintLabelMap } from "@gambitdao/gbc-middleware/src/mappings/label"
 
 export const $StoreItemPreview = (item: LabItemSale, rule: MintRule, parentRoute: Route, changeRouteTether: Tether<string, string>) => {
-  const max = saleMaxSupply(item)
 
   const mintCount = multicast(getMintCount(rule, 15000))
 
   const supplyLeft = map(amount => {
-    const count = max - Number(amount)
+    const count = rule.supply - Number(amount)
     return count ? `${count} left` : 'Sold Out'
   }, mintCount)
 

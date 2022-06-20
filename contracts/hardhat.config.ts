@@ -5,7 +5,6 @@ import "hardhat-gas-reporter"
 import "@typechain/hardhat"
 
 import dotenv from "dotenv"
-export * from "./tasks/tasks"
 import { CHAIN, NETWORK_METADATA } from "@gambitdao/gmx-middleware"
 dotenv.config({ path: "../.env" })
 
