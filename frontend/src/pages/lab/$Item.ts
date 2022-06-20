@@ -163,7 +163,7 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
                             $text(style({ color: pallete.foreground }))(` tokens per address`),
                           ),
                           $element('li')(
-                            $text(style({ color: pallete.foreground }))(isFinished ? 'Sale Settled on' : 'Sale will automatically settle in '),
+                            $text(style({ color: pallete.foreground }))(isFinished ? 'Sale Settled on ' : 'Sale will automatically settle in '),
                             $text(displayDate(mintRule.finish))
                           ),
                         )

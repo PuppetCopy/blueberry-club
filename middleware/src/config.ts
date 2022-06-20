@@ -40,9 +40,9 @@ export const saleConfig = {
 
 export const saleDescriptionList: LabItemSale[] = [
   {
-    name: "GBC x Wine bottle Club",
+    name: "GBC x Wine Bottle Club",
     description: `For all members present at the Wine Bottle Club x GBC event in Bordeaux`,
-    id: IAttributeMappings["GBC x Wine bottle Club"],
+    id: IAttributeMappings["GBC x Wine Bottle Club"],
     mintRuleList: [
       {
         supply: 11,

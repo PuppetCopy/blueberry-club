@@ -146,7 +146,7 @@ export enum IAttributeMappings {
   "Lab Flask" = 207,
   "GLP Shirt" = 208,
   "GBC x Giorgio Balbi" = 209,
-  "GBC x Wine bottle Club" = 210,
+  "GBC x Wine Bottle Club" = 210,
   "Summer Buoy" = 211,
 }
 
@@ -344,7 +344,7 @@ export enum IAttributeHat {
   CHRISTMAS_HAT = IAttributeMappings['Christmas Hat'],
   FAST_FOOD_CAP = IAttributeMappings['Fast Food Cap'],
   LAB_FLASK = IAttributeMappings["Lab Flask"],
-  GBC_WINE_BOTTLE_CLUB = IAttributeMappings["GBC x Wine bottle Club"],
+  GBC_WINE_BOTTLE_CLUB = IAttributeMappings["GBC x Wine Bottle Club"],
 }
 
 export enum IAttributeBackground {
