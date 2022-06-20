@@ -151,7 +151,7 @@ export const saleDescriptionList: LabItemSale[] = [
   },
   {
     name: "Fast Food Cap",
-    description: "Strap on the cap that ensures you the job security that you never wanted, it has a the magical powers to turn things around when you least expect it",
+    description: "this cap ensures you a job security you never wanted, it has been told to have magical powers to turn things around when you least expect it",
     id: IAttributeMappings["Fast Food Cap"],
     mintRuleList: [
       {
