@@ -54,7 +54,7 @@ abstract contract Mintable is Payable {
 
         if (_accountMintCount > ACCOUNT_LIMIT) revert MaxWalletReached();
 
-        if (block.timestamp < START) revert MintNotStarted();
+        if (block.timestamp <= START) revert MintNotStarted();
         if (block.timestamp > FINISH) revert MintEnded();
 
         totalMinted += amount_;
