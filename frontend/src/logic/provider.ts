@@ -1,5 +1,5 @@
 import { JsonRpcProvider, WebSocketProvider } from "@ethersproject/providers"
-import { GLOBAL_W3P, GLOBAL_W3P_AVALANCHE } from "@gambitdao/gbc-middleware"
+import { GLOBAL_W3P, GLOBAL_W3P_ARBITRUM, GLOBAL_W3P_AVALANCHE } from "@gambitdao/gbc-middleware"
 import { NETWORK_METADATA } from "@gambitdao/gmx-middleware"
 import detectEthereumProvider from "@metamask/detect-provider"
 import WalletConnectProvider from "@walletconnect/ethereum-provider"
@@ -20,5 +20,7 @@ export const walletConnect = new WalletConnectProvider({
 export const metamaskQuery = detectEthereumProvider({ mustBeMetaMask: false, silent: true }) as Promise<IEthereumProvider & { selectedAddress: string } | null>
 
 export const web3Provider = new WebSocketProvider(GLOBAL_W3P)
+
+export const arbOneWeb3Provider = new WebSocketProvider(GLOBAL_W3P_ARBITRUM)
 export const w3pAva = new JsonRpcProvider(GLOBAL_W3P_AVALANCHE)
 

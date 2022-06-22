@@ -95,11 +95,8 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
               const publicSaleTime = takeUntilLast(time => time > mintRule.start, timeChange)
 
               const time = unixTimestampNow()
-
               const endDate = mintRule.finish
-
               const isFinished = time > endDate
-
               const currentSaleType = mintLabelMap[mintRule.type]
 
               const sale = mintRule.type === SaleType.Public

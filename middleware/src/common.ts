@@ -52,13 +52,12 @@ export function saleLastDate(sale: LabItemSale): MintRule {
 }
 
 export const berryPartsToSvg = (svgParts: SvgPartsMap, [background, clothes, body, expression, faceAccessory, hat]: Partial<IBerryDisplayTupleMap>,) => {
-
   return `
     ${background ? svgParts[0][background] : ''}
     ${svgParts[1][clothes ? clothes : IAttributeClothes.NUDE]}
     ${svgParts[2][body ? body : IAttributeBody.BLUEBERRY]}
     ${expression ? svgParts[3][expression] : ''}
     ${faceAccessory ? svgParts[4][faceAccessory] : ''}
-    ${svgParts[5][hat ? hat : IAttributeHat.NUDE]}
+    ${hat ? svgParts[5][hat] : IAttributeHat.NUDE}
   `
 }

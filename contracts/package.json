@@ -27,7 +27,6 @@
     "@nomiclabs/hardhat-ethers": "^2.0.6",
     "@nomiclabs/hardhat-etherscan": "^3.0.4",
     "@nomiclabs/hardhat-waffle": "^2.0.3",
-    "@openzeppelin/contracts": "^4.6.0",
     "@rari-capital/solmate": "^6.4.0",
     "@resvg/resvg-js": "^2.0.1",
     "@typechain/hardhat": "^6.0.0",
@@ -51,6 +50,8 @@
   },
   "dependencies": {
     "@gambitdao/gbc-middleware": "workspace:*",
-    "@gambitdao/gmx-middleware": "workspace:*"
+    "@gambitdao/gmx-middleware": "workspace:*",
+    "@openzeppelin/contracts": "^4.6.0",
+    "gmx-contracts": "workspace:*"
   }
 }
