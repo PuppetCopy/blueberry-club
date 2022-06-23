@@ -19,6 +19,7 @@ import { $tofunft } from "../elements/$icons"
 import tokenIdAttributeTuple from "@gambitdao/gbc-middleware/src/mappings/tokenIdAttributeTuple"
 import { queryTokenv2 } from "../logic/query"
 import { IToken, ITransfer } from "@gambitdao/gbc-middleware"
+import { $berryByToken } from "../logic/common"
 
 export function bnToHex(n: bigint) {
   return '0x' + n.toString(16)
@@ -53,7 +54,7 @@ export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
     $column(layoutSheet.spacingBig)(
       $responsiveFlex(layoutSheet.spacingBig)(
         $row(style({ minWidth: '400px', height: '400px', overflow: 'hidden', borderRadius: '30px' }))(
-          $loadBerry([background, clothes, IAttributeBody.BLUEBERRY, expression, faceAccessory, hat], 400)
+          switchLatest(map(t => $berryByToken(t, '100%'), token))
         ),
         $node(),
         switchLatest(map(token => {
