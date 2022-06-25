@@ -83,7 +83,7 @@ contract Whitelist is Payable, Native, Mintable {
         MintRule memory _mrule,
         bytes32[] calldata merkleProof,
         uint120 amount
-    ) internal requiresAuth {
+    ) internal {
         bytes32 leaf = getMerkleHash(to, nonce, _mrule);
 
         if (leafClaimed[leaf]) revert LeafClaimed();

@@ -51,7 +51,7 @@ export const saleDescriptionList: LabItemSale[] = [
         type: SaleType.whitelist,
         cost: 0n,
         nonce: 0,
-        contractAddress: "0xE5471EfD0dD4099e8AfaDbf86E2c1939E263f8D7",
+        contractAddress: "0x7Cae36E0b9b745c1e0C5C9966a6101d57B4B991e",
         start: toTime(2022, 5, 24, 18),
         finish: toTime(2022, 6, 24, 18),
         accountLimit: 1,

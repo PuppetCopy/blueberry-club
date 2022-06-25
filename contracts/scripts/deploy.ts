@@ -10,7 +10,7 @@ import getAddress, { ZERO_ADDRESS } from "../utils/getAddress"
 import { connectOrDeploy } from "../utils/deploy"
 import { attributeIndexToLabel, GBC_ADDRESS, getLabItemTupleIndex, mintLabelMap, saleDescriptionList, SaleType } from "@gambitdao/gbc-middleware"
 import { getMerkleProofs } from "../utils/whitelist"
-import { NFTStorage, File, Token as NFTToken } from "nft.storage"
+import { NFTStorage, File } from "nft.storage"
 import { labItemSvg } from "../utils/image"
 import { Resvg } from "@resvg/resvg-js"
 
