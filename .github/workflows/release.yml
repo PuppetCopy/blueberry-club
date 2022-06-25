@@ -25,6 +25,9 @@ jobs:
       # - name: set checksum behavior
       #   run: set -x YARN_CHECKSUM_BEHAVIOR update
 
+      - name: Checkout submodules
+        run: git submodule update --init --recursive
+
       - name: Install Dependencies
         run: yarn
 
