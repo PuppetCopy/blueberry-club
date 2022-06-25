@@ -1,4 +1,5 @@
-import { IAttributeBackground, IAttributeClothes, IAttributeBody, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat, LabItemSale, MintRule } from "./types"
+import { unixTimestampNow } from "@gambitdao/gmx-middleware"
+import { IAttributeBackground, IAttributeClothes, IAttributeBody, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat, LabItemSale, MintRule, SvgPartsMap, IBerryDisplayTupleMap } from "./types"
 
 
 const labAttributeTuple = [IAttributeBackground, IAttributeClothes, IAttributeBody, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat] as const
@@ -18,7 +19,13 @@ export const getLabItemTupleIndex = (itemId: number) => {
 }
 
 export function saleMaxSupply(sale: LabItemSale): number {
-  return sale.mintRuleList.reduce((seed, next) => seed + next.amount, 0)
+  return sale.mintRuleList.reduce((seed, next) => seed + next.supply, 0)
+}
+
+export function isSaleWithinTimeRange(rule: MintRule): boolean {
+  const { start, finish } = rule
+  const now = unixTimestampNow()
+  return now > start && now < finish
 }
 
 export function saleLastDate(sale: LabItemSale): MintRule {
@@ -42,4 +49,15 @@ export function saleLastDate(sale: LabItemSale): MintRule {
   }
 
   return match
+}
+
+export const berryPartsToSvg = (svgParts: SvgPartsMap, [background, clothes, body, expression, faceAccessory, hat]: Partial<IBerryDisplayTupleMap>,) => {
+  return `
+    ${background ? svgParts[0][background] : ''}
+    ${svgParts[1][clothes ? clothes : IAttributeClothes.NUDE]}
+    ${svgParts[2][body ? body : IAttributeBody.BLUEBERRY]}
+    ${expression ? svgParts[3][expression] : ''}
+    ${faceAccessory ? svgParts[4][faceAccessory] : ''}
+    ${hat ? svgParts[5][hat] : IAttributeHat.NUDE}
+  `
 }

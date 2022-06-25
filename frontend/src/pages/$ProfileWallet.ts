@@ -1,11 +1,11 @@
 import { Behavior, replayLatest } from "@aelea/core"
 import { $node, $text, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
-import { $column, $row, layoutSheet, state } from "@aelea/ui-components"
-import { IOwner, IToken } from "@gambitdao/gbc-middleware"
+import { $column, $Popover, $row, layoutSheet, state } from "@aelea/ui-components"
+import { IOwner, IToken, saleDescriptionList } from "@gambitdao/gbc-middleware"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { map, multicast } from "@most/core"
+import { map, multicast, switchLatest, now } from "@most/core"
 import { $responsiveFlex } from "../elements/$common"
 import { queryOwnerV2 } from "../logic/query"
 import { IAccountStakingStore } from "@gambitdao/gbc-middleware"
@@ -14,8 +14,11 @@ import { connectGbc } from "../logic/contract/gbc"
 import { $accountPreview } from "../components/$AccountProfile"
 import { ContractTransaction } from "@ethersproject/contracts"
 import { $berryTileId } from "../components/$common"
-import { $ButtonSecondary } from "../components/form/$Button"
-import { $berryByToken } from "../logic/common"
+import { $ButtonPrimary, $ButtonSecondary } from "../components/form/$Button"
+import { $berryByToken, $labItem } from "../logic/common"
+import { connectLab } from "../logic/contract/lab"
+import { pallete } from "@aelea/ui-components-theme"
+import { $DropMultiSelect, $defaultChip, $defaultSelectContainer } from "../components/form/$Dropdown"
 
 
 export interface IAccount {
@@ -26,12 +29,8 @@ export interface IAccount {
 }
 
 export const $ProfileWallet = ({ walletLink, parentRoute, accountStakingStore }: IAccount) => component((
-  [selectTokensForWhitelist, selectTokensForWhitelistTether]: Behavior<IToken[], IToken[]>,
-  [selectTokensToWithdraw, selectTokensToWithdrawTether]: Behavior<IToken[], IToken[]>,
-  [clickWithdraw, clickWithdrawTether]: Behavior<PointerEvent, PointerEvent>,
   [changeRoute, changeRouteTether]: Behavior<string, string>,
-  [stakeTxn, stakeTxnTether]: Behavior<any, Promise<ContractTransaction>>,
-  [setApprovalForAll, setApprovalForAllTether]: Behavior<any, Promise<ContractTransaction>>,
+  [clickTransferItems, clickTransferItemsTether]: Behavior<any, any>,
 
 ) => {
 
@@ -45,10 +44,13 @@ export const $ProfileWallet = ({ walletLink, parentRoute, accountStakingStore }:
 
     return queryOwnerV2(address)
   }, walletLink.account)))
+  const lab = connectLab(walletLink)
 
 
 
   const gbcWallet = connectGbc(walletLink)
+
+  const ownedItems = multicast(lab.accountListBalance(saleDescriptionList.map(x => x.id)))
 
 
   return [
@@ -95,6 +97,39 @@ export const $ProfileWallet = ({ walletLink, parentRoute, accountStakingStore }:
                 })),
 
 
+
+                $row(
+                  $text('Items'),
+
+                  // switchLatest(map(items => {
+                  //   return $Popover({
+                  //     $$popContent: map(_ => $TransferItems(items.filter(x => x.amount > 0))({}), clickTransferItems),
+
+                  //   })(
+                  //     $ButtonSecondary({ $content: $text('Transfer') })({
+                  //       click: clickTransferItemsTether()
+                  //     })
+                  //   )({})
+                  // }, ownedItems))
+
+                ),
+
+
+                switchLatest(map(items => {
+
+
+                  return $row(layoutSheet.spacing)(
+                    ...items.filter(item => item.amount > 0).map(item => {
+                      return $row(style({ position: 'relative' }))(
+                        $text(style({ position: 'absolute', top: '1px', right: '4px', fontSize: '.75em', fontWeight: 'bold', color: pallete.background }))(
+                          item.amount + 'x'
+                        ),
+                        $labItem(item.id, 100)
+                      )
+                    })
+                  )
+                }, ownedItems))
+
               ),
             )
           }),
@@ -109,3 +144,46 @@ export const $ProfileWallet = ({ walletLink, parentRoute, accountStakingStore }:
 
 
 
+export const $TransferItems = (items: { id: number, amount: number }[]) => component((
+  [selection, selectionTether]: Behavior<any, any>
+) => {
+
+  return [
+    $column(
+      $row(...items.map(item => {
+
+        return $row(
+          $labItem(item.id, 50)
+        )
+      })),
+      
+      // $DropMultiSelect({
+      //   value: now([]),
+      //   $chip: $defaultChip(style({ padding: 0, overflow: 'hidden' })),
+      //   $$chip: map(item => {
+
+      //     return $row(style({ alignItems: 'center', gap: '8px', color: pallete.message }))(
+      //       style({ borderRadius: '50%' }, $labItem(item.id, 50)),
+      //       $text(String(item.id)),
+      //     )
+      //   }),
+      //   selectDrop: {
+      //     $container: $defaultSelectContainer(style({ padding: '10px', flexWrap: 'wrap', width: '100%', maxHeight: '400px', overflow: 'auto', flexDirection: 'row' })),
+      //     $$option: map((item) => {
+
+      //       return style({ cursor: 'pointer' }, $labItem(item.id, 50))
+      //     }),
+      //     list: items
+      //   }
+      // })({
+      //   selection: selectionTether()
+      // }),
+
+      $ButtonPrimary({
+        $content: $text('Send')
+      })({})
+    )
+
+
+  ]
+})

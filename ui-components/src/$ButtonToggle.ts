@@ -12,7 +12,7 @@ export interface IButton<T> {
 }
 
 const $toggleBtn = $row(layoutSheet.flex, style({ placeContent: 'center', alignItems: 'center', cursor: 'pointer', backgroundColor: pallete.background }))
-const $container = $row(layoutSheet.flex, style({ border: `1px solid ${pallete.middleground}`, backgroundColor: pallete.middleground, gap: '1px', overflow: 'hidden', borderRadius: '8px' }))
+const $container = $row(layoutSheet.flex, style({ border: `1px solid ${pallete.horizon}`, backgroundColor: pallete.horizon, gap: '1px', overflow: 'hidden', borderRadius: '8px' }))
 
 
 const defaultOption = map(<T>(o: T) => $text(String(o)))

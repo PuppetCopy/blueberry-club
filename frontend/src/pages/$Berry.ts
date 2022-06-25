@@ -3,9 +3,9 @@ import { $node, $text, attr, component, IBranch, nodeEvent, style } from "@aelea
 import { Route } from "@aelea/router"
 import { $column, $icon, $Popover, $row, $seperator, $TextField, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { USE_CHAIN, GBC_ADDRESS, IAttributeBody, IAttributeMappings } from "@gambitdao/gbc-middleware"
+import { USE_CHAIN, GBC_ADDRESS, IAttributeBody, IAttributeMappings, attributeIndexToLabel } from "@gambitdao/gbc-middleware"
 import { GBC__factory } from "@gambitdao/gbc-contracts"
-import { isAddress, shortenAddress, timeSince } from "@gambitdao/gmx-middleware"
+import { isAddress, timeSince } from "@gambitdao/gmx-middleware"
 import { $anchor, $Link, $caretDblDown, $IntermediateTx } from "@gambitdao/ui-components"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
@@ -16,10 +16,10 @@ import { $loadBerry } from "../components/$DisplayBerry"
 import { $ButtonPrimary, $ButtonSecondary } from "../components/form/$Button"
 import { $accountRef, $card, $responsiveFlex, $txnIconLink } from "../elements/$common"
 import { $tofunft } from "../elements/$icons"
-import tokenIdAttributeTuple from "../logic/mappings/tokenIdAttributeTuple"
-import { queryToken, queryTokenv2 } from "../logic/query"
+import tokenIdAttributeTuple from "@gambitdao/gbc-middleware/src/mappings/tokenIdAttributeTuple"
+import { queryTokenv2 } from "../logic/query"
 import { IToken, ITransfer } from "@gambitdao/gbc-middleware"
-import { attributeIndexToLabel } from "../logic/mappings/label"
+import { $berryByToken } from "../logic/common"
 
 export function bnToHex(n: bigint) {
   return '0x' + n.toString(16)
@@ -54,7 +54,7 @@ export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
     $column(layoutSheet.spacingBig)(
       $responsiveFlex(layoutSheet.spacingBig)(
         $row(style({ minWidth: '400px', height: '400px', overflow: 'hidden', borderRadius: '30px' }))(
-          $loadBerry([background, clothes, IAttributeBody.BLUEBERRY, expression, faceAccessory, hat], 400)
+          switchLatest(map(t => $berryByToken(t, '100%'), token))
         ),
         $node(),
         switchLatest(map(token => {

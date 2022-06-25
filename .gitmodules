@@ -1,0 +1,3 @@
+[submodule "gmx-contracts"]
+	path = gmx-contracts
+	url = https://github.com/gmx-io/gmx-contracts.git

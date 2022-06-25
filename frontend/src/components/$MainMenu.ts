@@ -1,5 +1,5 @@
 import { Behavior, combineArray, O, Op } from "@aelea/core"
-import { $element, $Node, $text, attr, component, IBranch, nodeEvent, style } from "@aelea/dom"
+import { $Branch, $element, $Node, $text, attr, component, IBranch, nodeEvent, style } from "@aelea/dom"
 import { $RouterAnchor, Route } from '@aelea/router'
 import { $column, $icon, $Popover, $row, layoutSheet, screenUtils, state } from '@aelea/ui-components'
 import { pallete, theme } from "@aelea/ui-components-theme"
@@ -8,17 +8,19 @@ import { IWalletLink } from "@gambitdao/wallet-link"
 import { constant, empty, map, now, switchLatest } from '@most/core'
 import { IEthereumProvider } from "eip1193-provider"
 import { WALLET } from "../logic/provider"
-import { $caretDown } from "../elements/$icons"
+import { $bagOfCoins, $caretDown } from "../elements/$icons"
 import { $accountPreview, $walletAccountDisplay } from "./$AccountProfile"
 import { $IntermediateConnectPopover } from "./$ConnectAccount"
 import { $ButtonSecondary } from "./form/$Button"
 import { totalWalletHoldingsUsd } from "../logic/gbcTreasury"
 import { $Dropdown, $defaultSelectContainer } from "./form/$Dropdown"
-import { $bagOfCoinsCircle, $fileCheckCircle, $logo, $logoFull } from "../common/$icons"
+import { $bagOfCoinsCircle, $fileCheckCircle, $logo, $logoFull, $labLogo } from "../common/$icons"
 import { $anchor, $discord, $gitbook, $github, $instagram, $Link, $moreDots, $twitter } from "@gambitdao/ui-components"
 import { $seperator2 } from "../pages/common"
 import { $Picker } from "../components/$ThemePicker"
 import { dark, light } from "../common/theme"
+import { Stream } from "@most/types"
+
 
 
 
@@ -50,16 +52,39 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
 
 
 
+  const $pageLink = ($iconPath: $Branch<SVGPathElement>, text: string | Stream<string>) => $row(style({ alignItems: 'center', cursor: 'pointer' }))(
+    $icon({ $content: $iconPath, width: '16px', fill: pallete.middleground, svgOps: style({ minWidth: '36px' }), viewBox: '0 0 32 32' }),
+    $text(text)
+  )
+
+  const $treasuryStatus = $row(style({ alignItems: 'center', cursor: 'pointer' }))(
+    $pageLink($bagOfCoins, map(x => '$' + formatReadableUSD(x), totalWalletHoldingsUsd)),
+    $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginTop: '3px', marginLeft: '5px' }), viewBox: '0 0 32 32' })
+  )
+
+
   const $menuItemList = [
-    $Link({ $content: $text('Lab'), url: '/p/lab', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
+    $Link({ $content: $pageLink($labLogo, 'Lab'), url: '/p/lab', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
       click: routeChangeTether()
     }),
-    $Link({ $content: $text('Leaderboard'), url: '/p/leaderboard', disabled: now(true), route: parentRoute.create({ fragment: 'feefwefwe' }) })({
+
+
+    // $Link({ $content: $text('Leaderboard'), url: '/p/leaderboard', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
+    //   click: routeChangeTether()
+    // }),
+    // $Link({ $content: $text('Trade'), url: '/p/trade', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
+    //   click: routeChangeTether()
+    // }),
+  ]
+
+
+  const $treasuryLinks = [
+    $Link({ $content: $govItem('Treasury', $bagOfCoinsCircle, 'GBC Community-Led Portfolio'), url: '/p/treasury', route: parentRoute })({
       click: routeChangeTether()
     }),
-    $Link({ $content: $text('Trade'), url: '/p/trade', disabled: now(true), route: parentRoute.create({ fragment: 'feefwefwe' }) })({
-      click: routeChangeTether()
-    }),
+    $anchor(style({ textDecoration: 'none' }), attr({ href: 'https://snapshot.org/#/gbc-nft.eth', target: '_blank' }))(
+      $govItem('Governance', $fileCheckCircle, 'Treasury Governance, 1 GBC = 1 Voting Power')
+    ),
   ]
 
   return [
@@ -68,57 +93,46 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
         $RouterAnchor({ url: '/', route: parentRoute, $anchor: $element('a')($icon({ $content: theme.name === 'dark' ? $logo : $logoFull, width: '55px', viewBox: '0 0 32 32' })) })({
           click: routeChangeTether()
         }),
-        $Dropdown({
-          // disabled: accountChange,
-          // $noneSelected: $text('Choose Amount'),
-          $selection: $row(style({ alignItems: 'center', cursor: 'pointer' }))(
-            screenUtils.isDesktopScreen ? $text(style({ marginRight: '8px' }))('Treasury: ') : empty(),
-            switchLatest(map(x => $text('$' + formatReadableUSD(x)), totalWalletHoldingsUsd)),
-            $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginTop: '3px', marginLeft: '5px' }), viewBox: '0 0 32 32' }),
-          ),
-          value: {
-            value: now(null),
-            $container: $defaultSelectContainer(style({ minWidth: '300px' })),
-            $$option: map(option => option),
-            list: [
-              $Link({ $content: $govItem('Treasury', $bagOfCoinsCircle, 'GBC Community-Led Portfolio'), url: '/p/treasury', route: parentRoute })({
-                click: routeChangeTether()
-              }),
-              $anchor(style({ textDecoration: 'none' }), attr({ href: 'https://snapshot.org/#/gbc-nft.eth', target: '_blank' }))(
-                $govItem('Governance', $fileCheckCircle, 'Treasury Governance, 1 GBC = 1 Voting Power')
-              ),
-            ],
-          }
-        })({}),
+        screenUtils.isDesktopScreen
+          ? $Dropdown({
+            $selection: $treasuryStatus,
+            value: {
+              value: now(null),
+              $container: $defaultSelectContainer(style({ minWidth: '300px' })),
+              $$option: map(option => option),
+              list: $treasuryLinks,
+            }
+          })({})
+          : empty(),
       ),
       $row(layoutSheet.spacingBig, style({ fontSize: '.9em', flex: 1, alignItems: 'center', placeContent: 'center' }), containerOp)(
 
-        ...screenUtils.isDesktopScreen ? [
-          ...$menuItemList,
-          style({ alignSelf: 'stretch' }, $seperator2)
-        ] : [],
-
+        ...$menuItemList,
+        style({ alignSelf: 'stretch' }, $seperator2),
 
         $Popover({
           // dismiss: profileLinkClick,
           $$popContent: combineArray((_) => {
             return $column(layoutSheet.spacingBig)(
+              ...screenUtils.isMobileScreen
+                ? $treasuryLinks
+                : [],
 
-              ...screenUtils.isMobileScreen ? $menuItemList : [],
+              // ...screenUtils.isMobileScreen ? $menuItemList : [],
               $row(layoutSheet.spacingBig, style({ flexWrap: 'wrap', width: '210px' }))(
-                $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://discord.com/invite/7ZMmeU3z9j' }))(
+                $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://discord.com/invite/7ZMmeU3z9j' }))(
                   $icon({ $content: $discord, width: '22px', viewBox: `0 0 32 32` })
                 ),
-                $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://docs.blueberry.club/' }))(
+                $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://docs.blueberry.club/' }))(
                   $icon({ $content: $gitbook, width: '22px', viewBox: `0 0 32 32` })
                 ),
-                $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://twitter.com/GBlueberryClub' }))(
+                $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://twitter.com/GBlueberryClub' }))(
                   $icon({ $content: $twitter, width: '22px', viewBox: `0 0 24 24` })
                 ),
-                $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://www.instagram.com/blueberryclub.eth' }))(
+                $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://www.instagram.com/blueberryclub.eth' }))(
                   $icon({ $content: $instagram, width: '18px', viewBox: `0 0 32 32` })
                 ),
-                $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://github.com/nissoh/blueberry-club' }))(
+                $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://github.com/nissoh/blueberry-club' }))(
                   $icon({ $content: $github, width: '22px', viewBox: `0 0 32 32` })
                 ),
               ),
@@ -139,7 +153,24 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
             )
           }, clickPopoverClaim),
         })(
-          $row(style({ border: `2px solid ${pallete.middleground}`, borderRadius: '30px' }))(
+          $row(style({ border: `2px solid ${pallete.horizon}`, borderRadius: '30px' }))(
+            $icon({
+              svgOps: O(
+                clickPopoverClaimTether(nodeEvent('click')),
+                style({
+                  marginLeft: '3px',
+                  padding: '6px',
+                  cursor: 'pointer',
+                  alignSelf: 'center',
+                  transform: 'rotate(90deg)',
+                })
+              ),
+              width: '32px',
+              $content: $moreDots,
+              viewBox: '0 0 32 32'
+            }),
+
+            style({ backgroundColor: pallete.horizon, width: '2px', margin: '0px 10px 0 0' }, $seperator2),
 
             $IntermediateConnectPopover({
               $button: profileLinkClickTether()(style({ cursor: 'pointer' }, $walletAccountDisplay())),
@@ -156,49 +187,34 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
             })({
               walletChange: walletChangeTether()
             }),
-            style({ marginLeft: '6px', backgroundColor: pallete.middleground, width: '2px' }, $seperator2),
-            $icon({
-              svgOps: O(
-                clickPopoverClaimTether(nodeEvent('click')),
-                style({
-                  padding: '6px',
-                  cursor: 'pointer',
-                  alignSelf: 'center',
-                  marginRight: '6px',
-                  transform: 'rotate(90deg)',
-                })
-              ),
-              width: '32px',
-              $content: $moreDots,
-              viewBox: '0 0 32 32'
-            }),
+
           ),
         )({
           // overlayClick: clickPopoverClaimTether()
         }),
 
       ),
-      $row(style({ flex: 1, placeContent: 'flex-end' }))(
-        ...screenUtils.isDesktopScreen ? [
+      screenUtils.isDesktopScreen
+        ? $row(style({ flex: 1, placeContent: 'flex-end' }))(
           $row(layoutSheet.spacingBig)(
-            $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://discord.com/invite/7ZMmeU3z9j' }))(
+            $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://discord.com/invite/7ZMmeU3z9j' }))(
               $icon({ $content: $discord, width: '22px', viewBox: `0 0 32 32` })
             ),
-            $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://docs.blueberry.club/' }))(
+            $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://docs.blueberry.club/' }))(
               $icon({ $content: $gitbook, width: '22px', viewBox: `0 0 32 32` })
             ),
-            $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://twitter.com/GBlueberryClub' }))(
+            $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://twitter.com/GBlueberryClub' }))(
               $icon({ $content: $twitter, width: '22px', viewBox: `0 0 24 24` })
             ),
-            // $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://www.instagram.com/blueberryclub.eth' }))(
+            // $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://www.instagram.com/blueberryclub.eth' }))(
             //   $icon({ $content: $instagram, width: '18px', viewBox: `0 0 32 32` })
             // ),
-            // $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.middleground}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://github.com/nissoh/blueberry-club' }))(
+            // $anchor(layoutSheet.displayFlex, attr({ target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://github.com/nissoh/blueberry-club' }))(
             //   $icon({ $content: $github, width: '22px', viewBox: `0 0 32 32` })
             // ),
-          )
-        ] : []
-      )
+          ))
+        : empty()
+
     ),
 
 

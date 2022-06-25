@@ -155,10 +155,7 @@ export default ({ baseRoute = '' }: Website) => component((
               parentRoute: pagesRoute,
               treasuryStore,
               walletStore
-            })({
-              routeChanges: linkClickTether(),
-              walletChange: walletChangeTether()
-            })
+            })({ routeChanges: linkClickTether() })
           ),
 
           router.contains(pagesRoute)(

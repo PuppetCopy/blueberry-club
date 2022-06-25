@@ -4,8 +4,8 @@ import { awaitPromises, continueWith, fromPromise, map, multicast, now, periodic
 import { Stream } from "@most/types"
 import { $loadBerry } from "../components/$DisplayBerry"
 import { IValueInterval } from "../components/$StakingGraph"
-import { IBerryDisplayTupleMap, getLabItemTupleIndex, IAttributeExpression, USE_CHAIN, IAttributeBackground, IAttributeMappings, IBerryLabItems, IToken } from "@gambitdao/gbc-middleware"
-import tokenIdAttributeTuple from "./mappings/tokenIdAttributeTuple"
+import { IBerryDisplayTupleMap, getLabItemTupleIndex, IAttributeExpression, USE_CHAIN, IAttributeBackground, IAttributeMappings, IBerryLabItems, IToken, IAttributeHat } from "@gambitdao/gbc-middleware"
+import tokenIdAttributeTuple from "@gambitdao/gbc-middleware/src/mappings/tokenIdAttributeTuple"
 import { IPricefeed, IStakeSource, queryLatestPrices, queryTokenv2 } from "./query"
 import { $Node, $svg, attr, style } from "@aelea/dom"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
@@ -104,27 +104,30 @@ export const $berryByToken = (token: IToken, size: string | number = 85) => {
 }
 
 export const $berryByLabItems = (berryId: number, backgroundId: IAttributeBackground, labItemId: IAttributeMappings, size: string | number = 85) => {
-  const matchTuple: Partial<IBerryDisplayTupleMap> = [...tokenIdAttributeTuple[berryId - 1]]
+  const tuple: Partial<IBerryDisplayTupleMap> = [...tokenIdAttributeTuple[berryId - 1]]
 
   if (labItemId) {
     const customIdx = getLabItemTupleIndex(labItemId)
 
     // @ts-ignore
-    matchTuple.splice(customIdx, 1, labItemId)
+    tuple.splice(customIdx, 1, labItemId)
   }
 
   if (backgroundId) {
-    matchTuple.splice(0, 1, backgroundId)
+    tuple.splice(0, 1, backgroundId)
   }
 
-
-  return $loadBerry(matchTuple, size)
+  return $loadBerry(tuple, size)
 }
 
 export const $labItem = (id: number, size: string | number = 85, background = true, showFace = false): $Node => {
-  const state = getLabItemTupleIndex(id)
+  const tupleIdx = getLabItemTupleIndex(id)
   const localTuple = Array(5).fill(undefined) as IBerryDisplayTupleMap
-  localTuple.splice(state, 1, id)
+  localTuple.splice(tupleIdx, 1, id)
+
+  if (tupleIdx !== 5) {
+    localTuple.splice(5, 1, IAttributeHat.NUDE)
+  }
 
   if (showFace) {
     localTuple.splice(3, 1, IAttributeExpression.HAPPY)
@@ -133,7 +136,7 @@ export const $labItem = (id: number, size: string | number = 85, background = tr
 
   const backgroundStyle = O(
     style({ placeContent: 'center', maxWidth: sizeNorm, overflow: 'hidden', borderRadius: 85 * 0.15 + 'px' }),
-    background ? style({ backgroundColor: state === 0 ? '' : colorAlpha(pallete.message, theme.name === 'light' ? .12 : .92) }) : O()
+    background ? style({ backgroundColor: tupleIdx === 0 ? '' : colorAlpha(pallete.message, theme.name === 'light' ? .12 : .92) }) : O()
   )
 
 
@@ -148,7 +151,7 @@ export const $labItemAlone = (id: number, size = 80) => {
     style({  })
   )(
     tap(async ({ element }) => {
-      const svgParts = (await import("../logic/mappings/svgParts")).default
+      const svgParts = (await import("@gambitdao/gbc-middleware/src/mappings/svgParts")).default
 
       // @ts-ignore
       element.innerHTML = svgParts[state][id]

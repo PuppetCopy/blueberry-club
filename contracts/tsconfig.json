@@ -13,14 +13,10 @@
     "./scripts",
     "./test",
     "./utils",
+    "./tasks",
     "./typechain-types"
   ],
   "files": [
     "./hardhat.config.ts"
-  ],
-  "ts-node": {
-    "compilerOptions": {
-      "module": "CommonJS"
-    }
-  }
+  ]
 }

@@ -34,7 +34,7 @@ export const $GbcWhitelist = (config: MintCmp) => component((
   [alert, alertTether]: Behavior<string | null, string | null>,
 ) => {
 
-  const saleWallet = connectHolderSale(config.walletLink, config.item.contractAddress)
+  const saleWallet = connectHolderSale(config.walletLink, config.mintRule.contractAddress)
   const gbcWallet = connectGbc(config.walletLink)
   const managerWallet = connectManager(config.walletLink)
   const labWallet = connectLab(config.walletLink)
@@ -78,7 +78,7 @@ export const $GbcWhitelist = (config: MintCmp) => component((
 
 
       return $column(layoutSheet.spacing)(
-        $row(layoutSheet.spacing, style({ alignItems: 'flex-start' }))(
+        $row(layoutSheet.spacing, style({ alignItems: 'flex-end', placeContent: 'space-between' }))(
 
 
           $IntermediatePromise({
@@ -92,8 +92,8 @@ export const $GbcWhitelist = (config: MintCmp) => component((
                 placeholder: 'Select Berries',
                 validation: map(list => {
 
-                  if (list.length > config.mintRule.transaction) {
-                    return `Exceeding ${config.mintRule.transaction} tokens per Transaction`
+                  if (list.length > config.mintRule.accountLimit) {
+                    return `Exceeding address limit of ${config.mintRule.accountLimit}`
                   }
 
                   return null
@@ -118,7 +118,7 @@ export const $GbcWhitelist = (config: MintCmp) => component((
 
 
               return $ButtonPrimary({
-                disabled: disablePrimary,
+                disabled: startWith(true, disablePrimary),
                 buttonOp: style({ alignSelf: 'flex-end' }),
                 $content: switchLatest(
                   map(({ chosenTokens }) => {
@@ -146,7 +146,7 @@ export const $GbcWhitelist = (config: MintCmp) => component((
                     const idList = selectTokensForWhitelist.map(x => x.id).slice(0, 90)
 
                     const cost = BigInt(selectTokensForWhitelist.length) * config.mintRule.cost
-                    const contractAction = saleContract.nftMint(idList, { value: cost })
+                    const contractAction = saleContract.mint(idList, { value: cost })
 
                     return contractAction
                   }, combineObject({ selectTokensForWhitelist: chosenTokens, saleContract: saleWallet.contract, account: config.walletLink.account })),

@@ -47,7 +47,7 @@ dataSources:
         - Transaction
       abis:
         - name: ERC1155
-          file: ../contracts/artifacts/contracts/GBCL.sol/GBCLab.json
+          file: ../contracts/artifacts/contracts/lab/Lab.sol/GBCLab.json
       eventHandlers:
         - event: TransferSingle(indexed address,indexed address,indexed address,uint256,uint256)
           handler: handleTransferSingle

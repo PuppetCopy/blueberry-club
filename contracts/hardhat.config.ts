@@ -8,6 +8,7 @@ import dotenv from "dotenv"
 import { CHAIN, NETWORK_METADATA } from "@gambitdao/gmx-middleware"
 dotenv.config({ path: "../.env" })
 
+
 const key = process.env.ACCOUNT
 const accounts = key ? [key] : []
 
