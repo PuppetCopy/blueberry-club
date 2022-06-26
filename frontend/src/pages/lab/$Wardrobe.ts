@@ -403,20 +403,33 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
                       }, exchangeState)
                     })({
                       click: clickSaveTether(
-                        snapshot(async ({ selectedBerry, updateBackgroundState, updateItemState, closet: contract, lab, account }) => {
-                          const addList: number[] = []
-                          const removeList: number[] = []
-
-                          if (updateBackgroundState) {
-                            (updateBackgroundState.isRemove ? removeList : addList).push(updateBackgroundState.id)
-                          }
-
-                          if (updateItemState) {
-                            (updateItemState.isRemove ? removeList : addList).push(updateItemState.id)
-                          }
+                        snapshot(async ({ selectedBerry, selectedBerryItems, updateBackgroundState, updateItemState, closet: contract, lab, account }) => {
 
                           if (!selectedBerry || !account) {
                             throw 'no berry selected'
+                          }
+
+                          const addList: number[] = []
+                          const removeList: number[] = []
+
+                          selectedBerryItems.custom
+
+                          if (updateItemState) {
+                            if (updateItemState.isRemove) {
+                              removeList.push(updateItemState.id)
+                            } else {
+                              addList.push(updateItemState.id)
+                              removeList.push(selectedBerryItems.custom)
+                            }
+                          }
+
+                          if (updateBackgroundState) {
+                            if (updateBackgroundState.isRemove) {
+                              removeList.push(updateBackgroundState.id)
+                            } else {
+                              addList.push(updateBackgroundState.id)
+                              removeList.push(selectedBerryItems.background)
+                            }
                           }
 
                           const tx = (await contract.set(selectedBerry.id, addList, removeList, account))
