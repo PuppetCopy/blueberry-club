@@ -1,4 +1,4 @@
-import { ADDRESS_TRADE, TokenDescription } from "../types"
+import { TokenDescription } from "../types"
 import { groupByMap } from "../utils"
 import { ARBITRUM_ADDRESS } from "./arbitrum"
 import { AVALANCHE_ADDRESS } from "./avalanche"
@@ -105,16 +105,6 @@ export const CHAIN_TOKEN_ADDRESS_TO_SYMBOL = {
   [AVALANCHE_ADDRESS.USDC]: TOKEN_SYMBOL.USDC,
   [AVALANCHE_ADDRESS.USDCE]: TOKEN_SYMBOL.USDC,
 } as const
-
-
-
-
-export function getTokenDescription(indexToken: ADDRESS_TRADE) {
-  const ticker = CHAIN_TOKEN_ADDRESS_TO_SYMBOL[indexToken]
-  const tokenDesc = TOKEN_DESCRIPTION_MAP[ticker]
-
-  return tokenDesc
-}
 
 
 

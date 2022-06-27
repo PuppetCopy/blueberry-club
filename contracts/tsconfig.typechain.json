@@ -11,5 +11,8 @@
   },
   "include": [
     "./typechain-types"
+  ],
+  "exclude": [
+    "./typechain-types/hardhat.d.ts"
   ]
 }

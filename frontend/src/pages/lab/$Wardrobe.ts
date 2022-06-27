@@ -415,8 +415,9 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
                           selectedBerryItems.custom
 
                           if (updateItemState) {
+
                             if (updateItemState.isRemove) {
-                              removeList.push(updateItemState.id)
+                              removeList.push(selectedBerryItems.custom)
                             } else {
                               addList.push(updateItemState.id)
 
@@ -424,15 +425,16 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
                                 removeList.push(selectedBerryItems.custom)
                               }
                             }
+
                           }
 
                           if (updateBackgroundState) {
                             if (updateBackgroundState.isRemove) {
-                              removeList.push(updateBackgroundState.id)
+                              removeList.push(selectedBerryItems.background)
                             } else {
                               addList.push(updateBackgroundState.id)
 
-                              if (selectedBerryItems.background) {
+                              if (selectedBerryItems.background || updateBackgroundState.isRemove) {
                                 removeList.push(selectedBerryItems.background)
                               }
                             }
@@ -531,8 +533,8 @@ const $ItemSlot = ({ selectedSlot, change, gbcItemId, slot, slotLabel }: ItemSlo
         )
         : empty(),
       $tradeBox(selectTether(nodeEvent('click'), constant(slot)))(
-        gbcItemId && isSwap && !isGbcItemRemove ? $itemWrapper($labItem(gbcItemId, itemSize)) : empty(),
-        gbcItemId && isSwap && !isGbcItemRemove ? style({ left: '50%', top: '50%', marginLeft: '-12px', marginTop: '-12px', pointerEvents: 'none' })($iconCircular($arrowsFlip, pallete.background)) : empty(),
+        gbcItemId && isSwap && !isGbcItemRemove ? $itemWrapper($labItem(gbcItemId, itemSize, false)) : empty(),
+        gbcItemId && isSwap && !isGbcItemRemove ? style({ left: '50%', top: '50%', marginLeft: '-12px', marginTop: '-12px', pointerEvents: 'none' })($iconCircular($arrowsFlip, pallete.horizon)) : empty(),
         $itemWrapper(style({ width: isSwap && canRemove ? '65px' : itemSizePx }))(
           item ? style({ borderRadius: 0, filter: change?.isRemove ? 'saturate(0) brightness(0.2)' : '' }, $labItem(item, itemSize, false)) : $row(style({ flex: 1, alignItems: 'center', placeContent: 'center', color: pallete.horizon, fontSize: '.65em' }))($text(slotLabel))
         )
