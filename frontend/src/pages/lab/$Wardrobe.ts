@@ -419,7 +419,10 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
                               removeList.push(updateItemState.id)
                             } else {
                               addList.push(updateItemState.id)
-                              removeList.push(selectedBerryItems.custom)
+
+                              if (selectedBerryItems.custom) {
+                                removeList.push(selectedBerryItems.custom)
+                              }
                             }
                           }
 
@@ -428,7 +431,10 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
                               removeList.push(updateBackgroundState.id)
                             } else {
                               addList.push(updateBackgroundState.id)
-                              removeList.push(selectedBerryItems.background)
+
+                              if (selectedBerryItems.background) {
+                                removeList.push(selectedBerryItems.background)
+                              }
                             }
                           }
 
