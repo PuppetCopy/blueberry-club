@@ -102,14 +102,15 @@ export const $ProfileLinks = (address: string, claim?: IClaim) => {
 export const $accountPreview = ({
   labelSize = '16px', avatarSize = 38, claim, address,
 }: IAccountPreview) => {
-
   const profile = fromPromise(queryProfile({ id: address.toLowerCase() }).catch(() => null))
 
   return switchLatest(map(p => {
-    return p ? $profilePreview({ labelSize, avatarSize, profile: p }) : $row(layoutSheet.row, layoutSheet.spacingSmall, style({ alignItems: 'center', pointerEvents: 'none', textDecoration: 'none' }))(
-      $AccountPhoto(address, claim, avatarSize),
-      $AccountLabel(address, claim, labelSize)
-    )
+    return p
+      ? $profilePreview({ labelSize, avatarSize, profile: p })
+      : $row(layoutSheet.spacingSmall, style({ alignItems: 'center', flexDirection: 'row-reverse', pointerEvents: 'none', textDecoration: 'none' }))(
+        $AccountPhoto(address, claim, avatarSize),
+        $AccountLabel(address, claim, labelSize)
+      )
   }, profile))
 }
 
@@ -118,7 +119,7 @@ export const $profilePreview = ({
   labelSize = '16px', avatarSize = 38, claim, profile,
 }: IProfilePreview) => {
 
-  return $row(layoutSheet.row, layoutSheet.spacingSmall, style({ alignItems: 'center', pointerEvents: 'none', textDecoration: 'none' }))(
+  return $row(layoutSheet.row, layoutSheet.spacingSmall, style({ alignItems: 'center', flexDirection: 'row-reverse', pointerEvents: 'none', textDecoration: 'none' }))(
     profile.token ? style({ borderRadius: '50%' }, $berryByToken(profile.token, avatarSize)) : $AccountPhoto(profile.id, claim, avatarSize),
     profile.name
       ? $text(style({ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', fontSize: labelSize }))(profile.name)

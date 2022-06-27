@@ -4,7 +4,7 @@ import { Whitelist__factory, Holder__factory, Public__factory, Mintable__factory
 import { MintRule } from "@gambitdao/gbc-middleware"
 import { periodicRun } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { awaitPromises, map, multicast } from "@most/core"
+import { awaitPromises, map, multicast, skipRepeats } from "@most/core"
 import { getWalletProvider, takeUntilLast } from "../common"
 import { web3Provider } from "../provider"
 
@@ -51,7 +51,7 @@ export const getMintCount = (rule: MintRule, updateInterval = 1500) => {
   const count = periodicRun(updateInterval, map(async () => (await contract.totalMinted()).toNumber()), true)
   const countUntil = takeUntilLast(c => rule.supply === c, count)
 
-  return replayLatest(multicast(countUntil))
+  return skipRepeats(replayLatest(multicast(countUntil)))
 }
 
 

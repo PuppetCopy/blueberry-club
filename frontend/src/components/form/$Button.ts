@@ -1,7 +1,7 @@
 import { O } from "@aelea/core"
 import { $element, style, stylePseudo } from "@aelea/dom"
 import { IButton, layoutSheet } from "@aelea/ui-components"
-import { colorAlpha, pallete } from "@aelea/ui-components-theme"
+import { pallete } from "@aelea/ui-components-theme"
 import { $Button } from "./$buttonCore"
 
 

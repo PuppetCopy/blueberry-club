@@ -403,20 +403,31 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
                       }, exchangeState)
                     })({
                       click: clickSaveTether(
-                        snapshot(async ({ selectedBerry, updateBackgroundState, updateItemState, closet: contract, lab, account }) => {
-                          const addList: number[] = []
-                          const removeList: number[] = []
-
-                          if (updateBackgroundState) {
-                            (updateBackgroundState.isRemove ? removeList : addList).push(updateBackgroundState.id)
-                          }
-
-                          if (updateItemState) {
-                            (updateItemState.isRemove ? removeList : addList).push(updateItemState.id)
-                          }
+                        snapshot(async ({ selectedBerry, selectedBerryItems, updateBackgroundState, updateItemState, closet: contract, lab, account }) => {
 
                           if (!selectedBerry || !account) {
                             throw 'no berry selected'
+                          }
+
+                          const addList: number[] = []
+                          const removeList: number[] = []
+
+                          selectedBerryItems.custom
+
+                          if (updateItemState) {
+                            addList.push(updateItemState.id)
+
+                            if (selectedBerryItems.custom || updateItemState.isRemove) {
+                              removeList.push(selectedBerryItems.custom)
+                            }
+                          }
+
+                          if (updateBackgroundState) {
+                            addList.push(updateBackgroundState.id)
+
+                            if (selectedBerryItems.background || updateBackgroundState.isRemove) {
+                              removeList.push(selectedBerryItems.background)
+                            }
                           }
 
                           const tx = (await contract.set(selectedBerry.id, addList, removeList, account))
@@ -512,8 +523,8 @@ const $ItemSlot = ({ selectedSlot, change, gbcItemId, slot, slotLabel }: ItemSlo
         )
         : empty(),
       $tradeBox(selectTether(nodeEvent('click'), constant(slot)))(
-        gbcItemId && isSwap && !isGbcItemRemove ? $itemWrapper($labItem(gbcItemId, itemSize)) : empty(),
-        gbcItemId && isSwap && !isGbcItemRemove ? style({ left: '50%', top: '50%', marginLeft: '-12px', marginTop: '-12px', pointerEvents: 'none' })($iconCircular($arrowsFlip, pallete.background)) : empty(),
+        gbcItemId && isSwap && !isGbcItemRemove ? $itemWrapper($labItem(gbcItemId, itemSize, false)) : empty(),
+        gbcItemId && isSwap && !isGbcItemRemove ? style({ left: '50%', top: '50%', marginLeft: '-12px', marginTop: '-12px', pointerEvents: 'none' })($iconCircular($arrowsFlip, pallete.horizon)) : empty(),
         $itemWrapper(style({ width: isSwap && canRemove ? '65px' : itemSizePx }))(
           item ? style({ borderRadius: 0, filter: change?.isRemove ? 'saturate(0) brightness(0.2)' : '' }, $labItem(item, itemSize, false)) : $row(style({ flex: 1, alignItems: 'center', placeContent: 'center', color: pallete.horizon, fontSize: '.65em' }))($text(slotLabel))
         )

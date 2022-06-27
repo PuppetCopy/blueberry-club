@@ -294,7 +294,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
 
         $column(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
           $text(style({ fontWeight: 'bold', fontSize: '2.5em' }))('Treasury'),
-          $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '878px' }))('100% GBC Treasury yield is Distributed to GBC holders '),
+          $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '878px' }))('100% GBC Treasury yield is Distributed to GBC holders(WIP)'),
         ),
 
         $node(),

@@ -93,7 +93,7 @@ export const $GbcWhitelist = (config: MintCmp) => component((
                 validation: map(list => {
 
                   if (list.length > config.mintRule.accountLimit) {
-                    return `Exceeding ${config.mintRule.accountLimit} tokens per Transaction`
+                    return `Exceeding address limit of ${config.mintRule.accountLimit}`
                   }
 
                   return null

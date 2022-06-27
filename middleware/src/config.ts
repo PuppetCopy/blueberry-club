@@ -7,6 +7,8 @@ export const USE_CHAIN = CHAIN.ARBITRUM_RINKBY
 
 export const GLOBAL_W3P = 'wss://arb-rinkeby.g.alchemy.com/v2/lQJmbKMHodW3eT3FdEQdkzk5S6gQ5-Lh'
 export const GLOBAL_W3P_HTTP = 'https://arbitrum-mainnet.infura.io/v3/6d7e461ad6644743b92327579860b662'
+
+export const GLOBAL_W3P_ARBITRUM = 'wss://arb-mainnet.g.alchemy.com/v2/RBsflxWv6IhITsLxAWcQlhCqSuxV7Low'
 export const GLOBAL_W3P_AVALANCHE = 'https://api.avax.network/ext/bc/C/rpc'
 
 export const MINT_WHITELIST_START = Date.UTC(2021, 11, 5, 22, 0, 0)
@@ -40,9 +42,9 @@ export const saleConfig = {
 
 export const saleDescriptionList: LabItemSale[] = [
   {
-    name: "GBC x Wine bottle Club",
+    name: "GBC x Wine Bottle Club",
     description: `For all members present at the Wine Bottle Club x GBC event in Bordeaux`,
-    id: IAttributeMappings["GBC x Wine bottle Club"],
+    id: IAttributeMappings["GBC x Wine Bottle Club"],
     mintRuleList: [
       {
         supply: 11,
@@ -151,7 +153,7 @@ export const saleDescriptionList: LabItemSale[] = [
   },
   {
     name: "Fast Food Cap",
-    description: "Strap on the cap that ensures you the job security that you never wanted, it has a the magical powers to turn things around when you least expect it",
+    description: "this cap ensures you a job security you never wanted, it has been told to have magical powers to turn things around when you least expect it",
     id: IAttributeMappings["Fast Food Cap"],
     mintRuleList: [
       {
