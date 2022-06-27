@@ -115,11 +115,10 @@ export const $IntermediateTx = <T extends ContractTransaction>({
       )
     }),
     $loader: switchLatest(map(c => {
-      const n = c.then(x => x.wait())
 
       return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
         $spinner,
-        $text(startWith('Awaiting wallet approval', map(() => 'Minting...', fromPromise(n)))),
+        $text(startWith('Awaiting wallet approval', map(() => 'Awaiting confirmation...', fromPromise(c)))),
         $node(style({ flex: 1 }))(),
         switchLatest(map(txHash => $txHashRef(txHash.hash, chain), fromPromise(c)))
       )

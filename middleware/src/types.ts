@@ -29,7 +29,7 @@ export interface IToken {
   owner: IOwner
   transfers: ITransfer[]
   contract: IContract
-  labItems: ILabItemOwnership[]
+  labItems: ILabItem[]
 }
 
 export interface IContract {

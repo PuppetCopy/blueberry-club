@@ -415,18 +415,28 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
                           selectedBerryItems.custom
 
                           if (updateItemState) {
-                            addList.push(updateItemState.id)
 
-                            if (selectedBerryItems.custom || updateItemState.isRemove) {
+                            if (updateItemState.isRemove) {
                               removeList.push(selectedBerryItems.custom)
+                            } else {
+                              addList.push(updateItemState.id)
+
+                              if (selectedBerryItems.custom) {
+                                removeList.push(selectedBerryItems.custom)
+                              }
                             }
+
                           }
 
                           if (updateBackgroundState) {
-                            addList.push(updateBackgroundState.id)
-
-                            if (selectedBerryItems.background || updateBackgroundState.isRemove) {
+                            if (updateBackgroundState.isRemove) {
                               removeList.push(selectedBerryItems.background)
+                            } else {
+                              addList.push(updateBackgroundState.id)
+
+                              if (selectedBerryItems.background || updateBackgroundState.isRemove) {
+                                removeList.push(selectedBerryItems.background)
+                              }
                             }
                           }
 
