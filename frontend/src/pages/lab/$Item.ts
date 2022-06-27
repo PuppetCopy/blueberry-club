@@ -1,4 +1,4 @@
-import { Behavior } from "@aelea/core"
+import { Behavior, combineArray } from "@aelea/core"
 import { $element, $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
@@ -136,7 +136,14 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
                     }, mintCount))
                   ),
 
-                  isFinished ? empty() : switchLatest(map(time => {
+                  switchLatest(combineArray((time, mintedAmount) => {
+                    if (mintedAmount === mintRule.supply) {
+                      return empty()
+                    }
+
+                    if (isFinished) {
+                      return $text(style({ color: pallete.foreground }))(`Sale Finished!`)
+                    }
 
                     return time < mintRule.start
                       ? $row(layoutSheet.spacing, style({ alignItems: 'baseline' }))(
@@ -144,28 +151,22 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
                         $text(style({ fontSize: '1.55em', fontWeight: 'bold' }))(countdownFn(mintRule.start, time))
                       )
                       : sale
-                  }, publicSaleTime)),
+                  }, publicSaleTime, mintCount)),
 
-                  switchLatest(map(amount => {
-                    const count = Number(amount)
-                    const isSoldOut = count === mintRule.supply
-
-                    return $row(layoutSheet.spacingTiny, style({ fontSize: '.75em' }))(
-                      isSoldOut
-                        ? $text(style({ color: pallete.foreground }))('Sale has sold out!')
-                        : $element('ul')(style({ lineHeight: '1.5em' }))(
-                          $element('li')(
-                            $text(style({ color: pallete.foreground }))(`limit of `),
-                            $text(`${mintRule.accountLimit}`),
-                            $text(style({ color: pallete.foreground }))(` tokens per address`),
-                          ),
-                          $element('li')(
-                            $text(style({ color: pallete.foreground }))(isFinished ? 'Sale Settled on ' : 'Sale will automatically settle in '),
-                            $text(displayDate(mintRule.finish))
-                          ),
-                        )
+                  $row(layoutSheet.spacingTiny, style({ fontSize: '.75em' }))(
+                    $element('ul')(style({ lineHeight: '1.5em' }))(
+                      $element('li')(
+                        $text(style({ color: pallete.foreground }))(`limit of `),
+                        $text(`${mintRule.accountLimit}`),
+                        $text(style({ color: pallete.foreground }))(` tokens per address`),
+                      ),
+                      $element('li')(
+                        $text(style({ color: pallete.foreground }))(isFinished ? 'Sale Settled on ' : 'Sale will automatically settle in '),
+                        $text(displayDate(mintRule.finish))
+                      ),
                     )
-                  }, mintCount))
+                  )
+
                 ),
                 idx < item.mintRuleList.length - 1 ? $seperator2 : empty()
               ]

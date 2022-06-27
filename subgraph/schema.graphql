@@ -4,7 +4,7 @@ type Token @entity {
   transfers: [Transfer!]! @derivedFrom(field: "token")
   operator: String!
 
-  labItems: [LabItemOwnership!]!
+  labItems: [LabItem!]!
 }
 
 type TokenLabItemOwnership @entity {

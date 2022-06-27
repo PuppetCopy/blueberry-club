@@ -1,5 +1,5 @@
 import { $svg, attr } from "@aelea/dom"
-import { TOKEN_SYMBOL } from "@gambitdao/gmx-middleware"
+import { CHAIN, TOKEN_SYMBOL } from "@gambitdao/gmx-middleware"
 
 export const $path = $svg('path')
 
@@ -140,6 +140,11 @@ export const $eth = $svg('g')(
   $path(attr({ 'fill-opacity': '.298', d: 'M9 16.22l7.498 4.353v-7.701z' }))(),
 )
 
+
+export const $nativeTokenMap = {
+  [CHAIN.ARBITRUM]: $eth,
+  [CHAIN.AVALANCHE]: $avax,
+}
 
 export const $tokenIconMap = {
   [TOKEN_SYMBOL.GMX]: $gmx,
