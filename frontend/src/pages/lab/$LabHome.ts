@@ -165,6 +165,7 @@ export const $LabHome = ({ walletLink, parentRoute, walletStore }: IBerry) => co
           $IntermediatePromise({
             query: now(queryProfileList({ pageSize: screenUtils.isDesktopScreen ? 12 : 8 })),
             $$done: map(berryWallList => {
+
               if (berryWallList.length === 0) {
                 return $text('No Identiees have been chosen yet. help us get this section filled using the Wardrobe or Profile section')
               }

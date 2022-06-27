@@ -98,7 +98,7 @@ export const $berryById = (id: number, size: string | number = 85) => {
 }
 
 export const $berryByToken = (token: IToken, size: string | number = 85) => {
-  const display = getBerryFromItems(token.labItems.map(li => li.item.id))
+  const display = getBerryFromItems(token.labItems.map(li => Number(li.id)))
 
   return $berryByLabItems(token.id, display.background, display.custom, size)
 }
@@ -183,6 +183,6 @@ export function getBerryFromItems(items: number[]) {
 }
 
 export function getBerryFromToken(token: IToken) {
-  return getBerryFromItems(token.labItems.map(it => it.item.id))
+  return getBerryFromItems(token.labItems.map(it => Number(it.id)))
 }
 
