@@ -391,9 +391,6 @@ query ($id: String) {
       balance
       ownedLabItems(first: 1000) {
         balance
-        item {
-          id
-        }
         id
       }
       displayName
@@ -402,18 +399,13 @@ query ($id: String) {
         id
         labItems {
           id
-          item {
-            id
-          }
         }
       }
       profile {
         token {
           id
           labItems {
-            item {
-              id
-            }
+            id
           }
         }
         name
@@ -424,9 +416,6 @@ query ($id: String) {
     }
     labItems {
       id
-      item {
-        id
-      }
     }
   }
 }
