@@ -458,9 +458,7 @@ query ($id: String) {
     token {
       id
       labItems {
-        item {
-          id
-        }
+        id
       }
     }
     name
