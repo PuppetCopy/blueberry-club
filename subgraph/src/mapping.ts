@@ -2,7 +2,7 @@ import * as generated from '../generated/ERC721/ERC721'
 import * as lab from "../generated/ERC1155/ERC1155"
 import * as manager from "../generated/Closet/Closet"
 import * as profile from "../generated/Profile/Profile"
-import { Owner, Transfer, Token, LabItemOwnership, Profile } from "../generated/schema"
+import { Owner, Transfer, Token, Profile } from "../generated/schema"
 import { handleLabItemTransfer, _createNewOwner } from "./common"
 import { ONE_BI, ZERO_BI, _createTransactionIfNotExist } from './helpers'
 
@@ -26,15 +26,14 @@ export function handleTransferBatch(event: lab.TransferBatch): void {
 
 export function handleSetItems(event: manager.Set): void {
   const params = event.params
-  const from = event.transaction.from.toHex()
-  const to = event.transaction.to!.toHex()
+
   
   const token = Token.load(params.token.toHex())
 
   if (token) {
 
     for (let index = 0; index < params.deposits.length; index++) {
-      const id = params.deposits[index].toHex() + ':' + to
+      const id = params.deposits[index].toHex()
       const items = token.labItems
       items.push(id)
 
@@ -42,7 +41,7 @@ export function handleSetItems(event: manager.Set): void {
     }
 
     for (let index = 0; index < params.whithdraws.length; index++) {
-      const id = params.whithdraws[index].toHex() + ':' + from
+      const id = params.whithdraws[index].toHex()
       const items = token.labItems
 
       const removeIdx = items.indexOf(id)

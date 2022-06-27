@@ -1,5 +1,5 @@
 {
-    "name": "www.blueberry.club",
+    "name": "frontend",
     "version": "0.0.0",
     "license": "MIT",
     "module": ".dist/esm/index.js",
@@ -57,7 +57,7 @@
     },
     "devDependencies": {
         "@types/dotenv-webpack": "^7.0.3",
-        "@types/node": "18.0.0",
+        "@types/node": "^18.0.0",
         "@types/webpack": "^5.28.0",
         "@types/webpack-dev-server": "^4.7.2",
         "copy-webpack-plugin": "11.0.0",

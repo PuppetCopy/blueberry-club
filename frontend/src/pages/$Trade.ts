@@ -2,13 +2,13 @@ import { Behavior, combineArray, combineObject, O, replayLatest } from "@aelea/c
 import { $element, $node, $text, attr, component, eventElementTarget, IBranch, INode, nodeEvent, style, StyleCSS, styleInline } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, Input, layoutSheet, observer, screenUtils, state } from "@aelea/ui-components"
-import { AddressZero, ADDRESS_LEVERAGE, ARBITRUM_ADDRESS, ARBITRUM_ADDRESS_LEVERAGE, CHAIN, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, formatFixed, formatReadableUSD, getMappedKeyByValue, getTokenDescription, IAccountTradeListParamApi, intervalTimeMap, intervalListFillOrderMap, IPricefeed, IPricefeedParamApi, IPriceLatestMap, isTradeClosed, isTradeLiquidated, isTradeOpen, isTradeSettled, ITrade, readableNumber, TOKEN_DESCRIPTION_MAP, TOKEN_SYMBOL, unixTimestampNow, unixTimeTzOffset } from "@gambitdao/gmx-middleware"
+import { AddressZero, ADDRESS_LEVERAGE, ARBITRUM_ADDRESS, ARBITRUM_ADDRESS_LEVERAGE, CHAIN, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, formatFixed, formatReadableUSD, IAccountTradeListParamApi, intervalTimeMap, intervalListFillOrderMap, IPricefeed, IPricefeedParamApi, IPriceLatestMap, isTradeClosed, isTradeLiquidated, isTradeOpen, isTradeSettled, ITrade, readableNumber, TOKEN_DESCRIPTION_MAP, unixTimestampNow, unixTimeTzOffset, ARBITRUM_ADDRESS_TRADE } from "@gambitdao/gmx-middleware"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { at, combine, constant, filter, join, map, merge, mergeArray, multicast, now, periodic, skipRepeats, snapshot, startWith, switchLatest, tap, until } from "@most/core"
+import { at, awaitPromises, combine, constant, filter, join, map, merge, mergeArray, multicast, now, periodic, skipRepeats, snapshot, startWith, switchLatest, tap, until } from "@most/core"
 import { $card } from "../elements/$common"
 import { pallete } from "@aelea/ui-components-theme"
-import { $alert, $tokenIconMap, $tokenLabelFromSummary, getPricefeedVisibleColumns } from "@gambitdao/ui-components"
+import { $tokenIconMap, $tokenLabelFromSummary, getPricefeedVisibleColumns } from "@gambitdao/ui-components"
 import { CrosshairMode, LineStyle, MouseEventParams, PriceScaleMode, SeriesMarker, Time } from "lightweight-charts"
 import { IEthereumProvider } from "eip1193-provider"
 import { Stream } from "@most/types"
@@ -17,10 +17,11 @@ import { WALLET } from "../logic/provider"
 import { connectTrade } from "../logic/contract/trade"
 import { $Dropdown, $defaultSelectContainer } from "../components/form/$Dropdown"
 import { $caretDown } from "../elements/$icons"
+import { ERC20__factory } from "@gambitdao/gbc-contracts"
 
 const INTERVAL_TICKS = 140
 
-
+type InputTradeAddress = ARBITRUM_ADDRESS_TRADE | typeof AddressZero
 
 export interface ITradeComponent {
   parentStore: <T, TK extends string>(key: string, intitialState: T) => state.BrowserStore<T, TK>
@@ -39,13 +40,15 @@ export const $Trade = (config: ITradeComponent) => component((
   [selectOtherTimeframe, selectOtherTimeframeTether]: Behavior<IBranch, intervalTimeMap>,
   [changeRoute, changeRouteTether]: Behavior<string, string>,
   [walletChange, walletChangeTether]: Behavior<IEthereumProvider, IEthereumProvider>,
+  [changeInputTrade, changeInputTradeTether]: Behavior<ARBITRUM_ADDRESS_LEVERAGE, ARBITRUM_ADDRESS_LEVERAGE>,
+  [changeOutputTrade, changeOutputTradeTether]: Behavior<ARBITRUM_ADDRESS_LEVERAGE, ARBITRUM_ADDRESS_LEVERAGE>,
 
 ) => {
 
-  
+  // inputTrade.store(src, map(x => x))
 
   const trade = connectTrade(config.walletLink)
-  
+
 
   const urlFragments = document.location.pathname.split('/')
   // const [chainLabel] = urlFragments.slice(1) as [keyof typeof CHAIN_LABEL_ID]
@@ -64,10 +67,17 @@ export const $Trade = (config: ITradeComponent) => component((
   const timeFrameStore = config.parentStore('portfolio-chart-interval', intervalTimeMap.DAY7)
   const chartInterval = startWith(timeFrameStore.state, replayLatest(timeFrameStore.store(timeFrame, map(x => x))))
 
+
+  const inputTradeStore = config.parentStore('input-trade', AddressZero as ARBITRUM_ADDRESS_LEVERAGE)
+  const outputTradeStore = config.parentStore('output-trade', ARBITRUM_ADDRESS.NATIVE_TOKEN)
+
   const accountTradeList = multicast(filter(list => list.length > 0, config.accountTradeList))
 
   const settledTradeList = map(list => list.filter(isTradeSettled), accountTradeList)
   const openTradeList = map(list => list.filter(isTradeOpen), accountTradeList)
+
+  const inputBalanceState = inputTradeStore.store(merge(changeInputTrade, now(inputTradeStore.state)), map(x => x))
+  const outputBalanceState = outputTradeStore.store(merge(changeOutputTrade, now(outputTradeStore.state)), map(x => x))
 
 
   const latestInitiatedPosition = map(h => {
@@ -106,7 +116,7 @@ export const $Trade = (config: ITradeComponent) => component((
   )
 
 
-  
+
   const activeTimeframe: StyleCSS = { color: pallete.primary, pointerEvents: 'none' }
 
   const timeframePnLCounter: Stream<number> = combineArray(
@@ -137,21 +147,26 @@ export const $Trade = (config: ITradeComponent) => component((
   const $chartContainer = screenUtils.isDesktopScreen
     ? $node(
       chartContainerStyle, style({
-        position: 'fixed', inset: '120px 0px 0px',  width: 'calc(50vw)', display: 'flex',
+        position: 'fixed', inset: '120px 0px 0px', width: 'calc(50vw)', display: 'flex',
       })
     )
     : $column(chartContainerStyle)
-  
-  
+
+
   return [
     $container(
       $column(layoutSheet.spacingBig, style({ flex: 1 }))(
 
-        $alert($text('GBC Trading. Work in Progress (;')),
+        $TradeBox({
+          inputTrade: now(inputTradeStore.state),
+          outputTrade: now(outputTradeStore.state),
+          walletLink: config.walletLink
+        })({
+          changeInputTrade: changeInputTradeTether(),
+          changeOutputTrade: changeOutputTradeTether(),
+        }),
 
-        $TradeBox({})({}),
-
-        $node(),     
+        $node(),
 
       ),
       $column(style({ position: 'relative', flex: 1 }))(
@@ -180,7 +195,7 @@ export const $Trade = (config: ITradeComponent) => component((
                   return { open, high, low, close, time: timestamp }
                 })
 
-                
+
 
                 // @ts-ignore
                 series.setData(chartData)
@@ -190,11 +205,11 @@ export const $Trade = (config: ITradeComponent) => component((
                 priceScale.applyOptions({
                   scaleMargins: screenUtils.isDesktopScreen
                     ? {
-                      top:  0.3,
+                      top: 0.3,
                       bottom: 0.3
                     }
                     : {
-                      top:  0.1,
+                      top: 0.1,
                       bottom: 0.1
                     }
                 })
@@ -237,7 +252,7 @@ export const $Trade = (config: ITradeComponent) => component((
                         time: unixTimeTzOffset(pos.settledTimestamp),
                       }
                     })
-                  
+
                   // console.log(new Date(closePosMarkers[0].time as number * 1000))
 
                   const markers = [...increasePosMarkers, ...closePosMarkers, ...liquidatedPosMarkers].sort((a, b) => a.time as number - (b.time as number))
@@ -261,8 +276,8 @@ export const $Trade = (config: ITradeComponent) => component((
                   entireTextOnly: true,
                   borderVisible: false,
                   mode: PriceScaleMode.Logarithmic
-                  
-                // visible: false
+
+                  // visible: false
                 },
                 timeScale: {
                   timeVisible: chartInterval <= intervalTimeMap.DAY7,
@@ -288,8 +303,8 @@ export const $Trade = (config: ITradeComponent) => component((
                 }
               },
             })({
-            // crosshairMove: sampleChartCrosshair(),
-            // click: sampleClick()
+              // crosshairMove: sampleChartCrosshair(),
+              // click: sampleClick()
             })
           }, combineObject({ chartInterval, selectedToken, settledTradeList }), config.pricefeed))
         ),
@@ -321,13 +336,16 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
 interface ITradeBox {
-
+  inputTrade: Stream<InputTradeAddress>
+  outputTrade: Stream<ARBITRUM_ADDRESS_LEVERAGE>
+  walletLink: IWalletLink
 }
 
 const $TradeBox = (config: ITradeBox) => component((
   [changeInput, changeInputTether]: Behavior<any, number>,
   [changeLeverage, changeLeverageTether]: Behavior<any, any>,
-  [selectInput, selectInputTether]: Behavior<ARBITRUM_ADDRESS_LEVERAGE | typeof AddressZero, ARBITRUM_ADDRESS_LEVERAGE | typeof AddressZero>,
+  [changeInputTrade, changeInputTradeTether]: Behavior<InputTradeAddress, InputTradeAddress>,
+  [changeOutputTrade, changeOutputTradeTether]: Behavior<InputTradeAddress, InputTradeAddress>,
 ) => {
 
   const $field = $element('input')(attr({ placeholder: '0.0' }), style({ flex: 1, padding: '0 16px', fontSize: '1.25em', background: 'transparent', border: 'none', height: '60px', outline: 'none', lineHeight: '60px', color: pallete.message }))
@@ -337,14 +355,31 @@ const $TradeBox = (config: ITradeBox) => component((
     $text(val),
   )
 
-  
+  const inputTradeAddressState = merge(changeInputTrade, config.inputTrade)
+  const outputTradeAddressState = merge(changeOutputTrade, config.inputTrade)
+
+  const tradeSize = snapshot((inpVal, lev) => inpVal * lev, changeInput, changeLeverage)
 
   return [
     $card(style({ padding: '0', gap: 0 }))(
-      
+
       $row(style({ placeContent: 'space-between', padding: '10px 20px 0' }))(
         $hintInput('Pay', now('1')),
-        $hintInput('Balance', now('1')),
+        $hintInput('Balance', awaitPromises(combineArray(async (inp, w3p, account) => {
+          if (w3p === null || account === null) {
+            throw new Error('no wallet provided')
+          }
+          if (inp === AddressZero) {
+            const balance = (await w3p.getSigner().getBalance()).toBigInt()
+            
+            return readableNumber(formatFixed(BigInt(balance)))
+          }
+
+          const ercp = ERC20__factory.connect(inp, w3p.getSigner())
+
+          return readableNumber(formatFixed((await ercp.balanceOf(account)).toBigInt()))
+
+        }, inputTradeAddressState, config.walletLink.provider, config.walletLink.account))),
       ),
 
       $row(
@@ -358,19 +393,19 @@ const $TradeBox = (config: ITradeBox) => component((
           return Number(target.value)
         })))(),
 
-        $Dropdown<ARBITRUM_ADDRESS_LEVERAGE | typeof AddressZero>({
+        $Dropdown<InputTradeAddress>({
           $container: $row(style({ position: 'relative', alignSelf: 'center', padding: '0 15px' })),
           $selection: $row(style({ alignItems: 'center', cursor: 'pointer' }))(
             switchLatest(map(option => {
               const tokenDesc = option === AddressZero ? TOKEN_DESCRIPTION_MAP.ETH : TOKEN_DESCRIPTION_MAP[CHAIN_TOKEN_ADDRESS_TO_SYMBOL[option]]
 
               return $icon({ $content: $tokenIconMap[tokenDesc.symbol], width: '34px', viewBox: '0 0 32 32' })
-            }, selectInput)),
+            }, inputTradeAddressState)),
             $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginTop: '3px', marginLeft: '5px' }), viewBox: '0 0 32 32' }),
           ),
           value: {
-            value: now(ARBITRUM_ADDRESS.NATIVE_TOKEN),
-            $container: $defaultSelectContainer(style({ minWidth:'300px', right: 0 })),
+            value: config.inputTrade,
+            $container: $defaultSelectContainer(style({ minWidth: '300px', right: 0 })),
             $$option: map(option => {
               const tokenDesc = option === AddressZero ? TOKEN_DESCRIPTION_MAP.ETH : TOKEN_DESCRIPTION_MAP[CHAIN_TOKEN_ADDRESS_TO_SYMBOL[option]]
 
@@ -382,38 +417,77 @@ const $TradeBox = (config: ITradeBox) => component((
               ARBITRUM_ADDRESS.LINK,
               ARBITRUM_ADDRESS.UNI,
               ARBITRUM_ADDRESS.WBTC,
+              ARBITRUM_ADDRESS.USDC,
+              ARBITRUM_ADDRESS.USDT,
+              ARBITRUM_ADDRESS.DAI,
+              ARBITRUM_ADDRESS.FRAX,
+              ARBITRUM_ADDRESS.MIM,
             ],
           }
         })({
-          select: selectInputTether()
+          select: changeInputTradeTether()
         }),
       ),
-      
+
       $LeverageSlider({ value: now(0) })({
         change: changeLeverageTether()
       }),
-      $field(
-        O(
-          map(node =>
-            merge(
-              now(node),
-              filter(() => false, tap(val => {
-              // applying by setting `HTMLInputElement.value` imperatively(only way known to me)
-                node.element.value = String(val)
-              }, snapshot((inpVal, lev) => inpVal * lev, changeInput, changeLeverage)))
-            )
+      
+
+      $row(
+        $field(
+          O(
+            map(node =>
+              merge(
+                now(node),
+                filter(() => false, tap(val => {
+                  // applying by setting `HTMLInputElement.value` imperatively(only way known to me)
+                  node.element.value = String(val)
+                }, tradeSize))
+              )
+            ),
+            switchLatest
+          )
+
+        )(),
+
+        $Dropdown<InputTradeAddress>({
+          $container: $row(style({ position: 'relative', alignSelf: 'center', padding: '0 15px' })),
+          $selection: $row(style({ alignItems: 'center', cursor: 'pointer' }))(
+            switchLatest(map(option => {
+              const tokenDesc = option === AddressZero ? TOKEN_DESCRIPTION_MAP.ETH : TOKEN_DESCRIPTION_MAP[CHAIN_TOKEN_ADDRESS_TO_SYMBOL[option]]
+
+              return $icon({ $content: $tokenIconMap[tokenDesc.symbol], width: '34px', viewBox: '0 0 32 32' })
+            }, outputTradeAddressState)),
+            $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginTop: '3px', marginLeft: '5px' }), viewBox: '0 0 32 32' }),
           ),
-          switchLatest
-        )
-        
-      )(),
+          value: {
+            value: config.outputTrade,
+            $container: $defaultSelectContainer(style({ minWidth: '300px', right: 0 })),
+            $$option: map(option => {
+              const tokenDesc = option === AddressZero ? TOKEN_DESCRIPTION_MAP.ETH : TOKEN_DESCRIPTION_MAP[CHAIN_TOKEN_ADDRESS_TO_SYMBOL[option]]
+
+              return $tokenLabelFromSummary(tokenDesc)
+            }),
+            list: [
+              ARBITRUM_ADDRESS.NATIVE_TOKEN,
+              ARBITRUM_ADDRESS.LINK,
+              ARBITRUM_ADDRESS.UNI,
+              ARBITRUM_ADDRESS.WBTC,
+            ],
+          }
+        })({
+          select: changeOutputTradeTether()
+        }),
+      )
 
 
       // $text(map(String, startWith(0, changeLeverage)))
     ),
 
     {
-
+      changeInputTrade,
+      changeOutputTrade,
     }
   ]
 })
@@ -437,7 +511,7 @@ export const $LeverageSlider = ({ value, max = 30, thumbSize = 34 }: Slider) => 
     if (n === 0) {
       return null
     }
-    
+
     return n > 0 ? false : true
   }, thumbePositionDelta))
 
