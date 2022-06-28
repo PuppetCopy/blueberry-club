@@ -8,13 +8,13 @@ import { IWalletLink } from "@gambitdao/wallet-link"
 import { constant, empty, map, now, switchLatest } from '@most/core'
 import { IEthereumProvider } from "eip1193-provider"
 import { WALLET } from "../logic/provider"
-import { $bagOfCoins, $caretDown } from "../elements/$icons"
+import { $bagOfCoins, $caretDown, $stackedCoins } from "../elements/$icons"
 import { $accountPreview, $walletAccountDisplay } from "./$AccountProfile"
 import { $IntermediateConnectPopover } from "./$ConnectAccount"
 import { $ButtonSecondary } from "./form/$Button"
 import { totalWalletHoldingsUsd } from "../logic/gbcTreasury"
 import { $Dropdown, $defaultSelectContainer } from "./form/$Dropdown"
-import { $bagOfCoinsCircle, $fileCheckCircle, $logo, $logoFull, $labLogo } from "../common/$icons"
+import { $bagOfCoinsCircle, $fileCheckCircle, $logo, $logoFull, $labLogo, $gmxLogo } from "../common/$icons"
 import { $anchor, $discord, $gitbook, $github, $instagram, $Link, $moreDots, $twitter } from "@gambitdao/ui-components"
 import { $seperator2 } from "../pages/common"
 import { $Picker } from "../components/$ThemePicker"
@@ -67,10 +67,10 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
     $Link({ $content: $pageLink($labLogo, 'Lab'), url: '/p/lab', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
       click: routeChangeTether()
     }),
-    // $Link({ $content: $text('Leaderboard'), url: '/p/leaderboard', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
-    //   click: routeChangeTether()
-    // }),
-    $Link({ $content: $text('Trade'), url: '/p/trade', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
+    $Link({ $content: $pageLink($stackedCoins, 'Leaderboard'), disabled: now(true), url: '/p/leaderboard', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
+      click: routeChangeTether()
+    }),
+    $Link({ $content: $pageLink($gmxLogo, 'Trade'), url: '/p/trade', disabled: now(true), route: parentRoute.create({ fragment: 'feefwefwe' }) })({
       click: routeChangeTether()
     }),
   ]
@@ -87,26 +87,24 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
 
   return [
     $row(layoutSheet.spacingBig, style({ alignItems: 'center', placeContent: 'center', flex: 1, width: '100%', padding: '30px 0', zIndex: 1000, borderRadius: '12px' }))(
-      $row(layoutSheet.spacingBig, style({ flex: 1, alignItems: 'center' }))(
+      screenUtils.isDesktopScreen ? $row(layoutSheet.spacingBig, style({ flex: 1, alignItems: 'center' }))(
         $RouterAnchor({ url: '/', route: parentRoute, $anchor: $element('a')($icon({ $content: theme.name === 'dark' ? $logo : $logoFull, width: '55px', viewBox: '0 0 32 32' })) })({
           click: routeChangeTether()
         }),
-        screenUtils.isDesktopScreen
-          ? $Dropdown({
-            $selection: $treasuryStatus,
-            value: {
-              value: now(null),
-              $container: $defaultSelectContainer(style({ minWidth: '300px' })),
-              $$option: map(option => option),
-              list: $treasuryLinks,
-            }
-          })({})
-          : empty(),
-      ),
-      $row(layoutSheet.spacingBig, style({ fontSize: '.9em', flex: 1, alignItems: 'center', placeContent: 'center' }), containerOp)(
+
+        $Dropdown({
+          $selection: $treasuryStatus,
+          value: {
+            value: now(null),
+            $container: $defaultSelectContainer(style({ minWidth: '300px' })),
+            $$option: map(option => option),
+            list: $treasuryLinks,
+          }
+        })({}),
+      ) : empty(),
+      $row(screenUtils.isDesktopScreen ? layoutSheet.spacingBig : layoutSheet.spacing, style({ fontSize: '.9em', flex: 1, alignItems: 'center', placeContent: 'center' }), containerOp)(
 
         ...$menuItemList,
-        style({ alignSelf: 'stretch' }, $seperator2),
 
         $Popover({
           // dismiss: profileLinkClick,
@@ -177,7 +175,7 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
               $display: map(address => {
                 return $Link({
                   route: parentRoute.create({ fragment: 'df2f23f' }),
-                  $content: $accountPreview({ address }),
+                  $content: $accountPreview({ address, showAddress: screenUtils.isDesktopScreen }),
                   anchorOp: style({ minWidth: 0, overflow: 'hidden' }),
                   url: `/p/wallet`,
                 })({ click: routeChangeTether() })
