@@ -1,27 +1,23 @@
-import { Behavior, combineArray, combineObject, O, replayLatest } from "@aelea/core"
-import { $element, $node, $text, attr, component, eventElementTarget, IBranch, INode, nodeEvent, style, StyleCSS, styleInline } from "@aelea/dom"
+import { Behavior, combineArray, combineObject, replayLatest } from "@aelea/core"
+import { $node, component, IBranch, INode, style, StyleCSS } from "@aelea/dom"
 import { Route } from "@aelea/router"
-import { $column, $icon, $row, Input, layoutSheet, observer, screenUtils, state } from "@aelea/ui-components"
-import { AddressZero, ADDRESS_LEVERAGE, ARBITRUM_ADDRESS, ARBITRUM_ADDRESS_LEVERAGE, CHAIN, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, formatFixed, formatReadableUSD, IAccountTradeListParamApi, intervalTimeMap, intervalListFillOrderMap, IPricefeed, IPricefeedParamApi, IPriceLatestMap, isTradeClosed, isTradeLiquidated, isTradeOpen, isTradeSettled, ITrade, readableNumber, TOKEN_DESCRIPTION_MAP, unixTimestampNow, unixTimeTzOffset, ARBITRUM_ADDRESS_TRADE } from "@gambitdao/gmx-middleware"
+import { $column, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
+import { AddressZero, ADDRESS_LEVERAGE, ARBITRUM_ADDRESS, ARBITRUM_ADDRESS_LEVERAGE, CHAIN, formatFixed, formatReadableUSD, IAccountTradeListParamApi, intervalTimeMap, intervalListFillOrderMap, IPricefeed, IPricefeedParamApi, IPriceLatestMap, isTradeClosed, isTradeLiquidated, isTradeOpen, isTradeSettled, ITrade, unixTimestampNow, unixTimeTzOffset } from "@gambitdao/gmx-middleware"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { at, awaitPromises, combine, constant, filter, join, map, merge, mergeArray, multicast, now, periodic, skipRepeats, snapshot, startWith, switchLatest, tap, until } from "@most/core"
-import { $card } from "../elements/$common"
+import { at, combine, constant, filter, map, merge, mergeArray, multicast, now, periodic, snapshot, startWith, switchLatest } from "@most/core"
 import { pallete } from "@aelea/ui-components-theme"
-import { $tokenIconMap, $tokenLabelFromSummary, getPricefeedVisibleColumns } from "@gambitdao/ui-components"
+import { getPricefeedVisibleColumns } from "@gambitdao/ui-components"
 import { CrosshairMode, LineStyle, MouseEventParams, PriceScaleMode, SeriesMarker, Time } from "lightweight-charts"
 import { IEthereumProvider } from "eip1193-provider"
 import { Stream } from "@most/types"
 import { $Chart } from "../components/chart/$Chart"
 import { WALLET } from "../logic/provider"
 import { connectTrade } from "../logic/contract/trade"
-import { $Dropdown, $defaultSelectContainer } from "../components/form/$Dropdown"
-import { $caretDown } from "../elements/$icons"
-import { ERC20__factory } from "@gambitdao/gbc-contracts"
+import { $TradeBox } from "../components/trade/$TradeBox"
 
 const INTERVAL_TICKS = 140
 
-type InputTradeAddress = ARBITRUM_ADDRESS_TRADE | typeof AddressZero
 
 export interface ITradeComponent {
   parentStore: <T, TK extends string>(key: string, intitialState: T) => state.BrowserStore<T, TK>
@@ -69,7 +65,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
   const inputTradeStore = config.parentStore('input-trade', AddressZero as ARBITRUM_ADDRESS_LEVERAGE)
-  const outputTradeStore = config.parentStore('output-trade', ARBITRUM_ADDRESS.NATIVE_TOKEN)
+  const outputTradeStore = config.parentStore<ARBITRUM_ADDRESS_LEVERAGE, ARBITRUM_ADDRESS_LEVERAGE>('output-trade', ARBITRUM_ADDRESS.NATIVE_TOKEN)
 
   const accountTradeList = multicast(filter(list => list.length > 0, config.accountTradeList))
 
@@ -91,7 +87,6 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
   const historicalPnl = multicast(
-
     combineArray((tradeList, interval) => {
       const intervalInSecs = Math.floor((interval / INTERVAL_TICKS))
       const initialDataStartTime = unixTimestampNow() - interval
@@ -158,8 +153,12 @@ export const $Trade = (config: ITradeComponent) => component((
       $column(layoutSheet.spacingBig, style({ flex: 1 }))(
 
         $TradeBox({
-          inputTrade: now(inputTradeStore.state),
-          outputTrade: now(outputTradeStore.state),
+          initialState: {
+            inputAddress: inputTradeStore.state,
+            outputAddress: outputTradeStore.state,
+          },
+          inputAddressState: inputBalanceState,
+          outputAddressState: outputBalanceState,
           walletLink: config.walletLink
         })({
           changeInputTrade: changeInputTradeTether(),
@@ -331,266 +330,5 @@ export const $Trade = (config: ITradeComponent) => component((
       changeRoute,
       walletChange
     }
-  ]
-})
-
-
-interface ITradeBox {
-  inputTrade: Stream<InputTradeAddress>
-  outputTrade: Stream<ARBITRUM_ADDRESS_LEVERAGE>
-  walletLink: IWalletLink
-}
-
-const $TradeBox = (config: ITradeBox) => component((
-  [changeInput, changeInputTether]: Behavior<any, number>,
-  [changeLeverage, changeLeverageTether]: Behavior<any, any>,
-  [changeInputTrade, changeInputTradeTether]: Behavior<InputTradeAddress, InputTradeAddress>,
-  [changeOutputTrade, changeOutputTradeTether]: Behavior<InputTradeAddress, InputTradeAddress>,
-) => {
-
-  const $field = $element('input')(attr({ placeholder: '0.0' }), style({ flex: 1, padding: '0 16px', fontSize: '1.25em', background: 'transparent', border: 'none', height: '60px', outline: 'none', lineHeight: '60px', color: pallete.message }))
-
-  const $hintInput = (label: string, val: Stream<string>) => $row(layoutSheet.spacingTiny, style({ fontSize: '0.75em', color: pallete.foreground }))(
-    $text(label),
-    $text(val),
-  )
-
-  const inputTradeAddressState = merge(changeInputTrade, config.inputTrade)
-  const outputTradeAddressState = merge(changeOutputTrade, config.inputTrade)
-
-  const tradeSize = snapshot((inpVal, lev) => inpVal * lev, changeInput, changeLeverage)
-
-  return [
-    $card(style({ padding: '0', gap: 0 }))(
-
-      $row(style({ placeContent: 'space-between', padding: '10px 20px 0' }))(
-        $hintInput('Pay', now('1')),
-        $hintInput('Balance', awaitPromises(combineArray(async (inp, w3p, account) => {
-          if (w3p === null || account === null) {
-            throw new Error('no wallet provided')
-          }
-          if (inp === AddressZero) {
-            const balance = (await w3p.getSigner().getBalance()).toBigInt()
-            
-            return readableNumber(formatFixed(BigInt(balance)))
-          }
-
-          const ercp = ERC20__factory.connect(inp, w3p.getSigner())
-
-          return readableNumber(formatFixed((await ercp.balanceOf(account)).toBigInt()))
-
-        }, inputTradeAddressState, config.walletLink.provider, config.walletLink.account))),
-      ),
-
-      $row(
-        $field(changeInputTether(nodeEvent('input'), map((x) => {
-          const target = x.currentTarget
-
-          if (!(target instanceof HTMLInputElement)) {
-            throw new Error('Target is not type of input')
-          }
-
-          return Number(target.value)
-        })))(),
-
-        $Dropdown<InputTradeAddress>({
-          $container: $row(style({ position: 'relative', alignSelf: 'center', padding: '0 15px' })),
-          $selection: $row(style({ alignItems: 'center', cursor: 'pointer' }))(
-            switchLatest(map(option => {
-              const tokenDesc = option === AddressZero ? TOKEN_DESCRIPTION_MAP.ETH : TOKEN_DESCRIPTION_MAP[CHAIN_TOKEN_ADDRESS_TO_SYMBOL[option]]
-
-              return $icon({ $content: $tokenIconMap[tokenDesc.symbol], width: '34px', viewBox: '0 0 32 32' })
-            }, inputTradeAddressState)),
-            $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginTop: '3px', marginLeft: '5px' }), viewBox: '0 0 32 32' }),
-          ),
-          value: {
-            value: config.inputTrade,
-            $container: $defaultSelectContainer(style({ minWidth: '300px', right: 0 })),
-            $$option: map(option => {
-              const tokenDesc = option === AddressZero ? TOKEN_DESCRIPTION_MAP.ETH : TOKEN_DESCRIPTION_MAP[CHAIN_TOKEN_ADDRESS_TO_SYMBOL[option]]
-
-              return $tokenLabelFromSummary(tokenDesc)
-            }),
-            list: [
-              AddressZero,
-              ARBITRUM_ADDRESS.NATIVE_TOKEN,
-              ARBITRUM_ADDRESS.LINK,
-              ARBITRUM_ADDRESS.UNI,
-              ARBITRUM_ADDRESS.WBTC,
-              ARBITRUM_ADDRESS.USDC,
-              ARBITRUM_ADDRESS.USDT,
-              ARBITRUM_ADDRESS.DAI,
-              ARBITRUM_ADDRESS.FRAX,
-              ARBITRUM_ADDRESS.MIM,
-            ],
-          }
-        })({
-          select: changeInputTradeTether()
-        }),
-      ),
-
-      $LeverageSlider({ value: now(0) })({
-        change: changeLeverageTether()
-      }),
-      
-
-      $row(
-        $field(
-          O(
-            map(node =>
-              merge(
-                now(node),
-                filter(() => false, tap(val => {
-                  // applying by setting `HTMLInputElement.value` imperatively(only way known to me)
-                  node.element.value = String(val)
-                }, tradeSize))
-              )
-            ),
-            switchLatest
-          )
-
-        )(),
-
-        $Dropdown<InputTradeAddress>({
-          $container: $row(style({ position: 'relative', alignSelf: 'center', padding: '0 15px' })),
-          $selection: $row(style({ alignItems: 'center', cursor: 'pointer' }))(
-            switchLatest(map(option => {
-              const tokenDesc = option === AddressZero ? TOKEN_DESCRIPTION_MAP.ETH : TOKEN_DESCRIPTION_MAP[CHAIN_TOKEN_ADDRESS_TO_SYMBOL[option]]
-
-              return $icon({ $content: $tokenIconMap[tokenDesc.symbol], width: '34px', viewBox: '0 0 32 32' })
-            }, outputTradeAddressState)),
-            $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginTop: '3px', marginLeft: '5px' }), viewBox: '0 0 32 32' }),
-          ),
-          value: {
-            value: config.outputTrade,
-            $container: $defaultSelectContainer(style({ minWidth: '300px', right: 0 })),
-            $$option: map(option => {
-              const tokenDesc = option === AddressZero ? TOKEN_DESCRIPTION_MAP.ETH : TOKEN_DESCRIPTION_MAP[CHAIN_TOKEN_ADDRESS_TO_SYMBOL[option]]
-
-              return $tokenLabelFromSummary(tokenDesc)
-            }),
-            list: [
-              ARBITRUM_ADDRESS.NATIVE_TOKEN,
-              ARBITRUM_ADDRESS.LINK,
-              ARBITRUM_ADDRESS.UNI,
-              ARBITRUM_ADDRESS.WBTC,
-            ],
-          }
-        })({
-          select: changeOutputTradeTether()
-        }),
-      )
-
-
-      // $text(map(String, startWith(0, changeLeverage)))
-    ),
-
-    {
-      changeInputTrade,
-      changeOutputTrade,
-    }
-  ]
-})
-
-
-
-export interface Slider extends Input<number> {
-  max?: number
-  thumbSize?: number
-}
-
-export const $LeverageSlider = ({ value, max = 30, thumbSize = 34 }: Slider) => component((
-  [sliderDimension, sliderDimensionTether]: Behavior<IBranch<HTMLInputElement>, number>,
-  [thumbePositionDelta, thumbePositionDeltaTether]: Behavior<IBranch<HTMLInputElement>, number>
-) => {
-
-
-  const leverage = combine((slider, thumb) => (thumb / slider) * max, sliderDimension, thumbePositionDelta)
-
-  const isBull = skipRepeats(map(n => {
-    if (n === 0) {
-      return null
-    }
-
-    return n > 0 ? false : true
-  }, thumbePositionDelta))
-
-  const sizePx = thumbSize + 'px'
-
-
-  const $range = $row(sliderDimensionTether(observer.resize({}), map(res => res[0].contentRect.width)), style({ placeContent: 'center', backgroundColor: pallete.background, height: '2px', position: 'relative', zIndex: 10 }))
-
-  const changeBehavior = thumbePositionDeltaTether(
-    nodeEvent('pointerdown'),
-    snapshot((current, downEvent) => {
-
-      const target = downEvent.currentTarget
-
-      if (!(target instanceof HTMLElement)) {
-        throw new Error('no target event captured')
-      }
-
-      const drag = until(eventElementTarget('pointerup', window.document), eventElementTarget('pointermove', window.document))
-
-      return map(moveEvent => {
-
-        const maxWidth = target.parentElement!.parentElement!.clientWidth
-
-        const deltaX = ((moveEvent.clientX - downEvent.clientX) * 2) + current
-
-        moveEvent.preventDefault()
-
-
-        return Math.abs(deltaX) > maxWidth ? deltaX > 0 ? maxWidth : -maxWidth : deltaX
-
-      }, drag)
-    }, mergeArray([now(0), multicast(thumbePositionDelta)])),
-    join
-  )
-
-  const $thumb = $row(
-    changeBehavior,
-    style({
-      width: thumbSize + 'px',
-      height: thumbSize + 'px',
-      position: 'absolute',
-      background: pallete.background,
-      borderRadius: '50%',
-      cursor: 'grab',
-      left: '-15px',
-      alignItems: 'center',
-      placeContent: 'center',
-      border: `1px solid ${pallete.foreground}`,
-    }),
-
-    styleInline(map(isBull => {
-
-      console.log(isBull)
-      if (isBull === null) {
-        return { border: `1px solid ${pallete.foreground}` }
-      }
-
-      return isBull ? { left: `-${thumbSize / 2}px`, right: 'auto', border: `1px solid ${pallete.negative}` } : { left: 'auto', right: `-${thumbSize / 2}px`, border: `1px solid ${pallete.positive}` }
-    }, isBull))
-  )(
-    $text(style({ fontSize: '11px' }))(map(n => readableNumber(Math.abs(n), 1), leverage))
-  )
-
-
-  const sliderStyle = styleInline(map(n => {
-    const width = Math.abs(n) + 'px'
-    const background = n === 0 ? '' : n > 0 ? `linear-gradient(90deg, transparent 10%, ${pallete.positive} 100%)` : `linear-gradient(90deg, ${pallete.negative} 0%, transparent 100%)`
-
-    return { width, background }
-  }, thumbePositionDelta))
-
-
-  return [
-    $range(
-      $row(style({ alignItems: 'center', position: 'relative' }), sliderStyle)(
-        $thumb
-      )
-    ),
-    { change: leverage }
   ]
 })

@@ -14,7 +14,7 @@ import { Provider, TransactionRequest } from "@ethersproject/providers";
 import type {
   PositionRouter,
   PositionRouterInterface,
-} from "./PositionRouter";
+} from "../PositionRouter";
 
 const _abi = [
   {

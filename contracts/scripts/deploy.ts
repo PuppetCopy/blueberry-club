@@ -34,7 +34,7 @@ export default ROLES
  */
 
 // This contract/address can be used on other contracts
-const TREASURY = '' // Multisig or you personal address (if you leave it blank it will be the owner address)
+const TREASURY = GBC_ADDRESS.TREASURY_ARBITRUM // Multisig or you personal address (if you leave it blank it will be the owner address)
 const GBC = GBC_ADDRESS.GBC // The GBC ERC721 (NFT) contract
 // const POLICE = "" // Police contract
 const POLICE = GBC_ADDRESS.POLICE // Police contract
@@ -165,11 +165,11 @@ const main = async () => {
 
       const saleContract = await saleContractQuery
 
-      if (owner == creator.address) {
-        console.log(`🎩 Set roles from LAB to name: ${sale.name} sale: ${mintLabelMap[rule.type]} SALE`)
-        await police.setUserRole(saleContract.address, ROLES.MINTER, true)
-        console.log(`  - MINTER role setted !`)
-      }
+      // if (owner == creator.address) {
+      console.log(`🎩 Set roles from LAB to name: ${sale.name} sale: ${mintLabelMap[rule.type]} SALE`)
+      await police.setUserRole(saleContract.address, ROLES.MINTER, true)
+      console.log(`  - MINTER role setted !`)
+      // }
 
 
       console.log()
@@ -180,9 +180,9 @@ const main = async () => {
       const { url, data } = await storeIpfsQuery
       console.log(data, url)
     }
-    
+
   }
-  
+
 
 }
 

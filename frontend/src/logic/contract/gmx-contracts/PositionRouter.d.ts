@@ -18,7 +18,7 @@ import {
 import { BytesLike } from "@ethersproject/bytes";
 import { Listener, Provider } from "@ethersproject/providers";
 import { FunctionFragment, EventFragment, Result } from "@ethersproject/abi";
-import { TypedEventFilter, TypedEvent, TypedListener } from "./common";
+import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
 
 interface PositionRouterInterface extends ethers.utils.Interface {
   functions: {
@@ -523,6 +523,263 @@ interface PositionRouterInterface extends ethers.utils.Interface {
   getEvent(nameOrSignatureOrTopic: "SetRequestKeysStartValues"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "WithdrawFees"): EventFragment;
 }
+
+export type CancelDecreasePositionEvent = TypedEvent<
+  [
+    string,
+    string[],
+    string,
+    BigNumber,
+    BigNumber,
+    boolean,
+    string,
+    BigNumber,
+    BigNumber,
+    BigNumber,
+    BigNumber,
+    BigNumber
+  ] & {
+    account: string;
+    path: string[];
+    indexToken: string;
+    collateralDelta: BigNumber;
+    sizeDelta: BigNumber;
+    isLong: boolean;
+    receiver: string;
+    acceptablePrice: BigNumber;
+    minOut: BigNumber;
+    executionFee: BigNumber;
+    blockGap: BigNumber;
+    timeGap: BigNumber;
+  }
+>;
+
+export type CancelIncreasePositionEvent = TypedEvent<
+  [
+    string,
+    string[],
+    string,
+    BigNumber,
+    BigNumber,
+    BigNumber,
+    boolean,
+    BigNumber,
+    BigNumber,
+    BigNumber,
+    BigNumber
+  ] & {
+    account: string;
+    path: string[];
+    indexToken: string;
+    amountIn: BigNumber;
+    minOut: BigNumber;
+    sizeDelta: BigNumber;
+    isLong: boolean;
+    acceptablePrice: BigNumber;
+    executionFee: BigNumber;
+    blockGap: BigNumber;
+    timeGap: BigNumber;
+  }
+>;
+
+export type CreateDecreasePositionEvent = TypedEvent<
+  [
+    string,
+    string[],
+    string,
+    BigNumber,
+    BigNumber,
+    boolean,
+    string,
+    BigNumber,
+    BigNumber,
+    BigNumber,
+    BigNumber,
+    BigNumber,
+    BigNumber
+  ] & {
+    account: string;
+    path: string[];
+    indexToken: string;
+    collateralDelta: BigNumber;
+    sizeDelta: BigNumber;
+    isLong: boolean;
+    receiver: string;
+    acceptablePrice: BigNumber;
+    minOut: BigNumber;
+    executionFee: BigNumber;
+    index: BigNumber;
+    blockNumber: BigNumber;
+    blockTime: BigNumber;
+  }
+>;
+
+export type CreateIncreasePositionEvent = TypedEvent<
+  [
+    string,
+    string[],
+    string,
+    BigNumber,
+    BigNumber,
+    BigNumber,
+    boolean,
+    BigNumber,
+    BigNumber,
+    BigNumber,
+    BigNumber,
+    BigNumber,
+    BigNumber
+  ] & {
+    account: string;
+    path: string[];
+    indexToken: string;
+    amountIn: BigNumber;
+    minOut: BigNumber;
+    sizeDelta: BigNumber;
+    isLong: boolean;
+    acceptablePrice: BigNumber;
+    executionFee: BigNumber;
+    index: BigNumber;
+    blockNumber: BigNumber;
+    blockTime: BigNumber;
+    gasPrice: BigNumber;
+  }
+>;
+
+export type DecreasePositionReferralEvent = TypedEvent<
+  [string, BigNumber, BigNumber, string, string] & {
+    account: string;
+    sizeDelta: BigNumber;
+    marginFeeBasisPoints: BigNumber;
+    referralCode: string;
+    referrer: string;
+  }
+>;
+
+export type ExecuteDecreasePositionEvent = TypedEvent<
+  [
+    string,
+    string[],
+    string,
+    BigNumber,
+    BigNumber,
+    boolean,
+    string,
+    BigNumber,
+    BigNumber,
+    BigNumber,
+    BigNumber,
+    BigNumber
+  ] & {
+    account: string;
+    path: string[];
+    indexToken: string;
+    collateralDelta: BigNumber;
+    sizeDelta: BigNumber;
+    isLong: boolean;
+    receiver: string;
+    acceptablePrice: BigNumber;
+    minOut: BigNumber;
+    executionFee: BigNumber;
+    blockGap: BigNumber;
+    timeGap: BigNumber;
+  }
+>;
+
+export type ExecuteIncreasePositionEvent = TypedEvent<
+  [
+    string,
+    string[],
+    string,
+    BigNumber,
+    BigNumber,
+    BigNumber,
+    boolean,
+    BigNumber,
+    BigNumber,
+    BigNumber,
+    BigNumber
+  ] & {
+    account: string;
+    path: string[];
+    indexToken: string;
+    amountIn: BigNumber;
+    minOut: BigNumber;
+    sizeDelta: BigNumber;
+    isLong: boolean;
+    acceptablePrice: BigNumber;
+    executionFee: BigNumber;
+    blockGap: BigNumber;
+    timeGap: BigNumber;
+  }
+>;
+
+export type IncreasePositionReferralEvent = TypedEvent<
+  [string, BigNumber, BigNumber, string, string] & {
+    account: string;
+    sizeDelta: BigNumber;
+    marginFeeBasisPoints: BigNumber;
+    referralCode: string;
+    referrer: string;
+  }
+>;
+
+export type SetAdminEvent = TypedEvent<[string] & { admin: string }>;
+
+export type SetDelayValuesEvent = TypedEvent<
+  [BigNumber, BigNumber, BigNumber] & {
+    minBlockDelayKeeper: BigNumber;
+    minTimeDelayPublic: BigNumber;
+    maxTimeDelay: BigNumber;
+  }
+>;
+
+export type SetDepositFeeEvent = TypedEvent<
+  [BigNumber] & { depositFee: BigNumber }
+>;
+
+export type SetIncreasePositionBufferBpsEvent = TypedEvent<
+  [BigNumber] & { increasePositionBufferBps: BigNumber }
+>;
+
+export type SetIsLeverageEnabledEvent = TypedEvent<
+  [boolean] & { isLeverageEnabled: boolean }
+>;
+
+export type SetMaxGlobalSizesEvent = TypedEvent<
+  [string[], BigNumber[], BigNumber[]] & {
+    tokens: string[];
+    longSizes: BigNumber[];
+    shortSizes: BigNumber[];
+  }
+>;
+
+export type SetMinExecutionFeeEvent = TypedEvent<
+  [BigNumber] & { minExecutionFee: BigNumber }
+>;
+
+export type SetPositionKeeperEvent = TypedEvent<
+  [string, boolean] & { account: string; isActive: boolean }
+>;
+
+export type SetReferralStorageEvent = TypedEvent<
+  [string] & { referralStorage: string }
+>;
+
+export type SetRequestKeysStartValuesEvent = TypedEvent<
+  [BigNumber, BigNumber] & {
+    increasePositionRequestKeysStart: BigNumber;
+    decreasePositionRequestKeysStart: BigNumber;
+  }
+>;
+
+export type WithdrawFeesEvent = TypedEvent<
+  [string, string, BigNumber] & {
+    token: string;
+    receiver: string;
+    amount: BigNumber;
+  }
+>;
 
 export class PositionRouter extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
@@ -1496,6 +1753,50 @@ export class PositionRouter extends BaseContract {
   };
 
   filters: {
+    "CancelDecreasePosition(address,address[],address,uint256,uint256,bool,address,uint256,uint256,uint256,uint256,uint256)"(
+      account?: string | null,
+      path?: null,
+      indexToken?: null,
+      collateralDelta?: null,
+      sizeDelta?: null,
+      isLong?: null,
+      receiver?: null,
+      acceptablePrice?: null,
+      minOut?: null,
+      executionFee?: null,
+      blockGap?: null,
+      timeGap?: null
+    ): TypedEventFilter<
+      [
+        string,
+        string[],
+        string,
+        BigNumber,
+        BigNumber,
+        boolean,
+        string,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber
+      ],
+      {
+        account: string;
+        path: string[];
+        indexToken: string;
+        collateralDelta: BigNumber;
+        sizeDelta: BigNumber;
+        isLong: boolean;
+        receiver: string;
+        acceptablePrice: BigNumber;
+        minOut: BigNumber;
+        executionFee: BigNumber;
+        blockGap: BigNumber;
+        timeGap: BigNumber;
+      }
+    >;
+
     CancelDecreasePosition(
       account?: string | null,
       path?: null,
@@ -1540,6 +1841,47 @@ export class PositionRouter extends BaseContract {
       }
     >;
 
+    "CancelIncreasePosition(address,address[],address,uint256,uint256,uint256,bool,uint256,uint256,uint256,uint256)"(
+      account?: string | null,
+      path?: null,
+      indexToken?: null,
+      amountIn?: null,
+      minOut?: null,
+      sizeDelta?: null,
+      isLong?: null,
+      acceptablePrice?: null,
+      executionFee?: null,
+      blockGap?: null,
+      timeGap?: null
+    ): TypedEventFilter<
+      [
+        string,
+        string[],
+        string,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        boolean,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber
+      ],
+      {
+        account: string;
+        path: string[];
+        indexToken: string;
+        amountIn: BigNumber;
+        minOut: BigNumber;
+        sizeDelta: BigNumber;
+        isLong: boolean;
+        acceptablePrice: BigNumber;
+        executionFee: BigNumber;
+        blockGap: BigNumber;
+        timeGap: BigNumber;
+      }
+    >;
+
     CancelIncreasePosition(
       account?: string | null,
       path?: null,
@@ -1578,6 +1920,53 @@ export class PositionRouter extends BaseContract {
         executionFee: BigNumber;
         blockGap: BigNumber;
         timeGap: BigNumber;
+      }
+    >;
+
+    "CreateDecreasePosition(address,address[],address,uint256,uint256,bool,address,uint256,uint256,uint256,uint256,uint256,uint256)"(
+      account?: string | null,
+      path?: null,
+      indexToken?: null,
+      collateralDelta?: null,
+      sizeDelta?: null,
+      isLong?: null,
+      receiver?: null,
+      acceptablePrice?: null,
+      minOut?: null,
+      executionFee?: null,
+      index?: null,
+      blockNumber?: null,
+      blockTime?: null
+    ): TypedEventFilter<
+      [
+        string,
+        string[],
+        string,
+        BigNumber,
+        BigNumber,
+        boolean,
+        string,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber
+      ],
+      {
+        account: string;
+        path: string[];
+        indexToken: string;
+        collateralDelta: BigNumber;
+        sizeDelta: BigNumber;
+        isLong: boolean;
+        receiver: string;
+        acceptablePrice: BigNumber;
+        minOut: BigNumber;
+        executionFee: BigNumber;
+        index: BigNumber;
+        blockNumber: BigNumber;
+        blockTime: BigNumber;
       }
     >;
 
@@ -1628,6 +2017,53 @@ export class PositionRouter extends BaseContract {
       }
     >;
 
+    "CreateIncreasePosition(address,address[],address,uint256,uint256,uint256,bool,uint256,uint256,uint256,uint256,uint256,uint256)"(
+      account?: string | null,
+      path?: null,
+      indexToken?: null,
+      amountIn?: null,
+      minOut?: null,
+      sizeDelta?: null,
+      isLong?: null,
+      acceptablePrice?: null,
+      executionFee?: null,
+      index?: null,
+      blockNumber?: null,
+      blockTime?: null,
+      gasPrice?: null
+    ): TypedEventFilter<
+      [
+        string,
+        string[],
+        string,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        boolean,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber
+      ],
+      {
+        account: string;
+        path: string[];
+        indexToken: string;
+        amountIn: BigNumber;
+        minOut: BigNumber;
+        sizeDelta: BigNumber;
+        isLong: boolean;
+        acceptablePrice: BigNumber;
+        executionFee: BigNumber;
+        index: BigNumber;
+        blockNumber: BigNumber;
+        blockTime: BigNumber;
+        gasPrice: BigNumber;
+      }
+    >;
+
     CreateIncreasePosition(
       account?: string | null,
       path?: null,
@@ -1675,6 +2111,23 @@ export class PositionRouter extends BaseContract {
       }
     >;
 
+    "DecreasePositionReferral(address,uint256,uint256,bytes32,address)"(
+      account?: null,
+      sizeDelta?: null,
+      marginFeeBasisPoints?: null,
+      referralCode?: null,
+      referrer?: null
+    ): TypedEventFilter<
+      [string, BigNumber, BigNumber, string, string],
+      {
+        account: string;
+        sizeDelta: BigNumber;
+        marginFeeBasisPoints: BigNumber;
+        referralCode: string;
+        referrer: string;
+      }
+    >;
+
     DecreasePositionReferral(
       account?: null,
       sizeDelta?: null,
@@ -1689,6 +2142,50 @@ export class PositionRouter extends BaseContract {
         marginFeeBasisPoints: BigNumber;
         referralCode: string;
         referrer: string;
+      }
+    >;
+
+    "ExecuteDecreasePosition(address,address[],address,uint256,uint256,bool,address,uint256,uint256,uint256,uint256,uint256)"(
+      account?: string | null,
+      path?: null,
+      indexToken?: null,
+      collateralDelta?: null,
+      sizeDelta?: null,
+      isLong?: null,
+      receiver?: null,
+      acceptablePrice?: null,
+      minOut?: null,
+      executionFee?: null,
+      blockGap?: null,
+      timeGap?: null
+    ): TypedEventFilter<
+      [
+        string,
+        string[],
+        string,
+        BigNumber,
+        BigNumber,
+        boolean,
+        string,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber
+      ],
+      {
+        account: string;
+        path: string[];
+        indexToken: string;
+        collateralDelta: BigNumber;
+        sizeDelta: BigNumber;
+        isLong: boolean;
+        receiver: string;
+        acceptablePrice: BigNumber;
+        minOut: BigNumber;
+        executionFee: BigNumber;
+        blockGap: BigNumber;
+        timeGap: BigNumber;
       }
     >;
 
@@ -1736,6 +2233,47 @@ export class PositionRouter extends BaseContract {
       }
     >;
 
+    "ExecuteIncreasePosition(address,address[],address,uint256,uint256,uint256,bool,uint256,uint256,uint256,uint256)"(
+      account?: string | null,
+      path?: null,
+      indexToken?: null,
+      amountIn?: null,
+      minOut?: null,
+      sizeDelta?: null,
+      isLong?: null,
+      acceptablePrice?: null,
+      executionFee?: null,
+      blockGap?: null,
+      timeGap?: null
+    ): TypedEventFilter<
+      [
+        string,
+        string[],
+        string,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        boolean,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber
+      ],
+      {
+        account: string;
+        path: string[];
+        indexToken: string;
+        amountIn: BigNumber;
+        minOut: BigNumber;
+        sizeDelta: BigNumber;
+        isLong: boolean;
+        acceptablePrice: BigNumber;
+        executionFee: BigNumber;
+        blockGap: BigNumber;
+        timeGap: BigNumber;
+      }
+    >;
+
     ExecuteIncreasePosition(
       account?: string | null,
       path?: null,
@@ -1777,6 +2315,23 @@ export class PositionRouter extends BaseContract {
       }
     >;
 
+    "IncreasePositionReferral(address,uint256,uint256,bytes32,address)"(
+      account?: null,
+      sizeDelta?: null,
+      marginFeeBasisPoints?: null,
+      referralCode?: null,
+      referrer?: null
+    ): TypedEventFilter<
+      [string, BigNumber, BigNumber, string, string],
+      {
+        account: string;
+        sizeDelta: BigNumber;
+        marginFeeBasisPoints: BigNumber;
+        referralCode: string;
+        referrer: string;
+      }
+    >;
+
     IncreasePositionReferral(
       account?: null,
       sizeDelta?: null,
@@ -1794,7 +2349,24 @@ export class PositionRouter extends BaseContract {
       }
     >;
 
+    "SetAdmin(address)"(
+      admin?: null
+    ): TypedEventFilter<[string], { admin: string }>;
+
     SetAdmin(admin?: null): TypedEventFilter<[string], { admin: string }>;
+
+    "SetDelayValues(uint256,uint256,uint256)"(
+      minBlockDelayKeeper?: null,
+      minTimeDelayPublic?: null,
+      maxTimeDelay?: null
+    ): TypedEventFilter<
+      [BigNumber, BigNumber, BigNumber],
+      {
+        minBlockDelayKeeper: BigNumber;
+        minTimeDelayPublic: BigNumber;
+        maxTimeDelay: BigNumber;
+      }
+    >;
 
     SetDelayValues(
       minBlockDelayKeeper?: null,
@@ -1809,17 +2381,38 @@ export class PositionRouter extends BaseContract {
       }
     >;
 
+    "SetDepositFee(uint256)"(
+      depositFee?: null
+    ): TypedEventFilter<[BigNumber], { depositFee: BigNumber }>;
+
     SetDepositFee(
       depositFee?: null
     ): TypedEventFilter<[BigNumber], { depositFee: BigNumber }>;
+
+    "SetIncreasePositionBufferBps(uint256)"(
+      increasePositionBufferBps?: null
+    ): TypedEventFilter<[BigNumber], { increasePositionBufferBps: BigNumber }>;
 
     SetIncreasePositionBufferBps(
       increasePositionBufferBps?: null
     ): TypedEventFilter<[BigNumber], { increasePositionBufferBps: BigNumber }>;
 
+    "SetIsLeverageEnabled(bool)"(
+      isLeverageEnabled?: null
+    ): TypedEventFilter<[boolean], { isLeverageEnabled: boolean }>;
+
     SetIsLeverageEnabled(
       isLeverageEnabled?: null
     ): TypedEventFilter<[boolean], { isLeverageEnabled: boolean }>;
+
+    "SetMaxGlobalSizes(address[],uint256[],uint256[])"(
+      tokens?: null,
+      longSizes?: null,
+      shortSizes?: null
+    ): TypedEventFilter<
+      [string[], BigNumber[], BigNumber[]],
+      { tokens: string[]; longSizes: BigNumber[]; shortSizes: BigNumber[] }
+    >;
 
     SetMaxGlobalSizes(
       tokens?: null,
@@ -1830,9 +2423,21 @@ export class PositionRouter extends BaseContract {
       { tokens: string[]; longSizes: BigNumber[]; shortSizes: BigNumber[] }
     >;
 
+    "SetMinExecutionFee(uint256)"(
+      minExecutionFee?: null
+    ): TypedEventFilter<[BigNumber], { minExecutionFee: BigNumber }>;
+
     SetMinExecutionFee(
       minExecutionFee?: null
     ): TypedEventFilter<[BigNumber], { minExecutionFee: BigNumber }>;
+
+    "SetPositionKeeper(address,bool)"(
+      account?: string | null,
+      isActive?: null
+    ): TypedEventFilter<
+      [string, boolean],
+      { account: string; isActive: boolean }
+    >;
 
     SetPositionKeeper(
       account?: string | null,
@@ -1842,9 +2447,24 @@ export class PositionRouter extends BaseContract {
       { account: string; isActive: boolean }
     >;
 
+    "SetReferralStorage(address)"(
+      referralStorage?: null
+    ): TypedEventFilter<[string], { referralStorage: string }>;
+
     SetReferralStorage(
       referralStorage?: null
     ): TypedEventFilter<[string], { referralStorage: string }>;
+
+    "SetRequestKeysStartValues(uint256,uint256)"(
+      increasePositionRequestKeysStart?: null,
+      decreasePositionRequestKeysStart?: null
+    ): TypedEventFilter<
+      [BigNumber, BigNumber],
+      {
+        increasePositionRequestKeysStart: BigNumber;
+        decreasePositionRequestKeysStart: BigNumber;
+      }
+    >;
 
     SetRequestKeysStartValues(
       increasePositionRequestKeysStart?: null,
@@ -1855,6 +2475,15 @@ export class PositionRouter extends BaseContract {
         increasePositionRequestKeysStart: BigNumber;
         decreasePositionRequestKeysStart: BigNumber;
       }
+    >;
+
+    "WithdrawFees(address,address,uint256)"(
+      token?: null,
+      receiver?: null,
+      amount?: null
+    ): TypedEventFilter<
+      [string, string, BigNumber],
+      { token: string; receiver: string; amount: BigNumber }
     >;
 
     WithdrawFees(

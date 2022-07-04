@@ -42,6 +42,22 @@ export const saleConfig = {
 
 export const saleDescriptionList: LabItemSale[] = [
   {
+    name: "Noodles",
+    description: "Put these soggy little wiggles in your mouth and imagine how amazing the taste of success will make u feel. Slurping up crypto and letting it become one within. You need these noodles thriving in your little bustard body when you extract pure blueberry gold in the next bull run! Time to shine little berry, time to shine.",
+    id: IAttributeMappings.Noodles,
+    mintRuleList: [
+      {
+        supply: 75,
+        type: SaleType.holder,
+        cost: parseEther('0.04').toBigInt(),
+        contractAddress: "0x8CcC075E1c845FB3e0caBf04aF537171DF66b3A6",
+        start: toTime(2022, 6, 9, 18),
+        finish: toTime(2022, 7, 9, 18),
+        accountLimit: 3
+      }
+    ]
+  },
+  {
     name: "GBC x Wine Bottle Club",
     description: `For all members present at the Wine Bottle Club x GBC event in Bordeaux`,
     id: IAttributeMappings["GBC x Wine Bottle Club"],

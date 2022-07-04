@@ -192,24 +192,24 @@ export default ({ baseRoute = '' }: Website) => component((
               router.match(profileWalletRoute)(
                 fadeIn($ProfileWallet({ walletLink, parentRoute: pagesRoute, accountStakingStore })({ changeRoute: linkClickTether() }))
               ),
-              router.match(tradeRoute)(
-                $Trade({
-                  walletLink,
-                  parentRoute: tradeRoute,
-                  walletStore,
-                  accountTradeList: map((res: ITradeOpen[]) => res.map(fromJson.toTradeJson), clientApi.requestAccountTradeList),
-                  pricefeed: map((feed: IPricefeed[]) => feed.map(fromJson.pricefeedJson), clientApi.requestPricefeed),
-                  latestPriceMap,
-                  parentStore: rootStore,
+              // router.match(tradeRoute)(
+              //   $Trade({
+              //     walletLink,
+              //     parentRoute: tradeRoute,
+              //     walletStore,
+              //     accountTradeList: map((res: ITradeOpen[]) => res.map(fromJson.toTradeJson), clientApi.requestAccountTradeList),
+              //     pricefeed: map((feed: IPricefeed[]) => feed.map(fromJson.pricefeedJson), clientApi.requestPricefeed),
+              //     latestPriceMap,
+              //     parentStore: rootStore,
 
-                })({
-                  requestPricefeed: requestPricefeedTether(),
-                  requestAccountTradeList: requestAccountTradeListTether(),
-                  requestLatestPriceMap: requestLatestPriceMapTether(),
-                  changeRoute: linkClickTether(),
-                  walletChange: walletChangeTether()
-                })
-              ),
+              //   })({
+              //     requestPricefeed: requestPricefeedTether(),
+              //     requestAccountTradeList: requestAccountTradeListTether(),
+              //     requestLatestPriceMap: requestLatestPriceMapTether(),
+              //     changeRoute: linkClickTether(),
+              //     walletChange: walletChangeTether()
+              //   })
+              // ),
               // router.match(leaderboardRoute)(
               //   fadeIn($Leaderboard({
               //     walletLink, parentRoute: pagesRoute, accountStakingStore,

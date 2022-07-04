@@ -158,7 +158,7 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
                       $element('li')(
                         $text(style({ color: pallete.foreground }))(`limit of `),
                         $text(`${mintRule.accountLimit}`),
-                        $text(style({ color: pallete.foreground }))(` tokens per address`),
+                        $text(style({ color: pallete.foreground }))(` tokens per wallet address`),
                       ),
                       $element('li')(
                         $text(style({ color: pallete.foreground }))(isFinished ? 'Sale Settled on ' : 'Sale will automatically settle in '),

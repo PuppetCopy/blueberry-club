@@ -1,10 +1,10 @@
-import { PositionRouter__factory } from "./trade/PositionRouter__factory"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { awaitPromises, filter, map } from "@most/core"
 import { getWalletProvider } from "../common"
-import { ARBITRUM_ADDRESS } from "@gambitdao/gmx-middleware"
-import { ERC20__factory } from "@gambitdao/gmx-contracts"
+import { ADDRESS_LEVERAGE, ARBITRUM_ADDRESS } from "@gambitdao/gmx-middleware"
 import { combineArray } from "@aelea/core"
+import { ERC20__factory } from "@gambitdao/gbc-contracts"
+import { PositionRouter__factory, VaultPriceFeed__factory, VaultReader__factory, Vault__factory } from "./gmx-contracts"
 
 
 
@@ -30,12 +30,73 @@ export function connectTrade(wallet: IWalletLink) {
   
   const account = filter((a): a is string => a !== null, wallet.account)
 
-  const increasePosition = map(c => {
-    
-    c.createIncreasePositionETH
+  const executionFee = awaitPromises(map(async c => {
+    return (await c.minExecutionFee()).toBigInt()
+  }, contract))
 
-  }, contract)
+
+  return { contract, executionFee }
+}
+
+export function connectVaultReader(wallet: IWalletLink) {
+  const provider = getWalletProvider(wallet)
+
+  const contract = map(w3p => VaultReader__factory.connect(ARBITRUM_ADDRESS.VaultReader, w3p.getSigner()), provider)
+  
+  const account = filter((a): a is string => a !== null, wallet.account)
+
+  // const getPrice = (token: ADDRESS_LEVERAGE, maximize = false, incAmm = true) => map(async c => {
+  //   const p = await c.globalShortAveragePrices(token, maximize, incAmm, false)
+
+  //   return p.toBigInt()
+  // }, contract)
 
 
   return { contract }
+}
+
+export function connectPricefeed(wallet: IWalletLink) {
+  const provider = getWalletProvider(wallet)
+
+  const contract = map(w3p => VaultPriceFeed__factory.connect(ARBITRUM_ADDRESS.PositionRouter, w3p.getSigner()), provider)
+  
+  const account = filter((a): a is string => a !== null, wallet.account)
+
+  const getPrice = (token: ADDRESS_LEVERAGE, maximize = false, incAmm = true) => map(async c => {
+    const p = await c.getPrice(token, maximize, incAmm, false)
+
+    return p.toBigInt()
+  }, contract)
+
+
+  return { contract, getPrice }
+}
+
+export function connectVault(wallet: IWalletLink) {
+  const provider = getWalletProvider(wallet)
+
+  const contract = map(w3p => Vault__factory.connect(ARBITRUM_ADDRESS.Vault, w3p.getSigner()), provider)
+  
+  const account = filter((a): a is string => a !== null, wallet.account)
+
+  const getMaxPrice = (token: ADDRESS_LEVERAGE) => map(async c => {
+    const p = await c.getMaxPrice(token)
+
+    return p.toBigInt()
+  }, contract)
+
+  const tokenWeight = (token: ADDRESS_LEVERAGE) => map(async c => {
+    const p = await c.tokenWeights(token)
+
+    return p.toBigInt()
+  }, contract)
+
+  const getMinPrice = (token: ADDRESS_LEVERAGE) => map(async c => {
+    const p = await c.getMinPrice(token)
+
+    return p.toBigInt()
+  }, contract)
+
+
+  return { contract, getMinPrice, getMaxPrice, tokenWeight }
 }

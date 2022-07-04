@@ -1002,16 +1002,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@gambitdao/gmx-contracts@npm:1.0.6":
-  version: 1.0.6
-  resolution: "@gambitdao/gmx-contracts@npm:1.0.6"
-  dependencies:
-    bn.js: ^5.2.0
-    csv-parse: ^4.16.3
-  checksum: 0820771108e9ad0ef205969300987f22eed9be1ae5cd38abad5900e0ccff65559b975b1c946c78d8b3a033544dd764542f6787684713d04040dec1b04b2e5591
-  languageName: node
-  linkType: hard
-
 "@gambitdao/gmx-middleware@0.7.0, @gambitdao/gmx-middleware@workspace:*, @gambitdao/gmx-middleware@workspace:@gambitdao-gmx-middleware":
   version: 0.0.0-use.local
   resolution: "@gambitdao/gmx-middleware@workspace:@gambitdao-gmx-middleware"
@@ -8560,7 +8550,6 @@ __metadata:
     "@ethersproject/wallet": ^5.6.2
     "@gambitdao/gbc-contracts": "workspace:*"
     "@gambitdao/gbc-middleware": "workspace:*"
-    "@gambitdao/gmx-contracts": 1.0.6
     "@gambitdao/gmx-middleware": "workspace:*"
     "@gambitdao/ui-components": "workspace:*"
     "@gambitdao/wallet-link": "workspace:*"
