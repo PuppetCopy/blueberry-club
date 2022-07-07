@@ -2,16 +2,20 @@
 
 pragma solidity ^0.8.0;
 
+import {Auth} from "@rari-capital/solmate/src/auth/Auth.sol";
+
 import {ERC721} from "@rari-capital/solmate/src/tokens/ERC721.sol";
 import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import {SafeTransferLib} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 import {IERC2981} from "@openzeppelin/contracts/interfaces/IERC2981.sol";
 
+import {FullMath} from "../lib/FullMath.sol";
+
 /// @title Marketplace
 /// @author IrvingDev (https://github.com/IrvingDevPro)
 /// @notice An easy to use marketplace for any type of tokens with
-abstract contract Marketplace {
+abstract contract Marketplace is Auth {
     /// -----------------------------------------------------------------------
     /// Library usage
     /// -----------------------------------------------------------------------
@@ -19,36 +23,38 @@ abstract contract Marketplace {
     using SafeTransferLib for ERC20;
 
     /// -----------------------------------------------------------------------
-    /// Events
+    /// Constants
     /// -----------------------------------------------------------------------
 
-    enum OrderKind {
-        Direct,
-        Auction
-    }
+    uint256 private constant MAXIMUM_DURATION_AUCTION = 30 * 24 * 60 * 60;
+    uint256 private constant FEE_DENOMINATOR = 10000;
+
+    /// -----------------------------------------------------------------------
+    /// Events
+    /// -----------------------------------------------------------------------
 
     event OrderCreated(
         uint256 indexed orderId,
         OrderKind kind,
-        uint256 openFrom,
-        uint256 openTo,
+        uint256 start,
+        uint256 end,
         address indexed maker,
         ERC20 currency,
         uint256 price,
-        ERC721 tokenContract,
+        address tokenContract,
         uint256 tokenId
     );
 
     event OrderBid(
         uint256 indexed orderId,
         address indexed bidder,
-        uint256 bidAmount
+        uint256 bid
     );
 
     event OrderFilled(
         uint256 indexed orderId,
         address indexed taker,
-        uint256 paidAmount
+        uint256 paid
     );
 
     event OrderCancelled(uint256 indexed orderId);
@@ -56,6 +62,11 @@ abstract contract Marketplace {
     /// -----------------------------------------------------------------------
     /// Structs
     /// -----------------------------------------------------------------------
+
+    enum OrderKind {
+        Direct,
+        Auction
+    }
 
     struct Order {
         OrderKind kind;
@@ -65,7 +76,7 @@ abstract contract Marketplace {
         address maker;
         ERC20 currency;
         uint256 price;
-        ERC721 tokenContract;
+        address tokenContract;
         uint256 tokenId;
         address bidder;
         uint256 bidAmount;
@@ -73,13 +84,20 @@ abstract contract Marketplace {
         uint256 paidAmount;
     }
 
+    struct Fee {
+        address receiver;
+        uint96 fee;
+    }
+
     /// -----------------------------------------------------------------------
     /// Storage
     /// -----------------------------------------------------------------------
 
-    mapping(uint256 => Order) private order;
+    mapping(uint256 => Order) public order;
 
     uint256 private _orderIdTracker;
+
+    Fee public fee;
 
     /// -----------------------------------------------------------------------
     /// User actions
@@ -91,19 +109,15 @@ abstract contract Marketplace {
         uint256 openTo,
         ERC20 currency,
         uint256 price,
-        ERC721 tokenContract,
+        address tokenContract,
         uint256 tokenId
-    ) external virtual returns (uint256) {
-        uint256 openDuration_ = openDuration(openFrom, openTo);
+    ) external returns (uint256) {
+        if (
+            kind == OrderKind.Auction &&
+            _duration(openFrom, openTo) > MAXIMUM_DURATION_AUCTION
+        ) revert("MAXIMUM_DURATION_AUCTION");
 
-        require(openDuration_ > 0, "DURATION_ZERO");
-
-        if (kind == OrderKind.Auction) {
-            /// 2592000 = 30 * 24 * 60 * 60 = 30 days
-            require(openDuration_ <= 2592000, "AUCTION_LIMIT_DURATION");
-        }
-
-        tokenContract.transferFrom(msg.sender, address(this), tokenId);
+        _deposit(msg.sender, tokenContract, tokenId);
 
         uint256 orderId = _orderIdTracker++;
 
@@ -138,68 +152,78 @@ abstract contract Marketplace {
         return orderId;
     }
 
-    function cancelOrder(uint256 orderId) external virtual {
-        /// @dev No need to check if order exist because we check if sender is owner
+    function cancelOrder(uint256 orderId) external {
         Order memory order_ = order[orderId];
-        require(order_.maker == msg.sender, "INVALID_CANCELER");
-        require(order_.open, "ALREADY_CANCELED");
-        require(order_.bidder == address(0), "HAS_BIDDER");
-
-        order_.tokenContract.safeTransferFrom(
-            address(this),
-            order_.maker,
-            order_.tokenId
+        require(
+            order_.maker == msg.sender || isAuthorized(msg.sender, msg.sig),
+            "INVALID_SENDER"
         );
+        require(order_.open, "ALREADY_CANCELED");
+        require(order_.bidder == address(0), "AUCTION_STARTED");
 
-        order[orderId].open = false;
+        _withdraw(order_.maker, order_.tokenContract, order_.tokenId);
 
+        order_.open = false;
+        order[orderId] = order_;
         emit OrderCancelled(orderId);
     }
 
-    function bidOrder(uint256 orderId, uint256 amount) external virtual {
-        /// @dev No need to check if order exist because we check if is open
+    function bidOrder(uint256 orderId, uint256 amount) external {
         Order memory order_ = order[orderId];
-        require(order_.kind == OrderKind.Auction, "DIRECT_ORDER");
-        require(order_.open, "CLOSED_ORDER");
-        require(order_.openFrom <= block.timestamp, "FROM_CLOSED_ORDER");
-        require(order_.openTo > block.timestamp, "TO_CLOSED_ORDER");
-        require(order_.price <= amount, "INVALID_INITIAL_BID");
+
+        require(order_.kind == OrderKind.Auction, "INVALID_KIND");
+        require(order_.open, "ORDER_CANCELED");
+        require(order_.openFrom <= block.timestamp, "NOT_STARTED");
+        require(order_.openTo > block.timestamp, "FINISHED");
+        require(order_.price <= amount, "INVALID_AMOUNT");
+
+        ERC20 currency = order_.currency;
 
         if (order_.bidder != address(0)) {
-            require(order_.bidAmount < amount, "INVALID_BID");
+            uint256 bid = order_.bidAmount;
+            require(bid < amount, "INVALID_BID");
 
-            order_.currency.safeTransfer(order_.bidder, order_.bidAmount);
+            currency.safeTransfer(order_.bidder, bid);
         }
 
         order_.bidder = msg.sender;
         order_.bidAmount = amount;
+
         order[orderId] = order_;
 
-        order_.currency.safeTransferFrom(msg.sender, address(this), amount);
+        currency.safeTransferFrom(msg.sender, address(this), amount);
 
         emit OrderBid(orderId, msg.sender, amount);
     }
 
     function fillOrder(uint256 orderId, uint256 amount) external virtual {
         Order memory order_ = order[orderId];
-        require(order_.open, "CLOSED_ORDER");
 
+        require(order_.open, "ORDER_CLOSED");
         order_.open = false;
 
         address spender;
 
         if (order_.kind == OrderKind.Direct) {
-            require(order_.openFrom <= block.timestamp, "FROM_CLOSED_ORDER");
-            require(order_.openTo > block.timestamp, "TO_CLOSED_ORDER");
-            require(order_.price <= amount, "INVALID_PAID_AMOUNT");
+            require(order_.openFrom <= block.timestamp, "NOT_STARTED");
+            require(
+                order_.openTo == 0 || order_.openTo > block.timestamp,
+                "ENDED"
+            );
+            require(order_.price <= amount, "INVALID_AMOUNT");
 
             order_.taker = msg.sender;
             order_.paidAmount = amount;
             spender = msg.sender;
-        } else if (order_.kind == OrderKind.Auction) {
+        } else {
             require(order_.bidder != address(0), "NO_BIDDER");
-            require(order_.bidder == msg.sender, "INVALID_SENDER");
-            require(order_.openTo <= block.timestamp, "NOT_FINISHED");
+            require(
+                (order_.bidder == msg.sender &&
+                    order_.openTo <= block.timestamp) ||
+                    order_.maker == msg.sender ||
+                    isAuthorized(msg.sender, msg.sig),
+                "LemonadeMarketplace: must be the maker or final bidder to fill auction order"
+            );
 
             order_.taker = order_.bidder;
             order_.paidAmount = order_.bidAmount;
@@ -208,42 +232,30 @@ abstract contract Marketplace {
 
         order[orderId] = order_;
 
-        uint256 paidAmount = order_.paidAmount;
+        uint256 bill = order_.paidAmount;
 
-        if (paidAmount > 0) {
-            try
-                IERC2981(address(order_.tokenContract)).royaltyInfo(
-                    order_.tokenId,
-                    paidAmount
-                )
-            returns (address receiver, uint256 royaltyAmount) {
-                if (order_.maker != receiver) {
-                    order_.currency.safeTransferFrom(
-                        spender,
-                        receiver,
-                        royaltyAmount
-                    );
-                    paidAmount -= royaltyAmount;
-                }
-            } catch {}
+        if (bill > 0) {
+            Fee memory fee_ = fee;
 
-            order_.currency.safeTransferFrom(spender, order_.maker, paidAmount);
+            uint256 royalty = FullMath.mulDiv(bill, fee_.fee, FEE_DENOMINATOR);
+
+            order_.currency.safeTransferFrom(spender, fee_.receiver, royalty);
+            bill -= royalty;
+            if (bill > 0) {
+                order_.currency.safeTransferFrom(spender, order_.maker, bill);
+            }
         }
 
-        order_.tokenContract.safeTransferFrom(
-            address(this),
-            order_.taker,
-            order_.tokenId
-        );
+        _withdraw(order_.taker, order_.tokenContract, order_.tokenId);
 
         emit OrderFilled(orderId, order_.taker, order_.paidAmount);
     }
 
     /// -----------------------------------------------------------------------
-    /// Getters
+    /// Internal
     /// -----------------------------------------------------------------------
 
-    function openDuration(uint256 openFrom, uint256 openTo)
+    function _duration(uint256 openFrom, uint256 openTo)
         private
         view
         returns (uint256)
@@ -251,7 +263,19 @@ abstract contract Marketplace {
         uint256 start = openFrom < block.timestamp ? block.timestamp : openFrom;
         uint256 end = openTo == 0 ? type(uint256).max : openTo;
 
-        /// Revert if start > end due to underflow
+        /// @dev undeflow if start > end
         return end - start;
     }
+
+    function _deposit(
+        address from,
+        address tokenContract,
+        uint256 tokenId
+    ) internal virtual;
+
+    function _withdraw(
+        address to,
+        address tokenContract,
+        uint256 tokenId
+    ) internal virtual;
 }
