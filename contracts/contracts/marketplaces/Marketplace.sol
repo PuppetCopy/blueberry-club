@@ -36,7 +36,6 @@ abstract contract Marketplace is Auth {
         uint256 start,
         uint256 end,
         address indexed maker,
-        ERC20 currency,
         uint256 price,
         address tokenContract,
         uint256 tokenId
@@ -71,7 +70,6 @@ abstract contract Marketplace is Auth {
         uint256 openFrom;
         uint256 openTo;
         address maker;
-        ERC20 currency;
         uint256 price;
         address tokenContract;
         uint256 tokenId;
@@ -104,7 +102,6 @@ abstract contract Marketplace is Auth {
         OrderKind kind,
         uint256 openFrom,
         uint256 openTo,
-        ERC20 currency,
         uint256 price,
         address tokenContract,
         uint256 tokenId
@@ -124,7 +121,6 @@ abstract contract Marketplace is Auth {
             openFrom: openFrom,
             openTo: openTo,
             maker: msg.sender,
-            currency: currency,
             price: price,
             tokenContract: tokenContract,
             tokenId: tokenId,
@@ -140,7 +136,6 @@ abstract contract Marketplace is Auth {
             openFrom,
             openTo,
             msg.sender,
-            currency,
             price,
             tokenContract,
             tokenId
@@ -165,41 +160,35 @@ abstract contract Marketplace is Auth {
         emit OrderCancelled(orderId);
     }
 
-    function bidOrder(uint256 orderId, uint256 amount) external {
+    function bidOrder(uint256 orderId) external payable {
         Order memory order_ = order[orderId];
 
         require(order_.kind == OrderKind.Auction, "INVALID_KIND");
         require(order_.open, "ORDER_CANCELED");
         require(order_.openFrom <= block.timestamp, "NOT_STARTED");
         require(order_.openTo > block.timestamp, "FINISHED");
-        require(order_.price <= amount, "INVALID_AMOUNT");
-
-        ERC20 currency = order_.currency;
+        require(order_.price <= msg.value, "INVALID_AMOUNT");
 
         if (order_.bidder != address(0)) {
             uint256 bid = order_.bidAmount;
-            require(bid < amount, "INVALID_BID");
+            require(bid < msg.value, "INVALID_BID");
 
-            currency.safeTransfer(order_.bidder, bid);
+            SafeTransferLib.safeTransferETH(order_.bidder, bid);
         }
 
         order_.bidder = msg.sender;
-        order_.bidAmount = amount;
+        order_.bidAmount = msg.value;
 
         order[orderId] = order_;
 
-        currency.safeTransferFrom(msg.sender, address(this), amount);
-
-        emit OrderBid(orderId, msg.sender, amount);
+        emit OrderBid(orderId, msg.sender, msg.value);
     }
 
-    function fillOrder(uint256 orderId, uint256 amount) external virtual {
+    function fillOrder(uint256 orderId) external payable virtual {
         Order memory order_ = order[orderId];
 
         require(order_.open, "ORDER_CLOSED");
         order_.open = false;
-
-        address spender;
 
         if (order_.kind == OrderKind.Direct) {
             require(order_.openFrom <= block.timestamp, "NOT_STARTED");
@@ -207,11 +196,10 @@ abstract contract Marketplace is Auth {
                 order_.openTo == 0 || order_.openTo > block.timestamp,
                 "ENDED"
             );
-            require(order_.price <= amount, "INVALID_AMOUNT");
+            require(order_.price <= msg.value, "INVALID_AMOUNT");
 
             order_.taker = msg.sender;
-            order_.paidAmount = amount;
-            spender = msg.sender;
+            order_.paidAmount = msg.value;
         } else {
             require(order_.bidder != address(0), "NO_BIDDER");
             require(
@@ -224,7 +212,6 @@ abstract contract Marketplace is Auth {
 
             order_.taker = order_.bidder;
             order_.paidAmount = order_.bidAmount;
-            spender = address(this);
         }
 
         order[orderId] = order_;
@@ -236,10 +223,11 @@ abstract contract Marketplace is Auth {
 
             uint256 royalty = FullMath.mulDiv(bill, fee_.fee, FEE_DENOMINATOR);
 
-            order_.currency.safeTransferFrom(spender, fee_.receiver, royalty);
+            SafeTransferLib.safeTransferETH(fee_.receiver, royalty);
+
             bill -= royalty;
             if (bill > 0) {
-                order_.currency.safeTransferFrom(spender, order_.maker, bill);
+                SafeTransferLib.safeTransferETH(order_.maker, bill);
             }
         }
 
