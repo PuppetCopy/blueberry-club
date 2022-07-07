@@ -17,21 +17,32 @@ contract MarketplaceERC721 is Marketplace, ERC721TokenReceiver {
     function _deposit(
         address from,
         address tokenContract,
-        uint256 tokenId
+        uint256[] memory tokenIds,
+        uint256[] memory
     ) internal override {
-        ERC721(tokenContract).safeTransferFrom(
-            from,
-            address(this),
-            tokenId,
-            ""
-        );
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            ERC721(tokenContract).safeTransferFrom(
+                from,
+                address(this),
+                tokenIds[i],
+                ""
+            );
+        }
     }
 
     function _withdraw(
         address to,
         address tokenContract,
-        uint256 tokenId
+        uint256[] memory tokenIds,
+        uint256[] memory
     ) internal override {
-        ERC721(tokenContract).safeTransferFrom(address(this), to, tokenId, "");
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            ERC721(tokenContract).safeTransferFrom(
+                address(this),
+                to,
+                tokenIds[i],
+                ""
+            );
+        }
     }
 }

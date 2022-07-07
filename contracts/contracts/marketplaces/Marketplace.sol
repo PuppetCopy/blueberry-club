@@ -38,7 +38,8 @@ abstract contract Marketplace is Auth {
         address indexed maker,
         uint256 price,
         address tokenContract,
-        uint256 tokenId
+        uint256[] tokenIds,
+        uint256[] amounts
     );
 
     event OrderBid(
@@ -72,7 +73,8 @@ abstract contract Marketplace is Auth {
         address maker;
         uint256 price;
         address tokenContract;
-        uint256 tokenId;
+        uint256[] tokenIds;
+        uint256[] amounts;
         address bidder;
         uint256 bidAmount;
         address taker;
@@ -104,14 +106,15 @@ abstract contract Marketplace is Auth {
         uint256 openTo,
         uint256 price,
         address tokenContract,
-        uint256 tokenId
+        uint256[] calldata tokenIds,
+        uint256[] calldata amounts
     ) external returns (uint256) {
         if (
             kind == OrderKind.Auction &&
             _duration(openFrom, openTo) > MAXIMUM_DURATION_AUCTION
         ) revert("MAXIMUM_DURATION_AUCTION");
 
-        _deposit(msg.sender, tokenContract, tokenId);
+        _deposit(msg.sender, tokenContract, tokenIds, amounts);
 
         uint256 orderId = _orderIdTracker++;
 
@@ -123,7 +126,8 @@ abstract contract Marketplace is Auth {
             maker: msg.sender,
             price: price,
             tokenContract: tokenContract,
-            tokenId: tokenId,
+            tokenIds: tokenIds,
+            amounts: amounts,
             bidder: address(0),
             bidAmount: 0,
             taker: address(0),
@@ -138,7 +142,8 @@ abstract contract Marketplace is Auth {
             msg.sender,
             price,
             tokenContract,
-            tokenId
+            tokenIds,
+            amounts
         );
 
         return orderId;
@@ -153,7 +158,12 @@ abstract contract Marketplace is Auth {
         require(order_.open, "ALREADY_CANCELED");
         require(order_.bidder == address(0), "AUCTION_STARTED");
 
-        _withdraw(order_.maker, order_.tokenContract, order_.tokenId);
+        _withdraw(
+            order_.maker,
+            order_.tokenContract,
+            order_.tokenIds,
+            order_.amounts
+        );
 
         order_.open = false;
         order[orderId] = order_;
@@ -231,7 +241,12 @@ abstract contract Marketplace is Auth {
             }
         }
 
-        _withdraw(order_.taker, order_.tokenContract, order_.tokenId);
+        _withdraw(
+            order_.taker,
+            order_.tokenContract,
+            order_.tokenIds,
+            order_.amounts
+        );
 
         emit OrderFilled(orderId, order_.taker, order_.paidAmount);
     }
@@ -255,13 +270,15 @@ abstract contract Marketplace is Auth {
     function _deposit(
         address from,
         address tokenContract,
-        uint256 tokenId
+        uint256[] memory tokenIds,
+        uint256[] memory amounts
     ) internal virtual;
 
     function _withdraw(
         address to,
         address tokenContract,
-        uint256 tokenId
+        uint256[] memory tokenIds,
+        uint256[] memory amounts
     ) internal virtual;
 
     function setFee(Fee memory fee_) external requiresAuth {

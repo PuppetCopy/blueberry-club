@@ -17,13 +17,14 @@ contract MarketplaceERC1155 is Marketplace, ERC1155TokenReceiver {
     function _deposit(
         address from,
         address tokenContract,
-        uint256 tokenId
+        uint256[] memory ids,
+        uint256[] memory amounts
     ) internal override {
-        ERC1155(tokenContract).safeTransferFrom(
+        ERC1155(tokenContract).safeBatchTransferFrom(
             from,
             address(this),
-            tokenId,
-            1,
+            ids,
+            amounts,
             ""
         );
     }
@@ -31,13 +32,14 @@ contract MarketplaceERC1155 is Marketplace, ERC1155TokenReceiver {
     function _withdraw(
         address to,
         address tokenContract,
-        uint256 tokenId
+        uint256[] memory ids,
+        uint256[] memory amounts
     ) internal override {
-        ERC1155(tokenContract).safeTransferFrom(
+        ERC1155(tokenContract).safeBatchTransferFrom(
             address(this),
             to,
-            tokenId,
-            1,
+            ids,
+            amounts,
             ""
         );
     }
