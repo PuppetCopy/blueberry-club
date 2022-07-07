@@ -61,7 +61,7 @@ dataSources:
     source:
       address: '0xE23316331e0717E5353F2Fbe710248B295f5BA7f'
       abi: Profile
-      startBlock: 13910680
+      startBlock: 13910702
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -84,7 +84,7 @@ dataSources:
     source:
       address: '0xb3598b108F59AfEc664974DfD96330DE48eF2D4D'
       abi: Closet
-      startBlock: 13910680
+      startBlock: 13910725
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6

@@ -2,12 +2,12 @@ import { combineArray } from "@aelea/core"
 import { BigNumber } from "@ethersproject/bignumber"
 import { BaseProvider } from "@ethersproject/providers"
 import { BI_18_PRECISION } from "@gambitdao/gbc-middleware"
-import { RewardReader__factory, GMX__factory, Reader__factory, EsGMX__factory, GlpManager__factory, Vault__factory } from "@gambitdao/gmx-contracts"
 import { ARBITRUM_ADDRESS, AVALANCHE_ADDRESS, BASIS_POINTS_DIVISOR } from "@gambitdao/gmx-middleware"
 import { awaitPromises, combine, fromPromise, map, now, take } from "@most/core"
 import { Stream } from "@most/types"
 import { IAsset } from "@gambitdao/gbc-middleware"
 import { latestTokenPriceMap } from "./common"
+import { EsGMX__factory, GlpManager__factory, GMX__factory, Reader__factory, RewardReader__factory, Vault__factory } from "./contract/gmx-contracts"
 
 
 

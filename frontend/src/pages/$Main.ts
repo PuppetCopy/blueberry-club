@@ -192,36 +192,37 @@ export default ({ baseRoute = '' }: Website) => component((
               router.match(profileWalletRoute)(
                 fadeIn($ProfileWallet({ walletLink, parentRoute: pagesRoute, accountStakingStore })({ changeRoute: linkClickTether() }))
               ),
-              router.match(tradeRoute)(
-                $Trade({
-                  walletLink,
-                  parentRoute: tradeRoute,
-                  walletStore,
-                  accountTradeList: map((res: ITradeOpen[]) => res.map(fromJson.toTradeJson), clientApi.requestAccountTradeList),
-                  pricefeed: map((feed: IPricefeed[]) => feed.map(fromJson.pricefeedJson), clientApi.requestPricefeed),
-                  latestPriceMap,
-                  parentStore: rootStore,
+              // router.match(tradeRoute)(
+              //   $Trade({
+              //     walletLink,
+              //     parentRoute: tradeRoute,
+              //     walletStore,
+              //     accountTradeList: map((res: ITradeOpen[]) => res.map(fromJson.toTradeJson), clientApi.requestAccountTradeList),
+              //     pricefeed: map((feed: IPricefeed[]) => feed.map(fromJson.pricefeedJson), clientApi.requestPricefeed),
+              //     latestPriceMap,
+              //     parentStore: rootStore,
 
-                })({
-                  requestPricefeed: requestPricefeedTether(),
-                  requestAccountTradeList: requestAccountTradeListTether(),
-                  requestLatestPriceMap: requestLatestPriceMapTether(),
-                  changeRoute: linkClickTether(),
-                  walletChange: walletChangeTether()
-                })
-              ),
-              router.match(leaderboardRoute)(
-                fadeIn($Leaderboard({
-                  walletLink, parentRoute: pagesRoute, accountStakingStore,
-                  leaderboardTopList: map((data: IPageParapApi<IAccountSummary>) => ({
-                    page: data.page.map(fromJson.accountSummaryJson),
-                    offset: data.offset,
-                    pageSize: data.pageSize
-                  }), clientApi.requestLeaderboardTopList)
-                })({
-                  requestLeaderboardTopList: requestLeaderboardTopListTether(),
-                }))
-              ),
+              //   })({
+              //     requestPricefeed: requestPricefeedTether(),
+              //     requestAccountTradeList: requestAccountTradeListTether(),
+              //     requestLatestPriceMap: requestLatestPriceMapTether(),
+              //     changeRoute: linkClickTether(),
+              //     walletChange: walletChangeTether()
+              //   })
+              // ),
+              // router.match(leaderboardRoute)(
+              //   fadeIn($Leaderboard({
+              //     walletLink, parentRoute: pagesRoute, accountStakingStore,
+              //     openTrades,
+              //     leaderboardTopList: map((data: IPageParapApi<IAccountSummary>) => ({
+              //       page: data.page.map(fromJson.accountSummaryJson),
+              //       offset: data.offset,
+              //       pageSize: data.pageSize
+              //     }), clientApi.requestLeaderboardTopList)
+              //   })({
+              //     requestLeaderboardTopList: requestLeaderboardTopListTether(),
+              //   }))
+              // ),
               router.match(treasuryRoute)(
                 $Treasury({ walletLink, parentRoute: treasuryRoute, treasuryStore })({})
               ),

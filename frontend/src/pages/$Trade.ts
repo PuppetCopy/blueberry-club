@@ -1,25 +1,22 @@
-import { Behavior, combineArray, combineObject, O, replayLatest } from "@aelea/core"
-import { $element, $node, $text, attr, component, eventElementTarget, IBranch, INode, nodeEvent, style, StyleCSS, styleInline } from "@aelea/dom"
+import { Behavior, combineArray, combineObject, replayLatest } from "@aelea/core"
+import { $node, component, IBranch, INode, style, StyleCSS } from "@aelea/dom"
 import { Route } from "@aelea/router"
-import { $column, $icon, $row, Input, layoutSheet, observer, screenUtils, state } from "@aelea/ui-components"
-import { AddressZero, ADDRESS_LEVERAGE, ARBITRUM_ADDRESS, ARBITRUM_ADDRESS_LEVERAGE, CHAIN, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, formatFixed, formatReadableUSD, getMappedKeyByValue, getTokenDescription, IAccountTradeListParamApi, intervalTimeMap, intervalListFillOrderMap, IPricefeed, IPricefeedParamApi, IPriceLatestMap, isTradeClosed, isTradeLiquidated, isTradeOpen, isTradeSettled, ITrade, readableNumber, TOKEN_DESCRIPTION_MAP, TOKEN_SYMBOL, unixTimestampNow, unixTimeTzOffset } from "@gambitdao/gmx-middleware"
+import { $column, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
+import { AddressZero, ADDRESS_LEVERAGE, ARBITRUM_ADDRESS, ARBITRUM_ADDRESS_LEVERAGE, CHAIN, formatFixed, formatReadableUSD, IAccountTradeListParamApi, intervalTimeMap, intervalListFillOrderMap, IPricefeed, IPricefeedParamApi, IPriceLatestMap, isTradeClosed, isTradeLiquidated, isTradeOpen, isTradeSettled, ITrade, unixTimestampNow, unixTimeTzOffset } from "@gambitdao/gmx-middleware"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { at, combine, constant, filter, join, map, merge, mergeArray, multicast, now, periodic, skipRepeats, snapshot, startWith, switchLatest, tap, until } from "@most/core"
-import { $card } from "../elements/$common"
+import { at, combine, constant, filter, map, merge, mergeArray, multicast, now, periodic, snapshot, startWith, switchLatest } from "@most/core"
 import { pallete } from "@aelea/ui-components-theme"
-import { $alert, $tokenIconMap, $tokenLabelFromSummary, getPricefeedVisibleColumns } from "@gambitdao/ui-components"
+import { getPricefeedVisibleColumns } from "@gambitdao/ui-components"
 import { CrosshairMode, LineStyle, MouseEventParams, PriceScaleMode, SeriesMarker, Time } from "lightweight-charts"
 import { IEthereumProvider } from "eip1193-provider"
 import { Stream } from "@most/types"
 import { $Chart } from "../components/chart/$Chart"
 import { WALLET } from "../logic/provider"
 import { connectTrade } from "../logic/contract/trade"
-import { $Dropdown, $defaultSelectContainer } from "../components/form/$Dropdown"
-import { $caretDown } from "../elements/$icons"
+import { $TradeBox } from "../components/trade/$TradeBox"
 
 const INTERVAL_TICKS = 140
-
 
 
 export interface ITradeComponent {
@@ -39,13 +36,15 @@ export const $Trade = (config: ITradeComponent) => component((
   [selectOtherTimeframe, selectOtherTimeframeTether]: Behavior<IBranch, intervalTimeMap>,
   [changeRoute, changeRouteTether]: Behavior<string, string>,
   [walletChange, walletChangeTether]: Behavior<IEthereumProvider, IEthereumProvider>,
+  [changeInputTrade, changeInputTradeTether]: Behavior<ARBITRUM_ADDRESS_LEVERAGE, ARBITRUM_ADDRESS_LEVERAGE>,
+  [changeOutputTrade, changeOutputTradeTether]: Behavior<ARBITRUM_ADDRESS_LEVERAGE, ARBITRUM_ADDRESS_LEVERAGE>,
 
 ) => {
 
-  
+  // inputTrade.store(src, map(x => x))
 
   const trade = connectTrade(config.walletLink)
-  
+
 
   const urlFragments = document.location.pathname.split('/')
   // const [chainLabel] = urlFragments.slice(1) as [keyof typeof CHAIN_LABEL_ID]
@@ -64,10 +63,17 @@ export const $Trade = (config: ITradeComponent) => component((
   const timeFrameStore = config.parentStore('portfolio-chart-interval', intervalTimeMap.DAY7)
   const chartInterval = startWith(timeFrameStore.state, replayLatest(timeFrameStore.store(timeFrame, map(x => x))))
 
+
+  const inputTradeStore = config.parentStore('input-trade', AddressZero as ARBITRUM_ADDRESS_LEVERAGE)
+  const outputTradeStore = config.parentStore<ARBITRUM_ADDRESS_LEVERAGE, ARBITRUM_ADDRESS_LEVERAGE>('output-trade', ARBITRUM_ADDRESS.NATIVE_TOKEN)
+
   const accountTradeList = multicast(filter(list => list.length > 0, config.accountTradeList))
 
   const settledTradeList = map(list => list.filter(isTradeSettled), accountTradeList)
   const openTradeList = map(list => list.filter(isTradeOpen), accountTradeList)
+
+  const inputBalanceState = inputTradeStore.store(merge(changeInputTrade, now(inputTradeStore.state)), map(x => x))
+  const outputBalanceState = outputTradeStore.store(merge(changeOutputTrade, now(outputTradeStore.state)), map(x => x))
 
 
   const latestInitiatedPosition = map(h => {
@@ -81,7 +87,6 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
   const historicalPnl = multicast(
-
     combineArray((tradeList, interval) => {
       const intervalInSecs = Math.floor((interval / INTERVAL_TICKS))
       const initialDataStartTime = unixTimestampNow() - interval
@@ -106,7 +111,7 @@ export const $Trade = (config: ITradeComponent) => component((
   )
 
 
-  
+
   const activeTimeframe: StyleCSS = { color: pallete.primary, pointerEvents: 'none' }
 
   const timeframePnLCounter: Stream<number> = combineArray(
@@ -137,21 +142,30 @@ export const $Trade = (config: ITradeComponent) => component((
   const $chartContainer = screenUtils.isDesktopScreen
     ? $node(
       chartContainerStyle, style({
-        position: 'fixed', inset: '120px 0px 0px',  width: 'calc(50vw)', display: 'flex',
+        position: 'fixed', inset: '120px 0px 0px', width: 'calc(50vw)', display: 'flex',
       })
     )
     : $column(chartContainerStyle)
-  
-  
+
+
   return [
     $container(
       $column(layoutSheet.spacingBig, style({ flex: 1 }))(
 
-        $alert($text('GBC Trading. Work in Progress (;')),
+        $TradeBox({
+          initialState: {
+            inputAddress: inputTradeStore.state,
+            outputAddress: outputTradeStore.state,
+          },
+          inputAddressState: inputBalanceState,
+          outputAddressState: outputBalanceState,
+          walletLink: config.walletLink
+        })({
+          changeInputTrade: changeInputTradeTether(),
+          changeOutputTrade: changeOutputTradeTether(),
+        }),
 
-        $TradeBox({})({}),
-
-        $node(),     
+        $node(),
 
       ),
       $column(style({ position: 'relative', flex: 1 }))(
@@ -180,7 +194,7 @@ export const $Trade = (config: ITradeComponent) => component((
                   return { open, high, low, close, time: timestamp }
                 })
 
-                
+
 
                 // @ts-ignore
                 series.setData(chartData)
@@ -190,11 +204,11 @@ export const $Trade = (config: ITradeComponent) => component((
                 priceScale.applyOptions({
                   scaleMargins: screenUtils.isDesktopScreen
                     ? {
-                      top:  0.3,
+                      top: 0.3,
                       bottom: 0.3
                     }
                     : {
-                      top:  0.1,
+                      top: 0.1,
                       bottom: 0.1
                     }
                 })
@@ -237,7 +251,7 @@ export const $Trade = (config: ITradeComponent) => component((
                         time: unixTimeTzOffset(pos.settledTimestamp),
                       }
                     })
-                  
+
                   // console.log(new Date(closePosMarkers[0].time as number * 1000))
 
                   const markers = [...increasePosMarkers, ...closePosMarkers, ...liquidatedPosMarkers].sort((a, b) => a.time as number - (b.time as number))
@@ -261,8 +275,8 @@ export const $Trade = (config: ITradeComponent) => component((
                   entireTextOnly: true,
                   borderVisible: false,
                   mode: PriceScaleMode.Logarithmic
-                  
-                // visible: false
+
+                  // visible: false
                 },
                 timeScale: {
                   timeVisible: chartInterval <= intervalTimeMap.DAY7,
@@ -288,8 +302,8 @@ export const $Trade = (config: ITradeComponent) => component((
                 }
               },
             })({
-            // crosshairMove: sampleChartCrosshair(),
-            // click: sampleClick()
+              // crosshairMove: sampleChartCrosshair(),
+              // click: sampleClick()
             })
           }, combineObject({ chartInterval, selectedToken, settledTradeList }), config.pricefeed))
         ),
@@ -316,207 +330,5 @@ export const $Trade = (config: ITradeComponent) => component((
       changeRoute,
       walletChange
     }
-  ]
-})
-
-
-interface ITradeBox {
-
-}
-
-const $TradeBox = (config: ITradeBox) => component((
-  [changeInput, changeInputTether]: Behavior<any, number>,
-  [changeLeverage, changeLeverageTether]: Behavior<any, any>,
-  [selectInput, selectInputTether]: Behavior<ARBITRUM_ADDRESS_LEVERAGE | typeof AddressZero, ARBITRUM_ADDRESS_LEVERAGE | typeof AddressZero>,
-) => {
-
-  const $field = $element('input')(attr({ placeholder: '0.0' }), style({ flex: 1, padding: '0 16px', fontSize: '1.25em', background: 'transparent', border: 'none', height: '60px', outline: 'none', lineHeight: '60px', color: pallete.message }))
-
-  const $hintInput = (label: string, val: Stream<string>) => $row(layoutSheet.spacingTiny, style({ fontSize: '0.75em', color: pallete.foreground }))(
-    $text(label),
-    $text(val),
-  )
-
-  
-
-  return [
-    $card(style({ padding: '0', gap: 0 }))(
-      
-      $row(style({ placeContent: 'space-between', padding: '10px 20px 0' }))(
-        $hintInput('Pay', now('1')),
-        $hintInput('Balance', now('1')),
-      ),
-
-      $row(
-        $field(changeInputTether(nodeEvent('input'), map((x) => {
-          const target = x.currentTarget
-
-          if (!(target instanceof HTMLInputElement)) {
-            throw new Error('Target is not type of input')
-          }
-
-          return Number(target.value)
-        })))(),
-
-        $Dropdown<ARBITRUM_ADDRESS_LEVERAGE | typeof AddressZero>({
-          $container: $row(style({ position: 'relative', alignSelf: 'center', padding: '0 15px' })),
-          $selection: $row(style({ alignItems: 'center', cursor: 'pointer' }))(
-            switchLatest(map(option => {
-              const tokenDesc = option === AddressZero ? TOKEN_DESCRIPTION_MAP.ETH : TOKEN_DESCRIPTION_MAP[CHAIN_TOKEN_ADDRESS_TO_SYMBOL[option]]
-
-              return $icon({ $content: $tokenIconMap[tokenDesc.symbol], width: '34px', viewBox: '0 0 32 32' })
-            }, selectInput)),
-            $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginTop: '3px', marginLeft: '5px' }), viewBox: '0 0 32 32' }),
-          ),
-          value: {
-            value: now(ARBITRUM_ADDRESS.NATIVE_TOKEN),
-            $container: $defaultSelectContainer(style({ minWidth:'300px', right: 0 })),
-            $$option: map(option => {
-              const tokenDesc = option === AddressZero ? TOKEN_DESCRIPTION_MAP.ETH : TOKEN_DESCRIPTION_MAP[CHAIN_TOKEN_ADDRESS_TO_SYMBOL[option]]
-
-              return $tokenLabelFromSummary(tokenDesc)
-            }),
-            list: [
-              AddressZero,
-              ARBITRUM_ADDRESS.NATIVE_TOKEN,
-              ARBITRUM_ADDRESS.LINK,
-              ARBITRUM_ADDRESS.UNI,
-              ARBITRUM_ADDRESS.WBTC,
-            ],
-          }
-        })({
-          select: selectInputTether()
-        }),
-      ),
-      
-      $LeverageSlider({ value: now(0) })({
-        change: changeLeverageTether()
-      }),
-      $field(
-        O(
-          map(node =>
-            merge(
-              now(node),
-              filter(() => false, tap(val => {
-              // applying by setting `HTMLInputElement.value` imperatively(only way known to me)
-                node.element.value = String(val)
-              }, snapshot((inpVal, lev) => inpVal * lev, changeInput, changeLeverage)))
-            )
-          ),
-          switchLatest
-        )
-        
-      )(),
-
-
-      // $text(map(String, startWith(0, changeLeverage)))
-    ),
-
-    {
-
-    }
-  ]
-})
-
-
-
-export interface Slider extends Input<number> {
-  max?: number
-  thumbSize?: number
-}
-
-export const $LeverageSlider = ({ value, max = 30, thumbSize = 34 }: Slider) => component((
-  [sliderDimension, sliderDimensionTether]: Behavior<IBranch<HTMLInputElement>, number>,
-  [thumbePositionDelta, thumbePositionDeltaTether]: Behavior<IBranch<HTMLInputElement>, number>
-) => {
-
-
-  const leverage = combine((slider, thumb) => (thumb / slider) * max, sliderDimension, thumbePositionDelta)
-
-  const isBull = skipRepeats(map(n => {
-    if (n === 0) {
-      return null
-    }
-    
-    return n > 0 ? false : true
-  }, thumbePositionDelta))
-
-  const sizePx = thumbSize + 'px'
-
-
-  const $range = $row(sliderDimensionTether(observer.resize({}), map(res => res[0].contentRect.width)), style({ placeContent: 'center', backgroundColor: pallete.background, height: '2px', position: 'relative', zIndex: 10 }))
-
-  const changeBehavior = thumbePositionDeltaTether(
-    nodeEvent('pointerdown'),
-    snapshot((current, downEvent) => {
-
-      const target = downEvent.currentTarget
-
-      if (!(target instanceof HTMLElement)) {
-        throw new Error('no target event captured')
-      }
-
-      const drag = until(eventElementTarget('pointerup', window.document), eventElementTarget('pointermove', window.document))
-
-      return map(moveEvent => {
-
-        const maxWidth = target.parentElement!.parentElement!.clientWidth
-
-        const deltaX = ((moveEvent.clientX - downEvent.clientX) * 2) + current
-
-        moveEvent.preventDefault()
-
-
-        return Math.abs(deltaX) > maxWidth ? deltaX > 0 ? maxWidth : -maxWidth : deltaX
-
-      }, drag)
-    }, mergeArray([now(0), multicast(thumbePositionDelta)])),
-    join
-  )
-
-  const $thumb = $row(
-    changeBehavior,
-    style({
-      width: thumbSize + 'px',
-      height: thumbSize + 'px',
-      position: 'absolute',
-      background: pallete.background,
-      borderRadius: '50%',
-      cursor: 'grab',
-      left: '-15px',
-      alignItems: 'center',
-      placeContent: 'center',
-      border: `1px solid ${pallete.foreground}`,
-    }),
-
-    styleInline(map(isBull => {
-
-      console.log(isBull)
-      if (isBull === null) {
-        return { border: `1px solid ${pallete.foreground}` }
-      }
-
-      return isBull ? { left: `-${thumbSize / 2}px`, right: 'auto', border: `1px solid ${pallete.negative}` } : { left: 'auto', right: `-${thumbSize / 2}px`, border: `1px solid ${pallete.positive}` }
-    }, isBull))
-  )(
-    $text(style({ fontSize: '11px' }))(map(n => readableNumber(Math.abs(n), 1), leverage))
-  )
-
-
-  const sliderStyle = styleInline(map(n => {
-    const width = Math.abs(n) + 'px'
-    const background = n === 0 ? '' : n > 0 ? `linear-gradient(90deg, transparent 10%, ${pallete.positive} 100%)` : `linear-gradient(90deg, ${pallete.negative} 0%, transparent 100%)`
-
-    return { width, background }
-  }, thumbePositionDelta))
-
-
-  return [
-    $range(
-      $row(style({ alignItems: 'center', position: 'relative' }), sliderStyle)(
-        $thumb
-      )
-    ),
-    { change: leverage }
   ]
 })

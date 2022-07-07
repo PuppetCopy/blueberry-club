@@ -2,7 +2,7 @@ import { Behavior, combineArray } from "@aelea/core"
 import { $Branch, $Node, component, style, $text, $element, attr } from "@aelea/dom"
 import { $row, layoutSheet, $icon, $column } from "@aelea/ui-components"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
-import { formatReadableUSD, formatFixed, CHAIN } from "@gambitdao/gmx-middleware"
+import { formatReadableUSD, formatFixed, CHAIN, readableNumber } from "@gambitdao/gmx-middleware"
 import { switchLatest, skipRepeatsWith, multicast, map } from "@most/core"
 import { Stream } from "@most/types"
 import { MouseEventParams, LineStyle, BarPrice, PriceScaleMode, Time } from "lightweight-charts"
@@ -23,25 +23,6 @@ type ITreasuryMetric = {
   // entry: bigint
 }
 
-const EMPTY_MESSAGE = '-'
-
-
-export function readableNumber(ammount: number) {
-  const parts = ammount.toString().split('.')
-  const [whole = '', decimal = ''] = parts
-
-  if (whole === '' && decimal === '') {
-    return EMPTY_MESSAGE
-  }
-
-  if (whole.replace(/^-/, '') === '0' || whole.length < 3) {
-    const shortDecimal = decimal.slice(0, 2)
-    return whole + (shortDecimal ? '.' + shortDecimal  : '')
-  }
-
-
-  return Number(whole).toLocaleString()
-}
 
 export const $AssetDetails = ({ label, $iconPath, asset, symbol, $distribution, priceChart, chain }: ITreasuryMetric) => component((
   [pnlCrosshairMove, pnlCrosshairMoveTether]: Behavior<MouseEventParams, MouseEventParams>

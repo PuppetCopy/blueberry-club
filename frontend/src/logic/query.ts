@@ -1,6 +1,6 @@
 import { groupByMapMany, IAccountQueryParamApi, intervalTimeMap, IPagePositionParamApi, ITimerangeParamApi } from "@gambitdao/gmx-middleware"
 import { ClientOptions, createClient, gql, TypedDocumentNode } from "@urql/core"
-import { ILabItemOwnership, IOwner, IPriceInterval, IProfile, IToken } from "@gambitdao/gbc-middleware"
+import { ILabItem, ILabItemOwnership, IOwner, IPriceInterval, IProfile, IToken } from "@gambitdao/gbc-middleware"
 
 
 export interface ITypename<T extends string> {
@@ -322,9 +322,6 @@ query ($account: String) {
     balance
     ownedLabItems(first: 1000) {
       balance
-      item {
-        id
-      }
       id
     }
     displayName
@@ -333,18 +330,13 @@ query ($account: String) {
       id
       labItems {
         id
-        item {
-          id
-        }
       }
     }
     profile {
       token {
         id
         labItems {
-          item {
-            id
-          }
+          id
         }
       }
       name
@@ -373,18 +365,13 @@ query {
       id
       labItems {
         id
-        item {
-          id
-        }
       }
     }
     profile {
       token {
         id
         labItems {
-          item {
-            id
-          }
+          id
         }
       }
       name
@@ -404,9 +391,6 @@ query ($id: String) {
       balance
       ownedLabItems(first: 1000) {
         balance
-        item {
-          id
-        }
         id
       }
       displayName
@@ -415,18 +399,13 @@ query ($id: String) {
         id
         labItems {
           id
-          item {
-            id
-          }
         }
       }
       profile {
         token {
           id
           labItems {
-            item {
-              id
-            }
+            id
           }
         }
         name
@@ -437,9 +416,6 @@ query ($id: String) {
     }
     labItems {
       id
-      item {
-        id
-      }
     }
   }
 }
@@ -453,9 +429,7 @@ query ($pageSize: Int = 1000, $skip: Int = 0) {
     token {
       id
       labItems {
-        item {
-          id
-        }
+        id
       }
     }
     name
@@ -473,9 +447,7 @@ query ($id: String) {
     token {
       id
       labItems {
-        item {
-          id
-        }
+        id
       }
     }
     name
@@ -728,6 +700,12 @@ function fromProfileJson(obj: IProfile): IProfile {
   }
 }
 
+function fromLabItemJson(obj: ILabItem): ILabItem {
+  return {
+    ...obj
+  }
+}
+
 function fromLabItemOwnershipJson(obj: ILabItemOwnership): ILabItemOwnership {
   return {
     ...obj,
@@ -741,7 +719,7 @@ function fromLabItemOwnershipJson(obj: ILabItemOwnership): ILabItemOwnership {
 function fromTokenJson<T extends IToken>(obj: T): T {
   return {
     ...obj,
-    labItems: obj.labItems.map(fromLabItemOwnershipJson),
+    labItems: obj.labItems.map(fromLabItemJson),
     owner: obj.owner ? fromOwnerJson(obj.owner) : null,
     id: Number(obj.id)
   }
@@ -753,7 +731,7 @@ function fromOwnerJson<T extends IOwner>(obj: T): T {
     ...obj,
     main: obj.profile ? fromProfileJson(obj.profile) : null,
     ownedTokens,
-    ownedLabItems: obj.ownedLabItems.map(json => ({ ...json, balance: BigInt(json.balance), item: { id: Number(json.item.id) } }))
+    ownedLabItems: obj.ownedLabItems.map(json => ({ ...json, balance: BigInt(json.balance), item: { id: Number(json.id) } }))
   }
 }
 

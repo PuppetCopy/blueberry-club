@@ -1,10 +1,12 @@
-import { ADDRESS_TRADE, TokenDescription } from "../types"
+import { AddressZero, CHAIN } from "../constant"
+import { TokenDescription } from "../types"
 import { groupByMap } from "../utils"
-import { ARBITRUM_ADDRESS } from "./arbitrum"
-import { AVALANCHE_ADDRESS } from "./avalanche"
+import { ARBITRUM_ADDRESS, ARBITRUM_ADDRESS_TRADE } from "./arbitrum"
+import { AVALANCHE_ADDRESS, AVALANCHE_ADDRESS_TRADE } from "./avalanche"
 import { TOKEN_SYMBOL } from "./symbol"
 
 
+export type TradeAddress = ARBITRUM_ADDRESS_TRADE | AVALANCHE_ADDRESS_TRADE | typeof AddressZero
 
 
 export const TOKEN_DESCRIPTION_LIST = [
@@ -105,17 +107,5 @@ export const CHAIN_TOKEN_ADDRESS_TO_SYMBOL = {
   [AVALANCHE_ADDRESS.USDC]: TOKEN_SYMBOL.USDC,
   [AVALANCHE_ADDRESS.USDCE]: TOKEN_SYMBOL.USDC,
 } as const
-
-
-
-
-export function getTokenDescription(indexToken: ADDRESS_TRADE) {
-  const ticker = CHAIN_TOKEN_ADDRESS_TO_SYMBOL[indexToken]
-  const tokenDesc = TOKEN_DESCRIPTION_MAP[ticker]
-
-  return tokenDesc
-}
-
-
 
 

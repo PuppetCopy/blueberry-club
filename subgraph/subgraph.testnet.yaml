@@ -9,7 +9,7 @@ dataSources:
     source:
       address: '0x6B921AB88d93C93758C55E102aE58F8267f8b299'
       abi: ERC721
-      startBlock: 3572696
+      startBlock: 10753033
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -34,7 +34,7 @@ dataSources:
     source:
       address: '0x3eaBD423D21DC2CE90aA982fB7D1939EA2Ec16ED'
       abi: ERC1155
-      startBlock: 13910680 
+      startBlock: 12026971 
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -61,7 +61,7 @@ dataSources:
     source:
       address: '0x13F82f192cB2A8746Aede30e23479B6Ff8FbcE2b'
       abi: Profile
-      startBlock: 13910680
+      startBlock: 12026979
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -84,7 +84,7 @@ dataSources:
     source:
       address: '0x227995578643a9c4E5EceF49AbA461EF74df1085'
       abi: Closet
-      startBlock: 13910680
+      startBlock: 12026985
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
