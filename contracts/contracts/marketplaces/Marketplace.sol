@@ -4,11 +4,8 @@ pragma solidity ^0.8.0;
 
 import {Auth} from "@rari-capital/solmate/src/auth/Auth.sol";
 
-import {ERC721} from "@rari-capital/solmate/src/tokens/ERC721.sol";
 import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import {SafeTransferLib} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-
-import {IERC2981} from "@openzeppelin/contracts/interfaces/IERC2981.sol";
 
 import {FullMath} from "../lib/FullMath.sol";
 
@@ -278,4 +275,8 @@ abstract contract Marketplace is Auth {
         address tokenContract,
         uint256 tokenId
     ) internal virtual;
+
+    function setFee(Fee memory fee_) external requiresAuth {
+        fee = fee_;
+    }
 }
