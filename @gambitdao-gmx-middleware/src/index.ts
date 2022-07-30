@@ -11,4 +11,5 @@ export * from './tether'
 export * from './comTypes'
 export * from './fromJson'
 export * from './common'
+export * as query from './graph/graph'
 

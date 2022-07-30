@@ -1,45 +1,10 @@
 import { awaitPromises, map } from "@most/core"
-import { accountTradeListQuery, latestPriceTimelineQuery, pricefeed, tradeListQuery } from './document'
-import { unixTimestampNow, cacheMap, ILeaderboardRequest, CHAIN, fromJson, ITrade, pagingQuery, toAccountSummary, IChainParamApi, IPriceLatestMap, groupByMap, IAccountTradeListParamApi, IPricefeedParamApi, intervalTimeMap } from '@gambitdao/gmx-middleware'
+import { query } from '@gambitdao/gmx-middleware'
+import { unixTimestampNow, cacheMap, ILeaderboardRequest, CHAIN, fromJson, ITrade, pagingQuery, toAccountSummary, IChainParamApi, IPriceLatestMap, groupByMap, IAccountTradeListParamApi, IPricefeedParamApi, intervalTimeMap, IRequestTradeQueryparam } from '@gambitdao/gmx-middleware'
 import { O } from "@aelea/core"
-import { ClientOptions, createClient, OperationContext, TypedDocumentNode } from "@urql/core"
-import fetch from 'isomorphic-fetch'
-
-export const prepareClient = (opts: ClientOptions) => {
-
-  const client = createClient(opts)
-
-  return async <Data, Variables extends object = {}>(document: TypedDocumentNode<Data, Variables>, params: Variables, context?: Partial<OperationContext>): Promise<Data> => {
-    const result = await client.query(document, params, context)
-      .toPromise()
-  
-    if (result.error) {
-      throw new Error(result.error.message)
-    }
-  
-    return result.data!
-  }
-}
 
 
-
-
-export const arbitrumGraph = prepareClient({
-  fetch,
-  url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-arbitrum'
-})
-export const avalancheGraph = prepareClient({
-  fetch,
-  url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-avalanche'
-})
-
-
-export const graphMap = {
-  [CHAIN.ARBITRUM]: arbitrumGraph,
-  [CHAIN.AVALANCHE]: avalancheGraph,
-}
-
-
+const { accountTradeListQuery, latestPriceTimelineQuery, pricefeed, tradeListQuery, tradeQuery } = query.document
 
 
 const createCache = cacheMap({})
@@ -56,7 +21,7 @@ const fetchTrades = async (chain: CHAIN.ARBITRUM | CHAIN.AVALANCHE, offset: numb
     return (await Promise.all([query0, query1])).flatMap(res => res)
   }
 
-  const list = (await graphMap[chain](tradeListQuery, { from, to, pageSize: 1000, offset }, { requestPolicy: 'network-only' })).trades
+  const list = (await query.graphClientMap[chain](tradeListQuery, { from, to, pageSize: 1000, offset }, { requestPolicy: 'network-only' })).trades
 
   if (list.length === 1000) {
     const newPage = await fetchTrades(chain, offset + 1000, from, to)
@@ -99,7 +64,7 @@ export const requestLeaderboardTopList = O(
 export const requestAccountTradeList = O(
   map(async (queryParams: IAccountTradeListParamApi) => {
     console.log(queryParams)
-    const allAccounts = await graphMap[queryParams.chain](accountTradeListQuery, { ...queryParams, account: queryParams.account.toLowerCase() })
+    const allAccounts = await query.graphClientMap[queryParams.chain](accountTradeListQuery, { ...queryParams, account: queryParams.account.toLowerCase() }, { requestPolicy: 'network-only' })
     return allAccounts.trades
   }),
   awaitPromises
@@ -107,13 +72,31 @@ export const requestAccountTradeList = O(
 
 export const requestLatestPriceMap = O(
   map(async (queryParams: IChainParamApi): Promise<IPriceLatestMap> => {
-    const priceList = await graphMap[queryParams.chain](latestPriceTimelineQuery, {}, { requestPolicy: 'network-only' })
+    const priceList = await query.graphClientMap[queryParams.chain](latestPriceTimelineQuery, {}, { requestPolicy: 'network-only' })
     const gmap = groupByMap(priceList.priceLatests.map(fromJson.priceLatestJson), price => price.id)
     return gmap
   }),
   awaitPromises
 )
 
+export const requestTrade = O(
+  map(async (queryParams: IRequestTradeQueryparam) => {
+
+    if (!queryParams?.id) {
+      return null
+    }
+
+    const id = queryParams.id
+    const priceFeedQuery = await query.graphClientMap[queryParams.chain](tradeQuery, { id })
+
+    if (priceFeedQuery === null) {
+      throw new Error('Trade not found')
+    }
+
+    return priceFeedQuery.trade
+  }),
+  awaitPromises
+)
 
 export const requestPricefeed = O(
   map(async (queryParams: IPricefeedParamApi) => {
@@ -121,7 +104,7 @@ export const requestPricefeed = O(
     const parsedTo = queryParams.to || unixTimestampNow()
     const params = { tokenAddress, interval: '_' + queryParams.interval, from: queryParams.from, to: parsedTo }
 
-    const priceFeedQuery = await graphMap[queryParams.chain](pricefeed, params as any)
+    const priceFeedQuery = await query.graphClientMap[queryParams.chain](pricefeed, params as any)
 
     return priceFeedQuery.pricefeeds
   }),

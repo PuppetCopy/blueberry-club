@@ -15,6 +15,7 @@ export type ADDRESS_TRADE = AVALANCHE_ADDRESS_TRADE | ARBITRUM_ADDRESS_TRADE
 export interface TokenDescription {
   name: string
   symbol: TOKEN_SYMBOL
+  isStable: boolean
   decimals: number
 }
 
@@ -62,6 +63,18 @@ export type IAbstractPositionStake = {
 export type IAbstractRealisedPosition = IAbstractPositionStake & {
   realisedPnl: bigint
   realisedPnlPercentage: bigint
+}
+
+export type IVaultPosition = {
+  key: string
+  size: bigint
+  isLong: boolean
+  collateral: bigint
+  averagePrice: bigint
+  entryFundingRate: bigint
+  reserveAmount: bigint
+  realisedPnl: bigint
+  lastIncreasedTime: bigint
 }
 
 export type IPositionIncrease = IAbstractPosition & IAbstractPositionDelta & IndexedType<'IncreasePosition'> & { price: bigint,  fee: bigint }

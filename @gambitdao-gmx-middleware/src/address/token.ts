@@ -1,4 +1,4 @@
-import { AddressZero, CHAIN } from "../constant"
+import { AddressZero } from "../constant"
 import { TokenDescription } from "../types"
 import { groupByMap } from "../utils"
 import { ARBITRUM_ADDRESS, ARBITRUM_ADDRESS_TRADE } from "./arbitrum"
@@ -14,66 +14,79 @@ export const TOKEN_DESCRIPTION_LIST = [
     name: "GLP",
     symbol: TOKEN_SYMBOL.GLP,
     decimals: 18,
+    isStable: false,
   },
   {
     name: "GMX",
     symbol: TOKEN_SYMBOL.GMX,
     decimals: 18,
+    isStable: false,
   },
   {
     name: "Avalanche",
     symbol: TOKEN_SYMBOL.AVAX,
     decimals: 18,
+    isStable: false,
   },
   {
     name: "Chainlink",
     symbol: TOKEN_SYMBOL.LINK,
     decimals: 18,
+    isStable: false,
   },
   {
     name: "Wrapped Bitcoin",
     symbol: TOKEN_SYMBOL.WBTC,
-    decimals: 18,
+    decimals: 8,
+    isStable: false,
   },
   {
     name: "Ethereum",
     symbol: TOKEN_SYMBOL.ETH,
     decimals: 18,
+    isStable: false,
   },
   {
     name: "Wrapped Ethereum",
     symbol: TOKEN_SYMBOL.WETH,
     decimals: 18,
+    isStable: false,
   },
   {
     name: "Uniswap",
     symbol: TOKEN_SYMBOL.UNI,
     decimals: 18,
+    isStable: false,
   },
   {
     name: "USD Coin",
     symbol: TOKEN_SYMBOL.USDC,
     decimals: 6,
+    isStable: true,
   },
   {
     name: "Tether",
     symbol: TOKEN_SYMBOL.USDT,
     decimals: 6,
+    isStable: true,
   },
   {
     name: "Dai",
     symbol: TOKEN_SYMBOL.DAI,
     decimals: 18,
+    isStable: true,
   },
   {
     name: "Frax",
     symbol: TOKEN_SYMBOL.FRAX,
     decimals: 18,
+    isStable: true,
   },
   {
     name: "Magic Internet Money",
     symbol: TOKEN_SYMBOL.MIM,
     decimals: 18,
+    isStable: true,
   },
   
 ] as TokenDescription[]

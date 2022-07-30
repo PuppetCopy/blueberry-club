@@ -1,12 +1,8 @@
-import { gql, TypedDocumentNode } from "@urql/core"
 import {
   IPagePositionParamApi, ITimerangeParamApi, IIdentifiableEntity, IPricefeed, ITrade,
-  TradeStatus, IAccountQueryParamApi, IChainParamApi, IPriceTimelineParamApi, IPricefeedParamApi, IPriceLatest
-} from "@gambitdao/gmx-middleware"
-
-
-export type IAccountTradeListParamApi = IChainParamApi & IAccountQueryParamApi & {status: TradeStatus};
-
+  TradeStatus, IPriceTimelineParamApi, IPricefeedParamApi, IPriceLatest, IAccountTradeListParamApi
+} from "../types"
+import { gql, TypedDocumentNode } from "@urql/core"
 
 const schemaFragments = `
 
@@ -109,7 +105,7 @@ fragment tradeFields on Trade {
 `
 
 
-export const tradeListQuery: TypedDocumentNode<{trades: ITrade[]}, Partial<IPagePositionParamApi & ITimerangeParamApi & {status: TradeStatus}>> = gql`
+export const tradeListQuery: TypedDocumentNode<{ trades: ITrade[] }, Partial<IPagePositionParamApi & ITimerangeParamApi & { status: TradeStatus }>> = gql`
 ${schemaFragments}
 
 query ($pageSize: Int, $offset: Int = 0, $from: Int = 0, $to: Int = 1999999999 $status: Status = "closed") {
@@ -119,7 +115,7 @@ query ($pageSize: Int, $offset: Int = 0, $from: Int = 0, $to: Int = 1999999999 $
 }
 `
 
-export const accountTradeListQuery: TypedDocumentNode<{trades: ITrade[]}, Partial<IAccountTradeListParamApi>> = gql`
+export const accountTradeListQuery: TypedDocumentNode<{ trades: ITrade[] }, Partial<IAccountTradeListParamApi>> = gql`
 ${schemaFragments}
 
 query ($pageSize: Int = 1000, $account: String) {
@@ -129,7 +125,7 @@ query ($pageSize: Int = 1000, $account: String) {
 }
 `
 
-export const tradeQuery: TypedDocumentNode<{trade: ITrade}, IIdentifiableEntity> = gql`
+export const tradeQuery: TypedDocumentNode<{ trade: ITrade }, IIdentifiableEntity> = gql`
 ${schemaFragments}
 
 query ($id: String) {
@@ -157,7 +153,7 @@ query($from: Int, $to: Int = 1999999999, $tokenAddress: TokenAddress, $interval:
 }
 `
 
-export const latestPriceTimelineQuery: TypedDocumentNode<{priceLatests: IPriceLatest[]}, {}> = gql`
+export const latestPriceTimelineQuery: TypedDocumentNode<{ priceLatests: IPriceLatest[] }, {}> = gql`
 query {
   priceLatests {
     id
@@ -168,7 +164,7 @@ query {
 `
 
 
-export const priceTimelineQuery: TypedDocumentNode<{priceTimelines: IPricefeed[]}, IPriceTimelineParamApi> = gql`
+export const priceTimelineQuery: TypedDocumentNode<{ priceTimelines: IPricefeed[] }, IPriceTimelineParamApi> = gql`
 query ($from: Int, $to: Int, $tokenAddress: TokenAddress ) {
   priceTimelines(first: 1000, orderBy: unixTimestamp, orderDirection: asc, where: { tokenAddress: $tokenAddress, timestamp_gte: $from, timestamp_lte: $to }) {
     timestamp,

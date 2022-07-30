@@ -1,46 +1,46 @@
 import { Behavior, Op } from "@aelea/core"
-import { $Node, $text, component, INode, nodeEvent, style, styleBehavior } from "@aelea/dom"
+import { $Node, $text, component, INode, NodeComposeFn, nodeEvent, style, styleBehavior } from "@aelea/dom"
 import { $row, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { constant, map, merge, now, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
 
-export interface IButton<T> {
+export interface IButtonToggle<T> {
   options: T[]
-  selected: Stream<T | null>
-  $option?: Op<T, $Node>
+  selected: Stream<T>
+
+  $button?: NodeComposeFn<$Node>
+  $$option?: Op<T, $Node>
 }
 
-const $toggleBtn = $row(layoutSheet.flex, style({ placeContent: 'center', alignItems: 'center', cursor: 'pointer', backgroundColor: pallete.background }))
-const $container = $row(layoutSheet.flex, style({ border: `1px solid ${pallete.horizon}`, backgroundColor: pallete.horizon, gap: '1px', overflow: 'hidden', borderRadius: '8px' }))
+const $toggleBtn = $row(style({ placeContent: 'center', border: `2px solid ${pallete.horizon}`, padding: '8px', alignItems: 'center', cursor: 'pointer', backgroundColor: pallete.background }))
+const $container = $row(style({ backgroundColor: pallete.background }))
 
 
 const defaultOption = map(<T>(o: T) => $text(String(o)))
 
-export const $ButtonToggle = <T>({ options, selected, $option = defaultOption }: IButton<T>) => component((
+export const $ButtonToggle = <T>({ options, selected, $$option = defaultOption, $button = $toggleBtn }: IButtonToggle<T>) => component((
   [select, sampleSelect]: Behavior<INode, T>
 ) => {
-
-  const selectedState = merge(select, selected)
 
   return [
     $container(
       ...options.map(opt =>
-        $toggleBtn(
+        $button(
           sampleSelect(
             nodeEvent('click'),
             constant(opt)
           ),
           styleBehavior(
-            map(selectedOpt =>
-              selectedOpt === opt
-                ? { backgroundColor: '#1a425b', cursor: 'default' }
+            map(selectedOpt => {
+              return selectedOpt === opt
+                ? { border: `2px solid ${pallete.message}`, cursor: 'default' }
                 : { color: pallete.foreground }
-            , selectedState)
+            }, selected)
           )
         )(
           switchLatest(
-            $option(now(opt))
+            $$option(now(opt))
           )
         )
       )
@@ -49,3 +49,4 @@ export const $ButtonToggle = <T>({ options, selected, $option = defaultOption }:
     { select }
   ]
 })
+

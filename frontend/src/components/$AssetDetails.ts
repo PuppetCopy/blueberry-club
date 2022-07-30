@@ -43,7 +43,7 @@ export const $AssetDetails = ({ label, $iconPath, asset, symbol, $distribution, 
           ),
           $text(style({ fontSize: '.75em', color: pallete.foreground, fontWeight: 'bold' }))(symbol),
         ),
-        $text(style({ fontSize: '.75em' }))(map(t => '$' +  formatReadableUSD(t.balanceUsd), asset)),
+        $text(style({ fontSize: '.75em' }))(map(t => formatReadableUSD(t.balanceUsd), asset)),
       )
     ),
 

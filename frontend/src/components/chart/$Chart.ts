@@ -61,7 +61,7 @@ export const $Chart = <T extends SeriesType>({ chartConfig, realtimeSource, init
     layout: {
       textColor: pallete.message,
       backgroundColor: 'transparent',
-      fontFamily: 'RelativeMono',
+      fontFamily: 'RelativePro',
       fontSize: 12
     },
     timeScale: {
@@ -135,9 +135,8 @@ export const $Chart = <T extends SeriesType>({ chartConfig, realtimeSource, init
       containerOp,
     )(
       switchLatest(
-        combineArray((entries, seriesApi) => {
-          const entry = entries[0]
-          const { width, height } = entry.contentRect
+        combineArray(([containerDimension], seriesApi) => {
+          const { width, height } = containerDimension.contentRect
           api.resize(width, height)
 
           return ignoreAll(realtimeSource ? map(data => seriesApi.update(data), realtimeSource) : empty())
@@ -150,6 +149,7 @@ export const $Chart = <T extends SeriesType>({ chartConfig, realtimeSource, init
       click,
       visibleLogicalRangeChange,
       visibleTimeRangeChange,
+      containerDimension
     }
   ]
 })

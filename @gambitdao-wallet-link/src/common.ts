@@ -74,7 +74,6 @@ export interface ProviderEventListener {
 
 
 
-export const filterNull = <T>(prov: Stream<T | null>) => filter((provider): provider is T => provider !== null, prov)
 
 export const eip1193ProviderEvent = <A>(provider: Stream<EIP1193Provider | null>): ProviderEventListener => (eventName: string) => switchLatest(
   map(provider => {

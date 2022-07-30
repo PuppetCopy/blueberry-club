@@ -6,7 +6,7 @@ import path from 'path'
 import ws from 'ws'
 import compression from 'compression'
 import { helloFrontend } from './messageBus'
-import { requestLeaderboardTopList, requestLatestPriceMap, requestAccountTradeList, requestPricefeed } from './logic/api'
+import { requestLeaderboardTopList, requestLatestPriceMap, requestAccountTradeList, requestPricefeed, requestTrade } from './logic/api'
 import { scheduler } from './logic/scheduler'
 
 
@@ -75,6 +75,7 @@ const apiComponent = helloFrontend(wss, {
   requestLeaderboardTopList,
   requestLatestPriceMap,
   requestAccountTradeList,
+  requestTrade,
   requestPricefeed,
 })
 

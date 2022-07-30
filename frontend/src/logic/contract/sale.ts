@@ -48,7 +48,10 @@ const sale = (address: string) => Mintable__factory.connect(address, web3Provide
 
 export const getMintCount = (rule: MintRule, updateInterval = 1500) => {
   const contract = sale(rule.contractAddress)
-  const count = periodicRun(updateInterval, map(async () => (await contract.totalMinted()).toNumber()), true)
+  const count = periodicRun({
+    interval: updateInterval,
+    actionOp: map(async () => (await contract.totalMinted()).toNumber()),
+  })
   const countUntil = takeUntilLast(c => rule.supply === c, count)
 
   return skipRepeats(replayLatest(multicast(countUntil)))

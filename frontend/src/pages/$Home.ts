@@ -9,7 +9,7 @@ import { $anchor, $gitbook, $IntermediatePromise, $Link } from "@gambitdao/ui-co
 import { fromPromise, map, multicast, now, snapshot, take, tap } from "@most/core"
 import { $card, $teamMember } from "../elements/$common"
 
-import { BI_18_PRECISION, GBC_ADDRESS, IAttributeBody, IAttributeClothes, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat, IBerryDisplayTupleMap, ITreasuryStore } from "@gambitdao/gbc-middleware"
+import { BI_18_PRECISION, GBC_ADDRESS, IAttributeBody, IAttributeClothes, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat, IBerryDisplayTupleMap, ITreasuryStore, tokenIdAttributeTuple } from "@gambitdao/gbc-middleware"
 import { $StakingGraph } from "../components/$StakingGraph"
 import { $seperator2 } from "./common"
 import { $buttonAnchor, $ButtonSecondary } from "../components/form/$Button"
@@ -106,7 +106,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
 
 
 
-  const GRAPHS_INTERVAL = intervalTimeMap.HR4
+  const GRAPHS_INTERVAL = intervalTimeMap.HR8
 
   const gmxArbitrumRS = priceFeedHistoryInterval(
     GRAPHS_INTERVAL,
@@ -144,7 +144,6 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
 
 
   const queryParts = now(Promise.all([
-    import("@gambitdao/gbc-middleware/src/mappings/tokenIdAttributeTuple").then(res => res.default),
     import("@gambitdao/gbc-middleware/src/mappings/svgParts").then(res => res.default)
   ]))
 
@@ -157,7 +156,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
       $row(style({ width: '100vw', marginLeft: 'calc(-50vw + 50%)', height: screenUtils.isDesktopScreen ? '580px' : '', alignItems: 'center', placeContent: 'center' }))(
         $IntermediatePromise({
           query: queryParts,
-          $$done: map(([tokenIdAttributeTuple, svgParts]) => {
+          $$done: map(([svgParts]) => {
 
             const berryDayId = dailyRandom(Date.now() / (intervalTimeMap.HR24 * 1000))
             const [background, clothes, body, expression, faceAccessory, hat] = tokenIdAttributeTuple[berryDayId]
@@ -403,6 +402,9 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
         $seperator2,
 
         $row(layoutSheet.spacingBig, style({ flexWrap: 'wrap', width: '100%', placeContent: 'center' }))(
+          $teamMember({ name: 'defipleb', size: 'small', title: "Lab's Shakespeare", tokenId: 6762 }),
+          $teamMember({ name: 'cryp_growth', size: 'small', title: "Blueberry Podcast", tokenId: 2605 }),
+          $teamMember({ name: 'tanoeth', size: 'small', title: "Blueberry Podcast", tokenId: 1867 }),
           $teamMember({ name: 'kingblockchain', size: 'small', title: "Marketing & Advocee", tokenId: 4825 }),
           $teamMember({ name: 'onisuals', size: 'small', title: "Motion Designer", tokenId: 3195 }),
           $teamMember({ name: '1tbk1', size: 'small', title: "GBC Builder", tokenId: 9376 }),

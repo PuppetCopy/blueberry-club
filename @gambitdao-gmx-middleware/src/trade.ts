@@ -1,6 +1,6 @@
-import { BASIS_POINTS_DIVISOR, FUNDING_RATE_PRECISION, MARGIN_FEE_BASIS_POINTS, MAX_LEVERAGE } from "./constant"
-import { IAccountSummary,  ITrade, IPositionDelta,  IClaim, IClaimSource, IPositionClose, IPositionLiquidated, IAbstractPositionStake, ITradeSettled, IAbstractTrade, ITradeClosed, ITradeLiquidated, ITradeOpen, TradeStatus } from "./types"
-import { formatFixed, groupByMapMany, isAddress } from "./utils"
+import { BASIS_POINTS_DIVISOR, FUNDING_RATE_PRECISION, MAX_LEVERAGE, USD_PERCISION } from "./constant"
+import { IAccountSummary, ITrade, IPositionDelta, IClaim, IClaimSource, IPositionClose, IPositionLiquidated, IAbstractPositionStake, ITradeSettled, IAbstractTrade, ITradeClosed, ITradeLiquidated, ITradeOpen, TradeStatus, TokenDescription } from "./types"
+import { formatFixed, getDenominator, groupByMapMany, isAddress } from "./utils"
 
 
 
@@ -8,15 +8,34 @@ export function getPositionCumulativeFundingFee(size: bigint, fundingRate: bigin
   return size * fundingRate / FUNDING_RATE_PRECISION
 }
 
-export function getPositionMarginFee(size: bigint) {
-  return size - size * (BASIS_POINTS_DIVISOR - MARGIN_FEE_BASIS_POINTS) / BASIS_POINTS_DIVISOR // TODO properly calculate cumulative fees
+
+
+export function getBasisMultiplier(amount: bigint, delta: bigint): bigint {
+  if (delta === 0n) {
+    return 0n
+  }
+
+  return amount * BASIS_POINTS_DIVISOR / delta
 }
 
+export function getBasisDivisor(amount: bigint, delta: bigint): bigint {
+  if (amount === 0n) {
+    return 0n
+  }
 
+  return delta * BASIS_POINTS_DIVISOR / amount
+}
 
-export function getLeverage ({ size, collateral }: IAbstractTrade): number {
-  const levBn = size * BASIS_POINTS_DIVISOR / collateral
-  return formatFixed(levBn, 4)
+export function getRatio(amount: bigint, delta: bigint): number {
+  return formatFixed(getBasisDivisor(amount, delta), 4)
+}
+
+export function getMultiplier(amount: bigint, delta: bigint): number {
+  return formatFixed(getBasisMultiplier(amount, delta), 4)
+}
+
+export function getLeverage({ size, collateral }: IAbstractPositionStake): number {
+  return getMultiplier(size, collateral)
 }
 
 export function priceDelta(positionPrice: bigint, price: bigint, collateral: bigint, size: bigint) {
@@ -31,6 +50,14 @@ export function priceDeltaPercentage(positionPrice: bigint, price: bigint, colla
   return delta * BASIS_POINTS_DIVISOR / collateral
 }
 
+export function getTokenAmount(amountUsd: bigint, price: bigint, tokenDescription: TokenDescription) {
+
+  // if (tokenDescription.isStable) {
+  //   return amountUsd * getDenominator(18) / USD_PERCISION
+  // }
+
+  return amountUsd * getDenominator(tokenDescription.decimals) / price
+}
 
 
 export function calculatePositionDelta(marketPrice: bigint, averagePrice: bigint, isLong: boolean, { size, collateral }: IAbstractPositionStake): IPositionDelta {
@@ -55,23 +82,23 @@ export function getLiquidationPriceFromDelta(collateral: bigint, size: bigint, a
 }
 
 
-export function isTradeSettled(trade: ITrade): trade is ITradeSettled  {
+export function isTradeSettled(trade: ITrade): trade is ITradeSettled {
   return trade.status !== TradeStatus.OPEN
 }
 
-export function isTradeOpen(trade: ITrade): trade is ITradeOpen  {
+export function isTradeOpen(trade: ITrade): trade is ITradeOpen {
   return trade.status === TradeStatus.OPEN
 }
 
-export function isTradeLiquidated(trade: ITrade): trade is ITradeLiquidated  {
+export function isTradeLiquidated(trade: ITrade): trade is ITradeLiquidated {
   return trade.status === TradeStatus.LIQUIDATED
 }
 
-export function isTradeClosed(trade: ITrade): trade is ITradeClosed  {
+export function isTradeClosed(trade: ITrade): trade is ITradeClosed {
   return trade.status === TradeStatus.CLOSED
 }
 
-export function isPositionLiquidated(trade: IPositionClose | IPositionLiquidated): trade is IPositionLiquidated  {
+export function isPositionLiquidated(trade: IPositionClose | IPositionLiquidated): trade is IPositionLiquidated {
   return 'markPrice' in trade
 }
 
@@ -98,7 +125,7 @@ export function toAccountSummary(list: ITrade[]): IAccountSummary[] {
 
       collateralDelta: 0n,
       sizeDelta: 0n,
-      realisedPnlPercentage: 0n,     
+      realisedPnlPercentage: 0n,
 
       winTradeCount: 0,
       settledTradeCount: 0,
@@ -116,13 +143,13 @@ export function toAccountSummary(list: ITrade[]): IAccountSummary[] {
         size: seed.size + next.size,
         sizeDelta: seed.sizeDelta + next.sizeDelta,
         realisedPnlPercentage: seed.realisedPnlPercentage + next.realisedPnlPercentage,
-        
+
         winTradeCount: next.realisedPnl > 0n ? seed.winTradeCount + 1 : seed.winTradeCount,
         settledTradeCount: next.status === TradeStatus.CLOSED || next.status === TradeStatus.LIQUIDATED ? seed.settledTradeCount + 1 : seed.settledTradeCount,
         openTradeCount: next.status === TradeStatus.OPEN ? seed.openTradeCount + 1 : seed.openTradeCount,
 
       }
-    }, seedAccountSummary) 
+    }, seedAccountSummary)
 
     seed.push(summary)
 

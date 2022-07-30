@@ -189,9 +189,7 @@ export const $StakingGraph = <T>(config: ITreasuryChart<T>)  => component((
       ),
       switchLatest(
         combineArray(({ filledGap, revenueSourceList, filledForecast }, yieldList) => {
-          // const startDate = new Date(data[0].time * 1000)
-          // const endDate = new Date(data[data.length - 1].time * 1000)
-            
+
 
           return $Chart({
             initializeSeries: map((api) => {
@@ -232,7 +230,7 @@ export const $StakingGraph = <T>(config: ITreasuryChart<T>)  => component((
               })
 
 
-              const markerInterval = Math.floor(intervalTimeMap.DAY7)
+              const markerInterval = Math.floor(intervalTimeMap.MONTH)
 
 
               if (yieldList.length) {
@@ -259,10 +257,10 @@ export const $StakingGraph = <T>(config: ITreasuryChart<T>)  => component((
                   }
                 }).filter(x => x.value).map((tick): SeriesMarker<any> => {
                   const rewardUsd = formatReadableUSD(tick.value)
-                  const esGmxMsg = `+$${rewardUsd}`
+                  const esGmxMsg = `+${rewardUsd}`
 
                   return {
-                    color: pallete.foreground,
+                    color: pallete.positive,
                     position: "aboveBar",
                     shape: "circle",
                     size: 1,

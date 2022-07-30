@@ -58,7 +58,7 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
   )
 
   const $treasuryStatus = $row(style({ alignItems: 'center', cursor: 'pointer' }))(
-    $pageLink($bagOfCoins, map(x => '$' + formatReadableUSD(x), totalWalletHoldingsUsd)),
+    $pageLink($bagOfCoins, map(x => formatReadableUSD(x, { maximumFractionDigits: 0 }), totalWalletHoldingsUsd)),
     $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginTop: '3px', marginLeft: '5px' }), viewBox: '0 0 32 32' })
   )
 
@@ -70,7 +70,7 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
     $Link({ $content: $pageLink($stackedCoins, 'Leaderboard'), disabled: now(true), url: '/p/leaderboard', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
       click: routeChangeTether()
     }),
-    $Link({ $content: $pageLink($gmxLogo, 'Trade'), url: '/p/trade', disabled: now(true), route: parentRoute.create({ fragment: 'feefwefwe' }) })({
+    $Link({ $content: $pageLink($gmxLogo, 'Trade'), url: '/p/trade', disabled: now(false), route: parentRoute.create({ fragment: 'feefwefwe' }) })({
       click: routeChangeTether()
     }),
   ]

@@ -148,7 +148,10 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
                     return time < mintRule.start
                       ? $row(layoutSheet.spacing, style({ alignItems: 'baseline' }))(
                         $text(style({ color: pallete.foreground }))('Starting In '),
-                        $text(style({ fontSize: '1.55em', fontWeight: 'bold' }))(countdownFn(mintRule.start, time))
+                        $column(
+                          $text(style({ fontSize: '1.55em', fontWeight: 'bold' }))(countdownFn(mintRule.start, time)),
+                          $text(style({ fontSize: '.75em' }))(displayDate(mintRule.start)),
+                        )
                       )
                       : sale
                   }, publicSaleTime, mintCount)),

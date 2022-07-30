@@ -9,7 +9,7 @@ import { $Button } from "./$buttonCore"
 export const buttonPrimaryStyle = style({
   color: pallete.background, whiteSpace: 'nowrap', fill: 'white', borderRadius: '30px',
   boxShadow: `0px 0px 0px 0 ${pallete.primary} inset`, position: 'relative',
-  transition: 'ease-in', alignSelf: 'flex-start',
+  alignSelf: 'flex-start',
   padding: '15px 24px', fontWeight: 'bold', borderWidth: '0px', backgroundColor: pallete.primary,
 })
 

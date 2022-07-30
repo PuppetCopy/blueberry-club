@@ -42,6 +42,6 @@
         "jazzicon": "^1.5.0"
     },
     "devDependencies": {
-        "@types/node": "18.0.0"
+        "@types/node": "18.6.2"
     }
 }

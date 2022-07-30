@@ -5,7 +5,7 @@ import { $column, designSheet, layoutSheet, screenUtils, state } from '@aelea/ui
 import {
   ADDRESS_LEVERAGE,
   ETH_ADDRESS_REGEXP, fromJson, groupByMap, IAccountSummary, IAccountTradeListParamApi, IChainParamApi,
-  ILeaderboardRequest, intervalTimeMap, IPageParapApi, IPricefeed, IPricefeedParamApi, IPriceLatestMap, ITradeOpen
+  ILeaderboardRequest, intervalTimeMap, IPageParapApi, IPricefeed, IPricefeedParamApi, IPriceLatestMap, IRequestTradeQueryparam, ITrade, ITradeOpen
 } from '@gambitdao/gmx-middleware'
 import { initWalletLink } from "@gambitdao/wallet-link"
 import {
@@ -54,7 +54,9 @@ export default ({ baseRoute = '' }: Website) => component((
   [requestAccountTradeList, requestAccountTradeListTether]: Behavior<IAccountTradeListParamApi, IAccountTradeListParamApi>,
   [requestLeaderboardTopList, requestLeaderboardTopListTether]: Behavior<ILeaderboardRequest, ILeaderboardRequest>,
   [requestPricefeed, requestPricefeedTether]: Behavior<IPricefeedParamApi, IPricefeedParamApi>,
+  // [requestTradePricefeed, requestTradePricefeedTether]: Behavior<IPricefeedParamApi, IPricefeedParamApi>,
   [requestLatestPriceMap, requestLatestPriceMapTether]: Behavior<IChainParamApi, IChainParamApi>,
+  [requestTrade, requestTradeTether]: Behavior<IRequestTradeQueryparam, IRequestTradeQueryparam>,
 ) => {
 
   const changes = merge(locationChange, multicast(routeChanges))
@@ -87,6 +89,7 @@ export default ({ baseRoute = '' }: Website) => component((
     requestLeaderboardTopList,
     requestPricefeed,
     requestLatestPriceMap,
+    requestTrade,
     requestAccountTradeList
   })
 
@@ -128,7 +131,7 @@ export default ({ baseRoute = '' }: Website) => component((
 
 
   const walletLink = initWalletLink(
-    replayLatest(multicast(mergeArray([defaultWalletProvider, tap(console.log, walletChange)])))
+    replayLatest(multicast(mergeArray([defaultWalletProvider, walletChange])))
   )
 
 
@@ -183,7 +186,7 @@ export default ({ baseRoute = '' }: Website) => component((
               router.match(wardrobeRoute)(
                 fadeIn($Wardrobe({ walletLink: walletLink, parentRoute: wardrobeRoute, walletStore })({
                   changeRoute: linkClickTether(),
-                  
+
                 }))
               ),
               router.match(profileRoute)(
@@ -192,24 +195,26 @@ export default ({ baseRoute = '' }: Website) => component((
               router.match(profileWalletRoute)(
                 fadeIn($ProfileWallet({ walletLink, parentRoute: pagesRoute, accountStakingStore })({ changeRoute: linkClickTether() }))
               ),
-              // router.match(tradeRoute)(
-              //   $Trade({
-              //     walletLink,
-              //     parentRoute: tradeRoute,
-              //     walletStore,
-              //     accountTradeList: map((res: ITradeOpen[]) => res.map(fromJson.toTradeJson), clientApi.requestAccountTradeList),
-              //     pricefeed: map((feed: IPricefeed[]) => feed.map(fromJson.pricefeedJson), clientApi.requestPricefeed),
-              //     latestPriceMap,
-              //     parentStore: rootStore,
-
-              //   })({
-              //     requestPricefeed: requestPricefeedTether(),
-              //     requestAccountTradeList: requestAccountTradeListTether(),
-              //     requestLatestPriceMap: requestLatestPriceMapTether(),
-              //     changeRoute: linkClickTether(),
-              //     walletChange: walletChangeTether()
-              //   })
-              // ),
+              router.match(tradeRoute)(
+                $Trade({
+                  walletLink,
+                  parentRoute: tradeRoute,
+                  walletStore,
+                  accountTradeList: map((res: ITradeOpen[]) => res.map(fromJson.toTradeJson), clientApi.requestAccountTradeList),
+                  pricefeed: map((feed: IPricefeed[]) => feed.map(fromJson.pricefeedJson), clientApi.requestPricefeed),
+                  latestPriceMap,
+                  parentStore: rootStore,
+                  trade: map((res: ITrade) => res ? fromJson.toTradeJson(res) : null, clientApi.requestTrade)
+                })({
+                  requestPricefeed: requestPricefeedTether(),
+                  // requestTradePricefeed: requestTradePricefeedTether(),
+                  requestAccountTradeList: requestAccountTradeListTether(),
+                  requestLatestPriceMap: requestLatestPriceMapTether(),
+                  changeRoute: linkClickTether(),
+                  walletChange: walletChangeTether(),
+                  requestTrade: requestTradeTether()
+                })
+              ),
               // router.match(leaderboardRoute)(
               //   fadeIn($Leaderboard({
               //     walletLink, parentRoute: pagesRoute, accountStakingStore,

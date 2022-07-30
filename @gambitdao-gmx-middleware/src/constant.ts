@@ -2,13 +2,23 @@
 export const AddressZero = "0x0000000000000000000000000000000000000000" as const
 
 export const USD_DECIMALS = 30
-export const MAX_LEVERAGE_NORMAL = 30
+export const MAX_LEVERAGE_NORMAL = 30.5
+export const USDG_DECIMALS = 18
 
 export const BASIS_POINTS_DIVISOR = 10000n
 export const MAX_LEVERAGE = 1000000n
+export const DEDUCT_FOR_GAS = 2000000000000000n
 
-export const LIQUIDATION_FEE = 5000000000000000000000000000000n
+export const USD_PERCISION = 10n ** 30n
+export const LIQUIDATION_FEE = 10n ** 5n
+
+export const TAX_BASIS_POINTS = 50n
+export const STABLE_TAX_BASIS_POINTS = 5n
+export const MINT_BURN_FEE_BASIS_POINTS = 25n
+export const SWAP_FEE_BASIS_POINTS = 30n
+export const STABLE_SWAP_FEE_BASIS_POINTS = 1n
 export const MARGIN_FEE_BASIS_POINTS = 10n
+
 export const FUNDING_RATE_PRECISION = 1000000n
 
 

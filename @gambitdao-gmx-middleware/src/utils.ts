@@ -1,6 +1,6 @@
 import { O, Op, replayLatest } from "@aelea/core"
 import { Stream } from "@most/types"
-import { at, awaitPromises, combineArray as combineArrayMost, constant, continueWith, merge, now, recoverWith } from "@most/core"
+import { at, awaitPromises, combineArray as combineArrayMost, constant, continueWith, filter, merge, now, recoverWith } from "@most/core"
 import { CHAIN, EXPLORER_URL, intervalTimeMap, NETWORK_METADATA, USD_DECIMALS } from "./constant"
 import { IPageParapApi, IPagePositionParamApi, ISortParamApi } from "./types"
 
@@ -21,11 +21,11 @@ export function isAddress(address: string) {
 }
 
 export function shortenAddress(address: string, padRight = 4, padLeft = 6) {
-  return address.slice(0, padLeft) + "..." + address.slice(address.length -padRight, address.length)
+  return address.slice(0, padLeft) + "..." + address.slice(address.length - padRight, address.length)
 }
 
 export function shortPostAdress(address: string) {
-  return address.slice(address.length -4, address.length)
+  return address.slice(address.length - 4, address.length)
 }
 
 export function readableNumber(ammount: number | bigint, decimalCount = 2) {
@@ -37,24 +37,47 @@ export function readableNumber(ammount: number | bigint, decimalCount = 2) {
   }
 
   if (whole.replace(/^-/, '') === '0' || whole.length < 3) {
-    const shortDecimal = decimal.slice(0, decimalCount)
-    return whole + (shortDecimal && decimalCount ? '.' + shortDecimal  : '')
+    const shortDecimal = trimZeroDecimalsTrail(decimal).slice(0, decimalCount)
+    return whole + (shortDecimal && decimalCount ? '.' + shortDecimal : '')
   }
 
   return Number(whole).toLocaleString()
 }
 
-export function formatReadableUSD(ammount: bigint) {
-  const str = formatFixed(ammount, USD_DECIMALS)
-  return readableNumber(str)
+export const trimZeroDecimalsTrail = (amount: string) => {
+  return amount.replace(/0+$/, '')
+}
+
+const nf = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 0
+})
+
+export function formatReadableUSD(ammount: bigint, options?: Intl.NumberFormatOptions) {
+  const amountUsd = formatFixed(ammount, USD_DECIMALS)
+
+  if (options) {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      ...options
+    }).format(amountUsd)
+  }
+  
+  return nf.format(amountUsd)
 }
 
 export function shortenTxAddress(address: string) {
   return shortenAddress(address, 8, 6)
 }
 
+export function getDenominator(decimals: number) {
+  return 10n ** BigInt(decimals)
+}
+
 export function expandDecimals(n: bigint, decimals: number) {
-  return n * (10n ** BigInt(decimals))
+  return n * getDenominator(decimals)
 }
 
 function getMultiplier(decimals: number): string {
@@ -139,13 +162,6 @@ export function parseFixed(input: string | number, decimals = 18) {
   }
 
   return wei
-}
-
-export const trimZeroDecimals = (amount: string) => {
-  if (parseFloat(amount) === parseInt(amount)) {
-    return parseInt(amount).toString()
-  }
-  return amount
 }
 
 export const limitDecimals = (amount: string, maxDecimals: number) => {
@@ -244,7 +260,7 @@ export interface IFillGap<T, R, RTime extends R & TimelineTime = R & TimelineTim
   getTime: (t: T) => number
   seed: R & TimelineTime
   source: T[]
-  
+
   fillMap: (prev: RTime, next: T) => R
   fillGapMap?: (prev: RTime, next: T) => R
   squashMap?: (prev: RTime, next: T) => R
@@ -256,7 +272,7 @@ export function intervalListFillOrderMap<T, R, RTime extends R & TimelineTime = 
   fillMap, squashMap = fillMap, fillGapMap = (prev, _next) => prev
 }: IFillGap<T, R, RTime>) {
 
-  
+
 
   const sortedSource = [...source].sort((a, b) => getTime(a) - getTime(b))
 
@@ -308,7 +324,7 @@ export function intervalListFillOrderMap<T, R, RTime extends R & TimelineTime = 
 
     return timeline
   },
-  [normalizedSeed])
+    [normalizedSeed])
 }
 
 
@@ -327,7 +343,7 @@ export async function pagingQuery<T, ReqParams extends IPagePositionParamApi & (
       queryParams.sortDirection === 'asc'
         ? Number(b[sortBy]) - Number(a[sortBy])
         : Number(a[sortBy]) - Number(b[sortBy])
-    
+
 
     list = res.sort(comperator)
   }
@@ -373,23 +389,48 @@ export function replayState<A, K extends keyof A = keyof A>(state: StreamInput<A
 }
 
 
-export const periodicRun = <T>(interval: number, actionOp: Op<number, Promise<T>>, startImmediate = true): Stream<T> => {
+export interface IPeriodRun<T> {
+  actionOp: Op<number, Promise<T>>
+
+  interval?: number
+  startImmediate?: boolean
+  recoverError?: boolean
+}
+
+export const filterNull = <T>(prov: Stream<T | null>) => filter((provider): provider is T => provider !== null, prov)
+
+
+export const periodicRun = <T>({ actionOp, interval = 1000, startImmediate = true, recoverError = true }: IPeriodRun<T>): Stream<T> => {
   const tickDelay = at(interval, null)
-  const tick = startImmediate ? merge(now(null), tickDelay) : tickDelay 
+  const tick = startImmediate ? merge(now(null), tickDelay) : tickDelay
 
   return O(
     constant(performance.now()),
     actionOp,
     awaitPromises,
-    recoverWith(err => {
-      console.error(err)
-      
-      return periodicRun(interval * 2, actionOp, false)
-    }),
+    recoverError
+      ? recoverWith(err => {
+        console.error(err)
+
+        return periodicRun({ interval: interval * 2, actionOp, recoverError, startImmediate: false })
+      })
+      : O(),
     continueWith(() => {
-      return periodicRun(interval, actionOp, false)
+      return periodicRun({ interval, actionOp, recoverError, startImmediate: false, })
     }),
   )(tick)
+}
+
+export const switchFailedSources = <T>(sourceList: Stream<T>[], activeSource = 0): Stream<T> => {
+  const source = sourceList[activeSource]
+  return recoverWith(() => {
+    const nextActive = activeSource + 1
+    if (!sourceList[nextActive]) {
+      throw new Error('No sources left to recover with')
+    }
+
+    return switchFailedSources(sourceList, nextActive)
+  }, source)
 }
 
 

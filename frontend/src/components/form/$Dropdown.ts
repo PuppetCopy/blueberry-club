@@ -147,7 +147,7 @@ export const $Dropdown = <T>({
           $Select({
             ...value,
             $container: value.$container(style({
-              zIndex: 50,
+              zIndex: 60,
               position: 'absolute',
               display: 'none'
             })),
@@ -360,9 +360,6 @@ export const $DropMultiSelect = <T>({
 
                 const bottomSpcace = window.innerHeight - bottom
                 const goDown = bottomSpcace > bottom
-                console.log(goDown)
-
-
 
                 return goDown
                   ? {
