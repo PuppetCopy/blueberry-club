@@ -128,7 +128,7 @@ export const $labItem = (id: number, size: string | number = 85, background = tr
     localTuple.splice(5, 1, IAttributeHat.NUDE)
   }
 
-  if (showFace) {
+  if (tupleIdx !== 3 && showFace) {
     localTuple.splice(3, 1, IAttributeExpression.HAPPY)
   }
   const sizeNorm = typeof size === 'number' ? size + 'px' : size

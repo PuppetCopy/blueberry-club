@@ -403,6 +403,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
 
         $row(layoutSheet.spacingBig, style({ flexWrap: 'wrap', width: '100%', placeContent: 'center' }))(
           $teamMember({ name: 'defipleb', size: 'small', title: "Lab's Shakespeare", tokenId: 6762 }),
+          $teamMember({ name: 'defiplebette', size: 'small', title: "Lab's Shakespeare", tokenId: 121 }),
           $teamMember({ name: 'cryp_growth', size: 'small', title: "Blueberry Podcast", tokenId: 2605 }),
           $teamMember({ name: 'tanoeth', size: 'small', title: "Blueberry Podcast", tokenId: 1867 }),
           $teamMember({ name: 'kingblockchain', size: 'small', title: "Marketing & Advocee", tokenId: 4825 }),
@@ -412,8 +413,8 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
           $teamMember({ name: 'monte_xyz', size: 'small', title: "Discord Mod", tokenId: 5708 }),
           $teamMember({ name: '0x11nze', size: 'small', title: "Fondation B Lead", tokenId: 9036 }),
           $teamMember({ name: 'juandelamochila', size: 'small', title: "Discord Mod", tokenId: 734 }),
-          $teamMember({ name: 'quantumzebra123', size: 'small', title: "Analyst", tokenId: 9681 }),
-          $teamMember({ name: 'CaptainPaup_', size: 'small', title: "3D Artist", tokenId: 3204 }),
+          $teamMember({ name: 'quantumzebra123', size: 'small', title: "Weekly Analysis", tokenId: 9681 }),
+          $teamMember({ name: 'CaptainPaup_', size: 'small', title: "3D Art", tokenId: 3204 }),
         ),
 
         $node(),

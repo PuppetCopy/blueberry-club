@@ -151,7 +151,9 @@ export enum IAttributeMappings {
   "GBC x Giorgio Balbi" = 209,
   "GBC x Wine Bottle Club" = 210,
   "Summer Buoy" = 211,
-  Noodles = 212
+  Noodles = 212,
+  High = 213,
+  "Juice Head" = 214,
 }
 
 
@@ -185,6 +187,8 @@ export enum IAttributeExpression {
   LOSER = IAttributeMappings.Looser,
   WINNER = IAttributeMappings.Winner,
   NUDE = IAttributeMappings.Nude,
+
+  HIGH = IAttributeMappings.High,
 }
 
 export enum IAttributeClothes {
@@ -287,6 +291,7 @@ export enum IAttributeFaceAccessory {
   NOODLES = IAttributeMappings.Noodles
 }
 
+
 export enum IAttributeHat {
   AFRO_GREEN = IAttributeMappings["Afro Green"],
   AFRO_MULTICOLOR = IAttributeMappings["Afro Multicolor"],
@@ -351,6 +356,7 @@ export enum IAttributeHat {
   FAST_FOOD_CAP = IAttributeMappings['Fast Food Cap'],
   LAB_FLASK = IAttributeMappings["Lab Flask"],
   GBC_WINE_BOTTLE_CLUB = IAttributeMappings["GBC x Wine Bottle Club"],
+  JUICE_HEAD = IAttributeMappings["Juice Head"]
 }
 
 export enum IAttributeBackground {

@@ -4,6 +4,9 @@ const HtmlWebpackPlugin = require('html-webpack-plugin')
 const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin')
 const CopyPlugin = require("copy-webpack-plugin")
 
+/**
+ * @type import('webpack').Configuration
+ */
 module.exports = {
   mode: "development",
   watch: false,
@@ -13,6 +16,9 @@ module.exports = {
     theme: './src/assignThemeSync.ts',
     main: './src/index.ts',
   },
+  // optimization: {
+  //   runtimeChunk: true,
+  // },
   module: {
     rules: [
       {
@@ -21,6 +27,7 @@ module.exports = {
         use: {
           loader: "ts-loader",
           options: {
+            happyPackMode: true,
             transpileOnly: true, // Set to true if you are using fork-ts-checker-webpack-plugin
             projectReferences: true
           }

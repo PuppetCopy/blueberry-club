@@ -45,8 +45,11 @@ export const $Trade = (config: ITradeComponent) => component((
   [selectCollateralToken, selectCollateralTokenTether]: Behavior<ARBITRUM_ADDRESS_LEVERAGE, ARBITRUM_ADDRESS_LEVERAGE>,
   [selectSizeToken, selectSizeTokenTether]: Behavior<ARBITRUM_ADDRESS_LEVERAGE, ARBITRUM_ADDRESS_LEVERAGE>,
 
-  [changeDirectionDiv, changeDirectionDivTether]: Behavior<number, number>,
+  // [changeDirectionDiv, changeDirectionDivTether]: Behavior<number, number>,
   [changeLeverage, changeLeverageTether]: Behavior<number, number>,
+  [switchReduce, switchReduceTether]: Behavior<boolean, boolean>,
+  // [switchIsLong, switchIsLongTether]: Behavior<boolean, boolean>,
+  [focusFactor, focusFactorTether]: Behavior<number, number>,
 
 ) => {
 
@@ -69,23 +72,27 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
 
-  const directionDivStore = config.parentStore('sizeRatio', 0)
+  // const directionDivStore = config.parentStore('sizeRatio', .5)
   const timeFrameStore = config.parentStore('portfolio-chart-interval', intervalTimeMap.MIN60)
   const collateralTokenStore = config.parentStore('selectCollateralToken', AddressZero as ARBITRUM_ADDRESS_LEVERAGE)
   const sizeTokenStore = config.parentStore<ARBITRUM_ADDRESS_LEVERAGE, ARBITRUM_ADDRESS_LEVERAGE>('output-trade', ARBITRUM_ADDRESS.NATIVE_TOKEN)
   const leverageStore = config.parentStore('leverage', 1)
-  const focusInputStore = config.parentStore('focusInput', 0)
+  // const isLongStore = config.parentStore('isLong', true)
+  const switchReduceStore = config.parentStore('isReduce', false)
+  const focusFactorStore = config.parentStore('focusFactor', 0)
 
   const accountTradeList = multicast(filter(list => list.length > 0, config.accountTradeList))
 
   const openTradeList = map(list => list.filter(isTradeOpen), accountTradeList)
 
   const collateralTokenState = replayLatest(collateralTokenStore.store(selectCollateralToken, map(x => x)), collateralTokenStore.state)
-  const directionDivState = replayLatest(directionDivStore.store(changeDirectionDiv, map(x => x)), directionDivStore.state)
+  // const directionDivState = replayLatest(directionDivStore.store(changeDirectionDiv, map(x => x)), directionDivStore.state)
   const timeFrameState = replayLatest(timeFrameStore.store(selectTimeFrame, map(x => x)), timeFrameStore.state)
   const indexTokenState = replayLatest(sizeTokenStore.store(selectSizeToken, map(x => x)), sizeTokenStore.state)
   const leverageState = replayLatest(leverageStore.store(changeLeverage, map(x => x)), leverageStore.state)
-  const focusInputState = replayLatest(focusInputStore.store(changeLeverage, map(x => x)), focusInputStore.state)
+  // const isLongState = replayLatest(isLongStore.store(switchIsLong, map(x => x)), isLongStore.state)
+  const switchReduceState = replayLatest(switchReduceStore.store(switchReduce, map(x => x)), switchReduceStore.state)
+  const focusFactorState = replayLatest(focusFactorStore.store(focusFactor, map(x => x)), focusFactorStore.state)
 
 
   const collateralTokenPrice = skipRepeats(switchLatest(map(address => pricefeed.getLatestPrice(address), collateralTokenState)))
@@ -151,24 +158,26 @@ export const $Trade = (config: ITradeComponent) => component((
           chain,
           walletStore: config.walletStore,
           walletLink: config.walletLink,
-
           state: {
             trade: config.trade,
             collateralTokenPrice,
+            indexTokenPrice,
             vaultPosition,
-            focusInput: focusInputState,
-
+            focusFactor: focusFactorState,
+            // isLong: isLongState,
+            switchReduce: switchReduceState,
             collateralToken: collateralTokenState,
             sizeToken: indexTokenState,
-
             leverage: leverageState,
-            directionDiv: directionDivState
+            // directionDiv: directionDivState
           }
         })({
           changeInputAddress: selectCollateralTokenTether(),
           changeOutputAddress: selectSizeTokenTether(),
           changeLeverage: changeLeverageTether(),
-          directionDiv: changeDirectionDivTether(),
+          switchReduce: switchReduceTether(),
+          // directionDiv: changeDirectionDivTether(),
+          focusFactor: focusFactorTether(),
         }),
 
         $node(),

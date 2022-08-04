@@ -9,7 +9,8 @@ export const getLabItemTupleIndex = (itemId: number) => {
     ? IAttributeHat : itemId in IAttributeBackground
       ? IAttributeBackground : itemId in IAttributeClothes
         ? IAttributeClothes : itemId in IAttributeFaceAccessory
-          ? IAttributeFaceAccessory : null
+          ? IAttributeFaceAccessory : itemId in IAttributeExpression
+            ? IAttributeExpression : null
 
   if (attrMap === null) {
     throw new Error(`item id: ${itemId} doesn't match any attribute`)

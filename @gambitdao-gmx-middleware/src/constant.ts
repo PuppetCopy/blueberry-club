@@ -6,7 +6,8 @@ export const MAX_LEVERAGE_NORMAL = 30.5
 export const USDG_DECIMALS = 18
 
 export const BASIS_POINTS_DIVISOR = 10000n
-export const MAX_LEVERAGE = 1000000n
+export const MAX_LEVERAGE = 305000n
+export const LEVERAGE_LIQUIDAITON = 1000000n
 export const DEDUCT_FOR_GAS = 2000000000000000n
 
 export const USD_PERCISION = 10n ** 30n

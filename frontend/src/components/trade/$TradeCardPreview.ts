@@ -187,7 +187,7 @@ export const $TradeCardPreview = ({
         ),
 
         $row(layoutSheet.spacing, style({ alignItems: 'baseline', placeContent: 'center', pointerEvents: 'none' }))(
-          $row(style({ fontSize: '2.25em', alignItems: 'baseline', paddingTop: '26px' }))(
+          $row(style({ fontSize: '2.25em', alignItems: 'baseline', paddingTop: '26px', paddingBottom: '26px' }))(
             animatePnl
               ? style({
                 lineHeight: 1,
@@ -255,9 +255,11 @@ export const $TradePnlHistory = ({ trade, latestPrice, pixelsPerBar = 5, chartCo
   const to = unixTimestampNow()
   const from = trade.timestamp
 
-  const params = { tokenAddress: '_' + trade.indexToken, interval: '_' + getPricefeedVisibleColumns(160, from, to), from, to }
+  const intervalTime = getPricefeedVisibleColumns(160, from, to)
+  const params = { tokenAddress: '_' + trade.indexToken, interval: '_' + intervalTime, from, to }
 
-  const priceFeedQuery = map(res => res.pricefeeds.map(fromJson.pricefeedJson), fromPromise(query.graphClientMap[chain](query.document.pricefeed, params as any, { requestPolicy: 'network-only' })))
+  const queryFeed = fromPromise(query.graphClientMap[chain](query.document.pricefeed, params as any, { requestPolicy: 'network-only' }))
+  const priceFeedQuery = map(res => res.pricefeeds.map(fromJson.pricefeedJson), queryFeed)
 
   const historicPnL = combineArray((feed, displayColumnCount) => {
 
@@ -447,7 +449,7 @@ export const $TradePnlHistory = ({ trade, latestPrice, pixelsPerBar = 5, chartCo
 
               series.applyOptions({
                 scaleMargins: {
-                  top: 0.1,
+                  top: 0.2,
                   bottom: 0,
                 }
               })

@@ -2,7 +2,7 @@ import { Behavior, combineArray, fromCallback, O, Op } from "@aelea/core"
 import { $wrapNativeElement, component, INode, style } from "@aelea/dom"
 import { observer } from '@aelea/ui-components'
 import { pallete } from '@aelea/ui-components-theme'
-import { debounce, empty, filter, map, multicast, now, switchLatest, take, throttle } from '@most/core'
+import { debounce, empty, filter, map, mergeArray, multicast, now, switchLatest, take, throttle } from '@most/core'
 import { disposeWith } from '@most/disposable'
 import { Stream } from '@most/types'
 import { ChartOptions, createChart, CrosshairMode, DeepPartial, IChartApi, ISeriesApi, LineStyle, MouseEventParams, SeriesDataItemTypeMap, SeriesMarker, SeriesType, Time, TimeRange } from 'lightweight-charts'
@@ -30,13 +30,13 @@ export const $Chart = <T extends SeriesType>({ chartConfig, realtimeSource, init
   const containerEl = document.createElement('chart')
 
 
-  
+
   const api = createChart(containerEl, {
     rightPriceScale: {
       visible: false,
     },
     handleScale: {
-          
+
     },
     grid: {
       horzLines: {
@@ -69,7 +69,7 @@ export const $Chart = <T extends SeriesType>({ chartConfig, realtimeSource, init
       secondsVisible: true,
       timeVisible: true,
       lockVisibleTimeRangeOnResize: true,
-      
+
     },
     crosshair: {
       mode: CrosshairMode.Magnet,
@@ -90,8 +90,8 @@ export const $Chart = <T extends SeriesType>({ chartConfig, realtimeSource, init
     },
     ...chartConfig
   })
-  
-  
+
+
 
   const crosshairMove = fromCallback<MouseEventParams>(
     cb => {
@@ -108,7 +108,7 @@ export const $Chart = <T extends SeriesType>({ chartConfig, realtimeSource, init
 
   const timeScale = api.timeScale()
 
-  
+
   const visibleLogicalRangeChange = multicast(
     fromCallback(cb => {
       timeScale.subscribeVisibleLogicalRangeChange(cb)
@@ -124,9 +124,9 @@ export const $Chart = <T extends SeriesType>({ chartConfig, realtimeSource, init
   )
 
 
-  
-  const init = initializeSeries(now(api))
-  
+
+  const init = multicast(initializeSeries(now(api)))
+
   const ignoreAll = filter(() => false)
   return [
     $wrapNativeElement(containerEl)(
@@ -134,14 +134,18 @@ export const $Chart = <T extends SeriesType>({ chartConfig, realtimeSource, init
       sampleContainerDimension(observer.resize()),
       containerOp,
     )(
-      switchLatest(
-        combineArray(([containerDimension], seriesApi) => {
+      ignoreAll(mergeArray([
+        combineArray((seriesApi, [containerDimension]) => {
           const { width, height } = containerDimension.contentRect
           api.resize(width, height)
 
-          return ignoreAll(realtimeSource ? map(data => seriesApi.update(data), realtimeSource) : empty())
-        }, containerDimension, init)
-      )
+          return empty()
+        }, init, containerDimension),
+
+        switchLatest(combineArray((seriesApi) => {
+          return realtimeSource ? map(data => seriesApi.update(data), realtimeSource) : empty()
+        }, init)),
+      ]))
     ),
 
     {

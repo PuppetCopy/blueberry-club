@@ -1,5 +1,5 @@
 import { USE_CHAIN } from "@gambitdao/gbc-middleware"
-import { TradeAddress, AddressZero, ARBITRUM_ADDRESS, ARBITRUM_ADDRESS_STABLE, CHAIN, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, TOKEN_DESCRIPTION_MAP, TOKEN_SYMBOL, AVALANCHE_ADDRESS, AVALANCHE_ADDRESS_LEVERAGE, ARBITRUM_ADDRESS_LEVERAGE, expandDecimals, BASIS_POINTS_DIVISOR, USD_PERCISION, USDG_DECIMALS, STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS } from "@gambitdao/gmx-middleware"
+import { TradeAddress, AddressZero, ARBITRUM_ADDRESS, ARBITRUM_ADDRESS_STABLE, CHAIN, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, TOKEN_DESCRIPTION_MAP, TOKEN_SYMBOL, AVALANCHE_ADDRESS, AVALANCHE_ADDRESS_LEVERAGE, ARBITRUM_ADDRESS_LEVERAGE, expandDecimals, BASIS_POINTS_DIVISOR, USD_PERCISION, USDG_DECIMALS, STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, getDenominator } from "@gambitdao/gmx-middleware"
 
 
 
@@ -127,29 +127,28 @@ export function getNextToAmount(
   totalTokenWeights: bigint,
   usdgSupply: bigint,
 
-  inputTokenAddress: TradeAddress,
-  inputMinPrice: bigint,
+  collateralToken: TradeAddress,
+  collateralMinPrice: bigint,
+  collateralAmount: bigint,
 
-  outputTokenAddress: AVALANCHE_ADDRESS_LEVERAGE | ARBITRUM_ADDRESS_LEVERAGE,
-  outputMaxPrice: bigint,
-
-  inputAmount: bigint,
+  indexToken: AVALANCHE_ADDRESS_LEVERAGE | ARBITRUM_ADDRESS_LEVERAGE,
+  indexMaxPrice: bigint,
 
   ratio = 0n
 ) {
 
-  const fromToken = getTokenDescription(chainId, inputTokenAddress)
-  const toToken = getTokenDescription(chainId, outputTokenAddress)
+  const collateralTokenDescription = getTokenDescription(chainId, collateralToken)
+  const indexTokenDescription = getTokenDescription(chainId, indexToken)
 
-  const isInputNative = CHAIN_NATIVE_TO_ADDRESS[chainId] === inputTokenAddress
-  const isOutNative = CHAIN_NATIVE_TO_ADDRESS[chainId] === outputTokenAddress
+  const isInputNative = CHAIN_NATIVE_TO_ADDRESS[chainId] === collateralToken
+  const isOutNative = CHAIN_NATIVE_TO_ADDRESS[chainId] === indexToken
 
   if (
-    inputTokenAddress === outputTokenAddress
-    || inputTokenAddress === AddressZero && isOutNative
+    collateralToken === indexToken
+    || collateralToken === AddressZero && isOutNative
     || isInputNative && isOutNative
   ) {
-    return { amount: inputAmount, feeBasisPoints: 0n }
+    return { amount: collateralAmount, feeBasisPoints: 0n }
   }
 
 
@@ -159,13 +158,13 @@ export function getNextToAmount(
 
 
   const toAmount = ratio > 0n
-    ? inputAmount * inputMinPrice / outputMaxPrice
-    : ratio > 0n ? inputAmount * USD_PERCISION / ratio : 0n
+    ? collateralAmount * collateralMinPrice / indexMaxPrice
+    : ratio > 0n ? collateralAmount * USD_PERCISION / ratio : 0n
 
-  const usdgAmount = adjustForDecimals(inputAmount * inputMinPrice / USD_PERCISION, fromToken.decimals, USDG_DECIMALS)
+  const usdgAmount = adjustForDecimals(collateralAmount * collateralMinPrice / USD_PERCISION, collateralTokenDescription.decimals, USDG_DECIMALS)
 
-  const swapFeeBasisPoints = fromToken.isStable && toToken.isStable ? STABLE_SWAP_FEE_BASIS_POINTS : SWAP_FEE_BASIS_POINTS
-  const taxBasisPoints = fromToken.isStable && toToken.isStable ? STABLE_TAX_BASIS_POINTS : TAX_BASIS_POINTS
+  const swapFeeBasisPoints = collateralTokenDescription.isStable && indexTokenDescription.isStable ? STABLE_SWAP_FEE_BASIS_POINTS : SWAP_FEE_BASIS_POINTS
+  const taxBasisPoints = collateralTokenDescription.isStable && indexTokenDescription.isStable ? STABLE_TAX_BASIS_POINTS : TAX_BASIS_POINTS
 
   const feeBasisPoints0 = getFeeBasisPoints(
     usdgAmount,
@@ -191,13 +190,13 @@ export function getNextToAmount(
   const feeBasisPoints = feeBasisPoints0 > feeBasisPoints1 ? feeBasisPoints0 : feeBasisPoints1
 
   return {
-    amount: adjustForDecimalsFactory(BigInt(toToken.decimals - fromToken.decimals), toAmount * BASIS_POINTS_DIVISOR - feeBasisPoints / BASIS_POINTS_DIVISOR),
+    amount: adjustForDecimalsFactory(BigInt(indexTokenDescription.decimals - collateralTokenDescription.decimals), toAmount * BASIS_POINTS_DIVISOR - feeBasisPoints / BASIS_POINTS_DIVISOR),
     feeBasisPoints,
   }
 }
 
 export function adjustForDecimals(amount: bigint, divDecimals: number, mulDecimals: number) {
-  return amount * expandDecimals(1n, mulDecimals) / expandDecimals(1n, divDecimals)
+  return amount * getDenominator(mulDecimals) / getDenominator(divDecimals)
 }
 
 

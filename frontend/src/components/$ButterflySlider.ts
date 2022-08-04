@@ -44,23 +44,23 @@ export const $ButterflySlider = ({ value, thumbText, $thumb = $defaultThumb, thu
 
   const change = multicast(skipRepeats(combine((slider, thumb) => thumb / slider, sliderDimension, thumbePositionDelta)))
 
-  const positive = map(n => n > 0, value)
 
 
   const $range = $row(sliderDimensionTether(observer.resize({}), map(res => res[0].contentRect.width)), style({ placeContent: 'center', backgroundColor: pallete.background, height: '2px', position: 'relative', zIndex: 10 }))
 
-  const initialPositionDelta = combine((val, sliderWidth) => {
+  const latestPositiondelta = combine((val, sliderWidth) => {
     const constraintValue = val > 0 ? Math.min(val, 1) : Math.max(val, -1)
     return constraintValue * sliderWidth
   }, value, sliderDimension)
 
+  const positive = map(n => n > 0, latestPositiondelta)
 
   const sliderStyle = styleInline(map((n) => {
     const width = Math.abs(n) + 'px'
     const background = n === 0 ? '' : n > 0 ? `linear-gradient(90deg, transparent 10%, ${positiveColor} 100%)` : `linear-gradient(90deg, ${negativeColor} 0%, transparent 100%)`
 
     return { width, background }
-  }, mergeArray([initialPositionDelta, thumbePositionDelta])))
+  }, mergeArray([latestPositiondelta, thumbePositionDelta])))
 
   // function round(number: number, increment: number, offset: number) {
   //   return Math.ceil((number - offset) / increment) * increment + offset
@@ -93,7 +93,7 @@ export const $ButterflySlider = ({ value, thumbText, $thumb = $defaultThumb, thu
                 return Math.abs(deltaX) > maxWidth ? deltaX > 0 ? maxWidth : -maxWidth : deltaX
 
               }, drag))
-            }, mergeArray([initialPositionDelta, multicast(thumbePositionDelta)])),
+            }, mergeArray([latestPositiondelta, multicast(thumbePositionDelta)])),
             join
           ),
           // thumbDimensionTether(observer.resize()),

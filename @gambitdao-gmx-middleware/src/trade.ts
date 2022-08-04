@@ -1,4 +1,4 @@
-import { BASIS_POINTS_DIVISOR, FUNDING_RATE_PRECISION, MAX_LEVERAGE, USD_PERCISION } from "./constant"
+import { BASIS_POINTS_DIVISOR, FUNDING_RATE_PRECISION, LEVERAGE_LIQUIDAITON, USD_PERCISION } from "./constant"
 import { IAccountSummary, ITrade, IPositionDelta, IClaim, IClaimSource, IPositionClose, IPositionLiquidated, IAbstractPositionStake, ITradeSettled, IAbstractTrade, ITradeClosed, ITradeLiquidated, ITradeOpen, TradeStatus, TokenDescription } from "./types"
 import { formatFixed, getDenominator, groupByMapMany, isAddress } from "./utils"
 
@@ -74,7 +74,7 @@ export function calculatePositionDelta(marketPrice: bigint, averagePrice: bigint
 
 
 export function getLiquidationPriceFromDelta(collateral: bigint, size: bigint, averagePrice: bigint, isLong: boolean) {
-  const liquidationAmount = size * BASIS_POINTS_DIVISOR / MAX_LEVERAGE
+  const liquidationAmount = size * BASIS_POINTS_DIVISOR / LEVERAGE_LIQUIDAITON
   const liquidationDelta = collateral - liquidationAmount
   const priceDelta = liquidationDelta * averagePrice / size
 

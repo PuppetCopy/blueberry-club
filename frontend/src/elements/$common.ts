@@ -65,9 +65,9 @@ interface ITeamMember {
 }
 
 export const $teamMember = ({ name, title, size = 'big', tokenId }: ITeamMember) => $column(layoutSheet.spacing, style({ flexBasis: size === 'small' ? '110px' : '', alignItems: 'center', fontSize: screenUtils.isDesktopScreen ? '' : '75%' }))(
-  style({ borderRadius: '15px' }, $berryById(tokenId, size === 'big' ? 155 : 75)),
+  style({ borderRadius: '15px' }, $berryById(tokenId, size === 'big' ? 100 : 75)),
   $column(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
-    $anchor(attr(({ href: `https://twitter.com/${name}` })), style({ fontWeight: 900, textDecoration: 'none', fontSize: size === 'big' ? '1.5em' : '.75em' }))($text(`@${name}`)),
+    $anchor(attr(({ href: `https://twitter.com/${name}` })), style({ fontWeight: 900, textDecoration: 'none', fontSize: size === 'big' ? '1.25em' : '.75em' }))($text(`@${name}`)),
     $text(style({ fontSize: '.75em', color: pallete.foreground, textAlign: 'center' }))(title),
   )
 )

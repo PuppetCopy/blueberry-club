@@ -81,7 +81,7 @@ export const $LabHome = ({ walletLink, parentRoute, walletStore }: IBerry) => co
 
   return [
     mergeArray([
-      $responsiveFlex(style({ gap: '75px', justifyContent: 'space-between' }))(
+      $responsiveFlex(style({ gap: '75px', justifyContent: 'space-between', alignItems: 'center' }))(
         $column(layoutSheet.spacingBig, style({ maxWidth: '570px' }))(
           $column(style({ fontSize: '3.2em' }))(
             $node(
