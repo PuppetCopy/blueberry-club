@@ -1,14 +1,14 @@
 import { Behavior, replayLatest, combineArray, combineObject } from "@aelea/core"
 import { $text, component, motion, MOTION_NO_WOBBLE, style } from "@aelea/dom"
-import { $column, $NumberTicker, $row, layoutSheet } from "@aelea/ui-components"
+import { $column, $NumberTicker, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { intervalTimeMap, readableNumber, formatFixed, formatReadableUSD, ITimerangeParamApi, unixTimestampNow, intervalListFillOrderMap } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { map, multicast, now, skipRepeats,  skipRepeatsWith, startWith, switchLatest } from "@most/core"
+import { empty, map, multicast, now, skipRepeats, skipRepeatsWith, startWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
 import { LastPriceAnimationMode, LineStyle, Time, BarPrice, CrosshairMode, PriceScaleMode, MouseEventParams, SeriesMarker } from "lightweight-charts"
-import { $card } from "../elements/$common"
-import {  IRewardsStream } from "../logic/contract"
+import { $card, $responsiveFlex } from "../elements/$common"
+import { IRewardsStream } from "../logic/contract"
 import { IPricefeed, IPriceFeedMap, IStakingClaim } from "../logic/query"
 import { IAsset } from "@gambitdao/gbc-middleware"
 import { $Chart } from "./chart/$Chart"
@@ -25,7 +25,7 @@ export interface ITreasuryChart<T> extends Partial<ITimerangeParamApi> {
   priceFeedHistoryMap: Stream<IPriceFeedMap>
 
   stakingYield: Stream<IStakingClaim<any>[]>
-  valueSource: {[p in keyof T]: Stream<IValueInterval[]>}
+  valueSource: { [p in keyof T]: Stream<IValueInterval[]> }
 
   arbitrumStakingRewards: IRewardsStream
   avalancheStakingRewards: IRewardsStream
@@ -33,21 +33,21 @@ export interface ITreasuryChart<T> extends Partial<ITimerangeParamApi> {
 
 
 
-export const $StakingGraph = <T>(config: ITreasuryChart<T>)  => component((
+export const $StakingGraph = <T>(config: ITreasuryChart<T>) => component((
   [pnlCrosshairMove, pnlCrosshairMoveTether]: Behavior<MouseEventParams, MouseEventParams>,
 ) => {
 
 
-  const sources = combineObject(config.valueSource as {[k: string]: Stream<IValueInterval[]>})
+  const sources = combineObject(config.valueSource as { [k: string]: Stream<IValueInterval[]> })
   const historicPortfolio = replayLatest(multicast(combineArray((arbitrumStaking, avalancheStaking, revenueSourceList) => {
 
     const source = Object.values(revenueSourceList).flat().sort((a, b) => a.time - b.time)
-    const seed: { time: number, value: number  } = {
+    const seed: { time: number, value: number } = {
       value: 0,
       time: source[0].time
     }
 
-    const accumulatedAssetMap: {[k: string]: bigint} = {}
+    const accumulatedAssetMap: { [k: string]: bigint } = {}
 
 
     const filledGap = intervalListFillOrderMap({
@@ -83,9 +83,9 @@ export const $StakingGraph = <T>(config: ITreasuryChart<T>)  => component((
     const filledForecast = intervalListFillOrderMap({
       seed: oldestTick,
       source: [oldestTick, endForecast],
-      getTime: (x) => x.time, 
+      getTime: (x) => x.time,
       interval: config.graphInterval,
-      fillMap (prev) {
+      fillMap(prev) {
         return { ...prev, value: prev.value + prev.value * perc }
       },
       fillGapMap(prev) {
@@ -115,33 +115,35 @@ export const $StakingGraph = <T>(config: ITreasuryChart<T>)  => component((
   const crosshairWithInitial = startWith(false, pnlCrosshairMoveMode)
 
 
-  
+
   const chartPnLCounter = multicast(switchLatest(combineArray((mode, graph) => {
     if (mode) {
       return map(change => change, pnlCrossHairChange)
     } else {
-      return now(graph.filledGap[graph.filledGap.length -1].value)
+      return now(graph.filledGap[graph.filledGap.length - 1].value)
     }
   }, crosshairWithInitial, historicPortfolio)))
 
   return [
     $card(style({ padding: 0, width: '100%', flex: 'none', overflow: 'hidden', height: '300px', position: 'relative' }))(
-      $row(style({ position: 'absolute', alignItems: 'center', zIndex: 10, left: 0, right: 0, pointerEvents: 'none', padding: '8px 26px' }))(
+      $responsiveFlex(style({ position: 'absolute', alignItems: 'center', zIndex: 10, left: 0, right: 0, pointerEvents: 'none', padding: '8px 26px' }))(
         $row(layoutSheet.spacing, style({ flex: 1, alignItems: 'flex-start' }))(
-          switchLatest(map(({ esGmxInStakedGmx }) => {
-            
-            return $column(layoutSheet.spacingTiny)(
-              $text(style({ color: pallete.foreground, fontSize: '.65em', textAlign: 'center' }))('Compounding Rewards'),
-              $row(layoutSheet.spacing)(
-                $row(layoutSheet.spacing, style({ pointerEvents: 'all' }))(
-                  $row(layoutSheet.spacingTiny, style({ alignItems: 'baseline' }))(
-                    $text(style({ fontWeight: 'bold', fontSize: '1em' }))(`${readableNumber(formatFixed(esGmxInStakedGmx, 18))}`),
-                    $text(style({ fontSize: '.75em', color: pallete.foreground, fontWeight: 'bold' }))(`esGMX`),
+          screenUtils.isDesktopScreen
+            ? switchLatest(map(({ esGmxInStakedGmx }) => {
+
+              return $column(layoutSheet.spacingTiny)(
+                $text(style({ color: pallete.foreground, fontSize: '.65em', textAlign: 'center' }))('Compounding Rewards'),
+                $row(layoutSheet.spacing)(
+                  $row(layoutSheet.spacing, style({ pointerEvents: 'all' }))(
+                    $row(layoutSheet.spacingTiny, style({ alignItems: 'baseline' }))(
+                      $text(style({ fontWeight: 'bold', fontSize: '1em' }))(`${readableNumber(formatFixed(esGmxInStakedGmx, 18))}`),
+                      $text(style({ fontSize: '.75em', color: pallete.foreground, fontWeight: 'bold' }))(`esGMX`),
+                    ),
                   ),
                 ),
-              ),
-            )
-          }, config.arbitrumStakingRewards))
+              )
+            }, config.arbitrumStakingRewards))
+            : empty()
         ),
         $column(
           $text(style({ color: pallete.foreground, fontSize: '.65em', textAlign: 'center' }))('Total Staked'),
@@ -160,7 +162,7 @@ export const $StakingGraph = <T>(config: ITreasuryChart<T>)  => component((
         ),
         $row(layoutSheet.spacing, style({ flex: 1, placeContent: 'flex-end' }))(
           switchLatest(combineArray((arbiStaking, avaxStaking) => {
-            
+
             return $column(layoutSheet.spacingTiny)(
               $text(style({ color: pallete.foreground, fontSize: '.65em', textAlign: 'center' }))('Pending Rewards'),
               $row(layoutSheet.spacing)(
@@ -289,7 +291,7 @@ export const $StakingGraph = <T>(config: ITreasuryChart<T>)  => component((
               const to = (filledGap[filledGap.length - 1].time + markerInterval) as Time
               // series.coordinateToPrice()
               setTimeout(() => {
-                api.timeScale().setVisibleRange({ from, to })
+                api.timeScale().setVisibleRange({ from, to: to + (markerInterval * 3 as any) })
               }, 35)
 
 
@@ -330,8 +332,8 @@ export const $StakingGraph = <T>(config: ITreasuryChart<T>)  => component((
 
                 visible: false,
                 scaleMargins: {
-                  top: 0.45,
-                  bottom: 0,
+                  top: 0.41,
+                  bottom: 0
                 }
               },
               // overlayPriceScales: {
@@ -343,7 +345,7 @@ export const $StakingGraph = <T>(config: ITreasuryChart<T>)  => component((
                 // rightOffset: 110,
                 secondsVisible: false,
                 timeVisible: true,
-                rightOffset: 0,
+                rightOffset: 550,
                 fixLeftEdge: true,
                 // fixRightEdge: true,
                 // visible: false,
@@ -359,11 +361,11 @@ export const $StakingGraph = <T>(config: ITreasuryChart<T>)  => component((
               multicast
             )
           })
-            
+
         }, historicPortfolio, config.stakingYield)
       )
     ),
-    
+
     { pnlCrosshairMove }
   ]
 })
