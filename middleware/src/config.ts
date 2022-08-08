@@ -51,8 +51,8 @@ export const saleDescriptionList: LabItemSale[] = [
         type: SaleType.holder,
         cost: parseEther('0.05').toBigInt(),
         contractAddress: "0xeD2381332e20f21D2AC2eD17F338D92D7d3De351",
-        start: toTime(2022, 7, 10, 18),
-        finish: toTime(2022, 8, 10, 18),
+        start: toTime(2022, 7, 10, 8),
+        finish: toTime(2022, 8, 10, 8),
         accountLimit: 1
       }
     ]
@@ -66,7 +66,7 @@ export const saleDescriptionList: LabItemSale[] = [
         supply: 82,
         type: SaleType.holder,
         cost: parseEther('0.0420').toBigInt(),
-        contractAddress: "0x576bC7D95BddedDFcF817AdA9496f9674848Ab54",
+        contractAddress: "0xa90C156D2632d18F4EB20f96991609DAC5689288",
         start: toTime(2022, 7, 8, 18),
         finish: toTime(2022, 8, 8, 18),
         accountLimit: 1
