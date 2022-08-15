@@ -6,8 +6,21 @@
     <style> 
         * { box-sizing: border-box; } body { margin: 0; overflow: hidden; }
 
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none; 
+        }
+
+        /* Firefox */
+        input[type="number"] {
+            appearance: none;
+            -moz-appearance: textfield;
+        }
+
         body, button {
-            font-family: 'Relative', sans-serif;
+            font-family: 'RelativePro', sans-serif;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }

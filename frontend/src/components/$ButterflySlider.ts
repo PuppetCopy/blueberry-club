@@ -83,9 +83,7 @@ export const $ButterflySlider = ({ value, thumbText, $thumb = $defaultThumb, thu
               const drag = until(eventElementTarget('pointerup', window.document), eventElementTarget('pointermove', window.document))
 
               return drawLatest(map(moveEvent => {
-
                 const maxWidth = target.parentElement!.parentElement!.clientWidth
-
                 const deltaX = ((moveEvent.clientX - downEvent.clientX) * 2) + current
 
                 moveEvent.preventDefault()

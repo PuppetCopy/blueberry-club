@@ -93,17 +93,20 @@ type IIntermediateTx<T extends ContractTransaction> = {
   $$success?: Op<ContractReceipt, $Node>
   chain: CHAIN
   query: Stream<Promise<T>>
+  clean?: Stream<any>
 }
 
 export const $IntermediateTx = <T extends ContractTransaction>({
   query,
   chain,
+  clean = empty(),
   $$success = constant($text(style({ color: pallete.positive }))('Tx Succeeded'))
 }: IIntermediateTx<T>) => {
 
   const multicastQuery = replayLatest(multicast(query))
 
   return $IntermediatePromise({
+    clean,
     query: map(async x => {
       const n = await x
       return await n.wait()

@@ -397,16 +397,17 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
           $teamMember({ name: 'itburnzz', title: "Dev", tokenId: 12 }),
           $teamMember({ name: 'B2F_zer', title: "Pleb", tokenId: 22 }),
           $teamMember({ name: 'IrvingDev_', title: "Dev", tokenId: 140 }),
+          $teamMember({ name: 'kingblockchain', title: "Marketing & Advocee", tokenId: 4825 }),
         ),
 
         $seperator2,
 
         $row(layoutSheet.spacingBig, style({ flexWrap: 'wrap', width: '100%', placeContent: 'center' }))(
+          $teamMember({ name: 'kitkat787878', size: 'small', title: "Witch", tokenId: 21 }),
           $teamMember({ name: 'defipleb', size: 'small', title: "Lab's Shakespeare", tokenId: 6762 }),
           $teamMember({ name: 'defiplebette', size: 'small', title: "Lab's Shakespeare", tokenId: 121 }),
           $teamMember({ name: 'cryp_growth', size: 'small', title: "Blueberry Podcast", tokenId: 2605 }),
           $teamMember({ name: 'tanoeth', size: 'small', title: "Blueberry Podcast", tokenId: 1867 }),
-          $teamMember({ name: 'kingblockchain', size: 'small', title: "Marketing & Advocee", tokenId: 4825 }),
           $teamMember({ name: 'onisuals', size: 'small', title: "Motion Designer", tokenId: 3195 }),
           $teamMember({ name: '1tbk1', size: 'small', title: "GBC Builder", tokenId: 9376 }),
           $teamMember({ name: 'Mr_r0bo1', size: 'small', title: "GBC Builder", tokenId: 175 }),

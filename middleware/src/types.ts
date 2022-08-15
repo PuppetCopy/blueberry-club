@@ -154,6 +154,7 @@ export enum IAttributeMappings {
   Noodles = 212,
   High = 213,
   "Juice Head" = 214,
+  "Ultra Sound BLAT" = 215,
 }
 
 
@@ -190,6 +191,7 @@ export enum IAttributeExpression {
 
   HIGH = IAttributeMappings.High,
 }
+
 
 export enum IAttributeClothes {
   ARMY_GREEN = IAttributeMappings["Army Green"],
@@ -250,6 +252,7 @@ export enum IAttributeClothes {
   AVALANCHE_HOODIE = IAttributeMappings["Avalanche Hoodie"],
   GLP_SHIRT = IAttributeMappings["GLP Shirt"],
   SUMMER_BUOY = IAttributeMappings["Summer Buoy"],
+  ULTRASOUND_BAT = IAttributeMappings["Ultra Sound BLAT"]
 }
 
 

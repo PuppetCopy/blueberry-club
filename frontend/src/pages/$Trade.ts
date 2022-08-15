@@ -1,14 +1,14 @@
 import { Behavior, combineArray, combineObject, O, replayLatest } from "@aelea/core"
-import { $node, $text, component, eventElementTarget, IBranch, style, styleBehavior } from "@aelea/dom"
+import { $node, $text, component, eventElementTarget, INode, nodeEvent, style, styleBehavior } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
-import { AddressZero, ADDRESS_LEVERAGE, ARBITRUM_ADDRESS, ARBITRUM_ADDRESS_LEVERAGE, formatFixed, IAccountTradeListParamApi, intervalTimeMap, IPricefeed, IPricefeedParamApi, IPriceLatestMap, isTradeOpen, ITrade, unixTimestampNow, IRequestTradeQueryparam, getLiquidationPriceFromDelta, calculatePositionDelta, getChainName, ITradeOpen, CHAIN_TOKEN_ADDRESS_TO_SYMBOL } from "@gambitdao/gmx-middleware"
+import { AddressZero, ARBITRUM_ADDRESS, ARBITRUM_ADDRESS_LEVERAGE, formatFixed, IAccountTradeListParamApi, intervalTimeMap, IPricefeed, IPricefeedParamApi, IPriceLatestMap, isTradeOpen, ITrade, unixTimestampNow, IRequestTradeQueryparam, getLiquidationPriceFromDelta, calculatePositionDelta, getChainName, ITradeOpen, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, TradeAddress, ARBITRUM_ADDRESS_TRADE, USD_PERCISION, ADDRESS_LEVERAGE } from "@gambitdao/gmx-middleware"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { combine, constant, delay, filter, map, multicast, periodic, scan, skipRepeats, snapshot, switchLatest, tap } from "@most/core"
+import { combine, constant, filter, map, mergeArray, multicast, now, periodic, scan, skipRepeats, snapshot, switchLatest, tap, throttle, debounce } from "@most/core"
 import { pallete } from "@aelea/ui-components-theme"
-import { $Link, $RiskLiquidator } from "@gambitdao/ui-components"
-import { CandlestickData, CrosshairMode, LineStyle, MouseEventParams, Time } from "lightweight-charts"
+import { $arrowsFlip, $Link, $RiskLiquidator } from "@gambitdao/ui-components"
+import { CandlestickData, CrosshairMode, LineStyle, Time } from "lightweight-charts"
 import { IEthereumProvider } from "eip1193-provider"
 import { Stream } from "@most/types"
 import { $Chart } from "../components/chart/$Chart"
@@ -19,11 +19,13 @@ import { USE_CHAIN } from "@gambitdao/gbc-middleware"
 import { $ButtonToggle } from "../common/$Toggle"
 import { $Table2 } from "../common/$Table2"
 import { $Entry, $livePnl } from "./$Leaderboard"
+import { $iconCircular } from "../elements/$common"
+import { getTokenDescription } from "../components/trade/utils"
 
 
 
 export interface ITradeComponent {
-  parentStore: <T, TK extends string>(key: string, intitialState: T) => state.BrowserStore<T, TK>
+  parentStore: <T, TK extends string>(key: TK, intitialState: T) => state.BrowserStore<T, TK>
   parentRoute: Route
   accountTradeList: Stream<ITrade[]>
   trade: Stream<ITrade | null>
@@ -34,26 +36,24 @@ export interface ITradeComponent {
 }
 
 export const $Trade = (config: ITradeComponent) => component((
-  [pnlCrosshairMove, pnlCrosshairMoveTether]: Behavior<MouseEventParams, MouseEventParams>,
   [selectTimeFrame, selectTimeFrameTether]: Behavior<intervalTimeMap, intervalTimeMap>,
-  [selectedTokenChange, selectedTokenChangeTether]: Behavior<IBranch, ADDRESS_LEVERAGE>,
-  [selectOtherTimeframe, selectOtherTimeframeTether]: Behavior<IBranch, intervalTimeMap>,
   [changeRoute, changeRouteTether]: Behavior<string, string>,
   [walletChange, walletChangeTether]: Behavior<IEthereumProvider, IEthereumProvider>,
-  [requestTradePricefeed, requestTradePricefeedTether]: Behavior<IPricefeedParamApi, IPricefeedParamApi>,
 
-  [selectCollateralToken, selectCollateralTokenTether]: Behavior<ARBITRUM_ADDRESS_LEVERAGE, ARBITRUM_ADDRESS_LEVERAGE>,
-  [selectSizeToken, selectSizeTokenTether]: Behavior<ARBITRUM_ADDRESS_LEVERAGE, ARBITRUM_ADDRESS_LEVERAGE>,
-
-  // [changeDirectionDiv, changeDirectionDivTether]: Behavior<number, number>,
+  [selectDepositToken, selectDepositTokenTether]: Behavior<TradeAddress, TradeAddress>,
+  [selectCollateralToken, selectCollateralTokenTether]: Behavior<ARBITRUM_ADDRESS_TRADE, ARBITRUM_ADDRESS_TRADE>,
+  [selectIndexToken, selectIndexTokenTether]: Behavior<ARBITRUM_ADDRESS_LEVERAGE, ARBITRUM_ADDRESS_LEVERAGE>,
   [changeLeverage, changeLeverageTether]: Behavior<number, number>,
-  [switchReduce, switchReduceTether]: Behavior<boolean, boolean>,
-  // [switchIsLong, switchIsLongTether]: Behavior<boolean, boolean>,
+
+  [editMode, editModeTether]: Behavior<boolean, boolean>,
   [focusFactor, focusFactorTether]: Behavior<number, number>,
 
+
+  [effectChangeCollateral, effectChangeCollateralTether]: Behavior<bigint, bigint>,
+  [effectChangeSize, effectChangeSizeTether]: Behavior<bigint, bigint>,
+  [switchTrade, switchTradeTether]: Behavior<INode, ITrade>,
 ) => {
 
-  // inputTrade.store(src, map(x => x))
 
   const trade = connectTrade(config.walletLink)
   const pricefeed = connectPricefeed(config.walletLink)
@@ -72,31 +72,35 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
 
-  // const directionDivStore = config.parentStore('sizeRatio', .5)
   const timeFrameStore = config.parentStore('portfolio-chart-interval', intervalTimeMap.MIN60)
-  const collateralTokenStore = config.parentStore('selectCollateralToken', AddressZero as ARBITRUM_ADDRESS_LEVERAGE)
-  const sizeTokenStore = config.parentStore<ARBITRUM_ADDRESS_LEVERAGE, ARBITRUM_ADDRESS_LEVERAGE>('output-trade', ARBITRUM_ADDRESS.NATIVE_TOKEN)
+  const depositTokenStore = config.parentStore<TradeAddress, 'depositToken'>('depositToken', AddressZero)
   const leverageStore = config.parentStore('leverage', 1)
-  // const isLongStore = config.parentStore('isLong', true)
-  const switchReduceStore = config.parentStore('isReduce', false)
+  const collateralTokenStore = config.parentStore<ARBITRUM_ADDRESS_TRADE, 'collateralToken'>('collateralToken', ARBITRUM_ADDRESS.NATIVE_TOKEN)
+  const indexTokenStore = config.parentStore<ARBITRUM_ADDRESS_LEVERAGE, 'indexToken'>('indexToken', ARBITRUM_ADDRESS.NATIVE_TOKEN)
+  const editModeStore = config.parentStore('isReduce', false)
   const focusFactorStore = config.parentStore('focusFactor', 0)
 
   const accountTradeList = multicast(filter(list => list.length > 0, config.accountTradeList))
 
   const openTradeList = map(list => list.filter(isTradeOpen), accountTradeList)
 
-  const collateralTokenState = replayLatest(collateralTokenStore.store(selectCollateralToken, map(x => x)), collateralTokenStore.state)
-  // const directionDivState = replayLatest(directionDivStore.store(changeDirectionDiv, map(x => x)), directionDivStore.state)
+  const depositTokenState = replayLatest(depositTokenStore.store(selectDepositToken, map(x => x)), depositTokenStore.state)
   const timeFrameState = replayLatest(timeFrameStore.store(selectTimeFrame, map(x => x)), timeFrameStore.state)
-  const indexTokenState = replayLatest(sizeTokenStore.store(selectSizeToken, map(x => x)), sizeTokenStore.state)
-  const leverageState = replayLatest(leverageStore.store(changeLeverage, map(x => x)), leverageStore.state)
-  // const isLongState = replayLatest(isLongStore.store(switchIsLong, map(x => x)), isLongStore.state)
-  const switchReduceState = replayLatest(switchReduceStore.store(switchReduce, map(x => x)), switchReduceStore.state)
+  const leverageState = replayLatest(leverageStore.store(mergeArray([snapshot((lev, t) => t.isLong ? Math.abs(lev) : -Math.abs(lev), mergeArray([changeLeverage, now(leverageStore.state)]), switchTrade), changeLeverage]), map(x => x)), leverageStore.state)
+  const editModeState = replayLatest(editModeStore.store(editMode, map(x => x)), editModeStore.state)
   const focusFactorState = replayLatest(focusFactorStore.store(focusFactor, map(x => x)), focusFactorStore.state)
 
 
-  const collateralTokenPrice = skipRepeats(switchLatest(map(address => pricefeed.getLatestPrice(address), collateralTokenState)))
+  const collateralTokenState = replayLatest(collateralTokenStore.store(mergeArray([map(t => t.collateralToken, switchTrade), selectCollateralToken]), map(x => x)), collateralTokenStore.state)
+  const indexTokenState = replayLatest(indexTokenStore.store(mergeArray([map(t => t.indexToken, switchTrade), selectIndexToken]), map(x => x)), indexTokenStore.state)
+
+  const collateralState = replayLatest(effectChangeCollateral, 0n)
+  const sizeState = replayLatest(effectChangeSize, 0n)
+
+
+  const depositTokenPrice = skipRepeats(switchLatest(map(address => pricefeed.getLatestPrice(address), depositTokenState)))
   const indexTokenPrice = skipRepeats(switchLatest(map(address => pricefeed.getLatestPrice(address), indexTokenState)))
+  const collateralTokenPrice = skipRepeats(switchLatest(map(address => pricefeed.getLatestPrice(address), collateralTokenState)))
 
 
   const $container = screenUtils.isDesktopScreen
@@ -122,7 +126,7 @@ export const $Trade = (config: ITradeComponent) => component((
         } else {
           throw new Error('scroll target is not an elemnt')
         }
-        
+
       }, eventElementTarget('scroll', document.body.children[0])))
     )
     : $column(chartContainerStyle)
@@ -131,13 +135,20 @@ export const $Trade = (config: ITradeComponent) => component((
 
   const isLong = skipRepeats(map(lev => lev > 0, leverageState))
 
-  const vaultPosition = replayLatest(multicast(switchLatest(combineArray((account, collateralToken, indexToken, isLong) => {
+
+  // const activePositionIndexToken = 
+
+  const requestPosition = debounce(150, combineObject({ account: config.walletLink.account, collateralTokenState, indexTokenState, isLong }))
+
+  const vaultPosition = replayLatest(multicast(switchLatest(map(({ account, collateralTokenState, indexTokenState, isLong }) => {
     if (account === null) {
       throw new Error('no account')
     }
 
-    return vault.getPosition(account, isLong, collateralToken, indexToken)
-  }, config.walletLink.account, collateralTokenState, indexTokenState, isLong))))
+    const activeToken = isLong ? indexTokenState : collateralTokenState
+
+    return vault.getPosition(account, isLong, activeToken, indexTokenState)
+  }, requestPosition))), null)
 
 
 
@@ -149,7 +160,9 @@ export const $Trade = (config: ITradeComponent) => component((
     [intervalTimeMap.HR24]: '1d',
   }
 
-
+  const newLocal = snapshot(({ currentPosition, timeframeState }, pricefeed) => {
+    return { currentPosition, timeframeState, pricefeed }
+  }, combineObject({ timeframeState: timeFrameState, currentPosition: vaultPosition }), config.pricefeed)
   return [
     $container(
       $column(layoutSheet.spacingBig, style({ flex: 1 }))(
@@ -160,22 +173,28 @@ export const $Trade = (config: ITradeComponent) => component((
           walletLink: config.walletLink,
           state: {
             trade: config.trade,
-            collateralTokenPrice,
+            depositTokenPrice,
             indexTokenPrice,
+            collateralTokenPrice,
             vaultPosition,
             focusFactor: focusFactorState,
-            // isLong: isLongState,
-            switchReduce: switchReduceState,
+            editMode: editModeState,
+            depositToken: depositTokenState,
             collateralToken: collateralTokenState,
-            sizeToken: indexTokenState,
+            indexToken: indexTokenState,
             leverage: leverageState,
-            // directionDiv: directionDivState
+
+            collateral: collateralState,
+            size: sizeState
           }
         })({
-          changeInputAddress: selectCollateralTokenTether(),
-          changeOutputAddress: selectSizeTokenTether(),
+          changeDepositToken: selectDepositTokenTether(),
           changeLeverage: changeLeverageTether(),
-          switchReduce: switchReduceTether(),
+          editMode: editModeTether(),
+          changeCollateral: effectChangeCollateralTether(),
+          changeSize: effectChangeSizeTether(),
+          changeCollateralToken: selectCollateralTokenTether(),
+          changeIndexToken: selectIndexTokenTether(),
           // directionDiv: changeDirectionDivTether(),
           focusFactor: focusFactorTether(),
         }),
@@ -218,6 +237,23 @@ export const $Trade = (config: ITradeComponent) => component((
                 return $livePnl(trade, newLocal)
               })
             },
+            {
+              $head: $text('Switch'),
+              columnOp: style({ flex: 2, placeContent: 'center', maxWidth: '80px' }),
+              $body: map((trade) => {
+
+                const clickSwitchBehavior = switchTradeTether(
+                  nodeEvent('click'),
+                  constant(trade),
+                )
+
+                return $row(styleBehavior(map(pos => pos && pos.key === trade.key ? { pointerEvents: 'none', opacity: '0.3' } : {}, vaultPosition)))(
+                  clickSwitchBehavior(
+                    style({ height: '28px', width: '28px' }, $iconCircular($arrowsFlip, pallete.horizon))
+                  )
+                )
+              })
+            },
           ],
         })({}),
 
@@ -242,7 +278,7 @@ export const $Trade = (config: ITradeComponent) => component((
               })
             })({ select: selectTimeFrameTether() }),
           ),
-          switchLatest(snapshot(({ timeframeState, currentPosition }, data) => {
+          switchLatest(combineArray(({ timeframeState, currentPosition, pricefeed: data }) => {
             console.log(timeframeState)
             const lastData = data[data.length - 1]
 
@@ -307,8 +343,6 @@ export const $Trade = (config: ITradeComponent) => component((
                   return { open, high, low, close, time: timestamp }
                 })
 
-
-
                 // @ts-ignore
                 series.setData(chartData)
 
@@ -327,31 +361,36 @@ export const $Trade = (config: ITradeComponent) => component((
                 })
 
 
-                if (currentPosition) {
-                  const liquidationPrice = getLiquidationPriceFromDelta(currentPosition.collateral, currentPosition.size, currentPosition.averagePrice, currentPosition.isLong)
-                  const posDelta = calculatePositionDelta(liquidationPrice, currentPosition.averagePrice, currentPosition.isLong, currentPosition)
-                  const formatedLiqPrice = formatFixed(liquidationPrice, 30)
-
-
-
-                  series.createPriceLine({
-                    price: formatedLiqPrice,
-                    color: pallete.negative,
-                    lineVisible: true,
-                    lineWidth: 1,
-                    axisLabelVisible: true,
-                    title: `Liquidation`,
-                    lineStyle: LineStyle.SparseDotted,
-                  })
-
-                }
-
-
                 setTimeout(() => {
                   const timeScale = api.timeScale()
                   timeScale.fitContent()
 
-                  // const www = series.coordinateToPrice(1000)
+                  if (currentPosition) {
+                    const liquidationPrice = getLiquidationPriceFromDelta(currentPosition.collateral, currentPosition.size, currentPosition.averagePrice, currentPosition.isLong)
+                    const posDelta = calculatePositionDelta(liquidationPrice, currentPosition.averagePrice, currentPosition.isLong, currentPosition)
+                    const formatedLiqPrice = formatFixed(liquidationPrice, 30)
+
+                    series.createPriceLine({
+                      price: formatedLiqPrice,
+                      color: pallete.negative,
+                      lineVisible: true,
+                      lineWidth: 1,
+                      axisLabelVisible: true,
+                      title: `Liquidation`,
+                      lineStyle: LineStyle.SparseDotted,
+                    })
+
+                    series.createPriceLine({
+                      price: formatFixed(currentPosition.averagePrice, 30),
+                      color: pallete.middleground,
+                      lineVisible: true,
+                      lineWidth: 1,
+                      axisLabelVisible: true,
+                      title: `Entry`,
+                      lineStyle: LineStyle.SparseDotted,
+                    })
+
+                  }
                 }, 55)
 
                 return series
@@ -397,8 +436,7 @@ export const $Trade = (config: ITradeComponent) => component((
               // crosshairMove: sampleChartCrosshair(),
               // click: sampleClick()
             })
-          }, combineObject({
-            timeframeState: timeFrameState, currentPosition: vaultPosition }), config.pricefeed))
+          }, newLocal))
         ),
       )
     ),
@@ -423,7 +461,6 @@ export const $Trade = (config: ITradeComponent) => component((
       }, account),
       requestLatestPriceMap: constant({ chain }, periodic(5000)),
       requestTrade: map(pos => pos ? <IRequestTradeQueryparam>{ id: 'Trade:' + pos.key, chain: USE_CHAIN } : null, vaultPosition),
-      requestTradePricefeed,
       changeRoute,
       walletChange
     }

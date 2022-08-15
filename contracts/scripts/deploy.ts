@@ -7,7 +7,7 @@ import { AddressZero, CHAIN } from "@gambitdao/gmx-middleware"
 import { ethers, network } from "hardhat"
 
 import getAddress, { ZERO_ADDRESS } from "../utils/getAddress"
-import { connectOrDeploy } from "../utils/deploy"
+import { connectOrDeploy, verify } from "../utils/deploy"
 import { attributeIndexToLabel, GBC_ADDRESS, getLabItemTupleIndex, mintLabelMap, saleDescriptionList, SaleType } from "@gambitdao/gbc-middleware"
 import { getMerkleProofs } from "../utils/whitelist"
 import { NFTStorage, File } from "nft.storage"
@@ -45,6 +45,7 @@ const LAB = GBC_ADDRESS.LAB // The Lab items ERC1155 contract
 // on others contract (for now)
 const PROFILE = GBC_ADDRESS.PROFILE
 const CLOSET = GBC_ADDRESS.CLOSET
+
 
 
 

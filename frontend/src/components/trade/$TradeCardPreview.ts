@@ -341,26 +341,13 @@ export const $TradePnlHistory = ({ trade, latestPrice, pixelsPerBar = 5, chartCo
           return $Chart({
             realtimeSource: isTradeOpen(trade)
               ? scan((latest, price): SingleValueData => {
-
-
                 const nextTime = unixTimestampNow()
                 const nextTimeslot = Math.floor(nextTime / intervalTime)
 
-                const currentTimeSlot = Math.floor(Number(latest.time) / intervalTime)
-                const priceFormatted = formatFixed(price, 30)
-
                 const delta = formatFixed(calculatePositionDelta(price, trade.averagePrice, trade.isLong, trade).delta, 30)
 
-                if (nextTimeslot > currentTimeSlot) {
-                  return {
-                    value: delta,
-                    time: nextTimeslot * intervalTime as Time
-                  }
-                }
-
-
                 return {
-                  value: priceFormatted,
+                  value: delta,
                   time: nextTimeslot * intervalTime as Time
                 }
               }, intialTimeseed, latestPrice)

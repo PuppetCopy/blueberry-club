@@ -42,6 +42,22 @@ export const saleConfig = {
 
 export const saleDescriptionList: LabItemSale[] = [
   {
+    name: "Ultra-Sound BLAT",
+    description: "Unlike the common bat this unique BLAT ( blueberry bat ) is using his blueberry sonar to navigate the merge. Watch as these honed fangs suck dry any Trad-Fi.",
+    id: IAttributeMappings["Ultra Sound BLAT"],
+    mintRuleList: [
+      {
+        supply: 400,
+        type: SaleType.holder,
+        cost: 0n,
+        contractAddress: "0xCB65F3FB88887f85B0C152dBdECdabb8e1aAC82F",
+        start: toTime(2022, 8, 1, 18),
+        finish: toTime(2022, 9, 1, 18),
+        accountLimit: 1
+      }
+    ]
+  },
+  {
     name: "Juicy Head",
     description: "Some do six packs to wise cracks instead I’m drinking my blueberry juice packs while I  kickback preparing for the GMX counter attack!",
     id: IAttributeMappings["Juice Head"],

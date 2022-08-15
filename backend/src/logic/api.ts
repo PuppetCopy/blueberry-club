@@ -87,7 +87,7 @@ export const requestTrade = O(
     }
 
     const id = queryParams.id
-    const priceFeedQuery = await query.graphClientMap[queryParams.chain](tradeQuery, { id })
+    const priceFeedQuery = await query.graphClientMap[queryParams.chain](tradeQuery, { id }, { requestPolicy: 'network-only' })
 
     if (priceFeedQuery === null) {
       throw new Error('Trade not found')
