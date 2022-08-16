@@ -12,7 +12,7 @@ import { $IntermediateTx, $tokenIconMap, $tokenLabelFromSummary } from "@gambitd
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { merge, multicast, awaitPromises, mergeArray, now, snapshot, map, switchLatest, filter, skipRepeats, combine, empty, constant, startWith, tap } from "@most/core"
 import { Stream } from "@most/types"
-import { $ButterflySlider } from "../$ButterflySlider"
+import { $Slider } from "../$ButterflySlider"
 import { $ButtonPrimary, $ButtonSecondary } from "../form/$Button"
 import { $Dropdown, $defaultSelectContainer } from "../form/$Dropdown"
 import { $card } from "../../elements/$common"
@@ -267,8 +267,8 @@ export const $TradeBox = ({ state, walletLink, walletStore, chain }: ITradeBox) 
     const maxSizeUsd = ((collateralUsd + positionCollateralUsd) * MAX_LEVERAGE / BASIS_POINTS_DIVISOR)
 
 
-    const sizeDelta = (maxSizeUsd * leverage / MAX_LEVERAGE) - positionSizeUsd
-    
+    const sizeDelta = (maxSizeUsd * leverageBps / BASIS_POINTS_DIVISOR) - positionSizeUsd
+
 
 
     const feeBps = getSwapFeeBps(params, params.collateral)
@@ -283,7 +283,7 @@ export const $TradeBox = ({ state, walletLink, walletStore, chain }: ITradeBox) 
 
     // const outputAmountUsd = nextToUsd * getDenominator(params.indexTokenDescription.decimals) / params.indexTokenPrice
 
-    return sizeDelta
+    return sizeDelta > 0n ? sizeDelta : 0n
   }, tradeParams, mergeArray([clickMaxBalanceValue, slideLeverage]))
 
 
@@ -360,6 +360,26 @@ export const $TradeBox = ({ state, walletLink, walletStore, chain }: ITradeBox) 
     return feeBps0 > feeBps1 ? feeBps0 : feeBps1
   }
 
+  // combineArray((pos, collateral) => {
+  //   if (!pos) {
+  //     return 0
+  //   }
+
+  //   const lev = getMultiplier(pos.size, pos.collateral + collateral) / MAX_LEVERAGE_NORMAL
+
+  //   console.log(lev)
+  //   return lev
+  // }, state.vaultPosition, state.collateral)
+
+  const currentLeverage = multicast(snapshot((params, { collateral, pos }) => {
+    const collateralUsd = getTokenUsd(collateral, params.depositTokenPrice, params.depositTokenDescription)
+    const totalCollateral = (pos?.collateral || 0n) + collateralUsd
+    const totalSize = (pos?.size || 0n) + params.size
+    const multiplier = getMultiplier(totalSize, totalCollateral) / MAX_LEVERAGE_NORMAL
+
+    return multiplier
+  }, tradeParams, combineObject({ collateral: state.collateral, pos: state.vaultPosition })))
+
   return [
     $column(layoutSheet.spacing)(
       $card(style({ gap: '20px', padding: '15px' }))(
@@ -370,8 +390,8 @@ export const $TradeBox = ({ state, walletLink, walletStore, chain }: ITradeBox) 
               map(isIncrease => isIncrease ? `Collateral` : 'Collateral', editMode), // combineArray((existingPosition) => (existingPosition ? `Collateral` : `Collateral`), config.currentPosition),
               map(position => (position ? formatReadableUSD(position.collateral) : '$0'), state.vaultPosition),
 
-              snapshot((params, amount) => {
-                const collateralUsd = amount * params.collateralTokenPrice / getDenominator(params.depositTokenDescription.decimals)
+              combine((params, amount) => {
+                const collateralUsd = amount * params.depositTokenPrice / getDenominator(params.depositTokenDescription.decimals)
                 const newLocal = formatReadableUSD(params.vaultPosition ? params.vaultPosition.collateral + collateralUsd : collateralUsd)
 
                 return newLocal
@@ -441,36 +461,36 @@ export const $TradeBox = ({ state, walletLink, walletStore, chain }: ITradeBox) 
               }, depositTokenDescription)),
             )(),
 
-            switchLatest(map(isReduce => {
-              if (isReduce) {
-                return empty()
-              }
+            // switchLatest(map(isReduce => {
+            //   if (isReduce) {
+            //     return empty()
+            //   }
 
-              return $ButtonSecondary({
-                $content: $text('Max'),
-                disabled: combineArray((params, depositDesc, depostToken) => {
+            //   return $ButtonSecondary({
+            //     $content: $text('Max'),
+            //     disabled: combineArray((params, depositDesc, depostToken) => {
 
-                  if (depostToken === AddressZero) {
-                    const totalBalance = params.walletBalance - REDUCED_FOR_TX_FEES
-                    return totalBalance === params.collateral
-                  }
+            //       if (depostToken === AddressZero) {
+            //         const totalBalance = params.walletBalance - REDUCED_FOR_TX_FEES
+            //         return totalBalance === params.collateral
+            //       }
 
-                  if (params.walletBalance >= 0n) {
-                    return false
-                  }
+            //       if (params.walletBalance >= 0n) {
+            //         return false
+            //       }
 
-                  // if (depositDesc === CHAIN_NATIVE_TO_ADDRESS)
-                  return true
-                }, tradeParams, depositTokenDescription, state.depositToken),
-                buttonOp: style({
-                  alignSelf: 'center',
-                  padding: '3px 6px',
-                  fontSize: '.65em'
-                }),
-              })({
-                click: clickMaxDepositTether()
-              })
-            }, state.editMode)),
+            //       // if (depositDesc === CHAIN_NATIVE_TO_ADDRESS)
+            //       return true
+            //     }, tradeParams, depositTokenDescription, state.depositToken),
+            //     buttonOp: style({
+            //       alignSelf: 'center',
+            //       padding: '3px 6px',
+            //       fontSize: '.65em'
+            //     }),
+            //   })({
+            //     click: clickMaxDepositTether()
+            //   })
+            // }, state.editMode)),
 
             switchLatest(map(params => {
 
@@ -525,12 +545,13 @@ export const $TradeBox = ({ state, walletLink, walletStore, chain }: ITradeBox) 
 
 
         style({ margin: '0 -15px' })(
-          $ButterflySlider({
+          $Slider({
             positiveColor: pallete.middleground,
             negativeColor: pallete.indeterminate,
+            step: 0.01,
             value: collateralRatio,
             thumbSize: 60,
-            thumbText: map(n => readableNumber(n * 100, 1) + '%')
+            thumbText: map(n => Math.round(n * 100) + '%')
           })({
             change: slideCollateralRatioTether()
           })
@@ -639,31 +660,31 @@ export const $TradeBox = ({ state, walletLink, walletStore, chain }: ITradeBox) 
               }, indexTokenDescription))
             )(),
 
-            switchLatest(map(isReduce => {
+            // switchLatest(map(isReduce => {
 
-              if (!isReduce) {
-                return empty()
-              }
+            //   if (!isReduce) {
+            //     return empty()
+            //   }
 
-              return $ButtonSecondary({
-                $content: $text('Min'),
-                disabled: map(params => {
+            //   return $ButtonSecondary({
+            //     $content: $text('Min'),
+            //     disabled: map(params => {
 
-                  if (params.vaultPosition && params.vaultPosition.size !== params.size) {
-                    return false
-                  }
+            //       if (params.vaultPosition && params.vaultPosition.size !== params.size) {
+            //         return false
+            //       }
 
-                  return true
-                }, tradeParams),
-                buttonOp: style({
-                  alignSelf: 'center',
-                  padding: '3px 6px',
-                  fontSize: '.65em'
-                }),
-              })({
-                click: clickMaxWithdrawTether()
-              })
-            }, state.editMode)),
+            //       return true
+            //     }, tradeParams),
+            //     buttonOp: style({
+            //       alignSelf: 'center',
+            //       padding: '3px 6px',
+            //       fontSize: '.65em'
+            //     }),
+            //   })({
+            //     click: clickMaxWithdrawTether()
+            //   })
+            // }, state.editMode)),
 
             $Dropdown<TradeAddress>({
               $container: $row(style({ position: 'relative', alignSelf: 'center' })),
@@ -697,9 +718,16 @@ export const $TradeBox = ({ state, walletLink, walletStore, chain }: ITradeBox) 
           ),
         ),
 
-        style({ margin: '0 -15px' })($ButterflySlider({
+        style({ margin: '0 -15px' })($Slider({
           value: state.leverage,
           thumbSize: 60,
+          min: snapshot((params, { collateral, pos }) => {
+            const collateralUsd = getTokenUsd(collateral, params.depositTokenPrice, params.depositTokenDescription)
+            const totalCollateral = (pos?.collateral || 0n) + collateralUsd
+            const totalSize = pos?.size || 0n
+            const multiplier = getMultiplier(totalSize, totalCollateral) / MAX_LEVERAGE_NORMAL
+            return multiplier
+          }, tradeParams, combineObject({ collateral: state.collateral, pos: state.vaultPosition })),
           thumbText: map(n => readableNumber(Math.abs(n * MAX_LEVERAGE_NORMAL), 1) + 'x')
         })({
           change: slideLeverageTether()
@@ -801,15 +829,7 @@ export const $TradeBox = ({ state, walletLink, walletStore, chain }: ITradeBox) 
       changeIndexToken,
       requestTrade,
       changeLeverage: mergeArray([
-        snapshot((params, ratioN) => {
-          const collateralUsd = getTokenUsd(ratioN, params.depositTokenPrice, params.depositTokenDescription)
-          const totalCollateral = (params.vaultPosition?.collateral || 0n) + collateralUsd
-          const totalSize = (params.vaultPosition?.size || 0n) + params.size
-
-          const multiplier = getMultiplier(totalSize, totalCollateral) / MAX_LEVERAGE_NORMAL
-
-          return multiplier
-        }, tradeParams, state.collateral),
+        currentLeverage,
         slideLeverage
       ]),
       walletChange,

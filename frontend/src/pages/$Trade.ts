@@ -158,9 +158,7 @@ export const $Trade = (config: ITradeComponent) => component((
         return 0
       }
 
-      const leverage = getMultiplier(trade.size, trade.collateral) / MAX_LEVERAGE_NORMAL
-
-      return trade.isLong ? Math.abs(leverage) : -Math.abs(leverage)
+      return getMultiplier(trade.size, trade.collateral) / MAX_LEVERAGE_NORMAL
     }, vaultPosition)
   ])
 
