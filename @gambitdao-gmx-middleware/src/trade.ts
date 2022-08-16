@@ -1,4 +1,4 @@
-import { BASIS_POINTS_DIVISOR, FUNDING_RATE_PRECISION, LEVERAGE_LIQUIDAITON, USD_PERCISION } from "./constant"
+import { BASIS_POINTS_DIVISOR, FUNDING_RATE_PRECISION, LEVERAGE_LIQUIDAITON, MARGIN_FEE_BASIS_POINTS, USD_PERCISION } from "./constant"
 import { IAccountSummary, ITrade, IPositionDelta, IClaim, IClaimSource, IPositionClose, IPositionLiquidated, IAbstractPositionStake, ITradeSettled, IAbstractTrade, ITradeClosed, ITradeLiquidated, ITradeOpen, TradeStatus, TokenDescription } from "./types"
 import { formatFixed, getDenominator, groupByMapMany, isAddress } from "./utils"
 
@@ -38,6 +38,57 @@ export function getLeverage({ size, collateral }: IAbstractPositionStake): numbe
   return getMultiplier(size, collateral)
 }
 
+export function getLeverageChange(
+  size: bigint,
+  sizeDelta: bigint,
+  increaseSize: bigint,
+  collateral: bigint,
+  collateralDelta: bigint,
+  increaseCollateral: bigint,
+  entryFundingRate: bigint,
+  cumulativeFundingRate: bigint
+): bigint {
+
+  let nextSize = size ? size : 0n
+
+  if (sizeDelta) {
+    if (increaseSize) {
+      nextSize = size + sizeDelta
+    } else {
+      if (sizeDelta >= size) {
+        return 0n
+      }
+      nextSize = size - sizeDelta
+    }
+  }
+
+  let remainingCollateral = collateral ? collateral : 0n
+
+  if (collateralDelta) {
+    if (increaseCollateral) {
+      remainingCollateral = collateral + collateralDelta
+    } else {
+      if (collateralDelta >= collateral) {
+        return 0n
+      }
+      remainingCollateral = collateral - collateralDelta
+    }
+  }
+
+
+
+  remainingCollateral = sizeDelta
+    ? remainingCollateral * (BASIS_POINTS_DIVISOR - MARGIN_FEE_BASIS_POINTS) / BASIS_POINTS_DIVISOR
+    : remainingCollateral
+
+  if (entryFundingRate && cumulativeFundingRate) {
+    const fundingFee = size * (cumulativeFundingRate - entryFundingRate) / FUNDING_RATE_PRECISION
+    remainingCollateral = remainingCollateral - fundingFee
+  }
+
+  return nextSize * BASIS_POINTS_DIVISOR / remainingCollateral
+}
+
 export function priceDelta(positionPrice: bigint, price: bigint, collateral: bigint, size: bigint) {
   const priceDelta = positionPrice > price ? positionPrice - price : price - positionPrice
   const delta = size * priceDelta / positionPrice
@@ -51,12 +102,11 @@ export function priceDeltaPercentage(positionPrice: bigint, price: bigint, colla
 }
 
 export function getTokenAmount(amountUsd: bigint, price: bigint, tokenDescription: TokenDescription) {
-
-  // if (tokenDescription.isStable) {
-  //   return amountUsd * getDenominator(18) / USD_PERCISION
-  // }
-
   return amountUsd * getDenominator(tokenDescription.decimals) / price
+}
+
+export function getTokenUsd(amount: bigint, price: bigint, tokenDescription: TokenDescription) {
+  return amount * price / getDenominator(tokenDescription.decimals)
 }
 
 

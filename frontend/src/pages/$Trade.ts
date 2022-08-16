@@ -2,10 +2,10 @@ import { Behavior, combineArray, combineObject, O, replayLatest } from "@aelea/c
 import { $node, $text, component, eventElementTarget, INode, nodeEvent, style, styleBehavior } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
-import { AddressZero, ARBITRUM_ADDRESS, ARBITRUM_ADDRESS_LEVERAGE, formatFixed, IAccountTradeListParamApi, intervalTimeMap, IPricefeed, IPricefeedParamApi, IPriceLatestMap, isTradeOpen, ITrade, unixTimestampNow, IRequestTradeQueryparam, getLiquidationPriceFromDelta, calculatePositionDelta, getChainName, ITradeOpen, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, TradeAddress, ARBITRUM_ADDRESS_TRADE, USD_PERCISION, ADDRESS_LEVERAGE } from "@gambitdao/gmx-middleware"
+import { AddressZero, ARBITRUM_ADDRESS, ARBITRUM_ADDRESS_LEVERAGE, formatFixed, IAccountTradeListParamApi, intervalTimeMap, IPricefeed, IPricefeedParamApi, IPriceLatestMap, isTradeOpen, ITrade, unixTimestampNow, IRequestTradeQueryparam, getLiquidationPriceFromDelta, calculatePositionDelta, getChainName, ITradeOpen, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, TradeAddress, ARBITRUM_ADDRESS_TRADE, USD_PERCISION, ADDRESS_LEVERAGE, BASIS_POINTS_DIVISOR, getMultiplier, MAX_LEVERAGE_NORMAL } from "@gambitdao/gmx-middleware"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { combine, constant, filter, map, mergeArray, multicast, now, periodic, scan, skipRepeats, snapshot, switchLatest, tap, throttle, debounce } from "@most/core"
+import { combine, constant, filter, map, mergeArray, multicast, now, periodic, scan, skipRepeats, snapshot, switchLatest, tap, throttle, debounce, startWith } from "@most/core"
 import { pallete } from "@aelea/ui-components-theme"
 import { $arrowsFlip, $Link, $RiskLiquidator } from "@gambitdao/ui-components"
 import { CandlestickData, CrosshairMode, LineStyle, Time } from "lightweight-charts"
@@ -86,7 +86,6 @@ export const $Trade = (config: ITradeComponent) => component((
 
   const depositTokenState = replayLatest(depositTokenStore.store(selectDepositToken, map(x => x)), depositTokenStore.state)
   const timeFrameState = replayLatest(timeFrameStore.store(selectTimeFrame, map(x => x)), timeFrameStore.state)
-  const leverageState = replayLatest(leverageStore.store(mergeArray([snapshot((lev, t) => t.isLong ? Math.abs(lev) : -Math.abs(lev), mergeArray([changeLeverage, now(leverageStore.state)]), switchTrade), changeLeverage]), map(x => x)), leverageStore.state)
   const editModeState = replayLatest(editModeStore.store(editMode, map(x => x)), editModeStore.state)
   const focusFactorState = replayLatest(focusFactorStore.store(focusFactor, map(x => x)), focusFactorStore.state)
 
@@ -132,13 +131,15 @@ export const $Trade = (config: ITradeComponent) => component((
     : $column(chartContainerStyle)
 
 
+  
 
-  const isLong = skipRepeats(map(lev => lev > 0, leverageState))
+  const isLong = skipRepeats(map(lev => lev >= 0, mergeArray([now(1), changeLeverage])))
 
 
   // const activePositionIndexToken = 
 
   const requestPosition = debounce(150, combineObject({ account: config.walletLink.account, collateralTokenState, indexTokenState, isLong }))
+
 
   const vaultPosition = replayLatest(multicast(switchLatest(map(({ account, collateralTokenState, indexTokenState, isLong }) => {
     if (account === null) {
@@ -150,7 +151,18 @@ export const $Trade = (config: ITradeComponent) => component((
     return vault.getPosition(account, isLong, activeToken, indexTokenState)
   }, requestPosition))), null)
 
+  const leverageState = mergeArray([
+    changeLeverage,
+    map(trade => {
+      if (!trade) {
+        return 0
+      }
 
+      const leverage = getMultiplier(trade.size, trade.collateral) / MAX_LEVERAGE_NORMAL
+
+      return trade.isLong ? Math.abs(leverage) : -Math.abs(leverage)
+    }, vaultPosition)
+  ])
 
   const timeFrameLabl = {
     [intervalTimeMap.MIN5]: '5m',
