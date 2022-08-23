@@ -2,7 +2,7 @@ import { isStream, O } from "@aelea/core"
 import { $Branch, $element, $node, $Node, $text, attr, component, style, styleBehavior, styleInline, stylePseudo } from "@aelea/dom"
 import { $column, $icon, $row, $seperator, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { CHAIN, formatReadableUSD, getLeverage, getLiquidationPriceFromDelta, getTxExplorerUrl, IAbstractTrade, ITradeOpen, liquidationWeight, readableNumber, shortenTxAddress, TokenDescription, TOKEN_SYMBOL } from "@gambitdao/gmx-middleware"
+import { CHAIN, formatReadableUSD, getLeverage, getLiquidationPrice, getTxExplorerUrl, IAbstractTrade, ITradeOpen, liquidationWeight, readableNumber, shortenTxAddress, TokenDescription, TOKEN_SYMBOL } from "@gambitdao/gmx-middleware"
 import { now, multicast, map, empty } from "@most/core"
 import { Stream } from "@most/types"
 import { $alertIcon, $caretDblDown, $skull, $tokenIconMap } from "./$icons"
@@ -69,7 +69,7 @@ export function $liquidationSeparator(liqWeight: Stream<number>) {
 }
 
 export const $RiskLiquidator = (pos: ITradeOpen, markPrice: Stream<bigint>) => component(() => {
-  const liquidationPrice = getLiquidationPriceFromDelta(pos.collateral, pos.size, pos.averagePrice, pos.isLong)
+  const liquidationPrice = getLiquidationPrice(pos.collateral, pos.size, pos.averagePrice, pos.isLong)
   const liqPercentage = map(price => liquidationWeight(pos.isLong, liquidationPrice, price), markPrice)
 
   return [

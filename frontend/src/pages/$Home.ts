@@ -158,7 +158,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
           query: queryParts,
           $$done: map(([svgParts]) => {
 
-            const berryDayId = dailyRandom(Date.now() / (intervalTimeMap.HR24 * 1000))
+            const berryDayId = dailyRandom(Date.now() / (intervalTimeMap.HR24 * 1000)) + 0
             const [background, clothes, body, expression, faceAccessory, hat] = tokenIdAttributeTuple[berryDayId]
 
             const berrySize = screenUtils.isDesktopScreen ? 100 : 70

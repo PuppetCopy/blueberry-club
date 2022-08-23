@@ -126,6 +126,8 @@ export function connectVault(wallet: IWalletLink) {
 
   const getTokenWeight = (token: TradeAddress) => awaitPromises(map(async c => (await c.tokenWeights(token)).toBigInt(), contract))
   const getTokenDebtUsd = (token: TradeAddress) => awaitPromises(map(async c => (await c.usdgAmounts(token)).toBigInt(), contract))
+  const getTokenCumulativeFundingRate = (token: TradeAddress) => awaitPromises(map(async c => (await c.cumulativeFundingRates(token)).toBigInt(), contract))
+
   const getMaxPrice = (token: ADDRESS_LEVERAGE) => awaitPromises(map(async c => (await c.getMaxPrice(token)).toBigInt(), contract))
   const getMinPrice = (token: ADDRESS_LEVERAGE) => awaitPromises(map(async c => (await c.getMinPrice(token)).toBigInt(), contract))
 
@@ -158,7 +160,7 @@ export function connectVault(wallet: IWalletLink) {
 
 
 
-  return { contract, getMinPrice, getMaxPrice, getTokenWeight, getTokenDebtUsd, totalTokenWeight, usdgAmount, getPosition }
+  return { contract, getMinPrice, getMaxPrice, getTokenWeight, getTokenDebtUsd, getTokenCumulativeFundingRate, totalTokenWeight, usdgAmount, getPosition }
 }
 
 const getPositionKey = (account: string, collateralToken: string, indexToken: string, isLong: boolean) => {

@@ -1,6 +1,7 @@
-import { O, Op, replayLatest } from "@aelea/core"
-import { Stream } from "@most/types"
-import { at, awaitPromises, combineArray as combineArrayMost, constant, continueWith, filter, merge, now, recoverWith } from "@most/core"
+import { combineObject, O, Op, replayLatest } from "@aelea/core"
+import { AnimationFrames } from "@aelea/dom"
+import { Disposable, Scheduler, Sink, Stream } from "@most/types"
+import { at, awaitPromises, constant, continueWith, filter, merge, multicast, now, recoverWith } from "@most/core"
 import { CHAIN, EXPLORER_URL, intervalTimeMap, NETWORK_METADATA, USD_DECIMALS } from "./constant"
 import { IPageParapApi, IPagePositionParamApi, ISortParamApi } from "./types"
 
@@ -64,7 +65,7 @@ export function formatReadableUSD(ammount: bigint, options?: Intl.NumberFormatOp
       ...options
     }).format(amountUsd)
   }
-  
+
   return nf.format(amountUsd)
 }
 
@@ -371,21 +372,57 @@ type StreamInput<T> = {
   [P in keyof T]: Stream<T[P]>
 }
 
+class WithAnimationFrame<T> {
+  constructor(private afp: AnimationFrames, private source: Stream<T>) { }
 
-export function replayState<A, K extends keyof A = keyof A>(state: StreamInput<A>, initialState: A): Stream<A> {
-  const entries = Object.entries(state) as [keyof A, Stream<A[K]>][]
-  const streams = entries.map(([key, stream]) => replayLatest(stream, initialState[key]))
+  run(sink: Sink<T>, scheduler: Scheduler): Disposable {
 
-  const combinedWithInitial = combineArrayMost((...arrgs: A[K][]) => {
-    return arrgs.reduce((seed, val, idx) => {
-      const key = entries[idx][0]
-      seed[key] = val
+    const frameSink = this.source.run(new WithAnimationFrameSink(this.afp, sink), scheduler)
 
-      return seed
-    }, {} as A)
-  }, streams)
+    return frameSink
+  }
+}
 
-  return combinedWithInitial
+
+
+class WithAnimationFrameSink<T> implements Sink<T> {
+  latestPendingFrame = -1
+
+  constructor(private afp: AnimationFrames, private sink: Sink<T>) { }
+
+  event(time: number, value: T): void {
+    if (this.latestPendingFrame > 0) {
+      this.afp.cancelAnimationFrame(this.latestPendingFrame)
+    }
+
+    this.latestPendingFrame = this.afp.requestAnimationFrame(() => {
+      eventThenEnd(time, this.sink, value)
+    })
+  }
+
+  end(): void {
+    if (this.latestPendingFrame > 0) {
+      this.afp.cancelAnimationFrame(this.latestPendingFrame)
+    }
+  }
+
+  error(time: number, err: Error): void {
+    this.end()
+    this.sink.error(time, err)
+  }
+}
+
+const eventThenEnd = <T>(requestTime: number, sink: Sink<T>, value: T) => {
+  sink.event(requestTime, value)
+}
+
+export const drawWithinFrame = <T>(source: Stream<T>, afp: AnimationFrames = window): Stream<T> =>
+  new WithAnimationFrame(afp, source)
+
+
+
+export function replayState<A>(state: StreamInput<A>): Stream<A> {
+  return replayLatest(multicast(combineObject(state)))
 }
 
 

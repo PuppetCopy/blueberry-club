@@ -89,17 +89,26 @@ export function getLeverageChange(
   return nextSize * BASIS_POINTS_DIVISOR / remainingCollateral
 }
 
-export function priceDelta(positionPrice: bigint, price: bigint, collateral: bigint, size: bigint) {
-  const priceDelta = positionPrice > price ? positionPrice - price : price - positionPrice
-  const delta = size * priceDelta / positionPrice
 
+
+export function getDelta(isLong: boolean, positionPrice: bigint, price: bigint, size: bigint) {
+  const delta = isLong ? positionPrice - price : price - positionPrice
+
+  return size * delta / positionPrice
+}
+
+export function getDeltaPercentage(delta: bigint, collateral: bigint) {
   return delta * BASIS_POINTS_DIVISOR / collateral
 }
 
-export function priceDeltaPercentage(positionPrice: bigint, price: bigint, collateral: bigint, size: bigint) {
-  const delta = priceDelta(positionPrice, price, collateral, size)
-  return delta * BASIS_POINTS_DIVISOR / collateral
+export function getNextAveragePrice(isLong: boolean, positionPrice: bigint, price: bigint, nextPrice: bigint, size: bigint, sizeDelta: bigint) {
+  const delta = getDelta(isLong, positionPrice, price, size)
+  const nextSize = size + sizeDelta
+  const divisor = nextSize + delta
+
+  return nextPrice * nextSize / divisor
 }
+
 
 export function getTokenAmount(amountUsd: bigint, price: bigint, tokenDescription: TokenDescription) {
   return amountUsd * getDenominator(tokenDescription.decimals) / price
@@ -109,21 +118,7 @@ export function getTokenUsd(amount: bigint, price: bigint, tokenDescription: Tok
   return amount * price / getDenominator(tokenDescription.decimals)
 }
 
-
-export function calculatePositionDelta(marketPrice: bigint, averagePrice: bigint, isLong: boolean, { size, collateral }: IAbstractPositionStake): IPositionDelta {
-  const priceDelta = averagePrice > marketPrice ? averagePrice - marketPrice : marketPrice - averagePrice
-
-  const hasProfit = isLong ? marketPrice > averagePrice : marketPrice < averagePrice
-
-  const delta = hasProfit ? size * priceDelta / averagePrice : -(size * priceDelta / averagePrice)
-  const deltaPercentage = delta * BASIS_POINTS_DIVISOR / collateral
-
-  return { delta, deltaPercentage }
-}
-
-
-
-export function getLiquidationPriceFromDelta(collateral: bigint, size: bigint, averagePrice: bigint, isLong: boolean) {
+export function getLiquidationPrice(collateral: bigint, size: bigint, averagePrice: bigint, isLong: boolean) {
   const liquidationAmount = size * BASIS_POINTS_DIVISOR / LEVERAGE_LIQUIDAITON
   const liquidationDelta = collateral - liquidationAmount
   const priceDelta = liquidationDelta * averagePrice / size
@@ -151,6 +146,15 @@ export function isTradeClosed(trade: ITrade): trade is ITradeClosed {
 export function isPositionLiquidated(trade: IPositionClose | IPositionLiquidated): trade is IPositionLiquidated {
   return 'markPrice' in trade
 }
+
+// function getFundingFee(address /* _account */, address _collateralToken, address /* _indexToken */, bool /* _isLong */, uint256 _size, uint256 _entryFundingRate) public override view returns(uint256) {
+//   if (_size == 0) { return 0; }
+
+//         uint256 fundingRate = vault.cumulativeFundingRates(_collateralToken).sub(_entryFundingRate);
+//   if (fundingRate == 0) { return 0; }
+
+//   return _size.mul(fundingRate).div(FUNDING_RATE_PRECISION);
+// }
 
 export function getFundingFee(entryFundingRate: bigint, cumulativeFundingRate: bigint, size: bigint) {
   return (size * (cumulativeFundingRate - entryFundingRate)) / FUNDING_RATE_PRECISION

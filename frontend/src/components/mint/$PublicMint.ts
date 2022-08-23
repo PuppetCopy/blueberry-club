@@ -17,6 +17,7 @@ import { $displayMintEvents } from "./mintUtils2"
 import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 import { IEthereumProvider } from "eip1193-provider"
 import { WALLET } from "../../logic/provider"
+import { Stream } from "@most/types"
 
 
 
@@ -60,9 +61,7 @@ export const $PublicMint = (config: MintCmp) => component((
     return amount === null
   }, selectedMintAmount))
 
-  const formState = replayState({ selectedMintAmount, account: config.walletLink.account }, {
-    selectedMintAmount: null, account: null
-  } as IFormState)
+  const formState: Stream<IFormState> = replayState({ selectedMintAmount, account: config.walletLink.account })
 
 
   return [

@@ -2,7 +2,7 @@ import { Behavior, combineArray, combineObject, O, replayLatest } from "@aelea/c
 import { $node, $text, component, eventElementTarget, INode, nodeEvent, style, styleBehavior } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
-import { AddressZero, ARBITRUM_ADDRESS, ARBITRUM_ADDRESS_LEVERAGE, formatFixed, IAccountTradeListParamApi, intervalTimeMap, IPricefeed, IPricefeedParamApi, IPriceLatestMap, isTradeOpen, ITrade, unixTimestampNow, IRequestTradeQueryparam, getLiquidationPriceFromDelta, calculatePositionDelta, getChainName, ITradeOpen, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, TradeAddress, ARBITRUM_ADDRESS_TRADE, USD_PERCISION, ADDRESS_LEVERAGE, BASIS_POINTS_DIVISOR, getMultiplier, MAX_LEVERAGE_NORMAL } from "@gambitdao/gmx-middleware"
+import { AddressZero, ARBITRUM_ADDRESS, ARBITRUM_ADDRESS_LEVERAGE, formatFixed, IAccountTradeListParamApi, intervalTimeMap, IPricefeed, IPricefeedParamApi, IPriceLatestMap, isTradeOpen, ITrade, unixTimestampNow, IRequestTradeQueryparam, getLiquidationPrice,  getChainName, ITradeOpen, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, TradeAddress, ARBITRUM_ADDRESS_TRADE, USD_PERCISION, ADDRESS_LEVERAGE, BASIS_POINTS_DIVISOR, getMultiplier, MAX_LEVERAGE_NORMAL } from "@gambitdao/gmx-middleware"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { combine, constant, filter, map, mergeArray, multicast, now, periodic, scan, skipRepeats, snapshot, switchLatest, tap, throttle, debounce, startWith } from "@most/core"
@@ -45,11 +45,13 @@ export const $Trade = (config: ITradeComponent) => component((
   [selectIndexToken, selectIndexTokenTether]: Behavior<ARBITRUM_ADDRESS_LEVERAGE, ARBITRUM_ADDRESS_LEVERAGE>,
   [changeLeverage, changeLeverageTether]: Behavior<number, number>,
 
-  [editMode, editModeTether]: Behavior<boolean, boolean>,
+  [switchIsLong, switchIsLongTether]: Behavior<boolean, boolean>,
+  [isIncrease, isIncreaseTether]: Behavior<boolean, boolean>,
   [focusFactor, focusFactorTether]: Behavior<number, number>,
 
 
-  [effectChangeCollateral, effectChangeCollateralTether]: Behavior<bigint, bigint>,
+  [changeCollateral, changeCollateralTether]: Behavior<bigint, bigint>,
+  [changeCollateralUsd, changeCollateralUsdTether]: Behavior<bigint, bigint>,
   [effectChangeSize, effectChangeSizeTether]: Behavior<bigint, bigint>,
   [switchTrade, switchTradeTether]: Behavior<INode, ITrade>,
 ) => {
@@ -74,10 +76,11 @@ export const $Trade = (config: ITradeComponent) => component((
 
   const timeFrameStore = config.parentStore('portfolio-chart-interval', intervalTimeMap.MIN60)
   const depositTokenStore = config.parentStore<TradeAddress, 'depositToken'>('depositToken', AddressZero)
+  const isLongStore = config.parentStore<boolean, 'isLong'>('isLong', true)
   const leverageStore = config.parentStore('leverage', 1)
   const collateralTokenStore = config.parentStore<ARBITRUM_ADDRESS_TRADE, 'collateralToken'>('collateralToken', ARBITRUM_ADDRESS.NATIVE_TOKEN)
   const indexTokenStore = config.parentStore<ARBITRUM_ADDRESS_LEVERAGE, 'indexToken'>('indexToken', ARBITRUM_ADDRESS.NATIVE_TOKEN)
-  const editModeStore = config.parentStore('isReduce', false)
+  const editModeStore = config.parentStore('isIncrease', true)
   const focusFactorStore = config.parentStore('focusFactor', 0)
 
   const accountTradeList = multicast(filter(list => list.length > 0, config.accountTradeList))
@@ -85,15 +88,17 @@ export const $Trade = (config: ITradeComponent) => component((
   const openTradeList = map(list => list.filter(isTradeOpen), accountTradeList)
 
   const depositTokenState = replayLatest(depositTokenStore.store(selectDepositToken, map(x => x)), depositTokenStore.state)
+  const isLongState = replayLatest(isLongStore.store(mergeArray([map(t => t.isLong, switchTrade), switchIsLong]), map(x => x)), isLongStore.state)
   const timeFrameState = replayLatest(timeFrameStore.store(selectTimeFrame, map(x => x)), timeFrameStore.state)
-  const editModeState = replayLatest(editModeStore.store(editMode, map(x => x)), editModeStore.state)
+  const isIncreaseState = replayLatest(editModeStore.store(isIncrease, map(x => x)), editModeStore.state)
   const focusFactorState = replayLatest(focusFactorStore.store(focusFactor, map(x => x)), focusFactorStore.state)
 
 
   const collateralTokenState = replayLatest(collateralTokenStore.store(mergeArray([map(t => t.collateralToken, switchTrade), selectCollateralToken]), map(x => x)), collateralTokenStore.state)
   const indexTokenState = replayLatest(indexTokenStore.store(mergeArray([map(t => t.indexToken, switchTrade), selectIndexToken]), map(x => x)), indexTokenStore.state)
 
-  const collateralState = replayLatest(effectChangeCollateral, 0n)
+  const collateralState = replayLatest(changeCollateral, 0n)
+  const collateralUsdState = replayLatest(changeCollateralUsd, 0n)
   const sizeState = replayLatest(effectChangeSize, 0n)
 
 
@@ -131,14 +136,11 @@ export const $Trade = (config: ITradeComponent) => component((
     : $column(chartContainerStyle)
 
 
-  
-
-  const isLong = skipRepeats(map(lev => lev >= 0, mergeArray([now(1), changeLeverage])))
 
 
   // const activePositionIndexToken = 
 
-  const requestPosition = debounce(150, combineObject({ account: config.walletLink.account, collateralTokenState, indexTokenState, isLong }))
+  const requestPosition = debounce(50, combineObject({ account: config.walletLink.account, collateralTokenState, indexTokenState, isLong: isLongState }))
 
 
   const vaultPosition = replayLatest(multicast(switchLatest(map(({ account, collateralTokenState, indexTokenState, isLong }) => {
@@ -168,11 +170,12 @@ export const $Trade = (config: ITradeComponent) => component((
     [intervalTimeMap.MIN60]: '1h',
     [intervalTimeMap.HR4]: 'h4',
     [intervalTimeMap.HR24]: '1d',
+    [intervalTimeMap.DAY7]: '1w',
   }
 
-  const newLocal = snapshot(({ currentPosition, timeframeState }, pricefeed) => {
+  const newLocal = map(({ currentPosition, timeframeState, pricefeed }) => {
     return { currentPosition, timeframeState, pricefeed }
-  }, combineObject({ timeframeState: timeFrameState, currentPosition: vaultPosition }), config.pricefeed)
+  }, combineObject({ timeframeState: timeFrameState, currentPosition: vaultPosition, pricefeed: config.pricefeed }))
   return [
     $container(
       $column(layoutSheet.spacingBig, style({ flex: 1 }))(
@@ -183,30 +186,34 @@ export const $Trade = (config: ITradeComponent) => component((
           walletLink: config.walletLink,
           state: {
             trade: config.trade,
-            depositTokenPrice,
-            indexTokenPrice,
-            collateralTokenPrice,
             vaultPosition,
+            isLong: isLongState,
             focusFactor: focusFactorState,
-            editMode: editModeState,
+            isIncrease: isIncreaseState,
             depositToken: depositTokenState,
             collateralToken: collateralTokenState,
             indexToken: indexTokenState,
             leverage: leverageState,
-
             collateral: collateralState,
+            collateralUsd: collateralUsdState,
             size: sizeState
-          }
+          },
+
+          depositTokenPrice,
+          indexTokenPrice,
+          collateralTokenPrice,
         })({
           changeDepositToken: selectDepositTokenTether(),
           changeLeverage: changeLeverageTether(),
-          editMode: editModeTether(),
-          changeCollateral: effectChangeCollateralTether(),
+          isIncrease: isIncreaseTether(),
+          changeCollateral: changeCollateralTether(),
+          changeCollateralUsd: changeCollateralUsdTether(),
           changeSize: effectChangeSizeTether(),
           changeCollateralToken: selectCollateralTokenTether(),
           changeIndexToken: selectIndexTokenTether(),
           // directionDiv: changeDirectionDivTether(),
           focusFactor: focusFactorTether(),
+          switchIsLong: switchIsLongTether(),
         }),
 
         $node(),
@@ -279,6 +286,7 @@ export const $Trade = (config: ITradeComponent) => component((
                 intervalTimeMap.MIN60,
                 intervalTimeMap.HR4,
                 intervalTimeMap.HR24,
+                intervalTimeMap.DAY7,
               ],
               $$option: map(option => {
                 // @ts-ignore
@@ -289,7 +297,6 @@ export const $Trade = (config: ITradeComponent) => component((
             })({ select: selectTimeFrameTether() }),
           ),
           switchLatest(combineArray(({ timeframeState, currentPosition, pricefeed: data }) => {
-            console.log(timeframeState)
             const lastData = data[data.length - 1]
 
             const intialTimeseed: CandlestickData = {
@@ -376,8 +383,7 @@ export const $Trade = (config: ITradeComponent) => component((
                   timeScale.fitContent()
 
                   if (currentPosition) {
-                    const liquidationPrice = getLiquidationPriceFromDelta(currentPosition.collateral, currentPosition.size, currentPosition.averagePrice, currentPosition.isLong)
-                    const posDelta = calculatePositionDelta(liquidationPrice, currentPosition.averagePrice, currentPosition.isLong, currentPosition)
+                    const liquidationPrice = getLiquidationPrice(currentPosition.collateral, currentPosition.size, currentPosition.averagePrice, currentPosition.isLong)
                     const formatedLiqPrice = formatFixed(liquidationPrice, 30)
 
                     series.createPriceLine({

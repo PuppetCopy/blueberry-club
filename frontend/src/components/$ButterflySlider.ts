@@ -1,5 +1,5 @@
-import { Behavior, combineObject, Op } from "@aelea/core"
-import { component, IBranch, style, nodeEvent, eventElementTarget, styleInline, $Node, NodeComposeFn, $text, drawLatest } from "@aelea/dom"
+import { Behavior, combineArray, combineObject, Op } from "@aelea/core"
+import { component, IBranch, style, nodeEvent, eventElementTarget, styleInline, $Node, NodeComposeFn, $text, drawLatest, styleBehavior } from "@aelea/dom"
 import { Input, $row, observer } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { skipRepeats, snapshot, until, multicast, join, map, now } from "@most/core"
@@ -16,8 +16,7 @@ export interface LeverageSlider extends Input<number> {
   max?: Stream<number>
 
   thumbSize?: number
-  positiveColor?: string
-  negativeColor?: string
+  color?: Stream<string>
 }
 
 
@@ -33,8 +32,9 @@ export const $defaultThumb = $row(
     fontSize: '.75em',
     alignItems: 'center',
     placeContent: 'center',
-    transition: 'border 500ms ease-in',
-    border: `1px solid ${pallete.foreground}`,
+    transition: 'border 250ms ease-in',
+    borderStyle: 'solid',
+    borderWidth: '1px',
   })
 )
 
@@ -42,8 +42,7 @@ export const $Slider = ({
   value, thumbText,
   $thumb = $defaultThumb,
   thumbSize = 50,
-  negativeColor = pallete.negative,
-  positiveColor = pallete.positive,
+  color = now(pallete.primary),
   step = 0,
   disabled = now(false),
   min = now(0),
@@ -55,12 +54,12 @@ export const $Slider = ({
 
   const $rangeWrapper = $row(sliderDimensionTether(observer.resize({}), map(res => res[0].contentRect.width)), style({ backgroundColor: pallete.background, height: '2px', position: 'relative', zIndex: 10 }))
 
-  const sliderStyle = styleInline(map((n) => {
+  const sliderStyle = styleInline(combineArray((n, color) => {
     const width = `${n * 100}%`
-    const background = n === 0 ? '' : n > 0 ? `linear-gradient(90deg, transparent 10%, ${positiveColor} 100%)` : `linear-gradient(90deg, ${negativeColor} 0%, transparent 100%)`
+    const background = `linear-gradient(90deg, transparent 10%, ${color} 100%)`
 
     return { width, background }
-  }, value))
+  }, value, color))
 
 
 
@@ -68,10 +67,10 @@ export const $Slider = ({
     $rangeWrapper(
       $row(style({
         placeContent: 'flex-end', top: '50%',
-        // transition: 'width 275ms cubic-bezier(0.25, 0.8, 0.25, 1)'
+        transition: 'width 175ms cubic-bezier(0.25, 0.8, 0.25, 1)'
       }), sliderStyle)(
         $row(style({ width: '0px', alignItems: 'center', placeContent: 'center' }))(
-          $thumb(
+          $thumb(styleBehavior(map(color => ({ borderColor: color }), color)))(
             thumbePositionDeltaTether(
               nodeEvent('pointerdown'),
               downEvent => {
@@ -86,7 +85,7 @@ export const $Slider = ({
                     const val = deltaX / sliderDimension
 
                     const cVal = Math.min(Math.max(val, min), max)
-                    const steppedVal = step > 0 ? Math.round(cVal / step) * step : cVal
+                    const steppedVal = step > 0 ? cVal / step * step : cVal
 
                     return steppedVal
                   }, drag))
