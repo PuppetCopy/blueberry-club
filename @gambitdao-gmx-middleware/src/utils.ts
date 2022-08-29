@@ -29,7 +29,7 @@ export function shortPostAdress(address: string) {
   return address.slice(address.length - 4, address.length)
 }
 
-export function readableNumber(ammount: number | bigint, decimalCount = 2) {
+export function readableNumber(ammount: number | bigint) {
   const parts = ammount.toString().split('.')
   const [whole = '', decimal = ''] = parts
 
@@ -38,35 +38,32 @@ export function readableNumber(ammount: number | bigint, decimalCount = 2) {
   }
 
   if (whole.replace(/^-/, '') === '0' || whole.length < 3) {
-    const shortDecimal = trimZeroDecimalsTrail(decimal).slice(0, decimalCount)
-    return whole + (shortDecimal && decimalCount ? '.' + shortDecimal : '')
+    const shortDecimal = trimTrailingNumber(decimal)
+    return whole + (shortDecimal ? '.' + shortDecimal : '')
   }
 
   return Number(whole).toLocaleString()
 }
 
-export const trimZeroDecimalsTrail = (amount: string) => {
-  return amount.replace(/0+$/, '')
+export const trimTrailingNumber = (n: string) => {
+  const match = n.match(/(^0+\d{2}|^\d{2})/)
+  // const match = n.match(new RegExp(`(^0+d{2}|^d{2})`))
+  return match ? match[0] : ''
 }
 
-const nf = new Intl.NumberFormat("en-US", {
+const defaultNumberFormatOption: Intl.NumberFormatOptions = {
   style: "currency",
   currency: "USD",
   maximumFractionDigits: 0
-})
+}
 
 export function formatReadableUSD(ammount: bigint, options?: Intl.NumberFormatOptions) {
   const amountUsd = formatFixed(ammount, USD_DECIMALS)
+  const opts = options
+    ? { ...defaultNumberFormatOption, ...options }
+    : ammount > 100 ? defaultNumberFormatOption : { ...defaultNumberFormatOption, maximumFractionDigits: 1 }
 
-  if (options) {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      ...options
-    }).format(amountUsd)
-  }
-
-  return nf.format(amountUsd)
+  return new Intl.NumberFormat("en-US", opts).format(amountUsd)
 }
 
 export function shortenTxAddress(address: string) {

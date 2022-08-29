@@ -78,7 +78,8 @@ export const $Slider = ({
                   const drag = until(eventElementTarget('pointerup', window.document), eventElementTarget('pointermove', window.document))
 
                   return drawLatest(map(moveEvent => {
-                    const deltaX = (moveEvent.clientX - downEvent.clientX) + (sliderDimension * value)
+                    const normalisedValue = Math.min(Math.max(value, min), max)
+                    const deltaX = (moveEvent.clientX - downEvent.clientX) + (sliderDimension * normalisedValue)
 
                     moveEvent.preventDefault()
 

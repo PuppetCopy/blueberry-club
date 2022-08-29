@@ -32,8 +32,9 @@ import { $Home } from "./$Home"
 import { $ProfileWallet } from "./$ProfileWallet"
 import { $Leaderboard } from "./$Leaderboard"
 import { $Trade } from "./$Trade"
+import { createLocalStorageChain } from "../logic/store"
 
-
+const GBC_APP_VERSION = '0.1'
 
 const popStateEvent = eventElementTarget('popstate', window)
 const initialLocation = now(document.location)
@@ -99,11 +100,11 @@ export default ({ baseRoute = '' }: Website) => component((
     return seed
   }, {} as IPriceLatestMap), clientApi.requestLatestPriceMap)))
 
-  // localstorage
-  const rootStore = state.createLocalStorageChain('ROOT')
-  const walletStore = rootStore<WALLET, 'walletStore'>('walletStore', WALLET.none)
-  const treasuryStore = rootStore<ITreasuryStore, 'treasuryStore'>('treasuryStore', { startedStakingGlpTimestamp: 1639431367, startedStakingGmxTimestamp: 1639432924 - intervalTimeMap.MIN5 })
-  const accountStakingStore = rootStore<IAccountStakingStore, 'treasuryStore'>('treasuryStore', {})
+  // localstorage state
+  const store = createLocalStorageChain('ROOT', GBC_APP_VERSION)
+  const walletStore = store.craete<WALLET, 'walletStore'>('walletStore', WALLET.none)
+  const treasuryStore = store.craete<ITreasuryStore, 'treasuryStore'>('treasuryStore', { startedStakingGlpTimestamp: 1639431367, startedStakingGmxTimestamp: 1639432924 - intervalTimeMap.MIN5 })
+  const accountStakingStore = store.craete<IAccountStakingStore, 'treasuryStore'>('treasuryStore', {})
 
   const chosenWalletName = now(walletStore.state)
   const defaultWalletProvider: Stream<IEthereumProvider | null> = multicast(switchLatest(awaitPromises(map(async name => {
@@ -139,7 +140,7 @@ export default ({ baseRoute = '' }: Website) => component((
 
   return [
 
-    $column(designSheet.main, style({ alignItems: 'center', gap: screenUtils.isDesktopScreen ? '85px' : '55px', overflowX: 'hidden', placeContent: 'center', padding: screenUtils.isMobileScreen ? '0 15px' : '0 55px' }))(
+    $column(designSheet.main, style({ fontWeight: 400, alignItems: 'center', gap: screenUtils.isDesktopScreen ? '85px' : '55px', overflowX: 'hidden', placeContent: 'center', padding: screenUtils.isMobileScreen ? '0 15px' : '0 55px' }))(
 
       $column(style({ gap: screenUtils.isDesktopScreen ? '85px' : '55px' }))(
         $column(
@@ -203,7 +204,7 @@ export default ({ baseRoute = '' }: Website) => component((
                   accountTradeList: map((res: ITradeOpen[]) => res.map(fromJson.toTradeJson), clientApi.requestAccountTradeList),
                   pricefeed: map((feed: IPricefeed[]) => feed.map(fromJson.pricefeedJson), clientApi.requestPricefeed),
                   latestPriceMap,
-                  parentStore: rootStore,
+                  store,
                   trade: map((res: ITrade) => res ? fromJson.toTradeJson(res) : null, clientApi.requestTrade)
                 })({
                   requestPricefeed: requestPricefeedTether(),

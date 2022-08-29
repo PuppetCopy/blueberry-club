@@ -228,7 +228,7 @@ export const $Leaderboard = ({ walletLink, openTrades, leaderboardTopList, paren
 export const $livePnl = (trade: ITrade, pos: Stream<bigint>) => $row(
   $ProfitLossText(
     map(price => {
-      const delta = getDelta(trade.isLong, price, trade.averagePrice, trade.size)
+      const delta = getDelta(trade.averagePrice, price, trade.size)
 
       return delta - trade.fee
     }, pos)

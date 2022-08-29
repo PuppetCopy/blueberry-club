@@ -1,14 +1,15 @@
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { awaitPromises, filter, map, multicast, now, switchLatest } from "@most/core"
 import { getWalletProvider } from "../common"
-import { AddressZero, ADDRESS_LEVERAGE, ADDRESS_TRADE, ARBITRUM_ADDRESS, IVaultPosition, switchFailedSources, TradeAddress, USD_PERCISION } from "@gambitdao/gmx-middleware"
+import { AddressZero, ADDRESS_LEVERAGE, ADDRESS_TRADE, ARBITRUM_ADDRESS, formatReadableUSD, IVaultPosition, switchFailedSources, TradeAddress, USD_PERCISION } from "@gambitdao/gmx-middleware"
 import { combineArray, replayLatest } from "@aelea/core"
 import { ERC20__factory } from "@gambitdao/gbc-contracts"
-import { FastPriceFeed__factory, PositionRouter__factory, VaultReader__factory, Vault__factory } from "./gmx-contracts"
+import { FastPriceFeed, FastPriceFeed__factory, PositionRouter__factory, VaultReader__factory, Vault__factory } from "./gmx-contracts"
 import { periodicRun } from "@gambitdao/gmx-middleware"
 import { keccak256 } from "@ethersproject/solidity"
 import { CHAIN_NATIVE_TO_ADDRESS, getTokenDescription } from "../../components/trade/utils"
 import { USE_CHAIN } from "@gambitdao/gbc-middleware"
+import { Stream } from "@most/types"
 
 
 
@@ -49,11 +50,7 @@ export function connectVaultReader(wallet: IWalletLink) {
 
   const account = filter((a): a is string => a !== null, wallet.account)
 
-  // const getPrice = (token: ADDRESS_LEVERAGE, maximize = false, incAmm = true) => map(async c => {
-  //   const p = await c.globalShortAveragePrices(token, maximize, incAmm, false)
 
-  //   return p.toBigInt()
-  // }, contract)
 
 
   return { contract }
@@ -79,6 +76,14 @@ const gmxIOPriceMapSource = replayLatest(multicast(periodicRun({
 
 const gmxIoLatestPrice = (token: ADDRESS_LEVERAGE) => map(pmap => BigInt(pmap[token]), gmxIOPriceMapSource)
 
+const feedPrice = (token: TradeAddress, feed: Stream<FastPriceFeed>) => switchLatest(map(c => {
+  return periodicRun({
+    recoverError: false,
+    actionOp: map(async () => (await c.prices(token)).toBigInt())
+  })
+}, feed))
+
+
 export function connectPricefeed(wallet: IWalletLink) {
   const provider = getWalletProvider(wallet)
 
@@ -86,28 +91,20 @@ export function connectPricefeed(wallet: IWalletLink) {
 
   const account = filter((a): a is string => a !== null, wallet.account)
 
-  const getLatestPrice = (address: TradeAddress, maximize = false, incAmm = true) => {
-    const desc = getTokenDescription(USE_CHAIN, address)
+  const getLatestPrice = (token: TradeAddress, maximize = false) => {
+    const desc = getTokenDescription(USE_CHAIN, token)
 
     if (desc.isStable) {
       return now(USD_PERCISION)
     }
 
-    const normalizedAddress = address === AddressZero ? CHAIN_NATIVE_TO_ADDRESS[USE_CHAIN] : address
-
+    const normalizedAddress = token === AddressZero ? CHAIN_NATIVE_TO_ADDRESS[USE_CHAIN] : token
 
     return switchFailedSources([
       gmxIoLatestPrice(normalizedAddress as ADDRESS_LEVERAGE),
-      switchLatest(map(c => {
-        return periodicRun({
-          recoverError: false,
-          actionOp: map(async () => (await c.prices(address)).toBigInt())
-        })
-      }, contract)),
+      feedPrice(token, contract),
     ])
-
   }
-
 
   return { contract, getLatestPrice }
 }
@@ -121,15 +118,20 @@ export function connectVault(wallet: IWalletLink) {
   const usdg = map(w3p => ERC20__factory.connect(ARBITRUM_ADDRESS.USDG, w3p.getSigner()), provider)
 
   const account = filter((a): a is string => a !== null, wallet.account)
-  const usdgAmount = awaitPromises(map(async c => (await c.totalSupply()).toBigInt(), usdg))
+  const usdgSupply = awaitPromises(map(async c => (await c.totalSupply()).toBigInt(), usdg))
   const totalTokenWeight = awaitPromises(map(async c => (await c.totalTokenWeights()).toBigInt(), contract))
 
   const getTokenWeight = (token: TradeAddress) => awaitPromises(map(async c => (await c.tokenWeights(token)).toBigInt(), contract))
   const getTokenDebtUsd = (token: TradeAddress) => awaitPromises(map(async c => (await c.usdgAmounts(token)).toBigInt(), contract))
   const getTokenCumulativeFundingRate = (token: TradeAddress) => awaitPromises(map(async c => (await c.cumulativeFundingRates(token)).toBigInt(), contract))
 
-  const getMaxPrice = (token: ADDRESS_LEVERAGE) => awaitPromises(map(async c => (await c.getMaxPrice(token)).toBigInt(), contract))
-  const getMinPrice = (token: ADDRESS_LEVERAGE) => awaitPromises(map(async c => (await c.getMinPrice(token)).toBigInt(), contract))
+  const getPrice = (token: ADDRESS_LEVERAGE, maximize: boolean) => switchLatest(map(c => periodicRun({
+    actionOp: map(async () => {
+      const price = (maximize ? await c.getMaxPrice(token) : await c.getMinPrice(token)).toBigInt()
+      console.log(maximize, formatReadableUSD(price, { maximumFractionDigits: 1 }))
+      return price
+    })
+  }), contract))
 
 
   const getPosition = (accountAddress: string, isLong: boolean, collateralToken: TradeAddress, indexToken: ADDRESS_LEVERAGE) => awaitPromises(map(async c => {
@@ -160,7 +162,7 @@ export function connectVault(wallet: IWalletLink) {
 
 
 
-  return { contract, getMinPrice, getMaxPrice, getTokenWeight, getTokenDebtUsd, getTokenCumulativeFundingRate, totalTokenWeight, usdgAmount, getPosition }
+  return { contract, getPrice, getTokenWeight, getTokenDebtUsd, getTokenCumulativeFundingRate, totalTokenWeight, usdgSupply, getPosition }
 }
 
 const getPositionKey = (account: string, collateralToken: string, indexToken: string, isLong: boolean) => {

@@ -55,8 +55,6 @@ export const $Tooltip = ({ $anchor, $content }: TooltipConfig) => component((
     )(
       $anchor,
       switchLatest(map(show => {
-        console.log(show)
-        
         if (!show) {
           return empty()
         }
@@ -69,9 +67,10 @@ export const $Tooltip = ({ $anchor, $content }: TooltipConfig) => component((
             background: pallete.background,
             border: pallete.middleground,
             padding: '8px',
+            minWidth: '150px',
             borderRadius: '8px',
             left: 0,
-            fontSize: '.75em',
+            // fontSize: '.75em',
           }),
           styleInline(
             map(([rect]) => {
