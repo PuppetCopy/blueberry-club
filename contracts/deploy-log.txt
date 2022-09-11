@@ -1,0 +1,92 @@
+DEPLOYER WIZARD 🧙‍♂️ (by IrvingDev)
+------------------------------------------------------------------------------
+
+🔑 Deployer: 0x9E7f78EafAEBaf1094202FFA0835157fC5C3ADe0
+💰 Treasury address: 0xDe2DBb7f1C893Cc5E2f51CbFd2A73C8a016183a0
+
+------------------------------------------------------------------------------
+
+🔍 Get existing GBC__factory contract at: 0x17f4BAa9D35Ee54fFbCb2608e20786473c7aa49f
+------------------------------------------------------------------------------
+
+🔍 Get existing Police__factory contract at: 0x575F40E8422EfA696108dAFD12cD8d6366982416
+------------------------------------------------------------------------------
+
+🔍 Get existing GBCLab__factory contract at: 0xF4f935F4272e6FD9C779cF0036589A63b48d77A7
+------------------------------------------------------------------------------
+
+🔍 Get existing Profile__factory contract at: 0xE23316331e0717E5353F2Fbe710248B295f5BA7f
+------------------------------------------------------------------------------
+
+🔍 Get existing Closet__factory contract at: 0xb3598b108F59AfEc664974DfD96330DE48eF2D4D
+Original SVG Size: 1500 x 1500
+Output PNG Size  : 1500 x 1500
+{
+  name: 'Ultra-Sound BLAT',
+  description: 'Unlike the common bat this unique BLAT ( blueberry bat ) is using his blueberry sonar to navigate the merge. Watch as these honed fangs suck dry any Trad-Fi.',
+  image: File {
+    _name: 'lab-[object Object].png',
+    _lastModified: 1662905706669
+  }
+}
+------------------------------------------------------------------------------
+
+⛽️ Estimated cost: 0.0003400055 ETH
+🏷  Hash: 0xaabba543199418fc1d3ca85041d7d7d7881fd8a7f496344eb49073f626d47fb0
+✅ Deployed Holder: 0x2735a28f1018fC3DE579f098a374FC71aB9fe469
+💸 Cost: 0.0003144082 ETH
+Nothing to compile
+No need to generate any newer typings.
+Successfully submitted source code for contract
+contracts/lab/mint/template/Holder.sol:Holder at 0x2735a28f1018fC3DE579f098a374FC71aB9fe469
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract Holder on Etherscan.
+https://arbiscan.io/address/0x2735a28f1018fC3DE579f098a374FC71aB9fe469#code
+🏁 arbitrum Verified: https://arbiscan.io/address/0x2735a28f1018fC3DE579f098a374FC71aB9fe469
+
+🎩 Set roles from LAB to name: Ultra-Sound BLAT sale: Holder SALE
+  - MINTER role setted !
+
+------------------------------------------------------------------------------
+
+{
+  name: 'Ultra-Sound BLAT',
+  description: 'Unlike the common bat this unique BLAT ( blueberry bat ) is using his blueberry sonar to navigate the merge. Watch as these honed fangs suck dry any Trad-Fi.',
+  attributes: [
+    { trait_type: 'Clothes', value: 'Ultra-Sound BLAT' },
+    { trait_type: 'Slot', value: 'Wear' }
+  ],
+  image: URL {
+    href: 'ipfs://bafybeiglkgymz42gkgnw45ssumcknthmcymjl47cj7hiqtv6uh2uazn2oy/lab-[object%20Object].png',
+    origin: 'null',
+    protocol: 'ipfs:',
+    username: '',
+    password: '',
+    host: 'bafybeiglkgymz42gkgnw45ssumcknthmcymjl47cj7hiqtv6uh2uazn2oy',
+    hostname: 'bafybeiglkgymz42gkgnw45ssumcknthmcymjl47cj7hiqtv6uh2uazn2oy',
+    port: '',
+    pathname: '/lab-[object%20Object].png',
+    search: '',
+    searchParams: URLSearchParams {},
+    hash: ''
+  }
+} ipfs://bafyreignf7ukkkyu4larlxbu4k4iskz7yt6uqqcrvunlbxgqe6guze66ua/metadata.json
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+

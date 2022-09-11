@@ -13,7 +13,7 @@ export interface IButtonToggle<T> {
   $$option?: Op<T, $Node>
 }
 
-const $toggleBtn = $row(style({ placeContent: 'center', border: `2px solid ${pallete.horizon}`, padding: '8px', alignItems: 'center', cursor: 'pointer', backgroundColor: pallete.background }))
+const $toggleBtn = $row(style({ placeContent: 'center', border: `2px solid ${pallete.horizon}`, padding: '6px 8px', alignItems: 'center', cursor: 'pointer', backgroundColor: pallete.background }))
 const $container = $row(style({ backgroundColor: pallete.background }))
 
 

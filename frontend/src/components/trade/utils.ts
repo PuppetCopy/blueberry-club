@@ -1,4 +1,3 @@
-import { USE_CHAIN } from "@gambitdao/gbc-middleware"
 import { TradeAddress, AddressZero, ARBITRUM_ADDRESS, ARBITRUM_ADDRESS_STABLE, CHAIN, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, TOKEN_DESCRIPTION_MAP, TOKEN_SYMBOL, AVALANCHE_ADDRESS, AVALANCHE_ADDRESS_LEVERAGE, ARBITRUM_ADDRESS_LEVERAGE, expandDecimals, BASIS_POINTS_DIVISOR, USD_PERCISION, USDG_DECIMALS, STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, getDenominator } from "@gambitdao/gmx-middleware"
 
 
@@ -110,7 +109,7 @@ export function getFeeBasisPoints(
     return rebateBps > feeBasisPoints ? 0n : feeBasisPoints - rebateBps
   }
 
-  let averageDiff = initialDiff + nextDiff / 2n
+  let averageDiff = (initialDiff + nextDiff) / 2n
 
   if (averageDiff > targetAmount) {
     averageDiff = targetAmount

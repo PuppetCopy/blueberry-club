@@ -18,6 +18,7 @@ import { $ButtonPrimary } from "../form/$Button"
 import { $Dropdown, $defaultSelectContainer } from "../form/$Dropdown"
 import { $displayMintEvents } from "./mintUtils2"
 import { $IntermediateConnectButton } from "../$ConnectAccount"
+import { Stream } from "@most/types"
 
 
 
@@ -71,9 +72,7 @@ export const $WhitelistMint = (config: MintCmp) => component((
     return selectedAmount === null || isEligible === false
   }, isConnectedAccountEligible, selectedMintAmount)
 
-  const formState = replayState({ selectedMintAmount, account: config.walletLink.account }, {
-    selectedMintAmount: null, account: null
-  } as IFormState)
+  const formState: Stream<IFormState> = replayState({ selectedMintAmount, account: config.walletLink.account })
 
   return [
     $column(layoutSheet.spacing)(

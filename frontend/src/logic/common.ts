@@ -1,5 +1,5 @@
 import { combineArray, O, replayLatest } from "@aelea/core"
-import { intervalListFillOrderMap, NETWORK_METADATA } from "@gambitdao/gmx-middleware"
+import { filterNull, intervalListFillOrderMap, NETWORK_METADATA } from "@gambitdao/gmx-middleware"
 import { awaitPromises, continueWith, fromPromise, map, multicast, now, periodic, switchLatest, takeWhile, tap } from "@most/core"
 import { Stream } from "@most/types"
 import { $loadBerry } from "../components/$DisplayBerry"
@@ -38,17 +38,19 @@ export function takeUntilLast<T>(fn: (t: T) => boolean, s: Stream<T>) {
 }
 
 export function getWalletProvider(wallet: IWalletLink,) {
+  const provider = filterNull(wallet.provider)
+
   return replayLatest(multicast(awaitPromises(combineArray(async w3p => {
-    if (w3p === null) {
-      throw new Error('no Ethereum Provider available')
-    }
+    // if (w3p === null) {
+    //   throw new Error('no Ethereum Provider available')
+    // }
 
     if (w3p?.network?.chainId !== USE_CHAIN) {
       throw new Error(`Please connect to ${NETWORK_METADATA[USE_CHAIN].chainName} network`)
     }
 
     return w3p
-  }, wallet.provider))))
+  }, provider))))
 }
 
 export function priceFeedHistoryInterval<T extends string>(interval: number, gmxPriceHistoryQuery: Stream<IPricefeed[]>, yieldSource: Stream<IStakeSource<T>[]>): Stream<IValueInterval[]> {

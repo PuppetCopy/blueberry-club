@@ -58,10 +58,11 @@ export async function verify<T extends ContractFactory>(address: string, ...cons
       console.log(`🏁 ${network.name} Verified: ${explorerUrl}\n`)
     })
     .catch(err => {
-      if (err.message.indexOf('Already Verified')) {
-        console.warn(`🏁 ${network.name} Already Verified: ${explorerUrl}\n`)
-      } else {
-        console.error(err)
-      }
+      console.error(err)
+      // if (err.message.indexOf('Already Verified')) {
+      //   console.warn(`🏁 ${network.name} Already Verified: ${explorerUrl}\n`)
+      // } else {
+      //   console.error(err)
+      // }
     })
 }

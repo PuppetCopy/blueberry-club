@@ -1,5 +1,5 @@
 import { Behavior, combineArray, fromCallback, O, Op } from "@aelea/core"
-import { $wrapNativeElement, component, INode, style } from "@aelea/dom"
+import { $wrapNativeElement, component, INode, style, drawLatest } from "@aelea/dom"
 import { observer } from '@aelea/ui-components'
 import { pallete } from '@aelea/ui-components-theme'
 import { debounce, empty, filter, map, mergeArray, multicast, now, switchLatest, take, throttle } from '@most/core'
@@ -140,7 +140,7 @@ export const $Chart = <T extends SeriesType>({ chartConfig, realtimeSource, init
           api.resize(width, height)
 
           return empty()
-        }, init, containerDimension),
+        }, init, drawLatest(containerDimension)),
 
         switchLatest(combineArray((seriesApi) => {
           return realtimeSource ? map(data => seriesApi.update(data), realtimeSource) : empty()

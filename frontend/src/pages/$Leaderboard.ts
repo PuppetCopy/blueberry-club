@@ -3,7 +3,7 @@ import { $text, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, state } from "@aelea/ui-components"
 import { IToken } from "@gambitdao/gbc-middleware"
-import { calculatePositionDelta, CHAIN, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, formatReadableUSD, getChainName, IAccountSummary, IChainParamApi, ILeaderboardRequest, intervalTimeMap, IPageParapApi, ITrade,  ITradeOpen, TOKEN_SYMBOL } from "@gambitdao/gmx-middleware"
+import { CHAIN, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, formatReadableUSD, getChainName, getDelta, IAccountSummary, IChainParamApi, ILeaderboardRequest, intervalTimeMap, IPageParapApi, ITrade,  ITradeOpen, TOKEN_SYMBOL } from "@gambitdao/gmx-middleware"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { chain, fromPromise, map, multicast, now, snapshot, startWith, switchLatest } from "@most/core"
@@ -228,9 +228,9 @@ export const $Leaderboard = ({ walletLink, openTrades, leaderboardTopList, paren
 export const $livePnl = (trade: ITrade, pos: Stream<bigint>) => $row(
   $ProfitLossText(
     map(price => {
-      const delta = calculatePositionDelta(price, trade.averagePrice, trade.isLong, trade)
+      const delta = getDelta(trade.averagePrice, price, trade.size)
 
-      return delta.delta - trade.fee
+      return delta - trade.fee
     }, pos)
   )
 )

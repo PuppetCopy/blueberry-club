@@ -2,11 +2,11 @@ import { Behavior, combineArray, O } from "@aelea/core"
 import { $Node, $text, component, INode, motion, MOTION_NO_WOBBLE, NodeComposeFn, style, styleBehavior } from "@aelea/dom"
 import { $column, $icon, $NumberTicker, $row, $seperator, layoutSheet, observer, screenUtils } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { combine, empty, filter, fromPromise, map, merge, multicast, now, scan, skip, skipRepeats, skipRepeatsWith, startWith, switchLatest } from "@most/core"
+import { empty, filter, fromPromise, map, merge, multicast, now, scan, skip, skipRepeats, skipRepeatsWith, startWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
 import {
-  calculatePositionDelta, formatFixed, formatReadableUSD, IPricefeed, intervalListFillOrderMap, isTradeSettled, readableNumber,
-  unixTimeTzOffset, isTradeLiquidated, IPositionDelta, isTradeClosed, unixTimestampNow, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, getLeverage, ITrade, IPricefeedParamApi, CHAIN, IChainParamApi, query, fromJson, isTradeOpen
+  getDelta, formatFixed, formatReadableUSD, intervalListFillOrderMap, isTradeSettled, readableNumber,
+  unixTimeTzOffset, isTradeLiquidated, IPositionDelta, isTradeClosed, unixTimestampNow, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, ITrade, IPricefeedParamApi, IChainParamApi, query, fromJson, isTradeOpen, getDeltaPercentage, bnDiv
 } from "@gambitdao/gmx-middleware"
 import { ChartOptions, DeepPartial, LineStyle, MouseEventParams, SeriesMarker, SingleValueData, Time } from "lightweight-charts"
 import { $bull, $bear, $target, $RiskLiquidator, $tokenIconMap, getPricefeedVisibleColumns } from "@gambitdao/ui-components"
@@ -86,15 +86,13 @@ export const $TradeCardPreview = ({
       return now({ delta: trade.realisedPnl - trade.fee, deltaPercentage: trade.realisedPnlPercentage })
     }
 
-    return map(price => calculatePositionDelta(price, trade.averagePrice, trade.isLong, trade), latestPrice)
+    return map(price => {
+      const delta = getDelta(trade.averagePrice, price, trade.size)
+      const deltaPercentage = getDeltaPercentage(delta, trade.collateral)
 
-    // if (isMoveringChart) {
-    //   return map(cross => {
-    //     return historicPnl.find(tick => cross.time === tick.time)!
-    //   }, pnlCrosshairMove)
-    // } else {
+      return { delta, deltaPercentage }
+    }, latestPrice)
 
-    // }
   }, now(trade))))
 
 
@@ -171,7 +169,7 @@ export const $TradeCardPreview = ({
             : $column(layoutSheet.spacingTiny, style({ textAlign: 'center' }))(
               $text(formatReadableUSD(trade.size)),
               $seperator,
-              style({ textAlign: 'center', fontSize: '.65em' }, $text(style({ fontWeight: 'bold' }))(`${readableNumber(getLeverage(trade))}x`)),
+              style({ textAlign: 'center', fontSize: '.65em' }, $text(style({ fontWeight: 'bold' }))(`${readableNumber(bnDiv(trade.size, trade.collateral))}x`)),
             ),
 
 
@@ -271,17 +269,20 @@ export const $TradePnlHistory = ({ trade, latestPrice, pixelsPerBar = 5, chartCo
     const endtime = isTradeSettled(trade) ? trade.settledTimestamp : unixTimestampNow()
     const timeRange = endtime - trade.timestamp
     const intervalTime = Math.floor(timeRange / displayColumnCount)
-    const startDelta = calculatePositionDelta(trade.increaseList[0].price, trade.averagePrice, trade.isLong, trade)
+    const delta = getDelta(trade.averagePrice, trade.increaseList[0].price, trade.size)
+    const deltaPercentage = getDeltaPercentage(delta, trade.collateral)
+
     const initalUpdate = trade.updateList[0]
 
     const initialTick: IPricefeedTick = {
       time: trade.timestamp,
       price: startPrice,
-      value: formatFixed(startDelta.delta, 30),
+      value: formatFixed(delta, 30),
       collateral: initalUpdate.collateral,
       size: initalUpdate.size,
       averagePrice: initalUpdate.averagePrice,
-      ...startDelta
+      delta,
+      deltaPercentage
     }
 
 
@@ -293,17 +294,20 @@ export const $TradePnlHistory = ({ trade, latestPrice, pixelsPerBar = 5, chartCo
       fillMap: (prev, next) => {
 
         if (next.__typename === 'UpdatePosition') {
-          const delta = calculatePositionDelta(next.markPrice, trade.averagePrice, trade.isLong, next)
-          const value = formatFixed(delta.delta, 30)
+          const delta = getDelta(trade.averagePrice, next.markPrice, next.size)
+          const deltaPercentage = getDeltaPercentage(delta, next.collateral)
+          const value = formatFixed(delta, 30)
 
-          return { ...prev, ...delta, value, price: next.markPrice, collateral: next.collateral, size: next.size, averagePrice: next.averagePrice }
+          return { ...prev, delta, deltaPercentage, value, price: next.markPrice, collateral: next.collateral, size: next.size, averagePrice: next.averagePrice }
         }
 
-        const delta = calculatePositionDelta(next.c, prev.averagePrice, trade.isLong, prev)
-        const value = formatFixed(delta.delta, 30)
+        const delta = getDelta(prev.averagePrice, next.c, prev.size)
+        const deltaPercentage = getDeltaPercentage(delta, prev.collateral)
+
+        const value = formatFixed(delta, 30)
 
 
-        return { ...prev, ...delta, value }
+        return { ...prev, delta, deltaPercentage, value }
       }
     })
 
@@ -311,14 +315,17 @@ export const $TradePnlHistory = ({ trade, latestPrice, pixelsPerBar = 5, chartCo
     if (isTradeClosed(trade)) {
       const prev = data[data.length - 1]
       const price = trade.decreaseList[trade.decreaseList.length - 1].price
-      const delta = calculatePositionDelta(price, trade.averagePrice, trade.isLong, trade)
+      const delta = getDelta(trade.averagePrice, price, trade.size)
+      const deltaPercentage = getDeltaPercentage(delta, trade.collateral)
 
-      data.push({ ...prev, ...delta, time: trade.closedPosition.timestamp })
+      data.push({ ...prev, delta, deltaPercentage, time: trade.closedPosition.timestamp })
     } else if (isTradeLiquidated(trade)) {
       const prev = data[data.length - 1]
       const price = trade.liquidatedPosition.markPrice
-      const delta = calculatePositionDelta(price, trade.averagePrice, trade.isLong, trade)
-      data.push({ ...prev, ...delta, time: trade.liquidatedPosition.timestamp })
+      const delta = getDelta(trade.averagePrice, price, trade.size)
+      const deltaPercentage = getDeltaPercentage(delta, trade.collateral)
+
+      data.push({ ...prev, delta, deltaPercentage, time: trade.liquidatedPosition.timestamp })
     }
 
     return { data, intervalTime }
@@ -331,39 +338,21 @@ export const $TradePnlHistory = ({ trade, latestPrice, pixelsPerBar = 5, chartCo
     )(
       switchLatest(
         combineArray(({ data, intervalTime }) => {
-          const lastData = data[data.length - 1]
-
-          const intialTimeseed: SingleValueData = {
-            value: lastData.value,
-            time: lastData.time as Time
-          }
 
           return $Chart({
             realtimeSource: isTradeOpen(trade)
-              ? scan((latest, price): SingleValueData => {
-
-
+              ? map((price): SingleValueData => {
                 const nextTime = unixTimestampNow()
                 const nextTimeslot = Math.floor(nextTime / intervalTime)
 
-                const currentTimeSlot = Math.floor(Number(latest.time) / intervalTime)
-                const priceFormatted = formatFixed(price, 30)
-
-                const delta = formatFixed(calculatePositionDelta(price, trade.averagePrice, trade.isLong, trade).delta, 30)
-
-                if (nextTimeslot > currentTimeSlot) {
-                  return {
-                    value: delta,
-                    time: nextTimeslot * intervalTime as Time
-                  }
-                }
-
+                const pnl = getDelta(trade.averagePrice, price, trade.size)
+                const value = formatFixed(pnl, 30)
 
                 return {
-                  value: priceFormatted,
+                  value,
                   time: nextTimeslot * intervalTime as Time
                 }
-              }, intialTimeseed, latestPrice)
+              }, latestPrice)
               : empty(),
             initializeSeries: map((api) => {
               const series = api.addBaselineSeries({

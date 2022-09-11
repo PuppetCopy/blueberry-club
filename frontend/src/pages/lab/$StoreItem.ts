@@ -44,7 +44,7 @@ export const $StoreItemPreview = (item: LabItemSale, rule: MintRule, parentRoute
 
   return $Link({
     url: `/p/item/${item.id}`,
-    anchorOp: screenUtils.isMobileScreen ? style({ maxWidth: '160px' }) : style({ flexBasis: '25' }),
+    anchorOp: screenUtils.isMobileScreen ? style({ maxWidth: '160px' }) : style({ maxWidth: '180px' }),
     route: parentRoute.create({ fragment: 'fefef' }),
     $content: $column(layoutSheet.spacingSmall, style({ position: 'relative', flexDirection: 'column' }))(
       $column(style({ position: 'relative' }))(

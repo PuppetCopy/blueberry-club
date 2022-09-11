@@ -3,9 +3,9 @@ import { $Branch, $element, $Node, $text, attr, component, IBranch, nodeEvent, s
 import { $RouterAnchor, Route } from '@aelea/router'
 import { $column, $icon, $Popover, $row, layoutSheet, screenUtils, state } from '@aelea/ui-components'
 import { pallete, theme } from "@aelea/ui-components-theme"
-import { formatReadableUSD, IClaim } from "@gambitdao/gmx-middleware"
+import { formatReadableUSD } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { constant, empty, map, now, switchLatest } from '@most/core'
+import { constant, empty, map, now } from '@most/core'
 import { IEthereumProvider } from "eip1193-provider"
 import { WALLET } from "../logic/provider"
 import { $bagOfCoins, $caretDown, $stackedCoins } from "../elements/$icons"
@@ -64,13 +64,13 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
 
 
   const $menuItemList = [
-    $Link({ $content: $pageLink($labLogo, 'Lab'), url: '/p/lab', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
+    $Link({ $content: $pageLink($gmxLogo, 'Trade'), url: '/p/trade', disabled: now(true), route: parentRoute.create({ fragment: 'feefwefwe' }) })({
       click: routeChangeTether()
     }),
     $Link({ $content: $pageLink($stackedCoins, 'Leaderboard'), disabled: now(true), url: '/p/leaderboard', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
       click: routeChangeTether()
     }),
-    $Link({ $content: $pageLink($gmxLogo, 'Trade'), url: '/p/trade', disabled: now(true), route: parentRoute.create({ fragment: 'feefwefwe' }) })({
+    $Link({ $content: $pageLink($labLogo, 'Lab'), url: '/p/lab', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
       click: routeChangeTether()
     }),
   ]

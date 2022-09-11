@@ -150,7 +150,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
   
 
   return [
-    $column(style(screenUtils.isDesktopScreen ? { gap: '125px', marginTop: '-50px' } : { gap: '90px' }))(
+    $column(style(screenUtils.isDesktopScreen ? { gap: '125px' } : { gap: '90px' }))(
 
 
       $row(style({ width: '100vw', marginLeft: 'calc(-50vw + 50%)', height: screenUtils.isDesktopScreen ? '580px' : '', alignItems: 'center', placeContent: 'center' }))(
@@ -158,7 +158,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
           query: queryParts,
           $$done: map(([svgParts]) => {
 
-            const berryDayId = dailyRandom(Date.now() / (intervalTimeMap.HR24 * 1000))
+            const berryDayId = dailyRandom(Date.now() / (intervalTimeMap.HR24 * 1000)) + 0
             const [background, clothes, body, expression, faceAccessory, hat] = tokenIdAttributeTuple[berryDayId]
 
             const berrySize = screenUtils.isDesktopScreen ? 100 : 70
@@ -346,7 +346,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
       $column(layoutSheet.spacingBig)(
         $column(layoutSheet.spacingBig, style({ alignItems: 'center', textAlign: 'center' }))(
           $text(style({ fontWeight: 'bold', fontSize: '2.5em' }))('Discover our Ecosystem'),
-          $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '878px' }))('The collection is based on a treasury receive revenue thorugh different Products'),
+          $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '878px' }))('The collection is based on a treasury which receives revenue thorugh different Products'),
         ),
         $node(),
 
@@ -397,16 +397,18 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
           $teamMember({ name: 'itburnzz', title: "Dev", tokenId: 12 }),
           $teamMember({ name: 'B2F_zer', title: "Pleb", tokenId: 22 }),
           $teamMember({ name: 'IrvingDev_', title: "Dev", tokenId: 140 }),
+          $teamMember({ name: 'kingblockchain', title: "Marketing & Advocee", tokenId: 4825 }),
         ),
 
         $seperator2,
 
         $row(layoutSheet.spacingBig, style({ flexWrap: 'wrap', width: '100%', placeContent: 'center' }))(
+          $teamMember({ name: 'JamesCliffyz', size: 'small', title: "Dune Analyst", tokenId: 150 }),
+          $teamMember({ name: 'kitkat787878', size: 'small', title: "Witch", tokenId: 21 }),
           $teamMember({ name: 'defipleb', size: 'small', title: "Lab's Shakespeare", tokenId: 6762 }),
           $teamMember({ name: 'defiplebette', size: 'small', title: "Lab's Shakespeare", tokenId: 121 }),
           $teamMember({ name: 'cryp_growth', size: 'small', title: "Blueberry Podcast", tokenId: 2605 }),
           $teamMember({ name: 'tanoeth', size: 'small', title: "Blueberry Podcast", tokenId: 1867 }),
-          $teamMember({ name: 'kingblockchain', size: 'small', title: "Marketing & Advocee", tokenId: 4825 }),
           $teamMember({ name: 'onisuals', size: 'small', title: "Motion Designer", tokenId: 3195 }),
           $teamMember({ name: '1tbk1', size: 'small', title: "GBC Builder", tokenId: 9376 }),
           $teamMember({ name: 'Mr_r0bo1', size: 'small', title: "GBC Builder", tokenId: 175 }),

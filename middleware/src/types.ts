@@ -123,6 +123,12 @@ export interface IYieldInterval extends IAsset {
 
 
 
+
+
+
+
+
+
 export enum IAttributeMappings {
   "Afro Green" = 78, "Afro Multicolor" = 42, "Afro Pink" = 34, Angry = 59, "Army Green" = 116, "Army Helmet" = 95, "Army Pink" = 128, Arrow = 138, Basket = 142, "Basketball Green" = 50, "Basketball Red" = 112,
   "Bathrobe Grey" = 119, "Bathrobe Orange" = 103, "Beanie Grey" = 65, "Beanie Red" = 67, "Bear Cap" = 126, "Bear Fur" = 127, "Beard Green" = 102, "Beard Multicolor" = 98, "Beard Pink" = 64, "Black and White" = 145,
@@ -154,6 +160,8 @@ export enum IAttributeMappings {
   Noodles = 212,
   High = 213,
   "Juice Head" = 214,
+  "Ultra Sound BLAT" = 215,
+  Uzumaki = 216,
 }
 
 
@@ -190,6 +198,7 @@ export enum IAttributeExpression {
 
   HIGH = IAttributeMappings.High,
 }
+
 
 export enum IAttributeClothes {
   ARMY_GREEN = IAttributeMappings["Army Green"],
@@ -250,6 +259,7 @@ export enum IAttributeClothes {
   AVALANCHE_HOODIE = IAttributeMappings["Avalanche Hoodie"],
   GLP_SHIRT = IAttributeMappings["GLP Shirt"],
   SUMMER_BUOY = IAttributeMappings["Summer Buoy"],
+  ULTRASOUND_BAT = IAttributeMappings["Ultra Sound BLAT"]
 }
 
 
@@ -290,6 +300,8 @@ export enum IAttributeFaceAccessory {
   BEARD_WHITE = IAttributeMappings["Beard White"],
   NOODLES = IAttributeMappings.Noodles
 }
+
+
 
 
 export enum IAttributeHat {
@@ -356,7 +368,8 @@ export enum IAttributeHat {
   FAST_FOOD_CAP = IAttributeMappings['Fast Food Cap'],
   LAB_FLASK = IAttributeMappings["Lab Flask"],
   GBC_WINE_BOTTLE_CLUB = IAttributeMappings["GBC x Wine Bottle Club"],
-  JUICE_HEAD = IAttributeMappings["Juice Head"]
+  JUICE_HEAD = IAttributeMappings["Juice Head"],
+  UZUMAKI = IAttributeMappings.Uzumaki,
 }
 
 export enum IAttributeBackground {

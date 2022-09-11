@@ -1,8 +1,10 @@
-import { O, Op, replayLatest } from "@aelea/core"
-import { Stream } from "@most/types"
-import { at, awaitPromises, combineArray as combineArrayMost, constant, continueWith, filter, merge, now, recoverWith } from "@most/core"
+import { combineObject, O, Op, replayLatest } from "@aelea/core"
+import { AnimationFrames } from "@aelea/dom"
+import { Disposable, Scheduler, Sink, Stream } from "@most/types"
+import { at, awaitPromises, constant, continueWith, filter, merge, multicast, now, recoverWith, combineArray as combineArrayMost } from "@most/core"
 import { CHAIN, EXPLORER_URL, intervalTimeMap, NETWORK_METADATA, USD_DECIMALS } from "./constant"
 import { IPageParapApi, IPagePositionParamApi, ISortParamApi } from "./types"
+import { keccak256 } from "@ethersproject/solidity"
 
 export const ETH_ADDRESS_REGEXP = /^0x[a-fA-F0-9]{40}$/i
 export const TX_HASH_REGEX = /^0x([A-Fa-f0-9]{64})$/i
@@ -28,7 +30,7 @@ export function shortPostAdress(address: string) {
   return address.slice(address.length - 4, address.length)
 }
 
-export function readableNumber(ammount: number | bigint, decimalCount = 2) {
+export function readableNumber(ammount: number | bigint) {
   const parts = ammount.toString().split('.')
   const [whole = '', decimal = ''] = parts
 
@@ -37,35 +39,36 @@ export function readableNumber(ammount: number | bigint, decimalCount = 2) {
   }
 
   if (whole.replace(/^-/, '') === '0' || whole.length < 3) {
-    const shortDecimal = trimZeroDecimalsTrail(decimal).slice(0, decimalCount)
-    return whole + (shortDecimal && decimalCount ? '.' + shortDecimal : '')
+    const shortDecimal = trimTrailingNumber(decimal)
+    return whole + (shortDecimal ? '.' + shortDecimal : '')
   }
 
   return Number(whole).toLocaleString()
 }
 
-export const trimZeroDecimalsTrail = (amount: string) => {
-  return amount.replace(/0+$/, '')
+export const trimTrailingNumber = (n: string) => {
+  const match = n.match(/(^0+\d{2}|^\d{2})/)
+  // const match = n.match(new RegExp(`(^0+d{2}|^d{2})`))
+  return match ? match[0] : ''
 }
 
-const nf = new Intl.NumberFormat("en-US", {
+const defaultNumberFormatOption: Intl.NumberFormatOptions = {
   style: "currency",
   currency: "USD",
   maximumFractionDigits: 0
-})
+}
 
 export function formatReadableUSD(ammount: bigint, options?: Intl.NumberFormatOptions) {
-  const amountUsd = formatFixed(ammount, USD_DECIMALS)
-
-  if (options) {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      ...options
-    }).format(amountUsd)
+  if (ammount === 0n) {
+    return '$0'
   }
-  
-  return nf.format(amountUsd)
+
+  const amountUsd = formatFixed(ammount, USD_DECIMALS)
+  const opts = options
+    ? { ...defaultNumberFormatOption, ...options }
+    : amountUsd > 100 ? defaultNumberFormatOption : { ...defaultNumberFormatOption, maximumFractionDigits: 1 }
+
+  return new Intl.NumberFormat("en-US", opts).format(amountUsd)
 }
 
 export function shortenTxAddress(address: string) {
@@ -371,22 +374,85 @@ type StreamInput<T> = {
   [P in keyof T]: Stream<T[P]>
 }
 
+class WithAnimationFrame<T> {
+  constructor(private afp: AnimationFrames, private source: Stream<T>) { }
 
-export function replayState<A, K extends keyof A = keyof A>(state: StreamInput<A>, initialState: A): Stream<A> {
-  const entries = Object.entries(state) as [keyof A, Stream<A[K]>][]
-  const streams = entries.map(([key, stream]) => replayLatest(stream, initialState[key]))
+  run(sink: Sink<T>, scheduler: Scheduler): Disposable {
 
-  const combinedWithInitial = combineArrayMost((...arrgs: A[K][]) => {
-    return arrgs.reduce((seed, val, idx) => {
-      const key = entries[idx][0]
-      seed[key] = val
+    const frameSink = this.source.run(new WithAnimationFrameSink(this.afp, sink), scheduler)
 
-      return seed
-    }, {} as A)
-  }, streams)
-
-  return combinedWithInitial
+    return frameSink
+  }
 }
+
+
+
+class WithAnimationFrameSink<T> implements Sink<T> {
+  latestPendingFrame = -1
+
+  constructor(private afp: AnimationFrames, private sink: Sink<T>) { }
+
+  event(time: number, value: T): void {
+    
+    if (this.latestPendingFrame > -1) {
+      this.afp.cancelAnimationFrame(this.latestPendingFrame)
+    }
+
+    this.latestPendingFrame = this.afp.requestAnimationFrame(() => {
+      // console.log(this.latestPendingFrame)
+      this.latestPendingFrame = -1
+      eventThenEnd(time, this.sink, value)
+    })
+  }
+
+  end(): void {
+    if (this.latestPendingFrame > -1) {
+      this.afp.cancelAnimationFrame(this.latestPendingFrame)
+    }
+  }
+
+  error(time: number, err: Error): void {
+    this.end()
+    this.sink.error(time, err)
+  }
+}
+
+const eventThenEnd = <T>(requestTime: number, sink: Sink<T>, value: T) => {
+  sink.event(requestTime, value)
+}
+
+export const drawWithinFrame = <T>(source: Stream<T>, afp: AnimationFrames = window): Stream<T> =>
+  new WithAnimationFrame(afp, source)
+
+
+export function replayState<A>(state: StreamInput<A>): Stream<A> {
+  return replayLatest(multicast(combineObject(state)))
+}
+
+export function getPositionKey (account: string, collateralToken: string, indexToken: string, isLong: boolean) {
+  return keccak256(
+    ["address", "address", "address", "bool"],
+    [account, collateralToken, indexToken, isLong]
+  )
+}
+
+
+// export function replayState<A, K extends keyof A = keyof A>(state: StreamInput<A>, initialState: A): Stream<A> {
+//   const entries = Object.entries(state) as [keyof A, Stream<A[K]>][]
+//   const streams = entries.map(([key, stream]) => replayLatest(stream, initialState[key]))
+
+//   const combinedWithInitial = combineArrayMost((...arrgs: A[K][]) => {
+//     return arrgs.reduce((seed, val, idx) => {
+//       const key = entries[idx][0]
+//       seed[key] = val
+
+//       return seed
+//     }, {} as A)
+//   }, streams)
+
+//   return combinedWithInitial
+// }
+
 
 
 export interface IPeriodRun<T> {

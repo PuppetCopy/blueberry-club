@@ -59,6 +59,6 @@ export const berryPartsToSvg = (svgParts: SvgPartsMap, [background, clothes, bod
     ${svgParts[2][body ? body : IAttributeBody.BLUEBERRY]}
     ${expression ? svgParts[3][expression] : ''}
     ${faceAccessory ? svgParts[4][faceAccessory] : ''}
-    ${hat ? svgParts[5][hat] : IAttributeHat.NUDE}
+    ${svgParts[5][hat ? hat : IAttributeHat.NUDE]}
   `
 }
