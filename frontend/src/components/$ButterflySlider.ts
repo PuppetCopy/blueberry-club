@@ -1,7 +1,7 @@
 import { Behavior, combineArray, combineObject, Op } from "@aelea/core"
 import { component, IBranch, style, nodeEvent, eventElementTarget, styleInline, $Node, NodeComposeFn, $text, drawLatest, styleBehavior } from "@aelea/dom"
 import { Input, $row, observer } from "@aelea/ui-components"
-import { pallete } from "@aelea/ui-components-theme"
+import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
 import { skipRepeats, snapshot, until, multicast, join, map, now } from "@most/core"
 import { Stream } from "@most/types"
 
@@ -52,63 +52,58 @@ export const $Slider = ({
   [thumbePositionDelta, thumbePositionDeltaTether]: Behavior<IBranch<HTMLInputElement>, number>
 ) => {
 
-  const $rangeWrapper = $row(sliderDimensionTether(observer.resize({}), map(res => res[0].contentRect.width)), style({ backgroundColor: pallete.background, height: '2px', position: 'relative', zIndex: 10 }))
+  const $rangeWrapper = $row(sliderDimensionTether(observer.resize({}), map(res => res[0].contentRect.width)), style({ height: '2px', background: pallete.background, position: 'relative', zIndex: 10 }))
 
-  const sliderStyle = styleInline(combineArray((n, color) => {
-    const width = `${n * 100}%`
-    const background = `linear-gradient(90deg, transparent 10%, ${color} 100%)`
+  const state = multicast(combineObject({ value, min, max }))
 
-    return { width, background }
-  }, value, color))
+  const sliderStyle = styleInline(combineArray(({ min, max, value }, color) => {
+    const gutterColor = colorAlpha(pallete.background, .35)
+    const minArea = `${gutterColor} ${min * 100}%,`
+    const valArea = `${color} ${min * 100}% ${value * 100}%,`
+    const freeArea = `${pallete.background} ${value * 100}% ${max * 100}%,`
+    const maxArea = `${gutterColor} ${max * 100}%`
 
-
+    const background = `linear-gradient(90deg, ${minArea} ${valArea} ${freeArea} ${maxArea}`
+    return { background }
+  }, state, map(x => colorAlpha(x, .5), color)))
 
   return [
-    $rangeWrapper(
-      $row(style({
-        placeContent: 'flex-end', top: '50%',
-        transition: 'width 175ms cubic-bezier(0.25, 0.8, 0.25, 1)'
-      }), sliderStyle)(
-        $row(style({ width: '0px', alignItems: 'center', placeContent: 'center' }))(
-          $thumb(styleBehavior(map(color => ({ borderColor: color }), color)))(
-            thumbePositionDeltaTether(
-              nodeEvent('pointerdown'),
-              downEvent => {
-                return snapshot(({ value, max, min }, { downEvent, sliderDimension }) => {
-                  const drag = until(eventElementTarget('pointerup', window.document), eventElementTarget('pointermove', window.document))
+    $rangeWrapper(sliderStyle)(
+      $row(
+        styleInline(map(({ value }) => ({ left: `${Math.min(Math.max(value, 0), 1) * 100}%` }), state)),
+        style({ width: '0px', top: '50%', position: 'absolute', transition: 'left 175ms cubic-bezier(0.25, 0.8, 0.25, 1) 0s', alignItems: 'center', placeContent: 'center' })
+      )(
+        $thumb(
+          styleBehavior(map(({ color, disabled }) => disabled ? { borderColor: 'transparent', pointerEvents: disabled ? 'none' : 'all' } : { borderColor: color }, combineObject({ disabled, color }))),
+          thumbePositionDeltaTether(
+            nodeEvent('pointerdown'),
+            downEvent => {
 
-                  return drawLatest(map(moveEvent => {
-                    const normalisedValue = Math.min(Math.max(value, min), max)
-                    const deltaX = (moveEvent.clientX - downEvent.clientX) + (sliderDimension * normalisedValue)
+              return snapshot(({ value, max, min }, { downEvent, sliderDimension }) => {
+                const drag = until(eventElementTarget('pointerup', window.document), eventElementTarget('pointermove', window.document))
 
-                    moveEvent.preventDefault()
+                return drawLatest(map(moveEvent => {
+                  const normalisedValue = Math.min(Math.max(value, min), max)
+                  const deltaX = (moveEvent.clientX - downEvent.clientX) + (sliderDimension * normalisedValue)
 
-                    const val = deltaX / sliderDimension
+                  moveEvent.preventDefault()
 
-                    const cVal = Math.min(Math.max(val, min), max)
-                    const steppedVal = step > 0 ? cVal / step * step : cVal
+                  const val = deltaX / sliderDimension
 
-                    return steppedVal
-                  }, drag))
-                }, combineObject({ value, min, max }), combineObject({ downEvent, sliderDimension }))
-              },
-              join,
-              skipRepeats,
-              multicast
-            ),
-            // thumbDimensionTether(observer.resize()),
-            // styleInline(combineArray((isPositive, isDisabled) => {
+                  const cVal = Math.min(Math.max(val, min), max)
+                  const steppedVal = step > 0 ? cVal / step * step : cVal
 
-            //   if (isPositive) {
-            //     return { left: 'auto', right: `-${thumbSize}px`, ...(isDisabled ? { pointerEvents: 'none', border: `1px solid transparent` } as const : { pointerEvents: 'all', border: `1px solid ${positiveColor}` }) }
-            //   }
-
-            //   return { right: 'auto', left: `-${thumbSize}px`, ...(isDisabled ? { pointerEvents: 'none', border: `1px solid transparent` } as const : { pointerEvents: 'all', border: `1px solid ${negativeColor}` }) }
-            // }, positive, disabled)),
-            style({ width: thumbSize + 'px' })
-          )(
-            $text(thumbText(value))
-          )
+                  return steppedVal
+                }, drag))
+              }, state, combineObject({ downEvent, sliderDimension }))
+            },
+            join,
+            skipRepeats,
+            multicast
+          ),
+          style({ width: thumbSize + 'px' })
+        )(
+          $text(thumbText(value))
         )
       )
     ),

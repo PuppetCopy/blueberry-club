@@ -2,6 +2,7 @@ import { Behavior, combineArray, fromCallback, O, Op } from "@aelea/core"
 import { $wrapNativeElement, component, drawLatest, INode, style } from "@aelea/dom"
 import { observer } from '@aelea/ui-components'
 import { pallete } from '@aelea/ui-components-theme'
+import { drawWithinFrame } from "@gambitdao/gmx-middleware"
 import { empty, filter, map, mergeArray, multicast, now, scan, switchLatest, tap } from '@most/core'
 import { disposeWith } from '@most/disposable'
 import { Stream } from '@most/types'
@@ -19,7 +20,7 @@ export interface ISeries {
 
   appendData?: Op<Array<SeriesDataItemTypeMap["Candlestick"]> | null, Stream<SeriesDataItemTypeMap["Candlestick"]>>
   priceLines?: Stream<PriceLineOptions | null>[]
-  markers?: Stream<IMarker | null>[]
+  drawMarkers?: Stream<IMarker[]>
 }
 
 export interface ICandlesticksChart {
@@ -164,7 +165,6 @@ export const $CandleSticks = ({ chartConfig, series, containerOp = O() }: ICandl
               return tap(next => seriesApi.update(next), liveData)
             }, seriesSetup)),
             ...priceLineConfigList.map(lineStreamConfig => {
-
               return scan((prev, params) => {
                 if (prev) {
                   seriesApi.removePriceLine(prev)
@@ -177,6 +177,9 @@ export const $CandleSticks = ({ chartConfig, series, containerOp = O() }: ICandl
                 return seriesApi.createPriceLine(params)
               }, null as IPriceLine | null, lineStreamConfig)
             }),
+            tap(next => {
+              seriesApi.setMarkers(next)
+            }, params.drawMarkers || empty()),
           ]
         }),
         combineArray(([containerDimension]) => {
@@ -184,7 +187,7 @@ export const $CandleSticks = ({ chartConfig, series, containerOp = O() }: ICandl
           chartApi.resize(width, height)
 
           return empty()
-        }, drawLatest(containerDimension)),
+        }, drawWithinFrame(containerDimension)),
       ]))
     ),
 

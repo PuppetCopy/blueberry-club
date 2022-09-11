@@ -1,11 +1,12 @@
 import { fromCallback } from "@aelea/core"
-import { BaseContract } from "@ethersproject/contracts"
+import { BigNumber } from "@ethersproject/bignumber"
+import { BaseContract, EventFilter } from "@ethersproject/contracts"
 
 import { multicast } from "@most/core"
 import type { Stream } from '@most/types'
 
 
-export const listen = <T extends BaseContract, R>(contract: T) => <EventName extends string>(eventName: EventName): Stream<R> => {
+export const listen = <T extends BaseContract>(contract: T) => (eventName: string): Stream<any> => {
   return multicast(
     fromCallback(
       cb => {
@@ -18,7 +19,15 @@ export const listen = <T extends BaseContract, R>(contract: T) => <EventName ext
         const argsObj: any = {}
         for (const prop in eventDescriptor.args) {
           if (Object.prototype.hasOwnProperty.call(eventDescriptor.args, prop) && !Number.isFinite(Number(prop))) {
-            argsObj[prop] = eventDescriptor.args[prop]
+
+            const value = eventDescriptor.args[prop]
+
+            if (BigNumber.isBigNumber(value)) {
+              argsObj[prop] = value.toBigInt()
+            } else {
+              argsObj[prop] = value
+            }
+            
           }
         }
         return argsObj

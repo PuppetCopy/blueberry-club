@@ -142,7 +142,7 @@ export default ({ baseRoute = '' }: Website) => component((
 
     $column(designSheet.main, style({ fontWeight: 400, alignItems: 'center', gap: screenUtils.isDesktopScreen ? '85px' : '55px', overflowX: 'hidden', placeContent: 'center', padding: screenUtils.isMobileScreen ? '0 15px' : '0 55px' }))(
 
-      $column(style({ gap: screenUtils.isDesktopScreen ? '85px' : '55px' }))(
+      $column(style({ gap: '45px' }))(
         $column(
           $MainMenu({ walletLink, parentRoute: rootRoute, walletStore })({
             routeChange: linkClickTether(),

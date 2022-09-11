@@ -63,7 +63,10 @@ export const requestLeaderboardTopList = O(
 
 export const requestAccountTradeList = O(
   map(async (queryParams: IAccountTradeListParamApi) => {
-    console.log(queryParams)
+    if (!queryParams.account) {
+      return []
+    }
+
     const allAccounts = await query.graphClientMap[queryParams.chain](accountTradeListQuery, { ...queryParams, account: queryParams.account.toLowerCase() }, { requestPolicy: 'network-only' })
     return allAccounts.trades
   }),

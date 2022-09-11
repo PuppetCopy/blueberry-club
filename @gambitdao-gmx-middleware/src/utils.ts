@@ -1,9 +1,10 @@
 import { combineObject, O, Op, replayLatest } from "@aelea/core"
 import { AnimationFrames } from "@aelea/dom"
 import { Disposable, Scheduler, Sink, Stream } from "@most/types"
-import { at, awaitPromises, constant, continueWith, filter, merge, multicast, now, recoverWith } from "@most/core"
+import { at, awaitPromises, constant, continueWith, filter, merge, multicast, now, recoverWith, combineArray as combineArrayMost } from "@most/core"
 import { CHAIN, EXPLORER_URL, intervalTimeMap, NETWORK_METADATA, USD_DECIMALS } from "./constant"
 import { IPageParapApi, IPagePositionParamApi, ISortParamApi } from "./types"
+import { keccak256 } from "@ethersproject/solidity"
 
 export const ETH_ADDRESS_REGEXP = /^0x[a-fA-F0-9]{40}$/i
 export const TX_HASH_REGEX = /^0x([A-Fa-f0-9]{64})$/i
@@ -58,10 +59,14 @@ const defaultNumberFormatOption: Intl.NumberFormatOptions = {
 }
 
 export function formatReadableUSD(ammount: bigint, options?: Intl.NumberFormatOptions) {
+  if (ammount === 0n) {
+    return '$0'
+  }
+
   const amountUsd = formatFixed(ammount, USD_DECIMALS)
   const opts = options
     ? { ...defaultNumberFormatOption, ...options }
-    : ammount > 100 ? defaultNumberFormatOption : { ...defaultNumberFormatOption, maximumFractionDigits: 1 }
+    : amountUsd > 100 ? defaultNumberFormatOption : { ...defaultNumberFormatOption, maximumFractionDigits: 1 }
 
   return new Intl.NumberFormat("en-US", opts).format(amountUsd)
 }
@@ -388,17 +393,20 @@ class WithAnimationFrameSink<T> implements Sink<T> {
   constructor(private afp: AnimationFrames, private sink: Sink<T>) { }
 
   event(time: number, value: T): void {
-    if (this.latestPendingFrame > 0) {
+    
+    if (this.latestPendingFrame > -1) {
       this.afp.cancelAnimationFrame(this.latestPendingFrame)
     }
 
     this.latestPendingFrame = this.afp.requestAnimationFrame(() => {
+      // console.log(this.latestPendingFrame)
+      this.latestPendingFrame = -1
       eventThenEnd(time, this.sink, value)
     })
   }
 
   end(): void {
-    if (this.latestPendingFrame > 0) {
+    if (this.latestPendingFrame > -1) {
       this.afp.cancelAnimationFrame(this.latestPendingFrame)
     }
   }
@@ -417,10 +425,34 @@ export const drawWithinFrame = <T>(source: Stream<T>, afp: AnimationFrames = win
   new WithAnimationFrame(afp, source)
 
 
-
 export function replayState<A>(state: StreamInput<A>): Stream<A> {
   return replayLatest(multicast(combineObject(state)))
 }
+
+export function getPositionKey (account: string, collateralToken: string, indexToken: string, isLong: boolean) {
+  return keccak256(
+    ["address", "address", "address", "bool"],
+    [account, collateralToken, indexToken, isLong]
+  )
+}
+
+
+// export function replayState<A, K extends keyof A = keyof A>(state: StreamInput<A>, initialState: A): Stream<A> {
+//   const entries = Object.entries(state) as [keyof A, Stream<A[K]>][]
+//   const streams = entries.map(([key, stream]) => replayLatest(stream, initialState[key]))
+
+//   const combinedWithInitial = combineArrayMost((...arrgs: A[K][]) => {
+//     return arrgs.reduce((seed, val, idx) => {
+//       const key = entries[idx][0]
+//       seed[key] = val
+
+//       return seed
+//     }, {} as A)
+//   }, streams)
+
+//   return combinedWithInitial
+// }
+
 
 
 export interface IPeriodRun<T> {

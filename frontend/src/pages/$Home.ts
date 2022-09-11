@@ -150,7 +150,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
   
 
   return [
-    $column(style(screenUtils.isDesktopScreen ? { gap: '125px', marginTop: '-50px' } : { gap: '90px' }))(
+    $column(style(screenUtils.isDesktopScreen ? { gap: '125px' } : { gap: '90px' }))(
 
 
       $row(style({ width: '100vw', marginLeft: 'calc(-50vw + 50%)', height: screenUtils.isDesktopScreen ? '580px' : '', alignItems: 'center', placeContent: 'center' }))(
@@ -346,7 +346,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
       $column(layoutSheet.spacingBig)(
         $column(layoutSheet.spacingBig, style({ alignItems: 'center', textAlign: 'center' }))(
           $text(style({ fontWeight: 'bold', fontSize: '2.5em' }))('Discover our Ecosystem'),
-          $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '878px' }))('The collection is based on a treasury receive revenue thorugh different Products'),
+          $text(style({ whiteSpace: 'pre-wrap', textAlign: 'center', maxWidth: '878px' }))('The collection is based on a treasury which receives revenue thorugh different Products'),
         ),
         $node(),
 
@@ -403,6 +403,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
         $seperator2,
 
         $row(layoutSheet.spacingBig, style({ flexWrap: 'wrap', width: '100%', placeContent: 'center' }))(
+          $teamMember({ name: 'JamesCliffyz', size: 'small', title: "Dune Analyst", tokenId: 150 }),
           $teamMember({ name: 'kitkat787878', size: 'small', title: "Witch", tokenId: 21 }),
           $teamMember({ name: 'defipleb', size: 'small', title: "Lab's Shakespeare", tokenId: 6762 }),
           $teamMember({ name: 'defiplebette', size: 'small', title: "Lab's Shakespeare", tokenId: 121 }),

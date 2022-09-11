@@ -6,7 +6,7 @@ import { empty, filter, fromPromise, map, merge, multicast, now, scan, skip, ski
 import { Stream } from "@most/types"
 import {
   getDelta, formatFixed, formatReadableUSD, intervalListFillOrderMap, isTradeSettled, readableNumber,
-  unixTimeTzOffset, isTradeLiquidated, IPositionDelta, isTradeClosed, unixTimestampNow, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, getLeverage, ITrade, IPricefeedParamApi, IChainParamApi, query, fromJson, isTradeOpen, getDeltaPercentage
+  unixTimeTzOffset, isTradeLiquidated, IPositionDelta, isTradeClosed, unixTimestampNow, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, ITrade, IPricefeedParamApi, IChainParamApi, query, fromJson, isTradeOpen, getDeltaPercentage, bnDiv
 } from "@gambitdao/gmx-middleware"
 import { ChartOptions, DeepPartial, LineStyle, MouseEventParams, SeriesMarker, SingleValueData, Time } from "lightweight-charts"
 import { $bull, $bear, $target, $RiskLiquidator, $tokenIconMap, getPricefeedVisibleColumns } from "@gambitdao/ui-components"
@@ -169,7 +169,7 @@ export const $TradeCardPreview = ({
             : $column(layoutSheet.spacingTiny, style({ textAlign: 'center' }))(
               $text(formatReadableUSD(trade.size)),
               $seperator,
-              style({ textAlign: 'center', fontSize: '.65em' }, $text(style({ fontWeight: 'bold' }))(`${readableNumber(getLeverage(trade))}x`)),
+              style({ textAlign: 'center', fontSize: '.65em' }, $text(style({ fontWeight: 'bold' }))(`${readableNumber(bnDiv(trade.size, trade.collateral))}x`)),
             ),
 
 

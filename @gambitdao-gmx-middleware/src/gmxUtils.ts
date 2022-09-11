@@ -13,34 +13,22 @@ export function getMarginFees(size: bigint) {
 }
 
 
-
-export function getBasisMultiplier(amount: bigint, delta: bigint): bigint {
-  if (delta === 0n) {
+export function div(a: bigint, b: bigint): bigint {
+  if (b === 0n) {
     return 0n
   }
 
-  return amount * BASIS_POINTS_DIVISOR / delta
+  return a * BASIS_POINTS_DIVISOR / b
 }
 
-export function getBasisDivisor(amount: bigint, delta: bigint): bigint {
-  if (amount === 0n) {
-    return 0n
-  }
-
-  return delta * BASIS_POINTS_DIVISOR / amount
+export function bnDiv(a: bigint, b: bigint): number {
+  return formatFixed(div(a, b), 4)
 }
 
-export function getRatio(amount: bigint, delta: bigint): number {
-  return formatFixed(getBasisDivisor(amount, delta), 4)
+export function formatToBasis(a: bigint): number {
+  return formatFixed(a, 4)
 }
 
-export function getMultiplier(amount: bigint, delta: bigint): number {
-  return formatFixed(getBasisMultiplier(amount, delta), 4)
-}
-
-export function getLeverage({ size, collateral }: IAbstractPositionStake): number {
-  return getMultiplier(size, collateral)
-}
 
 export function getLeverageChange(
   size: bigint,
@@ -117,8 +105,8 @@ export function getTokenAmount(amountUsd: bigint, price: bigint, tokenDescriptio
   return amountUsd * getDenominator(tokenDescription.decimals) / price
 }
 
-export function getTokenUsd(amount: bigint, price: bigint, tokenDescription: TokenDescription) {
-  return amount * price / getDenominator(tokenDescription.decimals)
+export function getTokenUsd(amount: bigint, price: bigint, decimals: number) {
+  return amount * price / getDenominator(decimals)
 }
 
 export function getLiquidationPrice(collateral: bigint, size: bigint, averagePrice: bigint, isLong: boolean) {
