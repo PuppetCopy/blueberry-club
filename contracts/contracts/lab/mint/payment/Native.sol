@@ -15,7 +15,9 @@ abstract contract Native is Payable {
 
     function _takeMoney(uint256 amount) internal override {
         if (amount != msg.value) revert InvalidPaidAmount();
-        RECEIVER.transfer(amount);
-        emit Paied(msg.sender, amount);
+        if (amount > 0) {
+            RECEIVER.transfer(amount);
+            emit Paied(msg.sender, amount);
+        }
     }
 }
