@@ -10,6 +10,7 @@ import { $StoreItemPreview } from "./$StoreItem"
 import { $accountIconLink, $responsiveFlex } from "../../elements/$common"
 import { $seperator2 } from "../common"
 import { $logo } from "../../common/$icons"
+import { $opensea } from "../../elements/$icons"
 
 
 interface ILabStore {
@@ -43,9 +44,9 @@ export const $LabStore = ({ walletLink, parentRoute }: ILabStore) => component((
           $row(layoutSheet.spacing)(
             $accountIconLink(GBC_ADDRESS.LAB),
             $seperator2,
-            $anchor(layoutSheet.spacingTiny, attr({ href: `https://stratosnft.io/collection/blueberrylab` }))(
+            $anchor(layoutSheet.spacingTiny, attr({ href: `https://opensea.io/collection/blueberry-lab-items` }))(
               $icon({
-                $content: $logo,
+                $content: $opensea,
                 viewBox: '0 0 32 32'
               }),
               $text('Lab Marketplace')

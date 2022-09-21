@@ -13,7 +13,7 @@ import { BI_18_PRECISION, GBC_ADDRESS, IAttributeBody, IAttributeClothes, IAttri
 import { $StakingGraph } from "../components/$StakingGraph"
 import { $seperator2 } from "./common"
 import { $buttonAnchor, $ButtonSecondary } from "../components/form/$Button"
-import { $tofunft } from "../elements/$icons"
+import { $opensea, $tofunft } from "../elements/$icons"
 import { Stream } from "@most/types"
 import { $berry, $loadBerry } from "../components/$DisplayBerry"
 import { priceFeedHistoryInterval, latestTokenPriceMap } from "../logic/common"
@@ -80,9 +80,6 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
       }
     }, eyeContainerPerspective, windowMouseMove)
   )
-
-
-
 
   const queryParams: IAccountQueryParamApi & Partial<ITimerangeParamApi> = {
     from: treasuryStore.state.startedStakingGmxTimestamp || undefined,
@@ -186,13 +183,13 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
               ),
               $seperator2,
               $row(layoutSheet.spacingBig, style({}))(
-                $anchor(layoutSheet.spacingSmall, style({ alignItems: 'center' }), attr({ href: `https://tofunft.com/collection/blueberryclub/items?category=fixed-price`, target: '_blank' }))(
+                $anchor(layoutSheet.spacingSmall, style({ alignItems: 'center' }), attr({ href: `https://opensea.io/collection/blueberry-club`, target: '_blank' }))(
                   $icon({
                     width: '40px',
-                    $content: $tofunft,
+                    $content: $opensea,
                     viewBox: '0 0 32 32'
                   }),
-                  $text(style({ paddingBottom: '6px' }))(screenUtils.isDesktopScreen ? 'Trade On TofuNFT' : 'Trade')
+                  $text(style({ paddingBottom: '6px' }))(screenUtils.isDesktopScreen ? 'Trade On Opensea' : 'Trade')
                 ),
                 $anchor(layoutSheet.spacingSmall, style({ alignItems: 'center' }), attr({ href: `https://docs.blueberry.club`, target: '_blank' }))(
                   $icon({
@@ -229,7 +226,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
                       ),
                       tap(({ element }) => {
                         element.querySelectorAll('.wakka').forEach(el => el.remove())
-                      }, $loadBerry([background, clothes, undefined, IAttributeExpression.HAPPY, undefined, undefined], 340) as $Branch),
+                      }, $loadBerry([background, clothes, undefined, IAttributeExpression.HAPPY, undefined, ' ' as any], 340) as $Branch),
                       $svg('svg')(
                         attr({ xmlns: 'http://www.w3.org/2000/svg', fill: 'none', viewBox: `0 0 1500 1500` }),
                         style({ width: 340 + 'px', height: 340 + 'px', position: 'absolute', zIndex: 1, })
@@ -407,7 +404,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
           $teamMember({ name: 'kitkat787878', size: 'small', title: "Witch", tokenId: 21 }),
           $teamMember({ name: 'defipleb', size: 'small', title: "Lab's Shakespeare", tokenId: 6762 }),
           $teamMember({ name: 'defiplebette', size: 'small', title: "Lab's Shakespeare", tokenId: 121 }),
-          $teamMember({ name: 'cryp_growth', size: 'small', title: "Blueberry Podcast", tokenId: 2605 }),
+          $teamMember({ name: 'gmx_intern', size: 'small', title: "Blueberry Podcast", tokenId: 2605 }),
           $teamMember({ name: 'tanoeth', size: 'small', title: "Blueberry Podcast", tokenId: 1867 }),
           $teamMember({ name: 'onisuals', size: 'small', title: "Motion Designer", tokenId: 3195 }),
           $teamMember({ name: '1tbk1', size: 'small', title: "GBC Builder", tokenId: 9376 }),

@@ -14,7 +14,7 @@ import { $Table2 } from "../common/$Table2"
 import { $accountPreview } from "../components/$AccountProfile"
 import { $ButtonPrimary, $ButtonSecondary } from "../components/form/$Button"
 import { $accountRef, $card, $responsiveFlex, $txnIconLink } from "../elements/$common"
-import { $tofunft } from "../elements/$icons"
+import { $opensea } from "../elements/$icons"
 import { queryTokenv2 } from "../logic/query"
 import { IToken, ITransfer } from "@gambitdao/gbc-middleware"
 import { $berryByToken } from "../logic/common"
@@ -96,10 +96,10 @@ export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
 
               $row(layoutSheet.spacingSmall)(
                 $icon({
-                  $content: $tofunft,
+                  $content: $opensea,
                   viewBox: '0 0 32 32'
                 }),
-                $anchor(attr({ href: `https://tofunft.com/nft/arbi/0x17f4BAa9D35Ee54fFbCb2608e20786473c7aa49f/${berryId}` }))(
+                $anchor(attr({ href: `https://opensea.io/assets/arbitrum/0x17f4baa9d35ee54ffbcb2608e20786473c7aa49f/${berryId}` }))(
                   $text('Trade')
                 ),
               ),

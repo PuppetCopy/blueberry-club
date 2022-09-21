@@ -13,7 +13,7 @@ import { $seperator2 } from "../common"
 import { getMintCount } from "../../logic/contract/sale"
 import { empty, map, multicast, switchLatest } from "@most/core"
 import { $anchor } from "@gambitdao/ui-components"
-import { $tofunft } from "../../elements/$icons"
+import { $opensea, $tofunft } from "../../elements/$icons"
 import { $GbcWhitelist } from "../../components/mint/$HolderMint"
 import { $WhitelistMint } from "../../components/mint/$WhitelistMint"
 import { $PublicMint } from "../../components/mint/$PublicMint"
@@ -67,16 +67,12 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
           ),
           $text(style({ lineHeight: '1.5em', whiteSpace: 'pre-wrap' }))(item.description.trim()),
 
-          $row(layoutSheet.spacingSmall)(
+          $anchor(layoutSheet.spacingTiny, attr({ href: `https://opensea.io/collection/blueberry-lab-items` }))(
             $icon({
-              $content: $logo,
+              $content: $opensea,
               viewBox: '0 0 32 32'
             }),
-            $anchor(attr({
-              href: `https://stratosnft.io/collection/blueberrylab`
-            }))(
-              $text('Lab Marketplace')
-            ),
+            $text('Lab Marketplace')
           ),
 
 
