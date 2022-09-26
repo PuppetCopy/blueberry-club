@@ -25,7 +25,7 @@ export async function storeImageOnIpfs(item: LabItemSale) {
   console.info('Original SVG Size:', `${resvg.width} x ${resvg.height}`)
   console.info('Output PNG Size  :', `${pngData.width} x ${pngData.height}`)
 
-  // await promises.writeFile(join(__dirname, './out.png'), pngBuffer)
+  await promises.writeFile(join(__dirname, `../.dist/${item.name}.png`), pngBuffer)
 
   const index = getLabItemTupleIndex(item.id)
 

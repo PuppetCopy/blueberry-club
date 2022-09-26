@@ -128,7 +128,6 @@ export interface IYieldInterval extends IAsset {
 
 
 
-
 export enum IAttributeMappings {
   "Afro Green" = 78, "Afro Multicolor" = 42, "Afro Pink" = 34, Angry = 59, "Army Green" = 116, "Army Helmet" = 95, "Army Pink" = 128, Arrow = 138, Basket = 142, "Basketball Green" = 50, "Basketball Red" = 112,
   "Bathrobe Grey" = 119, "Bathrobe Orange" = 103, "Beanie Grey" = 65, "Beanie Red" = 67, "Bear Cap" = 126, "Bear Fur" = 127, "Beard Green" = 102, "Beard Multicolor" = 98, "Beard Pink" = 64, "Black and White" = 145,
@@ -162,6 +161,7 @@ export enum IAttributeMappings {
   "Juice Head" = 214,
   "Ultra Sound BLAT" = 215,
   Uzumaki = 216,
+  xMithical = 217
 }
 
 
@@ -304,6 +304,10 @@ export enum IAttributeFaceAccessory {
 
 
 
+
+
+
+
 export enum IAttributeHat {
   AFRO_GREEN = IAttributeMappings["Afro Green"],
   AFRO_MULTICOLOR = IAttributeMappings["Afro Multicolor"],
@@ -370,6 +374,7 @@ export enum IAttributeHat {
   GBC_WINE_BOTTLE_CLUB = IAttributeMappings["GBC x Wine Bottle Club"],
   JUICE_HEAD = IAttributeMappings["Juice Head"],
   UZUMAKI = IAttributeMappings.Uzumaki,
+  XMITHICAL = IAttributeMappings.xMithical
 }
 
 export enum IAttributeBackground {

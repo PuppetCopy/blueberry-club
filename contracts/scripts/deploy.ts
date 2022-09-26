@@ -110,44 +110,44 @@ const main = async () => {
     }
 
 
-    // for (const rule of sale.mintRuleList) {
+    for (const rule of sale.mintRuleList) {
 
-    //   console.log(`------------------------------------------------------------------------------\n`)
+      console.log(`------------------------------------------------------------------------------\n`)
 
-    //   if (rule.contractAddress) {
-    //     break
-    //   }
+      if (rule.contractAddress) {
+        break
+      }
 
-    //   let saleContractQuery: Promise<Mintable>
+      let saleContractQuery: Promise<Mintable>
 
-    //   if (rule.type === SaleType.Public) {
-    //     saleContractQuery = connectOrDeploy(rule.contractAddress, Public__factory, sale.id, 0, owner, lab.address, rule)
-    //   } else if (rule.type === SaleType.holder) {
-    //     const { cost, start, finish, supply, accountLimit } = rule
-    //     saleContractQuery = connectOrDeploy(rule.contractAddress, Holder__factory, sale.id, 0, owner, lab.address, { cost, start, finish, supply, accountLimit }, gbc.address)
-    //   } else {
-    //     const { cost, start, supply, finish, accountLimit } = rule
+      if (rule.type === SaleType.Public) {
+        saleContractQuery = connectOrDeploy(rule.contractAddress, Public__factory, sale.id, 0, owner, lab.address, rule)
+      } else if (rule.type === SaleType.holder) {
+        const { cost, start, finish, supply, accountLimit } = rule
+        saleContractQuery = connectOrDeploy(rule.contractAddress, Holder__factory, sale.id, 0, owner, lab.address, { cost, start, finish, supply, accountLimit }, gbc.address)
+      } else {
+        const { cost, start, supply, finish, accountLimit } = rule
 
-    //     const res = getMerkleProofs(rule.addressList, sale, rule)
-    //     console.log(res.proofs)
-    //     console.log('root: ', res.merkleRoot)
+        const res = getMerkleProofs(rule.addressList, sale, rule)
+        console.log(res.proofs)
+        console.log('root: ', res.merkleRoot)
 
-    //     saleContractQuery = connectOrDeploy(rule.contractAddress, Whitelist__factory, sale.id, 0, owner, lab.address, { accountLimit, cost, finish, start, supply }, res.merkleRoot)
-    //   }
-
-
-    //   const saleContract = await saleContractQuery
-
-    //   // if (owner == creator.address) {
-    //   console.log(`🎩 Set roles from LAB to name: ${sale.name} sale: ${mintLabelMap[rule.type]} SALE`)
-    //   await police.setUserRole(saleContract.address, ROLES.MINTER, true)
-    //   console.log(`  - MINTER role setted !`)
-    //   // }
+        saleContractQuery = connectOrDeploy(rule.contractAddress, Whitelist__factory, sale.id, 0, owner, lab.address, { accountLimit, cost, finish, start, supply }, res.merkleRoot)
+      }
 
 
-    //   console.log()
-    //   console.log(`------------------------------------------------------------------------------\n`)
-    // }
+      const saleContract = await saleContractQuery
+
+      // if (owner == creator.address) {
+      console.log(`🎩 Set roles from LAB to name: ${sale.name} sale: ${mintLabelMap[rule.type]} SALE`)
+      await police.setUserRole(saleContract.address, ROLES.MINTER, true)
+      console.log(`  - MINTER role setted !`)
+      // }
+
+
+      console.log()
+      console.log(`------------------------------------------------------------------------------\n`)
+    }
 
     if (storeIpfsQuery) {
       const { url, data } = await storeIpfsQuery
