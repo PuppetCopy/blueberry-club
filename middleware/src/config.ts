@@ -84,18 +84,22 @@ The NFT Paris is an event that will gather Builders, Artists, Curators, Brand, C
 
 By minting this item, you will be able to attend this conference, discover new projects, meet other Berries and much more 🫐👀
 
-Fore more details check our see discord discussions and even help us improve this experience
+For more details check our see discord discussions and even help us improve this experience
 `,
     id: IAttributeMappings["Holographic Background"],
 
     externalLinks: [
       {
+        link: 'https://discord.com/channels/941356283234250772/942121185456570439/1033648582881984582',
+        name: 'Discord Discussion'
+      },
+      {
         link: 'https://www.nftparis.xyz/',
         name: 'NFT Paris Website'
       },
       {
-        link: 'https://discord.com/channels/941356283234250772/942121185456570439/1033648582881984582',
-        name: 'Discord Discussion'
+        link: 'https://snapshot.org/#/gbc-nft.eth/proposal/0xd48efa441b6c2c53ba5d6f0fa25e5237debbffe446bac60e2e28a04765ab4e10',
+        name: 'Governance Proposal'
       },
     ],
     mintRuleList: [
