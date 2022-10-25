@@ -41,7 +41,7 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
   const totalMintCount = combineArray((...countList) => countList.reduce((seed, next) => seed + next, 0), ...item.mintRuleList.map(rule => getMintCount(rule, 3500)))
 
   const externalLinks = [
-    $anchor(layoutSheet.spacingTiny, attr({ href: `https://opensea.io/assets/arbitrum/0xf4f935f4272e6fd9c779cf0036589a63b48d77a7/${item.id}` }))(
+    $anchor(layoutSheet.spacingTiny, attr({ href: `https://opensea.io/assets/arbitrum/0xf4f935f4272e6fd9c779cf0036589a63b48d77a7/${item.id}`, target: '_blank' }))(
       $icon({
         $content: $opensea,
         viewBox: '0 0 32 32'
@@ -53,7 +53,7 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
   if (item.externalLinks) {
     item.externalLinks.forEach(el => {
       externalLinks.unshift(
-        $anchor(layoutSheet.spacingTiny, attr({ href: el.link }))(
+        $anchor(layoutSheet.spacingTiny, attr({ href: el.link, target: '_blank' }))(
           $text(el.name)
         )
       )
@@ -164,7 +164,7 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
                   $row(layoutSheet.spacingTiny, style({ fontSize: '.75em' }))(
                     $element('ul')(style({ lineHeight: '1.5em' }))(
                       $element('li')(
-                        $text(style({ color: pallete.foreground }))(`Cost to mint is `),
+                        $text(style({ color: pallete.foreground }))(`Cost to mint `),
                         $text(`${mintPriceEth}`),
                       ),
                       $element('li')(
