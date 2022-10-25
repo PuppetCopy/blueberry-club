@@ -5,20 +5,20 @@ import { $column, $row, layoutSheet, screenUtils, state } from "@aelea/ui-compon
 import {
   AddressZero, ARBITRUM_ADDRESS, ARBITRUM_ADDRESS_LEVERAGE, formatFixed, intervalTimeMap, IPricefeed, IPricefeedParamApi, IPriceLatestMap, isTradeOpen, ITrade, unixTimestampNow, IRequestTradeQueryparam, getChainName,
   ITradeOpen, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, TradeAddress, ARBITRUM_ADDRESS_TRADE, BASIS_POINTS_DIVISOR, getAveragePriceFromDelta, getDelta,
-  getLiquidationPrice, getMarginFees, getTokenUsd, STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, TAX_BASIS_POINTS, replayState, getDenominator, USD_PERCISION, periodicRun, formatReadableUSD, timeSince, IVaultPosition, getPositionKey, listen
+  getLiquidationPrice, getMarginFees, getTokenUsd, STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, TAX_BASIS_POINTS, replayState, getDenominator, USD_PERCISION, periodicRun, formatReadableUSD, timeSince, IVaultPosition, getPositionKey, listen, IPositionIncrease, IPositionDecrease
 } from "@gambitdao/gmx-middleware"
 
 import { IWalletLink, parseError } from "@gambitdao/wallet-link"
 import { combine, constant, map, mergeArray, multicast, periodic, scan, skipRepeats, switchLatest, debounce, empty, skip, now, startWith, fromPromise, snapshot, take, filter } from "@most/core"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
-import { $alert, $arrowsFlip, $IntermediatePromise, $Link, $ProfitLossText, $RiskLiquidator, $spinner, $txHashRef } from "@gambitdao/ui-components"
+import { $alert, $arrowsFlip, $IntermediatePromise, $Link, $ProfitLossText, $RiskLiquidator, $spinner } from "@gambitdao/ui-components"
 import { CandlestickData, CrosshairMode, LineStyle, Time } from "lightweight-charts"
 import { IEthereumProvider } from "eip1193-provider"
 import { Stream } from "@most/types"
 import { WALLET, web3Provider } from "../logic/provider"
 import { connectPricefeed, connectTrade, connectVault, getErc20Balance, KeeperExecutePosition } from "../logic/contract/trade"
 import { $TradeBox } from "../components/trade/$TradeBox"
-import { BLUEBERRY_REFFERAL_CODE, GLOBAL_W3P, USE_CHAIN } from "@gambitdao/gbc-middleware"
+import { USE_CHAIN } from "@gambitdao/gbc-middleware"
 import { $ButtonToggle } from "../common/$Toggle"
 import { $Table2 } from "../common/$Table2"
 import { $Entry, $livePnl } from "./$Leaderboard"
@@ -26,7 +26,6 @@ import { $iconCircular } from "../elements/$common"
 import { $CandleSticks } from "../components/chart/$CandleSticks"
 import { CHAIN_NATIVE_TO_ADDRESS, getFeeBasisPoints, getTokenDescription, resolveLongPath } from "../components/trade/utils"
 import { BrowserStore } from "../logic/store"
-import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
 import { $seperator2 } from "./common"
 import { PositionRouter__factory } from "../logic/contract/gmx-contracts"
 
@@ -142,6 +141,7 @@ export const $Trade = (config: ITradeComponent) => component((
   const indexTokenWeight = switchLatest(map(address => vault.getTokenWeight(address), indexToken))
   const indexTokenDebtUsd = switchLatest(map(address => vault.getTokenDebtUsd(address), indexToken))
   // const indexTokenCumulativeFundingRate = switchLatest(map(address => vault.getTokenCumulativeFundingRate(address), indexToken))
+  const collateralAvailableLiquidityUsd = switchLatest(map(address => vault.getAvailableLiquidityUsd(USE_CHAIN, address as any), collateralToken))
 
 
   const inputTokenDescription = map(address => getTokenDescription(USE_CHAIN, address), inputToken)
@@ -152,25 +152,18 @@ export const $Trade = (config: ITradeComponent) => component((
   const requestPosition = debounce(50, combineObject({ account: config.walletLink.account, collateralToken, indexToken, isLong }))
 
 
-  const positionKey = replayLatest(multicast(map(params => {
+  const vaultPosition = replayLatest(multicast(switchLatest(map((params): Stream<IVaultPosition | null> => {
     if (!params.account) {
-      return null
-    }
-
-    // const nomCollateralToken = params.collateralToken === AddressZero ? CHAIN_NATIVE_TO_ADDRESS[USE_CHAIN] : params.collateralToken
-    const key = getPositionKey(params.account, params.collateralToken, params.indexToken, params.isLong)
-
-    return key
-  }, requestPosition)))
-
-  const vaultPosition = replayLatest(multicast(switchLatest(map((key): Stream<IVaultPosition | null> => {
-    if (!key) {
       return now(null)
     }
 
-    const position = vault.getPosition(key)
-    return position
-  }, positionKey))))
+    const key = getPositionKey(params.account, params.collateralToken, params.indexToken, params.isLong)
+
+
+    const vaultPos = map((pos): IVaultPosition | null => pos ? { ...pos, isLong: params.isLong } : null, vault.getPosition(key))
+
+    return vaultPos
+  }, requestPosition))))
 
 
   const swapFee = skipRepeats(combineArray((usdgSupply, totalTokenWeight, tradeParams, vaultPosition, inputTokenDebtUsd, inputTokenWeight, inputTokenDescription, inputTokenPrice, indexTokenDebtUsd, indexTokenWeight, indexTokenDescription, indexTokenPrice) => {
@@ -297,24 +290,26 @@ export const $Trade = (config: ITradeComponent) => component((
     backgroundImage: `radial-gradient(at right center, ${pallete.background} 50%, transparent)`,
     background: pallete.background
   })
-  const $chartContainer = $column(chartContainerStyle)(screenUtils.isDesktopScreen
-    ? O(
-      style({
-        position: 'fixed', flexDirection: 'column', inset: '120px 0px 0px', width: 'calc(50vw)', borderRight: `1px solid rgba(191, 187, 207, 0.15)`,
-        display: 'flex'
-      }),
-      styleInline(map(interesction => {
+  const $chartContainer = $column(chartContainerStyle)(
+    screenUtils.isDesktopScreen
+      ? O(
+        style({
+          position: 'fixed', flexDirection: 'column', inset: '120px 0px 0px', width: 'calc(50vw)', borderRight: `1px solid rgba(191, 187, 207, 0.15)`,
+          display: 'flex'
+        }),
+        styleInline(map(interesction => {
 
-        const target = interesction.target
+          const target = interesction.target
 
-        if (target instanceof HTMLElement) {
-          return { inset: `${120 - Math.min(120, target.scrollTop)}px 120px 0px 0px` }
-        } else {
-          throw new Error('scroll target is not an elemnt')
-        }
+          if (target instanceof HTMLElement) {
+            return { inset: `${120 - Math.min(120, target.scrollTop)}px 120px 0px 0px` }
+          } else {
+            throw new Error('scroll target is not an elemnt')
+          }
 
-      }, eventElementTarget('scroll', document.body.children[0])))
-    ) : O()
+        }, eventElementTarget('scroll', document.body.children[0])))
+      )
+      : O()
   )
 
 
@@ -350,13 +345,18 @@ export const $Trade = (config: ITradeComponent) => component((
     return { chain, interval, tokenAddress, from, to }
   }, indexToken, timeframe))
 
-  const historicActionList = map(trade => {
+  const newLocal_1 = map(trade => {
     if (trade === null) {
       return []
     }
 
-    return [...trade.increaseList, ...trade.decreaseList].sort((a, b) => b.timestamp - a.timestamp)
+    return [...trade.increaseList, ...trade.decreaseList]
+      .sort((a, b) => a.timestamp - b.timestamp)
   }, config.trade)
+  const historicActionList = mergeArray([
+    combine((x, y) => [x[0]], newLocal_1, periodic(5000)),
+    newLocal_1
+  ])
 
   const requestTradeMulticast = replayLatest(multicast(snapshot(async (params) => {
     const path = resolveLongPath(params.inputToken, params.indexToken)
@@ -390,7 +390,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
     const txstub = new Promise((resolve) => setTimeout(() => resolve({}), 1000))
-    
+
 
     const ctx = await txstub
     // const ctx = await queryCtx
@@ -438,6 +438,7 @@ export const $Trade = (config: ITradeComponent) => component((
             indexTokenPrice,
             collateralTokenPrice,
             collateralTokenDescription,
+            collateralAvailableLiquidityUsd,
             fee,
             indexTokenDescription,
             inputTokenDescription,
@@ -471,6 +472,8 @@ export const $Trade = (config: ITradeComponent) => component((
 
         $node(),
 
+        $text(map(amount => formatReadableUSD(amount), collateralAvailableLiquidityUsd)),
+
         $IntermediatePromise({
           clean: combineObject(tradeParams),
           query: requestTradeMulticast,
@@ -494,16 +497,12 @@ export const $Trade = (config: ITradeComponent) => component((
             ])
 
 
-            const allExs = take(1, filter(pos => {
-              debugger
-              return pos.account === req.account
-            }, mergeArray([
-              // createIncreasePosition,
-              // createDecreasePosition,
+            const allExs = take(1, filter(pos => pos.account === req.account, mergeArray([
+              createIncreasePosition,
+              createDecreasePosition,
               failExecutePosition,
             ])))
 
-            const awaitExecuteIncreasePosition: Stream<KeeperExecutePosition> = listen(req.params.trade)('CreateDecreasePosition')
 
             return $column(
               $row(layoutSheet.spacingSmall, style({ color: pallete.positive }))(
@@ -526,7 +525,7 @@ export const $Trade = (config: ITradeComponent) => component((
               ),
 
             )
-          }, positionKey),
+          }, vaultPosition),
           $loader: switchLatest(map(req => {
 
 
@@ -563,7 +562,7 @@ export const $Trade = (config: ITradeComponent) => component((
           dataSource: historicActionList,
           bodyContainerOp: layoutSheet.spacing,
           scrollConfig: {
-            containerOps: O(layoutSheet.spacingBig)
+            containerOps: O(layoutSheet.spacingBig, style({ flexDirection: 'column-reverse' }))
           },
           columns: [
             {
@@ -905,7 +904,7 @@ export const $Trade = (config: ITradeComponent) => component((
                       })
                     },
                     {
-                      $head: $text('Risk'),
+                      $head: $text('Size'),
                       columnOp: O(layoutSheet.spacingTiny, style({ flex: 1.3, alignItems: 'center', placeContent: 'flex-start', minWidth: '80px' })),
                       $body: map(trade => {
                         const positionMarkPrice = pricefeed.getLatestPrice(trade.indexToken)

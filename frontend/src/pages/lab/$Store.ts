@@ -4,9 +4,9 @@ import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { saleDescriptionList, GBC_ADDRESS } from "@gambitdao/gbc-middleware"
+import { saleDescriptionList, GBC_ADDRESS, getLatestSaleRule } from "@gambitdao/gbc-middleware"
 import { $anchor } from "@gambitdao/ui-components"
-import { $StoreItemPreview } from "./$StoreItem"
+import { $Mint } from "./$Mint"
 import { $accountIconLink, $responsiveFlex } from "../../elements/$common"
 import { $seperator2 } from "../common"
 import { $logo } from "../../common/$icons"
@@ -55,9 +55,12 @@ export const $LabStore = ({ walletLink, parentRoute }: ILabStore) => component((
         ),
 
         $row(screenUtils.isDesktopScreen ? style({ gap: '50px', placeContent: 'center', flexWrap: 'wrap' }) : O(layoutSheet.spacingBig, style({ overflow: 'hidden', placeContent: 'space-evenly', flexWrap: 'wrap' })))(
-          ...saleDescriptionList.flatMap(item => item.mintRuleList.map(rule => ({ rule, item }))).map(({ item, rule }) =>
-            $StoreItemPreview(item, rule, parentRoute, changeRouteTether)
-          )
+          ...saleDescriptionList.map(sale => {
+
+            const rule = getLatestSaleRule(sale)
+            return $Mint(sale, rule, parentRoute, changeRouteTether)
+
+          })
         ),
       ),
 

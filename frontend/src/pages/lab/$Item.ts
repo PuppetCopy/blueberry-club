@@ -4,8 +4,8 @@ import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $accountIconLink, $responsiveFlex } from "../../elements/$common"
-import { attributeIndexToLabel, mintLabelMap, GBC_ADDRESS, getLabItemTupleIndex, labItemDescriptionListMap, saleLastDate, saleMaxSupply, SaleType } from "@gambitdao/gbc-middleware"
-import { countdownFn, displayDate, unixTimestampNow } from "@gambitdao/gmx-middleware"
+import { attributeIndexToLabel, mintLabelMap, getLabItemTupleIndex, labItemDescriptionListMap, saleMaxSupply, SaleType } from "@gambitdao/gbc-middleware"
+import { countdownFn, displayDate, formatFixed, unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { pallete } from "@aelea/ui-components-theme"
 import { WALLET } from "../../logic/provider"
 import { $labItem, takeUntilLast } from "../../logic/common"
@@ -13,13 +13,12 @@ import { $seperator2 } from "../common"
 import { getMintCount } from "../../logic/contract/sale"
 import { empty, map, multicast, switchLatest } from "@most/core"
 import { $anchor } from "@gambitdao/ui-components"
-import { $opensea, $tofunft } from "../../elements/$icons"
+import { $opensea } from "../../elements/$icons"
 import { $GbcWhitelist } from "../../components/mint/$HolderMint"
 import { $WhitelistMint } from "../../components/mint/$WhitelistMint"
 import { $PublicMint } from "../../components/mint/$PublicMint"
 import { timeChange } from "../../components/mint/mintUtils2"
 import { IEthereumProvider } from "eip1193-provider"
-import { $logo } from "../../common/$icons"
 
 
 interface ILabItem {
@@ -39,8 +38,27 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
 
   const item = labItemDescriptionListMap[itemId]
   const berrySize = screenUtils.isDesktopScreen ? '415px' : '100%'
-  const activeMint = saleLastDate(item)
+  const totalMintCount = combineArray((...countList) => countList.reduce((seed, next) => seed + next, 0), ...item.mintRuleList.map(rule => getMintCount(rule, 3500)))
 
+  const externalLinks = [
+    $anchor(layoutSheet.spacingTiny, attr({ href: `https://opensea.io/assets/arbitrum/0xf4f935f4272e6fd9c779cf0036589a63b48d77a7/${item.id}` }))(
+      $icon({
+        $content: $opensea,
+        viewBox: '0 0 32 32'
+      }),
+      $text('Trade')
+    )
+  ]
+
+  if (item.externalLinks) {
+    item.externalLinks.forEach(el => {
+      externalLinks.unshift(
+        $anchor(layoutSheet.spacingTiny, attr({ href: el.link }))(
+          $text(el.name)
+        )
+      )
+    })
+  }
 
   return [
     $responsiveFlex(screenUtils.isDesktopScreen ? style({ gap: '50px' }) : layoutSheet.spacingBig)(
@@ -61,21 +79,12 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
                   const max = saleMaxSupply(item)
 
                   return `${amount}/${max} minted`
-                }, getMintCount(activeMint, 3500))
+                }, totalMintCount)
               ),
             )
           ),
           $text(style({ lineHeight: '1.5em', whiteSpace: 'pre-wrap' }))(item.description.trim()),
-
-          $anchor(layoutSheet.spacingTiny, attr({ href: `https://opensea.io/collection/blueberry-lab-items` }))(
-            $icon({
-              $content: $opensea,
-              viewBox: '0 0 32 32'
-            }),
-            $text('Lab Marketplace')
-          ),
-
-
+          ...externalLinks,
         ),
 
         $seperator2,
@@ -86,7 +95,7 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
             ...item.mintRuleList.flatMap((mintRule, idx) => {
 
               const mintCount = multicast(getMintCount(mintRule, 15000))
-
+              const mintPriceEth = mintRule.cost === 0n ? 'Free' : formatFixed(mintRule.cost, 18) + ' ETH'
 
               const publicSaleTime = takeUntilLast(time => time > mintRule.start, timeChange)
 
@@ -154,6 +163,10 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
 
                   $row(layoutSheet.spacingTiny, style({ fontSize: '.75em' }))(
                     $element('ul')(style({ lineHeight: '1.5em' }))(
+                      $element('li')(
+                        $text(style({ color: pallete.foreground }))(`Cost to mint is `),
+                        $text(`${mintPriceEth}`),
+                      ),
                       $element('li')(
                         $text(style({ color: pallete.foreground }))(`limit of `),
                         $text(`${mintRule.accountLimit}`),

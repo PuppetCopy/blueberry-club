@@ -1,17 +1,17 @@
-import { Behavior, combineArray, combineObject, O } from "@aelea/core"
+import { Behavior, combineArray, combineObject, O, replayLatest } from "@aelea/core"
 import { component, INode, $element, attr, style, $text, nodeEvent, stylePseudo, $node, styleBehavior, motion, MOTION_NO_WOBBLE } from "@aelea/dom"
 import { $row, layoutSheet, $icon, $column, state, $NumberTicker, $Checkbox } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import {
   ARBITRUM_ADDRESS_LEVERAGE, AddressZero, TOKEN_DESCRIPTION_MAP, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, ARBITRUM_ADDRESS, formatFixed, readableNumber,
   MAX_LEVERAGE_NORMAL, TradeAddress, TOKEN_SYMBOL, parseFixed, formatReadableUSD, BASIS_POINTS_DIVISOR,
-  ITrade, IVaultPosition, IChainParamApi, isTradeSettled, getDelta, ARBITRUM_ADDRESS_TRADE, USD_DECIMALS, getTokenAmount, TokenDescription, MAX_LEVERAGE, bnDiv, replayState, DEPOSIT_FEE, formatToBasis, div
+  ITrade, IVaultPosition, IChainParamApi, isTradeSettled, getDelta, ARBITRUM_ADDRESS_TRADE, USD_DECIMALS, getTokenAmount, TokenDescription, MAX_LEVERAGE, bnDiv, replayState, DEPOSIT_FEE, formatToBasis, div, getDeltaPercentage, TimelineTime
 } from "@gambitdao/gmx-middleware"
 import { $alertIcon, $bear, $bull, $tokenIconMap, $tokenLabelFromSummary, $Tooltip } from "@gambitdao/ui-components"
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { merge, multicast, mergeArray, now, snapshot, map, switchLatest, filter, skipRepeats, empty, combine, fromPromise, constant, delay, sample } from "@most/core"
+import { merge, multicast, mergeArray, now, snapshot, map, switchLatest, filter, skipRepeats, empty, combine, fromPromise, constant, sample, tap, startWith, skipRepeatsWith } from "@most/core"
 import { Stream } from "@most/types"
-import { $Slider } from "../$ButterflySlider"
+import { $Slider } from "../$Slider"
 import { $ButtonPrimary } from "../form/$Button"
 import { $Dropdown, $defaultSelectContainer } from "../form/$Dropdown"
 import { $card } from "../../elements/$common"
@@ -21,10 +21,11 @@ import { CHAIN_NATIVE_TO_ADDRESS, getTokenDescription } from "./utils"
 import { IEthereumProvider } from "eip1193-provider"
 import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 import { WALLET } from "../../logic/provider"
-import { $TradePnlHistory } from "./$TradeCardPreview"
 import { $label } from "../../common/$TextField"
 import { BrowserStore } from "../../logic/store"
 import { getErc20Balance } from "../../logic/contract/trade"
+import { MouseEventParams } from "lightweight-charts"
+import { $TradePnlHistory, IPricefeedTick } from "./$TradePnlHistory"
 
 
 
@@ -34,6 +35,7 @@ export interface ITradeState {
   collateralUsd: Stream<bigint>
   inputTokenPrice: Stream<bigint>
   collateralTokenPrice: Stream<bigint>
+  collateralAvailableLiquidityUsd: Stream<bigint>
   indexTokenPrice: Stream<bigint>
   walletBalance: Stream<bigint>
 
@@ -104,6 +106,10 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
   [walletChange, walletChangeTether]: Behavior<IEthereumProvider | null, IEthereumProvider | null>,
 
   [requestTrade, requestTradeTether]: Behavior<PointerEvent, PointerEvent>,
+
+  // [hoveredPriceTick, hoveredPriceTickTether]: Behavior<IPricefeedTick & TimelineTime, IPricefeedTick & TimelineTime>,
+  [crosshairMove, crosshairMoveTether]: Behavior<MouseEventParams, MouseEventParams>,
+
 
 ) => {
 
@@ -218,10 +224,29 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
   }, tradeState, slideLeverage)
 
   const sizeChangeEffect = mergeArray([
-    map(pos => pos?.size || 0n, state.vaultPosition),
     inputSizeDelta,
     sample(tradeParams.size, tradeParams.collateral)
   ])
+
+  const initialLeverage = map(pos => {
+    if (!pos) {
+      return 0
+    }
+
+    return bnDiv(pos.size, pos.collateral) / MAX_LEVERAGE_NORMAL
+  }, state.vaultPosition)
+
+
+
+  const pnlCrossHairTimeChange = replayLatest(multicast(startWith(null, skipRepeatsWith(((xsx, xsy) => xsx.time === xsy.time), crosshairMove))))
+
+  const pnlCrossHairTime = map((cross: MouseEventParams) => {
+    if (cross) {
+      return cross.seriesPrices.values().next().value
+    }
+
+    return null
+  }, pnlCrossHairTimeChange)
 
   return [
     $card(style({ gap: '20px', padding: '15px' }))(
@@ -239,7 +264,6 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
                 merge(
                   now(node),
                   filter(() => false, snapshot((params, val) => {
-                    console.log(val)
                     if (val === 0n) {
                       node.element.value = ''
                       return
@@ -593,33 +617,36 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
       ),
 
       style({ margin: '0 -15px' })($Slider({
-        value: tradeParams.leverage,
+        value: mergeArray([
+          initialLeverage,
+          tradeParams.leverage
+        ]),
         thumbSize: 60,
         disabled: map(state => !state.isIncrease && state.vaultPosition === null, tradeState),
         color: map(isLong => isLong ? pallete.positive : pallete.negative, tradeParams.isLong),
-        min: snapshot((params, { pos, isIncrease }) => {
+        min: map(({ collateralUsd, pos, isIncrease }) => {
           if (!isIncrease) {
             return 0
           }
 
-          const totalCollateral = (pos?.collateral || 0n) + params.collateralUsd
+          const totalCollateral = (pos?.collateral || 0n) + collateralUsd
           const totalSize = pos?.size || 0n
           const multiplier = bnDiv(totalSize, totalCollateral) / MAX_LEVERAGE_NORMAL
 
           return multiplier
-        }, tradeState, combineObject({ collateral: tradeParams.collateral, pos: state.vaultPosition, isIncrease: tradeParams.isIncrease })),
-        max: snapshot((params, { pos, isIncrease }) => {
+        }, combineObject({ collateral: tradeParams.collateral, collateralUsd: state.collateralUsd, pos: state.vaultPosition, isIncrease: tradeParams.isIncrease })),
+        max: map(({ collateralUsd, pos, isIncrease }) => {
           if (isIncrease) {
             return 1
           }
 
           // const collateralUsd = getTokenUsd(collateral, params.indexTokenPrice, params.indexTokenDescription)
-          const totalCollateral = (pos?.collateral || 0n) - params.collateralUsd
+          const totalCollateral = (pos?.collateral || 0n) - collateralUsd
           const totalSize = (pos?.size || 0n)
           const multiplier = bnDiv(totalSize, totalCollateral) / MAX_LEVERAGE_NORMAL
 
           return multiplier
-        }, tradeState, combineObject({ collateral: tradeParams.collateral, pos: state.vaultPosition, isIncrease: tradeParams.isIncrease })),
+        }, combineObject({ collateral: tradeParams.collateral, collateralUsd: state.collateralUsd, pos: state.vaultPosition, isIncrease: tradeParams.isIncrease })),
         thumbText: map(n => formatLeverageNumber.format(n * MAX_LEVERAGE_NORMAL) + 'x')
       })({
         change: slideLeverageTether()
@@ -656,20 +683,32 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
           return $container()
         }
 
-        const hoverChartPnl: Stream<bigint> = multicast(switchLatest(combineArray(t => {
-          if (isTradeSettled(t)) {
-            return now(t.realisedPnl - t.fee)
+
+        const hoverChartPnl = multicast(switchLatest(map((chartCxChange) => {
+          if (chartCxChange) {
+            return now(chartCxChange)
           }
 
-          return map(price => getDelta(t.averagePrice, price, t.size), state.indexTokenPrice)
+          if (isTradeSettled(trade)) {
+            return now(formatFixed(trade.realisedPnl - trade.fee, 30))
+          }
 
-        }, now(trade))))
+          return map(price => {
+            const delta = getDelta(trade.averagePrice, price, trade.size)
+            const deltaPercentage = getDeltaPercentage(delta, trade.collateral)
 
-        const chartRealisedPnl = map(delta => formatFixed(delta, 30), hoverChartPnl)
+            const newLocal = formatFixed(delta + trade.realisedPnl - trade.fee, 30)
+            return newLocal
+          }, state.indexTokenPrice)
+
+        }, pnlCrossHairTime)))
+
+
 
         return $column(
           $container(
             style({
+              pointerEvents: 'none',
               textAlign: 'center',
               fontSize: '1.75em', alignItems: 'baseline', paddingTop: '15px', paddingBottom: '15px', background: 'radial-gradient(rgba(0, 0, 0, 0.37) 9%, transparent 63%)',
               lineHeight: 1,
@@ -678,7 +717,7 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
               position: 'relative'
             })(
               $NumberTicker({
-                value$: map(Math.round, motion({ ...MOTION_NO_WOBBLE, precision: 15, stiffness: 210 }, 0, chartRealisedPnl)),
+                value$: map(Math.round, motion({ ...MOTION_NO_WOBBLE, precision: 15, stiffness: 210 }, 0, hoverChartPnl)),
                 incrementColor: pallete.positive,
                 decrementColor: pallete.negative
               })
@@ -686,7 +725,8 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
             $TradePnlHistory({
               trade, latestPrice: state.indexTokenPrice, chain
             })({
-              // crosshairMove: crosshairMoveTether()
+              crosshairMove: crosshairMoveTether(),
+              // hoveredPriceTick: hoveredPriceTickTether()
             })
           )
         )
@@ -694,10 +734,16 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
 
       }, state.trade)),
 
-      $row(style({ placeContent: 'center' }))(
+      $row(
+        style({ placeContent: 'center' })
+      )(
         $IntermediateConnectButton({
           walletStore: walletStore,
-          $container: $column(layoutSheet.spacingBig, style({ zIndex: 10 })),
+          $container: $column(
+            layoutSheet.spacingBig,
+            style({ zIndex: 10 }),
+            styleBehavior(map(xcsChange => xcsChange && xcsChange.time ? { opacity: .3 } : { opacity: 1 }, pnlCrossHairTimeChange))
+          ),
           $display: map(() => {
 
             return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
@@ -785,6 +831,7 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
 
           return bnDiv(posSize - size, posCollateral - params.collateralUsd) / MAX_LEVERAGE_NORMAL
         }, tradeState, sizeChangeEffect),
+        initialLeverage,
         slideLeverage
       ]),
       switchIsIncrease,
@@ -848,13 +895,7 @@ const $field = $element('input')(attr({ placeholder: '0.0', type: 'number' }), s
 
 const $hintInput = (label: Stream<string>, val: Stream<string>, change: Stream<string>) => $row(layoutSheet.spacingTiny, style({ fontSize: '0.75em' }))(
   $text(style({}))(val),
-  $icon({
-    svgOps: style({ transform: 'rotate(-90deg)' }),
-    width: '16px',
-    $content: $caretDown,
-    viewBox: '0 0 32 32',
-    fill: pallete.foreground,
-  }),
+  $text(style({ color: pallete.foreground }))('→'),
   $text(style({}))(change),
   $text(style({ color: pallete.foreground }))(label),
 )

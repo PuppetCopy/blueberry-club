@@ -7,7 +7,7 @@ import { IWalletLink } from "@gambitdao/wallet-link"
 import { awaitPromises, constant, empty, filter, map, merge, mergeArray, multicast, now, snapshot, startWith, switchLatest, tap } from "@most/core"
 import { $buttonAnchor, $ButtonPrimary, $ButtonSecondary } from "../../components/form/$Button"
 import { $defaultSelectContainer, $Dropdown } from "../../components/form/$Dropdown"
-import { IBerryDisplayTupleMap, getLabItemTupleIndex, saleDescriptionList, LabItemSale, IBerryLabItems, USE_CHAIN, IToken, GBC_ADDRESS, ILabItemOwnership, saleLastDate, tokenIdAttributeTuple } from "@gambitdao/gbc-middleware"
+import { IBerryDisplayTupleMap, getLabItemTupleIndex, saleDescriptionList, LabItemSale, IBerryLabItems, USE_CHAIN, IToken, GBC_ADDRESS, ILabItemOwnership, getLatestSaleRule, tokenIdAttributeTuple } from "@gambitdao/gbc-middleware"
 import { $labItem, getBerryFromToken, getTokenSlots } from "../../logic/common"
 import { $berryTileId } from "../../components/$common"
 import { fadeIn } from "../../transitions/enter"
@@ -294,7 +294,7 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
               const id = item.id
 
               const unixTime = unixTimestampNow()
-              const activeMint = saleLastDate(item)
+              const activeMint = getLatestSaleRule(item)
 
 
               const upcommingSaleDate = activeMint.start

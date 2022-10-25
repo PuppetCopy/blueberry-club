@@ -45,7 +45,7 @@ export const $leverage = (pos: IAbstractTrade) =>
 export const $ProfitLossText = (pnl: Stream<bigint> | bigint, colorful = true) => {
   const pnls = isStream(pnl) ? pnl : now(pnl)
 
-  const display = multicast(map(n => {
+  const display = multicast(map((n: bigint) => {
     return (n > 0n ? '+' : '') + formatReadableUSD(n)
   }, pnls))
 

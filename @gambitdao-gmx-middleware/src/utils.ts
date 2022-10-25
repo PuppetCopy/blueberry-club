@@ -38,7 +38,7 @@ export function readableNumber(ammount: number | bigint) {
     return EMPTY_MESSAGE
   }
 
-  if (whole.replace(/^-/, '') === '0' || whole.length < 3) {
+  if (whole.replace(/^-/, '') === '0' || whole.length < 2) {
     const shortDecimal = trimTrailingNumber(decimal)
     return whole + (shortDecimal ? '.' + shortDecimal : '')
   }
@@ -66,7 +66,7 @@ export function formatReadableUSD(ammount: bigint, options?: Intl.NumberFormatOp
   const amountUsd = formatFixed(ammount, USD_DECIMALS)
   const opts = options
     ? { ...defaultNumberFormatOption, ...options }
-    : amountUsd > 100 ? defaultNumberFormatOption : { ...defaultNumberFormatOption, maximumFractionDigits: 1 }
+    : Math.abs(amountUsd) > 100 ? defaultNumberFormatOption : { ...defaultNumberFormatOption, maximumFractionDigits: 1 }
 
   return new Intl.NumberFormat("en-US", opts).format(amountUsd)
 }
@@ -326,8 +326,7 @@ export function intervalListFillOrderMap<T, R, RTime extends R & TimelineTime = 
     }
 
     return timeline
-  },
-    [normalizedSeed])
+  }, [normalizedSeed])
 }
 
 
@@ -393,7 +392,7 @@ class WithAnimationFrameSink<T> implements Sink<T> {
   constructor(private afp: AnimationFrames, private sink: Sink<T>) { }
 
   event(time: number, value: T): void {
-    
+
     if (this.latestPendingFrame > -1) {
       this.afp.cancelAnimationFrame(this.latestPendingFrame)
     }
@@ -429,7 +428,7 @@ export function replayState<A>(state: StreamInput<A>): Stream<A> {
   return replayLatest(multicast(combineObject(state)))
 }
 
-export function getPositionKey (account: string, collateralToken: string, indexToken: string, isLong: boolean) {
+export function getPositionKey(account: string, collateralToken: string, indexToken: string, isLong: boolean) {
   return keccak256(
     ["address", "address", "address", "bool"],
     [account, collateralToken, indexToken, isLong]

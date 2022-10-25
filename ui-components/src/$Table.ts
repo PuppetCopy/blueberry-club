@@ -111,7 +111,7 @@ export const $Table = <T, FilterState = never>({
           constant(col.sortBy)
         )
 
-        return $cellHeader(behavior, col.columnOp || O())(
+        return $cellHeader(behavior)(col.columnOp || O())(
           style({ cursor: 'pointer' }, col.$head),
           switchLatest(map(s => {
 

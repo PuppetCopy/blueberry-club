@@ -85,9 +85,17 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IPositionRouter__factory>;
     getContractFactory(
+      name: "IPositionRouterCallbackReceiver",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IPositionRouterCallbackReceiver__factory>;
+    getContractFactory(
       name: "IRouter",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IRouter__factory>;
+    getContractFactory(
+      name: "IShortsTracker",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IShortsTracker__factory>;
     getContractFactory(
       name: "IVault",
       signerOrOptions?: ethers.Signer | FactoryOptions
@@ -116,6 +124,26 @@ declare module "hardhat/types/runtime" {
       name: "Router",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Router__factory>;
+    getContractFactory(
+      name: "ShortsTracker",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.ShortsTracker__factory>;
+    getContractFactory(
+      name: "MaliciousTraderTest",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.MaliciousTraderTest__factory>;
+    getContractFactory(
+      name: "PositionRouterCallbackReceiverTest",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.PositionRouterCallbackReceiverTest__factory>;
+    getContractFactory(
+      name: "ShortsTrackerTest",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.ShortsTrackerTest__factory>;
+    getContractFactory(
+      name: "VaultTest",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.VaultTest__factory>;
     getContractFactory(
       name: "Vault",
       signerOrOptions?: ethers.Signer | FactoryOptions
@@ -293,6 +321,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.OrderBookReader__factory>;
     getContractFactory(
+      name: "PriceFeedTimelock",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.PriceFeedTimelock__factory>;
+    getContractFactory(
       name: "Reader",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Reader__factory>;
@@ -344,10 +376,6 @@ declare module "hardhat/types/runtime" {
       name: "RewardDistributor",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.RewardDistributor__factory>;
-    getContractFactory(
-      name: "RewardManager",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.RewardManager__factory>;
     getContractFactory(
       name: "RewardRouter",
       signerOrOptions?: ethers.Signer | FactoryOptions
@@ -548,10 +576,20 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.IPositionRouter>;
     getContractAt(
+      name: "IPositionRouterCallbackReceiver",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IPositionRouterCallbackReceiver>;
+    getContractAt(
       name: "IRouter",
       address: string,
       signer?: ethers.Signer
     ): Promise<Contracts.IRouter>;
+    getContractAt(
+      name: "IShortsTracker",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IShortsTracker>;
     getContractAt(
       name: "IVault",
       address: string,
@@ -587,6 +625,31 @@ declare module "hardhat/types/runtime" {
       address: string,
       signer?: ethers.Signer
     ): Promise<Contracts.Router>;
+    getContractAt(
+      name: "ShortsTracker",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.ShortsTracker>;
+    getContractAt(
+      name: "MaliciousTraderTest",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.MaliciousTraderTest>;
+    getContractAt(
+      name: "PositionRouterCallbackReceiverTest",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.PositionRouterCallbackReceiverTest>;
+    getContractAt(
+      name: "ShortsTrackerTest",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.ShortsTrackerTest>;
+    getContractAt(
+      name: "VaultTest",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.VaultTest>;
     getContractAt(
       name: "Vault",
       address: string,
@@ -808,6 +871,11 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.OrderBookReader>;
     getContractAt(
+      name: "PriceFeedTimelock",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.PriceFeedTimelock>;
+    getContractAt(
       name: "Reader",
       address: string,
       signer?: ethers.Signer
@@ -872,11 +940,6 @@ declare module "hardhat/types/runtime" {
       address: string,
       signer?: ethers.Signer
     ): Promise<Contracts.RewardDistributor>;
-    getContractAt(
-      name: "RewardManager",
-      address: string,
-      signer?: ethers.Signer
-    ): Promise<Contracts.RewardManager>;
     getContractAt(
       name: "RewardRouter",
       address: string,

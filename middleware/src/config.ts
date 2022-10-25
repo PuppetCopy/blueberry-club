@@ -5,10 +5,10 @@ import { IAttributeMappings, LabItemSale, SaleType } from "./types"
 
 export const USE_CHAIN = CHAIN.ARBITRUM
 
-export const GLOBAL_W3P = 'wss://arb-mainnet.g.alchemy.com/v2/RBsflxWv6IhITsLxAWcQlhCqSuxV7Low'
+export const GLOBAL_W3P = 'wss://arb-mainnet.g.alchemy.com/v2/Rf-9XHJG_C6xvhApXKg1tNCZmAOBaA5A'
 export const GLOBAL_W3P_HTTP = 'https://arbitrum-mainnet.infura.io/v3/6d7e461ad6644743b92327579860b662'
 
-export const GLOBAL_W3P_ARBITRUM = 'wss://arb-mainnet.g.alchemy.com/v2/RBsflxWv6IhITsLxAWcQlhCqSuxV7Low'
+export const GLOBAL_W3P_ARBITRUM = GLOBAL_W3P
 export const GLOBAL_W3P_AVALANCHE = 'https://api.avax.network/ext/bc/C/rpc'
 
 export const BLUEBERRY_REFFERAL_CODE = '0x424c554542455252590000000000000000000000000000000000000000000000'
@@ -43,6 +43,89 @@ export const saleConfig = {
 }
 
 export const saleDescriptionList: LabItemSale[] = [
+  {
+    name: "Skeleton",
+    description: "Frankenstein and Dracula have nothing on Bloody Mary, although all these Classics are definitely scary. Here’s some thing from GBC for you it’s a real gusher, please let me introduce to you the infamous Mr. BoneCrusher!",
+    id: IAttributeMappings["Skeleton"],
+    mintRuleList: [
+      {
+        supply: 75,
+        type: SaleType.holder,
+        cost: 0n,
+        contractAddress: "0xa7c0b1F830D3427688Ea56FAEc42eF2674E1Be6C",
+        start: toTime(2022, 9, 30, 18),
+        finish: toTime(2022, 10, 30, 18),
+        accountLimit: 1
+      }
+    ]
+  },
+  {
+    name: "Scary Night",
+    description: "Ghosts, ghouls & goblins are giving you a fright, while vampires & zombies can’t wait to take a bite. For Halloween there will be plenty of candy for all your delight, so don’t be afraid and have a BERRY spooky night!",
+    id: IAttributeMappings["Scary Night"],
+    mintRuleList: [
+      {
+        supply: 125,
+        type: SaleType.holder,
+        cost: 0n,
+        contractAddress: "0xb6112aF0C2B8A3CE4A22BA9BA542830F20Fa4BdA",
+        start: toTime(2022, 9, 30, 18),
+        finish: toTime(2022, 10, 30, 18),
+        accountLimit: 1
+      }
+    ],
+  },
+  {
+    name: "Holographic",
+    description: `GBC goes to NFT Paris
+« This item includes additional minter(ONLY) benefits » 
+
+The NFT Paris is an event that will gather Builders, Artists, Curators, Brand, Collectors & Biggest NFT Collections. It will take place on February 24-25th, 2023 near the Eiffeil Tower in Paris. 
+
+By minting this item, you will be able to attend this conference, discover new projects, meet other Berries and much more 🫐👀
+
+Fore more details check our see discord discussions and even help us improve this experience
+`,
+    id: IAttributeMappings["Holographic Background"],
+
+    externalLinks: [
+      {
+        link: 'https://www.nftparis.xyz/',
+        name: 'NFT Paris Website'
+      },
+      {
+        link: 'https://discord.com/channels/941356283234250772/942121185456570439/1033648582881984582',
+        name: 'Discord Discussion'
+      },
+    ],
+    mintRuleList: [
+      {
+        supply: 42,
+        type: SaleType.holder,
+        cost: parseEther('0.4').toBigInt(),
+        contractAddress: "0x1E68618FC7709b2E7Cd5e0C147C5eB7952621386",
+        start: toTime(2022, 9, 28, 18),
+        finish: toTime(2022, 10, 28, 18),
+        accountLimit: 1
+      },
+      {
+        supply: 3,
+        type: SaleType.whitelist,
+        cost: parseEther('0.4').toBigInt(),
+        nonce: 0,
+        contractAddress: "0x809A6228a28778a8e6BD67d738F2c489a69b732C",
+        start: toTime(2022, 9, 28, 18),
+        finish: toTime(2022, 10, 28, 18),
+        accountLimit: 1,
+        addressList: [
+          "0xA7335b93ACef9A799e4C2A8dc559292f222D055C",
+          "0xd5bb4094B40802c64E79ba8eaCF39A81a8Da1BEd",
+          "0x6786939a63acf04b5ea7ab42178a30e1453f7453",
+        ],
+        signatureList: [],
+      }
+    ]
+  },
   // {
   //   name: "Uzumaki",
   //   description: "The BLUEBERRY referral code is show stoppin, So the NFT’s are droppin, These electrified berries be poppin, Got their hands karate choppin.",

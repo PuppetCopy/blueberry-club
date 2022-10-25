@@ -230,7 +230,7 @@ export const $livePnl = (trade: ITrade, pos: Stream<bigint>) => $row(
     map(price => {
       const delta = getDelta(trade.averagePrice, price, trade.size)
 
-      return delta - trade.fee
+      return trade.realisedPnl + delta - trade.fee
     }, pos)
   )
 )

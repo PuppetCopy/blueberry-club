@@ -1,10 +1,7 @@
 import { $svg, attr, $Node, $wrapNativeElement, style } from "@aelea/dom"
 import { map, now, tap } from "@most/core"
 
-import {
-  IAttributeBody, IAttributeHat,
-  IAttributeClothes, IBerryDisplayTupleMap, berryPartsToSvg
-} from "@gambitdao/gbc-middleware"
+import { IBerryDisplayTupleMap, berryPartsToSvg } from "@gambitdao/gbc-middleware"
 import { $IntermediatePromise } from "@gambitdao/ui-components"
 import { SvgPartsMap } from "@gambitdao/gbc-middleware"
 
@@ -28,7 +25,7 @@ export const $berry = (
   displayTuple: Partial<IBerryDisplayTupleMap>,
   size: string | number = 250
 ) => {
-  const sizeNorm = typeof size === 'number' ?  size + 'px' : size
+  const sizeNorm = typeof size === 'number' ? size + 'px' : size
 
   return $svg('svg')(
     style({ minWidth: sizeNorm, height: sizeNorm }),
@@ -45,7 +42,7 @@ export const $loadBerry = (
   size: string | number = 250
 ) => {
 
-  const query = now(import("@gambitdao/gbc-middleware/src/mappings/svgParts").then(({ "default": svgParts }) => svgParts))
+  const query = now(import("@gambitdao/gbc-middleware/src/mappings/svgParts").then(res => res.default))
 
   return $IntermediatePromise({
     query,

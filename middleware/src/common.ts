@@ -29,7 +29,7 @@ export function isSaleWithinTimeRange(rule: MintRule): boolean {
   return now > start && now < finish
 }
 
-export function saleLastDate(sale: LabItemSale): MintRule {
+export function getLatestSaleRule(sale: LabItemSale): MintRule {
   const l = sale.mintRuleList.length
 
   if (!l) {

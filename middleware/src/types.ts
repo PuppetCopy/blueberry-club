@@ -160,8 +160,10 @@ export enum IAttributeMappings {
   High = 213,
   "Juice Head" = 214,
   "Ultra Sound BLAT" = 215,
-  Uzumaki = 216,
-  xMithical = 217
+  "Holographic Background" = 216,
+  xMithical = 217,
+  "Scary Night" = 218,
+  Skeleton = 219,
 }
 
 
@@ -259,7 +261,8 @@ export enum IAttributeClothes {
   AVALANCHE_HOODIE = IAttributeMappings["Avalanche Hoodie"],
   GLP_SHIRT = IAttributeMappings["GLP Shirt"],
   SUMMER_BUOY = IAttributeMappings["Summer Buoy"],
-  ULTRASOUND_BAT = IAttributeMappings["Ultra Sound BLAT"]
+  ULTRASOUND_BAT = IAttributeMappings["Ultra Sound BLAT"],
+  SKELETON = IAttributeMappings.Skeleton
 }
 
 
@@ -300,13 +303,6 @@ export enum IAttributeFaceAccessory {
   BEARD_WHITE = IAttributeMappings["Beard White"],
   NOODLES = IAttributeMappings.Noodles
 }
-
-
-
-
-
-
-
 
 export enum IAttributeHat {
   AFRO_GREEN = IAttributeMappings["Afro Green"],
@@ -373,9 +369,12 @@ export enum IAttributeHat {
   LAB_FLASK = IAttributeMappings["Lab Flask"],
   GBC_WINE_BOTTLE_CLUB = IAttributeMappings["GBC x Wine Bottle Club"],
   JUICE_HEAD = IAttributeMappings["Juice Head"],
-  UZUMAKI = IAttributeMappings.Uzumaki,
+  // UZUMAKI = IAttributeMappings.Uzumaki,
   XMITHICAL = IAttributeMappings.xMithical
 }
+
+
+
 
 export enum IAttributeBackground {
   RED = IAttributeMappings.Red,
@@ -395,6 +394,8 @@ export enum IAttributeBackground {
 
   CAMO = IAttributeMappings['Camo Background'],
   GIORGIO_BALBI_BG = IAttributeMappings["GBC x Giorgio Balbi"],
+  HOLOGRAPHIC_BG = IAttributeMappings["Holographic Background"],
+  SCARY_NIGHT = IAttributeMappings["Scary Night"]
 }
 
 export enum SaleType {
@@ -443,6 +444,11 @@ export interface LabItemSale {
   id: number // mapped to global unique ID
   name: string // displays in UI
   description: string // dispolays in UI
+
+  externalLinks?: {
+    name: string
+    link: string
+  }[]
 
   mintRuleList: MintRule[]
 }
