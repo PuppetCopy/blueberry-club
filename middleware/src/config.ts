@@ -106,8 +106,8 @@ For more details check our see discord discussions and even help us improve this
       {
         supply: 41,
         type: SaleType.holder,
-        cost: parseEther('0.4').toBigInt(),
-        contractAddress: "0xed7A84293B7adda0a74a121BE7ae8a93802FEd1c",
+        cost: parseEther('0.35').toBigInt(),
+        contractAddress: "0xaA8f27dA5e73deF9ffc1CfedD90BCaD9FeA36B20",
         start: toTime(2022, 9, 28, 18),
         finish: toTime(2022, 10, 28, 18),
         accountLimit: 1
@@ -115,9 +115,9 @@ For more details check our see discord discussions and even help us improve this
       {
         supply: 4,
         type: SaleType.whitelist,
-        cost: parseEther('0.4').toBigInt(),
+        cost: parseEther('0.35').toBigInt(),
         nonce: 0,
-        contractAddress: "0xF26f4400d0F3Eae37Ae4752E4d8a287eFfa8957f",
+        contractAddress: "0xA8503345A18EF77C21F5eE0Fcf587B115A4bBbe4",
         start: toTime(2022, 9, 28, 18),
         finish: toTime(2022, 10, 28, 18),
         accountLimit: 1,
@@ -127,7 +127,7 @@ For more details check our see discord discussions and even help us improve this
           "0x6786939a63acf04b5ea7ab42178a30e1453f7453",
           "0x9103E518b3e39CB8fa4096331e74e24d8D8E2622",
         ],
-        signatureList: [["0xf5d83062ec0f3693ebbf39da3108fcd3cc2403d2330be09e847923e395f8fd6b", "0x5003c2145909df76ed6ac74f8b8f42cb5684e8d9b5f2afa29ebcada1dc8ed9dd"], ["0x2cd626844679b858000936608aa03c8b5c4b1457861a78042ed7201bbf69bef4", "0xe5e8fc018ad045a1e0b166f2b5586237a20efb7fca8425302156cfd4212639ad"], ["0xbf81b740dd044298521a88bddbc8c3c2af91ddc40540f8a259014bf1c385eb70", "0x5003c2145909df76ed6ac74f8b8f42cb5684e8d9b5f2afa29ebcada1dc8ed9dd"], ["0x61502a6fd22e210476a8a0f17b945e95dde9593f36c89c49d16f53921fded69a", "0xe5e8fc018ad045a1e0b166f2b5586237a20efb7fca8425302156cfd4212639ad"]],
+        signatureList: [["0x663db51a03ddfbc92c3739ce6e3f7d5c1577407a1ea5da235a198b71865a21bb", "0x02693398c61ff6ba477386f2b66ec078ac418a9f295ddb0cbb7f9568f09d8b42"], ["0x91ccc53977e4bf6e636e93ced7da2a728538db3f36f5be780791b885c3f4f421", "0x3a6f96cf64b9ff01e3f78168c151e10847febc52e8231911ea209c423a3e39f3"], ["0x17d0bc746a9ced37d4d985a9724fc6a157909e774a1284069532dc37c9d7abfc", "0x02693398c61ff6ba477386f2b66ec078ac418a9f295ddb0cbb7f9568f09d8b42"], ["0xc7ed5b2025d7a4f232b376707cc4347d584f49a530c97332369f82f0ac38038e", "0x3a6f96cf64b9ff01e3f78168c151e10847febc52e8231911ea209c423a3e39f3"]],
       }
     ]
   },
