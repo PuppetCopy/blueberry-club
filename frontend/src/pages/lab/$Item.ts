@@ -1,9 +1,9 @@
 import { Behavior, combineArray } from "@aelea/core"
 import { $element, $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
-import { $column, $icon, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
+import { $ButtonIcon, $column, $icon, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { $accountIconLink, $responsiveFlex } from "../../elements/$common"
+import { $accountIconLink, $addToCalendar, $responsiveFlex } from "../../elements/$common"
 import { attributeIndexToLabel, mintLabelMap, getLabItemTupleIndex, labItemDescriptionListMap, saleMaxSupply, SaleType } from "@gambitdao/gbc-middleware"
 import { countdownFn, displayDate, formatFixed, unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { pallete } from "@aelea/ui-components-theme"
@@ -12,13 +12,14 @@ import { $labItem, takeUntilLast } from "../../logic/common"
 import { $seperator2 } from "../common"
 import { getMintCount } from "../../logic/contract/sale"
 import { empty, map, multicast, switchLatest } from "@most/core"
-import { $anchor } from "@gambitdao/ui-components"
+import { $anchor, $discord } from "@gambitdao/ui-components"
 import { $opensea } from "../../elements/$icons"
 import { $GbcWhitelist } from "../../components/mint/$HolderMint"
 import { $WhitelistMint } from "../../components/mint/$WhitelistMint"
 import { $PublicMint } from "../../components/mint/$PublicMint"
 import { timeChange } from "../../components/mint/mintUtils2"
 import { IEthereumProvider } from "eip1193-provider"
+import { $ButtonSecondary } from "../../components/form/$Button"
 
 
 interface ILabItem {
@@ -29,6 +30,7 @@ interface ILabItem {
 
 export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => component((
   [changeRoute, changeRouteTether]: Behavior<string, string>,
+  [clickNotifyMint, clickNotifyMintTether]: Behavior<PointerEvent, PointerEvent>,
   [walletChange, walletChangeTether]: Behavior<IEthereumProvider | null, IEthereumProvider | null>,
 ) => {
 
@@ -91,7 +93,6 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
 
         $column(layoutSheet.spacingBig)(
           $column(style({ gap: '50px' }))(
-
             ...item.mintRuleList.flatMap((mintRule, idx) => {
 
               const mintCount = multicast(getMintCount(mintRule, 15000))
@@ -116,11 +117,7 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
                   $row(layoutSheet.spacing, style({ alignItems: 'baseline' }))(
                     $text(style({ fontWeight: 'bold', fontSize: '1.55em' }))(currentSaleType),
                     $row(layoutSheet.spacing)(
-                      $accountIconLink(mintRule.contractAddress),
-                      $node(
-                        // $text(style({ color: pallete.foreground }))(isFinished ? `Ended on ` : `Sale will close in `),
-                        // $text(displayDate(endDate))
-                      )
+                      $accountIconLink(mintRule.contractAddress)
                     ),
                     $node(style({ flex: 1 }))(),
                     switchLatest(map(amount => {
@@ -150,12 +147,24 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
                       return $text(style({ color: pallete.foreground }))(`Sale Finished!`)
                     }
 
+                    console.log(mintRule.start)
+
                     return time < mintRule.start
                       ? $row(layoutSheet.spacing, style({ alignItems: 'baseline' }))(
                         $text(style({ color: pallete.foreground }))('Starting In '),
-                        $column(
-                          $text(style({ fontSize: '1.55em', fontWeight: 'bold' }))(countdownFn(mintRule.start, time)),
-                          $text(style({ fontSize: '.75em' }))(displayDate(mintRule.start)),
+                        $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+                          $addToCalendar({
+                            time: new Date(mintRule.start * 1000),
+                            title: `blueberry.club MINT - ${item.name}`,
+                            description: `${item.description}  \n\n${document.location.href}`
+                          }),
+                          // $row(style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }))(
+                          //   $icon({ $content: $discord, width: '22px', viewBox: `0 0 32 32` })
+                          // ),
+                          $column(
+                            $text(style({ fontSize: '1.55em', fontWeight: 'bold' }))(countdownFn(mintRule.start, time)),
+                            $text(style({ fontSize: '.75em' }))(displayDate(mintRule.start)),
+                          ),
                         )
                       )
                       : sale
@@ -183,7 +192,6 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
                 idx < item.mintRuleList.length - 1 ? $seperator2 : empty()
               ]
             })
-
           ),
         )
 
