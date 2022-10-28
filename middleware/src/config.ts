@@ -104,20 +104,20 @@ For more details check our see discord discussions and even help us improve this
     ],
     mintRuleList: [
       {
-        supply: 42,
+        supply: 41,
         type: SaleType.holder,
         cost: parseEther('0.4').toBigInt(),
-        contractAddress: "0x1E68618FC7709b2E7Cd5e0C147C5eB7952621386",
+        contractAddress: "0xed7A84293B7adda0a74a121BE7ae8a93802FEd1c",
         start: toTime(2022, 9, 28, 18),
         finish: toTime(2022, 10, 28, 18),
         accountLimit: 1
       },
       {
-        supply: 3,
+        supply: 4,
         type: SaleType.whitelist,
         cost: parseEther('0.4').toBigInt(),
         nonce: 0,
-        contractAddress: "0x809A6228a28778a8e6BD67d738F2c489a69b732C",
+        contractAddress: "0xF26f4400d0F3Eae37Ae4752E4d8a287eFfa8957f",
         start: toTime(2022, 9, 28, 18),
         finish: toTime(2022, 10, 28, 18),
         accountLimit: 1,
@@ -125,8 +125,9 @@ For more details check our see discord discussions and even help us improve this
           "0xA7335b93ACef9A799e4C2A8dc559292f222D055C",
           "0xd5bb4094B40802c64E79ba8eaCF39A81a8Da1BEd",
           "0x6786939a63acf04b5ea7ab42178a30e1453f7453",
+          "0x9103E518b3e39CB8fa4096331e74e24d8D8E2622",
         ],
-        signatureList: [["0x0effcbcc605a8100f2bcc45c8272c924c613976800e5eb119dd7430499ca3dc7"], ["0x56f7c105f95dfa5f574de3c49e5adaac7f7e0fa8038f7e0f417c668fe66a3174", "0xc3158f19be593aff73ba63100dde0fc2893ee0924e034f860312601eb637cd9a"], ["0x2d66a819b6a80e4c1ca3a495981a085ecf26f25ce743d5b9fd7f2c381384adbb", "0xc3158f19be593aff73ba63100dde0fc2893ee0924e034f860312601eb637cd9a"]],
+        signatureList: [["0xf5d83062ec0f3693ebbf39da3108fcd3cc2403d2330be09e847923e395f8fd6b", "0x5003c2145909df76ed6ac74f8b8f42cb5684e8d9b5f2afa29ebcada1dc8ed9dd"], ["0x2cd626844679b858000936608aa03c8b5c4b1457861a78042ed7201bbf69bef4", "0xe5e8fc018ad045a1e0b166f2b5586237a20efb7fca8425302156cfd4212639ad"], ["0xbf81b740dd044298521a88bddbc8c3c2af91ddc40540f8a259014bf1c385eb70", "0x5003c2145909df76ed6ac74f8b8f42cb5684e8d9b5f2afa29ebcada1dc8ed9dd"], ["0x61502a6fd22e210476a8a0f17b945e95dde9593f36c89c49d16f53921fded69a", "0xe5e8fc018ad045a1e0b166f2b5586237a20efb7fca8425302156cfd4212639ad"]],
       }
     ]
   },
