@@ -83,21 +83,38 @@ export function getLeverageChange(
 
 
 
-export function getDelta(positionPrice: bigint, price: bigint, size: bigint) {
+export function getPriceDeltaPercentage(positionPrice: bigint, price: bigint) {
   const priceDelta = price - positionPrice
 
-  return size * priceDelta / positionPrice
+  return priceDelta / positionPrice
+}
+
+export function getDelta(nChange: bigint, n: bigint, size: bigint) {
+  const priceDelta = n - nChange
+
+  return size * priceDelta / nChange
+}
+
+export function getPositionPnL(isLong: boolean, priceChange: bigint, price: bigint, size: bigint) {
+  return isLong ? getDelta(priceChange, price, size) : -getDelta(priceChange, price, size)
 }
 
 export function getDeltaPercentage(delta: bigint, collateral: bigint) {
   return delta * BASIS_POINTS_DIVISOR / collateral
 }
 
-export function getAveragePriceFromDelta(pnl: bigint, size: bigint, markPrice: bigint, sizeDelta: bigint) {
+export function getAveragePriceFromDelta(islong: boolean, size: bigint, price: bigint, pnl: bigint, sizeDelta: bigint) {
   const nextSize = size + sizeDelta
-  const divisor = nextSize + pnl
 
-  return markPrice * nextSize / divisor
+  if (islong) {
+    const divisor = pnl > 0n ? nextSize + pnl : nextSize - pnl
+
+    return price * nextSize / divisor
+  }
+  
+  const divisor = pnl > 0n ? nextSize - pnl : nextSize + pnl
+
+  return price * nextSize / divisor
 }
 
 
@@ -199,7 +216,7 @@ export function toAccountSummary(list: ITrade[]): IAccountSummary[] {
         fee: seed.fee + next.fee,
         collateral: seed.collateral + next.collateral,
         collateralDelta: seed.collateralDelta + next.collateralDelta,
-        realisedPnl: seed.realisedPnl + (next.realisedPnl - next.fee),
+        realisedPnl: seed.realisedPnl + next.realisedPnl,
         size: seed.size + next.size,
         sizeDelta: seed.sizeDelta + next.sizeDelta,
         realisedPnlPercentage: seed.realisedPnlPercentage + next.realisedPnlPercentage,

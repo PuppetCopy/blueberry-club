@@ -17,7 +17,7 @@ export function timeSince(time: number) {
   const interval = intervals.find(i => i.seconds < timeDelta)
 
   if (!interval) {
-    return ''
+    return 'now'
   }
 
   const count = Math.floor(timeDelta / interval.seconds)
@@ -25,7 +25,7 @@ export function timeSince(time: number) {
 }
 
 
-const everySec = map(unixTimestampNow, periodic(1000))
+export const everySec = map(unixTimestampNow, periodic(1000))
 
 export const displayDate = (unixTime: number) => {
   return `${new Date(unixTime * 1000).toDateString()} ${new Date(unixTime * 1000).toLocaleTimeString() }`

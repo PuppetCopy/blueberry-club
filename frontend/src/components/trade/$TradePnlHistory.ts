@@ -2,7 +2,10 @@ import { Behavior, combineArray } from "@aelea/core"
 import { component, INode, style } from "@aelea/dom"
 import { $column, observer } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { unixTimestampNow, query, fromJson, isTradeSettled, getDelta, getDeltaPercentage, intervalListFillOrderMap, isTradeClosed, isTradeLiquidated, isTradeOpen, unixTimeTzOffset, formatReadableUSD, IChainParamApi, ITrade, IPositionDelta, formatFixed } from "@gambitdao/gmx-middleware"
+import {
+  unixTimestampNow, query, fromJson, isTradeSettled, getDeltaPercentage, intervalListFillOrderMap,
+  isTradeClosed, isTradeLiquidated, isTradeOpen, unixTimeTzOffset, formatReadableUSD, IChainParamApi, ITrade, IPositionDelta, formatFixed, getPositionPnL
+} from "@gambitdao/gmx-middleware"
 import { getPricefeedVisibleColumns } from "@gambitdao/ui-components"
 import { fromPromise, multicast, startWith, skipRepeats, combine, switchLatest, empty, skipRepeatsWith, map } from "@most/core"
 import { Stream } from "@most/types"
@@ -42,7 +45,7 @@ export const $TradePnlHistory = ({ trade, latestPrice, pixelsPerBar = 5, chartCo
   const intervalTime = getPricefeedVisibleColumns(160, from, to)
   const params = { tokenAddress: '_' + trade.indexToken, interval: '_' + intervalTime, from, to }
 
-  const queryFeed = fromPromise(query.graphClientMap[chain](query.document.pricefeed, params as any, { requestPolicy: 'network-only' }))
+  const queryFeed = fromPromise(query.graphClientMap[chain](query.document.pricefeedDoc, params as any, { requestPolicy: 'network-only' }))
   const priceFeedQuery = map(res => res.pricefeeds.map(fromJson.pricefeedJson), queryFeed)
 
   const historicPnL = multicast(combineArray((feed, displayColumnCount) => {
@@ -55,7 +58,7 @@ export const $TradePnlHistory = ({ trade, latestPrice, pixelsPerBar = 5, chartCo
     const endtime = isTradeSettled(trade) ? trade.settledTimestamp : unixTimestampNow()
     const timeRange = endtime - trade.timestamp
     const intervalTime = Math.floor(timeRange / displayColumnCount)
-    const initialPnl = getDelta(trade.averagePrice, trade.increaseList[0].price, trade.size)
+    const initialPnl = getPositionPnL(trade.isLong, trade.averagePrice, trade.increaseList[0].price, trade.size)
     const initialPnlPercentage = getDeltaPercentage(initialPnl, trade.collateral)
 
     const initalUpdate = trade.updateList[0]
@@ -92,12 +95,12 @@ export const $TradePnlHistory = ({ trade, latestPrice, pixelsPerBar = 5, chartCo
           delta = prev.delta
           deltaPercentage = prev.deltaPercentage
         } else if (next.__typename === 'UpdatePosition') {
-          delta = getDelta(next.averagePrice, next.markPrice, next.size) + next.realisedPnl - fee
+          delta = getPositionPnL(trade.isLong, next.averagePrice, next.markPrice, next.size) + next.realisedPnl - fee
           deltaPercentage = getDeltaPercentage(delta, next.collateral)
           realisedPnl = next.realisedPnl
           size = next.size
         } else {
-          delta = getDelta(prev.averagePrice, next.c, prev.size) + prev.realisedPnl - fee
+          delta = getPositionPnL(trade.isLong, prev.averagePrice, next.c, prev.size) + prev.realisedPnl - fee
           deltaPercentage = getDeltaPercentage(delta, prev.collateral)
         }
 
@@ -112,14 +115,14 @@ export const $TradePnlHistory = ({ trade, latestPrice, pixelsPerBar = 5, chartCo
 
     if (isTradeClosed(trade)) {
       const price = trade.decreaseList[trade.decreaseList.length - 1].price
-      const delta = getDelta(trade.averagePrice, price, trade.size)
+      const delta = getPositionPnL(trade.isLong, trade.averagePrice, price, trade.size)
       const deltaPercentage = getDeltaPercentage(delta, trade.collateral)
       const value = formatFixed(delta + trade.realisedPnl, 30)
 
       data.push({ ...lastChange, delta, deltaPercentage, value, time: trade.closedPosition.timestamp })
     } else if (isTradeLiquidated(trade)) {
       const price = trade.liquidatedPosition.markPrice
-      const delta = getDelta(trade.averagePrice, price, trade.size)
+      const delta = getPositionPnL(trade.isLong, trade.averagePrice, price, trade.size)
       const deltaPercentage = getDeltaPercentage(delta + trade.realisedPnl, trade.collateral)
 
       data.push({ ...lastChange, delta, deltaPercentage, time: trade.liquidatedPosition.timestamp })
@@ -151,7 +154,7 @@ export const $TradePnlHistory = ({ trade, latestPrice, pixelsPerBar = 5, chartCo
                 const nextTime = unixTimestampNow()
                 const nextTimeslot = Math.floor(nextTime / intervalTime)
 
-                const pnl = getDelta(trade.averagePrice, price, trade.size) + trade.realisedPnl - trade.fee
+                const pnl = getPositionPnL(trade.isLong, trade.averagePrice, price, trade.size) + trade.realisedPnl - trade.fee
                 const value = formatFixed(pnl, 30)
 
                 return {

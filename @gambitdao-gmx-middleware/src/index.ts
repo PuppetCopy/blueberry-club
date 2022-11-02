@@ -9,7 +9,9 @@ export * from './gmxUtils'
 export * from './constant'
 export * from './tether'
 export * from './comTypes'
-export * from './fromJson'
 export * from './common'
+
+export * as fromJson from './fromJson'
 export * as query from './graph/graph'
+export * as api from './graph/api'
 

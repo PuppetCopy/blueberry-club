@@ -369,10 +369,6 @@ export function getAccountExplorerUrl(chain: CHAIN, account: string) {
 }
 
 
-type StreamInput<T> = {
-  [P in keyof T]: Stream<T[P]>
-}
-
 class WithAnimationFrame<T> {
   constructor(private afp: AnimationFrames, private source: Stream<T>) { }
 
@@ -424,7 +420,12 @@ export const drawWithinFrame = <T>(source: Stream<T>, afp: AnimationFrames = win
   new WithAnimationFrame(afp, source)
 
 
-export function replayState<A>(state: StreamInput<A>): Stream<A> {
+
+export type StateStream<T> = {
+  [P in keyof T]: Stream<T[P]>
+}
+
+export function replayState<A>(state: StateStream<A>): Stream<A> {
   return replayLatest(multicast(combineObject(state)))
 }
 

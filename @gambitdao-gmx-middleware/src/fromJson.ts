@@ -6,11 +6,11 @@ import {
 } from "./types"
 
 
-function baseEntityJson<T extends  IIdentifiableEntity>(json: T): T {
+export function baseEntityJson<T extends  IIdentifiableEntity>(json: T): T {
   return { ...json }
 }
 
-function positonCloseJson(json: IPositionClose): IPositionClose {
+export function positonCloseJson(json: IPositionClose): IPositionClose {
   const realisedPnl = BigInt(json.realisedPnl)
   const collateral = BigInt(json.collateral)
   const entryFundingRate = BigInt(json.entryFundingRate)
@@ -20,7 +20,7 @@ function positonCloseJson(json: IPositionClose): IPositionClose {
   return { ...baseEntityJson(json), size, collateral, entryFundingRate, realisedPnl, averagePrice }
 }
 
-function positionLiquidatedJson(json: IPositionLiquidated): IPositionLiquidated {
+export function positionLiquidatedJson(json: IPositionLiquidated): IPositionLiquidated {
   const collateral = BigInt(json.collateral)
   const markPrice = BigInt(json.markPrice)
   const size = BigInt(json.size)
@@ -30,7 +30,7 @@ function positionLiquidatedJson(json: IPositionLiquidated): IPositionLiquidated 
   return { ...baseEntityJson(json), size, markPrice, realisedPnl, collateral, reserveAmount, }
 }
 
-function pricefeedJson(json: IPricefeed): IPricefeed {
+export function pricefeedJson(json: IPricefeed): IPricefeed {
   const c = BigInt(json.c)
   const h = BigInt(json.h)
   const l = BigInt(json.l)
@@ -40,34 +40,34 @@ function pricefeedJson(json: IPricefeed): IPricefeed {
   return { ...json, c, h, l, o, tokenAddress }
 }
 
-function priceLatestJson(json: IPriceLatest): IPriceLatest {
+export function priceLatestJson(json: IPriceLatest): IPriceLatest {
   const value = BigInt(json.value)
 
   return { ...json, value }
 }
 
-function positionDeltaJson<T extends IAbstractPositionDelta>(json: T): T {
+export function positionDeltaJson<T extends IAbstractPositionDelta>(json: T): T {
   const sizeDelta = BigInt(json.sizeDelta)
   const collateralDelta = BigInt(json.collateralDelta)
 
   return { ...json, sizeDelta, collateralDelta, }
 }
 
-function positionIncreaseJson(json: IPositionIncrease): IPositionIncrease {
+export function positionIncreaseJson(json: IPositionIncrease): IPositionIncrease {
   const price = BigInt(json.price)
   const fee = BigInt(json.fee)
 
   return { ...json, ...positionDeltaJson(json), price, fee }
 }
 
-function positionDecreaseJson(json: IPositionDecrease): IPositionDecrease {
+export function positionDecreaseJson(json: IPositionDecrease): IPositionDecrease {
   const price = BigInt(json.price)
   const fee = BigInt(json.fee)
 
   return { ...json, ...positionDeltaJson(json), price, fee }
 }
 
-function positionUpdateJson(json: IPositionUpdate): IPositionUpdate {
+export function positionUpdateJson(json: IPositionUpdate): IPositionUpdate {
   const collateral = BigInt(json.collateral)
   const averagePrice = BigInt(json.averagePrice)
   const size = BigInt(json.size)
@@ -80,7 +80,7 @@ function positionUpdateJson(json: IPositionUpdate): IPositionUpdate {
 }
 
 
-function toTradeJson<T extends ITrade>(json: T): T {
+export function toTradeJson<T extends ITrade>(json: T): T {
   const decreaseList = json.decreaseList.map(positionDecreaseJson).sort((a, b) => a.timestamp - b.timestamp)
   const increaseList = json.increaseList.map(positionIncreaseJson).sort((a, b) => a.timestamp - b.timestamp)
   const updateList = json.updateList.map(positionUpdateJson).sort((a, b) => a.timestamp - b.timestamp)
@@ -115,7 +115,7 @@ function toTradeJson<T extends ITrade>(json: T): T {
 
 
 
-function toTradeSummary<T extends ITrade>(json: T): T {
+export function toTradeSummary<T extends ITrade>(json: T): T {
   const size = BigInt(json.size)
   const collateral = BigInt(json.collateral)
   const fee = BigInt(json.fee)
@@ -124,7 +124,7 @@ function toTradeSummary<T extends ITrade>(json: T): T {
 }
 
 
-function accountSummaryJson(json: IAccountSummary): IAccountSummary {
+export function accountSummaryJson(json: IAccountSummary): IAccountSummary {
   const realisedPnl = BigInt(json.realisedPnl)
   const realisedPnlPercentage = BigInt(json.realisedPnlPercentage)
   const fee = BigInt(json.fee)
@@ -137,16 +137,3 @@ function accountSummaryJson(json: IAccountSummary): IAccountSummary {
 
 
 
-
-export const fromJson = {
-  positonCloseJson,
-  positionLiquidatedJson,
-  positionIncreaseJson,
-  positionDecreaseJson,
-  positionUpdateJson,
-  toTradeJson,
-  accountSummaryJson,
-  toTradeSummary,
-  priceLatestJson,
-  pricefeedJson,
-}

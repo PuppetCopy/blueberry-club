@@ -23,25 +23,24 @@ export interface LeverageSlider extends Input<number> {
 export const $defaultThumb = $row(
   style({
     position: 'absolute',
-    fontWeight: 'bold',
+    fontWeight: 'bolder',
     background: pallete.background,
     borderRadius: '50px',
-    width: '50px',
     cursor: 'grab',
     padding: '5px',
-    fontSize: '.75em',
+    fontSize: '.5em',
     alignItems: 'center',
     placeContent: 'center',
     transition: 'border 250ms ease-in',
     borderStyle: 'solid',
-    borderWidth: '1px',
+    borderWidth: '2px',
   })
 )
 
 export const $Slider = ({
   value, thumbText,
   $thumb = $defaultThumb,
-  thumbSize = 50,
+  thumbSize = 32,
   color = now(pallete.primary),
   step = 0,
   disabled = now(false),
@@ -61,7 +60,7 @@ export const $Slider = ({
     const gutterColor = colorAlpha(pallete.background, .35)
     const minArea = `${gutterColor} ${min * 100}%,`
     const valArea = `${color} ${min * 100}% ${value * 100}%,`
-    const freeArea = `${pallete.background} ${value * 100}% ${max * 100}%,`
+    const freeArea = `#000 ${value * 100}% ${max * 100}%,`
     const maxArea = `${gutterColor} ${max * 100}%`
 
     const background = `linear-gradient(90deg, ${minArea} ${valArea} ${freeArea} ${maxArea}`
@@ -102,7 +101,7 @@ export const $Slider = ({
             skipRepeats,
             multicast
           ),
-          style({ width: thumbSize + 'px' })
+          style({ width: thumbSize + 'px', height: thumbSize + 'px' })
         )(
           $text(thumbText(value))
         )

@@ -8,6 +8,7 @@ export const USDG_DECIMALS = 18
 export const BASIS_POINTS_DIVISOR = 10000n
 export const DEPOSIT_FEE = 30n
 export const MAX_LEVERAGE = 305000n
+export const MIN_LEVERAGE = 11000n
 export const LEVERAGE_LIQUIDAITON = 1000000n
 export const DEDUCT_FOR_GAS = 2000000000000000n
 

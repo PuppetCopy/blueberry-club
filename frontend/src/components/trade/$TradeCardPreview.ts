@@ -5,8 +5,8 @@ import { pallete } from "@aelea/ui-components-theme"
 import { map, merge, multicast, now, skip, skipRepeats, startWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
 import {
-  getDelta, formatFixed, formatReadableUSD, isTradeSettled, readableNumber,
-  isTradeLiquidated, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, ITrade, IPricefeedParamApi, IChainParamApi, getDeltaPercentage, bnDiv
+  formatFixed, formatReadableUSD, isTradeSettled, readableNumber,
+  isTradeLiquidated, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, ITrade, IPricefeedParamApi, IChainParamApi, getDeltaPercentage, bnDiv, getPositionPnL
 } from "@gambitdao/gmx-middleware"
 import { ChartOptions, DeepPartial, MouseEventParams } from "lightweight-charts"
 import { $bull, $bear, $target, $RiskLiquidator, $tokenIconMap } from "@gambitdao/ui-components"
@@ -81,7 +81,7 @@ export const $TradeCardPreview = ({
     }
 
     return map(price => {
-      const delta = getDelta(trade.averagePrice, price, trade.size)
+      const delta = getPositionPnL(trade.isLong, trade.averagePrice, price, trade.size)
       const deltaPercentage = getDeltaPercentage(delta, trade.collateral)
 
       return formatFixed(delta + trade.realisedPnl - trade.fee, 30)

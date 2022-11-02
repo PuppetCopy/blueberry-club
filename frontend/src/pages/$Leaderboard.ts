@@ -1,23 +1,20 @@
-import { O, Behavior, combineObject, replayLatest } from "@aelea/core"
+import { Behavior } from "@aelea/core"
 import { $text, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, state } from "@aelea/ui-components"
 import { IToken } from "@gambitdao/gbc-middleware"
-import { CHAIN, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, formatReadableUSD, getChainName, getDelta, IAccountSummary, IChainParamApi, ILeaderboardRequest, intervalTimeMap, IPageParapApi, ITrade,  ITradeOpen, TOKEN_SYMBOL } from "@gambitdao/gmx-middleware"
+import { CHAIN, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, formatReadableUSD, getPositionPnL, IAccountSummary, IChainParamApi, ILeaderboardRequest, intervalTimeMap, IPageParapApi, ITrade,  ITradeOpen, TOKEN_SYMBOL } from "@gambitdao/gmx-middleware"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { chain, fromPromise, map, multicast, now, snapshot, startWith, switchLatest } from "@most/core"
+import { fromPromise, map, startWith } from "@most/core"
 import { $responsiveFlex } from "../elements/$common"
 import { queryLatestPrices, queryOwnerV2 } from "../logic/query"
 import { IAccountStakingStore } from "@gambitdao/gbc-middleware"
 import { connectGbc } from "../logic/contract/gbc"
-import { $accountPreview } from "../components/$AccountProfile"
 import { ContractTransaction } from "@ethersproject/contracts"
-import { $Table2 } from "../common/$Table2"
 import { Stream } from "@most/types"
-import { $alert, $bear, $bull, $Link, $nativeTokenMap, $ProfitLossText, $risk, $RiskLiquidator, $tokenIconMap, TablePageResponse } from "@gambitdao/ui-components"
+import { $bear, $bull, $nativeTokenMap, $ProfitLossText, $tokenIconMap, TablePageResponse } from "@gambitdao/ui-components"
 import { connectRewardDistributor } from "../logic/contract/rewardDistributor"
-import { config } from "webpack"
 import { pallete } from "@aelea/ui-components-theme"
 
 
@@ -228,7 +225,7 @@ export const $Leaderboard = ({ walletLink, openTrades, leaderboardTopList, paren
 export const $livePnl = (trade: ITrade, pos: Stream<bigint>) => $row(
   $ProfitLossText(
     map(price => {
-      const delta = getDelta(trade.averagePrice, price, trade.size)
+      const delta = getPositionPnL(trade.isLong, trade.averagePrice, price, trade.size)
 
       return trade.realisedPnl + delta - trade.fee
     }, pos)

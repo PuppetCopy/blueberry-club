@@ -1,5 +1,5 @@
 import { Behavior, O } from "@aelea/core"
-import { $Node, $text, component, eventElementTarget, INode, nodeEvent, style, styleInline } from '@aelea/dom'
+import { $Node, $text, component, eventElementTarget, INode, NodeComposeFn, nodeEvent, style, styleInline } from '@aelea/dom'
 import { $column, $row, observer } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { constant, mergeArray, switchLatest, empty, map, skipRepeats, startWith, filter, now } from "@most/core"
@@ -10,12 +10,13 @@ import { constant, mergeArray, switchLatest, empty, map, skipRepeats, startWith,
 export interface TooltipConfig {
   $anchor: $Node
   $content: $Node
+  $container?: NodeComposeFn<$Node>,
 }
 
 
 
 
-export const $Tooltip = ({ $anchor, $content }: TooltipConfig) => component((
+export const $Tooltip = ({ $anchor, $content, $container = $column(style({ position: 'relative' })) }: TooltipConfig) => component((
   [hover, hoverTether]: Behavior<INode, boolean>,
   [targetIntersection, targetIntersectionTether]: Behavior<INode, IntersectionObserverEntry[]>,
 ) => {
@@ -25,8 +26,7 @@ export const $Tooltip = ({ $anchor, $content }: TooltipConfig) => component((
 
 
   return [
-
-    $column(
+    $container(
       hoverTether(
         nodeEvent('pointerenter'),
         map(enterEvent => {
@@ -42,16 +42,9 @@ export const $Tooltip = ({ $anchor, $content }: TooltipConfig) => component((
         switchLatest,
         skipRepeats,
       ),
-      // hoverTether(
-      //   src => {
-      //     const enter = constant(true, nodeEvent('pointerenter', src))
-      //     const leave = constant(false, nodeEvent('pointerleave', src))
-      //     return mergeArray([enter, leave])
-      //   }
-      // ),
       targetIntersectionTether(
         observer.intersection(),
-      ), style({ position: 'relative' })
+      )
     )(
       $anchor,
       switchLatest(map(show => {

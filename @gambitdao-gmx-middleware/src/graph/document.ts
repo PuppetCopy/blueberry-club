@@ -136,7 +136,7 @@ query ($id: String) {
 `
 
 
-export const pricefeed: TypedDocumentNode<{ pricefeeds: IPricefeed[] }, Omit<IPricefeedParamApi, 'chain'>> = gql`
+export const pricefeedDoc: TypedDocumentNode<{ pricefeeds: IPricefeed[] }, Omit<IPricefeedParamApi, 'chain'>> = gql`
 ${schemaFragments}
 
 query($from: Int, $to: Int = 1999999999, $tokenAddress: TokenAddress, $interval: IntervalTime) {

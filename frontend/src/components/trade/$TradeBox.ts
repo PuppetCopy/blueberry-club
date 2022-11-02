@@ -5,11 +5,11 @@ import { pallete } from "@aelea/ui-components-theme"
 import {
   ARBITRUM_ADDRESS_LEVERAGE, AddressZero, TOKEN_DESCRIPTION_MAP, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, ARBITRUM_ADDRESS, formatFixed, readableNumber,
   MAX_LEVERAGE_NORMAL, TradeAddress, TOKEN_SYMBOL, parseFixed, formatReadableUSD, BASIS_POINTS_DIVISOR,
-  ITrade, IVaultPosition, IChainParamApi, isTradeSettled, getDelta, ARBITRUM_ADDRESS_TRADE, USD_DECIMALS, getTokenAmount, TokenDescription, MAX_LEVERAGE, bnDiv, replayState, DEPOSIT_FEE, formatToBasis, div, getDeltaPercentage, TimelineTime
+  ITrade, IVaultPosition, IChainParamApi, isTradeSettled, ARBITRUM_ADDRESS_TRADE, USD_DECIMALS, getTokenAmount, TokenDescription, MAX_LEVERAGE, bnDiv, replayState, DEPOSIT_FEE, div, getDeltaPercentage, StateStream, getPositionPnL, MIN_LEVERAGE
 } from "@gambitdao/gmx-middleware"
 import { $alertIcon, $bear, $bull, $tokenIconMap, $tokenLabelFromSummary, $Tooltip } from "@gambitdao/ui-components"
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { merge, multicast, mergeArray, now, snapshot, map, switchLatest, filter, skipRepeats, empty, combine, fromPromise, constant, sample, tap, startWith, skipRepeatsWith } from "@most/core"
+import { merge, multicast, mergeArray, now, snapshot, map, switchLatest, filter, skipRepeats, empty, combine, fromPromise, constant, sample, startWith, skipRepeatsWith } from "@most/core"
 import { Stream } from "@most/types"
 import { $Slider } from "../$Slider"
 import { $ButtonPrimary } from "../form/$Button"
@@ -25,30 +25,31 @@ import { $label } from "../../common/$TextField"
 import { BrowserStore } from "../../logic/store"
 import { getErc20Balance } from "../../logic/contract/trade"
 import { MouseEventParams } from "lightweight-charts"
-import { $TradePnlHistory, IPricefeedTick } from "./$TradePnlHistory"
+import { $TradePnlHistory } from "./$TradePnlHistory"
 
 
 
 export interface ITradeState {
-  trade: Stream<ITrade | null>
-  vaultPosition: Stream<IVaultPosition | null>
-  collateralUsd: Stream<bigint>
-  inputTokenPrice: Stream<bigint>
-  collateralTokenPrice: Stream<bigint>
-  collateralAvailableLiquidityUsd: Stream<bigint>
-  indexTokenPrice: Stream<bigint>
-  walletBalance: Stream<bigint>
+  trade: ITrade | null
+  vaultPosition: IVaultPosition | null
+  collateralDeltaUsd: bigint
+  inputTokenPrice: bigint
+  collateralTokenPrice: bigint
+  collateralAvailableLiquidityUsd: bigint
+  indexTokenPrice: bigint
+  walletBalance: bigint
 
-  swapFee: Stream<bigint>
-  marginFee: Stream<bigint>
-  fee: Stream<bigint>
+  swapFee: bigint
+  marginFee: bigint
+  executionFee: bigint
+  fee: bigint
 
-  inputTokenDescription: Stream<TokenDescription>
-  indexTokenDescription: Stream<TokenDescription>
-  collateralTokenDescription: Stream<TokenDescription>
+  inputTokenDescription: TokenDescription
+  indexTokenDescription: TokenDescription
+  collateralTokenDescription: TokenDescription
 
-  averagePrice: Stream<bigint | null>
-  liquidationPrice: Stream<bigint | null>
+  averagePrice: bigint | null
+  liquidationPrice: bigint | null
 
   // minCollateralRatio: Stream<bigint>
 
@@ -56,26 +57,34 @@ export interface ITradeState {
 }
 
 export interface ITradeParams {
-  isLong: Stream<boolean>
+  isLong: boolean
   // focusFactor: Stream<number>
 
-  inputToken: Stream<TradeAddress>
-  collateralToken: Stream<ARBITRUM_ADDRESS_TRADE>
-  indexToken: Stream<ARBITRUM_ADDRESS_LEVERAGE>
-  isIncrease: Stream<boolean>
+  inputToken: TradeAddress
+  collateralToken: ARBITRUM_ADDRESS_TRADE
+  indexToken: ARBITRUM_ADDRESS_LEVERAGE
+  isIncrease: boolean
 
-  collateralRatio: Stream<number>
-  leverage: Stream<number>
-  collateral: Stream<bigint>
-  size: Stream<bigint>
+  collateralRatio: number
+  leverage: bigint
+  collateralDelta: bigint
+  sizeDelta: bigint
+}
+
+
+
+
+
+export interface ITradeRequest extends ITradeParams, ITradeState {
+
 }
 
 interface ITradeBox {
   store: BrowserStore<string, "ROOT.GBC-TRADING">
   chain: IChainParamApi['chain'],
 
-  tradeParams: ITradeParams
-  state: ITradeState
+  tradeParams: StateStream<ITradeParams> // ITradeParams
+  state: StateStream<ITradeState>
 
   walletLink: IWalletLink
   walletStore: state.BrowserStore<WALLET, "walletStore">
@@ -101,11 +110,11 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
   // [focusSize, focusSizeTether]: Behavior<INode, FocusEvent>,
 
   [slideCollateralRatio, slideCollateralRatioTether]: Behavior<number, number>,
-  [slideLeverage, slideLeverageTether]: Behavior<number, number>,
+  [slideLeverage, slideLeverageTether]: Behavior<number, bigint>,
 
   [walletChange, walletChangeTether]: Behavior<IEthereumProvider | null, IEthereumProvider | null>,
 
-  [requestTrade, requestTradeTether]: Behavior<PointerEvent, PointerEvent>,
+  [requestTrade, requestTradeTether]: Behavior<PointerEvent, ITradeRequest>,
 
   // [hoveredPriceTick, hoveredPriceTickTether]: Behavior<IPricefeedTick & TimelineTime, IPricefeedTick & TimelineTime>,
   [crosshairMove, crosshairMoveTether]: Behavior<MouseEventParams, MouseEventParams>,
@@ -114,23 +123,22 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
 ) => {
 
 
-  const tradeState = replayState({ ...state, ...tradeParams })
+
+  const tradeState: Stream<ITradeRequest> = replayState({ ...state, ...tradeParams })
 
 
   const validationError = map((params) => {
 
-    if (params.leverage > 1) {
+    if (params.leverage > MAX_LEVERAGE) {
       return `Leverage exceeds ${MAX_LEVERAGE_NORMAL}x`
     }
 
     if (params.isIncrease) {
-      const minLeverage = params.leverage * MAX_LEVERAGE_NORMAL
-
-      if (params.collateral > params.walletBalance) {
+      if (params.collateralDelta > params.walletBalance) {
         return `Not enough ${params.inputTokenDescription.symbol} in connected account`
       }
 
-      if (minLeverage < 1.1) {
+      if (params.leverage < MIN_LEVERAGE) {
         return `Leverage below 1.1x`
       }
 
@@ -142,12 +150,12 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
 
     if (params.vaultPosition && !params.isIncrease) {
 
-      const totalSize = params.vaultPosition.size - params.size
-      const pnl = getDelta(params.vaultPosition.averagePrice, params.indexTokenPrice, totalSize)
+      const totalSize = params.vaultPosition.size - params.sizeDelta
+      const pnl = getPositionPnL(params.isLong, params.vaultPosition.averagePrice, params.indexTokenPrice, totalSize)
 
       const netCollateral = params.vaultPosition.collateral + pnl
 
-      if (params.collateralUsd + params.fee > netCollateral) {
+      if (params.collateralDeltaUsd + params.fee > netCollateral) {
         return `Exceeding liquidation price`
       }
     }
@@ -181,59 +189,40 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
 
 
   const slideSize = snapshot((params, leverage) => {
-    const leverageRatio = BigInt(Math.floor(Math.abs(leverage) * Number(BASIS_POINTS_DIVISOR)))
-    const leverageMultiplier = MAX_LEVERAGE * leverageRatio / BASIS_POINTS_DIVISOR
+    const collateral = params.collateralDeltaUsd + (params.vaultPosition?.collateral || 0n)
+    const size = collateral * leverage / BASIS_POINTS_DIVISOR
 
     if (!params.vaultPosition) {
-
-      const maxSizeUsd = (params.collateralUsd * MAX_LEVERAGE / BASIS_POINTS_DIVISOR)
-      const sizeDelta = (maxSizeUsd * leverageRatio / BASIS_POINTS_DIVISOR)
-
-      return sizeDelta
-    }
-
-    const ttlCollateral = params.vaultPosition.collateral + (params.isIncrease ? params.collateralUsd : -params.collateralUsd)
-    const multiplierDiv = div(params.vaultPosition.size, ttlCollateral)
-
-
-    const posLeverage = formatToBasis(multiplierDiv) / MAX_LEVERAGE_NORMAL
-
-    if (posLeverage === params.leverage) {
-      return 0n
+      return size
     }
 
     if (params.isIncrease) {
-      const addCollateral = params.collateralUsd // - params.fee
-      const collateral = addCollateral + params.vaultPosition.collateral
+      const currentMultiplier = div(params.vaultPosition.size, collateral)
 
+      if (currentMultiplier >= leverage) {
+        return 0n
+      }
 
-      const maxSizeUsd = (collateral * MAX_LEVERAGE / BASIS_POINTS_DIVISOR)
-      const sizeDelta = (maxSizeUsd * leverageRatio / BASIS_POINTS_DIVISOR) - params.vaultPosition.size
-
-      return sizeDelta
+      return size - params.vaultPosition.size
     }
 
-    const currentLeverageMultiplier = leverageMultiplier * BASIS_POINTS_DIVISOR / multiplierDiv
+    const sizeM = (params.vaultPosition.collateral - params.collateralDeltaUsd) * leverage / BASIS_POINTS_DIVISOR
 
-    const sizeM = params.vaultPosition.size * currentLeverageMultiplier / BASIS_POINTS_DIVISOR
-
-    // const feeBps = getSwapFeeBps(params, params.collateral)
-    // const addedSwapFee = feeBps ? collateralUsd * (BASIS_POINTS_DIVISOR - feeBps) / BASIS_POINTS_DIVISOR : 0n
-    // const outputAmountUsd = nextToUsd * getDenominator(params.indexTokenDescription.decimals) / params.indexTokenPrice
     return params.vaultPosition.size - sizeM
+
   }, tradeState, slideLeverage)
 
   const sizeChangeEffect = mergeArray([
     inputSizeDelta,
-    sample(tradeParams.size, tradeParams.collateral)
+    sample(tradeParams.sizeDelta, state.collateralDeltaUsd)
   ])
 
   const initialLeverage = map(pos => {
     if (!pos) {
-      return 0
+      return 0n
     }
 
-    return bnDiv(pos.size, pos.collateral) / MAX_LEVERAGE_NORMAL
+    return div(pos.size, pos.collateral)
   }, state.vaultPosition)
 
 
@@ -356,16 +345,20 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
               const posCollateral = params.vaultPosition?.collateral || 0n
 
               if (params.isIncrease) {
-                return formatReadableUSD(posCollateral + params.collateralUsd - params.fee)
+                const newLocal_1 = formatReadableUSD(
+                  posCollateral + params.collateralDeltaUsd - params.fee
+                )
+
+                return newLocal_1
               }
 
               if (!params.vaultPosition) {
                 return formatReadableUSD(0n)
               }
 
-              const pnl = getDelta(params.vaultPosition.averagePrice, params.indexTokenPrice, params.vaultPosition.size)
-              const adjustedPnlDelta = pnl < 0n ? pnl * params.size / params.vaultPosition.size : 0n
-              const netCollateral = posCollateral - params.collateralUsd + adjustedPnlDelta
+              const pnl = getPositionPnL(params.isLong, params.vaultPosition.averagePrice, params.indexTokenPrice, params.vaultPosition.size)
+              const adjustedPnlDelta = pnl < 0n ? pnl * params.sizeDelta / params.vaultPosition.size : 0n
+              const netCollateral = posCollateral - params.collateralDeltaUsd + adjustedPnlDelta
 
               return formatReadableUSD(netCollateral)
             }, tradeState)
@@ -426,7 +419,6 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
 
             return bnDiv(maxWithdraw, params.vaultPosition.collateral)
           }, tradeState),
-          thumbSize: 60,
           thumbText: map(n => Math.round(n * 100) + '%')
         })({
           change: slideCollateralRatioTether()
@@ -540,27 +532,16 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
             map((params) => {
               const posSize = params.vaultPosition?.size || 0n
 
-
               if (params.isIncrease) {
                 const posCollateral = params.vaultPosition?.collateral || 0n
-                const leverageRatio = BigInt(Math.floor(Math.abs(params.leverage) * Number(BASIS_POINTS_DIVISOR)))
-
-                const addCollateral = params.collateralUsd - params.fee
+                const addCollateral = params.collateralDeltaUsd - params.fee
                 const collateral = addCollateral + posCollateral
-
-
-                const maxSizeUsd = (collateral * MAX_LEVERAGE / BASIS_POINTS_DIVISOR)
-                const sizeDelta = (maxSizeUsd * leverageRatio / BASIS_POINTS_DIVISOR)
+                const sizeDelta = collateral * params.leverage / BASIS_POINTS_DIVISOR
 
                 return formatReadableUSD(sizeDelta)
-
-                // const collateralDeltaUsd = getTokenUsd(params.collateral, params.inputTokenPrice, params.indexTokenDescription.decimals) - params.fee
-                // const sizeDeltaUsd = collateralDeltaUsd * leverageMultiplier / BASIS_POINTS_DIVISOR
-
-                // return formatReadableUSD(posSize + sizeDeltaUsd)
               }
 
-              return formatReadableUSD(posSize - params.size)
+              return formatReadableUSD(posSize - params.sizeDelta)
             }, tradeState)
           ),
 
@@ -617,42 +598,66 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
       ),
 
       style({ margin: '0 -15px' })($Slider({
-        value: mergeArray([
+        value: map(lm => {
+          if (lm === null) {
+            return 0
+          }
+
+          const newLocal = bnDiv(lm, MAX_LEVERAGE)
+          // debugger
+          return newLocal
+        }, mergeArray([
           initialLeverage,
           tradeParams.leverage
-        ]),
-        thumbSize: 60,
-        disabled: map(state => !state.isIncrease && state.vaultPosition === null, tradeState),
+        ])),
+        disabled: map(state => {
+
+          if (state.vaultPosition === null) {
+            return !state.isIncrease || state.collateralDelta === 0n
+          }
+
+          return false
+        }, tradeState),
         color: map(isLong => isLong ? pallete.positive : pallete.negative, tradeParams.isLong),
-        min: map(({ collateralUsd, pos, isIncrease }) => {
+        min: map(({ collateralDeltaUsd, pos, isIncrease }) => {
           if (!isIncrease) {
             return 0
           }
 
-          const totalCollateral = (pos?.collateral || 0n) + collateralUsd
+          const totalCollateral = (pos?.collateral || 0n) + collateralDeltaUsd
           const totalSize = pos?.size || 0n
-          const multiplier = bnDiv(totalSize, totalCollateral) / MAX_LEVERAGE_NORMAL
+          const leverage = div(totalSize, totalCollateral)
 
-          return multiplier
-        }, combineObject({ collateral: tradeParams.collateral, collateralUsd: state.collateralUsd, pos: state.vaultPosition, isIncrease: tradeParams.isIncrease })),
-        max: map(({ collateralUsd, pos, isIncrease }) => {
+          const leverageBasis = bnDiv(leverage, MAX_LEVERAGE)
+
+          return leverageBasis
+        }, combineObject({ collateralDeltaUsd: state.collateralDeltaUsd, pos: state.vaultPosition, isIncrease: tradeParams.isIncrease })),
+        max: map(({ collateralDeltaUsd, pos, isIncrease }) => {
           if (isIncrease) {
             return 1
           }
 
           // const collateralUsd = getTokenUsd(collateral, params.indexTokenPrice, params.indexTokenDescription)
-          const totalCollateral = (pos?.collateral || 0n) - collateralUsd
+          const totalCollateral = (pos?.collateral || 0n) - collateralDeltaUsd
           const totalSize = (pos?.size || 0n)
           const multiplier = bnDiv(totalSize, totalCollateral) / MAX_LEVERAGE_NORMAL
 
           return multiplier
-        }, combineObject({ collateral: tradeParams.collateral, collateralUsd: state.collateralUsd, pos: state.vaultPosition, isIncrease: tradeParams.isIncrease })),
+        }, combineObject({ collateralDeltaUsd: state.collateralDeltaUsd, pos: state.vaultPosition, isIncrease: tradeParams.isIncrease })),
         thumbText: map(n => formatLeverageNumber.format(n * MAX_LEVERAGE_NORMAL) + 'x')
       })({
-        change: slideLeverageTether()
+        change: slideLeverageTether(
+          map(leverage => {
+            const leverageRatio = BigInt(Math.floor(Math.abs(leverage) * Number(BASIS_POINTS_DIVISOR)))
+            const leverageMultiplier = MAX_LEVERAGE * leverageRatio / BASIS_POINTS_DIVISOR
+
+            return leverageMultiplier
+          }),
+          multicast
+        )
       })),
 
-      $row(
+      $row(layoutSheet.spacing)(
         $row(layoutSheet.spacingTiny, style({ fontSize: '0.75em' }))(
           $Tooltip({
             $anchor: $text(style({ color: pallete.foreground }))('Fees'),
@@ -673,7 +678,28 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
             }, tradeState))
           })({}),
           $text(map(params => formatReadableUSD(params.fee), tradeState))
-        )
+        ),
+        $row(layoutSheet.spacingTiny, style({ fontSize: '0.75em' }))(
+          $Tooltip({
+            $anchor: $text(style({ color: pallete.foreground }))('Discount'),
+            $content: switchLatest(map(params => {
+              const depositTokenNorm = params.inputToken === AddressZero ? CHAIN_NATIVE_TO_ADDRESS[USE_CHAIN] : params.inputToken
+
+              return $column(
+                $text(style({ color: pallete.foreground }))('BLUEBERRY Referral applied for 10% discount'),
+                // depositTokenNorm !== params.indexToken ? $row(layoutSheet.spacingTiny)(
+                //   $text(style({ color: pallete.foreground }))('Swap'),
+                //   $text(getRebateDiscountUsd(params.swapFee))
+                // ) : empty(),
+                // $row(layoutSheet.spacingTiny)(
+                //   $text(style({ color: pallete.foreground }))('Margin'),
+                //   $text(getRebateDiscountUsd(params.marginFee))
+                // )
+              )
+            }, tradeState))
+          })({}),
+          $text(style({ color: pallete.positive }))(map(params => getRebateDiscountUsd(params.marginFee), tradeState))
+        ),
       ),
 
       switchLatest(map(trade => {
@@ -694,7 +720,7 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
           }
 
           return map(price => {
-            const delta = getDelta(trade.averagePrice, price, trade.size)
+            const delta = getPositionPnL(trade.isLong, trade.averagePrice, price, trade.size)
             const deltaPercentage = getDeltaPercentage(delta, trade.collateral)
 
             const newLocal = formatFixed(delta + trade.realisedPnl - trade.fee, 30)
@@ -734,9 +760,7 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
 
       }, state.trade)),
 
-      $row(
-        style({ placeContent: 'center' })
-      )(
+      $row(style({ placeContent: 'center' }))(
         $IntermediateConnectButton({
           walletStore: walletStore,
           $container: $column(
@@ -746,26 +770,23 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
           ),
           $display: map(() => {
 
-            return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+            return $row(layoutSheet.spacingSmall, style({ alignItems: 'center', position: 'relative' }))(
               $ButtonPrimary({
                 disabled: map(params => {
+                  if (params.leverage > MAX_LEVERAGE || params.leverage < MIN_LEVERAGE) {
+                    return true
+                  }
 
-                  const minLeverage = params.leverage * MAX_LEVERAGE_NORMAL
-
-                  if (params.isIncrease && params.leverage <= 1 && minLeverage >= 1.1 && (params.collateral > 0n || params.size > 0n) && params.collateral <= params.walletBalance) {
+                  if (params.isIncrease && (params.collateralDeltaUsd > 0n || params.sizeDelta > 0n) && params.collateralDelta <= params.walletBalance) {
                     return false
                   }
 
-
-                  if (
-                    params.vaultPosition && !params.isIncrease && params.leverage <= 1 && (params.size > 0n || params.collateral > 0n)
-                    && (params.isLong
-                      ? params.liquidationPrice && params.liquidationPrice <= params.indexTokenPrice
-                      : params.liquidationPrice && params.liquidationPrice >= params.indexTokenPrice)
-                  ) {
+                  if (params.vaultPosition && !params.isIncrease && (params.sizeDelta > 0n || params.collateralDeltaUsd > 0n)
+                    && (params.liquidationPrice === null || (params.isLong
+                      ? params.liquidationPrice! <= params.indexTokenPrice
+                      : params.liquidationPrice! >= params.indexTokenPrice))) {
                     return false
                   }
-
 
                   return true
                 }, tradeState),
@@ -778,7 +799,7 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
                     if (params.isIncrease) {
                       modLabel = 'Increase'
                     } else {
-                      modLabel = params.size === params.vaultPosition.size || params.collateral === params.vaultPosition.collateral ? 'Close' : 'Reduce'
+                      modLabel = params.sizeDelta === params.vaultPosition.size || params.collateralDeltaUsd === params.vaultPosition.collateral ? 'Close' : 'Reduce'
                     }
                   } else {
                     modLabel = 'Open'
@@ -787,7 +808,9 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
                   return `${modLabel} ${params.isLong ? 'Long' : 'Short'} ${outputToken.symbol}`
                 }, tradeState)),
               })({
-                click: requestTradeTether()
+                click: requestTradeTether(snapshot((state) => {
+                  return state
+                }, tradeState))
               }),
 
               switchLatest(map(error => {
@@ -796,8 +819,12 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
                 }
 
                 return $Tooltip({
-                  $content: $text(style({ fontSize: '.75em' }))(error),
-                  $anchor: $icon({ $content: $alertIcon, viewBox: '0 0 24 24', width: '28px', svgOps: style({ fill: pallete.negative, padding: '3px', filter: 'drop-shadow(black 0px 0px 10px) drop-shadow(black 0px 0px 10px) drop-shadow(black 0px 0px 1px)' }) })
+                  $content: $text(style({ fontSize: '.75em', }))(error),
+                  $container: $column(style({ position: 'absolute', top: '10px', right: '-17px', backgroundColor: '#000', borderRadius: '50%', })),
+                  $anchor: $icon({
+                    $content: $alertIcon, viewBox: '0 0 24 24', width: '28px',
+                    svgOps: style({ fill: pallete.negative, padding: '3px', filter: 'drop-shadow(black 0px 0px 10px) drop-shadow(black 0px 0px 10px) drop-shadow(black 0px 0px 1px)' })
+                  })
                 })({})
               }, skipRepeats(validationError)))
             )
@@ -813,7 +840,6 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
       switchIsLong,
       changeInputToken,
       changeIndexToken,
-      slideCollateralRatio,
       leverage: mergeArray([
         snapshot((params, size) => {
           const posCollateral = params.vaultPosition?.collateral || 0n
@@ -821,22 +847,26 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
           const totalSize = posSize + size
 
           if (params.isIncrease) {
-            const totalCollateral = posCollateral + params.collateralUsd
-            return bnDiv(totalSize, totalCollateral) / MAX_LEVERAGE_NORMAL
+            const totalCollateral = posCollateral + params.collateralDeltaUsd
+            return div(totalSize, totalCollateral)
           }
 
           if (!params.vaultPosition) {
-            return 0
+            return null
           }
 
-          return bnDiv(posSize - size, posCollateral - params.collateralUsd) / MAX_LEVERAGE_NORMAL
+          const levMultipler = div(posSize - size, posCollateral - params.collateralDeltaUsd) // / MAX_LEVERAGE
+          return levMultipler
+          // return formatToBasis(levMultipler)
+          // return bnDiv(posSize - size, posCollateral - params.collateralUsd) / MAX_LEVERAGE_NORMAL
         }, tradeState, sizeChangeEffect),
         initialLeverage,
+
         slideLeverage
       ]),
       switchIsIncrease,
       changeCollateralToken,
-      changeCollateral: mergeArray([
+      changeCollateralDelta: mergeArray([
         slideCollateral,
         inputCollateral,
       ]),
@@ -849,10 +879,11 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
         slideCollateralRatio,
         snapshot(params => {
           if (params.isIncrease) {
-            return bnDiv(params.collateral, params.walletBalance)
+            const newLocal = bnDiv(params.collateralDelta, params.walletBalance)
+            return newLocal
           }
 
-          return params.vaultPosition ? bnDiv(params.collateralUsd, params.vaultPosition.collateral) : 0n
+          return params.vaultPosition ? bnDiv(params.collateralDelta, params.vaultPosition.collateral) : 0n
         }, tradeState, inputCollateral),
 
         constant(0, switchIsIncrease)
@@ -899,3 +930,8 @@ const $hintInput = (label: Stream<string>, val: Stream<string>, change: Stream<s
   $text(style({}))(change),
   $text(style({ color: pallete.foreground }))(label),
 )
+
+
+function getRebateDiscountUsd(amountUsd: bigint) {
+  return formatReadableUSD(amountUsd * 1500n / BASIS_POINTS_DIVISOR)
+}
