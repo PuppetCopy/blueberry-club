@@ -651,10 +651,8 @@ export const $Trade = (config: ITradeComponent) => component((
             },
           ]
         })({})
-
-
-
       ),
+
       $column(style({ position: 'relative', flex: 1 }))(
         $chartContainer(
           $row(layoutSheet.spacing, style({ fontSize: '0.85em', position: 'absolute', padding: '8px', placeContent: 'center' }))(

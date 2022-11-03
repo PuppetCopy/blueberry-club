@@ -1,6 +1,6 @@
 import { Behavior, combineArray, combineObject, O, replayLatest } from "@aelea/core"
 import { component, INode, $element, attr, style, $text, nodeEvent, stylePseudo, $node, styleBehavior, motion, MOTION_NO_WOBBLE } from "@aelea/dom"
-import { $row, layoutSheet, $icon, $column, state, $NumberTicker, $Checkbox } from "@aelea/ui-components"
+import { $row, layoutSheet, $icon, $column, state, $NumberTicker, $Checkbox, screenUtils, $Popover } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import {
   ARBITRUM_ADDRESS_LEVERAGE, AddressZero, TOKEN_DESCRIPTION_MAP, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, ARBITRUM_ADDRESS, formatFixed, readableNumber,
@@ -13,7 +13,7 @@ import { merge, multicast, mergeArray, now, snapshot, map, switchLatest, filter,
 import { Stream } from "@most/types"
 import { $Slider } from "../$Slider"
 import { $ButtonPrimary } from "../form/$Button"
-import { $Dropdown, $defaultSelectContainer } from "../form/$Dropdown"
+import { $Dropdown, $defaultSelectContainer, $Select } from "../form/$Dropdown"
 import { $card } from "../../elements/$common"
 import { $caretDown } from "../../elements/$icons"
 import { USE_CHAIN } from "@gambitdao/gbc-middleware"
@@ -118,6 +118,7 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
 
   // [hoveredPriceTick, hoveredPriceTickTether]: Behavior<IPricefeedTick & TimelineTime, IPricefeedTick & TimelineTime>,
   [crosshairMove, crosshairMoveTether]: Behavior<MouseEventParams, MouseEventParams>,
+  [clickIndexGroup, clickIndexGroupTether]: Behavior<any, any>,
 
 
 ) => {
@@ -237,8 +238,10 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
     return null
   }, pnlCrossHairTimeChange)
 
+  const BOX_SPACING = '20px'
+
   return [
-    $card(style({ gap: '20px', padding: '15px' }))(
+    $card(style({ gap: '20px', padding: BOX_SPACING, margin: screenUtils.isMobileScreen ? '0 10px' : '' }))(
 
       $column(layoutSheet.spacing)(
         $row(layoutSheet.spacingSmall, style({ position: 'relative', alignItems: 'center' }))(
@@ -398,7 +401,7 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
         ),
       ),
 
-      style({ margin: '0 -15px' })(
+      style({ margin: `0 -${BOX_SPACING}` })(
         $Slider({
           value: tradeParams.collateralRatio,
           color: map(isIncrease => isIncrease ? pallete.middleground : pallete.indeterminate, tradeParams.isIncrease),
@@ -419,19 +422,16 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
 
             return bnDiv(maxWithdraw, params.vaultPosition.collateral)
           }, tradeState),
-          thumbText: map(n => Math.round(n * 100) + '%')
+          thumbText: map(n => Math.round(n * 100) + '\n%')
         })({
           change: slideCollateralRatioTether()
         })
       ),
 
       $column(layoutSheet.spacing)(
-        $row(layoutSheet.spacingSmall, style({ position: 'relative', alignItems: 'center' }))(
+        $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
 
-          // (
-          //   // styleBehavior(map(isIncrease => isIncrease === 1 ? {} : { color: pallete.foreground, backgroundColor: 'transparent' }, state.focusFactor)),
-          //   focusSizeTether(nodeEvent('focus'))
-          // )
+
           $field(
             O(
               map(node =>
@@ -465,63 +465,95 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
             }, state.indexTokenDescription))
           )(),
 
-          $Dropdown<boolean>({
-            $container: $row(style({ position: 'relative' })),
-            $selection: $row(style({ alignItems: 'center', cursor: 'pointer' }))(
-              switchLatest(map(option => {
-                return $row(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
-                  $icon({ $content: option ? $bull : $bear, fill: option ? pallete.positive : pallete.negative, width: '14px', viewBox: '0 0 32 32' }),
-                  $text(style({ fontSize: '.75em' }))(option ? 'Long' : 'Short'),
-                )
-              }, tradeParams.isLong)),
-              $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginTop: '3px' }), viewBox: '0 0 32 32' }),
-            ),
-            value: {
-              value: tradeParams.isLong,
-              $container: $defaultSelectContainer(style({ minWidth: '100px' })),
-              $$option: map(option => {
-                return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
-                  $icon({ $content: option ? $bull : $bear, fill: option ? pallete.positive : pallete.negative, width: '18px', viewBox: '0 0 32 32' }),
-                  $text(option ? 'Long' : 'Short'),
-                )
-              }),
-              list: [
-                true,
-                false
-              ],
-            }
-          })({
-            select: switchIsLongTether()
-          }),
+          // $Dropdown<boolean>({
+          //   $container: $row(style({ position: 'relative' })),
+          //   $selection: $row(style({ alignItems: 'center', cursor: 'pointer' }))(
+          //     switchLatest(map(option => {
+          //       return $row(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
+          //         $icon({ $content: option ? $bull : $bear, fill: option ? pallete.positive : pallete.negative, width: '14px', viewBox: '0 0 32 32' }),
+          //         $text(style({ fontSize: '.75em' }))(option ? 'Long' : 'Short'),
+          //       )
+          //     }, tradeParams.isLong)),
+          //     $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginTop: '3px' }), viewBox: '0 0 32 32' }),
+          //   ),
+          //   value: {
+          //     value: tradeParams.isLong,
+          //     $container: $defaultSelectContainer(style({ minWidth: '100px' })),
+          //     $$option: map(option => {
+          //       return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+          //         $icon({ $content: option ? $bull : $bear, fill: option ? pallete.positive : pallete.negative, width: '18px', viewBox: '0 0 32 32' }),
+          //         $text(option ? 'Long' : 'Short'),
+          //       )
+          //     }),
+          //     list: [
+          //       true,
+          //       false
+          //     ],
+          //   }
+          // })({
+          //   select: switchIsLongTether()
+          // }),
 
-          $Dropdown<TradeAddress>({
-            $container: $row(style({ position: 'relative', alignSelf: 'center' })),
-            $selection: $row(style({ alignItems: 'center', cursor: 'pointer' }))(
+          $Popover({
+            $$popContent: map(() => {
+              return $column(
+                $Select<TradeAddress>({
+                  value: tradeParams.indexToken,
+                  $container: $column(layoutSheet.spacing, style({ border: `1px solid ${pallete.horizon}`, borderWidth: '1px 1px 0', padding: '10px', position: 'relative', alignSelf: 'center' })),
+                  $$option: map(option => {
+                    const tokenDesc = option === AddressZero ? TOKEN_DESCRIPTION_MAP.ETH : TOKEN_DESCRIPTION_MAP[CHAIN_TOKEN_ADDRESS_TO_SYMBOL[option]]
+
+                    return style({
+                      borderBottom: `1px solid ${pallete.horizon}`,
+                      paddingBottom: '12px'
+                    })($tokenLabelFromSummary(tokenDesc))
+                  }),
+                  list: [
+                    ARBITRUM_ADDRESS.NATIVE_TOKEN,
+                    ARBITRUM_ADDRESS.LINK,
+                    ARBITRUM_ADDRESS.UNI,
+                    ARBITRUM_ADDRESS.WBTC,
+                  ]
+                })({
+                  select: changeIndexTokenTether()
+                })
+              )
+            }, clickIndexGroup),
+          })(
+            $row(clickIndexGroupTether(nodeEvent('click')), style({ cursor: 'pointer', position: 'relative', alignSelf: 'center', alignItems: 'center' }))(
+              switchLatest(map(isLong => {
+                return $icon({
+                  svgOps: style({ borderRadius: '50%', padding: '6px', zIndex: 1, marginRight: '-8px', backgroundColor: pallete.background, }),
+                  $content: isLong ? $bull : $bear,
+                  viewBox: '0 0 32 32',
+                  width: '36px',
+                })
+              }, tradeParams.isLong)),
               switchLatest(map(option => {
                 const tokenDesc = TOKEN_DESCRIPTION_MAP[CHAIN_TOKEN_ADDRESS_TO_SYMBOL[option]]
 
-                return $icon({ $content: $tokenIconMap[tokenDesc.symbol], width: '34px', viewBox: '0 0 32 32' })
+                return $icon({ $content: $tokenIconMap[tokenDesc.symbol], svgOps: style({ zIndex: 0, }), width: '34px', viewBox: '0 0 32 32' })
               }, tradeParams.indexToken)),
               $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginTop: '3px', marginLeft: '5px' }), viewBox: '0 0 32 32' }),
-            ),
-            value: {
-              value: tradeParams.indexToken,
-              $container: $defaultSelectContainer(style({ minWidth: '300px', right: 0 })),
-              $$option: map(option => {
-                const tokenDesc = option === AddressZero ? TOKEN_DESCRIPTION_MAP.ETH : TOKEN_DESCRIPTION_MAP[CHAIN_TOKEN_ADDRESS_TO_SYMBOL[option]]
+            )
+          )({}),
 
-                return $tokenLabelFromSummary(tokenDesc)
-              }),
-              list: [
-                ARBITRUM_ADDRESS.NATIVE_TOKEN,
-                ARBITRUM_ADDRESS.LINK,
-                ARBITRUM_ADDRESS.UNI,
-                ARBITRUM_ADDRESS.WBTC,
-              ],
-            }
-          })({
-            select: changeIndexTokenTether()
-          }),
+          // $Dropdown<TradeAddress>({
+          //   $container: $row(style({ position: 'relative', alignSelf: 'center' })),
+          //   $selection: ,
+          //   value: {
+          //     value: tradeParams.indexToken,
+          //     $container: $defaultSelectContainer(style({ minWidth: '300px', right: 0 })),
+          //     $$option: map(option => {
+          //       const tokenDesc = option === AddressZero ? TOKEN_DESCRIPTION_MAP.ETH : TOKEN_DESCRIPTION_MAP[CHAIN_TOKEN_ADDRESS_TO_SYMBOL[option]]
+
+          //       return $tokenLabelFromSummary(tokenDesc)
+          //     }),
+
+          //   }
+          // })({
+          //   select: changeIndexTokenTether()
+          // }),
 
         ),
         $row(layoutSheet.spacing, style({ placeContent: 'space-between', padding: '0' }))(
@@ -597,7 +629,7 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
         ),
       ),
 
-      style({ margin: '0 -15px' })($Slider({
+      style({ margin: `0 -${BOX_SPACING}` })($Slider({
         value: map(lm => {
           if (lm === null) {
             return 0
@@ -644,7 +676,7 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
 
           return multiplier
         }, combineObject({ collateralDeltaUsd: state.collateralDeltaUsd, pos: state.vaultPosition, isIncrease: tradeParams.isIncrease })),
-        thumbText: map(n => formatLeverageNumber.format(n * MAX_LEVERAGE_NORMAL) + 'x')
+        thumbText: map(n => formatLeverageNumber.format(n * MAX_LEVERAGE_NORMAL) + '\nx')
       })({
         change: slideLeverageTether(
           map(leverage => {
@@ -703,7 +735,7 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
       ),
 
       switchLatest(map(trade => {
-        const $container = $column(style({ position: 'relative', margin: '-15px -15px -85px -15px', zIndex: 0, height: '170px' }))
+        const $container = $column(style({ position: 'relative', margin: `-${BOX_SPACING} -${BOX_SPACING} -85px -${BOX_SPACING}`, zIndex: 0, height: '170px' }))
 
         if (trade === null) {
           return $container()

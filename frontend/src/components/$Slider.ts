@@ -18,29 +18,34 @@ export interface LeverageSlider extends Input<number> {
   thumbSize?: number
   color?: Stream<string>
 }
-
-
+// line - height: 0.8;
+// margin - top: 3px;
 export const $defaultThumb = $row(
   style({
+    whiteSpace: 'pre-wrap',
+    textAlign: 'center',
     position: 'absolute',
     fontWeight: 'bolder',
     background: pallete.background,
     borderRadius: '50px',
     cursor: 'grab',
     padding: '5px',
-    fontSize: '.5em',
+    touchAction: 'none',
+    marginTop: '3px',
+    lineHeight: .9,
+    fontSize: '0.65em',
     alignItems: 'center',
     placeContent: 'center',
     transition: 'border 250ms ease-in',
     borderStyle: 'solid',
-    borderWidth: '2px',
+    borderWidth: '1px',
   })
 )
 
 export const $Slider = ({
   value, thumbText,
   $thumb = $defaultThumb,
-  thumbSize = 32,
+  thumbSize = 36,
   color = now(pallete.primary),
   step = 0,
   disabled = now(false),
@@ -67,6 +72,7 @@ export const $Slider = ({
     return { background }
   }, state, map(x => colorAlpha(x, .5), color)))
 
+
   return [
     $rangeWrapper(sliderStyle)(
       $row(
@@ -80,7 +86,9 @@ export const $Slider = ({
             downEvent => {
 
               return snapshot(({ value, max, min }, { downEvent, sliderDimension }) => {
-                const drag = until(eventElementTarget('pointerup', window.document), eventElementTarget('pointermove', window.document))
+                const dragEnd = eventElementTarget('pointerup', window.document)
+                const dragStart = eventElementTarget('pointermove', window.document)
+                const drag = until(dragEnd, dragStart)
 
                 return drawLatest(map(moveEvent => {
                   const normalisedValue = Math.min(Math.max(value, min), max)

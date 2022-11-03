@@ -178,7 +178,7 @@ export default ({ baseRoute = '' }: Website) => component((
 
 
         router.contains(pagesRoute)(
-          $column(layoutSheet.spacingBig, style({ margin: '0 auto', maxWidth: '1120px', gap: screenUtils.isDesktopScreen ? '85px' : '55px', width: '100%' }))(
+          $column(layoutSheet.spacingBig, style({ margin: '0 auto', maxWidth: '1080px', gap: screenUtils.isDesktopScreen ? '85px' : '55px', width: '100%' }))(
             router.match(berryRoute)(
               $BerryPage({ walletLink, parentRoute: pagesRoute })({
                 changeRoute: linkClickTether()
