@@ -7,13 +7,13 @@ import {
   isTradeOpen, ITrade, unixTimestampNow, IRequestTradeQueryparam, getChainName,
   ITradeOpen, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, TradeAddress, ARBITRUM_ADDRESS_TRADE, BASIS_POINTS_DIVISOR, getAveragePriceFromDelta,
   getLiquidationPrice, getMarginFees, getTokenUsd, STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, TAX_BASIS_POINTS,
-  replayState, getDenominator, USD_PERCISION, periodicRun, formatReadableUSD, timeSince, IVaultPosition, getPositionKey, listen, IPositionIncrease, IPositionDecrease, getPositionPnL
+  replayState, getDenominator, USD_PERCISION, periodicRun, formatReadableUSD, timeSince, IVaultPosition, getPositionKey, listen, IPositionIncrease, IPositionDecrease, getPositionPnL, CHAIN
 } from "@gambitdao/gmx-middleware"
 
-import { IWalletLink } from "@gambitdao/wallet-link"
-import { combine, constant, map, mergeArray, multicast, periodic, scan, skipRepeats, switchLatest, debounce, empty, skip, now, startWith, snapshot, take } from "@most/core"
+import { IWalletLink, parseError } from "@gambitdao/wallet-link"
+import { combine, constant, map, mergeArray, multicast, periodic, scan, skipRepeats, switchLatest, debounce, empty, skip, now, startWith, snapshot, take, fromPromise } from "@most/core"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
-import { $arrowsFlip, $Link, $RiskLiquidator, $spinner } from "@gambitdao/ui-components"
+import { $alert, $alertTooltip, $arrowsFlip, $IntermediatePromise, $IntermediateTx, $Link, $RiskLiquidator, $spinner, $txHashRef } from "@gambitdao/ui-components"
 import { CandlestickData, CrosshairMode, LineStyle, Time } from "lightweight-charts"
 import { IEthereumProvider } from "eip1193-provider"
 import { Stream } from "@most/types"
@@ -29,7 +29,7 @@ import { $CandleSticks } from "../components/chart/$CandleSticks"
 import { CHAIN_NATIVE_TO_ADDRESS, getFeeBasisPoints, getTokenDescription, resolveLongPath } from "../components/trade/utils"
 import { BrowserStore } from "../logic/store"
 import { PositionRouter__factory } from "../logic/contract/gmx-contracts"
-import { ContractTransaction } from "@ethersproject/contracts"
+import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
 
 
 export interface ITradeComponent {
@@ -44,7 +44,7 @@ export interface ITradeComponent {
 }
 
 type RequestTrade = ITradeRequest & {
-  ctx: Promise<ContractTransaction | null>
+  ctxQuery: Promise<ContractTransaction>
   keeperResponse: Stream<KeeperExecutePosition>
   timestamp: number
 }
@@ -370,17 +370,20 @@ export const $Trade = (config: ITradeComponent) => component((
   const requestTradeMulticast = replayLatest(multicast(snapshot((params, req): RequestTrade => {
     const path = resolveLongPath(req.inputToken, req.indexToken)
     const contract = PositionRouter__factory.connect(ARBITRUM_ADDRESS.PositionRouter, web3Provider)
+    const allowedSlippage = 10n
 
+    const refPrice = req.isLong ? req.indexTokenPrice : req.indexTokenPrice
+    const priceBasisPoints = isLong ? BASIS_POINTS_DIVISOR + allowedSlippage : BASIS_POINTS_DIVISOR - allowedSlippage
+    const acceptablePrice = refPrice * priceBasisPoints / BASIS_POINTS_DIVISOR
 
-
-    const queryCtx = req.inputToken === AddressZero
+    const ctxQuery = req.inputToken === AddressZero
       ? params.trade.createIncreasePositionETH(
         path,
         req.indexToken,
         0,
         req.sizeDelta,
         req.isLong,
-        req.indexTokenPrice,
+        acceptablePrice,
         req.executionFee,
         BLUEBERRY_REFFERAL_CODE,
         params.trade.signer.getAddress(),
@@ -393,14 +396,14 @@ export const $Trade = (config: ITradeComponent) => component((
         0,
         req.sizeDelta,
         req.isLong,
-        req.indexTokenPrice,
+        acceptablePrice,
         req.executionFee,
         BLUEBERRY_REFFERAL_CODE,
         params.trade.signer.getAddress(),
         { value: req.executionFee }
       )
     // Request increase BTC Long, +91,785.01 USD, Acceptable Price: < 18,747.42 USD
-    const ctx = queryCtx
+    // const keeperRequest = ctxQuery//.then(ctx => ({ keeperResponse, ctx })).catch(() => null)
     // .catch(x => {
     //   console.log(x)
     //   return null
@@ -409,8 +412,8 @@ export const $Trade = (config: ITradeComponent) => component((
     // const ctx = await queryCtx
     // const crp = await ctx.wait()
     // req.params.trade.signer.getAddress()
-    const createIncreasePosition: Stream<KeeperExecutePosition> = mergeArray([listen(contract)('ExecuteIncreasePosition'), listen(contract)('ExecuteIncreasePosition')])
-    const createDecreasePosition: Stream<KeeperExecutePosition> = mergeArray([listen(contract)('ExecuteDecreasePosition'), listen(contract)('ExecuteDecreasePosition')])
+    const createIncreasePosition: Stream<KeeperExecutePosition> = mergeArray([listen(params.trade)('ExecuteIncreasePosition'), listen(params.trade)('ExecuteIncreasePosition')])
+    const createDecreasePosition: Stream<KeeperExecutePosition> = mergeArray([listen(params.trade)('ExecuteDecreasePosition'), listen(params.trade)('ExecuteDecreasePosition')])
 
     const failExecutePosition: Stream<KeeperExecutePosition> = mergeArray([
       listen(contract)('CancelIncreasePosition'),
@@ -429,28 +432,8 @@ export const $Trade = (config: ITradeComponent) => component((
 
     const timestamp = unixTimestampNow()
 
-    return { ...req, ctx, keeperResponse, timestamp, }
+    return { ...req, ctxQuery, keeperResponse, timestamp, }
   }, combineObject({ trade: trade.contract }), requestTrade)))
-
-
-
-  //   // return $column(
-  //   //   $row(layoutSheet.spacingSmall, style({ color: pallete.positive }))(
-  //   //     $text(style({ color: pallete.positive }))('Tx Succeeded'),
-  //   //     // $txHashRef(req.crp.transactionHash, chain)
-  //   //   ),
-  //   //   $seperator2,
-  //   //   $row(layoutSheet.spacingSmall, style({ color: pallete.positive }))(
-  //   //     $text(style({ color: pallete.positive }))('Requesting '),
-  //   //     switchLatest(map(params => {
-  //   //       const { acceptablePrice, account, amountIn, blockGap, executionFee, indexToken, isLong, minOut, path, sizeDelta, timeGap } = params
-  //   //       console.log(params)
-  //   //       const actionName = req.params.isIncrease ? 'increase' : 'reduce'
-  //   //       const message = `Request ${actionName} ${req.params.indexTokenDescription.symbol} ${formatReadableUSD(req.params.size)} @ ${formatReadableUSD(acceptablePrice)}`
-  //   //       return $text(message)
-  //   //     }, allExs))
-  //   //   ),
-  //   // )
 
 
 
@@ -540,107 +523,107 @@ export const $Trade = (config: ITradeComponent) => component((
           },
           columns: [
             {
-              $head: $text('Timestamp'),
-              columnOp: O(style({ flex: 1 })),
+              $head: $text('Time'),
+              columnOp: O(style({ flex: .7 })),
 
-              $body: map((pos) => {
-                const isKeeperReq = 'keeperResponse' in pos
-
-                if (isKeeperReq) {
-                  return $column(
-                    switchLatest(mergeArray([
-                      switchLatest(map(params => {
-                        const { acceptablePrice, account, amountIn, blockGap, executionFee, indexToken, isLong, minOut, path, sizeDelta, timeGap } = params
-
-                        console.log(params)
-                        // const actionName = pos.params.isIncrease ? 'increase' : 'reduce'
-                        // const message = `Request ${actionName} ${req.params.indexTokenDescription.symbol} ${formatReadableUSD(req.params.size)} @ ${formatReadableUSD(acceptablePrice)}`
-
-                        return $text('message')
-                      }, pos.keeperResponse)),
-                      now($spinner)
-                    ])),
-                    $row(layoutSheet.spacingSmall, style({ color: pallete.positive }))(
-                      $text(style({ color: pallete.positive }))('Tx Succeeded'),
-                      // $txHashRef(req.crp.transactionHash, chain)
-                    ),
-                  )
-                }
+              $body: map((req) => {
 
                 return $column(layoutSheet.spacingTiny, style({ fontSize: '.65em' }))(
-                  $text(timeSince(pos.timestamp) + ' ago'),
+                  $text(timeSince(req.timestamp) + ' ago'),
                   //   isKeeperReq
                   //     ? map(now => timeSince(pos.timestamp) + ' ago', everySec)
                   //     : timeSince(pos.timestamp) + ' ago'
                   // ),
-                  $text(new Date(pos.timestamp * 1000).toLocaleDateString()),
+                  $text(new Date(req.timestamp * 1000).toLocaleDateString()),
                 )
               })
             },
-            // {
-            //   $head: $text('Action'),
-            //   columnOp: O(style({ flex: 1.2 })),
-
-            //   $body: map((pos) => {
-            //     const $container = $row(layoutSheet.spacing, style({ alignItems: 'center' }))
-
-            //     const actionType = pos.__typename === "DecreasePosition"
-            //       ? pos.collateralDelta === 0n ? actionList.indexOf(pos) === 0 ? pos.fee === 0n ? 'Liquidated' : 'Close' : 'Decrease' : 'Decrease'
-            //       : actionList.indexOf(pos) === actionList.length - 1 ? 'Open' : 'Increase'
-
-            //     const [_, txHash] = pos.id.split(':')
-            //     return $container(
-            //       $text(actionType),
-            //       $anchor(attr({ href: getTxExplorerUrl(chain, txHash) }))(
-            //         $icon({ $content: $ethScan, width: '16px', viewBox: '0 0 24 24' })
-            //       )
-            //     )
-            //   })
-            // },
-            // {
-            //   $head: $text('Collateral Delta'),
-            //   columnOp: O(style({ flex: 1.2 })),
-            //   $body: map((pos) => {
-
-            //     if (pos.collateralDelta === 0n) {
-            //       return $text('')
-            //     }
-
-            //     const $token = $TokenIndex(TOKEN_ADDRESS_TO_SYMBOL[pos.collateralToken], { width: '18px' })
-            //     const $container = $row(layoutSheet.spacingTiny, style({ alignItems: 'center' }))
-            //     const isDecrease = pos.__typename === "DecreasePosition"
-
-            //     return $container(
-            //       $token,
-            //       $ProfitLossText(isDecrease ? -pos.collateralDelta : pos.collateralDelta, false),
-            //     )
-            //   })
-            // },
             {
-              $head: $text('Price'),
-              columnOp: O(style({ flex: 0.7 })),
+              $head: $text('Action'),
+              columnOp: O(style({ flex: 1.2 })),
+
               $body: map((pos) => {
-                const isKeeperReq = 'keeperResponse' in pos
+
+                const isKeeperReq = 'ctxQuery' in pos
+
+                if (isKeeperReq) {
+                  const multicastQuery = replayLatest(multicast(now(pos.ctxQuery)))
+
+                  return $IntermediatePromise({
+                    query: map(async x => {
+                      const n = await x
+                      return await n.wait()
+                    }, multicastQuery),
+                    $$done: map((res: ContractReceipt) => {
+                      return $row(layoutSheet.spacingSmall, style({ color: pallete.positive }))(
+                        $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
+                          $txHashRef(res.transactionHash, chain, $text(pos.collateralDeltaUsd > 0n ? '↑' : '↓')),
+                          $text(formatReadableUSD(pos.indexTokenPrice))
+                        ),
+                        $txHashRef(res.transactionHash, chain)
+                      )
+                    }),
+                    $loader: switchLatest(map(c => {
+
+                      return $row(layoutSheet.spacingSmall, style({ alignItems: 'center', fontSize: '.75em' }))(
+                        $spinner,
+                        $text(startWith('Wallet Request...', map(() => 'Awaiting confirmation...', fromPromise(c)))),
+                        $node(style({ flex: 1 }))(),
+                        switchLatest(map(txHash => $txHashRef(txHash.hash, chain), fromPromise(c)))
+                      )
+                    }, multicastQuery)),
+                    $$fail: map(res => {
+                      const error = parseError(res)
+
+                      return $alertTooltip($text(error.message))
+                    }),
+                  })({})
+
+                  // return $row(
+                  //   $IntermediateTx({
+                  //     chain: USE_CHAIN,
+                  //     showTooltip: true,
+                  //     query: now(pos.ctxQuery),
+                  //     // $loader: $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+                  //     //   $spinner,
+                  //     //   $text(style({ fontSize: '.75em' }))('Loading unused tokens...')
+                  //     // ),
+                  //     // $$done: map(list => {
+                  //     //   const { acceptablePrice, account, amountIn, blockGap, executionFee, indexToken, isLong, minOut, path, sizeDelta, timeGap } = keeperRes.keeperResponse
+
+                  //     //   const actionName = req.isIncrease ? 'increase' : 'reduce'
+                  //     //   const message = `Request ${actionName} ${req.indexTokenDescription.symbol} ${formatReadableUSD(req.sizeDelta)} @ ${formatReadableUSD(acceptablePrice)}`
+
+                  //     //   return $text(message)
+                  //     // })
+                  //   })({})
+                  // )
+                }
+
+                const txHash = pos.id.split(':').slice(-1)[0]
+
 
                 return $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
-                  $text(formatReadableUSD(isKeeperReq ? pos.indexTokenPrice : pos.price)),
+                  $txHashRef(txHash, chain, $text(pos.collateralDelta > 0n ? '↑' : '↓')),
+                  $text(formatReadableUSD(pos.price))
                 )
               })
             },
             {
               $head: $text('Collateral Change'),
-              columnOp: O(style({ flex: 1 })),
+              columnOp: O(style({ flex: .5 })),
 
               $body: map((pos) => {
+                const isKeeperReq = 'ctxQuery' in pos
 
                 return $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
-                  $text(formatReadableUSD(pos.collateralDelta)),
+                  $text(formatReadableUSD(isKeeperReq ? pos.collateralDeltaUsd : pos.collateralDelta)),
                 )
               })
             },
             {
               $head: $text('Size Change'),
-              columnOp: O(style({ flex: 1, placeContent: 'flex-end' })),
+              columnOp: O(style({ flex: .6, })),
 
               $body: map((pos) => {
 

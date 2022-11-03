@@ -41,6 +41,8 @@ export function parseError(data: any): Error {
   
   if ('data' in data) {
     return resolveError((data as any).data)
+  } else if ('reason' in data) {
+    return new Error(data.reason)
   } else if ('message' in data) {
     return new Error(data.message)
   }

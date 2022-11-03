@@ -7,12 +7,12 @@ import { parseError } from "@gambitdao/wallet-link"
 import { chain, constant, empty, fromPromise, map, merge, mergeArray, multicast, now, recoverWith, startWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
 import { CHAIN } from "../../@gambitdao-gmx-middleware/src"
-import { $alert, $txHashRef,  } from "./$common"
+import { $alert, $alertTooltip, $txHashRef,  } from "./$common"
 
 
 export const $spinner = $node(style({
-  width: '70px',
-  height: '45px',
+  width: '60px',
+  height: '30px',
   borderRadius: '50%',
   backgroundImage: 'url(/assets/gbc-loop.gif)',
   backgroundPosition: 'center',
@@ -94,13 +94,15 @@ type IIntermediateTx<T extends ContractTransaction> = {
   chain: CHAIN
   query: Stream<Promise<T>>
   clean?: Stream<any>
+  showTooltip?: boolean
 }
 
 export const $IntermediateTx = <T extends ContractTransaction>({
   query,
   chain,
   clean = empty(),
-  $$success = constant($text(style({ color: pallete.positive }))('Tx Succeeded'))
+  $$success = constant($text(style({ color: pallete.positive }))('Tx Succeeded')),
+  showTooltip = false
 }: IIntermediateTx<T>) => {
 
   const multicastQuery = replayLatest(multicast(query))
@@ -119,9 +121,9 @@ export const $IntermediateTx = <T extends ContractTransaction>({
     }),
     $loader: switchLatest(map(c => {
 
-      return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+      return $row(layoutSheet.spacingSmall, style({ alignItems: 'center', fontSize: '.75em' }))(
         $spinner,
-        $text(startWith('Awaiting wallet approval', map(() => 'Awaiting confirmation...', fromPromise(c)))),
+        $text(startWith('Wallet Request...', map(() => 'Awaiting confirmation...', fromPromise(c)))),
         $node(style({ flex: 1 }))(),
         switchLatest(map(txHash => $txHashRef(txHash.hash, chain), fromPromise(c)))
       )
@@ -129,7 +131,7 @@ export const $IntermediateTx = <T extends ContractTransaction>({
     $$fail: map(res => {
       const error = parseError(res)
 
-      return $alert($text(error.message))
+      return showTooltip ? $alertTooltip($text(error.message)) : $alert($text(error.message))
     }),
   })
 }

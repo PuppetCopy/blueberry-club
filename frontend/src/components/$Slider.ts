@@ -1,6 +1,6 @@
 import { Behavior, combineArray, combineObject, Op } from "@aelea/core"
 import { component, IBranch, style, nodeEvent, eventElementTarget, styleInline, $Node, NodeComposeFn, $text, drawLatest, styleBehavior } from "@aelea/dom"
-import { Input, $row, observer } from "@aelea/ui-components"
+import { Input, $row, observer, screenUtils } from "@aelea/ui-components"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
 import { skipRepeats, snapshot, until, multicast, join, map, now, tap } from "@most/core"
 import { Stream } from "@most/types"
@@ -29,11 +29,10 @@ export const $defaultThumb = $row(
     background: pallete.background,
     borderRadius: '50px',
     cursor: 'grab',
-    padding: '5px',
     touchAction: 'none',
-    marginTop: '3px',
+    // marginTop: '3px',
     lineHeight: .9,
-    fontSize: '0.65em',
+    fontSize: '0.6em',
     alignItems: 'center',
     placeContent: 'center',
     transition: 'border 250ms ease-in',
@@ -45,7 +44,7 @@ export const $defaultThumb = $row(
 export const $Slider = ({
   value, thumbText,
   $thumb = $defaultThumb,
-  thumbSize = 36,
+  thumbSize = screenUtils.isDesktopScreen ? 32 : 36,
   color = now(pallete.primary),
   step = 0,
   disabled = now(false),
@@ -58,7 +57,7 @@ export const $Slider = ({
 
   const $rangeWrapper = $row(sliderDimensionTether(observer.resize({}), map(res => res[0].contentRect.width)), style({ height: '2px', background: pallete.background, position: 'relative', zIndex: 10 }))
 
-  
+
   const state = multicast(combineObject({ value, min, max }))
 
   const sliderStyle = styleInline(combineArray(({ min, max, value }, color) => {
@@ -111,7 +110,7 @@ export const $Slider = ({
           ),
           style({ width: thumbSize + 'px', height: thumbSize + 'px' })
         )(
-          $text(thumbText(value))
+          $text(style({ paddingTop: '2px' }))(thumbText(value))
         )
       )
     ),

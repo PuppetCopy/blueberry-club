@@ -2,7 +2,7 @@ import { Behavior, O } from "@aelea/core"
 import { $Node, $text, component, eventElementTarget, INode, NodeComposeFn, nodeEvent, style, styleInline } from '@aelea/dom'
 import { $column, $row, observer } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { constant, mergeArray, switchLatest, empty, map, skipRepeats, startWith, filter, now } from "@most/core"
+import { constant, mergeArray, switchLatest, empty, map, skipRepeats, startWith, filter, now, never } from "@most/core"
 
 
 
@@ -16,11 +16,10 @@ export interface TooltipConfig {
 
 
 
-export const $Tooltip = ({ $anchor, $content, $container = $column(style({ position: 'relative' })) }: TooltipConfig) => component((
+export const $Tooltip = ({ $anchor, $content, $container = $row }: TooltipConfig) => component((
   [hover, hoverTether]: Behavior<INode, boolean>,
   [targetIntersection, targetIntersectionTether]: Behavior<INode, IntersectionObserverEntry[]>,
 ) => {
-
 
 
 
@@ -38,6 +37,7 @@ export const $Tooltip = ({ $anchor, $content, $container = $column(style({ posit
 
           const pointerLeave = eventElementTarget('pointerleave', target)
           return startWith(true, constant(false, pointerLeave))
+          // return startWith(true, never())
         }),
         switchLatest,
         skipRepeats,
@@ -54,27 +54,30 @@ export const $Tooltip = ({ $anchor, $content, $container = $column(style({ posit
 
         return $row(
           style({
-            zIndex: 60,
+            zIndex: 1160,
             position: 'absolute',
             display: 'none',
             background: pallete.background,
             border: pallete.middleground,
+            boxShadow: '1px 1px 5px #0000007a',
             padding: '8px',
-            minWidth: '150px',
+            maxWidth: '250px',
             borderRadius: '8px',
-            left: 0,
             // fontSize: '.75em',
           }),
           styleInline(
             map(([rect]) => {
-              const { bottom } = rect.intersectionRect
+              const { bottom, top, left, right, width } = rect.intersectionRect
 
               const bottomSpcace = window.innerHeight - bottom
               const goDown = bottomSpcace > bottom
+              const leftOffset = width / 2
 
               return {
-                [goDown ? 'top' : 'bottom']: 'calc(100% + 5px)',
-                display: 'flex'
+                top: (goDown ? bottom + 5 : top - 5) + 'px',
+                left: right - leftOffset + 'px',
+                display: 'flex',
+                transform: `translate(-50%, ${goDown ? 0 : -100}%)`,
               }
             }, targetIntersection)
           ),

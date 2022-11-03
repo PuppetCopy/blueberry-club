@@ -238,10 +238,10 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
     return null
   }, pnlCrossHairTimeChange)
 
-  const BOX_SPACING = '20px'
+  const BOX_SPACING = '18px'
 
   return [
-    $card(style({ gap: '20px', padding: BOX_SPACING, margin: screenUtils.isMobileScreen ? '0 10px' : '' }))(
+    $card(screenUtils.isDesktopScreen ? layoutSheet.spacing : layoutSheet.spacingBig, style({ padding: BOX_SPACING, margin: screenUtils.isMobileScreen ? '0 10px' : '' }))(
 
       $column(layoutSheet.spacing)(
         $row(layoutSheet.spacingSmall, style({ position: 'relative', alignItems: 'center' }))(
@@ -802,7 +802,7 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
           ),
           $display: map(() => {
 
-            return $row(layoutSheet.spacingSmall, style({ alignItems: 'center', position: 'relative' }))(
+            return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
               $ButtonPrimary({
                 disabled: map(params => {
                   if (params.leverage > MAX_LEVERAGE || params.leverage < MIN_LEVERAGE) {
@@ -852,7 +852,7 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
 
                 return $Tooltip({
                   $content: $text(style({ fontSize: '.75em', }))(error),
-                  $container: $column(style({ position: 'absolute', top: '10px', right: '-17px', backgroundColor: '#000', borderRadius: '50%', })),
+                  $container: $column(style({ marginLeft: '-25px', zIndex: 5, backgroundColor: '#000', borderRadius: '50%', })),
                   $anchor: $icon({
                     $content: $alertIcon, viewBox: '0 0 24 24', width: '28px',
                     svgOps: style({ fill: pallete.negative, padding: '3px', filter: 'drop-shadow(black 0px 0px 10px) drop-shadow(black 0px 0px 10px) drop-shadow(black 0px 0px 1px)' })

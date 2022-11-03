@@ -11,7 +11,7 @@ module.exports = {
   mode: "development",
   watch: false,
   context: __dirname, // to automatically find tsconfig.json
-  devtool: 'eval-cheap-module-source-map',
+  devtool: 'eval-source-map',
   entry: {
     theme: './src/assignThemeSync.ts',
     main: './src/index.ts',

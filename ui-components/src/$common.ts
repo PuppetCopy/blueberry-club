@@ -6,6 +6,7 @@ import { bnDiv, CHAIN, formatReadableUSD, getLiquidationPrice, getTxExplorerUrl,
 import { now, multicast, map, empty } from "@most/core"
 import { Stream } from "@most/types"
 import { $alertIcon, $caretDblDown, $skull, $tokenIconMap } from "./$icons"
+import { $Tooltip } from "./$Tooltip"
 
 
 export const $anchor = $element('a')(
@@ -17,13 +18,25 @@ export const $anchor = $element('a')(
   }),
 )
 
-export const $alert = ($contnet: $Branch) => $row(layoutSheet.spacingSmall, style({
+const $alertContainer = $row(layoutSheet.spacingSmall, style({
   alignSelf: 'flex-start',
-  borderRadius: '100px', alignItems: 'center', fontSize: '75%', border: `1px solid ${pallete.negative}`, padding: '10px 14px'
-}))(
+  borderRadius: '100px', alignItems: 'center', fontSize: '75%',
+  border: `1px solid ${pallete.negative}`, padding: '10px 14px',
+}))
+
+export const $alert = ($content: $Branch) => $alertContainer(
   $icon({ $content: $alertIcon, viewBox: '0 0 24 24', width: '18px', svgOps: style({ minWidth: '18px' }) }),
-  $contnet,
+  $content,
 )
+
+export const $alertTooltip = ($content: $Branch) => {
+  return $Tooltip({
+    $content,
+    $anchor: $alertContainer(
+      $icon({ $content: $alertIcon, viewBox: '0 0 24 24', width: '18px', svgOps: style({ minWidth: '18px' }) }),
+    ),
+  })({})
+}
 
 
 export const $txHashRef = (txHash: string, chain: CHAIN, label?: $Node) => {
@@ -79,17 +92,17 @@ export const $RiskLiquidator = (pos: ITradeOpen, markPrice: Stream<bigint>) => c
       $row(style({ fontSize: '.65em', gap: '2px', alignItems: 'center' }))(
         $leverage(pos),
 
-        $node(),
+        // $node(),
 
-        $icon({
-          $content: $skull,
-          width: '12px',
-          svgOps: style({ marginLeft: '3px' }),
-          viewBox: '0 0 32 32',
-        }),
-        $text(style({  }))(
-          formatReadableUSD(liquidationPrice)
-        )
+        // $icon({
+        //   $content: $skull,
+        //   width: '12px',
+        //   svgOps: style({ marginLeft: '3px' }),
+        //   viewBox: '0 0 32 32',
+        // }),
+        // $text(style({  }))(
+        //   formatReadableUSD(liquidationPrice)
+        // )
       )
     )
   ]
