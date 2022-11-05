@@ -29,7 +29,6 @@ export const $defaultThumb = $row(
     background: pallete.background,
     borderRadius: '50px',
     cursor: 'grab',
-    touchAction: 'none',
     lineHeight: .9,
     fontSize: '0.6em',
     alignItems: 'center',
@@ -72,7 +71,7 @@ export const $Slider = ({
 
 
   return [
-    $column(style({ height: '30px', placeContent: 'center', cursor: 'pointer' }))(
+    $column(style({ height: '30px', touchAction: 'none', placeContent: 'center', cursor: 'pointer' }))(
       thumbePositionDeltaTether(
         nodeEvent('pointerdown'),
         downSrc => {
