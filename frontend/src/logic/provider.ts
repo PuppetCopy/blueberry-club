@@ -12,9 +12,9 @@ export enum WALLET {
 }
 
 export const walletConnect = new WalletConnectProvider({
-  rpc: Object.entries(NETWORK_METADATA).reduce((seed, [chainId, net]) => ({ ...seed, [chainId]: net.rpcUrls[0] }), {}),
+  rpcMap: Object.entries(NETWORK_METADATA).reduce((seed, [chainId, net]) => ({ ...seed, [chainId]: net.rpcUrls[0] }), {}),
   chainId: 3,
-  infuraId: "78577f8136324f42b21cdf478a8ba820"
+  // infuraId: "78577f8136324f42b21cdf478a8ba820"
 })
 
 export const metamaskQuery = detectEthereumProvider({ mustBeMetaMask: false, silent: true }) as Promise<IEthereumProvider & { selectedAddress: string } | null>

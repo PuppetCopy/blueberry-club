@@ -7,13 +7,13 @@ import {
   isTradeOpen, ITrade, unixTimestampNow, IRequestTradeQueryparam, getChainName,
   ITradeOpen, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, TradeAddress, ARBITRUM_ADDRESS_TRADE, BASIS_POINTS_DIVISOR, getAveragePriceFromDelta,
   getLiquidationPrice, getMarginFees, getTokenUsd, STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, TAX_BASIS_POINTS,
-  replayState, getDenominator, USD_PERCISION, periodicRun, formatReadableUSD, timeSince, IVaultPosition, getPositionKey, listen, IPositionIncrease, IPositionDecrease, getPositionPnL, CHAIN
+  replayState, getDenominator, USD_PERCISION, periodicRun, formatReadableUSD, timeSince, IVaultPosition, getPositionKey, listen, IPositionIncrease, IPositionDecrease, getPositionPnL
 } from "@gambitdao/gmx-middleware"
 
 import { IWalletLink, parseError } from "@gambitdao/wallet-link"
 import { combine, constant, map, mergeArray, multicast, periodic, scan, skipRepeats, switchLatest, debounce, empty, skip, now, startWith, snapshot, take, fromPromise } from "@most/core"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
-import { $alert, $alertTooltip, $arrowsFlip, $IntermediatePromise, $IntermediateTx, $Link, $RiskLiquidator, $spinner, $txHashRef } from "@gambitdao/ui-components"
+import { $alertTooltip, $arrowsFlip, $IntermediatePromise, $Link, $RiskLiquidator, $spinner, $txHashRef } from "@gambitdao/ui-components"
 import { CandlestickData, CrosshairMode, LineStyle, Time } from "lightweight-charts"
 import { IEthereumProvider } from "eip1193-provider"
 import { Stream } from "@most/types"
@@ -60,13 +60,11 @@ export const $Trade = (config: ITradeComponent) => component((
   [changeCollateralToken, changeCollateralTokenTether]: Behavior<ARBITRUM_ADDRESS_TRADE, ARBITRUM_ADDRESS_TRADE>,
   [switchIsLong, switchIsLongTether]: Behavior<boolean, boolean>,
   [switchIsIncrease, switchIsIncreaseTether]: Behavior<boolean, boolean>,
-  // [changeFocusFactor, changeFocusFactorTether]: Behavior<number, number>,
   [changeCollateralDelta, changeCollateralDeltaTether]: Behavior<bigint, bigint>,
-  // [slideCollateralRatio, slideCollateralRatioTether]: Behavior<number, number>,
 
   [changeSize, changeSizeTether]: Behavior<bigint, bigint>,
   [changeLeverage, changeLeverageTether]: Behavior<bigint, bigint>,
-  [changeCollateralRatio, changeCollateralRatioTether]: Behavior<number, number>,
+  [changeCollateralRatio, changeCollateralRatioTether]: Behavior<bigint, bigint>,
 
   [switchTrade, switchTradeTether]: Behavior<INode, ITrade>,
   [requestTrade, requestTradeTether]: Behavior<ITradeRequest, ITradeRequest>,
@@ -115,7 +113,7 @@ export const $Trade = (config: ITradeComponent) => component((
   const collateralDelta = replayLatest(changeCollateralDelta, 0n)
   const sizeDelta = replayLatest(changeSize, 0n)
 
-  const collateralRatio = replayLatest(changeCollateralRatio, 0)
+  const collateralRatio = replayLatest(changeCollateralRatio, 0n)
   // const collateralRatio = replayLatest(collateralRatioStore.store(changeCollateralRatio, map(x => x)), collateralRatioStore.state)
   const leverage = replayLatest(changeLeverage)
 
@@ -567,7 +565,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
                       return $row(layoutSheet.spacingSmall, style({ alignItems: 'center', fontSize: '.75em' }))(
                         $spinner,
-                        $text(startWith('Wallet Request...', map(() => 'Awaiting confirmation...', fromPromise(c)))),
+                        $text(startWith('Awaiting your Approval...', map(() => 'Awaiting confirmation...', fromPromise(c)))),
                         $node(style({ flex: 1 }))(),
                         switchLatest(map(txHash => $txHashRef(txHash.hash, chain), fromPromise(c)))
                       )
@@ -603,15 +601,17 @@ export const $Trade = (config: ITradeComponent) => component((
                 const txHash = pos.id.split(':').slice(-1)[0]
 
 
-                return $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
-                  $txHashRef(txHash, chain, $text(pos.collateralDelta > 0n ? '↑' : '↓')),
+                return $row(style({ alignItems: 'center' }))(
+                  style({ padding: '4px 8px' })(
+                    $txHashRef(txHash, chain, $text(pos.collateralDelta > 0n ? '↑' : '↓'))
+                  ),
                   $text(formatReadableUSD(pos.price))
                 )
               })
             },
             {
               $head: $text('Collateral Change'),
-              columnOp: O(style({ flex: .5 })),
+              columnOp: O(style({ flex: .5, textAlign: 'right' })),
 
               $body: map((pos) => {
                 const isKeeperReq = 'ctxQuery' in pos
@@ -623,7 +623,7 @@ export const $Trade = (config: ITradeComponent) => component((
             },
             {
               $head: $text('Size Change'),
-              columnOp: O(style({ flex: .6, })),
+              columnOp: O(style({ flex: .6, textAlign: 'right' })),
 
               $body: map((pos) => {
 

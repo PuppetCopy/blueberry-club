@@ -127,7 +127,7 @@ export default ({ baseRoute = '' }: Website) => component((
 
       if (mainAccount) {
         if (isWC) {
-          const connector = wallet.walletConnect.connector
+          const connector = wallet.walletConnect
           const wcDisconnected = constant(null, fromCallback(cb => connector.on('disconnect', cb)))
 
           return startWith(provider, wcDisconnected)

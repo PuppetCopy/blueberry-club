@@ -20,7 +20,7 @@
         "@ethersproject/abi": "^5.7.0",
         "@ethersproject/bignumber": "^5.7.0",
         "@ethersproject/contracts": "^5.7.0",
-        "@ethersproject/providers": "5.7.1",
+        "@ethersproject/providers": "5.7.2",
         "@gambitdao/gmx-middleware": "workspace:*",
         "@gambitdao/wallet-link": "workspace:*",
         "@most/core": "1.6.1",
@@ -29,16 +29,16 @@
         "@most/scheduler": "1.3.0",
         "@most/types": "1.1.0",
         "@types/isomorphic-fetch": "^0.0.36",
-        "@urql/core": "^3.0.4",
+        "@urql/core": "^3.0.5",
         "eip1193-provider": "1.0.1",
-        "ethers": "^5.7.1",
+        "ethers": "^5.7.2",
         "graphql": "^16.6.0"
     },
     "devDependencies": {
         "@ethersproject/bytes": "^5.7.0",
-        "@typechain/ethers-v5": "^10.1.0",
-        "@types/node": "18.11.0",
-        "typechain": "^8.1.0",
+        "@typechain/ethers-v5": "^10.1.1",
+        "@types/node": "18.11.9",
+        "typechain": "^8.1.1",
         "typescript": "^4.8.4"
     }
 }

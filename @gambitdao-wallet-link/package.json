@@ -17,7 +17,7 @@
     },
     "dependencies": {
         "@aelea/core": "1.3.0",
-        "@ethersproject/providers": "5.7.1",
+        "@ethersproject/providers": "5.7.2",
         "@gambitdao/gmx-middleware": "workspace:*",
         "@most/core": "1.6.1",
         "@most/disposable": "1.3.0",
@@ -27,6 +27,6 @@
         "eip1193-provider": "1.0.1"
     },
     "devDependencies": {
-        "@types/node": "18.11.0"
+        "@types/node": "18.11.9"
     }
 }

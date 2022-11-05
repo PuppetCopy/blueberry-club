@@ -7,9 +7,9 @@ import {
   MAX_LEVERAGE_NORMAL, TradeAddress, TOKEN_SYMBOL, parseFixed, formatReadableUSD, BASIS_POINTS_DIVISOR,
   ITrade, IVaultPosition, IChainParamApi, isTradeSettled, ARBITRUM_ADDRESS_TRADE, USD_DECIMALS, getTokenAmount, TokenDescription, MAX_LEVERAGE, bnDiv, replayState, DEPOSIT_FEE, div, getDeltaPercentage, StateStream, getPositionPnL, MIN_LEVERAGE
 } from "@gambitdao/gmx-middleware"
-import { $alertIcon, $bear, $bull, $tokenIconMap, $tokenLabelFromSummary, $Tooltip } from "@gambitdao/ui-components"
+import { $alertIcon, $bear, $bull, $infoTooltip, $tokenIconMap, $tokenLabelFromSummary, $Tooltip } from "@gambitdao/ui-components"
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { merge, multicast, mergeArray, now, snapshot, map, switchLatest, filter, skipRepeats, empty, combine, fromPromise, constant, sample, startWith, skipRepeatsWith } from "@most/core"
+import { merge, multicast, mergeArray, now, snapshot, map, switchLatest, filter, skipRepeats, empty, combine, fromPromise, constant, sample, startWith, skipRepeatsWith, tap } from "@most/core"
 import { Stream } from "@most/types"
 import { $Slider } from "../$Slider"
 import { $ButtonPrimary } from "../form/$Button"
@@ -65,7 +65,7 @@ export interface ITradeParams {
   indexToken: ARBITRUM_ADDRESS_LEVERAGE
   isIncrease: boolean
 
-  collateralRatio: number
+  collateralRatio: bigint
   leverage: bigint
   collateralDelta: bigint
   sizeDelta: bigint
@@ -101,22 +101,13 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
   [changeCollateralToken, changeCollateralTokenTether]: Behavior<ARBITRUM_ADDRESS_TRADE, ARBITRUM_ADDRESS_TRADE>,
   [changeIndexToken, changeIndexTokenTether]: Behavior<TradeAddress, TradeAddress>,
 
-  // [changeWithdrawCollateralToken, changeWithdrawCollateralTokenTether]: Behavior<ARBITRUM_ADDRESS_TRADE, ARBITRUM_ADDRESS_TRADE>,
-  // [crosshairMove, crosshairMoveTether]: Behavior<MouseEventParams, MouseEventParams>,
-  // [switchIsLong, switchIsLongTether]: Behavior<INode, boolean>,
-
   [switchIsIncrease, switchisIncreaseTether]: Behavior<boolean, boolean>,
-  // [focusCollateral, focusCollateralTether]: Behavior<INode, FocusEvent>,
-  // [focusSize, focusSizeTether]: Behavior<INode, FocusEvent>,
-
-  [slideCollateralRatio, slideCollateralRatioTether]: Behavior<number, number>,
+  [slideCollateralRatio, slideCollateralRatioTether]: Behavior<number, bigint>,
   [slideLeverage, slideLeverageTether]: Behavior<number, bigint>,
 
   [walletChange, walletChangeTether]: Behavior<IEthereumProvider | null, IEthereumProvider | null>,
-
   [requestTrade, requestTradeTether]: Behavior<PointerEvent, ITradeRequest>,
 
-  // [hoveredPriceTick, hoveredPriceTickTether]: Behavior<IPricefeedTick & TimelineTime, IPricefeedTick & TimelineTime>,
   [crosshairMove, crosshairMoveTether]: Behavior<MouseEventParams, MouseEventParams>,
   [clickIndexGroup, clickIndexGroupTether]: Behavior<any, any>,
 
@@ -165,31 +156,27 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
   }, tradeState)
 
 
-  const slideCollateral = snapshot((params, rawRatio) => {
-    const ratio = BigInt(Math.floor(Math.abs(rawRatio) * Number(BASIS_POINTS_DIVISOR)))
+  const ratioAdjustments = mergeArray([sample(slideCollateralRatio, state.walletBalance), slideCollateralRatio])
 
-    // const baseRatio = BigInt(Math.floor(Math.abs(ratioN) * Number(BASIS_POINTS_DIVISOR)))
-    // const ratioDelta = baseRatio - params.minCollateralRatio
-    // const ratio = div(baseRatio - params.minCollateralRatio, BASIS_POINTS_DIVISOR - params.minCollateralRatio)
+  const slideCollateral = snapshot((params, ratio) => {
     if (params.isIncrease) {
-      const newLocal = params.walletBalance * ratio / BASIS_POINTS_DIVISOR
-      return newLocal
+      return params.walletBalance * ratio / BASIS_POINTS_DIVISOR
     }
-
 
     if (!params.vaultPosition) {
       return 0n
     }
 
-    const collateralDelta = params.vaultPosition.collateral * (BASIS_POINTS_DIVISOR - DEPOSIT_FEE) / BASIS_POINTS_DIVISOR
-    const sizeUsd = collateralDelta * ratio / BASIS_POINTS_DIVISOR
-    const amount = getTokenAmount(sizeUsd, params.inputTokenPrice, params.inputTokenDescription)
+    // const positionCollateral = params.vaultPosition.collateral * (BASIS_POINTS_DIVISOR - DEPOSIT_FEE) / BASIS_POINTS_DIVISOR
+    const positionCollateralUsd = params.vaultPosition.collateral / BASIS_POINTS_DIVISOR
+    const removeCollateral = positionCollateralUsd * ratio / BASIS_POINTS_DIVISOR
+    const amount = getTokenAmount(removeCollateral, params.inputTokenPrice, params.inputTokenDescription)
 
     return amount
-  }, tradeState, slideCollateralRatio)
+  }, tradeState, ratioAdjustments)
 
 
-  const slideSize = snapshot((params, leverage) => {
+  const changeSizeByRatio = snapshot((params, leverage) => {
     const collateral = params.collateralDeltaUsd + (params.vaultPosition?.collateral || 0n)
     const size = collateral * leverage / BASIS_POINTS_DIVISOR
 
@@ -197,8 +184,9 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
       return size
     }
 
+    const currentMultiplier = div(params.vaultPosition.size, collateral)
+
     if (params.isIncrease) {
-      const currentMultiplier = div(params.vaultPosition.size, collateral)
 
       if (currentMultiplier >= leverage) {
         return 0n
@@ -206,6 +194,8 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
 
       return size - params.vaultPosition.size
     }
+
+    console.log(currentMultiplier, leverage)
 
     const sizeM = (params.vaultPosition.collateral - params.collateralDeltaUsd) * leverage / BASIS_POINTS_DIVISOR
 
@@ -241,7 +231,7 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
   const BOX_SPACING = '18px'
 
   return [
-    $card(screenUtils.isDesktopScreen ? layoutSheet.spacing : layoutSheet.spacingBig, style({ padding: BOX_SPACING, margin: screenUtils.isMobileScreen ? '0 10px' : '' }))(
+    $card(screenUtils.isDesktopScreen ? layoutSheet.spacingBig : layoutSheet.spacingBig, style({ padding: BOX_SPACING, margin: screenUtils.isMobileScreen ? '0 10px' : '' }))(
 
       $column(layoutSheet.spacing)(
         $row(layoutSheet.spacingSmall, style({ position: 'relative', alignItems: 'center' }))(
@@ -342,6 +332,7 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
         $row(layoutSheet.spacingSmall, style({ alignItems: 'center', placeContent: 'stretch' }))(
           $hintInput(
             now(`Collateral`),
+            'The amount you will deposit to open a leverage position',
             map(pos => formatReadableUSD(pos?.collateral || 0n), state.vaultPosition),
             combineArray(params => {
 
@@ -365,26 +356,6 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
 
               return formatReadableUSD(netCollateral)
             }, tradeState)
-
-            // map((params) => {
-            //   const posCollateral = params.vaultPosition?.collateral || 0n
-
-            //   if (params.isIncrease) {
-            //     return formatReadableUSD(posCollateral + params.collateralUsd - params.fee)
-            //   }
-
-            //   if (!params.vaultPosition || params.size === params.vaultPosition.size) {
-            //     return formatReadableUSD(0n)
-            //   }
-
-            //   const pnl = getDelta(params.vaultPosition.averagePrice, params.indexTokenPrice, params.vaultPosition.size)
-            //   const adjustedPnlDelta = pnl * params.size / params.vaultPosition.size
-
-            //   const netCollateral = (params.vaultPosition.collateral || 0n) + adjustedPnlDelta
-            //   const ratio = BigInt(Math.floor(Math.abs(params.collateralRatio) * Number(BASIS_POINTS_DIVISOR)))
-
-            //   return formatReadableUSD(netCollateral * (BASIS_POINTS_DIVISOR - ratio) / BASIS_POINTS_DIVISOR)
-            // }, tradeState)
           ),
 
           $node(style({ flex: 1 }))(),
@@ -403,7 +374,13 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
 
       style({ margin: `0 -${BOX_SPACING}` })(
         $Slider({
-          value: tradeParams.collateralRatio,
+          value: map(lm => {
+            if (lm === null) {
+              return 0
+            }
+
+            return bnDiv(lm, BASIS_POINTS_DIVISOR)
+          }, tradeParams.collateralRatio),
           color: map(isIncrease => isIncrease ? pallete.middleground : pallete.indeterminate, tradeParams.isIncrease),
           step: 0.01,
           disabled: map(params => !params.isIncrease && params.vaultPosition === null, tradeState),
@@ -424,7 +401,16 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
           }, tradeState),
           thumbText: map(n => Math.round(n * 100) + '\n%')
         })({
-          change: slideCollateralRatioTether()
+          change: slideCollateralRatioTether(
+            map(ratio => {
+              const leverageRatio = BigInt(Math.floor(Math.abs(ratio) * Number(BASIS_POINTS_DIVISOR)))
+
+              console.log(leverageRatio)
+
+              return leverageRatio
+            }),
+            multicast
+          )
         })
       ),
 
@@ -449,7 +435,7 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
                     // applying by setting `HTMLInputElement.value` imperatively(only way known to me)
                     node.element.value = valF.toString()
 
-                  }, slideSize))
+                  }, changeSizeByRatio))
                 )
               ),
               switchLatest
@@ -537,28 +523,12 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
               $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginTop: '3px', marginLeft: '5px' }), viewBox: '0 0 32 32' }),
             )
           )({}),
-
-          // $Dropdown<TradeAddress>({
-          //   $container: $row(style({ position: 'relative', alignSelf: 'center' })),
-          //   $selection: ,
-          //   value: {
-          //     value: tradeParams.indexToken,
-          //     $container: $defaultSelectContainer(style({ minWidth: '300px', right: 0 })),
-          //     $$option: map(option => {
-          //       const tokenDesc = option === AddressZero ? TOKEN_DESCRIPTION_MAP.ETH : TOKEN_DESCRIPTION_MAP[CHAIN_TOKEN_ADDRESS_TO_SYMBOL[option]]
-
-          //       return $tokenLabelFromSummary(tokenDesc)
-          //     }),
-
-          //   }
-          // })({
-          //   select: changeIndexTokenTether()
-          // }),
-
         ),
+
         $row(layoutSheet.spacing, style({ placeContent: 'space-between', padding: '0' }))(
           $hintInput(
             now(`Size`),
+            'Amount amplified relative to collateral, higher Size to Collateral means higher risk of being liquidated',
             map(pos => formatReadableUSD(pos ? pos.size : 0n), state.vaultPosition),
 
             map((params) => {
@@ -635,9 +605,7 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
             return 0
           }
 
-          const newLocal = bnDiv(lm, MAX_LEVERAGE)
-          // debugger
-          return newLocal
+          return bnDiv(lm, MAX_LEVERAGE)
         }, mergeArray([
           initialLeverage,
           tradeParams.leverage
@@ -905,7 +873,7 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
       changeSize: mergeArray([
         // slideLeverage,
         inputSizeDelta,
-        slideSize,
+        changeSizeByRatio,
       ]),
       changeCollateralRatio: mergeArray([
         slideCollateralRatio,
@@ -956,11 +924,12 @@ const formatLeverageNumber = new Intl.NumberFormat("en-US", {
 
 const $field = $element('input')(attr({ placeholder: '0.0', type: 'number' }), style({ fontFamily: '-apple-system,BlinkMacSystemFont,Trebuchet MS,Roboto,Ubuntu,sans-serif', minWidth: '0', transition: 'background 500ms ease-in', flex: 1, fontSize: '1.55em', background: 'transparent', border: 'none', height: '35px', outline: 'none', color: pallete.message }))
 
-const $hintInput = (label: Stream<string>, val: Stream<string>, change: Stream<string>) => $row(layoutSheet.spacingTiny, style({ fontSize: '0.75em' }))(
+const $hintInput = (label: Stream<string>, tooltip: string | Stream<string>, val: Stream<string>, change: Stream<string>) => $row(layoutSheet.spacingTiny, style({ fontSize: '0.75em' }))(
   $text(style({}))(val),
   $text(style({ color: pallete.foreground }))('→'),
   $text(style({}))(change),
   $text(style({ color: pallete.foreground }))(label),
+  $infoTooltip(tooltip)
 )
 
 

@@ -5,7 +5,7 @@ import { pallete } from "@aelea/ui-components-theme"
 import { bnDiv, CHAIN, formatReadableUSD, getLiquidationPrice, getTxExplorerUrl, IAbstractTrade, ITradeOpen, liquidationWeight, readableNumber, shortenTxAddress, TokenDescription } from "@gambitdao/gmx-middleware"
 import { now, multicast, map, empty } from "@most/core"
 import { Stream } from "@most/types"
-import { $alertIcon, $caretDblDown, $skull, $tokenIconMap } from "./$icons"
+import { $alertIcon, $caretDblDown, $info, $skull, $tokenIconMap } from "./$icons"
 import { $Tooltip } from "./$Tooltip"
 
 
@@ -35,6 +35,13 @@ export const $alertTooltip = ($content: $Branch) => {
     $anchor: $alertContainer(
       $icon({ $content: $alertIcon, viewBox: '0 0 24 24', width: '18px', svgOps: style({ minWidth: '18px' }) }),
     ),
+  })({})
+}
+
+export const $infoTooltip = (text: string | Stream<string>) => {
+  return $Tooltip({
+    $content: $text(text),
+    $anchor: $icon({ $content: $info, viewBox: '0 0 32 32', fill: pallete.foreground, width: '18px', svgOps: style({ minWidth: '18px' }) }),
   })({})
 }
 

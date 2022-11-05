@@ -27,7 +27,7 @@
         "@ethersproject/contracts": "^5.7.0",
         "@ethersproject/hash": "5.7.0",
         "@ethersproject/keccak256": "5.7.0",
-        "@ethersproject/providers": "5.7.1",
+        "@ethersproject/providers": "5.7.2",
         "@ethersproject/strings": "5.7.0",
         "@ethersproject/units": "^5.7.0",
         "@ethersproject/wallet": "^5.7.0",
@@ -42,6 +42,6 @@
         "jazzicon": "^1.5.0"
     },
     "devDependencies": {
-        "@types/node": "18.11.0"
+        "@types/node": "18.11.9"
     }
 }
