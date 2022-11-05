@@ -1,7 +1,7 @@
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { awaitPromises, combine, filter, map, multicast, now, switchLatest } from "@most/core"
 import { getWalletProvider } from "../common"
-import { AddressZero, ADDRESS_LEVERAGE, ARBITRUM_ADDRESS, CHAIN, formatReadableUSD, getDenominator, getPositionKey, IVaultPosition, switchFailedSources, TradeAddress, USD_PERCISION } from "@gambitdao/gmx-middleware"
+import { AddressZero, ADDRESS_LEVERAGE, ARBITRUM_ADDRESS, ARBITRUM_ADDRESS_TRADE, CHAIN, formatReadableUSD, getDenominator, getPositionKey, IVaultPosition, switchFailedSources, TradeAddress, USD_PERCISION } from "@gambitdao/gmx-middleware"
 import { combineArray, replayLatest } from "@aelea/core"
 import { ERC20__factory } from "@gambitdao/gbc-contracts"
 import { FastPriceFeed, FastPriceFeed__factory, PositionRouter__factory, VaultReader__factory, Vault__factory } from "./gmx-contracts"
@@ -168,7 +168,7 @@ export function connectVault(wallet: IWalletLink) {
   const getTokenCumulativeFundingRate = (token: TradeAddress) => awaitPromises(map(async c => (await c.cumulativeFundingRates(token)).toBigInt(), contract))
   const getPoolAmount = (token: TradeAddress) => awaitPromises(map(async c => (await c.poolAmounts(token)).toBigInt(), contract))
   const getReservedAmount = (token: TradeAddress) => awaitPromises(map(async c => (await c.reservedAmounts(token)).toBigInt(), contract))
-  const getAvailableLiquidityUsd = (chain: CHAIN.ARBITRUM | CHAIN.AVALANCHE, token: ADDRESS_LEVERAGE) => {
+  const getAvailableLiquidityUsd = (chain: CHAIN.ARBITRUM | CHAIN.AVALANCHE, token: ARBITRUM_ADDRESS_TRADE) => {
 
     const tokenDesc = getTokenDescription(chain, token)
     const denominator = getDenominator(tokenDesc.decimals)
@@ -185,7 +185,7 @@ export function connectVault(wallet: IWalletLink) {
     return combine((reservedAmount, price) => reservedAmount * price / denominator, reservedAmount, price)
   }
 
-  const getPrice = (token: ADDRESS_LEVERAGE, maximize: boolean) => switchLatest(map(c => periodicRun({
+  const getPrice = (token: ARBITRUM_ADDRESS_TRADE, maximize: boolean) => switchLatest(map(c => periodicRun({
     actionOp: map(async () => {
       const price = (maximize ? await c.getMaxPrice(token) : await c.getMinPrice(token)).toBigInt()
       return price

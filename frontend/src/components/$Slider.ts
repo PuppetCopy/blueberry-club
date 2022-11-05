@@ -1,8 +1,8 @@
 import { Behavior, combineArray, combineObject, Op } from "@aelea/core"
 import { component, IBranch, style, nodeEvent, eventElementTarget, styleInline, $Node, NodeComposeFn, $text, drawLatest, styleBehavior } from "@aelea/dom"
-import { Input, $row, observer, screenUtils } from "@aelea/ui-components"
+import { Input, $row, observer, screenUtils, $column } from "@aelea/ui-components"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
-import { skipRepeats, snapshot, until, multicast, join, map, now, tap } from "@most/core"
+import { skipRepeats, snapshot, until, multicast, join, map, now, tap, mergeArray } from "@most/core"
 import { Stream } from "@most/types"
 
 export interface LeverageSlider extends Input<number> {
@@ -30,7 +30,6 @@ export const $defaultThumb = $row(
     borderRadius: '50px',
     cursor: 'grab',
     touchAction: 'none',
-    // marginTop: '3px',
     lineHeight: .9,
     fontSize: '0.6em',
     alignItems: 'center',
@@ -51,11 +50,11 @@ export const $Slider = ({
   min = now(0),
   max = now(1),
 }: LeverageSlider) => component((
-  [sliderDimension, sliderDimensionTether]: Behavior<IBranch<HTMLInputElement>, number>,
+  [sliderDimension, sliderDimensionTether]: Behavior<IBranch<HTMLInputElement>, ResizeObserverEntry>,
   [thumbePositionDelta, thumbePositionDeltaTether]: Behavior<IBranch<HTMLInputElement>, number>
 ) => {
 
-  const $rangeWrapper = $row(sliderDimensionTether(observer.resize({}), map(res => res[0].contentRect.width)), style({ height: '2px', background: pallete.background, position: 'relative', zIndex: 10 }))
+  const $rangeWrapper = $row(sliderDimensionTether(observer.resize({}), map(res => res[0])), style({ height: '2px', background: pallete.background, position: 'relative', zIndex: 10 }))
 
 
   const state = multicast(combineObject({ value, min, max }))
@@ -73,44 +72,67 @@ export const $Slider = ({
 
 
   return [
-    $rangeWrapper(sliderStyle)(
-      $row(
-        styleInline(map(({ value }) => ({ left: `${Math.min(Math.max(value, 0), 1) * 100}%` }), state)),
-        style({ width: '0px', top: '50%', position: 'absolute', transition: 'left 175ms cubic-bezier(0.25, 0.8, 0.25, 1) 0s', alignItems: 'center', placeContent: 'center' })
-      )(
-        $thumb(
-          styleBehavior(map(({ color, disabled }) => disabled ? { borderColor: 'transparent', pointerEvents: disabled ? 'none' : 'all' } : { borderColor: color }, combineObject({ disabled, color }))),
-          thumbePositionDeltaTether(
-            nodeEvent('pointerdown'),
-            downEvent => {
+    $column(style({ height: '30px', placeContent: 'center', cursor: 'pointer' }))(
+      thumbePositionDeltaTether(
+        nodeEvent('pointerdown'),
+        downSrc => {
 
-              return snapshot(({ value, max, min }, { downEvent, sliderDimension }) => {
-                const dragEnd = eventElementTarget('pointerup', window.document)
-                const dragStart = eventElementTarget('pointermove', window.document)
-                const drag = until(dragEnd, dragStart)
+          return snapshot(({ sliderDimension, state: { value, max, min } }, downEvent) => {
+            const dragEnd = eventElementTarget('pointerup', window.document)
+            const dragStart = eventElementTarget('pointermove', window.document)
+            const drag = until(dragEnd, dragStart)
+            const rectWidth = sliderDimension.contentRect.width
 
-                return drawLatest(map(moveEvent => {
-                  const normalisedValue = Math.min(Math.max(value, min), max)
-                  const deltaX = (moveEvent.clientX - downEvent.clientX) + (sliderDimension * normalisedValue)
+            const hasTouchedBar = rectWidth === (downEvent.target instanceof HTMLElement && downEvent.target.clientWidth)
 
-                  moveEvent.preventDefault()
 
-                  const val = deltaX / sliderDimension
+            if (hasTouchedBar) {
+              const initialOffset = now(downEvent.offsetX / rectWidth)
+              const moveDelta = drawLatest(map(moveEvent => {
+                const deltaX = (moveEvent.clientX - downEvent.clientX) + downEvent.offsetX
 
-                  const cVal = Math.min(Math.max(val, min), max)
-                  const steppedVal = step > 0 ? cVal / step * step : cVal
+                moveEvent.preventDefault()
 
-                  return steppedVal
-                }, drag))
-              }, state, combineObject({ downEvent, sliderDimension }))
-            },
-            join,
-            skipRepeats,
-            multicast
-          ),
-          style({ width: thumbSize + 'px', height: thumbSize + 'px' })
+                const val = deltaX / rectWidth
+
+                const cVal = Math.min(Math.max(val, min), max)
+                const steppedVal = step > 0 ? cVal / step * step : cVal
+
+                return steppedVal
+              }, drag))
+
+              return mergeArray([initialOffset, moveDelta])
+            }
+
+            return drawLatest(map(moveEvent => {
+              const normalisedValue = Math.min(Math.max(value, min), max)
+              const deltaX = (moveEvent.clientX - downEvent.clientX) + (rectWidth * normalisedValue)
+
+              moveEvent.preventDefault()
+
+              const val = deltaX / rectWidth
+
+              const cVal = Math.min(Math.max(val, min), max)
+              const steppedVal = step > 0 ? cVal / step * step : cVal
+
+              return steppedVal
+            }, drag))
+          }, combineObject({ state, sliderDimension }), downSrc)
+        },
+        join
+      )
+    )(
+      $rangeWrapper(sliderStyle)(
+        $row(
+          styleInline(map(({ value }) => ({ left: `${Math.min(Math.max(value, 0), 1) * 100}%` }), state)),
+          style({ width: '0px', top: '50%', position: 'absolute', transition: 'left 175ms cubic-bezier(0.25, 0.8, 0.25, 1) 0s', alignItems: 'center', placeContent: 'center' }),
         )(
-          $text(style({ paddingTop: '2px' }))(thumbText(value))
+          $thumb(
+            styleBehavior(map(({ color, disabled }) => disabled ? { borderColor: 'transparent', pointerEvents: disabled ? 'none' : 'all' } : { borderColor: color }, combineObject({ disabled, color }))),
+            style({ width: thumbSize + 'px', height: thumbSize + 'px' }),
+          )(
+            $text(style({ paddingTop: '2px' }))(thumbText(value))
+          )
         )
       )
     ),

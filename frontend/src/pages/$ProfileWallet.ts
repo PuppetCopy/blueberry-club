@@ -118,13 +118,13 @@ export const $ProfileWallet = ({ walletLink, parentRoute, accountStakingStore }:
                 switchLatest(map(items => {
 
 
-                  return $row(layoutSheet.spacing)(
+                  return $row(layoutSheet.spacing, style({ flexWrap: 'wrap' }))(
                     ...items.filter(item => item.amount > 0).map(item => {
                       return $row(style({ position: 'relative' }))(
                         $text(style({ position: 'absolute', top: '1px', right: '4px', fontSize: '.75em', fontWeight: 'bold', color: pallete.background }))(
                           item.amount + 'x'
                         ),
-                        $labItem(item.id, 100)
+                        $labItem(item.id, 97)
                       )
                     })
                   )
@@ -156,7 +156,7 @@ export const $TransferItems = (items: { id: number, amount: number }[]) => compo
           $labItem(item.id, 50)
         )
       })),
-      
+
       // $DropMultiSelect({
       //   value: now([]),
       //   $chip: $defaultChip(style({ padding: 0, overflow: 'hidden' })),

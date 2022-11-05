@@ -231,7 +231,7 @@ export const $TradeBox = ({ chain, state, tradeParams, walletLink, walletStore, 
   const BOX_SPACING = '18px'
 
   return [
-    $card(screenUtils.isDesktopScreen ? layoutSheet.spacingBig : layoutSheet.spacingBig, style({ padding: BOX_SPACING, margin: screenUtils.isMobileScreen ? '0 10px' : '' }))(
+    $card(screenUtils.isDesktopScreen ? layoutSheet.spacing : layoutSheet.spacing, style({ padding: BOX_SPACING, margin: screenUtils.isMobileScreen ? '0 10px' : '' }))(
 
       $column(layoutSheet.spacing)(
         $row(layoutSheet.spacingSmall, style({ position: 'relative', alignItems: 'center' }))(

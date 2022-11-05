@@ -535,7 +535,7 @@ const $ItemSlot = ({ selectedSlot, change, gbcItemId, slot, slotLabel }: ItemSlo
         gbcItemId && isSwap && !isGbcItemRemove ? $itemWrapper($labItem(gbcItemId, itemSize, false)) : empty(),
         gbcItemId && isSwap && !isGbcItemRemove ? style({ left: '50%', top: '50%', marginLeft: '-12px', marginTop: '-12px', pointerEvents: 'none', position: 'absolute' })($iconCircular($arrowsFlip, pallete.horizon)) : empty(),
         $itemWrapper(style({ width: isSwap && canRemove ? '65px' : itemSizePx }))(
-          item ? style({ borderRadius: 0, filter: change?.isRemove ? 'saturate(0) brightness(0.2)' : '' }, $labItem(item, itemSize, false)) : $row(style({ flex: 1, alignItems: 'center', placeContent: 'center', color: pallete.horizon, fontSize: '.65em' }))($text(slotLabel))
+          item ? style({ borderRadius: 0, filter: change?.isRemove ? 'saturate(0) brightness(0.2)' : '' }, $labItem(item, itemSize, false)) : $row(style({ flex: 1, alignItems: 'center', placeContent: 'center', color: pallete.foreground, fontSize: '.65em' }))($text(slotLabel))
         )
       )
     ),
