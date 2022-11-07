@@ -10,6 +10,7 @@ import { CHAIN_NATIVE_TO_ADDRESS, getTokenDescription } from "../../components/t
 import { USE_CHAIN } from "@gambitdao/gbc-middleware"
 import { Stream } from "@most/types"
 import { Web3Provider } from "@ethersproject/providers"
+import { BigNumber } from "ethers"
 
 
 export interface KeeperExecutePosition {
@@ -103,7 +104,7 @@ const gmxIOPriceMapSource = replayLatest(multicast(periodicRun({
 
 const gmxIoLatestPrice = (token: ADDRESS_LEVERAGE) => map(pmap => BigInt(pmap[token]), gmxIOPriceMapSource)
 
-const feedPrice = (token: TradeAddress, feed: Stream<FastPriceFeed>) => switchLatest(map(c => {
+const latestVaultPrice = (token: TradeAddress, feed: Stream<FastPriceFeed>) => switchLatest(map(c => {
   return periodicRun({
     recoverError: false,
     actionOp: map(async () => (await c.prices(token)).toBigInt())
@@ -144,7 +145,7 @@ export function connectPricefeed(wallet: IWalletLink) {
 
     return switchFailedSources([
       gmxIoLatestPrice(normalizedAddress as ADDRESS_LEVERAGE),
-      feedPrice(token, contract),
+      latestVaultPrice(token, contract),
     ])
   }
 
@@ -168,24 +169,41 @@ export function connectVault(wallet: IWalletLink) {
   const getTokenCumulativeFundingRate = (token: TradeAddress) => awaitPromises(map(async c => (await c.cumulativeFundingRates(token)).toBigInt(), contract))
   const getPoolAmount = (token: TradeAddress) => awaitPromises(map(async c => (await c.poolAmounts(token)).toBigInt(), contract))
   const getReservedAmount = (token: TradeAddress) => awaitPromises(map(async c => (await c.reservedAmounts(token)).toBigInt(), contract))
-  const getAvailableLiquidityUsd = (chain: CHAIN.ARBITRUM | CHAIN.AVALANCHE, token: ARBITRUM_ADDRESS_TRADE) => {
+  const getTotalShort = (token: TradeAddress) => awaitPromises(map(async c => (await c.globalShortSizes(token)).toBigInt(), contract))
+  const getTotalShortCap = (token: TradeAddress) => awaitPromises(map(async c => {
+    try {
+      return (await c.maxGlobalShortSizes(token)).toBigInt()
+    } catch (e) {
+      return null
+    }
+  }, contract))
+
+  const getAvailableLiquidityUsd = (chain: CHAIN.ARBITRUM | CHAIN.AVALANCHE, token: TradeAddress, isLong: boolean) => {
 
     const tokenDesc = getTokenDescription(chain, token)
     const denominator = getDenominator(tokenDesc.decimals)
     const price = getPrice(token, false)
-
-    if (tokenDesc.isStable) {
-      const poolAmount = getPoolAmount(token)
-
-      return combine((poolAmount, price) => poolAmount * price / denominator, poolAmount, price)
-    }
-
+    const poolAmount = getPoolAmount(token)
     const reservedAmount = getReservedAmount(token)
 
-    return combine((reservedAmount, price) => reservedAmount * price / denominator, reservedAmount, price)
+    return combineArray((poolAmount, reservedAmount, maxGlobalShortSize, globalShortSize, price) => {
+      const availableAmount = poolAmount - reservedAmount
+
+      if (isLong) {
+        return availableAmount * price / denominator
+      }
+
+      const maxAvailableShort = globalShortSize ? maxGlobalShortSize - globalShortSize : maxGlobalShortSize
+
+      if (availableAmount > maxAvailableShort) {
+        return maxAvailableShort
+      }
+
+      return availableAmount * price / denominator
+    }, poolAmount, reservedAmount, getTotalShort(token), getTotalShortCap(token), price)
   }
 
-  const getPrice = (token: ARBITRUM_ADDRESS_TRADE, maximize: boolean) => switchLatest(map(c => periodicRun({
+  const getPrice = (token: TradeAddress, maximize: boolean) => switchLatest(map(c => periodicRun({
     actionOp: map(async () => {
       const price = (maximize ? await c.getMaxPrice(token) : await c.getMinPrice(token)).toBigInt()
       return price

@@ -54,7 +54,7 @@ export const $Tooltip = ({ $anchor, $content, $container = $row }: TooltipConfig
 
         return $row(
           style({
-            zIndex: 1160,
+            zIndex: 5160,
             position: 'absolute',
             display: 'none',
             background: pallete.background,

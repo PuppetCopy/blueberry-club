@@ -92,7 +92,7 @@ export const $Trade = (config: ITradeComponent) => component((
   const collateralTokenStore = tradingStore.craete<ARBITRUM_ADDRESS_TRADE, 'collateralToken'>('collateralToken', ARBITRUM_ADDRESS.NATIVE_TOKEN)
   const indexTokenStore = tradingStore.craete<ARBITRUM_ADDRESS_LEVERAGE, 'indexToken'>('indexToken', ARBITRUM_ADDRESS.NATIVE_TOKEN)
   const isIncreaseStore = tradingStore.craete('isIncrease', true)
-  const collateralRatioStore = tradingStore.craete('collateralRatio', 0)
+  // const collateralRatioStore = tradingStore.craete('collateralRatio', 0)
 
 
 
@@ -151,7 +151,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
   const indexTokenWeight = switchLatest(map(address => vault.getTokenWeight(address), indexToken))
   const indexTokenDebtUsd = switchLatest(map(address => vault.getTokenDebtUsd(address), indexToken))
-  const collateralAvailableLiquidityUsd = switchLatest(map(address => vault.getAvailableLiquidityUsd(USE_CHAIN, address), collateralToken))
+  
 
   const inputTokenDescription = map(address => getTokenDescription(USE_CHAIN, address), inputToken)
   const indexTokenDescription = map(address => getTokenDescription(USE_CHAIN, address), indexToken)
@@ -166,10 +166,13 @@ export const $Trade = (config: ITradeComponent) => component((
       return now(null)
     }
 
-    const key = getPositionKey(params.account, params.collateralToken, params.indexToken, params.isLong)
+    const collateralToken = params.isLong ? params.indexToken : params.collateralToken
 
+    const key = getPositionKey(params.account.toLowerCase(), collateralToken, params.indexToken, params.isLong)
+    const vaultPos = map((pos): IVaultPosition | null => {
+      return pos ? { ...pos, isLong: params.isLong } : null
+    }, vault.getPosition(key))
 
-    const vaultPos = map((pos): IVaultPosition | null => pos ? { ...pos, isLong: params.isLong } : null, vault.getPosition(key))
 
     return vaultPos
   }, requestPosition))))
@@ -223,18 +226,6 @@ export const $Trade = (config: ITradeComponent) => component((
 
   const fee = combine((swap, margin) => swap + margin, swapFee, marginFee)
 
-  // const minCollateralRatio = map(state => {
-  //   if (!state.isIncrease) {
-  //     return 0n
-  //   }
-
-  //   const walletBalance = getTokenUsd(state.walletBalance, state.inputTokenPrice, state.inputTokenDescription.decimals)
-  //   const posCollateral = state.vaultPosition?.collateral || 0n
-
-  //   return div(walletBalance, walletBalance + posCollateral)
-  //   // return bnDiv(minCollateral, ttlColalteral)
-  // }, combineObject({ isIncrease, inputTokenPrice, walletBalance, inputTokenDescription, vaultPosition }))
-
 
   const collateralDeltaUsd = multicast(map(params => {
     if (params.isIncrease) {
@@ -244,13 +235,6 @@ export const $Trade = (config: ITradeComponent) => component((
     if (!params.vaultPosition) {
       return 0n
     }
-
-    // const pnl = getDelta(params.vaultPosition.averagePrice, params.indexTokenPrice, params.vaultPosition.size)
-    // const adjustedPnlDelta = pnl * params.size / params.vaultPosition.size
-
-    // const ratio = BigInt(Math.floor(Math.abs(params.collateralRatio) * Number(BASIS_POINTS_DIVISOR)))
-
-    // const adjCollateral = adjustedPnlDelta * ratio / BASIS_POINTS_DIVISOR
 
     const withdrawCollateral = getTokenUsd(params.collateralDelta, params.inputTokenPrice, params.inputTokenDescription.decimals)
 
@@ -266,7 +250,9 @@ export const $Trade = (config: ITradeComponent) => component((
     if (params.isIncrease) {
       const pnl = getPositionPnL(params.vaultPosition.isLong, params.vaultPosition.averagePrice, params.indexTokenPrice, params.vaultPosition.size)
 
-      return getAveragePriceFromDelta(params.vaultPosition.isLong, params.vaultPosition.size, params.indexTokenPrice, pnl, params.sizeDelta)
+      const adjustedPnlDelta = pnl < 0n ? pnl * params.sizeDelta / params.vaultPosition.size : 0n
+
+      return getAveragePriceFromDelta(params.vaultPosition.isLong, params.vaultPosition.size, params.indexTokenPrice, adjustedPnlDelta, params.sizeDelta)
     }
 
     return params.vaultPosition.averagePrice
@@ -402,14 +388,14 @@ export const $Trade = (config: ITradeComponent) => component((
         params.trade.signer.getAddress(),
         { value: req.executionFee }
       ))
-      .catch(() => {
-        if (params.provider) {
-          const ctx = params.provider.getTransaction('0xbcb9f8ec6784fb25e54983c593bbce874199415c8392cb22377eddcd5d4a6bff')
-          return ctx
-        }
+    // .catch(() => {
+    //   if (params.provider) {
+    //     const ctx = params.provider.getTransaction('0xbcb9f8ec6784fb25e54983c593bbce874199415c8392cb22377eddcd5d4a6bff')
+    //     return ctx
+    //   }
 
-        throw new Error('ff')
-      })
+    //   throw new Error('ff')
+    // })
 
 
     const executeIncreasePosition: Stream<KeeperExecutePosition> = listen(params.trade)('ExecuteIncreasePosition')
@@ -479,7 +465,6 @@ export const $Trade = (config: ITradeComponent) => component((
             indexTokenPrice,
             collateralTokenPrice,
             collateralTokenDescription,
-            collateralAvailableLiquidityUsd,
             fee,
             indexTokenDescription,
             inputTokenDescription,
@@ -512,7 +497,7 @@ export const $Trade = (config: ITradeComponent) => component((
           walletChange: walletChangeTether()
         }),
 
-        $node(),
+        // $node($text(map(amountUsd => formatReadableUSD(amountUsd), availableLiquidityUsd))),
 
 
 

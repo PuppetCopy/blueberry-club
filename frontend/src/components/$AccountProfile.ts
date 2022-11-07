@@ -140,7 +140,7 @@ export const $walletAccountDisplay = (avatarSize = 38) => {
     $wrapper(style({ display: 'flex', border: `1px solid ${pallete.foreground}`, placeContent: 'center', alignItems: 'center' }))(
       $text(style({ fontWeight: 800, color: pallete.foreground }))('?')
     ),
-    $column(
+    $column(style({ whiteSpace: 'nowrap', paddingRight: '8px' }))(
       $text(style({ fontSize: '.75em' }))('0x----'),
       $text(style({ fontSize: '1em' }))('----')
     )

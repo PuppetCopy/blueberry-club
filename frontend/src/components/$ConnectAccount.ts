@@ -1,4 +1,4 @@
-import { Behavior, combineArray, Op } from "@aelea/core"
+import { Behavior, combineArray, fromCallback, Op } from "@aelea/core"
 import { $element, $Node, $text, attr, component, NodeComposeFn, nodeEvent, style } from "@aelea/dom"
 import { $column, $icon, $Popover, $row, layoutSheet, state } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
@@ -12,6 +12,8 @@ import { USE_CHAIN } from "@gambitdao/gbc-middleware"
 import { WALLET } from "../logic/provider"
 import { NETWORK_METADATA } from "@gambitdao/gmx-middleware"
 import { $caretDown } from "../elements/$icons"
+import QRCodeModal from "@walletconnect/qrcode-modal"
+import AuthClient, { generateNonce } from "@walletconnect/auth-client"
 
 
 
@@ -95,6 +97,30 @@ export const $IntermediateConnectPopover = ({ $display, walletLink, walletStore,
         })({
           click: walletChangeTether(
             map(async () => {
+              // const authClient = await wallet.walletConnectAuthClient
+
+              // authClient.on("auth_response", ({ params }) => {
+              //   debugger
+              // })
+
+              // const nonce = generateNonce()
+              // const { uri } = await authClient.request({
+              //   aud: window.location.href,
+              //   domain: window.location.hostname.split(".").slice(-2).join("."),
+              //   chainId: `eip155:${USE_CHAIN}`,
+              //   // type: "eip4361",
+              //   nonce,
+              //   statement: "Sign in with wallet.",
+              // })
+
+              // await new Promise((resolve, reject) => {
+              //   QRCodeModal.open(uri, () => {
+              //     debugger
+              //   })
+              // })
+
+
+
               await wallet.walletConnect.request({ method: 'eth_requestAccounts' })
               return wallet.walletConnect
             }),
@@ -136,7 +162,7 @@ export const $IntermediateConnectPopover = ({ $display, walletLink, walletStore,
         })(
           clickOpenPopoverTether(nodeEvent('click'))($button)
         )({})
-    
+
       }
 
       return ensureNetwork ? $column(
@@ -159,7 +185,7 @@ export const $IntermediateConnectPopover = ({ $display, walletLink, walletStore,
               )
             })
           }
-                
+
           return switchLatest($display(now(account)))
         }, walletLink.network))
       ) : switchLatest($display(now(account)))

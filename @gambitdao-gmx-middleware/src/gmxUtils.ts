@@ -30,58 +30,6 @@ export function formatToBasis(a: bigint): number {
 }
 
 
-export function getLeverageChange(
-  size: bigint,
-  sizeDelta: bigint,
-  increaseSize: bigint,
-  collateral: bigint,
-  collateralDelta: bigint,
-  increaseCollateral: bigint,
-  entryFundingRate: bigint,
-  cumulativeFundingRate: bigint
-): bigint {
-
-  let nextSize = size ? size : 0n
-
-  if (sizeDelta) {
-    if (increaseSize) {
-      nextSize = size + sizeDelta
-    } else {
-      if (sizeDelta >= size) {
-        return 0n
-      }
-      nextSize = size - sizeDelta
-    }
-  }
-
-  let remainingCollateral = collateral ? collateral : 0n
-
-  if (collateralDelta) {
-    if (increaseCollateral) {
-      remainingCollateral = collateral + collateralDelta
-    } else {
-      if (collateralDelta >= collateral) {
-        return 0n
-      }
-      remainingCollateral = collateral - collateralDelta
-    }
-  }
-
-
-
-  remainingCollateral = sizeDelta
-    ? remainingCollateral * (BASIS_POINTS_DIVISOR - MARGIN_FEE_BASIS_POINTS) / BASIS_POINTS_DIVISOR
-    : remainingCollateral
-
-  if (entryFundingRate && cumulativeFundingRate) {
-    const fundingFee = size * (cumulativeFundingRate - entryFundingRate) / FUNDING_RATE_PRECISION
-    remainingCollateral = remainingCollateral - fundingFee
-  }
-
-  return nextSize * BASIS_POINTS_DIVISOR / remainingCollateral
-}
-
-
 
 export function getPriceDeltaPercentage(positionPrice: bigint, price: bigint) {
   const priceDelta = price - positionPrice
