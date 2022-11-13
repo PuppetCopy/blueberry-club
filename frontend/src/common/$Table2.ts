@@ -87,7 +87,7 @@ export const $Table2 = <T, FilterState = never>({
   const $rowContainer = $row(layoutSheet.spacingSmall)
 
   const $rowHeaderContainer = $rowContainer(
-    style({ overflowY: 'scroll' }), stylePseudo('::-webkit-scrollbar', { backgroundColor: 'transparent', width: '6px' })
+    style({ overflowY: 'scroll', flexShrink: 0 }), stylePseudo('::-webkit-scrollbar', { backgroundColor: 'transparent', width: '6px' })
   )
 
   const sortBy = chain((state) => {

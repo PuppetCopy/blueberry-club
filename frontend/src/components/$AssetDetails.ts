@@ -33,7 +33,7 @@ export const $AssetDetails = ({ label, $iconPath, asset, symbol, $distribution, 
     $row(layoutSheet.spacing, style({ flex: 1, }))(
       $row(style({ position:'relative' }))(
         $icon({ $content: $iconPath, viewBox: '0 0 32 32', svgOps: style({ marginTop: '3px' }), width: '34px' }),
-        $element('img')(attr({ src: `/assets/${chain === CHAIN.ARBITRUM ? 'arbitrum' : 'avalanche'}.svg` }), style({ width: '18px', padding: '3px', borderRadius: '50%', backgroundColor: pallete.background, position: 'absolute', right: '-8px', top: '-4px' }))(),
+        $element('img')(attr({ src: `/assets/chain/${chain}.svg` }), style({ width: '18px', padding: '3px', borderRadius: '50%', backgroundColor: pallete.background, position: 'absolute', right: '-8px', top: '-4px' }))(),
       ),
       // $node(style({ flex: 1 }))(),
       $column(layoutSheet.spacingTiny, style({ flex: 1, alignItems: 'baseline' }))(

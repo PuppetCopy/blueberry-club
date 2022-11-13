@@ -196,7 +196,7 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
               address: GBC_ADDRESS.TREASURY_ARBITRUM,
             }),
             $anchor(attr({ href: getAccountExplorerUrl(CHAIN.ARBITRUM, GBC_ADDRESS.TREASURY_ARBITRUM) }))(
-              $element('img')(attr({ src: `/assets/arbitrum.svg` }), style({ width: '28px', padding: '3px', borderRadius: '50%', backgroundColor: pallete.background }))()
+              $element('img')(attr({ src: `/assets/chain/${CHAIN.ARBITRUM}.svg` }), style({ width: '28px', padding: '3px', borderRadius: '50%', backgroundColor: pallete.background }))()
             ),
           ),
 
@@ -220,7 +220,7 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
               address: GBC_ADDRESS.TREASURY_AVALANCHE,
             }),
             $anchor(attr({ href: getAccountExplorerUrl(CHAIN.AVALANCHE, GBC_ADDRESS.TREASURY_AVALANCHE) }))(
-              $element('img')(attr({ src: `/assets/avalanche.svg` }), style({ width: '28px', padding: '3px', borderRadius: '50%', backgroundColor: pallete.background }))()
+              $element('img')(attr({ src: `/assets/chain/${CHAIN.AVALANCHE}.svg` }), style({ width: '28px', padding: '3px', borderRadius: '50%', backgroundColor: pallete.background }))()
             )
           ),
 

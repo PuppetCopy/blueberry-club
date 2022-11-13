@@ -121,7 +121,7 @@ export const $profilePreview = ({
   labelSize = '16px', avatarSize = 38, claim, profile, showAddress = true
 }: IProfilePreview) => {
 
-  return $row(layoutSheet.row, layoutSheet.spacingSmall, style({ alignItems: 'center', flexDirection: 'row-reverse', pointerEvents: 'none', textDecoration: 'none' }))(
+  return $row(layoutSheet.row, layoutSheet.spacingSmall, style({ alignItems: 'center', pointerEvents: 'none', textDecoration: 'none' }))(
     profile.token ? style({ borderRadius: '50%' }, $berryByToken(profile.token, avatarSize)) : $AccountPhoto(profile.id, claim, avatarSize),
     showAddress
       ? profile.name
@@ -132,7 +132,7 @@ export const $profilePreview = ({
 }
 
 
-export const $walletAccountDisplay = (avatarSize = 38) => {
+export const $DisconnectedWalletDisplay = (avatarSize = 38) => {
   const sizePx = avatarSize + 'px'
   const $wrapper = $node(style({ width: sizePx, height: sizePx, minWidth: sizePx, minHeight: sizePx, borderRadius: '50%' }))
 

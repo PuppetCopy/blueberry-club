@@ -1,4 +1,4 @@
-import { Behavior, combineArray, O } from "@aelea/core"
+import { Behavior, O } from "@aelea/core"
 import { $Node, $text, component, motion, MOTION_NO_WOBBLE, NodeComposeFn, style, styleBehavior } from "@aelea/dom"
 import { $column, $icon, $NumberTicker, $row, $seperator, layoutSheet, screenUtils } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
@@ -6,7 +6,7 @@ import { map, merge, multicast, now, skip, skipRepeats, startWith, switchLatest 
 import { Stream } from "@most/types"
 import {
   formatFixed, formatReadableUSD, isTradeSettled, readableNumber,
-  isTradeLiquidated, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, ITrade, IPricefeedParamApi, IChainParamApi, getDeltaPercentage, bnDiv, getPositionPnL
+  isTradeLiquidated, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, ITrade, IPricefeedParamApi, IChainParamApi, getDeltaPercentage, bnDiv, getPnL
 } from "@gambitdao/gmx-middleware"
 import { ChartOptions, DeepPartial, MouseEventParams } from "lightweight-charts"
 import { $bull, $bear, $target, $RiskLiquidator, $tokenIconMap } from "@gambitdao/ui-components"
@@ -81,7 +81,7 @@ export const $TradeCardPreview = ({
     }
 
     return map(price => {
-      const delta = getPositionPnL(trade.isLong, trade.averagePrice, price, trade.size)
+      const delta = getPnL(trade.isLong, trade.averagePrice, price, trade.size)
       const deltaPercentage = getDeltaPercentage(delta, trade.collateral)
 
       return formatFixed(delta + trade.realisedPnl - trade.fee, 30)

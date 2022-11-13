@@ -54,7 +54,7 @@ export const $VirtualScroll = ({ dataSource, containerOps = O(), $loader = $defa
 
   const $observer = $custom('observer')(intersectedLoader)()
 
-  const delayDatasource = delay(45, multicastDatasource)
+  const delayDatasource = multicastDatasource
   const loadState = merge(
     map(data => ({ $intermediate: $observer, data }), delayDatasource),
     map(() => ({ $intermediate: $loader, }), scrollReuqestWithInitial)

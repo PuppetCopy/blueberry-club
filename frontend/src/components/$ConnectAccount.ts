@@ -1,8 +1,8 @@
-import { Behavior, combineArray, fromCallback, Op } from "@aelea/core"
+import { Behavior, combineArray, Op } from "@aelea/core"
 import { $element, $Node, $text, attr, component, NodeComposeFn, nodeEvent, style } from "@aelea/dom"
 import { $column, $icon, $Popover, $row, layoutSheet, state } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { awaitPromises, constant, empty, fromPromise, map, multicast, now, skipRepeats, snapshot, switchLatest, tap } from "@most/core"
+import { awaitPromises, constant, empty, fromPromise, map, multicast, now, skipRepeats, snapshot, switchLatest } from "@most/core"
 import { IEthereumProvider } from "eip1193-provider"
 import { IWalletLink, attemptToSwitchNetwork } from "@gambitdao/wallet-link"
 import { $walletConnectLogo } from "../common/$icons"
@@ -12,8 +12,6 @@ import { USE_CHAIN } from "@gambitdao/gbc-middleware"
 import { WALLET } from "../logic/provider"
 import { NETWORK_METADATA } from "@gambitdao/gmx-middleware"
 import { $caretDown } from "../elements/$icons"
-import QRCodeModal from "@walletconnect/qrcode-modal"
-import AuthClient, { generateNonce } from "@walletconnect/auth-client"
 
 
 
@@ -34,10 +32,19 @@ export interface IIntermediateDisplay {
 
   ensureNetwork?: boolean
 
+  $connectLabel?: $Node
+
   $container?: NodeComposeFn<$Node>
 }
 
-export const $IntermediateConnectButton = ({ $display, walletLink, walletStore, $container, ensureNetwork = true }: IIntermediateDisplay) => component((
+export const $IntermediateConnectButton = ({
+  $display,
+  walletLink,
+  walletStore,
+  $container,
+  ensureNetwork = true,
+  $connectLabel = $text('Connect Wallet')
+}: IIntermediateDisplay) => component((
   [switchNetwork, switchNetworkTether]: Behavior<Promise<any>, Promise<any>>,
   [walletChange, walletChangeTether]: Behavior<IEthereumProvider | null, IEthereumProvider | null>,
 ) => {
@@ -49,7 +56,7 @@ export const $IntermediateConnectButton = ({ $display, walletLink, walletStore, 
         ensureNetwork,
         $button: $ButtonPrimary({
           $content: $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
-            $text('Connect Wallet'),
+            $connectLabel,
             $icon({ $content: $caretDown, viewBox: '0 0 32 32', width: '16px', fill: pallete.background, svgOps: style({ marginTop: '2px' }) }),
           )
         })({}),
@@ -180,7 +187,7 @@ export const $IntermediateConnectPopover = ({ $display, walletLink, walletStore,
                     console.error(error)
                     return error
                   }) : null
-                }, walletLink.wallet),
+                }, walletLink.walletChange),
                 multicast
               )
             })
@@ -192,7 +199,7 @@ export const $IntermediateConnectPopover = ({ $display, walletLink, walletStore,
     }, fromPromise(wallet.metamaskQuery), walletLink.provider, noAccount)),
 
     {
-      walletChange: multicast(walletChange), switchNetwork
+      walletChange, switchNetwork
     }
   ]
 })

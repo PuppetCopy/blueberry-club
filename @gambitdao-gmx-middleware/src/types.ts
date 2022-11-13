@@ -4,7 +4,6 @@ import { TOKEN_SYMBOL } from "./address/symbol"
 import { CHAIN, intervalTimeMap } from "./constant"
 
 
-
 export type Address = string
 
 export type ADDRESS_LEVERAGE = AVALANCHE_ADDRESS_LEVERAGE | ARBITRUM_ADDRESS_LEVERAGE
@@ -37,10 +36,7 @@ export interface IEntityIndexed extends IIdentifiableEntity {
 export type TypeName<T extends string> = { __typename: T }
 export type IndexedType<T extends string> = TypeName<T> & IEntityIndexed
 
-export interface IPositionDelta {
-  delta: bigint
-  deltaPercentage: bigint
-}
+
 
 export interface IAbstractPosition {
   account: Address
@@ -68,7 +64,7 @@ export type IAbstractRealisedPosition = IAbstractPositionStake & {
 export type IVaultPosition = {
   key: string
   size: bigint
-  isLong: boolean
+  // isLong: boolean
   collateral: bigint
   averagePrice: bigint
   entryFundingRate: bigint

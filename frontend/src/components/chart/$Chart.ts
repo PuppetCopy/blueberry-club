@@ -130,7 +130,7 @@ export const $Chart = <T extends SeriesType>({ chartConfig, realtimeSource, init
   const ignoreAll = filter(() => false)
   return [
     $wrapNativeElement(containerEl)(
-      style({ position: 'relative', minHeight: '30px', flex: 1 }),
+      style({ position: 'relative', minHeight: '30px' }),
       sampleContainerDimension(observer.resize()),
       containerOp,
     )(

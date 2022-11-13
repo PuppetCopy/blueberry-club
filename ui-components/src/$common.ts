@@ -2,7 +2,7 @@ import { isStream, O } from "@aelea/core"
 import { $Branch, $element, $node, $Node, $text, attr, component, style, styleBehavior, styleInline, stylePseudo } from "@aelea/dom"
 import { $column, $icon, $row, $seperator, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { bnDiv, CHAIN, formatReadableUSD, getLiquidationPrice, getTxExplorerUrl, IAbstractTrade, ITradeOpen, liquidationWeight, readableNumber, shortenTxAddress, TokenDescription } from "@gambitdao/gmx-middleware"
+import { bnDiv, CHAIN, formatReadableUSD, getLiquidationPrice, getTxExplorerUrl, IAbstractTrade, ITrade, ITradeOpen, liquidationWeight, readableNumber, shortenTxAddress, TokenDescription } from "@gambitdao/gmx-middleware"
 import { now, multicast, map, empty } from "@most/core"
 import { Stream } from "@most/types"
 import { $alertIcon, $caretDblDown, $info, $skull, $tokenIconMap } from "./$icons"
@@ -80,7 +80,10 @@ export const $ProfitLossText = (pnl: Stream<bigint> | bigint, colorful = true) =
   return $text(colorStyle)(display)
 }
 
-export function $liquidationSeparator(liqWeight: Stream<number>) {
+export function $liquidationSeparator(pos: ITrade, markPrice: Stream<bigint>) {
+  const liquidationPrice = getLiquidationPrice(pos.isLong, pos.collateral, pos.size, pos.averagePrice)
+  const liqWeight = map(price => liquidationWeight(pos.isLong, liquidationPrice, price), markPrice)
+
   return styleInline(map((weight) => {
     return { width: '100%', background: `linear-gradient(90deg, ${pallete.negative} ${`${weight * 100}%`}, ${pallete.foreground} 0)` }
   }, liqWeight))(
@@ -89,13 +92,11 @@ export function $liquidationSeparator(liqWeight: Stream<number>) {
 }
 
 export const $RiskLiquidator = (pos: ITradeOpen, markPrice: Stream<bigint>) => component(() => {
-  const liquidationPrice = getLiquidationPrice(pos.collateral, pos.size, pos.averagePrice, pos.isLong)
-  const liqPercentage = map(price => liquidationWeight(pos.isLong, liquidationPrice, price), markPrice)
 
   return [
     $column(layoutSheet.spacingTiny, style({ minWidth: '100px', alignItems: 'center' }))(
       $text(formatReadableUSD(pos.size)),
-      $liquidationSeparator(liqPercentage),
+      $liquidationSeparator(pos, markPrice),
       $row(style({ fontSize: '.65em', gap: '2px', alignItems: 'center' }))(
         $leverage(pos),
 

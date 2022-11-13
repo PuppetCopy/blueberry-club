@@ -7,28 +7,35 @@ const intervals = [
   { label: 'year', seconds: intervalTimeMap.MONTH * 12 },
   { label: 'month', seconds: intervalTimeMap.MONTH },
   { label: 'day', seconds: intervalTimeMap.HR24 },
-  { label: 'hour', seconds: intervalTimeMap.MIN * 60 },
-  { label: 'minute', seconds: intervalTimeMap.MIN },
-  { label: 'second', seconds: intervalTimeMap.SEC }
+  { label: 'hr', seconds: intervalTimeMap.MIN * 60 },
+  { label: 'min', seconds: intervalTimeMap.MIN },
+  { label: 'sec', seconds: intervalTimeMap.SEC }
 ] as const
 
 export function timeSince(time: number) {
   const timeDelta = Math.abs(unixTimestampNow() - time)
-  const interval = intervals.find(i => i.seconds < timeDelta)
+  const intervalIdx = intervals.findIndex(i => i.seconds < timeDelta)
+  // const grade = intervals.indexOf(interval as any)
 
-  if (!interval) {
+  if (!intervalIdx) {
     return 'now'
   }
 
-  const count = Math.floor(timeDelta / interval.seconds)
-  return `${count} ${interval.label}${count !== 1 ? 's' : ''}`
+  const fst = intervals[intervalIdx]
+  const count1 = Math.floor(timeDelta / fst.seconds)
+
+  const snd = intervals[intervalIdx + 1]
+  const count2 = count1 * fst.seconds
+
+
+  return `${count1} ${fst.label}${count1 !== 1 ? 's' : ''} ${Math.floor((timeDelta - fst.seconds) / snd.seconds)} ${snd.label} `
 }
 
 
 export const everySec = map(unixTimestampNow, periodic(1000))
 
 export const displayDate = (unixTime: number) => {
-  return `${new Date(unixTime * 1000).toDateString()} ${new Date(unixTime * 1000).toLocaleTimeString() }`
+  return `${new Date(unixTime * 1000).toDateString()} ${new Date(unixTime * 1000).toLocaleTimeString()}`
 }
 
 export const countdown = (targetDate: number) => {

@@ -1,4 +1,4 @@
-import { Behavior, fromCallback, O, replayLatest } from "@aelea/core"
+import { Behavior, fromCallback, replayLatest } from "@aelea/core"
 import { component, eventElementTarget, style } from "@aelea/dom"
 import * as router from '@aelea/router'
 import { $column, designSheet, layoutSheet, screenUtils } from '@aelea/ui-components'
@@ -6,7 +6,7 @@ import {
   ADDRESS_LEVERAGE,
   api,
   ETH_ADDRESS_REGEXP, fromJson, groupByMap, IAccountTradeListParamApi, IChainParamApi,
-  ILeaderboardRequest, intervalTimeMap, IPricefeed, IPricefeedParamApi, IPriceLatestMap, IRequestTradeQueryparam, ITrade, ITradeOpen
+  ILeaderboardRequest, intervalTimeMap, IPricefeedParamApi, IPriceLatestMap, IRequestTradeQueryparam
 } from '@gambitdao/gmx-middleware'
 import { initWalletLink } from "@gambitdao/wallet-link"
 import {
@@ -120,20 +120,20 @@ export default ({ baseRoute = '' }: Website) => component((
   const chosenWalletName = now(walletStore.state)
   const defaultWalletProvider: Stream<IEthereumProvider | null> = multicast(switchLatest(awaitPromises(map(async name => {
     const isWC = name === WALLET.walletConnect
-    const provider = isWC ? wallet.walletConnect : await wallet.metamaskQuery
+    const walletProvider = isWC ? wallet.walletConnect : await wallet.metamaskQuery
 
-    if (name && provider) {
-      const [mainAccount]: string[] = await provider.request({ method: 'eth_accounts' }) as any
+    if (name && walletProvider) {
+      const [mainAccount]: string[] = await walletProvider.request({ method: 'eth_accounts' }) as any
 
       if (mainAccount) {
         if (isWC) {
           const connector = wallet.walletConnect
           const wcDisconnected = constant(null, fromCallback(cb => connector.on('disconnect', cb)))
 
-          return startWith(provider, wcDisconnected)
+          return startWith(walletProvider, wcDisconnected)
         }
 
-        return now(provider)
+        return now(walletProvider)
       }
     }
 
@@ -143,9 +143,8 @@ export default ({ baseRoute = '' }: Website) => component((
 
 
   const walletLink = initWalletLink(
-    replayLatest(multicast(mergeArray([defaultWalletProvider, walletChange])))
+    mergeArray([defaultWalletProvider, walletChange])
   )
-
 
 
 

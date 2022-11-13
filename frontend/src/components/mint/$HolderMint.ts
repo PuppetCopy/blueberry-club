@@ -114,8 +114,6 @@ export const $GbcWhitelist = (config: MintCmp) => component((
 
             const disablePrimary = combineArray((msg, tokens) => msg || tokens.length === 0, alert, chosenTokens)
 
-
-
             return $ButtonPrimary({
               disabled: startWith(true, disablePrimary),
               buttonOp: style({ alignSelf: 'flex-end' }),

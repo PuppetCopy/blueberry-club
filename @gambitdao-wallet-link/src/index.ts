@@ -1,6 +1,7 @@
+import { combineArray, replayLatest } from "@aelea/core"
 import { Web3Provider } from "@ethersproject/providers"
 import { CHAIN, NETWORK_METADATA } from "@gambitdao/gmx-middleware"
-import { awaitPromises, constant, map, merge, mergeArray, snapshot } from "@most/core"
+import { awaitPromises, combine, constant, map, merge, mergeArray, multicast, snapshot } from "@most/core"
 import { Stream } from "@most/types"
 import { EIP1193Provider, ProviderInfo, ProviderRpcError } from "eip1193-provider"
 import { eip1193ProviderEvent, parseError } from "./common"
@@ -13,7 +14,7 @@ export interface IWalletLink<T extends EIP1193Provider = EIP1193Provider> {
   connect: Stream<ProviderInfo>
 
   provider: Stream<Web3Provider | null>
-  wallet: Stream<T | null>
+  walletChange: Stream<T | null>
 }
 
 
@@ -22,29 +23,34 @@ export interface IWalletLink<T extends EIP1193Provider = EIP1193Provider> {
 // walletconnect chaining chain issue https://github.com/WalletConnect/walletconnect-monorepo/issues/612
 // attempting to manage wallet connection and event flow
 export function initWalletLink<T extends EIP1193Provider>(walletChange: Stream<T | null>): IWalletLink<T> {
-  const ethersWeb3Wrapper = awaitPromises(map(async wallet => {
-    if (wallet) {
-      const w3p = new Web3Provider(wallet)
-      await w3p.getNetwork()
-      return w3p
-    }
-
-    return null
-  }, walletChange))
-
   const walletEvent = eip1193ProviderEvent(walletChange)
 
   const connect = walletEvent('connect')
   const disconnect = walletEvent('disconnect')
-  
   const networkChange = map(Number, walletEvent('chainChanged'))
   const accountChange = map(list => list[0], walletEvent('accountsChanged'))
+
+
+  const ethersWeb3Wrapper = replayLatest(multicast(awaitPromises(combineArray(async (wallet) => {
+    if (wallet) {
+      const chainId = await wallet.request({ method: 'eth_chainId' }) as any as number
+      console.log(chainId)
+      const w3p = new Web3Provider(wallet, Number(chainId))
+      // const network = await w3p.getNetwork()
+      return w3p
+    }
+
+    return null
+  }, walletChange))))
+
+
+
   const proivderChange = awaitPromises(snapshot(async (walletProvider, net) => {
     if (walletProvider === null) {
       return null
     }
 
-    const w3p = new Web3Provider(walletProvider)
+    const w3p = new Web3Provider(walletProvider, net)
     await w3p.getNetwork()
 
     return w3p
@@ -63,7 +69,7 @@ export function initWalletLink<T extends EIP1193Provider>(walletChange: Stream<T
 
   const account = merge(accountChange, currentAccount)
   const onDisconnect = constant(null, disconnect)
-  const provider = mergeArray([ethersWeb3Wrapper, proivderChange, onDisconnect])
+  const provider = replayLatest(multicast(mergeArray([ethersWeb3Wrapper, proivderChange, onDisconnect])))
 
   const network = awaitPromises(map(async w3p => {
     if (w3p) {
@@ -75,7 +81,7 @@ export function initWalletLink<T extends EIP1193Provider>(walletChange: Stream<T
     return null
   }, provider))
 
-  return { account, network, provider, disconnect, connect, wallet: walletChange }
+  return { account, network, provider, disconnect, connect, walletChange }
 }
 
 

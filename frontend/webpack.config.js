@@ -11,7 +11,7 @@ module.exports = {
   mode: "development",
   watch: false,
   context: __dirname, // to automatically find tsconfig.json
-  devtool: 'inline-source-map',
+  devtool: 'source-map',
   entry: {
     theme: './src/assignThemeSync.ts',
     main: './src/index.ts',
@@ -27,7 +27,7 @@ module.exports = {
         use: {
           loader: "ts-loader",
           options: {
-            happyPackMode: true,
+            // happyPackMode: true,
             transpileOnly: true, // Set to true if you are using fork-ts-checker-webpack-plugin
             projectReferences: true
           }

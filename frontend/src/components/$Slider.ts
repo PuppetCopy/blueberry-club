@@ -53,7 +53,7 @@ export const $Slider = ({
   [thumbePositionDelta, thumbePositionDeltaTether]: Behavior<IBranch<HTMLInputElement>, number>
 ) => {
 
-  const $rangeWrapper = $row(sliderDimensionTether(observer.resize({}), map(res => res[0])), style({ height: '2px', background: pallete.background, position: 'relative', zIndex: 10 }))
+  const $rangeWrapper = $row(style({ height: '2px', pointerEvents: 'none', background: pallete.background, position: 'relative', zIndex: 10 }))
 
 
   const state = multicast(combineObject({ value, min, max }))
@@ -72,6 +72,7 @@ export const $Slider = ({
 
   return [
     $column(style({ height: '30px', touchAction: 'none', placeContent: 'center', cursor: 'pointer' }))(
+      sliderDimensionTether(observer.resize({}), map(res => res[0])),
       thumbePositionDeltaTether(
         nodeEvent('pointerdown'),
         downSrc => {
@@ -82,7 +83,7 @@ export const $Slider = ({
             const drag = until(dragEnd, dragStart)
             const rectWidth = sliderDimension.contentRect.width
 
-            const hasTouchedBar = rectWidth === (downEvent.target instanceof HTMLElement && downEvent.target.clientWidth)
+            const hasTouchedBar = downEvent.target === sliderDimension.target
 
 
             if (hasTouchedBar) {
@@ -127,7 +128,7 @@ export const $Slider = ({
           style({ width: '0px', top: '50%', position: 'absolute', transition: 'left 175ms cubic-bezier(0.25, 0.8, 0.25, 1) 0s', alignItems: 'center', placeContent: 'center' }),
         )(
           $thumb(
-            styleBehavior(map(({ color, disabled }) => disabled ? { borderColor: 'transparent', pointerEvents: disabled ? 'none' : 'all' } : { borderColor: color }, combineObject({ disabled, color }))),
+            styleBehavior(map(({ color, disabled }) => disabled ? { borderColor: 'transparent', pointerEvents: disabled ? 'none' : 'all' } : { borderColor: color, pointerEvents: 'all' }, combineObject({ disabled, color }))),
             style({ width: thumbSize + 'px', height: thumbSize + 'px' }),
           )(
             $text(style({ paddingTop: '2px' }))(thumbText(value))

@@ -1,6 +1,6 @@
-import { combineArray, O, replayLatest } from "@aelea/core"
-import { filterNull, intervalListFillOrderMap, NETWORK_METADATA } from "@gambitdao/gmx-middleware"
-import { awaitPromises, continueWith, fromPromise, map, multicast, now, periodic, switchLatest, takeWhile, tap } from "@most/core"
+import { combineArray, O, Op, replayLatest } from "@aelea/core"
+import { CHAIN, filterNull, intervalListFillOrderMap, listen, NETWORK_METADATA } from "@gambitdao/gmx-middleware"
+import { awaitPromises, continueWith, filter, fromPromise, map, multicast, now, periodic, switchLatest, takeWhile, tap } from "@most/core"
 import { Stream } from "@most/types"
 import { $loadBerry } from "../components/$DisplayBerry"
 import { IValueInterval } from "../components/$StakingGraph"
@@ -10,8 +10,10 @@ import { $Node, $svg, attr, style } from "@aelea/dom"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { Closet } from "@gambitdao/gbc-contracts"
-import { BigNumberish } from "@ethersproject/bignumber"
+import { BigNumberish, BigNumber } from "@ethersproject/bignumber"
 import { bnToHex } from "../pages/$Berry"
+import { Provider, Web3Provider } from "@ethersproject/providers"
+import { BaseContract, ContractFactory } from "@ethersproject/contracts"
 
 
 export const latestTokenPriceMap = replayLatest(multicast(awaitPromises(map(() => queryLatestPrices(), periodic(5000)))))
@@ -52,6 +54,64 @@ export function getWalletProvider(wallet: IWalletLink,) {
     return w3p
   }, provider))))
 }
+
+export function contractConnect<T extends typeof ContractFactory>(contractCtr: T, provider: Stream<Web3Provider | null>, contractMapping: { [p in CHAIN]?: string }) {
+  // @ts-ignore
+  const contract: Stream<ReturnType<T['connect']> | null> = map((w3p) => {
+    if (w3p === null) {
+      return null
+    }
+
+    const chainId = w3p.network.chainId as CHAIN
+    const address = contractMapping[chainId]
+
+    if (!address) {
+      console.warn(`contract ${contractCtr.name} doesn't support chain ${chainId}`)
+      return null
+    }
+
+    try {
+      // @ts-ignore 
+      return contractCtr.connect(address, w3p.getSigner())
+    } catch (error) {
+
+      // @ts-ignore
+      return contractCtr.connect(address, w3p)
+    }
+  }, provider)
+
+  // @ts-ignore
+  const run = <R>(op: Op<ReturnType<T['connect']>, Promise<R>>) => O(
+    filter(w3p => w3p !== null),
+    op,
+    awaitPromises,
+  )(contract)
+
+  // @ts-ignore
+  const int = (op: Op<ReturnType<T['connect']>, Promise<BigNumber>>): Stream<bigint> => {
+    const newLocal = O(
+      op,
+      map(async (n) => {
+        return (await n).toBigInt()
+      })
+    )
+
+    return run(newLocal)
+  }
+
+  const _listen = (name: string) => switchLatest(map((c) => {
+    if (c === null) {
+      return null
+    }
+
+    return listen(c)(name)
+  }, contract as any as Stream<BaseContract>))
+
+
+  return { run, int, contract, listen: _listen }
+}
+
+
 
 export function priceFeedHistoryInterval<T extends string>(interval: number, gmxPriceHistoryQuery: Stream<IPricefeed[]>, yieldSource: Stream<IStakeSource<T>[]>): Stream<IValueInterval[]> {
   return combineArray((feed, yieldList) => {
@@ -149,7 +209,7 @@ export const $labItemAlone = (id: number, size = 80) => {
 
   return $svg('svg')(
     attr({ width: `${size}px`, height: `${size}px`, xmlns: 'http://www.w3.org/2000/svg', preserveAspectRatio: 'none', fill: 'none', viewBox: `0 0 1500 1500` }),
-    style({  })
+    style({})
   )(
     tap(async ({ element }) => {
       const svgParts = (await import("@gambitdao/gbc-middleware/src/mappings/svgParts")).default

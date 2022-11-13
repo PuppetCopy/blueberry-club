@@ -1,16 +1,14 @@
-import { IWalletLink } from "@gambitdao/wallet-link"
-import { awaitPromises, combine, filter, map, multicast, now, switchLatest } from "@most/core"
-import { getWalletProvider } from "../common"
-import { AddressZero, ADDRESS_LEVERAGE, ARBITRUM_ADDRESS, ARBITRUM_ADDRESS_TRADE, CHAIN, formatReadableUSD, getDenominator, getPositionKey, IVaultPosition, switchFailedSources, TradeAddress, USD_PERCISION } from "@gambitdao/gmx-middleware"
+import { awaitPromises, map, multicast, now, switchLatest } from "@most/core"
+import { AddressZero, ADDRESS_LEVERAGE, ARBITRUM_ADDRESS, AVALANCHE_ADDRESS, CHAIN, getDenominator, switchFailedSources, TradeAddress, USD_PERCISION } from "@gambitdao/gmx-middleware"
 import { combineArray, replayLatest } from "@aelea/core"
-import { ERC20__factory } from "@gambitdao/gbc-contracts"
-import { FastPriceFeed, FastPriceFeed__factory, PositionRouter__factory, VaultReader__factory, Vault__factory } from "./gmx-contracts"
+import { ERC20__factory, FastPriceFeed, FastPriceFeed__factory, PositionRouter__factory, VaultReader__factory, Vault__factory } from "./gmx-contracts"
 import { periodicRun } from "@gambitdao/gmx-middleware"
 import { CHAIN_NATIVE_TO_ADDRESS, getTokenDescription } from "../../components/trade/utils"
 import { USE_CHAIN } from "@gambitdao/gbc-middleware"
 import { Stream } from "@most/types"
-import { Web3Provider } from "@ethersproject/providers"
-import { BigNumber } from "ethers"
+import { BaseProvider, Provider, Web3Provider } from "@ethersproject/providers"
+import { Signer } from "@ethersproject/abstract-signer"
+import { contractConnect } from "../common"
 
 
 export interface KeeperExecutePosition {
@@ -27,28 +25,55 @@ export interface KeeperExecutePosition {
   timeGap: bigint
 }
 
-export function connectErc20(address: string, wallet: IWalletLink) {
-  const provider = getWalletProvider(wallet)
+export function connectErc20(address: string, provider: Stream<Signer | Provider>) {
 
-  const contract = map(w3p => ERC20__factory.connect(address, w3p.getSigner()), provider)
+  const contract = map(w3p => ERC20__factory.connect(address, w3p), provider)
 
-  const account = filter((a): a is string => a !== null, wallet.account)
+  // const account = filter((a): a is string => a !== null, wallet.account)
 
-  const balance = awaitPromises(combineArray(async (c, acct) => {
-    return (await c.balanceOf(acct)).toBigInt()
-  }, contract, account))
+  const balance = awaitPromises(map(async w3p => {
+
+    if (!w3p.address) {
+      throw 'no account connected'
+    }
+
+    return (await w3p.balanceOf(w3p.address)).toBigInt()
+  }, contract))
 
   return { contract, balance }
 }
 
 
-export function connectTrade(wallet: IWalletLink) {
-  const provider = getWalletProvider(wallet)
-  const contract = map(w3p => PositionRouter__factory.connect(ARBITRUM_ADDRESS.PositionRouter, w3p.getSigner()), provider)
+export function connectTrade(provider: Stream<BaseProvider | null>) {
+  const router = contractConnect(PositionRouter__factory, provider, {
+    [CHAIN.ARBITRUM]: ARBITRUM_ADDRESS.PositionRouter,
+    [CHAIN.AVALANCHE]: AVALANCHE_ADDRESS.PositionRouter
+  })
 
-  const executionFee = awaitPromises(map(async c => (await c.minExecutionFee()).toBigInt(), contract))
 
-  const getLatestTradeRequest = (key: string, isIncrease: boolean) => map(async router => {
+  // const executeIncreasePosition: Stream<KeeperExecutePosition> = map((xx) => {
+  //   if (xx) {
+  //     const contract = PositionRouter__factory.connect(ARBITRUM_ADDRESS.PositionRouter, web3Provider)
+
+  //     contract.on('ExecuteIncreasePosition', (xx) => {
+  //       debugger
+  //     })
+  //     contract.on('ExecuteDecreasePosition', (xx) => {
+  //       debugger
+  //     })
+  //   }
+  //   return xx as any`
+  // }, provider)
+
+  const executeIncreasePosition: Stream<KeeperExecutePosition> = router.listen('ExecuteIncreasePosition')
+  const cancelIncreasePosition: Stream<KeeperExecutePosition> = router.listen('CancelIncreasePosition')
+
+  const executeDecreasePosition: Stream<KeeperExecutePosition> = router.listen('ExecuteDecreasePosition')
+  const cancelDecreasePosition: Stream<KeeperExecutePosition> = router.listen('CancelDecreasePosition')
+
+  const executionFee = router.int(map(c => c.minExecutionFee()))
+
+  const getLatestTradeRequest = (key: string, isIncrease: boolean) => router.run(map(async router => {
     const resp = isIncrease ? await router.increasePositionRequests(key) : await router.decreasePositionRequests(key)
 
     const account = resp.account
@@ -69,19 +94,15 @@ export function connectTrade(wallet: IWalletLink) {
 
     // amountIn, hasCollateralInETH,
     return { acceptablePrice, sizeDelta, account, indexToken, blockNumber, blockTime, executionFee, minOut, isLong, }
-  }, contract)
+  }))
 
-  return { contract, executionFee, getLatestTradeRequest }
-}
-
-export function connectVaultReader(wallet: IWalletLink) {
-  const provider = getWalletProvider(wallet)
-
-  const contract = map(w3p => VaultReader__factory.connect(ARBITRUM_ADDRESS.VaultReader, w3p.getSigner()), provider)
-
-  const account = filter((a): a is string => a !== null, wallet.account)
-
-  return { contract }
+  return {
+    contract: router.contract, executionFee, getLatestTradeRequest,
+    executeIncreasePosition,
+    cancelIncreasePosition,
+    executeDecreasePosition,
+    cancelDecreasePosition,
+  }
 }
 
 
@@ -127,12 +148,13 @@ export async function getErc20Balance(token: TradeAddress, w3p: Web3Provider | n
 }
 
 
-export function connectPricefeed(wallet: IWalletLink) {
-  const provider = getWalletProvider(wallet)
+export function connectPricefeed(provider: Stream<BaseProvider | null>) {
+  const pricefeed = contractConnect(FastPriceFeed__factory, provider, {
+    [CHAIN.ARBITRUM]: ARBITRUM_ADDRESS.FastPriceFeed,
+    [CHAIN.AVALANCHE]: AVALANCHE_ADDRESS.FastPriceFeed
+  })
 
-  const contract = map(w3p => FastPriceFeed__factory.connect('0x1a0ad27350cccd6f7f168e052100b4960efdb774', w3p.getSigner()), provider)
-
-  const account = filter((a): a is string => a !== null, wallet.account)
+  // const contract = map(w3p => FastPriceFeed__factory.connect('0x1a0ad27350cccd6f7f168e052100b4960efdb774', w3p), provider)
 
   const getLatestPrice = (token: TradeAddress, maximize = false) => {
     const desc = getTokenDescription(USE_CHAIN, token)
@@ -145,38 +167,47 @@ export function connectPricefeed(wallet: IWalletLink) {
 
     return switchFailedSources([
       gmxIoLatestPrice(normalizedAddress as ADDRESS_LEVERAGE),
-      latestVaultPrice(token, contract),
+      latestVaultPrice(token, pricefeed.contract),
     ])
   }
 
-  return { contract, getLatestPrice }
+  return { contract: pricefeed.contract, getLatestPrice }
 }
 
 
 
-export function connectVault(wallet: IWalletLink) {
-  const provider = getWalletProvider(wallet)
 
-  const contract = map(w3p => Vault__factory.connect(ARBITRUM_ADDRESS.Vault, w3p.getSigner()), provider)
-  const usdg = map(w3p => ERC20__factory.connect(ARBITRUM_ADDRESS.USDG, w3p.getSigner()), provider)
 
-  const account = filter((a): a is string => a !== null, wallet.account)
-  const usdgSupply = awaitPromises(map(async c => (await c.totalSupply()).toBigInt(), usdg))
-  const totalTokenWeight = awaitPromises(map(async c => (await c.totalTokenWeights()).toBigInt(), contract))
+export function connectVault(provider: Stream<BaseProvider | null>) {
+  const vault = contractConnect(Vault__factory, provider, {
+    [CHAIN.ARBITRUM]: ARBITRUM_ADDRESS.Vault,
+    [CHAIN.AVALANCHE]: AVALANCHE_ADDRESS.Vault
+  })
+  const usdg = contractConnect(ERC20__factory, provider, {
+    [CHAIN.ARBITRUM]: ARBITRUM_ADDRESS.USDG,
+    [CHAIN.AVALANCHE]: AVALANCHE_ADDRESS.USDG
+  })
 
-  const getTokenWeight = (token: TradeAddress) => awaitPromises(map(async c => (await c.tokenWeights(token)).toBigInt(), contract))
-  const getTokenDebtUsd = (token: TradeAddress) => awaitPromises(map(async c => (await c.usdgAmounts(token)).toBigInt(), contract))
-  const getTokenCumulativeFundingRate = (token: TradeAddress) => awaitPromises(map(async c => (await c.cumulativeFundingRates(token)).toBigInt(), contract))
-  const getPoolAmount = (token: TradeAddress) => awaitPromises(map(async c => (await c.poolAmounts(token)).toBigInt(), contract))
-  const getReservedAmount = (token: TradeAddress) => awaitPromises(map(async c => (await c.reservedAmounts(token)).toBigInt(), contract))
-  const getTotalShort = (token: TradeAddress) => awaitPromises(map(async c => (await c.globalShortSizes(token)).toBigInt(), contract))
-  const getTotalShortCap = (token: TradeAddress) => awaitPromises(map(async c => {
+  // const usdg = map(w3p => ERC20__factory.connect(ARBITRUM_ADDRESS.USDG, w3p), provider)
+
+  const usdgSupply = usdg.int(map(c => c.totalSupply()))
+
+  const totalTokenWeight = vault.int(map(c => c.totalTokenWeights()))
+  const getTokenWeight = (token: TradeAddress) => vault.int(map(c => c.tokenWeights(token)))
+  const getTokenDebtUsd = (token: TradeAddress) => vault.int(map(c => c.usdgAmounts(token)))
+  const getTokenCumulativeFundingRate = (token: TradeAddress) => vault.int(map(c => c.cumulativeFundingRates(token)))
+  const getPoolAmount = (token: TradeAddress) => vault.int(map(c => c.poolAmounts(token)))
+  const getReservedAmount = (token: TradeAddress) => vault.int(map(c => c.reservedAmounts(token)))
+  const getTotalShort = (token: TradeAddress) => vault.int(map(c => c.globalShortSizes(token)))
+  const getTotalShortCap = (token: TradeAddress) => vault.run(map(async c => {
     try {
       return (await c.maxGlobalShortSizes(token)).toBigInt()
     } catch (e) {
       return null
     }
-  }, contract))
+  }))
+
+
 
   const getAvailableLiquidityUsd = (chain: CHAIN.ARBITRUM | CHAIN.AVALANCHE, token: TradeAddress, isLong: boolean) => {
 
@@ -203,15 +234,20 @@ export function connectVault(wallet: IWalletLink) {
     }, poolAmount, reservedAmount, getTotalShort(token), getTotalShortCap(token), price)
   }
 
-  const getPrice = (token: TradeAddress, maximize: boolean) => switchLatest(map(c => periodicRun({
+  const getPrice = (token: TradeAddress, maximize: boolean) => switchLatest(map(contract => periodicRun({
     actionOp: map(async () => {
-      const price = (maximize ? await c.getMaxPrice(token) : await c.getMinPrice(token)).toBigInt()
+
+      if (contract === null) {
+        throw new Error('no connected account')
+      }
+
+      const price = (maximize ? await contract.getMaxPrice(token) : await contract.getMinPrice(token)).toBigInt()
       return price
     })
-  }), contract))
+  }), vault.contract))
 
 
-  const getPosition = (positionKey: string) => awaitPromises(map(async c => {
+  const getPosition = (positionKey: string) => vault.run(map(async c => {
     const position = await c.positions(positionKey)
 
     if (!position || position.lastIncreasedTime.eq(0)) {
@@ -232,10 +268,10 @@ export function connectVault(wallet: IWalletLink) {
       realisedPnl: realisedPnl.toBigInt(),
       lastIncreasedTime: lastIncreasedTimeBn,
     }
-  }, contract))
+  }))
 
   return {
-    contract, getPrice, getTokenWeight, getTokenDebtUsd, getTokenCumulativeFundingRate, totalTokenWeight, usdgSupply, getPosition, getPoolAmount, getReservedAmount, getAvailableLiquidityUsd
+    contract: vault.contract, getPrice, getTokenWeight, getTokenDebtUsd, getTokenCumulativeFundingRate, totalTokenWeight, usdgSupply, getPosition, getPoolAmount, getReservedAmount, getAvailableLiquidityUsd
   }
 }
 

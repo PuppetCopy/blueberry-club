@@ -3,7 +3,7 @@ import { $text, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, state } from "@aelea/ui-components"
 import { IToken } from "@gambitdao/gbc-middleware"
-import { CHAIN, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, formatReadableUSD, getPositionPnL, IAccountSummary, IChainParamApi, ILeaderboardRequest, intervalTimeMap, IPageParapApi, ITrade,  ITradeOpen, TOKEN_SYMBOL } from "@gambitdao/gmx-middleware"
+import { CHAIN, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, formatReadableUSD, getPnL, IAccountSummary, IChainParamApi, ILeaderboardRequest, intervalTimeMap, IPageParapApi, ITrade,  ITradeOpen, TOKEN_SYMBOL } from "@gambitdao/gmx-middleware"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { fromPromise, map, startWith } from "@most/core"
@@ -13,7 +13,7 @@ import { IAccountStakingStore } from "@gambitdao/gbc-middleware"
 import { connectGbc } from "../logic/contract/gbc"
 import { ContractTransaction } from "@ethersproject/contracts"
 import { Stream } from "@most/types"
-import { $bear, $bull, $nativeTokenMap, $ProfitLossText, $tokenIconMap, TablePageResponse } from "@gambitdao/ui-components"
+import { $bear, $bull, $liquidationSeparator, $nativeTokenMap, $ProfitLossText, $tokenIconMap, TablePageResponse } from "@gambitdao/ui-components"
 import { connectRewardDistributor } from "../logic/contract/rewardDistributor"
 import { pallete } from "@aelea/ui-components-theme"
 
@@ -225,7 +225,7 @@ export const $Leaderboard = ({ walletLink, openTrades, leaderboardTopList, paren
 export const $livePnl = (trade: ITrade, pos: Stream<bigint>) => $row(
   $ProfitLossText(
     map(price => {
-      const delta = getPositionPnL(trade.isLong, trade.averagePrice, price, trade.size)
+      const delta = getPnL(trade.isLong, trade.averagePrice, price, trade.size)
 
       return trade.realisedPnl + delta - trade.fee
     }, pos)
@@ -235,18 +235,24 @@ export const $livePnl = (trade: ITrade, pos: Stream<bigint>) => $row(
 export const $Entry = (pos: ITrade) =>
   $row(
     $column(layoutSheet.spacingTiny, style({ alignSelf: 'flex-start' }))(
-      $row(style({ position: 'relative', flexDirection: 'row-reverse', alignSelf: 'center' }))(
-        $TokenIcon(CHAIN_TOKEN_ADDRESS_TO_SYMBOL[pos.indexToken]),
-        style({ borderRadius: '50%', padding: '3px', marginRight: '-5px', backgroundColor: pallete.background, })(
-          $icon({
-            $content: pos.isLong ? $bull : $bear,
-            viewBox: '0 0 32 32',
-          })
-        ),
-      ),
+      $entryDisplay(pos),
       $text(style({ fontSize: '.65em', textAlign: 'center', color: pallete.primary }))(formatReadableUSD(pos.averagePrice))
     )
   )
+
+
+export function $entryDisplay(pos: ITrade) {
+  return $row(style({ position: 'relative', flexDirection: 'row-reverse', alignSelf: 'center' }))(
+    $TokenIcon(CHAIN_TOKEN_ADDRESS_TO_SYMBOL[pos.indexToken]),
+    style({ borderRadius: '50%', padding: '3px', marginRight: '-5px', backgroundColor: pallete.background, })(
+      $icon({
+        $content: pos.isLong ? $bull : $bear,
+        viewBox: '0 0 32 32',
+      })
+    )
+  )
+}
+
 
 export const $TokenIcon = (indexToken: TOKEN_SYMBOL, IIcon?: { width?: string }) => {
   const $token = $tokenIconMap[indexToken]

@@ -1,12 +1,16 @@
 import { Behavior, combineArray, fromCallback, O, Op } from "@aelea/core"
-import { $wrapNativeElement, component, drawLatest, INode, style } from "@aelea/dom"
+import { $wrapNativeElement, component, INode, style } from "@aelea/dom"
 import { observer } from '@aelea/ui-components'
 import { pallete } from '@aelea/ui-components-theme'
 import { drawWithinFrame } from "@gambitdao/gmx-middleware"
-import { empty, filter, map, mergeArray, multicast, now, scan, switchLatest, tap } from '@most/core'
+import { empty, filter, map, mergeArray, multicast, scan, switchLatest, tap } from '@most/core'
 import { disposeWith } from '@most/disposable'
 import { Stream } from '@most/types'
-import { CandlestickData, CandlestickSeriesPartialOptions, ChartOptions, createChart, CrosshairMode, DeepPartial, IPriceLine, ISeriesApi, LineStyle, MouseEventParams, PriceLineOptions, SeriesDataItemTypeMap, SeriesMarker, Time, TimeRange, WhitespaceData } from 'lightweight-charts'
+import {
+  CandlestickData, CandlestickSeriesPartialOptions, ChartOptions, createChart, CrosshairMode, DeepPartial,
+  IPriceLine, ISeriesApi, LineStyle, MouseEventParams, PriceLineOptions, SeriesDataItemTypeMap, SeriesMarker,
+  Time, TimeRange, WhitespaceData
+} from 'lightweight-charts'
 
 export interface IMarker extends SeriesMarker<Time> {
 
@@ -18,7 +22,7 @@ export interface ISeries {
 
   data: Stream<Array<SeriesDataItemTypeMap["Candlestick"]> | null>
 
-  appendData?: Op<Array<SeriesDataItemTypeMap["Candlestick"]> | null, Stream<SeriesDataItemTypeMap["Candlestick"]>>
+  appendData?: Stream<SeriesDataItemTypeMap["Candlestick"]>
   priceLines?: Stream<PriceLineOptions | null>[]
   drawMarkers?: Stream<IMarker[]>
 }
@@ -158,11 +162,16 @@ export const $CandleSticks = ({ chartConfig, series, containerOp = O() }: ICandl
 
           return [
             switchLatest(map(ss => {
-              const liveData = params.appendData
-                ? switchLatest(params.appendData(now(ss.data)))
-                : empty()
+              // const liveData = params.appendData
+              //   ? switchLatest(params.appendData(now(ss.data)))
+              //   : empty()
 
-              return tap(next => seriesApi.update(next), liveData)
+              return params.appendData ? tap(next => {
+                if (next && next.time) {
+                  seriesApi.update(next)
+                }
+                
+              }, params.appendData) : empty()
             }, seriesSetup)),
             ...priceLineConfigList.map(lineStreamConfig => {
               return scan((prev, params) => {
