@@ -1,13 +1,13 @@
 import { Behavior, combineArray, combineObject, Op } from "@aelea/core"
 import { $node, $Node, $text, attr, attrBehavior, component, INode, nodeEvent, style, stylePseudo } from "@aelea/dom"
 import { Route } from "@aelea/router"
-import { $column, $icon, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
+import { $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { awaitPromises, constant, empty, filter, map, merge, mergeArray, multicast, now, snapshot, startWith, switchLatest, tap } from "@most/core"
 import { $buttonAnchor, $ButtonPrimary, $ButtonSecondary } from "../../components/form/$Button"
 import { $defaultSelectContainer, $Dropdown } from "../../components/form/$Dropdown"
-import { IBerryDisplayTupleMap, getLabItemTupleIndex, saleDescriptionList, LabItemSale, IBerryLabItems, USE_CHAIN, IToken, GBC_ADDRESS, ILabItemOwnership, getLatestSaleRule, tokenIdAttributeTuple } from "@gambitdao/gbc-middleware"
+import { IBerryDisplayTupleMap, getLabItemTupleIndex, saleDescriptionList, LabItemSale, IBerryLabItems, LAB_CHAIN, IToken, GBC_ADDRESS, getLatestSaleRule, tokenIdAttributeTuple } from "@gambitdao/gbc-middleware"
 import { $labItem, getBerryFromToken, getTokenSlots } from "../../logic/common"
 import { $berryTileId } from "../../components/$common"
 import { fadeIn } from "../../transitions/enter"
@@ -26,12 +26,14 @@ import { WALLET } from "../../logic/provider"
 import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 import { queryOwnerV2 } from "../../logic/query"
 import { Closet, GBCLab } from "@gambitdao/gbc-contracts"
+import { BrowserStore } from "../../logic/store"
+import { IEthereumProvider } from "eip1193-provider"
 
 
 interface IBerryComp {
   walletLink: IWalletLink
   parentRoute: Route
-  walletStore: state.BrowserStore<WALLET, "walletStore">
+  walletStore: BrowserStore<"ROOT.v1.walletStore", WALLET | null>
 
   initialBerry?: IToken
 }
@@ -470,7 +472,7 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
 
           $row(layoutSheet.spacing, style({ placeContent: 'flex-end' }))(
             $IntermediateTx({
-              chain: USE_CHAIN,
+              chain: LAB_CHAIN,
               query: mergeArray([clickSave, setMainBerry, setApproval])
             })({}),
           ),

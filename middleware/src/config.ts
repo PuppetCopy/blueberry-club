@@ -3,7 +3,8 @@ import { parseEther } from "ethers/lib/utils"
 import { IAttributeMappings, LabItemSale, SaleType } from "./types"
 
 
-export const USE_CHAIN = CHAIN.ARBITRUM
+export const LAB_CHAIN = CHAIN.ARBITRUM
+export const CHAIN_LIST: [CHAIN.ARBITRUM, CHAIN.AVALANCHE] = [CHAIN.ARBITRUM, CHAIN.AVALANCHE]
 
 export const GLOBAL_W3P = 'wss://arb-mainnet.g.alchemy.com/v2/Rf-9XHJG_C6xvhApXKg1tNCZmAOBaA5A'
 export const GLOBAL_W3P_HTTP = 'https://arbitrum-mainnet.infura.io/v3/6d7e461ad6644743b92327579860b662'

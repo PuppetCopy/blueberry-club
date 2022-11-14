@@ -3,7 +3,7 @@ import { $node, $text, attr, component, IBranch, nodeEvent, style } from "@aelea
 import { Route } from "@aelea/router"
 import { $column, $icon, $Popover, $row, $seperator, $TextField, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { USE_CHAIN, GBC_ADDRESS, IAttributeMappings, attributeIndexToLabel, tokenIdAttributeTuple } from "@gambitdao/gbc-middleware"
+import { LAB_CHAIN, GBC_ADDRESS, IAttributeMappings, attributeIndexToLabel, tokenIdAttributeTuple } from "@gambitdao/gbc-middleware"
 import { GBC__factory } from "@gambitdao/gbc-contracts"
 import { isAddress, timeSince } from "@gambitdao/gmx-middleware"
 import { $anchor, $Link, $caretDblDown, $IntermediateTx } from "@gambitdao/ui-components"
@@ -171,7 +171,7 @@ const $TrasnferOwnership = (address: string, token: IToken, walletLink: IWalletL
 ) => {
 
   const contract = replayLatest(multicast(skipRepeats(awaitPromises(map(async w3p => {
-    if (w3p === null || w3p?.network?.chainId !== USE_CHAIN) {
+    if (w3p === null || w3p?.network?.chainId !== LAB_CHAIN) {
       return null
     }
 
@@ -239,7 +239,7 @@ const $TrasnferOwnership = (address: string, token: IToken, walletLink: IWalletL
         switchLatest(map(ta => $accountPreview({ address: ta }), transferTo))
       ),
       $IntermediateTx({
-        chain: USE_CHAIN,
+        chain: LAB_CHAIN,
         query: transfer,
       })({}),
     ),

@@ -8,10 +8,11 @@ import { IWalletLink, attemptToSwitchNetwork } from "@gambitdao/wallet-link"
 import { $walletConnectLogo } from "../common/$icons"
 import * as wallet from "../logic/provider"
 import { $ButtonPrimary, $ButtonSecondary } from "./form/$Button"
-import { USE_CHAIN } from "@gambitdao/gbc-middleware"
+import { LAB_CHAIN } from "@gambitdao/gbc-middleware"
 import { WALLET } from "../logic/provider"
 import { NETWORK_METADATA } from "@gambitdao/gmx-middleware"
 import { $caretDown } from "../elements/$icons"
+import { BrowserStore } from "../logic/store"
 
 
 
@@ -19,16 +20,16 @@ import { $caretDown } from "../elements/$icons"
 export interface IConnectWalletPopover {
   $display: Op<string, $Node>
   walletLink: IWalletLink
-  walletStore: state.BrowserStore<WALLET, "walletStore">
+  walletStore: BrowserStore<"ROOT.v1.walletStore", WALLET | null>
+  $button: $Node
 
   ensureNetwork?: boolean
-
-  $button: $Node
 }
+
 export interface IIntermediateDisplay {
   $display: Op<string, $Node>
   walletLink: IWalletLink
-  walletStore: state.BrowserStore<WALLET, "walletStore">
+  walletStore: BrowserStore<"ROOT.v1.walletStore", WALLET | null>
 
   ensureNetwork?: boolean
 
@@ -104,35 +105,18 @@ export const $IntermediateConnectPopover = ({ $display, walletLink, walletStore,
         })({
           click: walletChangeTether(
             map(async () => {
-              // const authClient = await wallet.walletConnectAuthClient
-
-              // authClient.on("auth_response", ({ params }) => {
-              //   debugger
-              // })
-
-              // const nonce = generateNonce()
-              // const { uri } = await authClient.request({
-              //   aud: window.location.href,
-              //   domain: window.location.hostname.split(".").slice(-2).join("."),
-              //   chainId: `eip155:${USE_CHAIN}`,
-              //   // type: "eip4361",
-              //   nonce,
-              //   statement: "Sign in with wallet.",
-              // })
-
-              // await new Promise((resolve, reject) => {
-              //   QRCodeModal.open(uri, () => {
-              //     debugger
-              //   })
-              // })
-
-
 
               await wallet.walletConnect.request({ method: 'eth_requestAccounts' })
               return wallet.walletConnect
             }),
             awaitPromises,
-            src => walletStore.store(src, constant(WALLET.walletConnect)),
+            src => walletStore.store(src, map(value => {
+
+              return {
+                store: WALLET.walletConnect,
+                value: value
+              }
+            })),
           )
         })
 
@@ -157,7 +141,14 @@ export const $IntermediateConnectPopover = ({ $display, walletLink, walletStore,
                   throw new Error('Could not find metmask')
                 }),
                 awaitPromises,
-                src => walletStore.store(src, constant(WALLET.metamask)),
+                src => {
+                  return walletStore.store(src, map(value => {
+                    return {
+                      store: WALLET.metamask,
+                      value: value
+                    }
+                  }))
+                },
               ),
             }),
             $walletConnectBtn
@@ -175,14 +166,14 @@ export const $IntermediateConnectPopover = ({ $display, walletLink, walletStore,
       return ensureNetwork ? $column(
         switchLatest(map(empty, switchNetwork)), // side effect
         switchLatest(map((chain) => {
-          if (chain !== USE_CHAIN) {
+          if (chain !== LAB_CHAIN) {
             return $ButtonPrimary({
               buttonOp: style({ alignSelf: 'flex-start' }),
-              $content: $text(`Switch to ${NETWORK_METADATA[USE_CHAIN].chainName}`),
+              $content: $text(`Switch to ${NETWORK_METADATA[LAB_CHAIN].chainName}`),
             })({
               click: switchNetworkTether(
                 snapshot(async wallet => {
-                  return wallet ? attemptToSwitchNetwork(wallet, USE_CHAIN).catch(error => {
+                  return wallet ? attemptToSwitchNetwork(wallet, LAB_CHAIN).catch(error => {
                     alert(error.message)
                     console.error(error)
                     return error

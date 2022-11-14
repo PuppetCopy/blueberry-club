@@ -1,7 +1,7 @@
 import { style, $text } from "@aelea/dom"
 import { $column, layoutSheet, $row } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { IAttributeMappings, IToken, USE_CHAIN } from "@gambitdao/gbc-middleware"
+import { IAttributeMappings, IToken, LAB_CHAIN } from "@gambitdao/gbc-middleware"
 import { $txHashRef } from "@gambitdao/ui-components"
 import { $berryByToken, $labItem } from "../logic/common"
 
@@ -15,7 +15,7 @@ export function $mintDet1ails(txHash: string, berriesAmount: number, ids: number
   return $column(layoutSheet.spacing)(
     $row(style({ placeContent: 'space-between' }))(
       $text(style({ color: pallete.positive }))(`Minted ${berriesAmount} ${IAttributeMappings[ids[0]]}`),
-      $txHashRef(txHash, USE_CHAIN)
+      $txHashRef(txHash, LAB_CHAIN)
     ),
     $row(style({ flexWrap: 'wrap' }))(...ids.map(tokenId => {
       return $labItem(tokenId)

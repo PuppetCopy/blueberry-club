@@ -1,44 +1,48 @@
 import { Behavior, combineArray, combineObject, O, replayLatest } from "@aelea/core"
 import { $node, $text, component, eventElementTarget, INode, nodeEvent, style, styleBehavior, styleInline } from "@aelea/dom"
 import { Route } from "@aelea/router"
-import { $column, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
+import { $column, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 import {
-  AddressZero, ARBITRUM_ADDRESS, ARBITRUM_ADDRESS_LEVERAGE, formatFixed, intervalTimeMap, IPricefeed, IPricefeedParamApi, IPriceLatestMap,
+  AddressZero, ARBITRUM_ADDRESS, formatFixed, intervalTimeMap, IPricefeed, IPricefeedParamApi, IPriceLatestMap,
   isTradeOpen, ITrade, unixTimestampNow, IRequestTradeQueryparam, getChainName,
-  ITradeOpen, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, TradeAddress, BASIS_POINTS_DIVISOR, getAveragePriceFromDelta,
+  ITradeOpen, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, BASIS_POINTS_DIVISOR, getAveragePriceFromDelta,
   getLiquidationPrice, getMarginFees, getTokenUsd, STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, TAX_BASIS_POINTS,
-  replayState, getDenominator, USD_PERCISION, periodicRun, formatReadableUSD, timeSince, IVaultPosition, getPositionKey, listen, IPositionIncrease, IPositionDecrease, getPnL, filterNull, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE, AVALANCHE_ADDRESS_LEVERAGE, CHAIN, ADDRESS_LEVERAGE
+  replayState, getDenominator, USD_PERCISION, periodicRun, formatReadableUSD, timeSince, IVaultPosition, getPositionKey, listen, IPositionIncrease,
+  IPositionDecrease, getPnL, filterNull, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE, CHAIN, AddressIndex, AddressStable, AddressInput
 } from "@gambitdao/gmx-middleware"
 
 import { IWalletLink, parseError } from "@gambitdao/wallet-link"
-import { combine, constant, map, mergeArray, multicast, periodic, scan, skipRepeats, switchLatest, debounce, empty, skip, now, startWith, snapshot, fromPromise, filter, merge } from "@most/core"
+import { combine, constant, map, mergeArray, multicast, periodic, scan, skipRepeats, switchLatest, debounce, empty, now, startWith, snapshot, fromPromise, filter, merge } from "@most/core"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { $alertTooltip, $arrowsFlip, $infoTooltip, $IntermediatePromise, $Link, $RiskLiquidator, $spinner, $txHashRef } from "@gambitdao/ui-components"
 import { CandlestickData, CrosshairMode, LineStyle, Time } from "lightweight-charts"
 import { IEthereumProvider } from "eip1193-provider"
 import { Stream } from "@most/types"
-import { WALLET } from "../logic/provider"
 import { connectPricefeed, connectTrade, connectVault, getErc20Balance, KeeperExecutePosition } from "../logic/contract/trade"
 import { $TradeBox, ITradeRequest } from "../components/trade/$TradeBox"
-import { BLUEBERRY_REFFERAL_CODE, USE_CHAIN } from "@gambitdao/gbc-middleware"
+import { BLUEBERRY_REFFERAL_CODE } from "@gambitdao/gbc-middleware"
 import { $ButtonToggle } from "../common/$Toggle"
 import { $Table2 } from "../common/$Table2"
 import { $Entry, $livePnl } from "./$Leaderboard"
 import { $iconCircular } from "../elements/$common"
 import { $CandleSticks } from "../components/chart/$CandleSticks"
-import { CHAIN_NATIVE_TO_ADDRESS, getFeeBasisPoints, getTokenDescription, resolveLongPath } from "../components/trade/utils"
+import { getFeeBasisPoints, getTokenDescription, resolveAddress } from "../logic/utils"
 import { BrowserStore } from "../logic/store"
 import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
 import { TransactionResponse } from "@ethersproject/providers"
+import { WALLET } from "../logic/provider"
 
 
 export interface ITradeComponent {
-  store: BrowserStore<string, "ROOT">
+  chain: CHAIN | null,
+  indexTokens: AddressIndex[]
+  stableTokens: AddressStable[]
+  store: BrowserStore<"ROOT.v1", "v1">
   parentRoute: Route
   accountTradeList: Stream<ITrade[]>
   trade: Stream<ITradeOpen | null>
   walletLink: IWalletLink
-  walletStore: state.BrowserStore<WALLET, "walletStore">
+  walletStore: BrowserStore<"ROOT.v1.walletStore", WALLET | null>
   pricefeed: Stream<IPricefeed[]>
   latestPriceMap: Stream<IPriceLatestMap>
 }
@@ -58,8 +62,8 @@ export const $Trade = (config: ITradeComponent) => component((
   [changeRoute, changeRouteTether]: Behavior<string, string>,
   [walletChange, walletChangeTether]: Behavior<IEthereumProvider, IEthereumProvider>,
 
-  [changeInputToken, changeInputTokenTether]: Behavior<TradeAddress, TradeAddress>,
-  [changeIndexToken, changeIndexTokenTether]: Behavior<ARBITRUM_ADDRESS_LEVERAGE | AVALANCHE_ADDRESS_LEVERAGE | typeof AddressZero, ARBITRUM_ADDRESS_LEVERAGE | AVALANCHE_ADDRESS_LEVERAGE | typeof AddressZero>,
+  [changeInputToken, changeInputTokenTether]: Behavior<AddressInput, AddressInput>,
+  [changeIndexToken, changeIndexTokenTether]: Behavior<AddressIndex, AddressIndex>,
   [changeCollateralToken, changeCollateralTokenTether]: Behavior<ARBITRUM_ADDRESS_STABLE | AVALANCHE_ADDRESS_STABLE, ARBITRUM_ADDRESS_STABLE | AVALANCHE_ADDRESS_STABLE>,
   [switchIsLong, switchIsLongTether]: Behavior<boolean, boolean>,
   [switchIsIncrease, switchIsIncreaseTether]: Behavior<boolean, boolean>,
@@ -74,13 +78,12 @@ export const $Trade = (config: ITradeComponent) => component((
   [requestTrade, requestTradeTether]: Behavior<ITradeRequest, ITradeRequest>,
 ) => {
 
-
+  const chain = config.chain || CHAIN.ARBITRUM
   const pricefeed = connectPricefeed(config.walletLink.provider)
   const vault = connectVault(config.walletLink.provider)
   const position = connectTrade(config.walletLink.provider)
   const executionFee = multicast(position.executionFee)
 
-  const chain = USE_CHAIN
 
   const trade = mergeArray([config.trade, switchTrade])
 
@@ -91,20 +94,30 @@ export const $Trade = (config: ITradeComponent) => component((
   const timeFrameStore = tradingStore.craete('portfolio-chart-interval', intervalTimeMap.MIN60)
 
   const isLongStore = tradingStore.craete('isLong', true)
-  const inputTokenStore = tradingStore.craete<TradeAddress, 'depositToken'>('depositToken', AddressZero)
-  const collateralTokenStore = tradingStore.craete<ARBITRUM_ADDRESS_STABLE | AVALANCHE_ADDRESS_STABLE, 'collateralToken'>('collateralToken', ARBITRUM_ADDRESS.USDC)
-  const indexTokenStore = tradingStore.craete<ADDRESS_LEVERAGE | typeof AddressZero, 'indexToken'>('indexToken', AddressZero)
+  const inputTokenStore = tradingStore.craete('depositToken', AddressZero as AddressIndex)
+  const shortCollateralTokenStore = tradingStore.craete('collateralToken', config.stableTokens[0] as AddressStable)
+  const indexTokenStore = tradingStore.craete('indexToken', config.indexTokens[0] as AddressIndex)
   const isIncreaseStore = tradingStore.craete('isIncrease', true)
   const slippageStore = tradingStore.craete('slippage', '0.2')
   // const collateralRatioStore = tradingStore.craete('collateralRatio', 0)
 
 
+  const timeframe = timeFrameStore.storeReplay(selectTimeFrame)
 
-  const timeframe = replayLatest(timeFrameStore.store(selectTimeFrame, map(x => x)), timeFrameStore.state)
+  const isLong = isLongStore.storeReplay(mergeArray([map(t => t.isLong, switchTrade), switchIsLong]))
+  const isIncrease = isIncreaseStore.storeReplay(switchIsIncrease)
 
-  const isLong = replayLatest(isLongStore.store(mergeArray([map(t => t.isLong, switchTrade), switchIsLong]), map(x => x)), isLongStore.state)
-  const isIncrease = replayLatest(isIncreaseStore.store(switchIsIncrease, map(x => x)), isIncreaseStore.state)
-  const inputToken = replayLatest(inputTokenStore.store(changeInputToken, map(x => x)), inputTokenStore.state)
+  const inputToken = replayLatest(
+    inputTokenStore.store(changeInputToken),
+    [...config.indexTokens, ...config.stableTokens].indexOf(inputTokenStore.getState()) > -1 ? inputTokenStore.getState() : AddressZero
+  )
+  const indexToken = indexTokenStore.storeReplay(mergeArray([map(t => t.indexToken, switchTrade), changeIndexToken]))
+
+  const shortCollateralToken = replayLatest(
+    shortCollateralTokenStore.store(mergeArray([map(t => t.isLong ? t.indexToken : t.collateralToken, switchTrade), changeCollateralToken])),
+    config.stableTokens.indexOf(shortCollateralTokenStore.getState()) > -1 ? shortCollateralTokenStore.getState() : config.stableTokens[0]
+  )
+
 
   const walletBalance = replayLatest(skipRepeats(multicast(switchLatest(combineArray((token, w3p, account) => {
     return periodicRun({
@@ -115,57 +128,35 @@ export const $Trade = (config: ITradeComponent) => component((
     })
   }, inputToken, config.walletLink.provider, config.walletLink.account)))))
 
-  const shortCollateralToken = replayLatest(collateralTokenStore.store(mergeArray([map(t => t.isLong ? t.indexToken : t.collateralToken, switchTrade), changeCollateralToken]), map(x => x)), collateralTokenStore.state)
-  const indexToken = combineArray((address, network) => {
-    if (network === null) {
-      return ARBITRUM_ADDRESS.NATIVE_TOKEN
-    }
-
-    return address === AddressZero ? CHAIN_NATIVE_TO_ADDRESS[network as CHAIN.ARBITRUM | CHAIN.AVALANCHE] : address
-  }, replayLatest(indexTokenStore.store(mergeArray([map(t => t.indexToken, switchTrade), changeIndexToken]), map(x => x)), indexTokenStore.state), config.walletLink.network)
-
   const collateralDelta = replayLatest(changeCollateralDelta, 0n)
   const sizeDelta = replayLatest(changeSize, 0n)
 
   const collateralRatio = replayLatest(changeCollateralRatio, 0n)
-  // const collateralRatio = replayLatest(collateralRatioStore.store(changeCollateralRatio, map(x => x)), collateralRatioStore.state)
   const leverage = replayLatest(changeLeverage, 0n)
-  const slippage = replayLatest(slippageStore.store(changeSlippage, map(x => x)), slippageStore.state)
+
+  const slippage = slippageStore.storeReplay(changeSlippage)
+
+
+  const inputTokenPrice = replayLatest(skipRepeats(switchLatest(map(address => pricefeed.getLatestPrice(chain, address), inputToken))))
+  const indexTokenPrice = replayLatest(skipRepeats(switchLatest(map(address => pricefeed.getLatestPrice(chain, address), indexToken))))
+  const collateralTokenPrice = replayLatest(skipRepeats(switchLatest(map(address => pricefeed.getLatestPrice(chain, address), shortCollateralToken))))
+
+
 
   const tradeParams = { trade, slippage, isLong, isIncrease, inputToken, shortCollateralToken, indexToken, leverage, collateralDelta, sizeDelta, collateralRatio, }
   const tradeParamsState = replayState(tradeParams)
 
 
-  const inputTokenPrice = replayLatest(skipRepeats(switchLatest(map(address => pricefeed.getLatestPrice(address), inputToken))))
-  const indexTokenPrice = replayLatest(skipRepeats(switchLatest(map(address => pricefeed.getLatestPrice(address), indexToken))))
-  const collateralTokenPrice = replayLatest(skipRepeats(switchLatest(map(address => pricefeed.getLatestPrice(address), shortCollateralToken))))
-
-
-
-
-  const inputTokenWeight = switchLatest(map(address => {
-    if (address === AddressZero) {
-      return vault.getTokenWeight(CHAIN_NATIVE_TO_ADDRESS[USE_CHAIN])
-    }
-
-    return vault.getTokenWeight(address)
-  }, inputToken))
-
-  const inputTokenDebtUsd = switchLatest(map(address => {
-    if (address === AddressZero) {
-      return vault.getTokenDebtUsd(CHAIN_NATIVE_TO_ADDRESS[USE_CHAIN])
-    }
-
-    return vault.getTokenDebtUsd(address)
-  }, inputToken))
+  const inputTokenWeight = switchLatest(map(address => vault.getTokenWeight(address), inputToken))
+  const inputTokenDebtUsd = switchLatest(map(address => vault.getTokenDebtUsd(address), inputToken))
 
   const indexTokenWeight = switchLatest(map(address => vault.getTokenWeight(address), indexToken))
   const indexTokenDebtUsd = switchLatest(map(address => vault.getTokenDebtUsd(address), indexToken))
 
 
-  const inputTokenDescription = map(address => getTokenDescription(USE_CHAIN, address), inputToken)
-  const indexTokenDescription = map(address => getTokenDescription(USE_CHAIN, address), indexToken)
-  const collateralTokenDescription = map(address => getTokenDescription(USE_CHAIN, address), shortCollateralToken)
+  const inputTokenDescription = map(address => getTokenDescription(chain, address), inputToken)
+  const indexTokenDescription = map(address => getTokenDescription(chain, address), indexToken)
+  const collateralTokenDescription = map(address => getTokenDescription(chain, address), shortCollateralToken)
 
 
   const requestPosition = debounce(50, combineObject({ account: config.walletLink.account, collateralToken: shortCollateralToken, indexToken, isLong }))
@@ -182,7 +173,6 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
   const changeVaultPositon = switchLatest(map((key): Stream<IVaultPosition | null> => {
-    console.log(key)
     return key
       ? map((pos): IVaultPosition | null => pos ? pos : null, vault.getPosition(key))
       : now(null)
@@ -209,9 +199,7 @@ export const $Trade = (config: ITradeComponent) => component((
     const swapFeeBasisPoints = inputTokenDescription.isStable && indexTokenDescription.isStable ? STABLE_SWAP_FEE_BASIS_POINTS : SWAP_FEE_BASIS_POINTS
     const taxBasisPoints = inputTokenDescription.isStable && indexTokenDescription.isStable ? STABLE_TAX_BASIS_POINTS : TAX_BASIS_POINTS
 
-    const swapTokenNorm = tradeParams.inputToken === AddressZero ? CHAIN_NATIVE_TO_ADDRESS[USE_CHAIN] : tradeParams.inputToken
-
-    if (swapTokenNorm === tradeParams.indexToken) {
+    if (tradeParams.inputToken === tradeParams.indexToken) {
       return 0n
     }
 
@@ -359,7 +347,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
 
-  const requestAccountTradeList = multicast(map((address) => {
+  const requestAccountTradeList = multicast(map(address => {
     return {
       account: address,
       // timeInterval: timeFrameStore.state,
@@ -367,13 +355,10 @@ export const $Trade = (config: ITradeComponent) => component((
     }
   }, config.walletLink.account))
 
-  const requestPricefeed = multicast(combine((tokenAddress, selectedInterval): IPricefeedParamApi => {
-    const range = selectedInterval * 1000
-
+  const requestPricefeed = multicast(combineArray((tokenAddress, interval): IPricefeedParamApi => {
+    const range = interval * 1000
     const to = unixTimestampNow()
     const from = to - range
-
-    const interval = selectedInterval
 
     return { chain, interval, tokenAddress, from, to }
   }, indexToken, timeframe))
@@ -389,12 +374,22 @@ export const $Trade = (config: ITradeComponent) => component((
       throw new Error('No wallet provider connected')
     }
 
-    const path = resolveLongPath(req.inputToken, req.indexToken)
+    const normalizedAddress = resolveAddress(chain, req.inputToken)
     const allowedSlippage = BigInt(Number(req.slippage) * 100)
 
     const refPrice = req.isLong ? req.indexTokenPrice : req.indexTokenPrice
     const priceBasisPoints = isLong ? BASIS_POINTS_DIVISOR + allowedSlippage : BASIS_POINTS_DIVISOR - allowedSlippage
     const acceptablePrice = refPrice * priceBasisPoints / BASIS_POINTS_DIVISOR
+
+    const path = normalizedAddress !== req.indexToken
+      ? [normalizedAddress, req.indexToken]
+      : [req.indexToken]
+
+
+    // if (req.inputToken === AddressZero && req.indexToken === ARBITRUM_ADDRESS.NATIVE_TOKEN) {
+    //   path = [ARBITRUM_ADDRESS.NATIVE_TOKEN]
+    // }
+
 
     const ctxQuery = (req.inputToken === AddressZero
       ? params.trade.createIncreasePositionETH(
@@ -473,6 +468,8 @@ export const $Trade = (config: ITradeComponent) => component((
         // ),
 
         $TradeBox({
+          indexTokens: config.indexTokens,
+          stableTokens: config.stableTokens,
           chain,
           walletStore: config.walletStore,
           walletLink: config.walletLink,
@@ -532,7 +529,6 @@ export const $Trade = (config: ITradeComponent) => component((
 
           const tradeList = list.filter((t): t is ITradeOpen => isTradeOpen(t) && (!trade || t.key !== trade.key))
 
-
           return $Table2<ITradeOpen>({
             bodyContainerOp: layoutSheet.spacing,
             scrollConfig: {
@@ -547,7 +543,7 @@ export const $Trade = (config: ITradeComponent) => component((
                   return $Link({
                     anchorOp: style({ position: 'relative' }),
                     $content: style({ pointerEvents: 'none' }, $Entry(pos)),
-                    url: `/${getChainName(chain).toLowerCase()}/${CHAIN_TOKEN_ADDRESS_TO_SYMBOL[pos.indexToken]}/${pos.id}/${pos.timestamp}`,
+                    url: `/${getChainName(chain).toLowerCase()}/${CHAIN_TOKEN_ADDRESS_TO_SYMBOL[resolveAddress(chain, pos.indexToken)]}/${pos.id}/${pos.timestamp}`,
                     route: config.parentRoute.create({ fragment: '2121212' })
                   })({ click: changeRouteTether() })
                 })
@@ -556,7 +552,7 @@ export const $Trade = (config: ITradeComponent) => component((
                 $head: $text('Size'),
                 columnOp: O(layoutSheet.spacingTiny, style({ flex: 1.3, alignItems: 'center', placeContent: 'flex-start', minWidth: '80px' })),
                 $body: map(pos => {
-                  const positionMarkPrice = pricefeed.getLatestPrice(pos.indexToken)
+                  const positionMarkPrice = pricefeed.getLatestPrice(chain, pos.indexToken)
 
                   return $row(
                     $RiskLiquidator(pos, positionMarkPrice)({})
@@ -567,7 +563,7 @@ export const $Trade = (config: ITradeComponent) => component((
                 $head: $text('PnL $'),
                 columnOp: style({ flex: 2, placeContent: 'flex-end', maxWidth: '160px' }),
                 $body: map((pos) => {
-                  const newLocal = pricefeed.getLatestPrice(pos.indexToken)
+                  const newLocal = pricefeed.getLatestPrice(chain, pos.indexToken)
                   return $livePnl(pos, newLocal)
                 })
               },
@@ -975,7 +971,7 @@ export const $Trade = (config: ITradeComponent) => component((
       requestPricefeed,
       requestAccountTradeList,
       requestLatestPriceMap: constant({ chain }, periodic(5000)),
-      requestTrade: map(pos => pos ? <IRequestTradeQueryparam>{ id: 'Trade:' + pos.key, chain: USE_CHAIN } : null, vaultPosition),
+      requestTrade: map(pos => pos ? <IRequestTradeQueryparam>{ id: 'Trade:' + pos.key, chain } : null, vaultPosition),
       changeRoute,
       walletChange
     }

@@ -1,7 +1,7 @@
 import { Behavior, combineArray, replayLatest } from "@aelea/core"
 import { $Branch, $element, $node, $svg, $text, attr, component, eventElementTarget, INode, style, styleInline, stylePseudo } from "@aelea/dom"
 import { Route } from "@aelea/router"
-import { $column, $icon, $row, layoutSheet, observer, screenUtils, state } from "@aelea/ui-components"
+import { $column, $icon, $row, layoutSheet, observer, screenUtils } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { IAccountQueryParamApi, intervalTimeMap, ITimerangeParamApi } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
@@ -13,21 +13,22 @@ import { BI_18_PRECISION, GBC_ADDRESS, IAttributeBody, IAttributeClothes, IAttri
 import { $StakingGraph } from "../components/$StakingGraph"
 import { $seperator2 } from "./common"
 import { $buttonAnchor, $ButtonSecondary } from "../components/form/$Button"
-import { $opensea, $tofunft } from "../elements/$icons"
+import { $opensea } from "../elements/$icons"
 import { Stream } from "@most/types"
 import { $berry, $loadBerry } from "../components/$DisplayBerry"
 import { priceFeedHistoryInterval, latestTokenPriceMap } from "../logic/common"
 import { arbitrumContract, avalancheContract } from "../logic/gbcTreasury"
 import { gmxGlpPriceHistory, queryArbitrumRewards, queryAvalancheRewards, StakedTokenArbitrum, StakedTokenAvalanche } from "../logic/query"
-import { WALLET } from "../logic/provider"
 import { SvgPartsMap } from "@gambitdao/gbc-middleware"
+import { BrowserStore } from "../logic/store"
+import { WALLET } from "../logic/provider"
 
 
 export interface ITreasury {
   walletLink: IWalletLink
   parentRoute: Route
-  treasuryStore: state.BrowserStore<ITreasuryStore, "treasuryStore">
-  walletStore: state.BrowserStore<WALLET, "walletStore">
+  treasuryStore: BrowserStore<"ROOT.v1.treasuryStore", ITreasuryStore>
+  walletStore: BrowserStore<"ROOT.v1.walletStore", WALLET | null>
 }
 
 
@@ -82,7 +83,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
   )
 
   const queryParams: IAccountQueryParamApi & Partial<ITimerangeParamApi> = {
-    from: treasuryStore.state.startedStakingGmxTimestamp || undefined,
+    from: treasuryStore.getState().startedStakingGmxTimestamp || undefined,
     account: GBC_ADDRESS.TREASURY_ARBITRUM
   }
 

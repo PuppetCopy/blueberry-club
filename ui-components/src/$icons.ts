@@ -172,6 +172,7 @@ export const $tokenIconMap = {
   [TOKEN_SYMBOL.GLP]: $glp,
 
   [TOKEN_SYMBOL.WBTC]: $btc,
+  [TOKEN_SYMBOL.BTCB]: $btc,
   [TOKEN_SYMBOL.ETH]: $eth,
   [TOKEN_SYMBOL.WETH]: $eth,
   [TOKEN_SYMBOL.UNI]: $uni,
@@ -181,6 +182,7 @@ export const $tokenIconMap = {
 
   [TOKEN_SYMBOL.DAI]: $dai,
   [TOKEN_SYMBOL.USDC]: $usdc,
+  [TOKEN_SYMBOL.USDCE]: $usdc,
   [TOKEN_SYMBOL.USDT]: $usdt,
   [TOKEN_SYMBOL.FRAX]: $frax,
   [TOKEN_SYMBOL.MIM]: $usd,

@@ -3,11 +3,10 @@ import { component, INode, style } from "@aelea/dom"
 import { $column, observer } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import {
-  unixTimestampNow, query, fromJson, isTradeSettled, getDeltaPercentage, intervalListFillOrderMap,
-  isTradeOpen, IChainParamApi, ITrade, formatFixed, getPnL
+  unixTimestampNow, isTradeSettled, getDeltaPercentage, intervalListFillOrderMap,
+  isTradeOpen, ITrade, formatFixed, getPnL, IPricefeed
 } from "@gambitdao/gmx-middleware"
-import { getPricefeedVisibleColumns } from "@gambitdao/ui-components"
-import { fromPromise, multicast, switchLatest, empty, skipRepeatsWith, map, skip } from "@most/core"
+import { multicast, switchLatest, empty, skipRepeatsWith, map, skip } from "@most/core"
 import { Stream } from "@most/types"
 import { MouseEventParams, SingleValueData, Time, LineStyle, ChartOptions, DeepPartial } from "lightweight-charts"
 import { $Chart } from "../chart/$Chart"
@@ -15,9 +14,9 @@ import { $Chart } from "../chart/$Chart"
 interface ITradePnlPreview {
   trade: ITrade
   latestPrice: Stream<bigint>
-  chain: IChainParamApi['chain'],
   chartConfig?: DeepPartial<ChartOptions>
   pixelsPerBar?: number
+  pricefeed: IPricefeed[]
 }
 
 export interface IPricefeedTick {
@@ -33,23 +32,14 @@ export interface IPricefeedTick {
 }
 
 
-export const $TradePnlHistory = ({ trade, latestPrice, pixelsPerBar = 5, chartConfig = {}, chain }: ITradePnlPreview) => component((
+export const $TradePnlHistory = ({ trade, latestPrice, pixelsPerBar = 5, chartConfig = {}, pricefeed }: ITradePnlPreview) => component((
   [crosshairMove, crosshairMoveTether]: Behavior<MouseEventParams, MouseEventParams>,
   [containerDimension, sampleContainerDimension]: Behavior<INode, ResizeObserverEntry[]>
 ) => {
 
   const displayColumnCount = map(([container]) => container.contentRect.width / pixelsPerBar, containerDimension)
 
-  const to = unixTimestampNow()
-  const from = trade.timestamp
-
-  const intervalTime = getPricefeedVisibleColumns(160, from, to)
-  const params = { tokenAddress: '_' + trade.indexToken, interval: '_' + intervalTime, from, to }
-
-  const queryFeed = fromPromise(query.graphClientMap[chain](query.document.pricefeedDoc, params as any, { requestPolicy: 'network-only' }))
-  const priceFeedQuery = map(res => res.pricefeeds.map(fromJson.pricefeedJson), queryFeed)
-
-  const historicPnL = multicast(combineArray((feed, displayColumnCount) => {
+  const historicPnL = multicast(combineArray((displayColumnCount) => {
 
     const startPrice = trade.increaseList[0].price
     const endtime = isTradeSettled(trade) ? trade.settledTimestamp : unixTimestampNow()
@@ -74,7 +64,7 @@ export const $TradePnlHistory = ({ trade, latestPrice, pixelsPerBar = 5, chartCo
 
 
     const data = intervalListFillOrderMap({
-      source: [...feed.filter(tick => tick.timestamp > initialTick.time), ...trade.updateList],
+      source: [...pricefeed.filter(tick => tick.timestamp > initialTick.time), ...trade.updateList],
       // source: [...feed.filter(tick => tick.timestamp > initialTick.time), ...trade.updateList, ...trade.increaseList, ...trade.decreaseList],
       interval,
       seed: initialTick,
@@ -112,7 +102,7 @@ export const $TradePnlHistory = ({ trade, latestPrice, pixelsPerBar = 5, chartCo
     }
 
     return { data, interval }
-  }, priceFeedQuery, displayColumnCount))
+  }, displayColumnCount))
 
 
   return [
@@ -218,7 +208,7 @@ export const $TradePnlHistory = ({ trade, latestPrice, pixelsPerBar = 5, chartCo
 
               series.applyOptions({
                 scaleMargins: {
-                  top: 0.1,
+                  top: 0.2,
                   bottom: 0,
                 }
               })

@@ -213,11 +213,11 @@ export const $TradeCardPreview = ({
           ),
         ),
 
-        $TradePnlHistory({ trade, latestPrice, chain })({
-          // pnlCrossHairChange: pnlCrosshairMoveTether(),
-          // requestTradePricefeed: requestTradePricefeedTether(),
-          crosshairMove: crosshairMoveTether()
-        })
+        // $TradePnlHistory({ trade, latestPrice, pricefeed })({
+        //   // pnlCrossHairChange: pnlCrosshairMoveTether(),
+        //   // requestTradePricefeed: requestTradePricefeedTether(),
+        //   crosshairMove: crosshairMoveTether()
+        // })
       ),
 
     ),

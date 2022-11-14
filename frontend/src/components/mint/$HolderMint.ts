@@ -18,12 +18,13 @@ import { $ButtonPrimary } from "../form/$Button"
 import { $displayMintEvents } from "./mintUtils2"
 import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 import { IEthereumProvider } from "eip1193-provider"
+import { BrowserStore } from "../../logic/store"
 
 interface MintCmp {
   item: LabItemSale
   mintRule: MintRule
   walletLink: IWalletLink
-  walletStore: state.BrowserStore<WALLET, "walletStore">
+  walletStore: BrowserStore<"ROOT.v1.walletStore", WALLET | null>
 }
 
 export const $GbcWhitelist = (config: MintCmp) => component((

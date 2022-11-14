@@ -3,7 +3,7 @@ import { $text, style } from "@aelea/dom"
 import { $row, layoutSheet, $column } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { BaseContract, ContractTransaction } from "@ethersproject/contracts"
-import { USE_CHAIN, IAttributeMappings } from "@gambitdao/gbc-middleware"
+import { LAB_CHAIN, IAttributeMappings } from "@gambitdao/gbc-middleware"
 import { unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { $IntermediateTx } from "@gambitdao/ui-components"
 import { join, map, now, periodic } from "@most/core"
@@ -17,7 +17,7 @@ export function $displayMintEvents(contract: Stream<BaseContract>, ctxStream: St
 
     return $IntermediateTx({
       query: now(ctx),
-      chain: USE_CHAIN,
+      chain: LAB_CHAIN,
       $$success: map(tx => {
 
         return $column(

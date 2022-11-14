@@ -4,7 +4,7 @@ import { awaitPromises, continueWith, filter, fromPromise, map, multicast, now, 
 import { Stream } from "@most/types"
 import { $loadBerry } from "../components/$DisplayBerry"
 import { IValueInterval } from "../components/$StakingGraph"
-import { IBerryDisplayTupleMap, getLabItemTupleIndex, IAttributeExpression, USE_CHAIN, IAttributeBackground, IAttributeMappings, IBerryLabItems, IToken, IAttributeHat, tokenIdAttributeTuple } from "@gambitdao/gbc-middleware"
+import { IBerryDisplayTupleMap, getLabItemTupleIndex, IAttributeExpression, LAB_CHAIN, IAttributeBackground, IAttributeMappings, IBerryLabItems, IToken, IAttributeHat, tokenIdAttributeTuple } from "@gambitdao/gbc-middleware"
 import { IPricefeed, IStakeSource, queryLatestPrices, queryTokenv2 } from "./query"
 import { $Node, $svg, attr, style } from "@aelea/dom"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
@@ -47,8 +47,8 @@ export function getWalletProvider(wallet: IWalletLink,) {
     //   throw new Error('no Ethereum Provider available')
     // }
 
-    if (w3p?.network?.chainId !== USE_CHAIN) {
-      throw new Error(`Please connect to ${NETWORK_METADATA[USE_CHAIN].chainName} network`)
+    if (w3p?.network?.chainId !== LAB_CHAIN) {
+      throw new Error(`Please connect to ${NETWORK_METADATA[LAB_CHAIN].chainName} network`)
     }
 
     return w3p

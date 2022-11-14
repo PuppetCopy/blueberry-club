@@ -39,8 +39,8 @@ export const avalancheGraph = prepareClient({
 })
 
 
-export const graphClientMap = {
+export const graphClientMap: { [p in CHAIN]: typeof arbitrumGraph } = {
   [CHAIN.ARBITRUM]: arbitrumGraph,
   [CHAIN.AVALANCHE]: avalancheGraph,
-}
+} as any
 

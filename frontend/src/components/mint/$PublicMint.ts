@@ -3,7 +3,7 @@ import { component, style, $text, attr, nodeEvent, styleInline, stylePseudo, INo
 import { $column, layoutSheet, $row, $icon, state } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { ContractTransaction } from "@ethersproject/contracts"
-import { LabItemSale, MintRule, USE_CHAIN } from "@gambitdao/gbc-middleware"
+import { LabItemSale, MintRule, LAB_CHAIN } from "@gambitdao/gbc-middleware"
 import { ETH_ADDRESS_REGEXP, formatFixed, replayState } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { switchLatest, multicast, startWith, snapshot, map, tap, skipRepeats, merge } from "@most/core"
@@ -18,6 +18,7 @@ import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 import { IEthereumProvider } from "eip1193-provider"
 import { WALLET } from "../../logic/provider"
 import { Stream } from "@most/types"
+import { BrowserStore } from "../../logic/store"
 
 
 
@@ -31,7 +32,7 @@ interface MintCmp {
   item: LabItemSale
   mintRule: MintRule
   walletLink: IWalletLink
-  walletStore: state.BrowserStore<WALLET, "walletStore">
+  walletStore: BrowserStore<"ROOT.v1.walletStore", WALLET | null>
 }
 
 export const $PublicMint = (config: MintCmp) => component((
@@ -44,7 +45,7 @@ export const $PublicMint = (config: MintCmp) => component((
 
   const hasAccount = map(address => address && !ETH_ADDRESS_REGEXP.test(address), config.walletLink.account)
 
-  const supportedNetwork = map(x => x !== USE_CHAIN, config.walletLink.network)
+  const supportedNetwork = map(x => x !== LAB_CHAIN, config.walletLink.network)
   const mintCount = getMintCount(config.mintRule)
 
   const totalMintedChange = takeUntilLast(isLive => Number(isLive) === config.mintRule.supply, mintCount)

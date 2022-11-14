@@ -1,13 +1,12 @@
 import { Behavior, combineArray, O, Op } from "@aelea/core"
 import { $Branch, $element, $Node, $text, attr, component, IBranch, nodeEvent, style } from "@aelea/dom"
 import { $RouterAnchor, Route } from '@aelea/router'
-import { $column, $icon, $Popover, $row, layoutSheet, screenUtils, state } from '@aelea/ui-components'
+import { $column, $icon, $Popover, $row, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { pallete, theme } from "@aelea/ui-components-theme"
 import { formatReadableUSD } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { constant, empty, map, now } from '@most/core'
 import { IEthereumProvider } from "eip1193-provider"
-import { WALLET } from "../logic/provider"
 import { $bagOfCoins, $caretDown, $stackedCoins } from "../elements/$icons"
 import { $ButtonSecondary } from "./form/$Button"
 import { totalWalletHoldingsUsd } from "../logic/gbcTreasury"
@@ -18,6 +17,8 @@ import { $Picker } from "../components/$ThemePicker"
 import { dark, light } from "../common/theme"
 import { Stream } from "@most/types"
 import { $WalletProfile } from "./$WalletProfile"
+import { BrowserStore } from "../logic/store"
+import { WALLET } from "../logic/provider"
 
 
 
@@ -26,7 +27,7 @@ interface MainMenu {
   parentRoute: Route
   containerOp?: Op<IBranch, IBranch>
   walletLink: IWalletLink
-  walletStore: state.BrowserStore<WALLET, "walletStore">
+  walletStore: BrowserStore<"ROOT.v1.walletStore", WALLET | null>
 
   showAccount?: boolean
 }

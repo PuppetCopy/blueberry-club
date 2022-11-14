@@ -8,12 +8,14 @@ export enum TOKEN_SYMBOL {
   UNI = "UNI",
   LINK = "LINK",
   AVAX = "AVAX",
-  WAVAX = "WVAX",
+  WAVAX = "WAVAX",
 
   USDT = "USDT",
   DAI = "DAI",
   USDC = 'USDC',
   FRAX = 'FRAX',
   MIM = "MIM",
-  WBTC = "WBTC"
+  WBTC = "WBTC",
+  BTCB = "BTCB",
+  USDCE = "USDCE"
 }

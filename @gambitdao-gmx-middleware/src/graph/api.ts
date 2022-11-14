@@ -62,7 +62,7 @@ export const accountTradeList = O(
 
 const createCache = cacheMap({})
 
-async function fetchTrades(chain: CHAIN.ARBITRUM | CHAIN.AVALANCHE, offset: number, from: number, to: number): Promise<ITrade[]> {
+async function fetchTrades(chain: CHAIN, offset: number, from: number, to: number): Promise<ITrade[]> {
   const deltaTime = to - from
 
   // splits the queries because the-graph's result limit of 5k items

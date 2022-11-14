@@ -1,64 +1,102 @@
-import { Op, replayLatest } from '@aelea/core'
-import { filter, map } from "@most/core"
-import { merge } from "@most/core"
-import { multicast } from "@most/core"
+import { Op } from '@aelea/core'
+import { map, merge, now, tap } from "@most/core"
 import { Stream } from "@most/types"
 
 
-type StoreFn<STORE> = <Z>(stream: Stream<Z>, writePipe: Op<Z, STORE>) => Stream<Z>
+type StoreFn<STORE> = <T>(
+  stream: Stream<T>,
+  // transformInitialPipe?: Op<STORE, T>,
+  writePipe?: Op<T, { store: STORE, value: T }>
+) => Stream<T>
 
-export type BrowserStore<STORE, StoreKey extends string> = {
-  state: STORE
+type StoreReplayFn<STORE> = <T>(
+  stream: Stream<T>,
+  transformInitialPipe?: Op<STORE, T>,
+  writePipe?: Op<T, { store: STORE, value: T }>
+) => Stream<T>
+
+export type BrowserStore<TKey extends string, STORE> = {
+  getState: () => STORE
   store: StoreFn<STORE>
-  craete: <T, CreateStoreKey extends string>(key: CreateStoreKey, intitialState: T) => BrowserStore<T, `${StoreKey}.${CreateStoreKey}`>
+  storeReplay: StoreReplayFn<STORE>
+  craete: <ZKey extends string, ZStore>(key: ZKey, defaultState: ZStore) => BrowserStore<`${TKey}.${ZKey}`, ZStore>
 }
 
+// @ts-ignore
+BigInt.prototype.toJSON = function () { return this.toString() }
 
-const createLocalStorageChainFactory = (keyChain: string) => <STORE, TKey extends string>(key: TKey, initialDefaultState: STORE): BrowserStore<STORE, TKey> => {
-  const mktTree = `${keyChain}.${key}`
-  const storeData = localStorage.getItem(mktTree)
-  const initialState = storeData ? JSON.parse(storeData) as STORE : initialDefaultState
+const ES_BIGINT_EXP = /-?\d+n$/
 
-  const storeCurry: StoreFn<STORE> = <Z>(stream: Stream<Z>, writePipe: Op<Z, STORE>) => {
-    const multicastSource = multicast(stream)
-    const writeOp = writePipe(multicastSource)
 
-    // ignore 
-    const writeEffect: Stream<never> = filter(state => {
-      scope.state = state
-      localStorage.setItem(mktTree, JSON.stringify(state))
+function getStateFromLS<STORE>(key: string, defaultState: STORE): STORE {
+  const storeData = localStorage.getItem(key)!
 
-      return false
-    }, writeOp)
-
-    return merge(writeEffect, multicastSource)
-  }
-
-  let _state = initialState
-
-  const scope = {
-    get state() {
-      return _state
-    },
-    set state(newState) {
-      _state = newState
-    },
-    store: storeCurry,
-    craete: createLocalStorageChainFactory(mktTree)
-  }
-
-  return scope
-}
-
-export function createLocalStorageChain<STORE, TKey extends string>(key: TKey, initialDefaultState: STORE) {
-  return createLocalStorageChainFactory('_')(key, initialDefaultState)
-}
-
-export function createStore<TPK extends string>(store: BrowserStore<any, TPK>) {
-  return <STORE, TKey extends string>(key: TKey, initialState: STORE, value: Stream<STORE>) => {
-    const newStore = store.craete(key, initialState)
-
-    return replayLatest(multicast(newStore.store(value, map(x => x))), newStore.state)
+  if (storeData === null) {
+    return defaultState
+  } else if (ES_BIGINT_EXP.test(storeData)) {
+    return BigInt(storeData) as STORE
+  } else {
+    return JSON.parse(storeData)
   }
 }
 
+function setStateFromLS<STORE>(key: string, value: STORE): STORE {
+  if (typeof value === 'bigint') {
+    localStorage.setItem(key, String(value) + 'n')
+  } else {
+    localStorage.setItem(key, JSON.stringify(value))
+  }
+
+  return value
+}
+
+function createLocalStorageChainFactory<TKey extends string>(keyChain: TKey) {
+
+  return <ZKey extends string, STORE>(key: ZKey, defaultState: STORE) => {
+    const mktTree = `${keyChain}.${key}`
+
+    const getState = () => getStateFromLS(mktTree, defaultState)
+
+
+    const scope: BrowserStore<`${TKey}.${ZKey}`, STORE> = {
+      getState,
+      store: <T>(stream: Stream<T>, writePipe?: Op<T, { store: STORE, value: T }>) => {
+        if (!writePipe) {
+          return tap(store => setStateFromLS(mktTree, store), stream)
+        }
+
+        const writeEffect = map(({ store, value }) => {
+          setStateFromLS(mktTree, store)
+          return value
+        }, writePipe(stream))
+
+        return writeEffect
+      },
+      storeReplay: <T>(stream: Stream<T>, transformInitialPipe?: Op<STORE, T>, writePipe?: Op<T, { store: STORE, value: T }>) => {
+        const state = getStateFromLS(mktTree, defaultState)
+        const initial = map(getState, now(state))
+        const toState: Stream<T> = transformInitialPipe ? transformInitialPipe(initial) : initial as any as Stream<T>
+
+        if (!writePipe) {
+          return merge(stream, toState)
+        }
+
+        const writeEffect = map(({ store, value }) => {
+          setStateFromLS(mktTree, store)
+          return value
+        }, writePipe(stream))
+
+        return merge(writeEffect, toState)
+      },
+      craete: createLocalStorageChainFactory(mktTree)
+    }
+
+    return scope
+  }
+}
+
+
+
+export function createLocalStorageChain<TKey extends string, VKey extends string>(keyChain: TKey, version: VKey) {
+  return createLocalStorageChainFactory(keyChain)(version, version)
+}

@@ -18,13 +18,14 @@ import { Stream } from "@most/types"
 import { $berryById, latestTokenPriceMap, priceFeedHistoryInterval } from "../logic/common"
 import { $accountPreview } from "../components/$AccountProfile"
 import { $metricEntry, $seperator2 } from "./common"
+import { BrowserStore } from "../logic/store"
 
 const GRAPHS_INTERVAL = Math.floor(intervalTimeMap.HR4)
 
 export interface ITreasury {
   walletLink: IWalletLink
   parentRoute: Route
-  treasuryStore: state.BrowserStore<ITreasuryStore, "treasuryStore">
+  treasuryStore: BrowserStore<"ROOT.v1.treasuryStore", ITreasuryStore>
 }
 
 
@@ -36,7 +37,7 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
 
 
   const queryParams: IAccountQueryParamApi & Partial<ITimerangeParamApi> = {
-    from: treasuryStore.state.startedStakingGmxTimestamp || undefined,
+    from: treasuryStore.getState().startedStakingGmxTimestamp || undefined,
     account: GBC_ADDRESS.TREASURY_ARBITRUM
   }
 

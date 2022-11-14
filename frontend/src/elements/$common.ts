@@ -3,7 +3,7 @@ import { $ButtonIcon, $column, $icon, $row, layoutSheet, screenUtils } from "@ae
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
 import { getAccountExplorerUrl, getTxExplorerUrl, shortenAddress } from "@gambitdao/gmx-middleware"
 import { $trash } from "./$icons"
-import { USE_CHAIN } from "@gambitdao/gbc-middleware"
+import { LAB_CHAIN } from "@gambitdao/gbc-middleware"
 import { $anchor, $calendar, $caretDblDown, $discord, $ethScan } from "@gambitdao/ui-components"
 import { $berryById } from "../logic/common"
 
@@ -90,17 +90,17 @@ export const $iconCircular = ($iconPath: $Branch<SVGPathElement>, backgroundColo
 
 
 
-export const $accountRef = (id: string) => $anchor(attr({ href: getAccountExplorerUrl(USE_CHAIN, id) }))(
+export const $accountRef = (id: string) => $anchor(attr({ href: getAccountExplorerUrl(LAB_CHAIN, id) }))(
   $text(style({}))(`${shortenAddress(id)}`)
 )
 
 
-export const $accountIconLink = (address: string) => $anchor(attr({ href: getAccountExplorerUrl(USE_CHAIN, address) }))(
+export const $accountIconLink = (address: string) => $anchor(attr({ href: getAccountExplorerUrl(LAB_CHAIN, address) }))(
   $icon({ $content: $ethScan, width: '16px', viewBox: '0 0 24 24', svgOps: style({ margin: '3px 4px 0 0' }) }),
   $text(style({}))(` ${shortenAddress(address)} `),
 )
 
-export const $txnIconLink = (address: string) => $anchor(attr({ href: getTxExplorerUrl(USE_CHAIN, address) }))(
+export const $txnIconLink = (address: string) => $anchor(attr({ href: getTxExplorerUrl(LAB_CHAIN, address) }))(
   $icon({ $content: $ethScan, width: '16px', viewBox: '0 0 24 24' })
 )
 

@@ -1,31 +1,31 @@
 import { Behavior, combineArray } from "@aelea/core"
 import { $element, $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
-import { $ButtonIcon, $column, $icon, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
+import { $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $accountIconLink, $addToCalendar, $responsiveFlex } from "../../elements/$common"
 import { attributeIndexToLabel, mintLabelMap, getLabItemTupleIndex, labItemDescriptionListMap, saleMaxSupply, SaleType } from "@gambitdao/gbc-middleware"
 import { countdownFn, displayDate, formatFixed, unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { pallete } from "@aelea/ui-components-theme"
-import { WALLET } from "../../logic/provider"
 import { $labItem, takeUntilLast } from "../../logic/common"
 import { $seperator2 } from "../common"
 import { getMintCount } from "../../logic/contract/sale"
 import { empty, map, multicast, switchLatest } from "@most/core"
-import { $anchor, $discord } from "@gambitdao/ui-components"
+import { $anchor } from "@gambitdao/ui-components"
 import { $opensea } from "../../elements/$icons"
 import { $GbcWhitelist } from "../../components/mint/$HolderMint"
 import { $WhitelistMint } from "../../components/mint/$WhitelistMint"
 import { $PublicMint } from "../../components/mint/$PublicMint"
 import { timeChange } from "../../components/mint/mintUtils2"
 import { IEthereumProvider } from "eip1193-provider"
-import { $ButtonSecondary } from "../../components/form/$Button"
+import { BrowserStore } from "../../logic/store"
+import { WALLET } from "../../logic/provider"
 
 
 interface ILabItem {
   walletLink: IWalletLink
   parentRoute: Route
-  walletStore: state.BrowserStore<WALLET, "walletStore">
+  walletStore: BrowserStore<"ROOT.v1.walletStore", WALLET | null>
 }
 
 export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => component((

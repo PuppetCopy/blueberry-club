@@ -1,10 +1,9 @@
 import { awaitPromises, map, multicast, now, switchLatest } from "@most/core"
-import { AddressZero, ADDRESS_LEVERAGE, ARBITRUM_ADDRESS, AVALANCHE_ADDRESS, CHAIN, getDenominator, switchFailedSources, TradeAddress, USD_PERCISION } from "@gambitdao/gmx-middleware"
+import { AddressZero,  ARBITRUM_ADDRESS, AVALANCHE_ADDRESS, CHAIN, getDenominator, switchFailedSources, AddressIndex, AddressInput, USD_PERCISION } from "@gambitdao/gmx-middleware"
 import { combineArray, replayLatest } from "@aelea/core"
-import { ERC20__factory, FastPriceFeed, FastPriceFeed__factory, PositionRouter__factory, VaultReader__factory, Vault__factory } from "./gmx-contracts"
+import { ERC20__factory, FastPriceFeed, FastPriceFeed__factory, PositionRouter__factory, Vault__factory } from "./gmx-contracts"
 import { periodicRun } from "@gambitdao/gmx-middleware"
-import { CHAIN_NATIVE_TO_ADDRESS, getTokenDescription } from "../../components/trade/utils"
-import { USE_CHAIN } from "@gambitdao/gbc-middleware"
+import { getTokenDescription, resolveAddress } from "../utils"
 import { Stream } from "@most/types"
 import { BaseProvider, Provider, Web3Provider } from "@ethersproject/providers"
 import { Signer } from "@ethersproject/abstract-signer"
@@ -106,8 +105,9 @@ export function connectTrade(provider: Stream<BaseProvider | null>) {
 }
 
 
-async function getGmxIOPriceMap(): Promise<{ [key in ADDRESS_LEVERAGE]: bigint }> {
-  const res = await fetch('https://gmx-server-mainnet.uw.r.appspot.com/prices')
+async function getGmxIOPriceMap(chain: CHAIN): Promise<{ [key in AddressIndex]: bigint }> {
+  const url = chain === CHAIN.ARBITRUM ? 'https://gmx-server-mainnet.uw.r.appspot.com/prices' : 'https://gmx-avax-server.uc.r.appspot.com/prices'
+  const res = await fetch(url)
   const json = await res.json()
 
   // @ts-ignore
@@ -118,14 +118,24 @@ async function getGmxIOPriceMap(): Promise<{ [key in ADDRESS_LEVERAGE]: bigint }
   }, {})
 }
 
-const gmxIOPriceMapSource = replayLatest(multicast(periodicRun({
-  interval: 5000,
-  actionOp: map(async time => getGmxIOPriceMap())
-})))
+const gmxIOPriceMapSource = {
+  [CHAIN.ARBITRUM]: replayLatest(multicast(periodicRun({
+    interval: 5000,
+    actionOp: map(async time => getGmxIOPriceMap(CHAIN.ARBITRUM))
+  }))),
+  [CHAIN.AVALANCHE]: replayLatest(multicast(periodicRun({
+    interval: 5000,
+    actionOp: map(async time => getGmxIOPriceMap(CHAIN.AVALANCHE
+    ))
+  }))),
+}
 
-const gmxIoLatestPrice = (token: ADDRESS_LEVERAGE) => map(pmap => BigInt(pmap[token]), gmxIOPriceMapSource)
+const gmxIoLatestPrice = (chain: CHAIN, token: AddressIndex) => {
+  // @ts-ignore
+  return map(pmap => BigInt(pmap[token]), gmxIOPriceMapSource[chain])
+}
 
-const latestVaultPrice = (token: TradeAddress, feed: Stream<FastPriceFeed>) => switchLatest(map(c => {
+const latestVaultPrice = (token: AddressInput, feed: Stream<FastPriceFeed>) => switchLatest(map(c => {
   return periodicRun({
     recoverError: false,
     actionOp: map(async () => (await c.prices(token)).toBigInt())
@@ -133,7 +143,7 @@ const latestVaultPrice = (token: TradeAddress, feed: Stream<FastPriceFeed>) => s
 }, feed))
 
 
-export async function getErc20Balance(token: TradeAddress, w3p: Web3Provider | null, account: null | string) {
+export async function getErc20Balance(token: AddressInput, w3p: Web3Provider | null, account: null | string) {
   if (!w3p || !account) {
     return 0n
   }
@@ -156,17 +166,17 @@ export function connectPricefeed(provider: Stream<BaseProvider | null>) {
 
   // const contract = map(w3p => FastPriceFeed__factory.connect('0x1a0ad27350cccd6f7f168e052100b4960efdb774', w3p), provider)
 
-  const getLatestPrice = (token: TradeAddress, maximize = false) => {
-    const desc = getTokenDescription(USE_CHAIN, token)
+  const getLatestPrice = (chain: CHAIN, token: AddressInput, maximize = false) => {
+    const desc = getTokenDescription(chain, token)
 
     if (desc.isStable) {
       return now(USD_PERCISION)
     }
 
-    const normalizedAddress = token === AddressZero ? CHAIN_NATIVE_TO_ADDRESS[USE_CHAIN] : token
+    const normalizedAddress = resolveAddress(chain, token)
 
     return switchFailedSources([
-      gmxIoLatestPrice(normalizedAddress as ADDRESS_LEVERAGE),
+      gmxIoLatestPrice(chain, normalizedAddress as AddressIndex),
       latestVaultPrice(token, pricefeed.contract),
     ])
   }
@@ -193,13 +203,13 @@ export function connectVault(provider: Stream<BaseProvider | null>) {
   const usdgSupply = usdg.int(map(c => c.totalSupply()))
 
   const totalTokenWeight = vault.int(map(c => c.totalTokenWeights()))
-  const getTokenWeight = (token: TradeAddress) => vault.int(map(c => c.tokenWeights(token)))
-  const getTokenDebtUsd = (token: TradeAddress) => vault.int(map(c => c.usdgAmounts(token)))
-  const getTokenCumulativeFundingRate = (token: TradeAddress) => vault.int(map(c => c.cumulativeFundingRates(token)))
-  const getPoolAmount = (token: TradeAddress) => vault.int(map(c => c.poolAmounts(token)))
-  const getReservedAmount = (token: TradeAddress) => vault.int(map(c => c.reservedAmounts(token)))
-  const getTotalShort = (token: TradeAddress) => vault.int(map(c => c.globalShortSizes(token)))
-  const getTotalShortCap = (token: TradeAddress) => vault.run(map(async c => {
+  const getTokenWeight = (token: AddressInput) => vault.int(map(c => c.tokenWeights(token)))
+  const getTokenDebtUsd = (token: AddressInput) => vault.int(map(c => c.usdgAmounts(token)))
+  const getTokenCumulativeFundingRate = (token: AddressInput) => vault.int(map(c => c.cumulativeFundingRates(token)))
+  const getPoolAmount = (token: AddressInput) => vault.int(map(c => c.poolAmounts(token)))
+  const getReservedAmount = (token: AddressInput) => vault.int(map(c => c.reservedAmounts(token)))
+  const getTotalShort = (token: AddressInput) => vault.int(map(c => c.globalShortSizes(token)))
+  const getTotalShortCap = (token: AddressInput) => vault.run(map(async c => {
     try {
       return (await c.maxGlobalShortSizes(token)).toBigInt()
     } catch (e) {
@@ -209,7 +219,7 @@ export function connectVault(provider: Stream<BaseProvider | null>) {
 
 
 
-  const getAvailableLiquidityUsd = (chain: CHAIN.ARBITRUM | CHAIN.AVALANCHE, token: TradeAddress, isLong: boolean) => {
+  const getAvailableLiquidityUsd = (chain: CHAIN.ARBITRUM | CHAIN.AVALANCHE, token: AddressIndex, isLong: boolean) => {
 
     const tokenDesc = getTokenDescription(chain, token)
     const denominator = getDenominator(tokenDesc.decimals)
@@ -234,7 +244,7 @@ export function connectVault(provider: Stream<BaseProvider | null>) {
     }, poolAmount, reservedAmount, getTotalShort(token), getTotalShortCap(token), price)
   }
 
-  const getPrice = (token: TradeAddress, maximize: boolean) => switchLatest(map(contract => periodicRun({
+  const getPrice = (token: AddressIndex, maximize: boolean) => switchLatest(map(contract => periodicRun({
     actionOp: map(async () => {
 
       if (contract === null) {

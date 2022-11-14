@@ -2,7 +2,7 @@ import { Behavior, combineArray, combineObject, replayLatest } from "@aelea/core
 import { $node, $text, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet, state } from "@aelea/ui-components"
-import { GBC_ADDRESS, IToken, MINT_MAX_SUPPLY, REWARD_DISTRIBUTOR, USE_CHAIN } from "@gambitdao/gbc-middleware"
+import { GBC_ADDRESS, IToken, MINT_MAX_SUPPLY, REWARD_DISTRIBUTOR, LAB_CHAIN } from "@gambitdao/gbc-middleware"
 import { formatFixed, formatReadableUSD, readableNumber } from "@gambitdao/gmx-middleware"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
@@ -21,12 +21,13 @@ import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
 import { $SelectBerries } from "../components/$SelectBerries"
 import { $berryTileId } from "../components/$common"
 import { $berryByToken } from "../logic/common"
+import { BrowserStore } from "../logic/store"
 
 
 export interface IAccount {
   walletLink: IWalletLink
   parentRoute: Route
-  accountStakingStore: state.BrowserStore<IAccountStakingStore, "accountStakingStore">
+  accountStakingStore: BrowserStore<"ROOT.v1.treasuryStore", IAccountStakingStore>
   // walletStore: cstate.BrowserStore<"metamask" | "walletConnect" | null, "walletStore">
 }
 

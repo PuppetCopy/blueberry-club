@@ -1,9 +1,9 @@
 import { Behavior, combineArray, combineObject } from "@aelea/core"
 import { component, style, $text, attr, nodeEvent, styleInline, stylePseudo, INode } from "@aelea/dom"
-import { $column, layoutSheet, $row, $icon, state } from "@aelea/ui-components"
+import { $column, layoutSheet, $row, $icon } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { ContractTransaction } from "@ethersproject/contracts"
-import { LabItemSale, MintPrivate, USE_CHAIN } from "@gambitdao/gbc-middleware"
+import { LabItemSale, MintPrivate, LAB_CHAIN } from "@gambitdao/gbc-middleware"
 import { ETH_ADDRESS_REGEXP, formatFixed, replayState, filterNull } from "@gambitdao/gmx-middleware"
 import { $alert } from "@gambitdao/ui-components"
 import { IWalletLink } from "@gambitdao/wallet-link"
@@ -13,12 +13,13 @@ import { $caretDown } from "../../elements/$icons"
 import { takeUntilLast } from "../../logic/common"
 import { connectLab } from "../../logic/contract/lab"
 import { connectPrivateSale, getMintCount } from "../../logic/contract/sale"
-import { WALLET } from "../../logic/provider"
 import { $ButtonPrimary } from "../form/$Button"
 import { $Dropdown, $defaultSelectContainer } from "../form/$Dropdown"
 import { $displayMintEvents } from "./mintUtils2"
 import { $IntermediateConnectButton } from "../$ConnectAccount"
 import { Stream } from "@most/types"
+import { BrowserStore } from "../../logic/store"
+import { WALLET } from "../../logic/provider"
 
 
 
@@ -33,7 +34,7 @@ interface MintCmp {
   item: LabItemSale
   mintRule: MintPrivate
   walletLink: IWalletLink
-  walletStore: state.BrowserStore<WALLET, "walletStore">
+  walletStore: BrowserStore<"ROOT.v1.walletStore", WALLET | null>
 }
 
 
@@ -47,7 +48,7 @@ export const $WhitelistMint = (config: MintCmp) => component((
 
   const hasAccount = map(address => address && !ETH_ADDRESS_REGEXP.test(address), config.walletLink.account)
 
-  const supportedNetwork = map(x => x !== USE_CHAIN, config.walletLink.network)
+  const supportedNetwork = map(x => x !== LAB_CHAIN, config.walletLink.network)
   const mintCount = getMintCount(config.mintRule)
 
   const totalMintedChange = takeUntilLast(isLive => Number(isLive) === config.mintRule.supply, mintCount)

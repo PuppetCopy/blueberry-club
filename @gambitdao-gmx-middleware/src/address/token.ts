@@ -1,12 +1,9 @@
-import { AddressZero } from "../constant"
 import { TokenDescription } from "../types"
 import { groupByMap } from "../utils"
-import { ARBITRUM_ADDRESS, ARBITRUM_ADDRESS_TRADE } from "./arbitrum"
-import { AVALANCHE_ADDRESS, AVALANCHE_ADDRESS_TRADE } from "./avalanche"
+import { ARBITRUM_ADDRESS } from "./arbitrum"
+import { AVALANCHE_ADDRESS } from "./avalanche"
 import { TOKEN_SYMBOL } from "./symbol"
 
-
-export type TradeAddress = ARBITRUM_ADDRESS_TRADE | AVALANCHE_ADDRESS_TRADE | typeof AddressZero
 
 
 export const TOKEN_DESCRIPTION_LIST = [
@@ -29,14 +26,26 @@ export const TOKEN_DESCRIPTION_LIST = [
     isStable: false,
   },
   {
+    name: "Wrapped AVAX",
+    symbol: TOKEN_SYMBOL.WAVAX,
+    decimals: 18,
+    isStable: false,
+  },
+  {
     name: "Chainlink",
     symbol: TOKEN_SYMBOL.LINK,
     decimals: 18,
     isStable: false,
   },
   {
-    name: "Wrapped Bitcoin",
+    name: "Bitcoin (WBTC.e)",
     symbol: TOKEN_SYMBOL.WBTC,
+    decimals: 8,
+    isStable: false,
+  },
+  {
+    name: "Bitcoin (BTC.b)",
+    symbol: TOKEN_SYMBOL.BTCB,
     decimals: 8,
     isStable: false,
   },
@@ -61,6 +70,12 @@ export const TOKEN_DESCRIPTION_LIST = [
   {
     name: "USD Coin",
     symbol: TOKEN_SYMBOL.USDC,
+    decimals: 6,
+    isStable: true,
+  },
+  {
+    name: "USD Coin (USDC.e)",
+    symbol: TOKEN_SYMBOL.USDCE,
     decimals: 6,
     isStable: true,
   },
@@ -100,7 +115,7 @@ export const CHAIN_TOKEN_ADDRESS_TO_SYMBOL = {
   [ARBITRUM_ADDRESS.GLP]: TOKEN_SYMBOL.GLP,
   [ARBITRUM_ADDRESS.GMX]: TOKEN_SYMBOL.GMX,
 
-  [ARBITRUM_ADDRESS.NATIVE_TOKEN]: TOKEN_SYMBOL.ETH,
+  [ARBITRUM_ADDRESS.NATIVE_TOKEN]: TOKEN_SYMBOL.WETH,
   [ARBITRUM_ADDRESS.LINK]: TOKEN_SYMBOL.LINK,
   [ARBITRUM_ADDRESS.UNI]: TOKEN_SYMBOL.UNI,
   [ARBITRUM_ADDRESS.WBTC]: TOKEN_SYMBOL.WBTC,
@@ -111,14 +126,15 @@ export const CHAIN_TOKEN_ADDRESS_TO_SYMBOL = {
   [ARBITRUM_ADDRESS.USDC]: TOKEN_SYMBOL.USDC,
   [ARBITRUM_ADDRESS.USDT]: TOKEN_SYMBOL.USDT,
 
-  [AVALANCHE_ADDRESS.NATIVE_TOKEN]: TOKEN_SYMBOL.AVAX,
+  [AVALANCHE_ADDRESS.NATIVE_TOKEN]: TOKEN_SYMBOL.WAVAX,
   [AVALANCHE_ADDRESS.GMX]: TOKEN_SYMBOL.GMX,
   [AVALANCHE_ADDRESS.GLP]: TOKEN_SYMBOL.GLP,
   [AVALANCHE_ADDRESS.WBTCE]: TOKEN_SYMBOL.WBTC,
+  [AVALANCHE_ADDRESS.BTCB]: TOKEN_SYMBOL.BTCB,
   [AVALANCHE_ADDRESS.WETHE]: TOKEN_SYMBOL.ETH,
   [AVALANCHE_ADDRESS.MIM]: TOKEN_SYMBOL.MIM,
   [AVALANCHE_ADDRESS.USDC]: TOKEN_SYMBOL.USDC,
-  [AVALANCHE_ADDRESS.USDCE]: TOKEN_SYMBOL.USDC,
-} as const
+  [AVALANCHE_ADDRESS.USDCE]: TOKEN_SYMBOL.USDCE,
+}
 
 

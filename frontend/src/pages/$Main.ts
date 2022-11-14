@@ -3,10 +3,12 @@ import { component, eventElementTarget, style } from "@aelea/dom"
 import * as router from '@aelea/router'
 import { $column, designSheet, layoutSheet, screenUtils } from '@aelea/ui-components'
 import {
-  ADDRESS_LEVERAGE,
-  api,
+  AddressIndex, AddressStable, AddressZero, api,
+  ARBITRUM_ADDRESS,
+  AVALANCHE_ADDRESS,
+  CHAIN,
   ETH_ADDRESS_REGEXP, fromJson, groupByMap, IAccountTradeListParamApi, IChainParamApi,
-  ILeaderboardRequest, intervalTimeMap, IPricefeedParamApi, IPriceLatestMap, IRequestTradeQueryparam
+  intervalTimeMap, IPricefeedParamApi, IPriceLatestMap, IRequestTradeQueryparam
 } from '@gambitdao/gmx-middleware'
 import { initWalletLink } from "@gambitdao/wallet-link"
 import {
@@ -34,7 +36,6 @@ import { $ProfileWallet } from "./$ProfileWallet"
 import { $Trade } from "./$Trade"
 import { createLocalStorageChain } from "../logic/store"
 
-const GBC_APP_VERSION = '0.1'
 
 const popStateEvent = eventElementTarget('popstate', window)
 const initialLocation = now(document.location)
@@ -52,7 +53,7 @@ export default ({ baseRoute = '' }: Website) => component((
   [walletChange, walletChangeTether]: Behavior<IEthereumProvider | null, IEthereumProvider | null>,
 
   [requestAccountTradeList, requestAccountTradeListTether]: Behavior<IAccountTradeListParamApi, IAccountTradeListParamApi>,
-  [requestLeaderboardTopList, requestLeaderboardTopListTether]: Behavior<ILeaderboardRequest, ILeaderboardRequest>,
+  // [requestLeaderboardTopList, requestLeaderboardTopListTether]: Behavior<ILeaderboardRequest, ILeaderboardRequest>,
   [requestPricefeed, requestPricefeedTether]: Behavior<IPricefeedParamApi, IPricefeedParamApi>,
   // [requestTradePricefeed, requestTradePricefeedTether]: Behavior<IPricefeedParamApi, IPricefeedParamApi>,
   [requestLatestPriceMap, requestLatestPriceMapTether]: Behavior<IChainParamApi, IChainParamApi>,
@@ -106,18 +107,18 @@ export default ({ baseRoute = '' }: Website) => component((
 
 
   const latestPriceMap = replayLatest(multicast(map((res: IPriceLatestMap) => Object.entries(res).reduce((seed, [key, price]) => {
-    const k = key as ADDRESS_LEVERAGE
+    const k = key as AddressIndex
     seed[k] = fromJson.priceLatestJson(price)
     return seed
   }, {} as IPriceLatestMap), clientApi.requestLatestPriceMap)))
 
   // localstorage state
-  const store = createLocalStorageChain('ROOT', GBC_APP_VERSION)
-  const walletStore = store.craete<WALLET, 'walletStore'>('walletStore', WALLET.none)
-  const treasuryStore = store.craete<ITreasuryStore, 'treasuryStore'>('treasuryStore', { startedStakingGlpTimestamp: 1639431367, startedStakingGmxTimestamp: 1639432924 - intervalTimeMap.MIN5 })
-  const accountStakingStore = store.craete<IAccountStakingStore, 'treasuryStore'>('treasuryStore', {})
+  const store = createLocalStorageChain('ROOT', 'v1')
+  const treasuryStore = store.craete('treasuryStore', { startedStakingGlpTimestamp: 1639431367, startedStakingGmxTimestamp: 1639432924 - intervalTimeMap.MIN5 } as ITreasuryStore)
+  const accountStakingStore = store.craete('treasuryStore', {} as IAccountStakingStore)
 
-  const chosenWalletName = now(walletStore.state)
+  const walletStore = store.craete('walletStore', null as WALLET | null)
+
   const defaultWalletProvider: Stream<IEthereumProvider | null> = multicast(switchLatest(awaitPromises(map(async name => {
     const isWC = name === WALLET.walletConnect
     const walletProvider = isWC ? wallet.walletConnect : await wallet.metamaskQuery
@@ -138,7 +139,7 @@ export default ({ baseRoute = '' }: Website) => component((
     }
 
     return now(null)
-  }, chosenWalletName))))
+  }, now(walletStore.getState())))))
 
 
 
@@ -211,24 +212,57 @@ export default ({ baseRoute = '' }: Website) => component((
               fadeIn($ProfileWallet({ walletLink, parentRoute: pagesRoute, accountStakingStore })({ changeRoute: linkClickTether() }))
             ),
             router.match(tradeRoute)(
-              $Trade({
-                walletLink,
-                parentRoute: tradeRoute,
-                walletStore,
-                accountTradeList: clientApi.accountTradeList,
-                pricefeed: clientApi.pricefeed,
-                latestPriceMap,
-                store,
-                trade: clientApi.requestTrade
-              })({
-                requestPricefeed: requestPricefeedTether(),
-                // requestTradePricefeed: requestTradePricefeedTether(),
-                requestAccountTradeList: requestAccountTradeListTether(),
-                requestLatestPriceMap: requestLatestPriceMapTether(),
-                changeRoute: linkClickTether(),
-                walletChange: walletChangeTether(),
-                requestTrade: requestTradeTether()
-              })
+              switchLatest(map(chain => {
+
+                const indexTokens: AddressIndex[] = chain === CHAIN.AVALANCHE ?
+                  [
+                    AVALANCHE_ADDRESS.NATIVE_TOKEN,
+                    AVALANCHE_ADDRESS.WETHE,
+                    AVALANCHE_ADDRESS.WBTCE,
+                    AVALANCHE_ADDRESS.BTCB,
+                  ]
+                  : [
+                    ARBITRUM_ADDRESS.NATIVE_TOKEN,
+                    ARBITRUM_ADDRESS.LINK,
+                    ARBITRUM_ADDRESS.UNI,
+                    ARBITRUM_ADDRESS.WBTC,
+                  ]
+
+                const stableTokens: AddressStable[] = chain === CHAIN.AVALANCHE ?
+                  [
+                    AVALANCHE_ADDRESS.USDC,
+                    AVALANCHE_ADDRESS.USDCE,
+                    // AVALANCHE_ADDRESS.MIM,
+                  ] : [
+                    ARBITRUM_ADDRESS.USDC,
+                    ARBITRUM_ADDRESS.USDT,
+                    ARBITRUM_ADDRESS.DAI,
+                    ARBITRUM_ADDRESS.FRAX,
+                    // ARBITRUM_ADDRESS.MIM,
+                  ]
+
+
+                return $Trade({
+                  chain,
+                  stableTokens, indexTokens,
+                  walletLink,
+                  parentRoute: tradeRoute,
+                  walletStore,
+                  accountTradeList: clientApi.accountTradeList,
+                  pricefeed: clientApi.pricefeed,
+                  latestPriceMap,
+                  store,
+                  trade: clientApi.requestTrade
+                })({
+                  requestPricefeed: requestPricefeedTether(),
+                  // requestTradePricefeed: requestTradePricefeedTether(),
+                  requestAccountTradeList: requestAccountTradeListTether(),
+                  requestLatestPriceMap: requestLatestPriceMapTether(),
+                  changeRoute: linkClickTether(),
+                  walletChange: walletChangeTether(),
+                  requestTrade: requestTradeTether()
+                })
+              }, walletLink.network))
             ),
             router.match(treasuryRoute)(
               $Treasury({ walletLink, parentRoute: treasuryRoute, treasuryStore })({})

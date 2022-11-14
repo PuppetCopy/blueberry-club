@@ -20,6 +20,7 @@ import { $berryByToken, takeUntilLast } from "../../logic/common"
 import { $profilePreview } from "../../components/$AccountProfile"
 import { countdownFn } from "@gambitdao/gmx-middleware"
 import { timeChange } from "../../components/mint/mintUtils2"
+import { BrowserStore } from "../../logic/store"
 
 
 
@@ -68,8 +69,7 @@ export const $bgAnimation = style({
 interface IBerry {
   walletLink: IWalletLink
   parentRoute: Route
-  walletStore: state.BrowserStore<WALLET, "walletStore">
-
+  walletStore: BrowserStore<"ROOT.v1.walletStore", WALLET | null>
 }
 
 export const $LabHome = ({ walletLink, parentRoute, walletStore }: IBerry) => component((

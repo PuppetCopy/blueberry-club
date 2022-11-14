@@ -1,14 +1,14 @@
-import { ARBITRUM_ADDRESS_LEVERAGE, ARBITRUM_ADDRESS_STABLE, ARBITRUM_ADDRESS_TRADE } from "./address/arbitrum"
-import { AVALANCHE_ADDRESS_LEVERAGE, AVALANCHE_ADDRESS_STABLE, AVALANCHE_ADDRESS_TRADE } from "./address/avalanche"
+import { ARBITRUM_ADDRESS_INDEX, ARBITRUM_ADDRESS_STABLE } from "./address/arbitrum"
+import { AVALANCHE_ADDRESS_INDEX, AVALANCHE_ADDRESS_STABLE } from "./address/avalanche"
 import { TOKEN_SYMBOL } from "./address/symbol"
 import { CHAIN, intervalTimeMap } from "./constant"
 
-
 export type Address = string
 
-export type ADDRESS_LEVERAGE = AVALANCHE_ADDRESS_LEVERAGE | ARBITRUM_ADDRESS_LEVERAGE
-export type ADDRESS_STABLE = AVALANCHE_ADDRESS_STABLE | ARBITRUM_ADDRESS_STABLE
-export type ADDRESS_TRADE = AVALANCHE_ADDRESS_TRADE | ARBITRUM_ADDRESS_TRADE
+export type AddressStable = AVALANCHE_ADDRESS_STABLE | ARBITRUM_ADDRESS_STABLE
+export type AddressIndex = AVALANCHE_ADDRESS_INDEX | ARBITRUM_ADDRESS_INDEX
+export type AddressTrade = AddressIndex | AddressStable
+export type AddressInput = AddressTrade | "0x0000000000000000000000000000000000000000"
 
 
 export interface TokenDescription {
@@ -40,8 +40,8 @@ export type IndexedType<T extends string> = TypeName<T> & IEntityIndexed
 
 export interface IAbstractPosition {
   account: Address
-  collateralToken: ADDRESS_TRADE
-  indexToken: ADDRESS_LEVERAGE
+  collateralToken: AddressIndex
+  indexToken: AddressIndex
   isLong: boolean
   key: string
 }
@@ -137,7 +137,7 @@ export interface IAccountSummary extends IAbstractTrade {
 export interface IPriceTimeline {
   id: string
   value: bigint
-  tokenAddress: ADDRESS_LEVERAGE
+  tokenAddress: AddressIndex
   timestamp: string
 }
 
@@ -147,17 +147,17 @@ export interface IPricefeed extends IndexedType<'Pricefeed'> {
   h: bigint
   l: bigint
   c: bigint
-  tokenAddress: ADDRESS_LEVERAGE
+  tokenAddress: AddressIndex
 }
 
 export interface IPriceLatest extends IndexedType<'PriceLatest'> {
   value: bigint
-  id: ADDRESS_LEVERAGE
+  id: AddressIndex
   timestamp: number
 }
 
 export type IPriceLatestMap = {
-  [P in ADDRESS_LEVERAGE]: IPriceLatest
+  [P in AddressIndex]: IPriceLatest
 }
 
 export enum IClaimSource {
@@ -182,7 +182,7 @@ export interface Account {
 }
 
 export interface IChainParamApi {
-  chain: CHAIN.AVALANCHE | CHAIN.ARBITRUM
+  chain: CHAIN
 }
 
 export interface IAccountQueryParamApi {
@@ -218,11 +218,11 @@ export interface ILeaderboardRequest extends IPagePositionParamApi, IChainParamA
 }
 
 
-export type IPriceTimelineParamApi = IChainParamApi & ITimerangeParamApi & { tokenAddress: ADDRESS_LEVERAGE }
+export type IPriceTimelineParamApi = IChainParamApi & ITimerangeParamApi & { tokenAddress: AddressIndex }
 
 export type IOpenTradesParamApi = IChainParamApi & IPagePositionParamApi & ISortParamApi<keyof ITradeOpen>
 export type IAccountTradeListParamApi = IChainParamApi & IAccountQueryParamApi
-export type IPricefeedParamApi = IChainParamApi & ITimerangeParamApi & { interval: intervalTimeMap, tokenAddress: ADDRESS_LEVERAGE }
+export type IPricefeedParamApi = IChainParamApi & ITimerangeParamApi & { interval: intervalTimeMap, tokenAddress: AddressIndex }
 
 
 

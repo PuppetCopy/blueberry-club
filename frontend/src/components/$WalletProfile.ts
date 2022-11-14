@@ -13,20 +13,15 @@ import { $IntermediateConnectPopover } from "./$ConnectAccount"
 import { Route } from "@aelea/router"
 import { $Dropdown, $defaultSelectContainer } from "./form/$Dropdown"
 import { CHAIN, NETWORK_METADATA } from "../../../@gambitdao-gmx-middleware/src"
+import { BrowserStore } from "../logic/store"
 
 
 
 export interface IWalletDisplay {
   // $display: Op<string, $Node>
   walletLink: IWalletLink
-  store: state.BrowserStore<WALLET, "walletStore">
-
-  // ensureNetwork?: boolean
-
-  // $connectLabel?: $Node
+  store: BrowserStore<"ROOT.v1.walletStore", WALLET | null>
   parentRoute: Route
-
-  // $container?: NodeComposeFn<$Node>
 }
 
 export const $WalletProfile = (config: IWalletDisplay) => component((
