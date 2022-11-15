@@ -7,18 +7,18 @@ import {
   isTradeOpen, ITrade, unixTimestampNow, IRequestTradeQueryparam, getChainName,
   ITradeOpen, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, BASIS_POINTS_DIVISOR, getAveragePriceFromDelta,
   getLiquidationPrice, getMarginFees, getTokenUsd, STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, TAX_BASIS_POINTS,
-  replayState, getDenominator, USD_PERCISION, periodicRun, formatReadableUSD, timeSince, IVaultPosition, getPositionKey, listen, IPositionIncrease,
+  replayState, getDenominator, USD_PERCISION, periodicRun, formatReadableUSD, timeSince, IVaultPosition, getPositionKey, IPositionIncrease,
   IPositionDecrease, getPnL, filterNull, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE, CHAIN, AddressIndex, AddressStable, AddressInput
 } from "@gambitdao/gmx-middleware"
 
 import { IWalletLink, parseError } from "@gambitdao/wallet-link"
-import { combine, constant, map, mergeArray, multicast, periodic, scan, skipRepeats, switchLatest, debounce, empty, now, startWith, snapshot, fromPromise, filter, merge } from "@most/core"
+import { combine, constant, map, mergeArray, multicast, periodic, scan, skipRepeats, switchLatest, debounce, empty, now, startWith, snapshot, fromPromise, merge } from "@most/core"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { $alertTooltip, $arrowsFlip, $infoTooltip, $IntermediatePromise, $Link, $RiskLiquidator, $spinner, $txHashRef } from "@gambitdao/ui-components"
 import { CandlestickData, CrosshairMode, LineStyle, Time } from "lightweight-charts"
 import { IEthereumProvider } from "eip1193-provider"
 import { Stream } from "@most/types"
-import { connectPricefeed, connectTrade, connectVault, getErc20Balance, KeeperExecutePosition } from "../logic/contract/trade"
+import { connectPricefeed, connectTrade, connectVault, getErc20Balance } from "../logic/contract/trade"
 import { $TradeBox, ITradeRequest } from "../components/trade/$TradeBox"
 import { BLUEBERRY_REFFERAL_CODE } from "@gambitdao/gbc-middleware"
 import { $ButtonToggle } from "../common/$Toggle"
@@ -34,6 +34,7 @@ import { WALLET } from "../logic/provider"
 
 
 export interface ITradeComponent {
+  chainList: CHAIN[]
   chain: CHAIN | null,
   indexTokens: AddressIndex[]
   stableTokens: AddressStable[]
@@ -49,10 +50,6 @@ export interface ITradeComponent {
 
 type RequestTrade = ITradeRequest & {
   ctxQuery: Promise<ContractTransaction | TransactionResponse>
-  executeIncreasePosition: Stream<KeeperExecutePosition>
-  cancelIncreasePosition: Stream<KeeperExecutePosition>
-  executeDecreasePosition: Stream<KeeperExecutePosition>
-  cancelDecreasePosition: Stream<KeeperExecutePosition>
   timestamp: number
 }
 
@@ -76,6 +73,8 @@ export const $Trade = (config: ITradeComponent) => component((
 
   [switchTrade, switchTradeTether]: Behavior<INode, ITrade>,
   [requestTrade, requestTradeTether]: Behavior<ITradeRequest, ITradeRequest>,
+
+  [enableTrading, enableTradingTether]: Behavior<boolean, boolean>,
 ) => {
 
   const chain = config.chain || CHAIN.ARBITRUM
@@ -396,7 +395,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
     const ctxQuery = (req.inputToken === AddressZero
-      ? params.trade.createIncreasePositionETH(
+      ? params.trade.contract.createIncreasePositionETH(
         path,
         req.indexToken,
         0,
@@ -408,7 +407,7 @@ export const $Trade = (config: ITradeComponent) => component((
         params.account,
         { value: req.collateralDelta + req.executionFee }
       )
-      : params.trade.createIncreasePosition(
+      : params.trade.contract.createIncreasePosition(
         path,
         req.indexToken,
         req.collateralDelta,
@@ -421,34 +420,11 @@ export const $Trade = (config: ITradeComponent) => component((
         params.account,
         { value: req.executionFee }
       ))
-    // .catch(() => {
-    //   if (params.provider) {
-    //     const ctx = params.provider.getTransaction('0xbcb9f8ec6784fb25e54983c593bbce874199415c8392cb22377eddcd5d4a6bff')
-    //     return ctx
-    //   }
-
-    //   throw new Error('ff')
-    // })
-
-
-    const executeIncreasePosition = filter((pos: KeeperExecutePosition) => params.account === pos.account, listen(params.trade)('ExecuteIncreasePosition'))
-    const cancelIncreasePosition = filter((pos: KeeperExecutePosition) => params.account === pos.account, listen(params.trade)('CancelIncreasePosition'))
-
-    const executeDecreasePosition = filter((pos: KeeperExecutePosition) => params.account === pos.account, listen(params.trade)('ExecuteDecreasePosition'))
-    const cancelDecreasePosition = filter((pos: KeeperExecutePosition) => params.account === pos.account, listen(params.trade)('CancelDecreasePosition'))
-    // const allExs = take(1, filter(pos => pos.account !== req.account, ))
 
 
     const timestamp = unixTimestampNow()
 
-    return {
-      ...req, ctxQuery,
-      executeIncreasePosition,
-      cancelIncreasePosition,
-      executeDecreasePosition,
-      cancelDecreasePosition,
-      timestamp,
-    }
+    return { ...req, ctxQuery, timestamp, }
   }, combineObject({ trade: position.contract, provider: config.walletLink.provider, account: config.walletLink.account }), requestTrade)
 
 
@@ -472,6 +448,7 @@ export const $Trade = (config: ITradeComponent) => component((
         // ),
 
         $TradeBox({
+          chainList: config.chainList,
           indexTokens: config.indexTokens,
           stableTokens: config.stableTokens,
           chain,
@@ -925,7 +902,7 @@ export const $Trade = (config: ITradeComponent) => component((
                               $txHashRef('res.transactionHash', chain, style({ padding: '4px 8px' })($text(`✔ Response ${formatReadableUSD(acceptablePrice)}`))),
                               $infoTooltip('Request Approved'),
                             )
-                          }, mergeArray([pos.executeIncreasePosition, pos.executeDecreasePosition])),
+                          }, mergeArray([position.executeIncreasePosition, position.executeDecreasePosition])),
                           map(req => {
                             const { acceptablePrice, account, amountIn, blockGap, executionFee, indexToken, isLong, minOut, path, sizeDelta, timeGap } = req
 
@@ -933,7 +910,7 @@ export const $Trade = (config: ITradeComponent) => component((
                               $txHashRef('res.transactionHash', chain, style({ padding: '4px 8px' })($text(`✖ Response ${formatReadableUSD(acceptablePrice)}`))),
                               $infoTooltip('Request Failed'),
                             )
-                          }, mergeArray([pos.cancelDecreasePosition, pos.cancelIncreasePosition])),
+                          }, mergeArray([position.cancelDecreasePosition, position.cancelIncreasePosition])),
                         ]))
                       )
 

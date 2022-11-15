@@ -3,7 +3,7 @@ import { $Branch, $element, $Node, $text, attr, component, IBranch, nodeEvent, s
 import { $RouterAnchor, Route } from '@aelea/router'
 import { $column, $icon, $Popover, $row, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { pallete, theme } from "@aelea/ui-components-theme"
-import { formatReadableUSD } from "@gambitdao/gmx-middleware"
+import {  CHAIN, formatReadableUSD } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { constant, empty, map, now, switchLatest } from '@most/core'
 import { IEthereumProvider } from "eip1193-provider"
@@ -24,6 +24,7 @@ import { WALLET } from "../logic/provider"
 
 
 interface MainMenu {
+  chainList: CHAIN[]
   parentRoute: Route
   containerOp?: Op<IBranch, IBranch>
   walletLink: IWalletLink
@@ -32,7 +33,7 @@ interface MainMenu {
   showAccount?: boolean
 }
 
-export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletStore, showAccount = true }: MainMenu) => component((
+export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletStore, chainList, showAccount = true }: MainMenu) => component((
   [routeChange, routeChangeTether]: Behavior<string, string>,
   [walletChange, walletChangeTether]: Behavior<any, IEthereumProvider | null>,
   [clickPopoverClaim, clickPopoverClaimTether]: Behavior<any, any>,
@@ -182,6 +183,7 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
         }),
 
         $WalletProfile({
+          chainList,
           store: walletStore,
           walletLink,
           parentRoute

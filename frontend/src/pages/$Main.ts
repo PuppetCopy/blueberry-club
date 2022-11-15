@@ -123,8 +123,6 @@ export default ({ baseRoute = '' }: Website) => component((
       const isWC = name === WALLET.walletConnect
       const wp = isWC ? wallet.walletConnect : await wallet.metamaskQuery
 
-      console.log(wp)
-
       if (name && wp) {
         const [mainAccount]: string[] = await wp.request({ method: 'eth_accounts' }) as any
 
@@ -157,7 +155,7 @@ export default ({ baseRoute = '' }: Website) => component((
 
       $column(style({ gap: '45px' }))(
         $column(
-          $MainMenu({ walletLink, parentRoute: rootRoute, walletStore })({
+          $MainMenu({ walletLink, parentRoute: rootRoute, walletStore, chainList: [CHAIN.ARBITRUM, CHAIN.AVALANCHE] })({
             routeChange: linkClickTether(),
             walletChange: walletChangeTether()
           }),
@@ -197,12 +195,12 @@ export default ({ baseRoute = '' }: Website) => component((
               }))
             ),
             router.match(itemRoute)(
-              fadeIn($LabItem({ walletLink, walletStore, parentRoute: itemRoute })({
+              fadeIn($LabItem({ walletLink, chainList: [CHAIN.ARBITRUM], walletStore, parentRoute: itemRoute })({
                 changeRoute: linkClickTether(), walletChange: walletChangeTether()
               }))
             ),
             router.match(wardrobeRoute)(
-              fadeIn($Wardrobe({ walletLink: walletLink, parentRoute: wardrobeRoute, walletStore })({
+              fadeIn($Wardrobe({ chainList: [CHAIN.ARBITRUM], walletLink: walletLink, parentRoute: wardrobeRoute, walletStore })({
                 changeRoute: linkClickTether(),
 
               }))
@@ -245,6 +243,7 @@ export default ({ baseRoute = '' }: Website) => component((
 
 
                 return $Trade({
+                  chainList: [CHAIN.ARBITRUM, CHAIN.AVALANCHE],
                   chain,
                   stableTokens, indexTokens,
                   walletLink,

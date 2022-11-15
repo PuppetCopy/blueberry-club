@@ -3,7 +3,7 @@ import { component, style, $text } from "@aelea/dom"
 import { $column, layoutSheet, $row, state } from "@aelea/ui-components"
 import { formatFixed } from "@ethersproject/bignumber"
 import { ContractTransaction } from "@ethersproject/contracts"
-import { IToken, LabItemSale, MintRule } from "@gambitdao/gbc-middleware"
+import { IToken, LabItemSale, MintRule, } from "@gambitdao/gbc-middleware"
 import { $alert, $IntermediatePromise, $spinner } from "@gambitdao/ui-components"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { awaitPromises, switchLatest, empty, multicast, startWith, snapshot, map } from "@most/core"
@@ -19,8 +19,11 @@ import { $displayMintEvents } from "./mintUtils2"
 import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 import { IEthereumProvider } from "eip1193-provider"
 import { BrowserStore } from "../../logic/store"
+import { CHAIN } from '@gambitdao/gmx-middleware'
 
 interface MintCmp {
+  chainList: CHAIN[],
+
   item: LabItemSale
   mintRule: MintRule
   walletLink: IWalletLink
@@ -110,6 +113,7 @@ export const $GbcWhitelist = (config: MintCmp) => component((
 
         $IntermediateConnectButton({
           walletStore: config.walletStore,
+          chainList: config.chainList,
           $container: $column(layoutSheet.spacingBig),
           $$display: map(() => {
 

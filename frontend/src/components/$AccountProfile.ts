@@ -110,8 +110,8 @@ export const $accountPreview = ({
     return p
       ? $profilePreview({ labelSize, avatarSize, profile: p, showAddress })
       : $row(layoutSheet.spacingSmall, style({ alignItems: 'center', flexDirection: 'row-reverse', pointerEvents: 'none', textDecoration: 'none' }))(
+        showAddress ? $AccountLabel(address, claim, labelSize) : empty(),
         $AccountPhoto(address, claim, avatarSize),
-        showAddress ? $AccountLabel(address, claim, labelSize) : empty()
       )
   }, profile))
 }

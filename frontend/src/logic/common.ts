@@ -1,5 +1,5 @@
 import { combineArray, O, Op, replayLatest } from "@aelea/core"
-import { CHAIN, filterNull, intervalListFillOrderMap, listen, NETWORK_METADATA } from "@gambitdao/gmx-middleware"
+import { ARBITRUM_ADDRESS, AVALANCHE_ADDRESS, CHAIN, filterNull, intervalListFillOrderMap, listen, NETWORK_METADATA } from "@gambitdao/gmx-middleware"
 import { awaitPromises, continueWith, filter, fromPromise, map, multicast, now, periodic, switchLatest, takeWhile, tap } from "@most/core"
 import { Stream } from "@most/types"
 import { $loadBerry } from "../components/$DisplayBerry"
@@ -12,7 +12,7 @@ import { IWalletLink } from "@gambitdao/wallet-link"
 import { Closet } from "@gambitdao/gbc-contracts"
 import { BigNumberish, BigNumber } from "@ethersproject/bignumber"
 import { bnToHex } from "../pages/$Berry"
-import { Provider, Web3Provider } from "@ethersproject/providers"
+import { JsonRpcSigner, Provider, Web3Provider } from "@ethersproject/providers"
 import { BaseContract, ContractFactory } from "@ethersproject/contracts"
 
 
@@ -55,33 +55,44 @@ export function getWalletProvider(wallet: IWalletLink,) {
   }, provider))))
 }
 
-export function contractConnect<T extends typeof ContractFactory>(contractCtr: T, provider: Stream<Web3Provider | null>, contractMapping: { [p in CHAIN]?: string }) {
+const contractMapping = {
+  [CHAIN.ARBITRUM]: ARBITRUM_ADDRESS,
+  [CHAIN.AVALANCHE]: AVALANCHE_ADDRESS
+} as const
+
+
+export function contractConnect<T extends typeof ContractFactory>(contractCtr: T, provider: Stream<Web3Provider | null>, contractAddress: keyof typeof ARBITRUM_ADDRESS & keyof typeof AVALANCHE_ADDRESS) {
+
   // @ts-ignore
-  const contract: Stream<ReturnType<T['connect']> | null> = map((w3p) => {
-    if (w3p === null) {
+  type RType = { contract: ReturnType<T['connect']>, signer: JsonRpcSigner, provider: Web3Provider, addressMapping: typeof ARBITRUM_ADDRESS | typeof AVALANCHE_ADDRESS } | null
+
+  const contract: Stream<RType> = map((provider) => {
+    if (provider === null) {
       return null
     }
 
-    const chainId = w3p.network.chainId as CHAIN
-    const address = contractMapping[chainId]
+    const chainId = provider.network.chainId as CHAIN.ARBITRUM | CHAIN.AVALANCHE
+
+    if (!chainId) {
+      return null
+    }
+
+    const addressMapping = contractMapping[chainId]
+    const address = addressMapping[contractAddress]
 
     if (!address) {
       console.warn(`contract ${contractCtr.name} doesn't support chain ${chainId}`)
       return null
     }
 
-    try {
-      // @ts-ignore 
-      return contractCtr.connect(address, w3p.getSigner())
-    } catch (error) {
+    const signer = provider.getSigner()
+    // @ts-ignore
+    const contract = contractCtr.connect(address, signer)
 
-      // @ts-ignore
-      return contractCtr.connect(address, w3p)
-    }
+    return { provider, signer, contract, addressMapping }
   }, provider)
 
-  // @ts-ignore
-  const run = <R>(op: Op<ReturnType<T['connect']>, Promise<R>>) => O(
+  const run = <R>(op: Op<NonNullable<RType>, Promise<R>>) => O(
     filter(w3p => {
       return w3p !== null
     }),
@@ -89,8 +100,7 @@ export function contractConnect<T extends typeof ContractFactory>(contractCtr: T
     awaitPromises,
   )(contract)
 
-  // @ts-ignore
-  const int = (op: Op<ReturnType<T['connect']>, Promise<BigNumber>>): Stream<bigint> => {
+  const int = (op: Op<NonNullable<RType>, Promise<BigNumber>>): Stream<bigint> => {
     const newLocal = O(
       op,
       map(async (n) => {
@@ -101,13 +111,14 @@ export function contractConnect<T extends typeof ContractFactory>(contractCtr: T
     return run(newLocal)
   }
 
-  const _listen = <T>(name: string) => switchLatest(map((c) => {
-    if (c === null) {
+  const _listen = <T>(name: string) => switchLatest(map(res => {
+    if (res === null) {
       return now(null)
     }
 
-    return listen(c)(name) as Stream<T>
-  }, contract as Stream<BaseContract>))
+    // @ts-ignore
+    return listen(res.contract)(name) as Stream<T>
+  }, contract))
 
 
   return { run, int, contract, listen: _listen }

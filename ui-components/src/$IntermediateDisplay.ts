@@ -6,7 +6,7 @@ import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
 import { parseError } from "@gambitdao/wallet-link"
 import { chain, constant, empty, fromPromise, map, merge, mergeArray, multicast, now, recoverWith, startWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
-import { CHAIN } from "../../@gambitdao-gmx-middleware/src"
+import { CHAIN } from '@gambitdao/gmx-middleware'
 import { $alert, $alertTooltip, $txHashRef,  } from "./$common"
 
 

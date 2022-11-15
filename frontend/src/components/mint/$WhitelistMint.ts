@@ -4,7 +4,7 @@ import { $column, layoutSheet, $row, $icon } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { ContractTransaction } from "@ethersproject/contracts"
 import { LabItemSale, MintPrivate, LAB_CHAIN } from "@gambitdao/gbc-middleware"
-import { ETH_ADDRESS_REGEXP, formatFixed, replayState, filterNull } from "@gambitdao/gmx-middleware"
+import { ETH_ADDRESS_REGEXP, formatFixed, replayState, filterNull, CHAIN } from "@gambitdao/gmx-middleware"
 import { $alert } from "@gambitdao/ui-components"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { switchLatest, multicast, startWith, snapshot, map, tap, skipRepeats, merge, empty } from "@most/core"
@@ -31,6 +31,7 @@ interface IFormState {
 
 
 interface MintCmp {
+  chainList: CHAIN[],
   item: LabItemSale
   mintRule: MintPrivate
   walletLink: IWalletLink
@@ -137,6 +138,7 @@ export const $WhitelistMint = (config: MintCmp) => component((
         }),
 
         $IntermediateConnectButton({
+          chainList: config.chainList,
           walletStore: config.walletStore,
           $container: $column(layoutSheet.spacingBig),
           $$display: map(() => {

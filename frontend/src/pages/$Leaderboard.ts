@@ -13,7 +13,7 @@ import { IAccountStakingStore } from "@gambitdao/gbc-middleware"
 import { connectGbc } from "../logic/contract/gbc"
 import { ContractTransaction } from "@ethersproject/contracts"
 import { Stream } from "@most/types"
-import { $bear, $bull, $liquidationSeparator, $nativeTokenMap, $ProfitLossText, $tokenIconMap, TablePageResponse } from "@gambitdao/ui-components"
+import { $bear, $bull, $ProfitLossText, $tokenIconMap, TablePageResponse } from "@gambitdao/ui-components"
 import { connectRewardDistributor } from "../logic/contract/rewardDistributor"
 import { pallete } from "@aelea/ui-components-theme"
 
@@ -269,17 +269,4 @@ export const $TokenIcon = (indexToken: TOKEN_SYMBOL, IIcon?: { width?: string })
   })
 }
 
-export const $NativeTokenIcon = (chain: CHAIN.ARBITRUM | CHAIN.AVALANCHE, IIcon?: { width?: string }) => {
-  const $token = $nativeTokenMap[chain]
 
-  if (!$token) {
-    throw new Error('Unable to find matched token')
-  }
-
-  return $icon({
-    $content: $token,
-    viewBox: '0 0 32 32',
-    width: '24px',
-    ...IIcon
-  })
-}

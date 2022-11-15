@@ -162,11 +162,6 @@ export const $eth = $svg('g')(
 )
 
 
-export const $nativeTokenMap = {
-  [CHAIN.ARBITRUM]: $eth,
-  [CHAIN.AVALANCHE]: $avax,
-}
-
 export const $tokenIconMap = {
   [TOKEN_SYMBOL.GMX]: $gmx,
   [TOKEN_SYMBOL.GLP]: $glp,

@@ -21,16 +21,17 @@ import { $iconCircular, $responsiveFlex } from "../../elements/$common"
 import { connectManager } from "../../logic/contract/manager"
 import { connectLab } from "../../logic/contract/lab"
 import { $seperator2 } from "../common"
-import { unixTimestampNow } from "@gambitdao/gmx-middleware"
+import { CHAIN, unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { WALLET } from "../../logic/provider"
 import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 import { queryOwnerV2 } from "../../logic/query"
 import { Closet, GBCLab } from "@gambitdao/gbc-contracts"
 import { BrowserStore } from "../../logic/store"
-import { IEthereumProvider } from "eip1193-provider"
 
 
 interface IBerryComp {
+  chainList: CHAIN[],
+
   walletLink: IWalletLink
   parentRoute: Route
   walletStore: BrowserStore<"ROOT.v1.walletStore", WALLET | null>
@@ -57,7 +58,7 @@ interface ExchangeState {
 
 type Slot = 0 | 7 | null
 
-export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp) => component((
+export const $Wardrobe = (config: IBerryComp) => component((
   [changeRoute, changeRouteTether]: Behavior<any, string>,
   [changeBerry, changeBerryTether]: Behavior<IToken, IToken>,
   // [selectedAttribute, selectedAttributeTether]: Behavior<ILabAttributeOptions, ILabAttributeOptions>,
@@ -74,9 +75,9 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
 
 ) => {
 
-  const lab = connectLab(walletLink)
+  const lab = connectLab(config.walletLink)
   // const gbc = connectGbc(walletLink)
-  const closet = connectManager(walletLink)
+  const closet = connectManager(config.walletLink)
 
 
   const owner = multicast(awaitPromises(map(async n => {
@@ -84,7 +85,7 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
       return null
     }
     return queryOwnerV2(n)
-  }, walletLink.account)))
+  }, config.walletLink.account)))
 
   const tokenList = map(xz => xz ? xz.ownedTokens : [], owner)
 
@@ -109,7 +110,7 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
     if (acc === null) return null
 
     return c.isApprovedForAll(acc, GBC_ADDRESS.CLOSET)
-  }, lab.contract, walletLink.account))
+  }, lab.contract, config.walletLink.account))
 
   const isClosetApprovedState = mergeArray([isClosetApproved, switchLatest(awaitPromises(map(async tx => {
     await (await tx).wait()
@@ -139,7 +140,7 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
     closet: closet.contract,
     selectedBerryItems,
     lab: lab.contract,
-    account: walletLink.account
+    account: config.walletLink.account
   }))
 
 
@@ -251,7 +252,7 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
               $option: $row,
               value: {
                 $container: $defaultSelectContainer(style({ padding: '15px', flexWrap: 'wrap', width: '310px', maxHeight: '400px', overflow: 'auto', flexDirection: 'row' })),
-                value: now(initialBerry || null),
+                value: now(config.initialBerry || null),
                 $$option: map(token => {
 
                   if (!token) {
@@ -276,7 +277,7 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
                 return (await contract.chooseMain(berry!.id))
               }))
             })
-          }, closet.profileContract, walletLink.account, selectedBerry))),
+          }, closet.profileContract, config.walletLink.account, selectedBerry))),
         ),
       ),
 
@@ -346,7 +347,7 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
               )
             })
           )
-        }, ownedItemList, selectedSlotState, walletLink.account, lab.contract)),
+        }, ownedItemList, selectedSlotState, config.walletLink.account, lab.contract)),
 
 
         $row(style({ placeContent: 'center' }))(
@@ -385,6 +386,7 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
 
 
             $IntermediateConnectButton({
+              chainList: config.chainList,
               $$display: map(() => {
                 return switchLatest(map(isApproved => {
 
@@ -464,8 +466,8 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
                   })
                 }, isClosetApprovedState))
               }),
-              walletLink,
-              walletStore,
+              walletLink: config.walletLink,
+              walletStore: config.walletStore,
             })({}),
 
           ),

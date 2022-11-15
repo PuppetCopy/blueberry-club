@@ -5,7 +5,7 @@ import { $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-compon
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $accountIconLink, $addToCalendar, $responsiveFlex } from "../../elements/$common"
 import { attributeIndexToLabel, mintLabelMap, getLabItemTupleIndex, labItemDescriptionListMap, saleMaxSupply, SaleType } from "@gambitdao/gbc-middleware"
-import { countdownFn, displayDate, formatFixed, unixTimestampNow } from "@gambitdao/gmx-middleware"
+import { CHAIN, countdownFn, displayDate, formatFixed, unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { pallete } from "@aelea/ui-components-theme"
 import { $labItem, takeUntilLast } from "../../logic/common"
 import { $seperator2 } from "../common"
@@ -23,12 +23,13 @@ import { WALLET } from "../../logic/provider"
 
 
 interface ILabItem {
+  chainList: CHAIN[],
   walletLink: IWalletLink
   parentRoute: Route
   walletStore: BrowserStore<"ROOT.v1.walletStore", WALLET | null>
 }
 
-export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => component((
+export const $LabItem = ({ walletLink, walletStore, parentRoute, chainList }: ILabItem) => component((
   [changeRoute, changeRouteTether]: Behavior<string, string>,
   [clickNotifyMint, clickNotifyMintTether]: Behavior<PointerEvent, PointerEvent>,
   [walletChange, walletChangeTether]: Behavior<IEthereumProvider | null, IEthereumProvider | null>,
@@ -106,10 +107,10 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute }: ILabItem) => 
               const currentSaleType = mintLabelMap[mintRule.type]
 
               const sale = mintRule.type === SaleType.Public
-                ? $PublicMint({ item, mintRule, walletLink, walletStore })({})
+                ? $PublicMint({ item, mintRule, chainList, walletLink, walletStore })({})
                 : mintRule.type === SaleType.holder
-                  ? $GbcWhitelist({ item, mintRule, walletLink, walletStore })({}) : mintRule.type === SaleType.whitelist
-                    ? $WhitelistMint({ item, mintRule, walletLink, walletStore })({}) : empty()
+                  ? $GbcWhitelist({ item, mintRule, chainList, walletLink, walletStore })({}) : mintRule.type === SaleType.whitelist
+                    ? $WhitelistMint({ item, chainList, mintRule, walletLink, walletStore })({}) : empty()
 
               return [
 

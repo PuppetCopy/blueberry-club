@@ -17,7 +17,6 @@ import { $ButtonPrimary, $ButtonSecondary } from "../form/$Button"
 import { $Dropdown, $defaultSelectContainer } from "../form/$Dropdown"
 import { $card } from "../../elements/$common"
 import { $caretDown } from "../../elements/$icons"
-import { LAB_CHAIN } from "@gambitdao/gbc-middleware"
 import { getTokenDescription, resolveAddress } from "../../logic/utils"
 import { IEthereumProvider } from "eip1193-provider"
 import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
@@ -74,6 +73,7 @@ export interface ITradeRequest extends ITradeParams, ITradeState {
 }
 
 interface ITradeBox {
+  chainList: CHAIN[],
   chain: CHAIN | null
   indexTokens: AddressIndex[]
   stableTokens: AddressStable[]
@@ -467,7 +467,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                 $container: $defaultSelectContainer(style({ minWidth: '300px', right: 0 })),
                 $$option: snapshot((isLong, option) => {
                   const tokenDesc = getTokenDescription(chain, option)
-                  const availableLiquidityUsd = vault.getAvailableLiquidityUsd(LAB_CHAIN, option, isLong)
+                  const availableLiquidityUsd = vault.getAvailableLiquidityUsd(chain, option, isLong)
 
                   return $row(style({ placeContent: 'space-between', flex: 1 }))(
                     $tokenLabelFromSummary(tokenDesc),
@@ -691,6 +691,7 @@ export const $TradeBox = (config: ITradeBox) => component((
           ),
 
           $IntermediateConnectButton({
+            chainList: config.chainList,
             walletStore: config.walletStore,
             $connectLabel: $text('Connect To Trade'),
             $container: $column(
@@ -734,7 +735,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                     return true
                   }, tradeState),
                   $content: $text(map(params => {
-                    const outputToken = getTokenDescription(LAB_CHAIN, params.indexToken)
+                    const outputToken = getTokenDescription(chain, params.indexToken)
 
                     let modLabel: string
 

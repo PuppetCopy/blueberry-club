@@ -1,9 +1,6 @@
-import { combineArray } from "@aelea/core"
 import { IERC20__factory } from "@gambitdao/gbc-contracts"
-import { GBC_ADDRESS } from "@gambitdao/gbc-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { awaitPromises, filter, map, switchLatest } from "@most/core"
-import { periodicRun } from "../../../../@gambitdao-gmx-middleware/src"
+import { filter, map } from "@most/core"
 import { getWalletProvider } from "../common"
 import { connectGbc } from "./gbc"
 

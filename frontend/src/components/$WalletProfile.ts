@@ -12,13 +12,13 @@ import { $DisconnectedWalletDisplay, $accountPreview } from "./$AccountProfile"
 import { $IntermediateConnectPopover } from "./$ConnectAccount"
 import { Route } from "@aelea/router"
 import { $Dropdown, $defaultSelectContainer } from "./form/$Dropdown"
-import { CHAIN, NETWORK_METADATA } from "../../../@gambitdao-gmx-middleware/src"
+import { CHAIN, NETWORK_METADATA } from "@gambitdao/gmx-middleware"
 import { BrowserStore } from "../logic/store"
 
 
 
 export interface IWalletDisplay {
-  // $display: Op<string, $Node>
+  chainList: CHAIN[]
   walletLink: IWalletLink
   store: BrowserStore<"ROOT.v1.walletStore", WALLET | null>
   parentRoute: Route
@@ -40,76 +40,62 @@ export const $WalletProfile = (config: IWalletDisplay) => component((
         $button: profileLinkClickTether()(style({ cursor: 'pointer' }, $DisconnectedWalletDisplay())),
         walletLink: config.walletLink,
         walletStore: config.store,
+        chainList: config.chainList,
         $$display: map(address => {
 
-          const $link = $Link({
+          return $Link({
             route: config.parentRoute.create({ fragment: 'df2f23f' }),
             $content: $accountPreview({ address, showAddress: screenUtils.isDesktopScreen }),
             anchorOp: style({ minWidth: 0, overflow: 'hidden' }),
             url: `/p/wallet`,
           })({ click: routeChangeTether() })
-
-          if (!address) {
-            return $link
-          }
-
-          return $row(
-            $link,
-
-            style({ backgroundColor: pallete.horizon, width: '2px', margin: '0px 0px 0px 10px' }, $seperator2),
-
-            $Dropdown({
-              value: {
-                value: config.walletLink.network,
-                $$option: map(option => {
-                  if (option === null) {
-                    return $text('?')
-                  }
-
-                  const chainName = NETWORK_METADATA[option].chainName
-
-                  return $row(
-                    switchNetworkTether(
-                      nodeEvent('click'),
-                      snapshot((w3p) => {
-                        w3p ? attemptToSwitchNetwork(w3p, option).catch(error => {
-                          alert(error.message)
-                          console.error(error)
-                          return error
-                        }) : null
-
-
-                        return option
-                      }, config.walletLink.walletChange)
-                    ),
-                    style({ alignItems: 'center', width: '100%' })
-                  )(
-                    $element('img')(attr({ src: `/assets/chain/${option}.svg` }), style({ width: '32px', padding: '3px 6px' }))(),
-                    $text(chainName)
-                  )
-                }),
-                $container: $defaultSelectContainer(style({ left: 'auto', right: 0, })),
-
-                list: [
-                  // null,
-                  CHAIN.ARBITRUM,
-                  CHAIN.AVALANCHE,
-                ] as CHAIN[],
-              },
-              $container: $column(style({ placeContent: 'center', position: 'relative' })),
-              $selection: switchLatest(map(label => {
-                return $element('img')(attr({ src: `/assets/chain/${label}.svg` }), style({ margin: '0 4px', width: '38px', cursor: 'pointer', padding: '3px 6px' }))()
-              }, config.walletLink.network)),
-            })({}),
-            switchLatest(map(empty, switchNetwork)), // side effect
-          )
-
         })
       })({
         walletChange: walletChangeTether()
       }),
 
+      style({ backgroundColor: pallete.horizon, width: '2px', margin: '0px 0px 0px 10px' }, $seperator2),
 
+      $Dropdown({
+        value: {
+          value: config.walletLink.network,
+          $$option: map(option => {
+            if (option === null) {
+              return $text('?')
+            }
+
+            const chainName = NETWORK_METADATA[option].chainName
+
+            return $row(
+              switchNetworkTether(
+                nodeEvent('click'),
+                snapshot((w3p) => {
+                  w3p ? attemptToSwitchNetwork(w3p, option).catch(error => {
+                    alert(error.message)
+                    console.error(error)
+                    return error
+                  }) : null
+
+
+                  return option
+                }, config.walletLink.walletChange)
+              ),
+              style({ alignItems: 'center', width: '100%' })
+            )(
+              $element('img')(attr({ src: `/assets/chain/${option}.svg` }), style({ width: '32px', padding: '3px 6px' }))(),
+              $text(chainName)
+            )
+          }),
+          $container: $defaultSelectContainer(style({ left: 'auto', right: 0, })),
+
+          list: config.chainList,
+        },
+        $container: $column(style({ placeContent: 'center', position: 'relative' })),
+        $selection: switchLatest(map(label => {
+          return $element('img')(attr({ src: `/assets/chain/${label}.svg` }), style({ margin: '0 4px', width: '38px', cursor: 'pointer', padding: '3px 6px' }))()
+        }, config.walletLink.network)),
+      })({}),
+      switchLatest(map(empty, switchNetwork)), // side effect
 
 
     ),
