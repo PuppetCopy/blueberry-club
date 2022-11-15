@@ -18,7 +18,7 @@ import { BrowserStore } from "../logic/store"
 
 
 export interface IConnectWalletPopover {
-  $display: Op<string, $Node>
+  $$display: Op<string, $Node>
   walletLink: IWalletLink
   walletStore: BrowserStore<"ROOT.v1.walletStore", WALLET | null>
   $button: $Node
@@ -27,7 +27,7 @@ export interface IConnectWalletPopover {
 }
 
 export interface IIntermediateDisplay {
-  $display: Op<string, $Node>
+  $$display: Op<string, $Node>
   walletLink: IWalletLink
   walletStore: BrowserStore<"ROOT.v1.walletStore", WALLET | null>
 
@@ -39,7 +39,7 @@ export interface IIntermediateDisplay {
 }
 
 export const $IntermediateConnectButton = ({
-  $display,
+  $$display,
   walletLink,
   walletStore,
   $container,
@@ -61,7 +61,7 @@ export const $IntermediateConnectButton = ({
             $icon({ $content: $caretDown, viewBox: '0 0 32 32', width: '16px', fill: pallete.background, svgOps: style({ marginTop: '2px' }) }),
           )
         })({}),
-        $display,
+        $$display,
         walletLink,
         walletStore
       })({
@@ -77,7 +77,7 @@ export const $IntermediateConnectButton = ({
 })
 
 
-export const $IntermediateConnectPopover = ({ $display, walletLink, walletStore, $button, ensureNetwork = false }: IConnectWalletPopover) => component((
+export const $IntermediateConnectPopover = ({ $$display: $display, walletLink, walletStore, $button, ensureNetwork = false }: IConnectWalletPopover) => component((
   [clickOpenPopover, clickOpenPopoverTether]: Behavior<any, any>,
   [switchNetwork, switchNetworkTether]: Behavior<PointerEvent, Promise<any>>,
   [walletChange, walletChangeTether]: Behavior<PointerEvent, IEthereumProvider | null>,

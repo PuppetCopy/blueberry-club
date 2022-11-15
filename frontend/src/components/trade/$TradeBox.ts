@@ -506,11 +506,8 @@ export const $TradeBox = (config: ITradeBox) => component((
 
             $node(style({ flex: 1 }))(),
 
-            switchLatest(combineArray((isLong, network, indexToken) => {
+            switchLatest(combineArray((isLong, indexToken) => {
 
-              if (network === null) {
-                return empty()
-              }
 
               if (isLong) {
 
@@ -556,7 +553,7 @@ export const $TradeBox = (config: ITradeBox) => component((
               })({
                 select: changeCollateralTokenTether()
               })
-            }, config.tradeParams.isLong, config.walletLink.network, config.tradeParams.indexToken)),
+            }, config.tradeParams.isLong, config.tradeParams.indexToken)),
           ),
         ),
 
@@ -701,7 +698,7 @@ export const $TradeBox = (config: ITradeBox) => component((
               style({ zIndex: 10 }),
               styleBehavior(map(xcsChange => xcsChange && xcsChange.time ? { opacity: .3 } : { opacity: 1 }, pnlCrossHairTimeChange))
             ),
-            $display: map(() => {
+            $$display: map(() => {
 
               return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
                 $ButtonSecondary({

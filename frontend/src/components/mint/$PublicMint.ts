@@ -130,7 +130,7 @@ export const $PublicMint = (config: MintCmp) => component((
         $IntermediateConnectButton({
           walletStore: config.walletStore,
           $container: $column(layoutSheet.spacingBig),
-          $display: map(() => {
+          $$display: map(() => {
 
             return $ButtonPrimary({
               disabled: startWith(true, buttonState),

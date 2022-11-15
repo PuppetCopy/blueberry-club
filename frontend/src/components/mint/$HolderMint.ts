@@ -111,7 +111,7 @@ export const $GbcWhitelist = (config: MintCmp) => component((
         $IntermediateConnectButton({
           walletStore: config.walletStore,
           $container: $column(layoutSheet.spacingBig),
-          $display: map(() => {
+          $$display: map(() => {
 
             const disablePrimary = combineArray((msg, tokens) => msg || tokens.length === 0, alert, chosenTokens)
 

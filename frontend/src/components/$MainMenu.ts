@@ -5,7 +5,7 @@ import { $column, $icon, $Popover, $row, layoutSheet, screenUtils } from '@aelea
 import { pallete, theme } from "@aelea/ui-components-theme"
 import { formatReadableUSD } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { constant, empty, map, now } from '@most/core'
+import { constant, empty, map, now, switchLatest } from '@most/core'
 import { IEthereumProvider } from "eip1193-provider"
 import { $bagOfCoins, $caretDown, $stackedCoins } from "../elements/$icons"
 import { $ButtonSecondary } from "./form/$Button"
@@ -134,18 +134,26 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
                   $icon({ $content: $github, width: '22px', viewBox: `0 0 32 32` })
                 ),
               ),
-              $ButtonSecondary({
-                $content: $text('Change Wallet')
-              })({
-                click: walletChangeTether(
-                  map(pe => {
-                    pe.preventDefault()
-                    pe.stopImmediatePropagation()
-                  }),
-                  // awaitPromises,
-                  constant(null)
-                )
-              }),
+
+              switchLatest(map(w3p => {
+                if (w3p === null) {
+                  return empty()
+                }
+
+                return $ButtonSecondary({
+                  $content: $text('Disconnect Wallet')
+                })({
+                  click: walletChangeTether(
+                    map(pe => {
+                      pe.preventDefault()
+                      pe.stopImmediatePropagation()
+                    }),
+                    // awaitPromises,
+                    constant(null),
+                    src => walletStore.store(src)
+                  )
+                })
+              }, walletLink.provider)),
 
               $Picker([light, dark])({}),
             )
@@ -178,6 +186,7 @@ export const $MainMenu = ({ walletLink, parentRoute, containerOp = O(), walletSt
           walletLink,
           parentRoute
         })({
+          walletChange: walletChangeTether(),
           routeChange: routeChangeTether()
         })
 

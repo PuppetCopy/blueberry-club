@@ -3,7 +3,7 @@ import { $node, $text, component, eventElementTarget, INode, nodeEvent, style, s
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 import {
-  AddressZero, ARBITRUM_ADDRESS, formatFixed, intervalTimeMap, IPricefeed, IPricefeedParamApi, IPriceLatestMap,
+  AddressZero, formatFixed, intervalTimeMap, IPricefeed, IPricefeedParamApi, IPriceLatestMap,
   isTradeOpen, ITrade, unixTimestampNow, IRequestTradeQueryparam, getChainName,
   ITradeOpen, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, BASIS_POINTS_DIVISOR, getAveragePriceFromDelta,
   getLiquidationPrice, getMarginFees, getTokenUsd, STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, TAX_BASIS_POINTS,
@@ -452,519 +452,519 @@ export const $Trade = (config: ITradeComponent) => component((
 
   return [
     $container(
-      $column(layoutSheet.spacingBig, style({ flex: 1, paddingBottom: '50px' }))(
-
-        // executeSt,
-
-        // style({ alignSelf: 'center' })(
-        //   $alert(
-        //     $column(layoutSheet.spacingTiny)(
-        //       $text('Work in Progress. please use with caution'),
-        //       $anchor(attr({ href: 'https://app.gmx.io/#/trade' }))(
-        //         $text('got issues? positons can also be modified in gmx.io')
-        //       )
-        //     )
-        //   )
-        // ),
-
-        $TradeBox({
-          indexTokens: config.indexTokens,
-          stableTokens: config.stableTokens,
-          chain,
-          walletStore: config.walletStore,
-          walletLink: config.walletLink,
-          store: tradingStore,
-
-          tradeParams,
-          state: {
-            vaultPosition,
-            collateralDeltaUsd,
-            inputTokenPrice,
-            indexTokenPrice,
-            collateralTokenPrice,
-            collateralTokenDescription,
-            fee,
-            indexTokenDescription,
-            inputTokenDescription,
-            marginFee,
-            swapFee,
-            averagePrice,
-            liquidationPrice,
-            executionFee,
-            // validationError,
-            walletBalance,
-          },
-
-        })({
-          leverage: changeLeverageTether(),
-          switchIsIncrease: switchIsIncreaseTether(),
-          changeCollateralDelta: changeCollateralDeltaTether(),
-          // changeCollateralUsd: changeCollateralUsdTether(),
-          changeSize: changeSizeTether(),
-          changeInputToken: changeInputTokenTether(),
-          changeCollateralToken: changeCollateralTokenTether(),
-          changeIndexToken: changeIndexTokenTether(),
-          // changeWithdrawCollateralToken: changeWithdrawCollateralTokenTether(),
-          // focusFactor: changeFocusFactorTether(),
-          switchIsLong: switchIsLongTether(),
-          changeCollateralRatio: changeCollateralRatioTether(),
-          // slideCollateralRatio: slideCollateralRatioTether(),
-
-          requestTrade: requestTradeTether(),
-          changeSlippage: changeSlippageTether(),
-
-          walletChange: walletChangeTether()
-        }),
-
-        // $node($text(map(amountUsd => formatReadableUSD(amountUsd), availableLiquidityUsd))),
-
-        switchLatest(combine((trade, list) => {
-
-          if (!Array.isArray(list)) {
-            return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
-              $spinner,
-              $text(style({ fontSize: '.75em' }))('Loading open trades')
-            )
-          }
-
-          const tradeList = list.filter((t): t is ITradeOpen => isTradeOpen(t) && (!trade || t.key !== trade.key))
-
-          return $Table2<ITradeOpen>({
-            bodyContainerOp: layoutSheet.spacing,
-            scrollConfig: {
-              containerOps: O(layoutSheet.spacingBig)
-            },
-            dataSource: now(tradeList),
-            columns: [
-              {
-                $head: $text('Entry'),
-                columnOp: O(style({ maxWidth: '65px', flexDirection: 'column' }), layoutSheet.spacingTiny),
-                $body: map((pos) => {
-                  return $Link({
-                    anchorOp: style({ position: 'relative' }),
-                    $content: style({ pointerEvents: 'none' }, $Entry(pos)),
-                    url: `/${getChainName(chain).toLowerCase()}/${CHAIN_TOKEN_ADDRESS_TO_SYMBOL[resolveAddress(chain, pos.indexToken)]}/${pos.id}/${pos.timestamp}`,
-                    route: config.parentRoute.create({ fragment: '2121212' })
-                  })({ click: changeRouteTether() })
-                })
-              },
-              {
-                $head: $text('Size'),
-                columnOp: O(layoutSheet.spacingTiny, style({ flex: 1.3, alignItems: 'center', placeContent: 'flex-start', minWidth: '80px' })),
-                $body: map(pos => {
-                  const positionMarkPrice = pricefeed.getLatestPrice(chain, pos.indexToken)
-
-                  return $row(
-                    $RiskLiquidator(pos, positionMarkPrice)({})
-                  )
-                })
-              },
-              {
-                $head: $text('PnL $'),
-                columnOp: style({ flex: 2, placeContent: 'flex-end', maxWidth: '160px' }),
-                $body: map((pos) => {
-                  const newLocal = pricefeed.getLatestPrice(chain, pos.indexToken)
-                  return $livePnl(pos, newLocal)
-                })
-              },
-              {
-                $head: $text('Switch'),
-                columnOp: style({ flex: 2, placeContent: 'center', maxWidth: '80px' }),
-                $body: map((pos) => {
-
-                  const clickSwitchBehavior = switchTradeTether(
-                    nodeEvent('click'),
-                    constant(pos),
-                  )
-
-                  return $row(styleBehavior(map(vpos => {
-                    const isPosMatched = vpos && vpos.key === pos.key
-
-                    return isPosMatched ? { pointerEvents: 'none', opacity: '0.3' } : {}
-                  }, vaultPosition)))(
-                    clickSwitchBehavior(
-                      style({ height: '28px', width: '28px' }, $iconCircular($arrowsFlip, pallete.horizon))
-                    )
-                  )
-                })
-              },
-            ],
-          })({})
-        }, config.trade, mergeArray([config.accountTradeList, requestAccountTradeList])))
-
-
-      ),
-
-      $column(style({ flex: 1 }))(
-        $chartContainer(
-          $row(layoutSheet.spacing, style({ fontSize: '0.85em', zIndex: 5, position: 'absolute', padding: '8px', placeContent: 'center' }))(
-            $ButtonToggle({
-              selected: timeframe,
-              options: [
-                intervalTimeMap.MIN5,
-                intervalTimeMap.MIN15,
-                intervalTimeMap.MIN60,
-                intervalTimeMap.HR4,
-                intervalTimeMap.HR24,
-                intervalTimeMap.DAY7,
-              ],
-              $$option: map(option => {
-                // @ts-ignore
-                const newLocal: string = timeFrameLabl[option]
-
-                return $text(newLocal)
-              })
-            })({ select: selectTimeFrameTether() }),
-          ),
-
-
-          $row(style({ position: 'relative', height: '500px' }))(
-            $CandleSticks({
-              series: [
-                {
-                  seriesConfig: {
-                    upColor: pallete.foreground,
-                    downColor: 'transparent',
-                    priceLineColor: pallete.message,
-                    baseLineStyle: LineStyle.LargeDashed,
-                    borderDownColor: pallete.foreground,
-                    borderUpColor: pallete.foreground,
-                    wickDownColor: pallete.foreground,
-                    wickUpColor: pallete.foreground,
-                  },
-                  priceLines: [
-                    map(val => {
-                      if (val === 0n) {
-                        return null
-                      }
-
-                      return {
-                        price: formatFixed(val, 30),
-                        color: pallete.middleground,
-                        lineVisible: true,
-                        lineWidth: 1,
-                        axisLabelVisible: true,
-                        title: `Entry`,
-                        lineStyle: LineStyle.SparseDotted,
-                      }
-                    }, averagePrice),
-                    map(val => {
-                      if (val === 0n) {
-                        return null
-                      }
-
-                      return {
-                        price: formatFixed(val, 30),
-                        color: pallete.negative,
-                        lineVisible: true,
-                        lineWidth: 1,
-                        axisLabelVisible: true,
-                        title: `Liquidation`,
-                        lineStyle: LineStyle.SparseDotted,
-                      }
-                    }, liquidationPrice)
-
-                  ],
-                  appendData: switchLatest(map(params => {
-                    if (params.selectedPricefeed === null) {
-                      return empty()
-                    }
-
-                    const lastData = params.selectedPricefeed[params.selectedPricefeed.length - 1]
-
-                    return scan((prev: CandlestickData | null, nextPrice): CandlestickData => {
-                      const marketPrice = formatFixed(nextPrice, 30)
-                      const timeNow = unixTimestampNow()
-
-                      if (prev === null) {
-                        return {
-                          open: formatFixed(lastData.o, 30),
-                          high: formatFixed(lastData.h, 30),
-                          low: formatFixed(lastData.l, 30),
-                          close: marketPrice,
-                          time: lastData.timestamp as Time
-                        }
-                      }
-
-                      const prevTimeSlot = Math.floor(prev.time as number / params.timeframe)
-
-                      const nextTimeSlot = Math.floor(timeNow / params.timeframe)
-                      const time = nextTimeSlot * params.timeframe as Time
-
-                      const isNext = nextTimeSlot > prevTimeSlot
-
-                      if (isNext) {
-                        return {
-                          open: marketPrice,
-                          high: marketPrice,
-                          low: marketPrice,
-                          close: marketPrice,
-                          time
-                        }
-                      }
-
-                      return {
-                        open: prev.open,
-                        high: marketPrice > prev.high ? marketPrice : prev.high,
-                        low: marketPrice < prev.low ? marketPrice : prev.low,
-                        close: marketPrice,
-                        time
-                      }
-                    }, null, indexTokenPrice)
-                  }, combineObject({ timeframe, selectedPricefeed }))),
-                  data: combineArray(data => {
-
-                    if (data === null) {
-                      return []
-                    }
-
-                    return data.map(({ o, h, l, c, timestamp }) => {
-                      const open = formatFixed(o, 30)
-                      const high = formatFixed(h, 30)
-                      const low = formatFixed(l, 30)
-                      const close = formatFixed(c, 30)
-
-                      return { open, high, low, close, time: timestamp as Time }
-                    })
-                  }, selectedPricefeed),
-                  // drawMarkers: map(trade => {
-                  //   if (trade) {
-                  //     const increaseList = trade.increaseList
-                  //     const increaseMarkers = increaseList
-                  //       .slice(1)
-                  //       .map((ip): SeriesMarker<Time> => {
-                  //         return {
-                  //           color: pallete.foreground,
-                  //           position: "aboveBar",
-                  //           shape: "arrowUp",
-                  //           time: unixTimeTzOffset(ip.timestamp),
-                  //           text: formatReadableUSD(ip.collateralDelta)
-                  //         }
-                  //       })
-
-                  //     const decreaseList = isTradeSettled(trade) ? trade.decreaseList.slice(0, -1) : trade.decreaseList
-
-                  //     const decreaseMarkers = decreaseList
-                  //       .map((ip): SeriesMarker<Time> => {
-                  //         return {
-                  //           color: pallete.foreground,
-                  //           position: 'belowBar',
-                  //           shape: "arrowDown",
-                  //           time: unixTimeTzOffset(ip.timestamp),
-                  //           text: formatReadableUSD(ip.collateralDelta)
-                  //         }
-                  //       })
-
-                  //     return [...decreaseMarkers, ...increaseMarkers]
-                  //   }
-
-                  //   return []
-                  // }, config.trade)
-                }
-              ],
-              containerOp: style({
-                flex: 1,
-                inset: 0,
-                position: 'absolute',
-                borderBottom: `1px solid rgba(191, 187, 207, 0.15)`
-              }),
-              chartConfig: {
-                rightPriceScale: {
-                  visible: true,
-                  entireTextOnly: true,
-                  borderVisible: false,
-                  scaleMargins: {
-                    top: 0.1,
-                    bottom: 0.1
-                  }
-
-                  // autoScale: true,
-                  // mode: PriceScaleMode.Logarithmic
-                  // visible: false
-                },
-                timeScale: {
-                  timeVisible: true,
-                  // timeVisible: timeframeState <= intervalTimeMap.DAY7,
-                  // secondsVisible: timeframeState <= intervalTimeMap.MIN60,
-                  borderVisible: true,
-                  rightOffset: 15,
-                  shiftVisibleRangeOnNewBar: true,
-                  borderColor: pallete.middleground,
-                },
-                crosshair: {
-                  mode: CrosshairMode.Normal,
-                  horzLine: {
-                    labelBackgroundColor: pallete.background,
-                    color: pallete.foreground,
-                    width: 1,
-                    style: LineStyle.Dotted
-                  },
-                  vertLine: {
-                    labelBackgroundColor: pallete.background,
-                    color: pallete.foreground,
-                    width: 1,
-                    style: LineStyle.Dotted,
-                  }
-                }
-              },
-            })({
-              // crosshairMove: sampleChartCrosshair(),
-              // click: sampleClick()
-            }),
-            switchLatest(map(feed => {
-              if (feed) {
-                return empty()
-              }
-
-              return $node(style({ position: 'absolute', zIndex: 10, display: 'flex', inset: 0, backgroundColor: colorAlpha(pallete.middleground, .10), placeContent: 'center', alignItems: 'center' }))(
-                $spinner
-              )
-            }, mergeArray([config.pricefeed, constant(null, requestPricefeed), now(null)]))),
-          ),
-
-          $column(style({ flex: 1, position: 'relative' }))(
-            switchLatest(map(pos => {
-
-              if (pos === null) {
-                return $text('no trade')
-              }
-
-              return $Table2({
-                cellOp: style({ padding: '8px 15px' }),
-                dataSource: merge(
-                  now([...pos.increaseList, ...pos.decreaseList].sort((a, b) => b.timestamp - a.timestamp)),
-
-                  map(res => {
-                    return [res]
-                  }, requestTradeMulticast),
-                ) as Stream<(RequestTrade | IPositionIncrease | IPositionDecrease)[]>,
-                bodyContainerOp: O(style({ position: 'absolute', inset: '0' }), layoutSheet.spacing),
-                scrollConfig: {
-                  containerOps: O(layoutSheet.spacingSmall, style({}))
-                },
-                columns: [
-                  {
-                    $head: $text('Time'),
-                    columnOp: O(style({ flex: .7 })),
-
-                    $body: map((req) => {
-
-                      return $column(layoutSheet.spacingTiny, style({ fontSize: '.65em' }))(
-                        $text(timeSince(req.timestamp) + ' ago'),
-                        //   isKeeperReq
-                        //     ? map(now => timeSince(pos.timestamp) + ' ago', everySec)
-                        //     : timeSince(pos.timestamp) + ' ago'
-                        // ),
-                        $text(new Date(req.timestamp * 1000).toLocaleDateString()),
-                      )
-                    })
-                  },
-                  {
-                    $head: $text('Action'),
-                    columnOp: O(style({ flex: 1.2 })),
-
-                    $body: map((pos) => {
-                      const $requestRow = $row(style({ alignItems: 'center' }))
-
-                      if ('key' in pos) {
-                        const direction = pos.__typename === 'IncreasePosition' ? '↑' : '↓'
-                        const txHash = pos.id.split(':').slice(-1)[0]
-                        return $row(style({ alignItems: 'center' }))(
-                          style({ padding: '4px 8px' })(
-                            $txHashRef(txHash, chain, $text(`${direction} ${formatReadableUSD(pos.price)}`))
-                          )
-                        )
-                      }
-
-                      const multicastQuery = replayLatest(multicast(now(pos.ctxQuery)))
-
-                      return $column(
-                        $IntermediatePromise({
-                          query: map(async x => {
-                            const n = await x
-
-                            return await n.wait()
-                          }, multicastQuery),
-                          $$done: map((res: ContractReceipt) => {
-                            return $column(layoutSheet.spacingSmall)(
-                              $requestRow(
-                                $txHashRef(res.transactionHash, chain, $text(`${pos.collateralDeltaUsd > 0n ? '↑ Response' : '↓ Response'} ${formatReadableUSD(pos.indexTokenPrice)}`)),
-                                $infoTooltip('Market price requested'),
-                              ),
-                            )
-                          }),
-                          $loader: switchLatest(map(c => {
-
-                            return $row(layoutSheet.spacingSmall, style({ fontSize: '.75em' }))(
-                              $spinner,
-                              $text(startWith('Awaiting your Approval...', map(() => 'Awaiting confirmation...', fromPromise(c)))),
-                              $node(style({ flex: 1 }))(),
-                              switchLatest(map(txHash => $txHashRef(txHash.hash, chain), fromPromise(c)))
-                            )
-                          }, multicastQuery)),
-                          $$fail: map(res => {
-                            const error = parseError(res)
-
-                            return $alertTooltip($text(error.message))
-                          }),
-                        })({}),
-
-                        switchLatest(mergeArray([
-                          now($spinner),
-                          map(req => {
-                            const { acceptablePrice, account, amountIn, blockGap, executionFee, indexToken, isLong, minOut, path, sizeDelta, timeGap } = req
-
-                            const actionName = pos.isIncrease ? 'increase' : 'reduce'
-                            const message = `Request ${actionName} ${pos.indexTokenDescription.symbol} ${formatReadableUSD(pos.sizeDelta)} @ ${formatReadableUSD(acceptablePrice)}`
-
-                            return $requestRow(
-                              $txHashRef('res.transactionHash', chain, style({ padding: '4px 8px' })($text(`✔ Response ${formatReadableUSD(acceptablePrice)}`))),
-                              $infoTooltip('Request Approved'),
-                            )
-                          }, mergeArray([pos.executeIncreasePosition, pos.executeDecreasePosition])),
-                          map(req => {
-                            const { acceptablePrice, account, amountIn, blockGap, executionFee, indexToken, isLong, minOut, path, sizeDelta, timeGap } = req
-
-                            return $requestRow(
-                              $txHashRef('res.transactionHash', chain, style({ padding: '4px 8px' })($text(`✖ Response ${formatReadableUSD(acceptablePrice)}`))),
-                              $infoTooltip('Request Failed'),
-                            )
-                          }, mergeArray([pos.cancelDecreasePosition, pos.cancelIncreasePosition])),
-                        ]))
-                      )
-
-                    })
-                  },
-                  {
-                    $head: $text('Collateral Change'),
-                    columnOp: O(style({ flex: .7, placeContent: 'flex-end', textAlign: 'right', alignItems: 'center' })),
-
-                    $body: map((pos) => {
-                      const isKeeperReq = 'ctxQuery' in pos
-
-                      return $row(layoutSheet.spacing)(
-                        $text(formatReadableUSD(isKeeperReq ? pos.collateralDeltaUsd : pos.collateralDelta)),
-                      )
-                    })
-                  },
-                  {
-                    $head: $text('Size Change'),
-                    columnOp: O(style({ flex: .7, placeContent: 'flex-end', textAlign: 'right', alignItems: 'center' })),
-
-                    $body: map((pos) => {
-
-                      return $row(layoutSheet.spacing)(
-                        $text(formatReadableUSD(pos.sizeDelta)),
-                      )
-                    })
-                  },
-                ]
-              })({})
-
-            }, trade))
-          ),
-        ),
-      )
+      // $column(layoutSheet.spacingBig, style({ flex: 1, paddingBottom: '50px' }))(
+
+      //   // executeSt,
+
+      //   // style({ alignSelf: 'center' })(
+      //   //   $alert(
+      //   //     $column(layoutSheet.spacingTiny)(
+      //   //       $text('Work in Progress. please use with caution'),
+      //   //       $anchor(attr({ href: 'https://app.gmx.io/#/trade' }))(
+      //   //         $text('got issues? positons can also be modified in gmx.io')
+      //   //       )
+      //   //     )
+      //   //   )
+      //   // ),
+
+      //   $TradeBox({
+      //     indexTokens: config.indexTokens,
+      //     stableTokens: config.stableTokens,
+      //     chain,
+      //     walletStore: config.walletStore,
+      //     walletLink: config.walletLink,
+      //     store: tradingStore,
+
+      //     tradeParams,
+      //     state: {
+      //       vaultPosition,
+      //       collateralDeltaUsd,
+      //       inputTokenPrice,
+      //       indexTokenPrice,
+      //       collateralTokenPrice,
+      //       collateralTokenDescription,
+      //       fee,
+      //       indexTokenDescription,
+      //       inputTokenDescription,
+      //       marginFee,
+      //       swapFee,
+      //       averagePrice,
+      //       liquidationPrice,
+      //       executionFee,
+      //       // validationError,
+      //       walletBalance,
+      //     },
+
+      //   })({
+      //     leverage: changeLeverageTether(),
+      //     switchIsIncrease: switchIsIncreaseTether(),
+      //     changeCollateralDelta: changeCollateralDeltaTether(),
+      //     // changeCollateralUsd: changeCollateralUsdTether(),
+      //     changeSize: changeSizeTether(),
+      //     changeInputToken: changeInputTokenTether(),
+      //     changeCollateralToken: changeCollateralTokenTether(),
+      //     changeIndexToken: changeIndexTokenTether(),
+      //     // changeWithdrawCollateralToken: changeWithdrawCollateralTokenTether(),
+      //     // focusFactor: changeFocusFactorTether(),
+      //     switchIsLong: switchIsLongTether(),
+      //     changeCollateralRatio: changeCollateralRatioTether(),
+      //     // slideCollateralRatio: slideCollateralRatioTether(),
+
+      //     requestTrade: requestTradeTether(),
+      //     changeSlippage: changeSlippageTether(),
+
+      //     walletChange: walletChangeTether()
+      //   }),
+
+      //   // $node($text(map(amountUsd => formatReadableUSD(amountUsd), availableLiquidityUsd))),
+
+      //   switchLatest(combine((trade, list) => {
+
+      //     if (!Array.isArray(list)) {
+      //       return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+      //         $spinner,
+      //         $text(style({ fontSize: '.75em' }))('Loading open trades')
+      //       )
+      //     }
+
+      //     const tradeList = list.filter((t): t is ITradeOpen => isTradeOpen(t) && (!trade || t.key !== trade.key))
+
+      //     return $Table2<ITradeOpen>({
+      //       bodyContainerOp: layoutSheet.spacing,
+      //       scrollConfig: {
+      //         containerOps: O(layoutSheet.spacingBig)
+      //       },
+      //       dataSource: now(tradeList),
+      //       columns: [
+      //         {
+      //           $head: $text('Entry'),
+      //           columnOp: O(style({ maxWidth: '65px', flexDirection: 'column' }), layoutSheet.spacingTiny),
+      //           $body: map((pos) => {
+      //             return $Link({
+      //               anchorOp: style({ position: 'relative' }),
+      //               $content: style({ pointerEvents: 'none' }, $Entry(pos)),
+      //               url: `/${getChainName(chain).toLowerCase()}/${CHAIN_TOKEN_ADDRESS_TO_SYMBOL[resolveAddress(chain, pos.indexToken)]}/${pos.id}/${pos.timestamp}`,
+      //               route: config.parentRoute.create({ fragment: '2121212' })
+      //             })({ click: changeRouteTether() })
+      //           })
+      //         },
+      //         {
+      //           $head: $text('Size'),
+      //           columnOp: O(layoutSheet.spacingTiny, style({ flex: 1.3, alignItems: 'center', placeContent: 'flex-start', minWidth: '80px' })),
+      //           $body: map(pos => {
+      //             const positionMarkPrice = pricefeed.getLatestPrice(chain, pos.indexToken)
+
+      //             return $row(
+      //               $RiskLiquidator(pos, positionMarkPrice)({})
+      //             )
+      //           })
+      //         },
+      //         {
+      //           $head: $text('PnL $'),
+      //           columnOp: style({ flex: 2, placeContent: 'flex-end', maxWidth: '160px' }),
+      //           $body: map((pos) => {
+      //             const newLocal = pricefeed.getLatestPrice(chain, pos.indexToken)
+      //             return $livePnl(pos, newLocal)
+      //           })
+      //         },
+      //         {
+      //           $head: $text('Switch'),
+      //           columnOp: style({ flex: 2, placeContent: 'center', maxWidth: '80px' }),
+      //           $body: map((pos) => {
+
+      //             const clickSwitchBehavior = switchTradeTether(
+      //               nodeEvent('click'),
+      //               constant(pos),
+      //             )
+
+      //             return $row(styleBehavior(map(vpos => {
+      //               const isPosMatched = vpos && vpos.key === pos.key
+
+      //               return isPosMatched ? { pointerEvents: 'none', opacity: '0.3' } : {}
+      //             }, vaultPosition)))(
+      //               clickSwitchBehavior(
+      //                 style({ height: '28px', width: '28px' }, $iconCircular($arrowsFlip, pallete.horizon))
+      //               )
+      //             )
+      //           })
+      //         },
+      //       ],
+      //     })({})
+      //   }, config.trade, mergeArray([config.accountTradeList, requestAccountTradeList])))
+
+
+      // ),
+
+      // $column(style({ flex: 1 }))(
+      //   $chartContainer(
+      //     $row(layoutSheet.spacing, style({ fontSize: '0.85em', zIndex: 5, position: 'absolute', padding: '8px', placeContent: 'center' }))(
+      //       $ButtonToggle({
+      //         selected: timeframe,
+      //         options: [
+      //           intervalTimeMap.MIN5,
+      //           intervalTimeMap.MIN15,
+      //           intervalTimeMap.MIN60,
+      //           intervalTimeMap.HR4,
+      //           intervalTimeMap.HR24,
+      //           intervalTimeMap.DAY7,
+      //         ],
+      //         $$option: map(option => {
+      //           // @ts-ignore
+      //           const newLocal: string = timeFrameLabl[option]
+
+      //           return $text(newLocal)
+      //         })
+      //       })({ select: selectTimeFrameTether() }),
+      //     ),
+
+
+      //     $row(style({ position: 'relative', height: '500px' }))(
+      //       $CandleSticks({
+      //         series: [
+      //           {
+      //             seriesConfig: {
+      //               upColor: pallete.foreground,
+      //               downColor: 'transparent',
+      //               priceLineColor: pallete.message,
+      //               baseLineStyle: LineStyle.LargeDashed,
+      //               borderDownColor: pallete.foreground,
+      //               borderUpColor: pallete.foreground,
+      //               wickDownColor: pallete.foreground,
+      //               wickUpColor: pallete.foreground,
+      //             },
+      //             priceLines: [
+      //               map(val => {
+      //                 if (val === 0n) {
+      //                   return null
+      //                 }
+
+      //                 return {
+      //                   price: formatFixed(val, 30),
+      //                   color: pallete.middleground,
+      //                   lineVisible: true,
+      //                   lineWidth: 1,
+      //                   axisLabelVisible: true,
+      //                   title: `Entry`,
+      //                   lineStyle: LineStyle.SparseDotted,
+      //                 }
+      //               }, averagePrice),
+      //               map(val => {
+      //                 if (val === 0n) {
+      //                   return null
+      //                 }
+
+      //                 return {
+      //                   price: formatFixed(val, 30),
+      //                   color: pallete.negative,
+      //                   lineVisible: true,
+      //                   lineWidth: 1,
+      //                   axisLabelVisible: true,
+      //                   title: `Liquidation`,
+      //                   lineStyle: LineStyle.SparseDotted,
+      //                 }
+      //               }, liquidationPrice)
+
+      //             ],
+      //             appendData: switchLatest(map(params => {
+      //               if (params.selectedPricefeed === null) {
+      //                 return empty()
+      //               }
+
+      //               const lastData = params.selectedPricefeed[params.selectedPricefeed.length - 1]
+
+      //               return scan((prev: CandlestickData | null, nextPrice): CandlestickData => {
+      //                 const marketPrice = formatFixed(nextPrice, 30)
+      //                 const timeNow = unixTimestampNow()
+
+      //                 if (prev === null) {
+      //                   return {
+      //                     open: formatFixed(lastData.o, 30),
+      //                     high: formatFixed(lastData.h, 30),
+      //                     low: formatFixed(lastData.l, 30),
+      //                     close: marketPrice,
+      //                     time: lastData.timestamp as Time
+      //                   }
+      //                 }
+
+      //                 const prevTimeSlot = Math.floor(prev.time as number / params.timeframe)
+
+      //                 const nextTimeSlot = Math.floor(timeNow / params.timeframe)
+      //                 const time = nextTimeSlot * params.timeframe as Time
+
+      //                 const isNext = nextTimeSlot > prevTimeSlot
+
+      //                 if (isNext) {
+      //                   return {
+      //                     open: marketPrice,
+      //                     high: marketPrice,
+      //                     low: marketPrice,
+      //                     close: marketPrice,
+      //                     time
+      //                   }
+      //                 }
+
+      //                 return {
+      //                   open: prev.open,
+      //                   high: marketPrice > prev.high ? marketPrice : prev.high,
+      //                   low: marketPrice < prev.low ? marketPrice : prev.low,
+      //                   close: marketPrice,
+      //                   time
+      //                 }
+      //               }, null, indexTokenPrice)
+      //             }, combineObject({ timeframe, selectedPricefeed }))),
+      //             data: combineArray(data => {
+
+      //               if (data === null) {
+      //                 return []
+      //               }
+
+      //               return data.map(({ o, h, l, c, timestamp }) => {
+      //                 const open = formatFixed(o, 30)
+      //                 const high = formatFixed(h, 30)
+      //                 const low = formatFixed(l, 30)
+      //                 const close = formatFixed(c, 30)
+
+      //                 return { open, high, low, close, time: timestamp as Time }
+      //               })
+      //             }, selectedPricefeed),
+      //             // drawMarkers: map(trade => {
+      //             //   if (trade) {
+      //             //     const increaseList = trade.increaseList
+      //             //     const increaseMarkers = increaseList
+      //             //       .slice(1)
+      //             //       .map((ip): SeriesMarker<Time> => {
+      //             //         return {
+      //             //           color: pallete.foreground,
+      //             //           position: "aboveBar",
+      //             //           shape: "arrowUp",
+      //             //           time: unixTimeTzOffset(ip.timestamp),
+      //             //           text: formatReadableUSD(ip.collateralDelta)
+      //             //         }
+      //             //       })
+
+      //             //     const decreaseList = isTradeSettled(trade) ? trade.decreaseList.slice(0, -1) : trade.decreaseList
+
+      //             //     const decreaseMarkers = decreaseList
+      //             //       .map((ip): SeriesMarker<Time> => {
+      //             //         return {
+      //             //           color: pallete.foreground,
+      //             //           position: 'belowBar',
+      //             //           shape: "arrowDown",
+      //             //           time: unixTimeTzOffset(ip.timestamp),
+      //             //           text: formatReadableUSD(ip.collateralDelta)
+      //             //         }
+      //             //       })
+
+      //             //     return [...decreaseMarkers, ...increaseMarkers]
+      //             //   }
+
+      //             //   return []
+      //             // }, config.trade)
+      //           }
+      //         ],
+      //         containerOp: style({
+      //           flex: 1,
+      //           inset: 0,
+      //           position: 'absolute',
+      //           borderBottom: `1px solid rgba(191, 187, 207, 0.15)`
+      //         }),
+      //         chartConfig: {
+      //           rightPriceScale: {
+      //             visible: true,
+      //             entireTextOnly: true,
+      //             borderVisible: false,
+      //             scaleMargins: {
+      //               top: 0.1,
+      //               bottom: 0.1
+      //             }
+
+      //             // autoScale: true,
+      //             // mode: PriceScaleMode.Logarithmic
+      //             // visible: false
+      //           },
+      //           timeScale: {
+      //             timeVisible: true,
+      //             // timeVisible: timeframeState <= intervalTimeMap.DAY7,
+      //             // secondsVisible: timeframeState <= intervalTimeMap.MIN60,
+      //             borderVisible: true,
+      //             rightOffset: 15,
+      //             shiftVisibleRangeOnNewBar: true,
+      //             borderColor: pallete.middleground,
+      //           },
+      //           crosshair: {
+      //             mode: CrosshairMode.Normal,
+      //             horzLine: {
+      //               labelBackgroundColor: pallete.background,
+      //               color: pallete.foreground,
+      //               width: 1,
+      //               style: LineStyle.Dotted
+      //             },
+      //             vertLine: {
+      //               labelBackgroundColor: pallete.background,
+      //               color: pallete.foreground,
+      //               width: 1,
+      //               style: LineStyle.Dotted,
+      //             }
+      //           }
+      //         },
+      //       })({
+      //         // crosshairMove: sampleChartCrosshair(),
+      //         // click: sampleClick()
+      //       }),
+      //       switchLatest(map(feed => {
+      //         if (feed) {
+      //           return empty()
+      //         }
+
+      //         return $node(style({ position: 'absolute', zIndex: 10, display: 'flex', inset: 0, backgroundColor: colorAlpha(pallete.middleground, .10), placeContent: 'center', alignItems: 'center' }))(
+      //           $spinner
+      //         )
+      //       }, mergeArray([config.pricefeed, constant(null, requestPricefeed), now(null)]))),
+      //     ),
+
+      //     $column(style({ flex: 1, position: 'relative' }))(
+      //       switchLatest(map(pos => {
+
+      //         if (pos === null) {
+      //           return $text('no trade')
+      //         }
+
+      //         return $Table2({
+      //           cellOp: style({ padding: '8px 15px' }),
+      //           dataSource: merge(
+      //             now([...pos.increaseList, ...pos.decreaseList].sort((a, b) => b.timestamp - a.timestamp)),
+
+      //             map(res => {
+      //               return [res]
+      //             }, requestTradeMulticast),
+      //           ) as Stream<(RequestTrade | IPositionIncrease | IPositionDecrease)[]>,
+      //           bodyContainerOp: O(style({ position: 'absolute', inset: '0' }), layoutSheet.spacing),
+      //           scrollConfig: {
+      //             containerOps: O(layoutSheet.spacingSmall, style({}))
+      //           },
+      //           columns: [
+      //             {
+      //               $head: $text('Time'),
+      //               columnOp: O(style({ flex: .7 })),
+
+      //               $body: map((req) => {
+
+      //                 return $column(layoutSheet.spacingTiny, style({ fontSize: '.65em' }))(
+      //                   $text(timeSince(req.timestamp) + ' ago'),
+      //                   //   isKeeperReq
+      //                   //     ? map(now => timeSince(pos.timestamp) + ' ago', everySec)
+      //                   //     : timeSince(pos.timestamp) + ' ago'
+      //                   // ),
+      //                   $text(new Date(req.timestamp * 1000).toLocaleDateString()),
+      //                 )
+      //               })
+      //             },
+      //             {
+      //               $head: $text('Action'),
+      //               columnOp: O(style({ flex: 1.2 })),
+
+      //               $body: map((pos) => {
+      //                 const $requestRow = $row(style({ alignItems: 'center' }))
+
+      //                 if ('key' in pos) {
+      //                   const direction = pos.__typename === 'IncreasePosition' ? '↑' : '↓'
+      //                   const txHash = pos.id.split(':').slice(-1)[0]
+      //                   return $row(style({ alignItems: 'center' }))(
+      //                     style({ padding: '4px 8px' })(
+      //                       $txHashRef(txHash, chain, $text(`${direction} ${formatReadableUSD(pos.price)}`))
+      //                     )
+      //                   )
+      //                 }
+
+      //                 const multicastQuery = replayLatest(multicast(now(pos.ctxQuery)))
+
+      //                 return $column(
+      //                   $IntermediatePromise({
+      //                     query: map(async x => {
+      //                       const n = await x
+
+      //                       return await n.wait()
+      //                     }, multicastQuery),
+      //                     $$done: map((res: ContractReceipt) => {
+      //                       return $column(layoutSheet.spacingSmall)(
+      //                         $requestRow(
+      //                           $txHashRef(res.transactionHash, chain, $text(`${pos.collateralDeltaUsd > 0n ? '↑ Response' : '↓ Response'} ${formatReadableUSD(pos.indexTokenPrice)}`)),
+      //                           $infoTooltip('Market price requested'),
+      //                         ),
+      //                       )
+      //                     }),
+      //                     $loader: switchLatest(map(c => {
+
+      //                       return $row(layoutSheet.spacingSmall, style({ fontSize: '.75em' }))(
+      //                         $spinner,
+      //                         $text(startWith('Awaiting your Approval...', map(() => 'Awaiting confirmation...', fromPromise(c)))),
+      //                         $node(style({ flex: 1 }))(),
+      //                         switchLatest(map(txHash => $txHashRef(txHash.hash, chain), fromPromise(c)))
+      //                       )
+      //                     }, multicastQuery)),
+      //                     $$fail: map(res => {
+      //                       const error = parseError(res)
+
+      //                       return $alertTooltip($text(error.message))
+      //                     }),
+      //                   })({}),
+
+      //                   switchLatest(mergeArray([
+      //                     now($spinner),
+      //                     map(req => {
+      //                       const { acceptablePrice, account, amountIn, blockGap, executionFee, indexToken, isLong, minOut, path, sizeDelta, timeGap } = req
+
+      //                       const actionName = pos.isIncrease ? 'increase' : 'reduce'
+      //                       const message = `Request ${actionName} ${pos.indexTokenDescription.symbol} ${formatReadableUSD(pos.sizeDelta)} @ ${formatReadableUSD(acceptablePrice)}`
+
+      //                       return $requestRow(
+      //                         $txHashRef('res.transactionHash', chain, style({ padding: '4px 8px' })($text(`✔ Response ${formatReadableUSD(acceptablePrice)}`))),
+      //                         $infoTooltip('Request Approved'),
+      //                       )
+      //                     }, mergeArray([pos.executeIncreasePosition, pos.executeDecreasePosition])),
+      //                     map(req => {
+      //                       const { acceptablePrice, account, amountIn, blockGap, executionFee, indexToken, isLong, minOut, path, sizeDelta, timeGap } = req
+
+      //                       return $requestRow(
+      //                         $txHashRef('res.transactionHash', chain, style({ padding: '4px 8px' })($text(`✖ Response ${formatReadableUSD(acceptablePrice)}`))),
+      //                         $infoTooltip('Request Failed'),
+      //                       )
+      //                     }, mergeArray([pos.cancelDecreasePosition, pos.cancelIncreasePosition])),
+      //                   ]))
+      //                 )
+
+      //               })
+      //             },
+      //             {
+      //               $head: $text('Collateral Change'),
+      //               columnOp: O(style({ flex: .7, placeContent: 'flex-end', textAlign: 'right', alignItems: 'center' })),
+
+      //               $body: map((pos) => {
+      //                 const isKeeperReq = 'ctxQuery' in pos
+
+      //                 return $row(layoutSheet.spacing)(
+      //                   $text(formatReadableUSD(isKeeperReq ? pos.collateralDeltaUsd : pos.collateralDelta)),
+      //                 )
+      //               })
+      //             },
+      //             {
+      //               $head: $text('Size Change'),
+      //               columnOp: O(style({ flex: .7, placeContent: 'flex-end', textAlign: 'right', alignItems: 'center' })),
+
+      //               $body: map((pos) => {
+
+      //                 return $row(layoutSheet.spacing)(
+      //                   $text(formatReadableUSD(pos.sizeDelta)),
+      //                 )
+      //               })
+      //             },
+      //           ]
+      //         })({})
+
+      //       }, trade))
+      //     ),
+      //   ),
+      // )
     ),
 
     {

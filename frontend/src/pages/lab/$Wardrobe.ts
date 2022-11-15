@@ -385,7 +385,7 @@ export const $Wardrobe = ({ walletLink, initialBerry, walletStore }: IBerryComp)
 
 
             $IntermediateConnectButton({
-              $display: map(() => {
+              $$display: map(() => {
                 return switchLatest(map(isApproved => {
 
                   if (isApproved === true) {

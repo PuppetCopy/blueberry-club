@@ -139,7 +139,7 @@ export const $WhitelistMint = (config: MintCmp) => component((
         $IntermediateConnectButton({
           walletStore: config.walletStore,
           $container: $column(layoutSheet.spacingBig),
-          $display: map(() => {
+          $$display: map(() => {
 
             return $ButtonPrimary({
               disabled: startWith(true, isPrimaryDisabled),

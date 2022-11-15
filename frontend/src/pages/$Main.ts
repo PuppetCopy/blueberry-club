@@ -3,10 +3,8 @@ import { component, eventElementTarget, style } from "@aelea/dom"
 import * as router from '@aelea/router'
 import { $column, designSheet, layoutSheet, screenUtils } from '@aelea/ui-components'
 import {
-  AddressIndex, AddressStable, AddressZero, api,
-  ARBITRUM_ADDRESS,
-  AVALANCHE_ADDRESS,
-  CHAIN,
+  AddressIndex, AddressStable, api,
+  ARBITRUM_ADDRESS, AVALANCHE_ADDRESS, CHAIN,
   ETH_ADDRESS_REGEXP, fromJson, groupByMap, IAccountTradeListParamApi, IChainParamApi,
   intervalTimeMap, IPricefeedParamApi, IPriceLatestMap, IRequestTradeQueryparam
 } from '@gambitdao/gmx-middleware'
@@ -119,33 +117,37 @@ export default ({ baseRoute = '' }: Website) => component((
 
   const walletStore = store.craete('walletStore', null as WALLET | null)
 
-  const defaultWalletProvider: Stream<IEthereumProvider | null> = multicast(switchLatest(awaitPromises(map(async name => {
-    const isWC = name === WALLET.walletConnect
-    const walletProvider = isWC ? wallet.walletConnect : await wallet.metamaskQuery
+  const walletProvider: Stream<IEthereumProvider | null> = replayLatest(multicast(mergeArray([
+    switchLatest(awaitPromises(map(async () => {
+      const name = walletStore.getState()
+      const isWC = name === WALLET.walletConnect
+      const wp = isWC ? wallet.walletConnect : await wallet.metamaskQuery
 
-    if (name && walletProvider) {
-      const [mainAccount]: string[] = await walletProvider.request({ method: 'eth_accounts' }) as any
+      console.log(wp)
 
-      if (mainAccount) {
-        if (isWC) {
-          const connector = wallet.walletConnect
-          const wcDisconnected = constant(null, fromCallback(cb => connector.on('disconnect', cb)))
+      if (name && wp) {
+        const [mainAccount]: string[] = await wp.request({ method: 'eth_accounts' }) as any
 
-          return startWith(walletProvider, wcDisconnected)
+        if (mainAccount) {
+          if (isWC) {
+            const connector = wallet.walletConnect
+            const wcDisconnected = constant(null, fromCallback(cb => connector.on('disconnect', cb)))
+
+            return startWith(wp, wcDisconnected)
+          }
+
+          return now(wp)
         }
-
-        return now(walletProvider)
       }
-    }
 
-    return now(null)
-  }, now(walletStore.getState())))))
+      return now(null)
+    }, now(null)))),
+    walletChange
+  ])))
 
 
 
-  const walletLink = initWalletLink(
-    mergeArray([defaultWalletProvider, walletChange])
-  )
+  const walletLink = initWalletLink(walletProvider)
 
 
 

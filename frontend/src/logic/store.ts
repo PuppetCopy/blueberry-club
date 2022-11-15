@@ -3,17 +3,18 @@ import { map, merge, now, tap } from "@most/core"
 import { Stream } from "@most/types"
 
 
-type StoreFn<STORE> = <T>(
-  stream: Stream<T>,
-  // transformInitialPipe?: Op<STORE, T>,
-  writePipe?: Op<T, { store: STORE, value: T }>
-) => Stream<T>
+interface StoreFn<STORE> {
+  <T>(stream: Stream<T>, writePipe?: Op<T, { store: STORE, value: T }>): Stream<T>
+  // <T>(stream: Stream<T>): (writePipe?: Op<T, { store: STORE, value: T }>) => Stream<T>
+}
 
-type StoreReplayFn<STORE> = <T>(
-  stream: Stream<T>,
-  transformInitialPipe?: Op<STORE, T>,
-  writePipe?: Op<T, { store: STORE, value: T }>
-) => Stream<T>
+interface StoreReplayFn<STORE> {
+  <T>(stream: Stream<T>, transformInitialPipe?: Op<STORE, T>, writePipe?: Op<T, { store: STORE, value: T }>): Stream<T>
+  // <T>(stream: Stream<T>): (transformInitialPipe?: Op<STORE, T>, writePipe?: Op<T, { store: STORE, value: T }>) => Stream<T>
+  // <T>(stream: Stream<T>): (transformInitialPipe?: Op<STORE, T>) => (writePipe?: Op<T, { store: STORE, value: T }>) => Stream<T>
+}
+
+
 
 export type BrowserStore<TKey extends string, STORE> = {
   getState: () => STORE
@@ -72,10 +73,10 @@ function createLocalStorageChainFactory<TKey extends string>(keyChain: TKey) {
 
         return writeEffect
       },
-      storeReplay: <T>(stream: Stream<T>, transformInitialPipe?: Op<STORE, T>, writePipe?: Op<T, { store: STORE, value: T }>) => {
+      storeReplay: <T>(stream: Stream<T>, transformInitialPipe?: Op<STORE, T>, writePipe?: Op<T, { store: STORE, value: T }>): Stream<T> => {
         const state = getStateFromLS(mktTree, defaultState)
         const initial = map(getState, now(state))
-        const toState: Stream<T> = transformInitialPipe ? transformInitialPipe(initial) : initial as any as Stream<T>
+        const toState: Stream<T> = transformInitialPipe ? transformInitialPipe(initial) : initial as unknown as Stream<T>
 
         if (!writePipe) {
           return merge(stream, toState)
