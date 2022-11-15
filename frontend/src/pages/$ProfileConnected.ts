@@ -27,7 +27,7 @@ export interface IAccount {
   // walletStore: cstate.BrowserStore<"metamask" | "walletConnect" | null, "walletStore">
 }
 
-export const $ProfileWallet = ({ walletLink, parentRoute, accountStakingStore }: IAccount) => component((
+export const $ProfileConnected = ({ walletLink, parentRoute, accountStakingStore }: IAccount) => component((
   [changeRoute, changeRouteTether]: Behavior<string, string>,
   [clickTransferItems, clickTransferItemsTether]: Behavior<any, any>,
 

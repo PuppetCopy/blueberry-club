@@ -1,6 +1,6 @@
 import { Behavior, combineArray, Op } from "@aelea/core"
 import { $element, $Node, $text, attr, component, NodeComposeFn, nodeEvent, style } from "@aelea/dom"
-import { $column, $icon, $Popover, $row, layoutSheet, state } from "@aelea/ui-components"
+import { $column, $icon, $Popover, $row, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { awaitPromises, constant, empty, fromPromise, map, multicast, now, skipRepeats, snapshot, switchLatest } from "@most/core"
 import { IEthereumProvider } from "eip1193-provider"
@@ -178,8 +178,7 @@ export const $IntermediateConnectPopover = ({ $$display: $display, walletLink, w
                     console.error(error)
                     return error
                   }) : null
-                }, walletLink.walletChange),
-                multicast
+                }, walletLink.walletChange)
               )
             })
           }

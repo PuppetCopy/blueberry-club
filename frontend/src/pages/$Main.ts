@@ -30,7 +30,7 @@ import { $Wardrobe } from "./lab/$Wardrobe"
 import { $LabStore } from "./lab/$Store"
 import { $LabItem } from "./lab/$Item"
 import { $Home } from "./$Home"
-import { $ProfileWallet } from "./$ProfileWallet"
+import { $ProfileConnected } from "./$ProfileConnected"
 import { $Trade } from "./$Trade"
 import { createLocalStorageChain } from "../logic/store"
 
@@ -117,7 +117,7 @@ export default ({ baseRoute = '' }: Website) => component((
 
   const walletStore = store.craete('walletStore', null as WALLET | null)
 
-  const walletProvider: Stream<IEthereumProvider | null> = replayLatest(multicast(mergeArray([
+  const walletProvider: Stream<IEthereumProvider | null> = mergeArray([
     switchLatest(awaitPromises(map(async () => {
       const name = walletStore.getState()
       const isWC = name === WALLET.walletConnect
@@ -143,7 +143,7 @@ export default ({ baseRoute = '' }: Website) => component((
       return now(null)
     }, now(null)))),
     walletChange
-  ])))
+  ])
 
 
 
@@ -211,7 +211,7 @@ export default ({ baseRoute = '' }: Website) => component((
               fadeIn($Profile({ walletLink, parentRoute: pagesRoute, accountStakingStore })({}))
             ),
             router.match(profileWalletRoute)(
-              fadeIn($ProfileWallet({ walletLink, parentRoute: pagesRoute, accountStakingStore })({ changeRoute: linkClickTether() }))
+              fadeIn($ProfileConnected({ walletLink, parentRoute: pagesRoute, accountStakingStore })({ changeRoute: linkClickTether() }))
             ),
             router.match(tradeRoute)(
               switchLatest(map(chain => {

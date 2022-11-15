@@ -49,7 +49,6 @@ export function connectTrade(provider: Stream<BaseProvider | null>) {
     [CHAIN.AVALANCHE]: AVALANCHE_ADDRESS.PositionRouter
   })
 
-
   // const executeIncreasePosition: Stream<KeeperExecutePosition> = map((xx) => {
   //   if (xx) {
   //     const contract = PositionRouter__factory.connect(ARBITRUM_ADDRESS.PositionRouter, web3Provider)

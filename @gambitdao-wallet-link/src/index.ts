@@ -1,7 +1,7 @@
-import { combineArray } from "@aelea/core"
+import { combineArray, replayLatest } from "@aelea/core"
 import { Web3Provider } from "@ethersproject/providers"
 import { CHAIN, NETWORK_METADATA } from "@gambitdao/gmx-middleware"
-import { awaitPromises, constant, map, merge, mergeArray, snapshot } from "@most/core"
+import { awaitPromises, constant, map, merge, mergeArray, multicast, snapshot } from "@most/core"
 import { Stream } from "@most/types"
 import { EIP1193Provider, ProviderInfo, ProviderRpcError } from "eip1193-provider"
 import { eip1193ProviderEvent, parseError } from "./common"
@@ -69,7 +69,7 @@ export function initWalletLink<T extends EIP1193Provider>(walletChange: Stream<T
 
   const account = merge(accountChange, currentAccount)
   const onDisconnect = constant(null, disconnect)
-  const provider = mergeArray([ethersWeb3Wrapper, proivderChange, onDisconnect])
+  const provider = replayLatest(multicast(mergeArray([ethersWeb3Wrapper, proivderChange, onDisconnect])))
 
   const network = awaitPromises(map(async w3p => {
     if (w3p) {

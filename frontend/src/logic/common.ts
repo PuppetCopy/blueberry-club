@@ -82,7 +82,9 @@ export function contractConnect<T extends typeof ContractFactory>(contractCtr: T
 
   // @ts-ignore
   const run = <R>(op: Op<ReturnType<T['connect']>, Promise<R>>) => O(
-    filter(w3p => w3p !== null),
+    filter(w3p => {
+      return w3p !== null
+    }),
     op,
     awaitPromises,
   )(contract)
@@ -99,13 +101,13 @@ export function contractConnect<T extends typeof ContractFactory>(contractCtr: T
     return run(newLocal)
   }
 
-  const _listen = (name: string) => switchLatest(map((c) => {
+  const _listen = <T>(name: string) => switchLatest(map((c) => {
     if (c === null) {
-      return null
+      return now(null)
     }
 
-    return listen(c)(name)
-  }, contract as any as Stream<BaseContract>))
+    return listen(c)(name) as Stream<T>
+  }, contract as Stream<BaseContract>))
 
 
   return { run, int, contract, listen: _listen }
