@@ -314,6 +314,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
   const $chartContainer = $column(style({
     backgroundImage: `radial-gradient(at right center, ${pallete.background} 50%, transparent)`,
+    position: 'relative',
     background: pallete.background
   }))(
     screenUtils.isDesktopScreen
@@ -432,7 +433,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
   return [
     $container(
-      $column(layoutSheet.spacingBig, style({ flex: 1, paddingBottom: '50px' }))(
+      $node(layoutSheet.spacingBig, style({  flex: 1, paddingBottom: '50px', display: 'flex', flexDirection: screenUtils.isDesktopScreen ? 'column' : 'column-reverse' }))(
 
         // executeSt,
 

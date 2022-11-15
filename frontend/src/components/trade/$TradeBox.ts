@@ -749,6 +749,10 @@ export const $TradeBox = (config: ITradeBox) => component((
                       modLabel = 'Open'
                     }
 
+                    if (screenUtils.isMobileScreen) {
+                      return modLabel
+                    }
+
                     return `${modLabel} ${params.isLong ? 'Long' : 'Short'} ${outputToken.symbol}`
                   }, tradeState)),
                 })({
