@@ -437,24 +437,6 @@ export function getPositionKey(account: string, collateralToken: string, indexTo
 }
 
 
-// export function replayState<A, K extends keyof A = keyof A>(state: StreamInput<A>, initialState: A): Stream<A> {
-//   const entries = Object.entries(state) as [keyof A, Stream<A[K]>][]
-//   const streams = entries.map(([key, stream]) => replayLatest(stream, initialState[key]))
-
-//   const combinedWithInitial = combineArrayMost((...arrgs: A[K][]) => {
-//     return arrgs.reduce((seed, val, idx) => {
-//       const key = entries[idx][0]
-//       seed[key] = val
-
-//       return seed
-//     }, {} as A)
-//   }, streams)
-
-//   return combinedWithInitial
-// }
-
-
-
 export interface IPeriodRun<T> {
   actionOp: Op<number, Promise<T>>
 

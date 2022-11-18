@@ -82,7 +82,7 @@ export function connectTrade(provider: Stream<BaseProvider | null>) {
 
   return {
     isEnabled,
-    contract: positionRouter.contract, executionFee, getLatestTradeRequest,
+    positionRouter, executionFee, getLatestTradeRequest,
     executeIncreasePosition,
     cancelIncreasePosition,
     executeDecreasePosition,
@@ -105,15 +105,15 @@ async function getGmxIOPriceMap(chain: CHAIN): Promise<{ [key in AddressIndex]: 
 }
 
 const gmxIOPriceMapSource = {
-  [CHAIN.ARBITRUM]: replayLatest(multicast(periodicRun({
+  [CHAIN.ARBITRUM]: multicast(periodicRun({
     interval: 5000,
     actionOp: map(async time => getGmxIOPriceMap(CHAIN.ARBITRUM))
-  }))),
-  [CHAIN.AVALANCHE]: replayLatest(multicast(periodicRun({
+  })),
+  [CHAIN.AVALANCHE]: multicast(periodicRun({
     interval: 5000,
     actionOp: map(async time => getGmxIOPriceMap(CHAIN.AVALANCHE
     ))
-  }))),
+  })),
 }
 
 const gmxIoLatestPrice = (chain: CHAIN, token: AddressIndex) => {

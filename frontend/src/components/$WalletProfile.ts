@@ -8,7 +8,7 @@ import { attemptToSwitchNetwork, IWalletLink } from "@gambitdao/wallet-link"
 import { WALLET } from "../logic/provider"
 import { $Link } from "@gambitdao/ui-components"
 import { $seperator2 } from "../pages/common"
-import { $DisconnectedWalletDisplay, $accountPreview } from "./$AccountProfile"
+import { $disconnectedWalletDisplay, $accountPreview } from "./$AccountProfile"
 import { $IntermediateConnectPopover } from "./$ConnectAccount"
 import { Route } from "@aelea/router"
 import { $Dropdown, $defaultSelectContainer } from "./form/$Dropdown"
@@ -37,7 +37,7 @@ export const $WalletProfile = (config: IWalletDisplay) => component((
     $row(style({ border: `2px solid ${pallete.horizon}`, borderRadius: '30px', minHeight: '30px' }))(
 
       $IntermediateConnectPopover({
-        $button: profileLinkClickTether()(style({ cursor: 'pointer' }, $DisconnectedWalletDisplay())),
+        $button: profileLinkClickTether()(style({ cursor: 'pointer' }, $disconnectedWalletDisplay())),
         walletLink: config.walletLink,
         walletStore: config.store,
         chainList: config.chainList,
@@ -70,11 +70,13 @@ export const $WalletProfile = (config: IWalletDisplay) => component((
               switchNetworkTether(
                 nodeEvent('click'),
                 snapshot((w3p) => {
-                  w3p ? attemptToSwitchNetwork(w3p, option).catch(error => {
-                    alert(error.message)
-                    console.error(error)
-                    return error
-                  }) : null
+                  w3p
+                    ? attemptToSwitchNetwork(w3p, option).catch(error => {
+                      alert(error.message)
+                      console.error(error)
+                      return error
+                    })
+                    : null
 
 
                   return option

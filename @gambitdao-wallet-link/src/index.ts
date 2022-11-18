@@ -3,15 +3,13 @@ import { Web3Provider } from "@ethersproject/providers"
 import { CHAIN, NETWORK_METADATA } from "@gambitdao/gmx-middleware"
 import { awaitPromises, constant, map, merge, mergeArray, multicast, snapshot } from "@most/core"
 import { Stream } from "@most/types"
-import { EIP1193Provider, ProviderInfo, ProviderRpcError } from "eip1193-provider"
+import { EIP1193Provider } from "eip1193-provider"
 import { eip1193ProviderEvent, parseError } from "./common"
 
 
 export interface IWalletLink<T extends EIP1193Provider = EIP1193Provider> {
   account: Stream<string | null>
   network: Stream<CHAIN | null>
-  disconnect: Stream<ProviderRpcError>
-  connect: Stream<ProviderInfo>
 
   provider: Stream<Web3Provider | null>
   walletChange: Stream<T | null>
@@ -25,14 +23,12 @@ export interface IWalletLink<T extends EIP1193Provider = EIP1193Provider> {
 export function initWalletLink<T extends EIP1193Provider>(walletChange: Stream<T | null>): IWalletLink<T> {
   const walletEvent = eip1193ProviderEvent(walletChange)
 
-  const connect = walletEvent('connect')
-  const disconnect = walletEvent('disconnect')
+  const disconnect = constant(null, walletEvent('disconnect'))
   const networkChange = map(Number, walletEvent('chainChanged'))
   const accountChange = map(list => list[0], walletEvent('accountsChanged'))
 
 
   const ethersWeb3Wrapper = awaitPromises(combineArray(async (wallet) => {
-    console.log(wallet)
     if (wallet) {
       const chainId = await wallet.request({ method: 'eth_chainId' }) as any as number
       const w3p = new Web3Provider(wallet, Number(chainId))
@@ -57,31 +53,24 @@ export function initWalletLink<T extends EIP1193Provider>(walletChange: Stream<T
   }, walletChange, networkChange))
 
 
+
+  
+  const provider = replayLatest(multicast(mergeArray([ethersWeb3Wrapper, proivderChange, disconnect])))
+
+  const network = map(w3p => w3p?.network.chainId || null, provider)
+
+
   const currentAccount = awaitPromises(map(async (provi) => {
     if (provi === null) {
       return null
     }
 
-    await provi.getNetwork()
-    return (await provi.listAccounts())[0] || null
-  }, ethersWeb3Wrapper))
-
-
-  const account = merge(accountChange, currentAccount)
-  const onDisconnect = constant(null, disconnect)
-  const provider = replayLatest(multicast(mergeArray([ethersWeb3Wrapper, proivderChange, onDisconnect])))
-
-  const network = awaitPromises(map(async w3p => {
-    if (w3p) {
-      // @ts-ignore
-      const newLocal = w3p.getNetwork()
-      return (await newLocal).chainId
-    }
-
-    return null
+    return provi.getSigner().getAddress()
   }, provider))
 
-  return { account, network, provider, disconnect, connect, walletChange }
+  const account = merge(accountChange, currentAccount)
+
+  return { account, network, provider,  walletChange }
 }
 
 

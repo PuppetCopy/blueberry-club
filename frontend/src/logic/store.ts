@@ -74,12 +74,12 @@ function createLocalStorageChainFactory<TKey extends string>(keyChain: TKey) {
         return writeEffect
       },
       storeReplay: <T>(stream: Stream<T>, transformInitialPipe?: Op<STORE, T>, writePipe?: Op<T, { store: STORE, value: T }>): Stream<T> => {
-        const state = getStateFromLS(mktTree, defaultState)
-        const initial = map(getState, now(state))
-        const toState: Stream<T> = transformInitialPipe ? transformInitialPipe(initial) : initial as unknown as Stream<T>
+        const initial = map(getState, now(null))
+        const replayState: Stream<T> = transformInitialPipe ? transformInitialPipe(initial) : initial as unknown as Stream<T>
 
         if (!writePipe) {
-          return merge(stream, toState)
+          const writeEffect = tap(store => setStateFromLS(mktTree, store), stream)
+          return merge(writeEffect, replayState)
         }
 
         const writeEffect = map(({ store, value }) => {
@@ -87,7 +87,7 @@ function createLocalStorageChainFactory<TKey extends string>(keyChain: TKey) {
           return value
         }, writePipe(stream))
 
-        return merge(writeEffect, toState)
+        return merge(writeEffect, replayState)
       },
       craete: createLocalStorageChainFactory(mktTree)
     }

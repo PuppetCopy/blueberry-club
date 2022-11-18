@@ -12,7 +12,7 @@ import {
 } from "@gambitdao/gmx-middleware"
 
 import { IWalletLink, parseError } from "@gambitdao/wallet-link"
-import { combine, constant, map, mergeArray, multicast, periodic, scan, skipRepeats, switchLatest, debounce, empty, now, startWith, snapshot, fromPromise, merge } from "@most/core"
+import { combine, constant, map, mergeArray, multicast, periodic, scan, skipRepeats, switchLatest, debounce, empty, now, startWith, snapshot, fromPromise, merge, tap } from "@most/core"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { $alertTooltip, $arrowsFlip, $infoTooltip, $IntermediatePromise, $Link, $RiskLiquidator, $spinner, $txHashRef } from "@gambitdao/ui-components"
 import { CandlestickData, CrosshairMode, LineStyle, Time } from "lightweight-charts"
@@ -26,7 +26,7 @@ import { $Table2 } from "../common/$Table2"
 import { $Entry, $livePnl } from "./$Leaderboard"
 import { $iconCircular } from "../elements/$common"
 import { $CandleSticks } from "../components/chart/$CandleSticks"
-import { getFeeBasisPoints, getTokenDescription, resolveAddress } from "../logic/utils"
+import { CHAIN_NATIVE_TO_ADDRESS, getFeeBasisPoints, getTokenDescription, resolveAddress } from "../logic/utils"
 import { BrowserStore } from "../logic/store"
 import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
 import { TransactionResponse } from "@ethersproject/providers"
@@ -106,11 +106,14 @@ export const $Trade = (config: ITradeComponent) => component((
   const isLong = isLongStore.storeReplay(mergeArray([map(t => t.isLong, switchTrade), switchIsLong]))
   const isIncrease = isIncreaseStore.storeReplay(switchIsIncrease)
 
-  const inputToken = replayLatest(
-    inputTokenStore.store(changeInputToken),
-    [...config.indexTokens, ...config.stableTokens].indexOf(inputTokenStore.getState()) > -1 ? inputTokenStore.getState() : AddressZero
-  )
-  const indexToken = indexTokenStore.storeReplay(mergeArray([map(t => t.indexToken, switchTrade), changeIndexToken]))
+  const inputToken = inputTokenStore.storeReplay(changeInputToken, map(store => {
+    return [...config.indexTokens, ...config.stableTokens].indexOf(store) > -1 ? store : AddressZero
+  }))
+  const indexToken = indexTokenStore.storeReplay(mergeArray([map(t => t.indexToken, switchTrade), changeIndexToken]), map(store => {
+    // @ts-ignore
+    return config.indexTokens.indexOf(store) > -1 ? store : CHAIN_NATIVE_TO_ADDRESS[chain]
+  }))
+
 
   const shortCollateralToken = replayLatest(
     shortCollateralTokenStore.store(mergeArray([map(t => t.isLong ? t.indexToken : t.collateralToken, switchTrade), changeCollateralToken])),
@@ -137,7 +140,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
   const inputTokenPrice = replayLatest(skipRepeats(switchLatest(map(address => pricefeed.getLatestPrice(chain, address), inputToken))))
-  const indexTokenPrice = replayLatest(skipRepeats(switchLatest(map(address => pricefeed.getLatestPrice(chain, address), indexToken))))
+  const indexTokenPrice = skipRepeats(switchLatest(map(address => pricefeed.getLatestPrice(chain, address), indexToken)))
   const collateralTokenPrice = replayLatest(skipRepeats(switchLatest(map(address => pricefeed.getLatestPrice(chain, address), shortCollateralToken))))
 
 
@@ -158,14 +161,15 @@ export const $Trade = (config: ITradeComponent) => component((
   const collateralTokenDescription = map(address => getTokenDescription(chain, address), shortCollateralToken)
 
 
-  const requestPosition = debounce(50, combineObject({ account: config.walletLink.account, collateralToken: shortCollateralToken, indexToken, isLong }))
+  const requestPosition = debounce(50, combineObject({ account: config.walletLink.account, shortCollateralToken, indexToken, isLong }))
+  // const requestPosition = debounce(50, combineObject({ account: config.walletLink.account, shortCollateralToken, indexToken, isLong }))
 
 
   const requestPositionKey = map(params => {
     if (!params.account) {
       return null
     }
-    const collateralToken = params.isLong ? params.indexToken : params.collateralToken
+    const collateralToken = params.isLong ? params.indexToken : params.shortCollateralToken
 
     return getPositionKey(params.account.toLowerCase(), collateralToken, params.indexToken, params.isLong)
   }, requestPosition)
@@ -173,7 +177,9 @@ export const $Trade = (config: ITradeComponent) => component((
 
   const changeVaultPositon = switchLatest(map((key): Stream<IVaultPosition | null> => {
     return key
-      ? map((pos): IVaultPosition | null => pos ? pos : null, vault.getPosition(key))
+      ? map((pos): IVaultPosition | null => {
+        return pos ? pos : null
+      }, vault.getPosition(key))
       : now(null)
   }, requestPositionKey))
 
@@ -181,24 +187,31 @@ export const $Trade = (config: ITradeComponent) => component((
     return account === pos?.account ? pos : null
   }, config.walletLink.account, mergeArray([position.executeIncreasePosition, position.executeDecreasePosition])))
 
-  const newLocal = switchLatest(snapshot((position, update) => {
-    const { acceptablePrice, account, amountIn, blockGap, executionFee, indexToken, isLong, minOut, path, sizeDelta, timeGap } = update
-
-    const collateralToken = path[path.length - 1]
-
-    const key = getPositionKey(account.toLowerCase(), collateralToken, indexToken, isLong)
-
-    return key === position?.key || position === null ? vault.getPosition(key) : now(null)
-  }, changeVaultPositon, accountKeeperExecution))
-
-  const adjustVaultPosition = filterNull(newLocal)
 
   const vaultPosition: Stream<IVaultPosition | null> = replayLatest(multicast(mergeArray([
     changeVaultPositon,
-    adjustVaultPosition
+    switchLatest(snapshot((position, update) => {
+      const { acceptablePrice, account, amountIn, blockGap, executionFee, indexToken, isLong, minOut, path, sizeDelta, timeGap } = update
+
+      const collateralToken = path[path.length - 1]
+
+      const key = getPositionKey(account.toLowerCase(), collateralToken, indexToken, isLong)
+
+      return key === position?.key || position === null ? vault.getPosition(key) : now(null)
+    }, changeVaultPositon, accountKeeperExecution)),
+    // switchLatest(map((position) => {
+    //   const { acceptablePrice, account, amountIn, blockGap, executionFee, indexToken, isLong, minOut, path, sizeDelta, timeGap } = update
+
+    //   const collateralToken = path[path.length - 1]
+
+    //   const key = getPositionKey(account.toLowerCase(), collateralToken, indexToken, isLong)
+
+    //   return key === position?.key || position === null ? vault.getPosition(key) : now(null)
+    // }, changeVaultPositon))
   ])))
 
   const swapFee = skipRepeats(combineArray((usdgSupply, totalTokenWeight, tradeParams, vaultPosition, inputTokenDebtUsd, inputTokenWeight, inputTokenDescription, inputTokenPrice, indexTokenDebtUsd, indexTokenWeight, indexTokenDescription, indexTokenPrice, isLong) => {
+
     const swapFeeBasisPoints = inputTokenDescription.isStable && indexTokenDescription.isStable ? STABLE_SWAP_FEE_BASIS_POINTS : SWAP_FEE_BASIS_POINTS
     const taxBasisPoints = inputTokenDescription.isStable && indexTokenDescription.isStable ? STABLE_TAX_BASIS_POINTS : TAX_BASIS_POINTS
 
@@ -350,7 +363,6 @@ export const $Trade = (config: ITradeComponent) => component((
   }
 
 
-
   const requestAccountTradeList = multicast(map(address => {
     return {
       account: address,
@@ -368,15 +380,12 @@ export const $Trade = (config: ITradeComponent) => component((
   }, indexToken, timeframe))
 
 
-
-
-
-
-  const requestTradeMulticast = snapshot((params, req): RequestTrade => {
-
-    if (params.trade === null || params.account === null) {
+  
+  const requestTradeMulticast = snapshot((trade, req): RequestTrade => {
+    if (trade === null) {
       throw new Error('No wallet provider connected')
     }
+
 
     const normalizedAddress = resolveAddress(chain, req.inputToken)
     const allowedSlippage = BigInt(Number(req.slippage) * 100)
@@ -389,14 +398,11 @@ export const $Trade = (config: ITradeComponent) => component((
       ? [normalizedAddress, req.indexToken]
       : [req.indexToken]
 
-
-    // if (req.inputToken === AddressZero && req.indexToken === ARBITRUM_ADDRESS.NATIVE_TOKEN) {
-    //   path = [ARBITRUM_ADDRESS.NATIVE_TOKEN]
-    // }
+    const accountQuery = trade.signer.getAddress()
 
 
     const ctxQuery = (req.inputToken === AddressZero
-      ? params.trade.contract.createIncreasePositionETH(
+      ? trade.contract.createIncreasePositionETH(
         path,
         req.indexToken,
         0,
@@ -405,10 +411,10 @@ export const $Trade = (config: ITradeComponent) => component((
         acceptablePrice,
         req.executionFee,
         BLUEBERRY_REFFERAL_CODE,
-        params.account,
+        accountQuery,
         { value: req.collateralDelta + req.executionFee }
       )
-      : params.trade.contract.createIncreasePosition(
+      : trade.contract.createIncreasePosition(
         path,
         req.indexToken,
         req.collateralDelta,
@@ -418,7 +424,7 @@ export const $Trade = (config: ITradeComponent) => component((
         acceptablePrice,
         req.executionFee,
         BLUEBERRY_REFFERAL_CODE,
-        params.account,
+        accountQuery,
         { value: req.executionFee }
       ))
 
@@ -426,14 +432,13 @@ export const $Trade = (config: ITradeComponent) => component((
     const timestamp = unixTimestampNow()
 
     return { ...req, ctxQuery, timestamp, }
-  }, combineObject({ trade: position.contract, provider: config.walletLink.provider, account: config.walletLink.account }), requestTrade)
-
+  }, position.positionRouter.contract, requestTrade)
 
 
 
   return [
     $container(
-      $node(layoutSheet.spacingBig, style({  flex: 1, paddingBottom: '50px', display: 'flex', flexDirection: screenUtils.isDesktopScreen ? 'column' : 'column-reverse' }))(
+      $node(layoutSheet.spacingBig, style({ flex: 1, paddingBottom: '50px', display: 'flex', flexDirection: screenUtils.isDesktopScreen ? 'column' : 'column-reverse' }))(
 
         // executeSt,
 
@@ -475,26 +480,19 @@ export const $Trade = (config: ITradeComponent) => component((
             executionFee,
             // validationError,
             walletBalance,
-          },
-
+          }
         })({
           leverage: changeLeverageTether(),
           switchIsIncrease: switchIsIncreaseTether(),
           changeCollateralDelta: changeCollateralDeltaTether(),
-          // changeCollateralUsd: changeCollateralUsdTether(),
           changeSize: changeSizeTether(),
           changeInputToken: changeInputTokenTether(),
           changeCollateralToken: changeCollateralTokenTether(),
           changeIndexToken: changeIndexTokenTether(),
-          // changeWithdrawCollateralToken: changeWithdrawCollateralTokenTether(),
-          // focusFactor: changeFocusFactorTether(),
           switchIsLong: switchIsLongTether(),
           changeCollateralRatio: changeCollateralRatioTether(),
-          // slideCollateralRatio: slideCollateralRatioTether(),
-
           requestTrade: requestTradeTether(),
           changeSlippage: changeSlippageTether(),
-
           walletChange: walletChangeTether()
         }),
 
@@ -652,21 +650,18 @@ export const $Trade = (config: ITradeComponent) => component((
                       return empty()
                     }
 
-                    const lastData = params.selectedPricefeed[params.selectedPricefeed.length - 1]
+                    const fst = params.selectedPricefeed[params.selectedPricefeed.length - 1]
+                    const initialTick = {
+                      open: formatFixed(fst.o, 30),
+                      high: formatFixed(fst.h, 30),
+                      low: formatFixed(fst.l, 30),
+                      close: formatFixed(fst.c, 30),
+                      time: fst.timestamp as Time
+                    }
 
-                    return scan((prev: CandlestickData | null, nextPrice): CandlestickData => {
+                    return scan((prev: CandlestickData, nextPrice): CandlestickData => {
                       const marketPrice = formatFixed(nextPrice, 30)
                       const timeNow = unixTimestampNow()
-
-                      if (prev === null) {
-                        return {
-                          open: formatFixed(lastData.o, 30),
-                          high: formatFixed(lastData.h, 30),
-                          low: formatFixed(lastData.l, 30),
-                          close: marketPrice,
-                          time: lastData.timestamp as Time
-                        }
-                      }
 
                       const prevTimeSlot = Math.floor(prev.time as number / params.timeframe)
 
@@ -692,7 +687,7 @@ export const $Trade = (config: ITradeComponent) => component((
                         close: marketPrice,
                         time
                       }
-                    }, null, indexTokenPrice)
+                    }, initialTick, indexTokenPrice)
                   }, combineObject({ timeframe, selectedPricefeed }))),
                   data: combineArray(data => {
 
@@ -807,14 +802,11 @@ export const $Trade = (config: ITradeComponent) => component((
           $column(style({ flex: 1, position: 'relative' }))(
             switchLatest(map(pos => {
 
-              if (pos === null) {
-                return $text('no trade')
-              }
 
               return $Table2({
                 cellOp: style({ padding: '8px 15px' }),
                 dataSource: merge(
-                  now([...pos.increaseList, ...pos.decreaseList].sort((a, b) => b.timestamp - a.timestamp)),
+                  now((pos ? [...pos.increaseList, ...pos.decreaseList] : []).sort((a, b) => b.timestamp - a.timestamp)),
 
                   map(res => {
                     return [res]

@@ -132,7 +132,7 @@ export const $profilePreview = ({
 }
 
 
-export const $DisconnectedWalletDisplay = (avatarSize = 38) => {
+export const $disconnectedWalletDisplay = (avatarSize = 38) => {
   const sizePx = avatarSize + 'px'
   const $wrapper = $node(style({ width: sizePx, height: sizePx, minWidth: sizePx, minHeight: sizePx, borderRadius: '50%' }))
 

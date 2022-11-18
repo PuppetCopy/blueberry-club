@@ -14,23 +14,15 @@ const intervals = [
 
 export function timeSince(time: number) {
   const timeDelta = Math.abs(unixTimestampNow() - time)
-  const intervalIdx = intervals.findIndex(i => i.seconds < timeDelta)
-  // const grade = intervals.indexOf(interval as any)
+  const interval = intervals.find(i => i.seconds < timeDelta)
 
-  if (!intervalIdx) {
+  if (!interval) {
     return 'now'
   }
 
-  const fst = intervals[intervalIdx]
-  const count1 = Math.floor(timeDelta / fst.seconds)
-
-  const snd = intervals[intervalIdx + 1]
-  const count2 = count1 * fst.seconds
-
-
-  return `${count1} ${fst.label}${count1 !== 1 ? 's' : ''} ${Math.floor((timeDelta - fst.seconds) / snd.seconds)} ${snd.label} `
+  const count = Math.floor(timeDelta / interval.seconds)
+  return `${count} ${interval.label}${count !== 1 ? 's' : ''}`
 }
-
 
 export const everySec = map(unixTimestampNow, periodic(1000))
 

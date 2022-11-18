@@ -118,9 +118,9 @@ export const $TradePnlHistory = ({ trade, latestPrice, pixelsPerBar = 5, chartCo
                 const nextTime = unixTimestampNow()
                 const nextTimeslot = Math.floor(nextTime / interval)
 
-                const pnl = getPnL(trade.isLong, trade.averagePrice, price, trade.size) + trade.realisedPnl - trade.fee
+                const pnl = getPnL(trade.isLong, trade.averagePrice, price, trade.size) + trade.realisedPnl + -trade.fee
                 const value = formatFixed(pnl, 30)
-
+                BigInt.asIntN
                 return {
                   value,
                   time: nextTimeslot * interval as Time

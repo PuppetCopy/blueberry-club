@@ -10,7 +10,7 @@ import {
 } from '@gambitdao/gmx-middleware'
 import { initWalletLink } from "@gambitdao/wallet-link"
 import {
-  awaitPromises, constant, map, merge, mergeArray, multicast, now,
+  awaitPromises, constant, empty, map, merge, mergeArray, multicast, now,
   startWith, switchLatest
 } from '@most/core'
 import { Stream } from "@most/types"
@@ -213,6 +213,10 @@ export default ({ baseRoute = '' }: Website) => component((
             ),
             router.match(tradeRoute)(
               switchLatest(map(chain => {
+
+                if (chain === null) {
+                  return empty()
+                }
 
                 const indexTokens: AddressIndex[] = chain === CHAIN.AVALANCHE ?
                   [

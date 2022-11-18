@@ -1,5 +1,5 @@
-import { BASIS_POINTS_DIVISOR, FUNDING_RATE_PRECISION, LEVERAGE_LIQUIDAITON, LIQUIDATION_FEE, MARGIN_FEE_BASIS_POINTS, MAX_LEVERAGE } from "./constant"
-import { IAccountSummary, ITrade, IClaim, IClaimSource, IPositionClose, IPositionLiquidated, IAbstractPositionStake, ITradeSettled, ITradeClosed, ITradeLiquidated, ITradeOpen, TradeStatus, TokenDescription } from "./types"
+import { BASIS_POINTS_DIVISOR, FUNDING_RATE_PRECISION, LIQUIDATION_FEE, MARGIN_FEE_BASIS_POINTS, MAX_LEVERAGE } from "./constant"
+import { IAccountSummary, ITrade, IClaim, IClaimSource, IPositionClose, IPositionLiquidated, ITradeSettled, ITradeClosed, ITradeLiquidated, ITradeOpen, TradeStatus, TokenDescription } from "./types"
 import { formatFixed, getDenominator, groupByMapMany, isAddress } from "./utils"
 
 

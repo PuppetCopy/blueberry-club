@@ -17,7 +17,7 @@ import { $ButtonPrimary, $ButtonSecondary } from "../form/$Button"
 import { $Dropdown, $defaultSelectContainer } from "../form/$Dropdown"
 import { $card } from "../../elements/$common"
 import { $caretDown } from "../../elements/$icons"
-import { getTokenDescription, resolveAddress } from "../../logic/utils"
+import { CHAIN_NATIVE_TO_ADDRESS, getTokenDescription, resolveAddress } from "../../logic/utils"
 import { IEthereumProvider } from "eip1193-provider"
 import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 import { WALLET } from "../../logic/provider"
@@ -108,12 +108,12 @@ export const $TradeBox = (config: ITradeBox) => component((
   [crosshairMove, crosshairMoveTether]: Behavior<MouseEventParams, MouseEventParams>,
   [clickReset, clickResetTether]: Behavior<any, any>,
 
-
 ) => {
 
   const vault = connectVault(config.walletLink.provider)
   const chain = config.chain || CHAIN.ARBITRUM
   const tradeState: Stream<ITradeRequest> = replayState({ ...config.state, ...config.tradeParams })
+  // const tradeState: Stream<ITradeRequest> = combineObject({ ...config.state, ...config.tradeParams })
 
 
   const validationError = map((params) => {
@@ -466,7 +466,11 @@ export const $TradeBox = (config: ITradeBox) => component((
                 value: config.tradeParams.indexToken,
                 $container: $defaultSelectContainer(style({ minWidth: '300px', right: 0 })),
                 $$option: snapshot((isLong, option) => {
-                  const tokenDesc = getTokenDescription(chain, option)
+                  
+                  // @ts-ignore
+                  const token = CHAIN_NATIVE_TO_ADDRESS[chain] === option ? AddressZero : option
+
+                  const tokenDesc = getTokenDescription(chain, token)
                   const availableLiquidityUsd = vault.getAvailableLiquidityUsd(chain, option, isLong)
 
                   return $row(style({ placeContent: 'space-between', flex: 1 }))(
@@ -694,11 +698,7 @@ export const $TradeBox = (config: ITradeBox) => component((
             chainList: config.chainList,
             walletStore: config.walletStore,
             $connectLabel: $text('Connect To Trade'),
-            $container: $column(
-              layoutSheet.spacingBig,
-              style({ zIndex: 10 }),
-              styleBehavior(map(xcsChange => xcsChange && xcsChange.time ? { opacity: .3 } : { opacity: 1 }, pnlCrossHairTimeChange))
-            ),
+            $container: $column(layoutSheet.spacingBig, style({ zIndex: 10 })),
             $$display: map(() => {
 
               return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
@@ -716,24 +716,24 @@ export const $TradeBox = (config: ITradeBox) => component((
                   click: clickResetTether()
                 }),
                 $ButtonPrimary({
-                  disabled: map(params => {
-                    if (params.leverage > MAX_LEVERAGE || params.leverage < MIN_LEVERAGE) {
-                      return true
-                    }
+                  // disabled: map(params => {
+                  //   if (params.leverage > MAX_LEVERAGE || params.leverage < MIN_LEVERAGE) {
+                  //     return true
+                  //   }
 
-                    if (params.isIncrease && (params.collateralDeltaUsd > 0n || params.sizeDelta > 0n) && params.collateralDelta <= params.walletBalance) {
-                      return false
-                    }
+                  //   if (params.isIncrease && (params.collateralDeltaUsd > 0n || params.sizeDelta > 0n) && params.collateralDelta <= params.walletBalance) {
+                  //     return false
+                  //   }
 
-                    if (params.vaultPosition && !params.isIncrease && (params.sizeDelta > 0n || params.collateralDeltaUsd > 0n)
-                      && (params.liquidationPrice === null || (params.isLong
-                        ? params.liquidationPrice! <= params.indexTokenPrice
-                        : params.liquidationPrice! >= params.indexTokenPrice))) {
-                      return false
-                    }
+                  //   if (params.vaultPosition && !params.isIncrease && (params.sizeDelta > 0n || params.collateralDeltaUsd > 0n)
+                  //     && (params.liquidationPrice === null || (params.isLong
+                  //       ? params.liquidationPrice! <= params.indexTokenPrice
+                  //       : params.liquidationPrice! >= params.indexTokenPrice))) {
+                  //     return false
+                  //   }
 
-                    return true
-                  }, tradeState),
+                  //   return true
+                  // }, tradeState),
                   $content: $text(map(params => {
                     const outputToken = getTokenDescription(chain, params.indexToken)
 
@@ -756,9 +756,12 @@ export const $TradeBox = (config: ITradeBox) => component((
                     return `${modLabel} ${params.isLong ? 'Long' : 'Short'} ${outputToken.symbol}`
                   }, tradeState)),
                 })({
-                  click: requestTradeTether(snapshot((state) => {
-                    return state
-                  }, tradeState))
+                  click: requestTradeTether(
+                    snapshot((state) => {
+                      return state
+                    }, tradeState),
+                    multicast
+                  )
                 }),
 
                 switchLatest(map(error => {
@@ -902,7 +905,6 @@ export const $TradeBox = (config: ITradeBox) => component((
       ]),
       walletChange,
       changeSlippage,
-
       requestTrade,
 
     }
