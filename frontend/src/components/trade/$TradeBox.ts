@@ -1,14 +1,14 @@
 import { Behavior, combineArray, combineObject, O, replayLatest } from "@aelea/core"
-import { component, INode, $element, attr, style, $text, nodeEvent, stylePseudo, $node, styleBehavior, motion, MOTION_NO_WOBBLE } from "@aelea/dom"
-import { $row, layoutSheet, $icon, $column, screenUtils, $TextField, $NumberTicker } from "@aelea/ui-components"
+import { component, INode, $element, attr, style, $text, nodeEvent, stylePseudo, $node, styleBehavior, motion, MOTION_NO_WOBBLE, $Node } from "@aelea/dom"
+import { $row, layoutSheet, $icon, $column, screenUtils, $TextField, $NumberTicker, $Popover } from "@aelea/ui-components"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import {
   ARBITRUM_ADDRESS_INDEX, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, ARBITRUM_ADDRESS, formatFixed, readableNumber,
   parseFixed, formatReadableUSD, BASIS_POINTS_DIVISOR,
-  ITrade, IVaultPosition, getTokenAmount, TokenDescription, MAX_LEVERAGE, bnDiv, replayState,
+  ITrade, IVaultPosition, getTokenAmount, TokenDescription, LIMIT_LEVERAGE, bnDiv, replayState,
   div, StateStream, getPnL, MIN_LEVERAGE, formatToBasis, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE, AVALANCHE_ADDRESS_INDEX, isTradeSettled, CHAIN, unixTimestampNow, query, fromJson, AddressInput, AddressIndex, AddressStable, AddressZero
 } from "@gambitdao/gmx-middleware"
-import { $alertIcon, $ButtonToggle, $infoTooltip, $tokenIconMap, $tokenLabelFromSummary, $Tooltip, getPricefeedVisibleColumns } from "@gambitdao/ui-components"
+import { $alertIcon, $anchor, $ButtonToggle, $infoTooltip, $IntermediateTx, $tokenIconMap, $tokenLabelFromSummary, $Tooltip, getPricefeedVisibleColumns, IIntermediateState, IIntermediateStatus } from "@gambitdao/ui-components"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { merge, multicast, mergeArray, now, snapshot, map, switchLatest, filter, skipRepeats, empty, combine, fromPromise, constant, sample, startWith, skipRepeatsWith } from "@most/core"
 import { Stream } from "@most/types"
@@ -22,9 +22,10 @@ import { IEthereumProvider } from "eip1193-provider"
 import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 import { WALLET } from "../../logic/provider"
 import { BrowserStore } from "../../logic/store"
-import { connectVault, getErc20Balance } from "../../logic/contract/trade"
+import { connectTrade, connectVault, getErc20Balance } from "../../logic/contract/trade"
 import { MouseEventParams } from "lightweight-charts"
 import { $TradePnlHistory } from "./$TradePnlHistory"
+import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
 
 
 
@@ -51,6 +52,7 @@ export interface ITradeState {
 }
 
 export interface ITradeParams {
+  isTradingEnabled: boolean
   trade: ITrade | null
   isLong: boolean
 
@@ -88,6 +90,12 @@ interface ITradeBox {
 
 
 export const $TradeBox = (config: ITradeBox) => component((
+  [openEnableTradingPopover, openEnableTradingPopoverTether]: Behavior<any, any>,
+  [enableTrading, enableTradingTether]: Behavior<any, boolean>,
+  [enablePluginTx, enablePluginTxTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
+
+  [dismissEnableTradingOverlay, dismissEnableTradingOverlayTether]: Behavior<false, false>,
+
   [switchIsLong, switchIsLongTether]: Behavior<boolean, boolean>,
 
   [inputCollateral, inputCollateralTether]: Behavior<INode, bigint>,
@@ -111,6 +119,8 @@ export const $TradeBox = (config: ITradeBox) => component((
 ) => {
 
   const vault = connectVault(config.walletLink.provider)
+  const position = connectTrade(config.walletLink.provider)
+
   const chain = config.chain || CHAIN.ARBITRUM
   const tradeState: Stream<ITradeRequest> = replayState({ ...config.state, ...config.tradeParams })
   // const tradeState: Stream<ITradeRequest> = combineObject({ ...config.state, ...config.tradeParams })
@@ -118,8 +128,8 @@ export const $TradeBox = (config: ITradeBox) => component((
 
   const validationError = map((params) => {
 
-    if (params.leverage > MAX_LEVERAGE) {
-      return `Leverage exceeds ${formatToBasis(MAX_LEVERAGE)}x`
+    if (params.leverage > LIMIT_LEVERAGE) {
+      return `Leverage exceeds ${formatToBasis(LIMIT_LEVERAGE)}x`
     }
 
     if (params.isIncrease) {
@@ -226,7 +236,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
   const BOX_SPACING = '18px'
 
-  const MAX_LEVERAGE_NORMAL = formatToBasis(MAX_LEVERAGE)
+  const MAX_LEVERAGE_NORMAL = formatToBasis(LIMIT_LEVERAGE)
 
   const clickResetVal = constant(0n, clickReset)
 
@@ -235,7 +245,7 @@ export const $TradeBox = (config: ITradeBox) => component((
   return [
     $column(
 
-      $card(screenUtils.isDesktopScreen ? layoutSheet.spacing : layoutSheet.spacing, style({ border: `1px solid ${colorAlpha(pallete.foreground, .15)}`, padding: `${BOX_SPACING} ${BOX_SPACING} 0`, margin: screenUtils.isMobileScreen ? '0 10px' : '' }))(
+      $card(screenUtils.isDesktopScreen ? layoutSheet.spacing : layoutSheet.spacing, style({ boxShadow: `2px 2px 13px 3px #00000040`, border: `1px solid ${colorAlpha(pallete.foreground, .15)}`, padding: `${BOX_SPACING} ${BOX_SPACING} 0`, margin: screenUtils.isMobileScreen ? '0 10px' : '' }))(
         $column(layoutSheet.spacing)(
           $row(layoutSheet.spacingSmall, style({ position: 'relative', alignItems: 'center' }))(
 
@@ -381,7 +391,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                 return 0
               }
 
-              const minWithdraw = div(params.vaultPosition.size, MAX_LEVERAGE)
+              const minWithdraw = div(params.vaultPosition.size, LIMIT_LEVERAGE)
               const maxWithdraw = params.vaultPosition.collateral - minWithdraw // - state.fee
 
               return bnDiv(maxWithdraw, params.vaultPosition.collateral)
@@ -466,7 +476,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                 value: config.tradeParams.indexToken,
                 $container: $defaultSelectContainer(style({ minWidth: '300px', right: 0 })),
                 $$option: snapshot((isLong, option) => {
-                  
+
                   // @ts-ignore
                   const token = CHAIN_NATIVE_TO_ADDRESS[chain] === option ? AddressZero : option
 
@@ -567,7 +577,7 @@ export const $TradeBox = (config: ITradeBox) => component((
               return 0
             }
 
-            return bnDiv(lm, MAX_LEVERAGE)
+            return bnDiv(lm, LIMIT_LEVERAGE)
           }, mergeArray([
             initialLeverage,
             config.tradeParams.leverage
@@ -590,7 +600,7 @@ export const $TradeBox = (config: ITradeBox) => component((
             const totalSize = pos?.size || 0n
             const leverage = div(totalSize, totalCollateral)
 
-            const leverageBasis = bnDiv(leverage, MAX_LEVERAGE)
+            const leverageBasis = bnDiv(leverage, LIMIT_LEVERAGE)
 
             return leverageBasis
           }, combineObject({ collateralDeltaUsd: config.state.collateralDeltaUsd, pos: config.state.vaultPosition, isIncrease: config.tradeParams.isIncrease })),
@@ -601,7 +611,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
             const totalCollateral = (pos?.collateral || 0n) - collateralDeltaUsd
             const totalSize = (pos?.size || 0n)
-            const multiplier = bnDiv(div(totalSize, totalCollateral), MAX_LEVERAGE)
+            const multiplier = bnDiv(div(totalSize, totalCollateral), LIMIT_LEVERAGE)
 
             return multiplier
           }, combineObject({ collateralDeltaUsd: config.state.collateralDeltaUsd, pos: config.state.vaultPosition, isIncrease: config.tradeParams.isIncrease })),
@@ -610,7 +620,7 @@ export const $TradeBox = (config: ITradeBox) => component((
           change: slideLeverageTether(
             map(leverage => {
               const leverageRatio = BigInt(Math.floor(Math.abs(leverage) * Number(BASIS_POINTS_DIVISOR)))
-              const leverageMultiplier = MAX_LEVERAGE * leverageRatio / BASIS_POINTS_DIVISOR
+              const leverageMultiplier = LIMIT_LEVERAGE * leverageRatio / BASIS_POINTS_DIVISOR
 
               return leverageMultiplier
             }),
@@ -698,10 +708,12 @@ export const $TradeBox = (config: ITradeBox) => component((
             chainList: config.chainList,
             walletStore: config.walletStore,
             $connectLabel: $text('Connect To Trade'),
-            $container: $column(layoutSheet.spacingBig, style({ zIndex: 10 })),
+            $container: $column(layoutSheet.spacingBig, style({})),
             $$display: map(() => {
 
               return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+
+
                 $ButtonSecondary({
                   buttonOp: style({ padding: '8px', placeSelf: 'center' }),
                   disabled: map(params => {
@@ -712,57 +724,145 @@ export const $TradeBox = (config: ITradeBox) => component((
                     return true
                   }, tradeState),
                   $content: $text('Reset')
-                })({
-                  click: clickResetTether()
-                }),
-                $ButtonPrimary({
-                  // disabled: map(params => {
-                  //   if (params.leverage > MAX_LEVERAGE || params.leverage < MIN_LEVERAGE) {
-                  //     return true
-                  //   }
+                })({ click: clickResetTether() }),
 
-                  //   if (params.isIncrease && (params.collateralDeltaUsd > 0n || params.sizeDelta > 0n) && params.collateralDelta <= params.walletBalance) {
-                  //     return false
-                  //   }
+                switchLatest(combineArray((isPluginEnabled, isEnabled) => {
 
-                  //   if (params.vaultPosition && !params.isIncrease && (params.sizeDelta > 0n || params.collateralDeltaUsd > 0n)
-                  //     && (params.liquidationPrice === null || (params.isLong
-                  //       ? params.liquidationPrice! <= params.indexTokenPrice
-                  //       : params.liquidationPrice! >= params.indexTokenPrice))) {
-                  //     return false
-                  //   }
+                  console.log(isPluginEnabled)
 
-                  //   return true
-                  // }, tradeState),
-                  $content: $text(map(params => {
-                    const outputToken = getTokenDescription(chain, params.indexToken)
+                  if (!isPluginEnabled || !isEnabled) {
+                    return $Popover({
+                      $$popContent: map((xx) => {
 
-                    let modLabel: string
+               
+                        return $column(layoutSheet.spacing)(
+                          $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(`By using GBC Trading, I agree to the following Disclaimer`),
+                          $text(style({ whiteSpace: 'pre-wrap', fontSize: '.75em' }))(`By accessing, I agree that ${document.location.href} is an interface (hereinafter the "Interface") to interact with external GMX smart contracts, and does not have access to my funds.`),
+                          $node(
+                            $text(style({ whiteSpace: 'pre-wrap', fontSize: '.75em' }))(`By clicking Agree you accept the `),
+                            $anchor(attr({ href: '/p/trading-terms-and-conditions' }))($text('Terms & Conditions'))
+                          ),
 
-                    if (params.vaultPosition) {
-                      if (params.isIncrease) {
-                        modLabel = 'Increase'
-                      } else {
-                        modLabel = params.sizeDelta === params.vaultPosition.size || params.collateralDeltaUsd === params.vaultPosition.collateral ? 'Close' : 'Reduce'
+                          !isPluginEnabled
+                            ? switchLatest(mergeArray([
+                              now(
+                                $ButtonPrimary({
+                                  $content: $text(!isPluginEnabled ? 'Enable Leverage(GMX) & Agree' : 'Agree')
+                                })({
+                                  click: enablePluginTxTether(
+                                    snapshot((c) => c!.contract.approvePlugin(c!.address), position.router.contract)
+                                  )
+                                })
+                              ),
+
+                              map(ctxQuery => {
+                                return $IntermediateTx({
+                                  chain,
+                                  query: now(ctxQuery)
+                                })({
+                                  state: enableTradingTether(
+                                    filter((state: IIntermediateState<ContractReceipt | $Node | Error>) => state.status === IIntermediateStatus.DONE),
+                                    constant(true)
+                                  )
+                                })
+                              }, enablePluginTx)
+                            ]))
+                            : $ButtonPrimary({
+                              $content: $text('Agree')
+                            })({
+                              click: enableTradingTether(
+                                constant(true)
+                              )
+                            })
+                          //                           $text(style({ whiteSpace: 'pre-wrap' }))(`By accessing, I agree that blueberry.club/p/trade is an interface (hereinafter the "Interface") to interact with external GMX smart contracts, and does not have access to my funds. I represent and warrant the following:  
+
+                          // - I am not a United States person or entity;
+
+                          // - I am not a resident, national, or agent of any country to which the United States, the United Kingdom, the United Nations, or the European Union embargoes goods or imposes similar sanctions, including without limitation the U.S. Office of Foreign Asset Control, Specifically Designated Nationals and Blocked Person List;
+
+                          // - I am legally entitled to access the Interface under the laws of the jurisdiction where I am located;
+
+                          // - I am responsible for the risks using the Interface, including, but not limited to, the following: (i) the use of GMX smart contracts; (ii) leverage trading, the risk may result in the total loss of my deposit.`)
+
+                          // $label(layoutSheet.spacingSmall, style({ alignItems: 'center', flexDirection: 'row', fontSize: '0.75em' }))(
+                          //   $Checkbox({
+                          //     value: enableTrading
+                          //   })({
+                          //     check: enableTradingTether()
+                          //   }),
+                          //   $row(layoutSheet.spacingTiny)(
+                          //     $text(style({ color: pallete.foreground }))('Degen Mode'),
+                          //     $infoTooltip('You are going to get liquidated stupid')
+                          //   ),
+                          // ),
+
+                        )
+                      }, openEnableTradingPopover),
+                    })(
+                      $row(
+                        $ButtonSecondary({
+                          $content: $text('Enable Trading'),
+                          disabled: mergeArray([
+                            dismissEnableTradingOverlay,
+                            openEnableTradingPopover
+                          ])
+                        })({
+                          click: openEnableTradingPopoverTether()
+                        })
+                      )
+                    )({
+                      overlayClick: dismissEnableTradingOverlayTether(constant(false))
+                    })
+                  }
+
+                  return $ButtonPrimary({
+                    disabled: map(params => {
+                      if (params.leverage > LIMIT_LEVERAGE || params.leverage < MIN_LEVERAGE) {
+                        return true
                       }
-                    } else {
-                      modLabel = 'Open'
-                    }
 
-                    if (screenUtils.isMobileScreen) {
-                      return modLabel
-                    }
+                      if (params.isIncrease && (params.collateralDeltaUsd > 0n || params.sizeDelta > 0n) && params.collateralDelta <= params.walletBalance) {
+                        return false
+                      }
 
-                    return `${modLabel} ${params.isLong ? 'Long' : 'Short'} ${outputToken.symbol}`
-                  }, tradeState)),
-                })({
-                  click: requestTradeTether(
-                    snapshot((state) => {
-                      return state
+                      if (params.vaultPosition && !params.isIncrease && (params.sizeDelta > 0n || params.collateralDeltaUsd > 0n)
+                        && (params.liquidationPrice === null || (params.isLong
+                          ? params.liquidationPrice! <= params.indexTokenPrice
+                          : params.liquidationPrice! >= params.indexTokenPrice))) {
+                        return false
+                      }
+
+                      return true
                     }, tradeState),
-                    multicast
-                  )
-                }),
+                    $content: $text(map(params => {
+                      const outputToken = getTokenDescription(chain, params.indexToken)
+
+                      let modLabel: string
+
+                      if (params.vaultPosition) {
+                        if (params.isIncrease) {
+                          modLabel = 'Increase'
+                        } else {
+                          modLabel = params.sizeDelta === params.vaultPosition.size || params.collateralDeltaUsd === params.vaultPosition.collateral ? 'Close' : 'Reduce'
+                        }
+                      } else {
+                        modLabel = 'Open'
+                      }
+
+                      if (screenUtils.isMobileScreen) {
+                        return modLabel
+                      }
+
+                      return `${modLabel} ${params.isLong ? 'Long' : 'Short'} ${outputToken.symbol}`
+                    }, tradeState)),
+                  })({
+                    click: requestTradeTether(
+                      snapshot((state) => state, tradeState),
+                      multicast
+                    )
+                  })
+                }, position.isEnabled, config.tradeParams.isTradingEnabled)),
+
 
                 switchLatest(map(error => {
                   if (error === null) {
@@ -906,6 +1006,7 @@ export const $TradeBox = (config: ITradeBox) => component((
       walletChange,
       changeSlippage,
       requestTrade,
+      enableTrading,
 
     }
   ]

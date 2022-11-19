@@ -92,6 +92,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
   const timeFrameStore = tradingStore.craete('portfolio-chart-interval', intervalTimeMap.MIN60)
 
+  const isTradingEnabledStore = tradingStore.craete('isTradingEnabled', false)
   const isLongStore = tradingStore.craete('isLong', true)
   const inputTokenStore = tradingStore.craete('depositToken', AddressZero as AddressIndex)
   const shortCollateralTokenStore = tradingStore.craete('collateralToken', config.stableTokens[0] as AddressStable)
@@ -101,6 +102,7 @@ export const $Trade = (config: ITradeComponent) => component((
   // const collateralRatioStore = tradingStore.craete('collateralRatio', 0)
 
 
+  const isTradingEnabled = isTradingEnabledStore.storeReplay(enableTrading)
   const timeframe = timeFrameStore.storeReplay(selectTimeFrame)
 
   const isLong = isLongStore.storeReplay(mergeArray([map(t => t.isLong, switchTrade), switchIsLong]))
@@ -145,7 +147,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
 
-  const tradeParams = { trade, slippage, isLong, isIncrease, inputToken, shortCollateralToken, indexToken, leverage, collateralDelta, sizeDelta, collateralRatio, }
+  const tradeParams = { isTradingEnabled, trade, slippage, isLong, isIncrease, inputToken, shortCollateralToken, indexToken, leverage, collateralDelta, sizeDelta, collateralRatio, }
   const tradeParamsState = replayState(tradeParams)
 
 
@@ -305,9 +307,10 @@ export const $Trade = (config: ITradeComponent) => component((
     const averagePrice = params.vaultPosition?.averagePrice || params.indexTokenPrice
     const pnl = params.vaultPosition ? getPnL(params.isLong, params.vaultPosition.averagePrice, params.indexTokenPrice, params.vaultPosition.size) : 0n
 
-    const newLocal = getLiquidationPrice(params.isLong, positionSize, positionCollateral, averagePrice, 0n, 0n, pnl, params.sizeDelta, params.collateralDeltaUsd)
+    const sizedelta = params.isIncrease ? params.sizeDelta : -params.sizeDelta
+    const collateralDelta = params.isIncrease ? params.collateralDeltaUsd : -params.collateralDeltaUsd
 
-    return newLocal
+    return getLiquidationPrice(params.isLong, positionSize, positionCollateral, averagePrice, 0n, 0n, pnl, sizedelta, collateralDelta)
   }, combineObject({ vaultPosition, isIncrease, collateralDeltaUsd, sizeDelta, averagePrice, indexTokenPrice, isLong }))
 
 
@@ -493,7 +496,8 @@ export const $Trade = (config: ITradeComponent) => component((
           changeCollateralRatio: changeCollateralRatioTether(),
           requestTrade: requestTradeTether(),
           changeSlippage: changeSlippageTether(),
-          walletChange: walletChangeTether()
+          walletChange: walletChangeTether(),
+          enableTrading: enableTradingTether(),
         }),
 
         // $node($text(map(amountUsd => formatReadableUSD(amountUsd), availableLiquidityUsd))),
@@ -704,39 +708,6 @@ export const $Trade = (config: ITradeComponent) => component((
                       return { open, high, low, close, time: timestamp as Time }
                     })
                   }, selectedPricefeed),
-                  // drawMarkers: map(trade => {
-                  //   if (trade) {
-                  //     const increaseList = trade.increaseList
-                  //     const increaseMarkers = increaseList
-                  //       .slice(1)
-                  //       .map((ip): SeriesMarker<Time> => {
-                  //         return {
-                  //           color: pallete.foreground,
-                  //           position: "aboveBar",
-                  //           shape: "arrowUp",
-                  //           time: unixTimeTzOffset(ip.timestamp),
-                  //           text: formatReadableUSD(ip.collateralDelta)
-                  //         }
-                  //       })
-
-                  //     const decreaseList = isTradeSettled(trade) ? trade.decreaseList.slice(0, -1) : trade.decreaseList
-
-                  //     const decreaseMarkers = decreaseList
-                  //       .map((ip): SeriesMarker<Time> => {
-                  //         return {
-                  //           color: pallete.foreground,
-                  //           position: 'belowBar',
-                  //           shape: "arrowDown",
-                  //           time: unixTimeTzOffset(ip.timestamp),
-                  //           text: formatReadableUSD(ip.collateralDelta)
-                  //         }
-                  //       })
-
-                  //     return [...decreaseMarkers, ...increaseMarkers]
-                  //   }
-
-                  //   return []
-                  // }, config.trade)
                 }
               ],
               containerOp: style({
@@ -754,15 +725,9 @@ export const $Trade = (config: ITradeComponent) => component((
                     top: 0.1,
                     bottom: 0.1
                   }
-
-                  // autoScale: true,
-                  // mode: PriceScaleMode.Logarithmic
-                  // visible: false
                 },
                 timeScale: {
                   timeVisible: true,
-                  // timeVisible: timeframeState <= intervalTimeMap.DAY7,
-                  // secondsVisible: timeframeState <= intervalTimeMap.MIN60,
                   borderVisible: true,
                   rightOffset: 15,
                   shiftVisibleRangeOnNewBar: true,

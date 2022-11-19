@@ -64,7 +64,7 @@ const contractMapping = {
 export function contractConnect<T extends typeof ContractFactory>(contractCtr: T, provider: Stream<Web3Provider | null>, contractAddress: keyof typeof ARBITRUM_ADDRESS & keyof typeof AVALANCHE_ADDRESS) {
 
   // @ts-ignore
-  type RType = { contract: ReturnType<T['connect']>, signer: JsonRpcSigner, provider: Web3Provider, addressMapping: typeof ARBITRUM_ADDRESS | typeof AVALANCHE_ADDRESS } | null
+  type RType = { address: string, contract: ReturnType<T['connect']>, signer: JsonRpcSigner, provider: Web3Provider, addressMapping: typeof ARBITRUM_ADDRESS | typeof AVALANCHE_ADDRESS } | null
 
   const contract: Stream<RType> = map((provider) => {
     if (provider === null) {
@@ -78,6 +78,11 @@ export function contractConnect<T extends typeof ContractFactory>(contractCtr: T
     }
 
     const addressMapping = contractMapping[chainId]
+
+    if (!addressMapping) {
+      return null
+    }
+
     const address = addressMapping[contractAddress]
 
     if (!address) {
@@ -89,7 +94,7 @@ export function contractConnect<T extends typeof ContractFactory>(contractCtr: T
     // @ts-ignore
     const contract = contractCtr.connect(address, signer)
 
-    return { provider, signer, contract, addressMapping }
+    return { provider, signer, contract, addressMapping, address }
   }, provider)
 
   const run = <R>(op: Op<NonNullable<RType>, Promise<R>>) => O(

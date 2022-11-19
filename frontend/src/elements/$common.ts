@@ -62,7 +62,7 @@ export const $addToCalendar = (config: IAddtoCalendarButton) => {
     : `http://www.google.com/calendar/render?
 action=TEMPLATE
 &text=${config.title}
-&dates=${formatTime(config.time)}/${formatTime(config.time) }
+&dates=${formatTime(config.time)}/${formatTime(config.time)}
 ${config.description ? `&details=${encodeURIComponent(config.description)}` : ''}
 &location=${config.location}
 &trp=false

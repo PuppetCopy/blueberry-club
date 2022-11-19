@@ -2,7 +2,7 @@ import { Behavior } from "@aelea/core"
 import { $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
-import { $anchor, $IntermediatePromise, $Link } from "@gambitdao/ui-components"
+import { $anchor, $AnchorLink, $IntermediatePromise, $Link } from "@gambitdao/ui-components"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $loadBerry } from "../../components/$DisplayBerry"

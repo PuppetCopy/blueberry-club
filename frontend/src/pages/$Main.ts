@@ -218,32 +218,37 @@ export default ({ baseRoute = '' }: Website) => component((
                   return empty()
                 }
 
-                const indexTokens: AddressIndex[] = chain === CHAIN.AVALANCHE ?
-                  [
-                    AVALANCHE_ADDRESS.NATIVE_TOKEN,
-                    AVALANCHE_ADDRESS.WETHE,
-                    AVALANCHE_ADDRESS.WBTCE,
-                    AVALANCHE_ADDRESS.BTCB,
-                  ]
-                  : [
+                const indexTokens: AddressIndex[] = chain === CHAIN.ARBITRUM
+                  ? [
                     ARBITRUM_ADDRESS.NATIVE_TOKEN,
                     ARBITRUM_ADDRESS.LINK,
                     ARBITRUM_ADDRESS.UNI,
                     ARBITRUM_ADDRESS.WBTC,
                   ]
+                  : chain === CHAIN.AVALANCHE ?
+                    [
+                      AVALANCHE_ADDRESS.NATIVE_TOKEN,
+                      AVALANCHE_ADDRESS.WETHE,
+                      AVALANCHE_ADDRESS.WBTCE,
+                      AVALANCHE_ADDRESS.BTCB,
+                    ]
+                    : []
 
-                const stableTokens: AddressStable[] = chain === CHAIN.AVALANCHE ?
+                const stableTokens: AddressStable[] = chain === CHAIN.ARBITRUM ?
                   [
-                    AVALANCHE_ADDRESS.USDC,
-                    AVALANCHE_ADDRESS.USDCE,
-                    // AVALANCHE_ADDRESS.MIM,
-                  ] : [
                     ARBITRUM_ADDRESS.USDC,
                     ARBITRUM_ADDRESS.USDT,
                     ARBITRUM_ADDRESS.DAI,
                     ARBITRUM_ADDRESS.FRAX,
                     // ARBITRUM_ADDRESS.MIM,
                   ]
+                  : chain === CHAIN.AVALANCHE
+                    ? [
+                      AVALANCHE_ADDRESS.USDC,
+                      AVALANCHE_ADDRESS.USDCE,
+                      // AVALANCHE_ADDRESS.MIM,
+                    ]
+                    : []
 
 
                 return $Trade({

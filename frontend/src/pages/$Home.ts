@@ -145,7 +145,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
     import("@gambitdao/gbc-middleware/src/mappings/svgParts").then(res => res.default)
   ]))
 
-  
+
 
   return [
     $column(style(screenUtils.isDesktopScreen ? { gap: '125px' } : { gap: '90px' }))(
@@ -184,7 +184,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
               ),
               $seperator2,
               $row(layoutSheet.spacingBig, style({}))(
-                $anchor(layoutSheet.spacingSmall, style({ alignItems: 'center' }), attr({ href: `https://opensea.io/collection/blueberry-club`, target: '_blank' }))(
+                $anchor(layoutSheet.spacingSmall, style({ alignItems: 'center', display: 'flex' }), attr({ href: `https://opensea.io/collection/blueberry-club` }))(
                   $icon({
                     width: '40px',
                     $content: $opensea,
@@ -192,7 +192,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
                   }),
                   $text(style({ paddingBottom: '6px' }))(screenUtils.isDesktopScreen ? 'Trade On Opensea' : 'Trade')
                 ),
-                $anchor(layoutSheet.spacingSmall, style({ alignItems: 'center' }), attr({ href: `https://docs.blueberry.club`, target: '_blank' }))(
+                $anchor(layoutSheet.spacingSmall, style({ alignItems: 'center', display: 'flex' }), attr({ href: `https://docs.blueberry.club` }))(
                   $icon({
                     width: '40px',
                     $content: $gitbook,
@@ -206,9 +206,9 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
             const $mosaicItem = (id: number, svgBody: SvgPartsMap, size: number) => {
               const matchTuple: Partial<IBerryDisplayTupleMap> = tokenIdAttributeTuple[id - 1]
 
-              return $anchor(style({ position: 'relative' }), attr({ href: '/p/berry/' + id }))(
+              return $anchor(style({ position: 'relative' }), attr({ href: '/p/berry/' + id, target: '' }))(
                 style({ borderRadius: '10px' }, $berry(svgBody, matchTuple, size)),
-                $text(style({ textAlign: 'left', padding: screenUtils.isDesktopScreen ? '8px 0 0 8px' : '5px 0 0 5px', color: '#fff', textShadow: '#0000005e 0px 0px 5px', fontSize: screenUtils.isDesktopScreen ? '.6em' : '.6em', position: 'absolute', fontWeight: 'bold' }))(String(id))
+                $text(style({ textAlign: 'left', padding: screenUtils.isDesktopScreen ? '8px 0 0 8px' : '5px 0 0 5px', color: '#fff', textShadow: '#0000005e 0px 0px 5px', fontSize: screenUtils.isDesktopScreen ? '.6em' : '.6em', position: 'absolute', top: 0, fontWeight: 'bold' }))(String(id))
               )
             }
 

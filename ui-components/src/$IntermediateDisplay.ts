@@ -7,7 +7,7 @@ import { parseError } from "@gambitdao/wallet-link"
 import { chain, constant, empty, fromPromise, map, merge, mergeArray, multicast, now, recoverWith, startWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
 import { CHAIN } from '@gambitdao/gmx-middleware'
-import { $alert, $alertTooltip, $txHashRef,  } from "./$common"
+import { $alert, $alertTooltip, $txHashRef, } from "./$common"
 
 
 export const $spinner = $node(style({
@@ -33,24 +33,17 @@ export interface IIntermediatPromise<T> {
   $loader?: $Node
 }
 
-enum STATUS {
+export enum IIntermediateStatus {
   LOADING,
   DONE,
   ERROR,
 }
 
-interface IIntermediateState<T> {
-  status: STATUS.DONE
+export interface IIntermediateState<T> {
+  status: IIntermediateStatus.DONE | IIntermediateStatus.LOADING | IIntermediateStatus.ERROR
   data: T
 }
-interface IIntermediateLoading {
-  status: STATUS.LOADING
-  $loader: $Node
-}
-interface IIntermediateError {
-  status: STATUS.ERROR
-  error: Error
-}
+
 
 export const $IntermediatePromise = <T>({
   $loader = $spinner,
@@ -59,10 +52,10 @@ export const $IntermediatePromise = <T>({
   $$done,
   clean = empty()
 }: IIntermediatPromise<T>) => component(() => {
-  const state: Stream<IIntermediateState<T> | IIntermediateLoading | IIntermediateError> = multicast(switchLatest(map(prom => {
-    const doneData: Stream<IIntermediateState<T>> = map(data => ({ status: STATUS.DONE, data }), fromPromise(prom))
-    const loading: Stream<IIntermediateLoading> = now({ status: STATUS.LOADING, $loader })
-    const settledOrError = recoverWith(error => now({ status: STATUS.ERROR, error } as IIntermediateError), doneData)
+  const state: Stream<IIntermediateState<T | $Node | Error>> = multicast(switchLatest(map(prom => {
+    const doneData: Stream<IIntermediateState<T>> = map(data => ({ status: IIntermediateStatus.DONE, data }), fromPromise(prom))
+    const loading: Stream<IIntermediateState<$Node>> = now({ status: IIntermediateStatus.LOADING, data: $loader })
+    const settledOrError = recoverWith(error => now({ status: IIntermediateStatus.ERROR, data: error } as IIntermediateState<Error>), doneData)
 
     return merge(settledOrError, loading)
   }, query)))
@@ -71,12 +64,12 @@ export const $IntermediatePromise = <T>({
     switchLatest(mergeArray([
       chain(state => {
 
-        if (state.status === STATUS.LOADING) {
+        if (state.status === IIntermediateStatus.LOADING) {
           return now($loader)
         }
 
-        if (state.status === STATUS.ERROR) {
-          return $$fail(now(state.error))
+        if (state.status === IIntermediateStatus.ERROR) {
+          return $$fail(now(state.data))
         }
 
         return $$done(now(state.data))

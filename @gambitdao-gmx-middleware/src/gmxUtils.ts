@@ -83,12 +83,12 @@ export function getMarginFees(size: bigint) {
 export function getLiquidationPriceFromDelta(liquidationAmount: bigint, size: bigint, collateral: bigint, averagePrice: bigint, isLong: boolean) {
   if (liquidationAmount > collateral) {
     const liquidationDelta = liquidationAmount - collateral
-    const priceDelta = size ? liquidationDelta * averagePrice / size : 0n
+    const priceDelta = liquidationDelta * averagePrice / size
     return isLong ? averagePrice + priceDelta : averagePrice - priceDelta
   }
 
   const liquidationDelta = collateral - liquidationAmount
-  const priceDelta = size ? liquidationDelta * averagePrice / size : 0n
+  const priceDelta = liquidationDelta * averagePrice / size
 
   return isLong ? averagePrice - priceDelta : averagePrice + priceDelta
 }
@@ -107,10 +107,16 @@ export function getLiquidationPrice(
   sizeDelta = 0n,
   collateralDelta = 0n,
 ) {
-  const adjustedDelta = size ? sizeDelta * pnl / size : 0n
 
   const nextSize = size + sizeDelta
-  const remainingCollateral = (pnl < 0n ? collateral - adjustedDelta : collateral) + collateralDelta
+
+  if (nextSize === 0n) {
+    return 0n
+  }
+
+  const nextCollateral = pnl < 0n
+    ? collateral + collateralDelta + -(sizeDelta * pnl / size) // reduce payed loss in case of loss
+    : collateral + collateralDelta
 
 
   const fundingFee = (size * cumulativeFundingRate - entryFundingRate) / FUNDING_RATE_PRECISION
@@ -120,15 +126,15 @@ export function getLiquidationPrice(
   const liquidationPriceForFees = getLiquidationPriceFromDelta(
     positionFee,
     nextSize,
-    remainingCollateral,
+    nextCollateral,
     averagePrice,
     isLong,
   )
 
   const liquidationPriceForMaxLeverage = getLiquidationPriceFromDelta(
-    nextSize * BASIS_POINTS_DIVISOR / MAX_LEVERAGE,
+    div(nextSize, MAX_LEVERAGE),
     nextSize,
-    remainingCollateral,
+    nextCollateral,
     averagePrice,
     isLong,
   )
@@ -147,6 +153,9 @@ export function getLiquidationPrice(
     : liquidationPriceForMaxLeverage
 
 }
+
+
+
 
 
 export function isTradeSettled(trade: ITrade): trade is ITradeSettled {

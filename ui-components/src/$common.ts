@@ -10,11 +10,14 @@ import { $Tooltip } from "./$Tooltip"
 
 
 export const $anchor = $element('a')(
+  layoutSheet.spacingTiny,
+  attr({ target: '_blank' }),
   stylePseudo(':hover', { color: pallete.middleground + '!important', fill: pallete.middleground }),
   style({
-    display: 'flex',
     cursor: 'pointer',
-    color: pallete.message
+    color: pallete.message,
+    alignItems: 'center',
+    display: 'flex',
   }),
 )
 
@@ -49,7 +52,7 @@ export const $infoTooltip = (text: string | Stream<string>) => {
 export const $txHashRef = (txHash: string, chain: CHAIN, label?: $Node) => {
   const href = getTxExplorerUrl(chain, txHash)
 
-  return $anchor(attr({ href, target: '_blank' }))(label ?? $text(shortenTxAddress(txHash)))
+  return $anchor(label ?? $text(shortenTxAddress(txHash)))
 }
 
 
@@ -75,7 +78,7 @@ export const $ProfitLossText = (pnl: Stream<bigint> | bigint, colorful = true) =
       return { color: isNegative ? pallete.negative : pallete.positive }
     }, display))
     : O()
-  
+
   // @ts-ignore
   return $text(colorStyle)(display)
 }

@@ -179,67 +179,70 @@ export const $IntermediateConnectPopover = (config: IConnectWalletPopover) => co
 
           const fstChain = config.chainList[0]
 
-          if (chain !== fstChain) {
-            return $ButtonPrimary({
-              buttonOp: style({ alignSelf: 'flex-start' }),
-              $content: $row(layoutSheet.spacingSmall)(
-                $text(`Switch to ${NETWORK_METADATA[fstChain].chainName}`),
-                $element('img')(attr({ src: `/assets/chain/${fstChain}.svg` }), style({ width: '20px' }))(),
-              ),
-            })({
-              click: switchNetworkTether(
-                snapshot(async wallet => {
-                  return wallet ? attemptToSwitchNetwork(wallet, fstChain).catch(error => {
-                    alert(error.message)
-                    console.error(error)
-                    return error
-                  }) : null
-                }, config.walletLink.walletChange)
-              )
-            })
+          if (config.chainList.length > 1) {
+            return $Dropdown({
+              value: {
+                value: config.walletLink.network,
+                $$option: map(option => {
+                  if (option === null) {
+                    return $text('?')
+                  }
+
+                  const chainName = NETWORK_METADATA[option].chainName
+
+                  return $row(
+                    switchNetworkTether(
+                      nodeEvent('click'),
+                      snapshot(async (w3p) => {
+                        w3p ? await attemptToSwitchNetwork(w3p, option).catch(error => {
+                          alert(error.message)
+                          console.error(error)
+                          return error
+                        }) : null
+
+
+                        return option
+                      }, config.walletLink.walletChange),
+                      multicast
+                    ),
+                    style({ alignItems: 'center', width: '100%' })
+                  )(
+                    $element('img')(attr({ src: `/assets/chain/${option}.svg` }), style({ width: '32px', padding: '3px 6px' }))(),
+                    $text(chainName)
+                  )
+                }),
+                $container: $defaultSelectContainer(style({ left: 'auto', right: 0, })),
+                list: config.chainList,
+              },
+              $container: $column(style({ placeContent: 'center', position: 'relative' })),
+              $selection: $ButtonPrimary({
+                $content: $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+                  $text('Choose Network'),
+                  $icon({ $content: $caretDown, viewBox: '0 0 32 32', width: '16px', fill: pallete.background, svgOps: style({ marginTop: '2px' }) }),
+                )
+              })({}),
+            })({})
+            
           }
 
-          return $Dropdown({
-            value: {
-              value: config.walletLink.network,
-              $$option: map(option => {
-                if (option === null) {
-                  return $text('?')
-                }
-
-                const chainName = NETWORK_METADATA[option].chainName
-
-                return $row(
-                  switchNetworkTether(
-                    nodeEvent('click'),
-                    snapshot(async (w3p) => {
-                      w3p ? await attemptToSwitchNetwork(w3p, option).catch(error => {
-                        alert(error.message)
-                        console.error(error)
-                        return error
-                      }) : null
-
-
-                      return option
-                    }, config.walletLink.walletChange)
-                  ),
-                  style({ alignItems: 'center', width: '100%' })
-                )(
-                  $element('img')(attr({ src: `/assets/chain/${option}.svg` }), style({ width: '32px', padding: '3px 6px' }))(),
-                  $text(chainName)
-                )
-              }),
-              $container: $defaultSelectContainer(style({ left: 'auto', right: 0, })),
-              list: config.chainList,
-            },
-            $container: $column(style({ placeContent: 'center', position: 'relative' })),
-            $selection: $ButtonPrimary({
-              $content: $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
-                $text('Choose Network'),
-                $icon({ $content: $caretDown, viewBox: '0 0 32 32', width: '16px', fill: pallete.background, svgOps: style({ marginTop: '2px' }) }),
-              )
-            })({}),
-          })({})
+          return $ButtonPrimary({
+            buttonOp: style({ alignSelf: 'flex-start' }),
+            $content: $row(layoutSheet.spacingSmall)(
+              $text(`Switch to ${NETWORK_METADATA[fstChain].chainName}`),
+              $element('img')(attr({ src: `/assets/chain/${fstChain}.svg` }), style({ width: '20px' }))(),
+            ),
+          })({
+            click: switchNetworkTether(
+              snapshot(async wallet => {
+                return wallet ? attemptToSwitchNetwork(wallet, fstChain).catch(error => {
+                  alert(error.message)
+                  console.error(error)
+                  return error
+                }) : null
+              }, config.walletLink.walletChange),
+              multicast
+            )
+          })
         }, config.walletLink.network))
       ) : switchLatest(config.$$display(now(account)))
     }, fromPromise(wallet.metamaskQuery), config.walletLink.provider, noAccount)),

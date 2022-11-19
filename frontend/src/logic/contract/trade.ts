@@ -47,7 +47,10 @@ export function connectTrade(provider: Stream<BaseProvider | null>) {
   const router = contractConnect(Router__factory, provider, 'Router')
   const positionRouter = contractConnect(PositionRouter__factory, provider, 'PositionRouter')
 
-  const isEnabled = router.run(map(async c => c.contract.approvedPlugins(await c.signer.getAddress(), c.addressMapping['PositionRouter'])))
+  const isEnabled = router.run(map(async c => {
+    return c.contract.approvedPlugins(await c.signer.getAddress(), c.addressMapping['PositionRouter'])
+  }))
+  // const approvePlugin = router.run(map(async c => c.contract.approvePlugin(c.address)))
 
   const executeIncreasePosition: Stream<KeeperExecutePosition> = positionRouter.listen('ExecuteIncreasePosition')
   const cancelIncreasePosition: Stream<KeeperExecutePosition> = positionRouter.listen('CancelIncreasePosition')
@@ -82,7 +85,10 @@ export function connectTrade(provider: Stream<BaseProvider | null>) {
 
   return {
     isEnabled,
-    positionRouter, executionFee, getLatestTradeRequest,
+    positionRouter,
+    router,
+    executionFee,
+    getLatestTradeRequest,
     executeIncreasePosition,
     cancelIncreasePosition,
     executeDecreasePosition,

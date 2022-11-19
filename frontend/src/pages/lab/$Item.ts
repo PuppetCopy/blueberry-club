@@ -44,7 +44,7 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute, chainList }: IL
   const totalMintCount = combineArray((...countList) => countList.reduce((seed, next) => seed + next, 0), ...item.mintRuleList.map(rule => getMintCount(rule, 3500)))
 
   const externalLinks = [
-    $anchor(layoutSheet.spacingTiny, attr({ href: `https://opensea.io/assets/arbitrum/0xf4f935f4272e6fd9c779cf0036589a63b48d77a7/${item.id}`, target: '_blank' }))(
+    $anchor(layoutSheet.spacingTiny, attr({ href: `https://opensea.io/assets/arbitrum/0xf4f935f4272e6fd9c779cf0036589a63b48d77a7/${item.id}` }))(
       $icon({
         $content: $opensea,
         viewBox: '0 0 32 32'
@@ -56,7 +56,7 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute, chainList }: IL
   if (item.externalLinks) {
     item.externalLinks.forEach(el => {
       externalLinks.unshift(
-        $anchor(layoutSheet.spacingTiny, attr({ href: el.link, target: '_blank' }))(
+        $anchor(layoutSheet.spacingTiny, attr({ href: el.link }))(
           $text(el.name)
         )
       )
