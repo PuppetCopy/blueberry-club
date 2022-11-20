@@ -246,7 +246,7 @@ export const $TradeBox = (config: ITradeBox) => component((
   const clickResetVal = constant(0n, clickReset)
 
 
-  
+
 
   return [
     $column(
@@ -716,7 +716,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                 })({ click: clickResetTether() }),
 
                 switchLatest(combineArray((isPluginEnabled, isEnabled, isInputTokenApproved, inputToken, inputTokenDesc) => {
- 
+
                   if (!isPluginEnabled || !isEnabled) {
                     return $Popover({
                       $$popContent: map((xx) => {
@@ -766,28 +766,6 @@ export const $TradeBox = (config: ITradeBox) => component((
                                 constant(true)
                               )
                             })
-                          //                           $text(style({ whiteSpace: 'pre-wrap' }))(`By accessing, I agree that blueberry.club/p/trade is an interface (hereinafter the "Interface") to interact with external GMX smart contracts, and does not have access to my funds. I represent and warrant the following:  
-
-                          // - I am not a United States person or entity;
-
-                          // - I am not a resident, national, or agent of any country to which the United States, the United Kingdom, the United Nations, or the European Union embargoes goods or imposes similar sanctions, including without limitation the U.S. Office of Foreign Asset Control, Specifically Designated Nationals and Blocked Person List;
-
-                          // - I am legally entitled to access the Interface under the laws of the jurisdiction where I am located;
-
-                          // - I am responsible for the risks using the Interface, including, but not limited to, the following: (i) the use of GMX smart contracts; (ii) leverage trading, the risk may result in the total loss of my deposit.`)
-
-                          // $label(layoutSheet.spacingSmall, style({ alignItems: 'center', flexDirection: 'row', fontSize: '0.75em' }))(
-                          //   $Checkbox({
-                          //     value: enableTrading
-                          //   })({
-                          //     check: enableTradingTether()
-                          //   }),
-                          //   $row(layoutSheet.spacingTiny)(
-                          //     $text(style({ color: pallete.foreground }))('Degen Mode'),
-                          //     $infoTooltip('You are going to get liquidated stupid')
-                          //   ),
-                          // ),
-
                         )
                       }, openEnableTradingPopover),
                     })(
@@ -815,7 +793,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                       click: approveInputTokenTether(
                         snapshot(async (c) => {
                           const contractAddress = getContract(chain, 'PositionRouter')
-                          
+
                           if (c === null) {
                             return false
                           }

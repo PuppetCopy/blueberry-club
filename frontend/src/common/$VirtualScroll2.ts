@@ -3,7 +3,7 @@ import { Behavior, O, Op } from '@aelea/core'
 import { $Branch, $custom, $Node, $text, component, IBranch, style } from '@aelea/dom'
 import { $column, designSheet, observer } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { chain, delay, empty, filter, loop, map, merge, mergeArray, multicast, scan, skip, startWith, switchLatest } from "@most/core"
+import { chain, delay, empty, filter, loop, map, merge, mergeArray, multicast, now, scan, skip, startWith, switchLatest } from "@most/core"
 import { Stream } from '@most/types'
 
 
@@ -43,7 +43,7 @@ export const $VirtualScroll = ({ dataSource, containerOps = O(), $loader = $defa
     map(node => ({ ...node, insertAscending: false })),
     containerOps
   )
-  
+
   const intersectedLoader = intersectingTether(
     observer.intersection({ threshold: 1 }),
     map(entryList => entryList[0]),
@@ -59,23 +59,24 @@ export const $VirtualScroll = ({ dataSource, containerOps = O(), $loader = $defa
     map(data => ({ $intermediate: $observer, data }), delayDatasource),
     map(() => ({ $intermediate: $loader, }), scrollReuqestWithInitial)
   )
-  
+
   const $itemLoader = loop((seed, state) => {
 
     if ('data' in state && state.data) {
-      
+
       if (Array.isArray(state.data)) {
         return { seed, value: empty() }
       }
 
       const hasMoreItems = state.data.pageSize === state.data.$items.length
+      console.log(hasMoreItems)
       const value = hasMoreItems ? state.$intermediate : empty()
 
       return { seed, value }
     }
 
     return { seed, value: state.$intermediate }
-  }, {  }, loadState)
+  }, {}, loadState)
 
   return [
     $container(
@@ -83,9 +84,12 @@ export const $VirtualScroll = ({ dataSource, containerOps = O(), $loader = $defa
         const $items = Array.isArray($list) ? $list : $list.$items
         return mergeArray($items)
       }, multicastDatasource),
-      switchLatest(
-        startWith($observer, $itemLoader)
-      )
+      // switchLatest(
+      //   mergeArray([
+      //     delay(3020, now($observer)),
+      //     $itemLoader
+      //   ])
+      // )
     ),
 
     { scrollIndex: scrollReuqestWithInitial }

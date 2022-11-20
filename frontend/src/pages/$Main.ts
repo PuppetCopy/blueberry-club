@@ -1,5 +1,5 @@
 import { Behavior, fromCallback, replayLatest } from "@aelea/core"
-import { component, eventElementTarget, style } from "@aelea/dom"
+import { $element, $node, $text, component, eventElementTarget, style } from "@aelea/dom"
 import * as router from '@aelea/router'
 import { $column, designSheet, layoutSheet, screenUtils } from '@aelea/ui-components'
 import {
@@ -79,7 +79,9 @@ export default ({ baseRoute = '' }: Website) => component((
   const wardrobeRoute = pagesRoute.create({ fragment: 'wardrobe', title: 'Wardrobe' })
   const storeRoute = pagesRoute.create({ fragment: 'lab-store', title: 'Store' })
   const itemRoute = pagesRoute.create({ fragment: 'item' }).create({ fragment: /\d+/, title: 'Lab Item' })
-  const tradeRoute = pagesRoute.create({ fragment: 'trade' })
+  const TRADEURL = 'trade'
+  const tradeRoute = pagesRoute.create({ fragment: TRADEURL })
+  const tradeTermsAndConditions = pagesRoute.create({ fragment: 'trading-terms-and-conditions' })
 
 
 
@@ -146,7 +148,7 @@ export default ({ baseRoute = '' }: Website) => component((
 
 
   const walletLink = initWalletLink(walletProvider)
-
+  const $liItem = $element('li')(style({ marginBottom: '14px' }))
 
 
   return [
@@ -273,6 +275,32 @@ export default ({ baseRoute = '' }: Website) => component((
                   requestTrade: requestTradeTether()
                 })
               }, walletLink.network))
+            ),
+            router.match(tradeTermsAndConditions)(
+              $column(layoutSheet.spacing, style({ maxWidth: '680px', alignSelf: 'center' }))(
+                $text(style({ fontSize: '3em', textAlign: 'center' }))('GBC Trading'),
+                $node(),
+                $text(style({ fontSize: '1.5em', textAlign: 'center', fontWeight: 'bold' }))('Terms And Conditions'),
+                $text(style({ whiteSpace: 'pre-wrap' }))(`By accessing, I agree that ${document.location.host + '/p/' + TRADEURL} is an interface (hereinafter the "Interface") to interact with external GMX smart contracts, and does not have access to my funds. I represent and warrant the following:`),
+                $element('ul')(layoutSheet.spacing, style({ lineHeight: '1.5em' }))(
+                  $liItem(
+                    $text(`I am not a United States person or entity;`),
+                  ),
+                  $liItem(
+                    $text(`I am not a resident, national, or agent of any country to which the United States, the United Kingdom, the United Nations, or the European Union embargoes goods or imposes similar sanctions, including without limitation the U.S. Office of Foreign Asset Control, Specifically Designated Nationals and Blocked Person List;`),
+                  ),
+                  $liItem(
+                    $text(`I am legally entitled to access the Interface under the laws of the jurisdiction where I am located;`),
+                  ),
+                  $liItem(
+                    $text(`I am responsible for the risks using the Interface, including, but not limited to, the following: (i) the use of GMX smart contracts; (ii) leverage trading, the risk may result in the total loss of my deposit.`),
+                  ),
+                ),
+
+                $node(style({ height: '100px' }))(),
+
+              ),
+
             ),
             router.match(treasuryRoute)(
               $Treasury({ walletLink, parentRoute: treasuryRoute, treasuryStore })({})
