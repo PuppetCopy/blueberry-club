@@ -31,7 +31,7 @@ import { getContract } from "../../logic/common"
 
 
 
-export interface ITradeState {
+export interface ITradeParams {
   isTradingEnabled: boolean
   isInputTokenApproved: boolean
 
@@ -56,7 +56,7 @@ export interface ITradeState {
   liquidationPrice: bigint | null
 }
 
-export interface ITradeParams {
+export interface ITradeConfig {
   trade: ITrade | null
   isLong: boolean
 
@@ -74,7 +74,7 @@ export interface ITradeParams {
 }
 
 
-export interface ITradeRequest extends ITradeParams, ITradeState {
+export interface ITradeState extends ITradeConfig, ITradeParams {
 
 }
 
@@ -85,8 +85,8 @@ interface ITradeBox {
   stableTokens: AddressStable[]
   store: BrowserStore<"ROOT.v1.trade", string>
 
-  tradeParams: StateStream<ITradeParams> // ITradeParams
-  state: StateStream<ITradeState>
+  tradeParams: StateStream<ITradeConfig> // ITradeParams
+  state: StateStream<ITradeParams>
 
   walletLink: IWalletLink
   walletStore: BrowserStore<"ROOT.v1.walletStore", WALLET | null>
@@ -116,7 +116,7 @@ export const $TradeBox = (config: ITradeBox) => component((
   [changeSlippage, changeSlippageTether]: Behavior<string, string>,
 
   [walletChange, walletChangeTether]: Behavior<IEthereumProvider | null, IEthereumProvider | null>,
-  [requestTrade, requestTradeTether]: Behavior<PointerEvent, ITradeRequest>,
+  [requestTrade, requestTradeTether]: Behavior<PointerEvent, ITradeState>,
 
   [crosshairMove, crosshairMoveTether]: Behavior<MouseEventParams, MouseEventParams>,
   [clickReset, clickResetTether]: Behavior<any, any>,
@@ -127,41 +127,33 @@ export const $TradeBox = (config: ITradeBox) => component((
   const trade = connectTrade(config.walletLink.provider)
 
   const chain = config.chain || CHAIN.ARBITRUM
-  const tradeState: Stream<ITradeRequest> = replayState({ ...config.state, ...config.tradeParams })
+  const tradeState: Stream<ITradeState> = replayState({ ...config.state, ...config.tradeParams })
   // const tradeState: Stream<ITradeRequest> = combineObject({ ...config.state, ...config.tradeParams })
 
 
-  const validationError = map((params) => {
+  const validationError = map((state) => {
 
-    if (params.leverage > LIMIT_LEVERAGE) {
+    if (state.leverage > LIMIT_LEVERAGE) {
       return `Leverage exceeds ${formatToBasis(LIMIT_LEVERAGE)}x`
     }
 
-    if (params.isIncrease) {
-      if (params.collateralDelta > params.walletBalance) {
-        return `Not enough ${params.inputTokenDescription.symbol} in connected account`
+    if (state.isIncrease) {
+      if (state.collateralDelta > state.walletBalance) {
+        return `Not enough ${state.inputTokenDescription.symbol} in connected account`
       }
 
-      if (params.leverage < MIN_LEVERAGE) {
+      if (state.leverage < MIN_LEVERAGE) {
         return `Leverage below 1.1x`
       }
 
     }
 
-    if (!params.isIncrease && !params.vaultPosition) {
-      return `No ${params.indexTokenDescription.symbol} position to reduce`
+    if (!state.isIncrease && !state.vaultPosition) {
+      return `No ${state.indexTokenDescription.symbol} position to reduce`
     }
 
-    if (params.vaultPosition && !params.isIncrease) {
-
-      const totalSize = params.vaultPosition.size - params.sizeDelta
-      const pnl = getPnL(params.isLong, params.vaultPosition.averagePrice, params.indexTokenPrice, totalSize)
-
-      const netCollateral = params.vaultPosition.collateral + pnl
-
-      if (params.collateralDeltaUsd + params.fee > netCollateral) {
-        return `Exceeding liquidation price`
-      }
+    if (state.vaultPosition && state.liquidationPrice! > state.indexTokenPrice) {
+      return `Exceeding liquidation price`
     }
 
     return null
@@ -813,14 +805,11 @@ export const $TradeBox = (config: ITradeBox) => component((
                         return true
                       }
 
-                      if (params.isIncrease && (params.collateralDeltaUsd > 0n || params.sizeDelta > 0n) && params.collateralDelta <= params.walletBalance) {
-                        return false
+                      if (params.vaultPosition && params.liquidationPrice! > params.indexTokenPrice) {
+                        return true
                       }
 
-                      if (params.vaultPosition && !params.isIncrease && (params.sizeDelta > 0n || params.collateralDeltaUsd > 0n)
-                        && (params.liquidationPrice === null || (params.isLong
-                          ? params.liquidationPrice! <= params.indexTokenPrice
-                          : params.liquidationPrice! >= params.indexTokenPrice))) {
+                      if (params.isIncrease && (params.collateralDeltaUsd > 0n || params.sizeDelta > 0n) && params.collateralDelta <= params.walletBalance) {
                         return false
                       }
 

@@ -19,7 +19,7 @@ import { CandlestickData, CrosshairMode, LineStyle, Time } from "lightweight-cha
 import { IEthereumProvider } from "eip1193-provider"
 import { Stream } from "@most/types"
 import { connectErc20, connectPricefeed, connectTrade, connectVault, getErc20Balance } from "../logic/contract/trade"
-import { $TradeBox, ITradeRequest } from "../components/trade/$TradeBox"
+import { $TradeBox, ITradeState } from "../components/trade/$TradeBox"
 import { BLUEBERRY_REFFERAL_CODE } from "@gambitdao/gbc-middleware"
 import { $ButtonToggle } from "../common/$Toggle"
 import { $Table2 } from "../common/$Table2"
@@ -49,7 +49,7 @@ export interface ITradeComponent {
   latestPriceMap: Stream<IPriceLatestMap>
 }
 
-type RequestTrade = ITradeRequest & {
+type RequestTrade = ITradeState & {
   ctxQuery: Promise<ContractTransaction | TransactionResponse>
   timestamp: number
 }
@@ -73,7 +73,7 @@ export const $Trade = (config: ITradeComponent) => component((
   [changeSlippage, changeSlippageTether]: Behavior<string, string>,
 
   [switchTrade, switchTradeTether]: Behavior<INode, ITrade>,
-  [requestTrade, requestTradeTether]: Behavior<ITradeRequest, ITradeRequest>,
+  [requestTrade, requestTradeTether]: Behavior<ITradeState, ITradeState>,
 
   [approveInputToken, approveInputTokenTether]: Behavior<boolean, boolean>,
   [enableTrading, enableTradingTether]: Behavior<boolean, boolean>,
