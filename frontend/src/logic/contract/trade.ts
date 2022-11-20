@@ -1,13 +1,13 @@
 import { awaitPromises, empty, map, multicast, now, switchLatest } from "@most/core"
 import { AddressZero, CHAIN, getDenominator, switchFailedSources, AddressIndex, AddressInput, USD_PERCISION } from "@gambitdao/gmx-middleware"
-import { combineArray, replayLatest } from "@aelea/core"
+import { combineArray } from "@aelea/core"
 import { ERC20__factory, FastPriceFeed__factory, PositionRouter__factory, Router__factory, Vault__factory } from "./gmx-contracts"
 import { periodicRun } from "@gambitdao/gmx-middleware"
 import { getTokenDescription, resolveAddress } from "../utils"
 import { Stream } from "@most/types"
 import { BaseProvider, Provider, Web3Provider } from "@ethersproject/providers"
 import { Signer } from "@ethersproject/abstract-signer"
-import { contractConnect } from "../common"
+import { contractConnect, getContract } from "../common"
 
 
 export interface KeeperExecutePosition {
@@ -24,16 +24,23 @@ export interface KeeperExecutePosition {
   timeGap: bigint
 }
 
-export function connectErc20(address: string, provider: Stream<Signer | Provider>) {
+export function connectErc20(address: string, provider: Stream<Web3Provider | null>) {
 
-  const contract = map(w3p => ERC20__factory.connect(address, w3p), provider)
+  const contract = map(w3p => {
+
+    if (w3p === null) {
+      return null
+    }
+
+    return ERC20__factory.connect(address, w3p.getSigner())
+  }, provider)
+  // const erc20 = contractConnect(ERC20__factory, provider, 'PositionRouter')
 
   // const account = filter((a): a is string => a !== null, wallet.account)
 
   const balance = awaitPromises(map(async w3p => {
-
-    if (!w3p.address) {
-      throw 'no account connected'
+    if (w3p === null) {
+      return 0n
     }
 
     return (await w3p.balanceOf(w3p.address)).toBigInt()
@@ -48,9 +55,8 @@ export function connectTrade(provider: Stream<BaseProvider | null>) {
   const positionRouter = contractConnect(PositionRouter__factory, provider, 'PositionRouter')
 
   const isEnabled = router.run(map(async c => {
-    return c.contract.approvedPlugins(await c.signer.getAddress(), c.addressMapping['PositionRouter'])
+    return c.contract.approvedPlugins(await c.signer.getAddress(), getContract(c.chainId, 'PositionRouter'))
   }))
-  // const approvePlugin = router.run(map(async c => c.contract.approvePlugin(c.address)))
 
   const executeIncreasePosition: Stream<KeeperExecutePosition> = positionRouter.listen('ExecuteIncreasePosition')
   const cancelIncreasePosition: Stream<KeeperExecutePosition> = positionRouter.listen('CancelIncreasePosition')

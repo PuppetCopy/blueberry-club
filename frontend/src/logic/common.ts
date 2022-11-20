@@ -12,8 +12,8 @@ import { IWalletLink } from "@gambitdao/wallet-link"
 import { Closet } from "@gambitdao/gbc-contracts"
 import { BigNumberish, BigNumber } from "@ethersproject/bignumber"
 import { bnToHex } from "../pages/$Berry"
-import { JsonRpcSigner, Provider, Web3Provider } from "@ethersproject/providers"
-import { BaseContract, ContractFactory } from "@ethersproject/contracts"
+import { JsonRpcSigner, Web3Provider } from "@ethersproject/providers"
+import { ContractFactory } from "@ethersproject/contracts"
 
 
 export const latestTokenPriceMap = replayLatest(multicast(awaitPromises(map(() => queryLatestPrices(), periodic(5000)))))
@@ -61,29 +61,38 @@ const contractMapping = {
 } as const
 
 
-export function contractConnect<T extends typeof ContractFactory>(contractCtr: T, provider: Stream<Web3Provider | null>, contractAddress: keyof typeof ARBITRUM_ADDRESS & keyof typeof AVALANCHE_ADDRESS) {
+export function getContract(chain: CHAIN, contractName: keyof typeof ARBITRUM_ADDRESS & keyof typeof AVALANCHE_ADDRESS): string {
+  // @ts-ignore
+  const addressMapping = contractMapping[chain]
+
+  if (addressMapping === null) {
+    throw new Error(`no contract PositionRouter found on chain (${chain})`)
+  }
+
+  // if (!addressMapping) {
+  //   return null
+  // }
+
+  return addressMapping[contractName]
+}
+
+export function contractConnect<T extends typeof ContractFactory>(contractCtr: T, provider: Stream<Web3Provider | null>, contractName: keyof typeof ARBITRUM_ADDRESS & keyof typeof AVALANCHE_ADDRESS) {
 
   // @ts-ignore
-  type RType = { address: string, contract: ReturnType<T['connect']>, signer: JsonRpcSigner, provider: Web3Provider, addressMapping: typeof ARBITRUM_ADDRESS | typeof AVALANCHE_ADDRESS } | null
+  type RType = { address: string, contract: ReturnType<T['connect']>, signer: JsonRpcSigner, provider: Web3Provider, chainId: CHAIN } | null
 
   const contract: Stream<RType> = map((provider) => {
     if (provider === null) {
       return null
     }
 
-    const chainId = provider.network.chainId as CHAIN.ARBITRUM | CHAIN.AVALANCHE
+    const chainId = provider.network.chainId as CHAIN
 
     if (!chainId) {
       return null
     }
 
-    const addressMapping = contractMapping[chainId]
-
-    if (!addressMapping) {
-      return null
-    }
-
-    const address = addressMapping[contractAddress]
+    const address = getContract(chainId, contractName)
 
     if (!address) {
       console.warn(`contract ${contractCtr.name} doesn't support chain ${chainId}`)
@@ -94,7 +103,7 @@ export function contractConnect<T extends typeof ContractFactory>(contractCtr: T
     // @ts-ignore
     const contract = contractCtr.connect(address, signer)
 
-    return { provider, signer, contract, addressMapping, address }
+    return { provider, signer, contract, address, chainId }
   }, provider)
 
   const run = <R>(op: Op<NonNullable<RType>, Promise<R>>) => O(

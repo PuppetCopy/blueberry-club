@@ -10,7 +10,7 @@ import {
 } from "@gambitdao/gmx-middleware"
 import { $alertIcon, $anchor, $ButtonToggle, $infoTooltip, $IntermediateTx, $tokenIconMap, $tokenLabelFromSummary, $Tooltip, getPricefeedVisibleColumns, IIntermediateState, IIntermediateStatus } from "@gambitdao/ui-components"
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { merge, multicast, mergeArray, now, snapshot, map, switchLatest, filter, skipRepeats, empty, combine, fromPromise, constant, sample, startWith, skipRepeatsWith } from "@most/core"
+import { merge, multicast, mergeArray, now, snapshot, map, switchLatest, filter, skipRepeats, empty, combine, fromPromise, constant, sample, startWith, skipRepeatsWith, awaitPromises } from "@most/core"
 import { Stream } from "@most/types"
 import { $Slider } from "../$Slider"
 import { $ButtonPrimary, $ButtonSecondary } from "../form/$Button"
@@ -22,14 +22,19 @@ import { IEthereumProvider } from "eip1193-provider"
 import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 import { WALLET } from "../../logic/provider"
 import { BrowserStore } from "../../logic/store"
-import { connectTrade, connectVault, getErc20Balance } from "../../logic/contract/trade"
+import { connectErc20, connectTrade, connectVault, getErc20Balance } from "../../logic/contract/trade"
 import { MouseEventParams } from "lightweight-charts"
 import { $TradePnlHistory } from "./$TradePnlHistory"
 import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
+import { MaxUint256 } from "@ethersproject/constants"
+import { getContract } from "../../logic/common"
 
 
 
 export interface ITradeState {
+  isTradingEnabled: boolean
+  isInputTokenApproved: boolean
+
   vaultPosition: IVaultPosition | null
   collateralDeltaUsd: bigint
   inputTokenPrice: bigint
@@ -52,7 +57,6 @@ export interface ITradeState {
 }
 
 export interface ITradeParams {
-  isTradingEnabled: boolean
   trade: ITrade | null
   isLong: boolean
 
@@ -92,6 +96,7 @@ interface ITradeBox {
 export const $TradeBox = (config: ITradeBox) => component((
   [openEnableTradingPopover, openEnableTradingPopoverTether]: Behavior<any, any>,
   [enableTrading, enableTradingTether]: Behavior<any, boolean>,
+  [approveInputToken, approveInputTokenTether]: Behavior<PointerEvent, boolean>,
   [enablePluginTx, enablePluginTxTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
 
   [dismissEnableTradingOverlay, dismissEnableTradingOverlayTether]: Behavior<false, false>,
@@ -119,7 +124,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 ) => {
 
   const vault = connectVault(config.walletLink.provider)
-  const position = connectTrade(config.walletLink.provider)
+  const trade = connectTrade(config.walletLink.provider)
 
   const chain = config.chain || CHAIN.ARBITRUM
   const tradeState: Stream<ITradeRequest> = replayState({ ...config.state, ...config.tradeParams })
@@ -241,6 +246,7 @@ export const $TradeBox = (config: ITradeBox) => component((
   const clickResetVal = constant(0n, clickReset)
 
 
+  
 
   return [
     $column(
@@ -685,23 +691,6 @@ export const $TradeBox = (config: ITradeBox) => component((
             })({
               change: changeSlippageTether()
             }),
-            // $label(layoutSheet.spacingSmall, style({ alignItems: 'center', flexDirection: 'row', fontSize: '0.75em' }))(
-            //   $Checkbox({
-            //     value: map(x => !x, tradeParams.isIncrease)
-            //   })({
-            //     check: switchisIncreaseTether(map(x => !x))
-            //   }),
-            //   $row(layoutSheet.spacingTiny)(
-            //     $icon({
-            //       $content: $skull,
-            //       width: '18px',
-            //       fill: pallete.foreground,
-            //       viewBox: '0 0 32 32'
-            //     }),
-            //     $text(style({ color: pallete.foreground }))('Degen Mode'),
-            //     $infoTooltip('You are going to get liquidated stupid')
-            //   ),
-            // ),
           ),
 
           $IntermediateConnectButton({
@@ -726,15 +715,13 @@ export const $TradeBox = (config: ITradeBox) => component((
                   $content: $text('Reset')
                 })({ click: clickResetTether() }),
 
-                switchLatest(combineArray((isPluginEnabled, isEnabled) => {
-
-                  console.log(isPluginEnabled)
-
+                switchLatest(combineArray((isPluginEnabled, isEnabled, isInputTokenApproved, inputToken, inputTokenDesc) => {
+ 
                   if (!isPluginEnabled || !isEnabled) {
                     return $Popover({
                       $$popContent: map((xx) => {
 
-               
+
                         return $column(layoutSheet.spacing)(
                           $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(`By using GBC Trading, I agree to the following Disclaimer`),
                           $text(style({ whiteSpace: 'pre-wrap', fontSize: '.75em' }))(`By accessing, I agree that ${document.location.href} is an interface (hereinafter the "Interface") to interact with external GMX smart contracts, and does not have access to my funds.`),
@@ -750,7 +737,12 @@ export const $TradeBox = (config: ITradeBox) => component((
                                   $content: $text(!isPluginEnabled ? 'Enable Leverage(GMX) & Agree' : 'Agree')
                                 })({
                                   click: enablePluginTxTether(
-                                    snapshot((c) => c!.contract.approvePlugin(c!.address), position.router.contract)
+                                    snapshot((c) => {
+                                      const contractAddress = getContract(chain, 'PositionRouter')
+
+
+                                      return c!.contract.approvePlugin(contractAddress)
+                                    }, trade.router.contract)
                                   )
                                 })
                               ),
@@ -815,6 +807,28 @@ export const $TradeBox = (config: ITradeBox) => component((
                     })
                   }
 
+                  if (!isInputTokenApproved) {
+                    const erc20 = connectErc20(inputToken, config.walletLink.provider)
+                    return $ButtonPrimary({
+                      $content: $text(`Approved ${inputTokenDesc.symbol}`)
+                    })({
+                      click: approveInputTokenTether(
+                        snapshot(async (c) => {
+                          const contractAddress = getContract(chain, 'PositionRouter')
+                          
+                          if (c === null) {
+                            return false
+                          }
+
+                          await c.approve(contractAddress, MaxUint256)
+
+                          return true
+                        }, erc20.contract),
+                        awaitPromises
+                      )
+                    })
+                  }
+
                   return $ButtonPrimary({
                     disabled: map(params => {
                       if (params.leverage > LIMIT_LEVERAGE || params.leverage < MIN_LEVERAGE) {
@@ -861,7 +875,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                       multicast
                     )
                   })
-                }, position.isEnabled, config.tradeParams.isTradingEnabled)),
+                }, mergeArray([enableTrading, trade.isEnabled]), config.state.isTradingEnabled, config.state.isInputTokenApproved, config.tradeParams.inputToken, config.state.inputTokenDescription)),
 
 
                 switchLatest(map(error => {
@@ -1007,7 +1021,7 @@ export const $TradeBox = (config: ITradeBox) => component((
       changeSlippage,
       requestTrade,
       enableTrading,
-
+      approveInputToken: approveInputToken
     }
   ]
 })

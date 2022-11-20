@@ -12,13 +12,13 @@ import {
 } from "@gambitdao/gmx-middleware"
 
 import { IWalletLink, parseError } from "@gambitdao/wallet-link"
-import { combine, constant, map, mergeArray, multicast, periodic, scan, skipRepeats, switchLatest, debounce, empty, now, startWith, snapshot, fromPromise, merge, tap } from "@most/core"
+import { combine, constant, map, mergeArray, multicast, periodic, scan, skipRepeats, switchLatest, debounce, empty, now, startWith, snapshot, fromPromise, merge, tap, awaitPromises } from "@most/core"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { $alertTooltip, $arrowsFlip, $infoTooltip, $IntermediatePromise, $Link, $RiskLiquidator, $spinner, $txHashRef } from "@gambitdao/ui-components"
 import { CandlestickData, CrosshairMode, LineStyle, Time } from "lightweight-charts"
 import { IEthereumProvider } from "eip1193-provider"
 import { Stream } from "@most/types"
-import { connectPricefeed, connectTrade, connectVault, getErc20Balance } from "../logic/contract/trade"
+import { connectErc20, connectPricefeed, connectTrade, connectVault, getErc20Balance } from "../logic/contract/trade"
 import { $TradeBox, ITradeRequest } from "../components/trade/$TradeBox"
 import { BLUEBERRY_REFFERAL_CODE } from "@gambitdao/gbc-middleware"
 import { $ButtonToggle } from "../common/$Toggle"
@@ -31,6 +31,7 @@ import { BrowserStore } from "../logic/store"
 import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
 import { TransactionResponse } from "@ethersproject/providers"
 import { WALLET } from "../logic/provider"
+import { getContract } from "../logic/common"
 
 
 export interface ITradeComponent {
@@ -74,6 +75,7 @@ export const $Trade = (config: ITradeComponent) => component((
   [switchTrade, switchTradeTether]: Behavior<INode, ITrade>,
   [requestTrade, requestTradeTether]: Behavior<ITradeRequest, ITradeRequest>,
 
+  [approveInputToken, approveInputTokenTether]: Behavior<boolean, boolean>,
   [enableTrading, enableTradingTether]: Behavior<boolean, boolean>,
 ) => {
 
@@ -145,9 +147,28 @@ export const $Trade = (config: ITradeComponent) => component((
   const indexTokenPrice = skipRepeats(switchLatest(map(address => pricefeed.getLatestPrice(chain, address), indexToken)))
   const collateralTokenPrice = replayLatest(skipRepeats(switchLatest(map(address => pricefeed.getLatestPrice(chain, address), shortCollateralToken))))
 
+  const isInputTokenApproved = switchLatest(combineArray((account, token, collateral) => {
+    const erc20 = connectErc20(token, config.walletLink.provider)
+    return awaitPromises(map(async c => {
+      if (token === AddressZero) {
+        return true
+      }
 
+      if (c === null || account === null) {
+        return null
+      }
 
-  const tradeParams = { isTradingEnabled, trade, slippage, isLong, isIncrease, inputToken, shortCollateralToken, indexToken, leverage, collateralDelta, sizeDelta, collateralRatio, }
+      const contractAddress = getContract(chain, 'PositionRouter')
+
+      if (contractAddress === null) {
+        return null
+      }
+
+      return (await c.allowance(account, contractAddress)).toBigInt() >= collateral
+    }, erc20.contract))
+  }, config.walletLink.account, inputToken, collateralDelta))
+
+  const tradeParams = { trade, slippage, isLong, isIncrease, inputToken, shortCollateralToken, indexToken, leverage, collateralDelta, sizeDelta, collateralRatio, }
   const tradeParamsState = replayState(tradeParams)
 
 
@@ -415,7 +436,7 @@ export const $Trade = (config: ITradeComponent) => component((
         req.executionFee,
         BLUEBERRY_REFFERAL_CODE,
         accountQuery,
-        { value: req.collateralDelta + req.executionFee }
+        { value: req.collateralDelta + -req.executionFee }
       )
       : trade.contract.createIncreasePosition(
         path,
@@ -467,6 +488,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
           tradeParams,
           state: {
+            isTradingEnabled,
             vaultPosition,
             collateralDeltaUsd,
             inputTokenPrice,
@@ -481,8 +503,8 @@ export const $Trade = (config: ITradeComponent) => component((
             averagePrice,
             liquidationPrice,
             executionFee,
-            // validationError,
             walletBalance,
+            isInputTokenApproved,
           }
         })({
           leverage: changeLeverageTether(),
@@ -498,6 +520,7 @@ export const $Trade = (config: ITradeComponent) => component((
           changeSlippage: changeSlippageTether(),
           walletChange: walletChangeTether(),
           enableTrading: enableTradingTether(),
+          approveInputToken: approveInputTokenTether()
         }),
 
         // $node($text(map(amountUsd => formatReadableUSD(amountUsd), availableLiquidityUsd))),
