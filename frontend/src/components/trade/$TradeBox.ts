@@ -800,21 +800,30 @@ export const $TradeBox = (config: ITradeBox) => component((
                   }
 
                   return $ButtonPrimary({
-                    disabled: map(params => {
-                      if (params.leverage > LIMIT_LEVERAGE || params.leverage < MIN_LEVERAGE) {
+                    disabled: combineArray((error, params) => {
+
+                      if (error) {
                         return true
                       }
 
-                      if (params.vaultPosition && params.liquidationPrice! > params.indexTokenPrice) {
+                      if (params.sizeDelta === 0n && params.collateralDelta === 0n) {
                         return true
                       }
 
-                      if (params.isIncrease && (params.collateralDeltaUsd > 0n || params.sizeDelta > 0n) && params.collateralDelta <= params.walletBalance) {
-                        return false
-                      }
+                      // if (params.isIncrease && (params.leverage > LIMIT_LEVERAGE || params.leverage < MIN_LEVERAGE)) {
+                      //   return true
+                      // }
 
-                      return true
-                    }, tradeState),
+                      // if (params.vaultPosition && params.liquidationPrice! > params.indexTokenPrice) {
+                      //   return true
+                      // }
+
+                      // if (params.isIncrease && (params.collateralDeltaUsd > 0n || params.sizeDelta > 0n) && params.collateralDelta <= params.walletBalance) {
+                      //   return false
+                      // }
+
+                      return false
+                    }, validationError, tradeState),
                     $content: $text(map(params => {
                       const outputToken = getTokenDescription(chain, params.indexToken)
 
