@@ -1,5 +1,5 @@
 import { Behavior, combineArray } from "@aelea/core"
-import { component, INode, style } from "@aelea/dom"
+import { $Node, component, INode, NodeComposeFn, style } from "@aelea/dom"
 import { $column, observer } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import {
@@ -12,6 +12,7 @@ import { MouseEventParams, SingleValueData, Time, LineStyle, ChartOptions, DeepP
 import { $Chart } from "../chart/$Chart"
 
 interface ITradePnlPreview {
+  $container: NodeComposeFn<$Node>
   trade: ITrade
   latestPrice: Stream<bigint>
   chartConfig?: DeepPartial<ChartOptions>
@@ -32,26 +33,27 @@ export interface IPricefeedTick {
 }
 
 
-export const $TradePnlHistory = ({ trade, latestPrice, pixelsPerBar = 5, chartConfig = {}, pricefeed }: ITradePnlPreview) => component((
+export const $TradePnlHistory = (config: ITradePnlPreview) => component((
   [crosshairMove, crosshairMoveTether]: Behavior<MouseEventParams, MouseEventParams>,
   [containerDimension, sampleContainerDimension]: Behavior<INode, ResizeObserverEntry[]>
 ) => {
 
+  const pixelsPerBar = config.pixelsPerBar || 5
   const displayColumnCount = map(([container]) => container.contentRect.width / pixelsPerBar, containerDimension)
 
   const historicPnL = multicast(combineArray((displayColumnCount) => {
 
-    const startPrice = trade.increaseList[0].price
-    const endtime = isTradeSettled(trade) ? trade.settledTimestamp : unixTimestampNow()
-    const timeRange = endtime - trade.timestamp
+    const startPrice = config.trade.increaseList[0].price
+    const endtime = isTradeSettled(config.trade) ? config.trade.settledTimestamp : unixTimestampNow()
+    const timeRange = endtime - config.trade.timestamp
     const interval = Math.floor(timeRange / displayColumnCount)
     // const initialPnl = getPositionPnL(trade.isLong, trade.averagePrice, trade.increaseList[0].price, trade.size)
     // const initialPnlPercentage = getDeltaPercentage(initialPnl, trade.collateral)
 
-    const initalUpdate = trade.updateList[0]
+    const initalUpdate = config.trade.updateList[0]
 
     const initialTick: IPricefeedTick = {
-      time: trade.timestamp,
+      time: config.trade.timestamp,
       price: startPrice,
       collateral: initalUpdate.collateral,
       size: initalUpdate.size,
@@ -64,7 +66,7 @@ export const $TradePnlHistory = ({ trade, latestPrice, pixelsPerBar = 5, chartCo
 
 
     const data = intervalListFillOrderMap({
-      source: [...pricefeed.filter(tick => tick.timestamp > initialTick.time), ...trade.updateList],
+      source: [...config.pricefeed.filter(tick => tick.timestamp > initialTick.time), ...config.trade.updateList],
       // source: [...feed.filter(tick => tick.timestamp > initialTick.time), ...trade.updateList, ...trade.increaseList, ...trade.decreaseList],
       interval,
       seed: initialTick,
@@ -73,7 +75,7 @@ export const $TradePnlHistory = ({ trade, latestPrice, pixelsPerBar = 5, chartCo
         const time = next.timestamp
 
         if (next.__typename === 'UpdatePosition') {
-          const pnl = getPnL(trade.isLong, next.averagePrice, next.markPrice, next.size)
+          const pnl = getPnL(config.trade.isLong, next.averagePrice, next.markPrice, next.size)
           const realisedPnl = next.realisedPnl
           const pnlPercentage = getDeltaPercentage(pnl, next.collateral)
           const size = next.size
@@ -82,7 +84,7 @@ export const $TradePnlHistory = ({ trade, latestPrice, pixelsPerBar = 5, chartCo
           return { ...prev, pnl, pnlPercentage, time, realisedPnl, size, collateral }
         }
 
-        const pnl = getPnL(trade.isLong, prev.averagePrice, next.c, prev.size)
+        const pnl = getPnL(config.trade.isLong, prev.averagePrice, next.c, prev.size)
         const pnlPercentage = getDeltaPercentage(pnl, prev.collateral)
 
         return { ...prev, time, pnl, pnlPercentage }
@@ -93,12 +95,12 @@ export const $TradePnlHistory = ({ trade, latestPrice, pixelsPerBar = 5, chartCo
 
     const lastChange = data[data.length - 1]
 
-    if (isTradeSettled(trade)) {
+    if (isTradeSettled(config.trade)) {
       const pnl = 0n
-      const pnlPercentage = getDeltaPercentage(pnl, trade.collateral)
-      const realisedPnl = trade.realisedPnl
+      const pnlPercentage = getDeltaPercentage(pnl, config.trade.collateral)
+      const realisedPnl = config.trade.realisedPnl
 
-      data.push({ ...lastChange, pnl, realisedPnl, pnlPercentage, time: trade.settledTimestamp })
+      data.push({ ...lastChange, pnl, realisedPnl, pnlPercentage, time: config.trade.settledTimestamp })
     }
 
     return { data, interval }
@@ -107,20 +109,20 @@ export const $TradePnlHistory = ({ trade, latestPrice, pixelsPerBar = 5, chartCo
 
   return [
 
-    $column(style({ height: '100px' }), sampleContainerDimension(observer.resize()))(
+    (config.$container || $column(style({ height: '80px' })))(sampleContainerDimension(observer.resize()))(
       switchLatest(
         combineArray(({ data, interval }) => {
 
-          const newLocal = skip(1, latestPrice)
+          const newLocal = skip(1, config.latestPrice)
           return $Chart({
-            realtimeSource: isTradeOpen(trade)
+            realtimeSource: isTradeOpen(config.trade)
               ? map((price): SingleValueData => {
                 const nextTime = unixTimestampNow()
                 const nextTimeslot = Math.floor(nextTime / interval)
 
-                const pnl = getPnL(trade.isLong, trade.averagePrice, price, trade.size) + trade.realisedPnl + -trade.fee
+                const pnl = getPnL(config.trade.isLong, config.trade.averagePrice, price, config.trade.size) + config.trade.realisedPnl + -config.trade.fee
                 const value = formatFixed(pnl, 30)
-                BigInt.asIntN
+
                 return {
                   value,
                   time: nextTimeslot * interval as Time
@@ -234,7 +236,7 @@ export const $TradePnlHistory = ({ trade, latestPrice, pixelsPerBar = 5, chartCo
                 // visible: false,
                 rightBarStaysOnScroll: true,
               },
-              ...chartConfig
+              ...config.chartConfig || {}
             },
             containerOp: style({
               display: 'flex',

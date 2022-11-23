@@ -1,5 +1,5 @@
 import { Behavior, combineArray, combineObject, Op } from "@aelea/core"
-import { $node, $Node, $text, attr, attrBehavior, component, INode, nodeEvent, style, stylePseudo } from "@aelea/dom"
+import { $element, $node, $Node, $text, attr, attrBehavior, component, INode, nodeEvent, style, stylePseudo } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 
@@ -327,23 +327,22 @@ export const $Wardrobe = (config: IBerryComp) => component((
                       return `${Math.max(0, count)}x`
                     }, itemBalanceChange))
                   )
-                  : $ButtonSecondary({
-                    buttonOp: style({
-                      placeContent: 'center', alignItems: 'center',
-                      position: 'absolute',
-                      top: '-15px',
-                      width: '50px',
-                      height: '50px',
-                      right: '-15px',
-                      padding: '4px'
-                    }),
+                  : style({
+                    placeContent: 'center', alignItems: 'center',
+                    position: 'absolute',
+                    top: '-15px',
+                    width: '50px',
+                    height: '50px',
+                    right: '-15px',
+                    padding: '4px'
+                  })($ButtonSecondary({
                     $content: $text('Buy'),
                   })({
                     click: changeRouteTether(
                       constant(`/p/item/${id}`),
                       tap(x => history.pushState(null, '', x)),
                     )
-                  }),
+                  })),
               )
             })
           )

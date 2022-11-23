@@ -11,7 +11,9 @@ import { $alert, $alertTooltip, $txHashRef, } from "./$common"
 
 
 export const $spinner = $node(style({
-  width: '60px',
+  minWidth: '60px',
+  maxWidth: '60px',
+  width: '60xp',
   height: '35px',
   borderRadius: '50%',
   backgroundImage: 'url(/assets/gbc-loop.gif)',

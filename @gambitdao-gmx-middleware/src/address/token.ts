@@ -39,6 +39,12 @@ export const TOKEN_DESCRIPTION_LIST = [
   },
   {
     name: "Bitcoin (WBTC.e)",
+    symbol: TOKEN_SYMBOL.WBTCE,
+    decimals: 8,
+    isStable: false,
+  },
+  {
+    name: "Wrapped Bitcoin",
     symbol: TOKEN_SYMBOL.WBTC,
     decimals: 8,
     isStable: false,

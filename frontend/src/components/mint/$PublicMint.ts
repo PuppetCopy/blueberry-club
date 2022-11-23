@@ -137,7 +137,6 @@ export const $PublicMint = (config: MintCmp) => component((
 
             return $ButtonPrimary({
               disabled: startWith(true, buttonState),
-              buttonOp: style({ alignSelf: 'flex-end' }),
               $content: switchLatest(
                 map(({ selectedMintAmount, account }) => {
 

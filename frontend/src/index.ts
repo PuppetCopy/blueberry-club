@@ -5,6 +5,6 @@ import { runBrowser } from "@aelea/dom"
 import $Main from './pages/$Main'
 
 
-runBrowser({ rootNode: document.body })(
+runBrowser()(
   $Main({})({})
 )

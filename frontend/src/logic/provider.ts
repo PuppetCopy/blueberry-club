@@ -1,6 +1,6 @@
 import { JsonRpcProvider, WebSocketProvider } from "@ethersproject/providers"
 import { GLOBAL_W3P, GLOBAL_W3P_ARBITRUM, GLOBAL_W3P_AVALANCHE } from "@gambitdao/gbc-middleware"
-import { NETWORK_METADATA } from "@gambitdao/gmx-middleware"
+import { CHAIN, NETWORK_METADATA } from "@gambitdao/gmx-middleware"
 import detectEthereumProvider from "@metamask/detect-provider"
 import WalletConnectProvider from "@walletconnect/ethereum-provider"
 import { IEthereumProvider } from "eip1193-provider"
@@ -37,3 +37,7 @@ export const web3Provider = new WebSocketProvider(GLOBAL_W3P)
 export const arbOneWeb3Provider = new WebSocketProvider(GLOBAL_W3P_ARBITRUM)
 export const w3pAva = new JsonRpcProvider(GLOBAL_W3P_AVALANCHE)
 
+export const globalProviderMap: { [p in CHAIN]: JsonRpcProvider } = {
+  [CHAIN.ARBITRUM]: arbOneWeb3Provider,
+  [CHAIN.AVALANCHE]: w3pAva,
+} as any

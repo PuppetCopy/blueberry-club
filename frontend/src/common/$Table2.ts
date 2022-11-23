@@ -1,5 +1,5 @@
 import { Behavior, O, Op } from "@aelea/core"
-import { $Node, $svg, attr, component, INode, nodeEvent, style, stylePseudo } from '@aelea/dom'
+import { $Node, $svg, attr, component, INode, NodeComposeFn, nodeEvent, style, stylePseudo } from '@aelea/dom'
 import { $column, $icon, $row, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { chain, constant, map, merge, never, now, scan, startWith, switchLatest } from "@most/core"
@@ -11,6 +11,8 @@ import { $VirtualScroll, IScrollPagableReponse, QuantumScroll, ScrollRequest, Sc
 export type TablePageResponse<T> = T[] | Omit<IScrollPagableReponse, '$items'> & { data: T[] }
 
 export interface TableOption<T, FilterState> {
+  $container?: NodeComposeFn<$Node>
+
   columns: TableColumn<T>[]
 
   dataSource: Stream<TablePageResponse<T>>
@@ -54,8 +56,7 @@ export const $caretDown = $svg('path')(attr({ d: 'M4.616.296c.71.32 1.326.844 2.
 export const $Table2 = <T, FilterState = never>({
   dataSource, columns, scrollConfig, cellOp,
   headerCellOp, bodyCellOp,
-  bodyContainerOp = O(),
-  rowOp = O(),
+  $container = $column,
   sortChange = never(),
   filterChange = never(),
   $sortArrowDown = $caretDown
@@ -160,7 +161,7 @@ export const $Table2 = <T, FilterState = never>({
   }, startWith(null, requestPageFilters)))
 
   return [
-    $column(bodyContainerOp)(
+    $container(
       $header,
       $body,
     ),

@@ -121,7 +121,6 @@ export const $GbcWhitelist = (config: MintCmp) => component((
 
             return $ButtonPrimary({
               disabled: startWith(true, disablePrimary),
-              buttonOp: style({ alignSelf: 'flex-end' }),
               $content: switchLatest(
                 map(({ chosenTokens }) => {
                   if (chosenTokens.length === 0) {

@@ -1,28 +1,14 @@
-import { awaitPromises, empty, map, multicast, now, switchLatest } from "@most/core"
-import { AddressZero, CHAIN, getDenominator, switchFailedSources, AddressIndex, AddressInput, USD_PERCISION } from "@gambitdao/gmx-middleware"
+import { awaitPromises, combine, empty, map, multicast, now, switchLatest } from "@most/core"
+import { AddressZero, CHAIN, getDenominator, switchFailedSources, AddressIndex, AddressInput, USD_PERCISION, KeeperExecute, KeeperReject } from "@gambitdao/gmx-middleware"
 import { combineArray } from "@aelea/core"
 import { ERC20__factory, FastPriceFeed__factory, PositionRouter__factory, Router__factory, Vault__factory } from "./gmx-contracts"
 import { periodicRun } from "@gambitdao/gmx-middleware"
 import { getTokenDescription, resolveAddress } from "../utils"
 import { Stream } from "@most/types"
-import { BaseProvider, Provider, Web3Provider } from "@ethersproject/providers"
-import { Signer } from "@ethersproject/abstract-signer"
-import { contractConnect, getContract } from "../common"
+import { BaseProvider, JsonRpcProvider, Web3Provider } from "@ethersproject/providers"
+import { readContract as readContract, getContract } from "../common"
 
 
-export interface KeeperExecutePosition {
-  account: string
-  path: string[]
-  indexToken: string
-  amountIn: bigint
-  minOut: bigint
-  sizeDelta: bigint
-  isLong: boolean
-  acceptablePrice: bigint
-  executionFee: bigint
-  blockGap: bigint
-  timeGap: bigint
-}
 
 export function connectErc20(address: string, provider: Stream<Web3Provider | null>) {
 
@@ -50,21 +36,18 @@ export function connectErc20(address: string, provider: Stream<Web3Provider | nu
 }
 
 
-export function connectTrade(provider: Stream<BaseProvider | null>) {
-  const router = contractConnect(Router__factory, provider, 'Router')
-  const positionRouter = contractConnect(PositionRouter__factory, provider, 'PositionRouter')
+export function connectTrade<T extends JsonRpcProvider>(provider: Stream<T | null>) {
+  const router = readContract(Router__factory, provider, 'Router')
+  const positionRouter = readContract(PositionRouter__factory, provider, 'PositionRouter')
 
-  const isEnabled = router.run(map(async c => {
-    return c.contract.approvedPlugins(await c.signer.getAddress(), getContract(c.chainId, 'PositionRouter'))
-  }))
 
-  const executeIncreasePosition: Stream<KeeperExecutePosition> = positionRouter.listen('ExecuteIncreasePosition')
-  const cancelIncreasePosition: Stream<KeeperExecutePosition> = positionRouter.listen('CancelIncreasePosition')
+  const executeIncreasePosition: Stream<KeeperExecute> = positionRouter.listen('ExecuteIncreasePosition')
+  const cancelIncreasePosition: Stream<KeeperReject> = positionRouter.listen('CancelIncreasePosition')
 
-  const executeDecreasePosition: Stream<KeeperExecutePosition> = positionRouter.listen('ExecuteDecreasePosition')
-  const cancelDecreasePosition: Stream<KeeperExecutePosition> = positionRouter.listen('CancelDecreasePosition')
+  const executeDecreasePosition: Stream<KeeperExecute> = positionRouter.listen('ExecuteDecreasePosition')
+  const cancelDecreasePosition: Stream<KeeperReject> = positionRouter.listen('CancelDecreasePosition')
 
-  const executionFee = positionRouter.int(map(c => c.contract.minExecutionFee()))
+  const executionFee = positionRouter.readInt(map(c => c.contract.minExecutionFee()))
 
   const getLatestTradeRequest = (key: string, isIncrease: boolean) => positionRouter.run(map(async c => {
     const resp = isIncrease ? await c.contract.increasePositionRequests(key) : await c.contract.decreasePositionRequests(key)
@@ -89,8 +72,12 @@ export function connectTrade(provider: Stream<BaseProvider | null>) {
     return { acceptablePrice, sizeDelta, account, indexToken, blockNumber, blockTime, executionFee, minOut, isLong, }
   }))
 
+  const isPluginEnabled = (address: Stream<string>) => router.run(combine(async (a, c) => {
+    return c.contract.approvedPlugins(a, getContract(c.chainId, 'PositionRouter'))
+  }, address))
+
   return {
-    isEnabled,
+    isPluginEnabled,
     positionRouter,
     router,
     executionFee,
@@ -152,7 +139,7 @@ export async function getErc20Balance(token: AddressInput, w3p: Web3Provider | n
 
 
 export function connectPricefeed(provider: Stream<BaseProvider | null>) {
-  const pricefeed = contractConnect(FastPriceFeed__factory, provider, 'FastPriceFeed')
+  const pricefeed = readContract(FastPriceFeed__factory, provider, 'FastPriceFeed')
 
   // const contract = map(w3p => FastPriceFeed__factory.connect('0x1a0ad27350cccd6f7f168e052100b4960efdb774', w3p), provider)
 
@@ -190,20 +177,20 @@ export function connectPricefeed(provider: Stream<BaseProvider | null>) {
 
 
 export function connectVault(provider: Stream<BaseProvider | null>) {
-  const vault = contractConnect(Vault__factory, provider, 'Vault')
-  const usdg = contractConnect(ERC20__factory, provider, 'USDG')
+  const vault = readContract(Vault__factory, provider, 'Vault')
+  const usdg = readContract(ERC20__factory, provider, 'USDG')
 
   // const usdg = map(w3p => ERC20__factory.connect(ARBITRUM_ADDRESS.USDG, w3p), provider)
 
-  const usdgSupply = usdg.int(map(c => c.contract.totalSupply()))
+  const usdgSupply = usdg.readInt(map(c => c.contract.totalSupply()))
 
-  const totalTokenWeight = vault.int(map(c => c.contract.totalTokenWeights()))
-  const getTokenWeight = (token: AddressInput) => vault.int(map(c => c.contract.tokenWeights(token)))
-  const getTokenDebtUsd = (token: AddressInput) => vault.int(map(c => c.contract.usdgAmounts(token)))
-  const getTokenCumulativeFundingRate = (token: AddressInput) => vault.int(map(c => c.contract.cumulativeFundingRates(token)))
-  const getPoolAmount = (token: AddressInput) => vault.int(map(c => c.contract.poolAmounts(token)))
-  const getReservedAmount = (token: AddressInput) => vault.int(map(c => c.contract.reservedAmounts(token)))
-  const getTotalShort = (token: AddressInput) => vault.int(map(c => c.contract.globalShortSizes(token)))
+  const totalTokenWeight = vault.readInt(map(c => c.contract.totalTokenWeights()))
+  const getTokenWeight = (token: AddressInput) => vault.readInt(map(c => c.contract.tokenWeights(token)))
+  const getTokenDebtUsd = (token: AddressInput) => vault.readInt(map(c => c.contract.usdgAmounts(token)))
+  const getTokenCumulativeFundingRate = (token: AddressInput) => vault.readInt(map(c => c.contract.cumulativeFundingRates(token)))
+  const getPoolAmount = (token: AddressInput) => vault.readInt(map(c => c.contract.poolAmounts(token)))
+  const getReservedAmount = (token: AddressInput) => vault.readInt(map(c => c.contract.reservedAmounts(token)))
+  const getTotalShort = (token: AddressInput) => vault.readInt(map(c => c.contract.globalShortSizes(token)))
   const getTotalShortCap = (token: AddressInput) => vault.run(map(async c => {
     try {
       return (await c.contract.maxGlobalShortSizes(token)).toBigInt()

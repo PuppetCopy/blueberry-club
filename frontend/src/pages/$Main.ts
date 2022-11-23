@@ -51,10 +51,7 @@ export default ({ baseRoute = '' }: Website) => component((
   [walletChange, walletChangeTether]: Behavior<IEthereumProvider | null, IEthereumProvider | null>,
 
   [requestAccountTradeList, requestAccountTradeListTether]: Behavior<IAccountTradeListParamApi, IAccountTradeListParamApi>,
-  // [requestLeaderboardTopList, requestLeaderboardTopListTether]: Behavior<ILeaderboardRequest, ILeaderboardRequest>,
   [requestPricefeed, requestPricefeedTether]: Behavior<IPricefeedParamApi, IPricefeedParamApi>,
-  // [requestTradePricefeed, requestTradePricefeedTether]: Behavior<IPricefeedParamApi, IPricefeedParamApi>,
-  [requestLatestPriceMap, requestLatestPriceMapTether]: Behavior<IChainParamApi, IChainParamApi>,
   [requestTrade, requestTradeTether]: Behavior<IRequestTradeQueryparam, IRequestTradeQueryparam>,
 ) => {
 
@@ -97,7 +94,6 @@ export default ({ baseRoute = '' }: Website) => component((
   const clientApi = {
     ...serverApi,
 
-    requestLatestPriceMap: map(json => groupByMap(json.map(fromJson.priceLatestJson), price => price.id), api.latestPriceMap(requestLatestPriceMap)),
     requestTrade: map(json => json ? fromJson.toTradeJson(json) : null, api.trade(requestTrade)),
     pricefeed: map(json => json.map(fromJson.pricefeedJson), api.pricefeed(requestPricefeed)),
     accountTradeList: map(json => json.map(fromJson.toTradeJson), api.accountTradeList(requestAccountTradeList)),
@@ -105,12 +101,6 @@ export default ({ baseRoute = '' }: Website) => component((
   }
 
 
-
-  const latestPriceMap = replayLatest(multicast(map((res: IPriceLatestMap) => Object.entries(res).reduce((seed, [key, price]) => {
-    const k = key as AddressIndex
-    seed[k] = fromJson.priceLatestJson(price)
-    return seed
-  }, {} as IPriceLatestMap), clientApi.requestLatestPriceMap)))
 
   // localstorage state
   const store = createLocalStorageChain('ROOT', 'v1')
@@ -262,17 +252,12 @@ export default ({ baseRoute = '' }: Website) => component((
                   walletStore,
                   accountTradeList: clientApi.accountTradeList,
                   pricefeed: clientApi.pricefeed,
-                  latestPriceMap,
-                  store,
-                  trade: clientApi.requestTrade
+                  store
                 })({
                   requestPricefeed: requestPricefeedTether(),
-                  // requestTradePricefeed: requestTradePricefeedTether(),
                   requestAccountTradeList: requestAccountTradeListTether(),
-                  requestLatestPriceMap: requestLatestPriceMapTether(),
                   changeRoute: linkClickTether(),
                   walletChange: walletChangeTether(),
-                  requestTrade: requestTradeTether()
                 })
               }, walletLink.network))
             ),

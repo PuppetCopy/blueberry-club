@@ -1,4 +1,4 @@
-import { Behavior, replayLatest, combineArray, combineObject } from "@aelea/core"
+import { Behavior, replayLatest, combineArray, combineObject, O } from "@aelea/core"
 import { $text, component, motion, MOTION_NO_WOBBLE, style } from "@aelea/dom"
 import { $column, $NumberTicker, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
@@ -154,7 +154,7 @@ export const $StakingGraph = <T>(config: ITreasuryChart<T>) => component((
                 fontWeight: 'bold',
                 fontFamily: 'RelativeMono'
               },
-              value$: map(Math.round, motion({ ...MOTION_NO_WOBBLE, precision: 15, stiffness: 210 }, 0, chartPnLCounter)),
+              value$: map(O(readableNumber, Number), motion({ ...MOTION_NO_WOBBLE, precision: 15, stiffness: 210 }, 0, chartPnLCounter)),
               incrementColor: pallete.positive,
               decrementColor: pallete.negative
             }),

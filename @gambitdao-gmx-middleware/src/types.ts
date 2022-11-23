@@ -36,7 +36,21 @@ export interface IEntityIndexed extends IIdentifiableEntity {
 export type TypeName<T extends string> = { __typename: T }
 export type IndexedType<T extends string> = TypeName<T> & IEntityIndexed
 
-
+export interface KeeperResponse {
+  account: string
+  path: string[]
+  indexToken: string
+  amountIn: bigint
+  minOut: bigint
+  sizeDelta: bigint
+  isLong: boolean
+  acceptablePrice: bigint
+  executionFee: bigint
+  blockGap: bigint
+  timeGap: bigint
+}
+export interface KeeperExecute extends KeeperResponse, IndexedType<'KeeperExecute'> {}
+export interface KeeperReject extends KeeperResponse, IndexedType<'KeeperReject'> {}
 
 export interface IAbstractPosition {
   account: Address

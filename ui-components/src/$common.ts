@@ -17,7 +17,7 @@ export const $anchor = $element('a')(
     cursor: 'pointer',
     color: pallete.message,
     alignItems: 'center',
-    display: 'flex',
+    display: 'inline-flex',
   }),
 )
 
@@ -52,7 +52,7 @@ export const $infoTooltip = (text: string | Stream<string>) => {
 export const $txHashRef = (txHash: string, chain: CHAIN, label?: $Node) => {
   const href = getTxExplorerUrl(chain, txHash)
 
-  return $anchor(label ?? $text(shortenTxAddress(txHash)))
+  return $anchor(attr({ href }))(label ?? $text(shortenTxAddress(txHash)))
 }
 
 

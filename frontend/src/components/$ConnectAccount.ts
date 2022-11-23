@@ -105,7 +105,7 @@ export const $IntermediateConnectPopover = (config: IConnectWalletPopover) => co
               })
             ),
             $text('Wallet-Connect'),
-          ), buttonOp: style({})
+          )
         })({
           click: walletChangeTether(
             map(async () => {
@@ -130,7 +130,7 @@ export const $IntermediateConnectPopover = (config: IConnectWalletPopover) => co
               $content: $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
                 $element('img')(attr({ src: '/assets/metamask-fox.svg' }), style({ width: '24px' }))(),
                 $text('Connect Metamask')
-              ), buttonOp: style({})
+              )
             })({
               click: walletChangeTether(
                 map(async () => {
@@ -226,7 +226,6 @@ export const $IntermediateConnectPopover = (config: IConnectWalletPopover) => co
           }
 
           return $ButtonPrimary({
-            buttonOp: style({ alignSelf: 'flex-start' }),
             $content: $row(layoutSheet.spacingSmall)(
               $text(`Switch to ${NETWORK_METADATA[fstChain].chainName}`),
               $element('img')(attr({ src: `/assets/chain/${fstChain}.svg` }), style({ width: '20px' }))(),

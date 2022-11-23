@@ -1,8 +1,8 @@
-import { Behavior, O } from "@aelea/core"
-import { $Node, $text, component, eventElementTarget, INode, NodeComposeFn, nodeEvent, style, styleInline } from '@aelea/dom'
-import { $column, $row, observer } from "@aelea/ui-components"
+import { Behavior } from "@aelea/core"
+import { $Node, component, eventElementTarget, INode, NodeComposeFn, nodeEvent, style, styleInline } from '@aelea/dom'
+import { $row, observer } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { constant, mergeArray, switchLatest, empty, map, skipRepeats, startWith, filter, now, never } from "@most/core"
+import { constant, switchLatest, empty, map, skipRepeats, startWith, never } from "@most/core"
 
 
 

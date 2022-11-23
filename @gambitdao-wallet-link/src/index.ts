@@ -55,7 +55,7 @@ export function initWalletLink<T extends EIP1193Provider>(walletChange: Stream<T
 
 
   
-  const provider = replayLatest(multicast(mergeArray([ethersWeb3Wrapper, proivderChange, disconnect])))
+  const provider = mergeArray([ethersWeb3Wrapper, proivderChange, disconnect])
 
   const network = map(w3p => w3p?.network.chainId || null, provider)
 

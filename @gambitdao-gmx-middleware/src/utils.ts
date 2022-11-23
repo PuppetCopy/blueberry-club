@@ -30,7 +30,7 @@ export function shortPostAdress(address: string) {
   return address.slice(address.length - 4, address.length)
 }
 
-export function readableNumber(ammount: number | bigint) {
+export function readableNumber(ammount: number | bigint, localize = true) {
   const parts = ammount.toString().split('.')
   const [whole = '', decimal = ''] = parts
 
@@ -43,7 +43,7 @@ export function readableNumber(ammount: number | bigint) {
     return whole + (shortDecimal ? '.' + shortDecimal : '')
   }
 
-  return Number(whole).toLocaleString()
+  return localize ? Number(whole).toLocaleString() : whole
 }
 
 export const trimTrailingNumber = (n: string) => {
@@ -66,7 +66,7 @@ export function formatReadableUSD(ammount: bigint, options?: Intl.NumberFormatOp
   const amountUsd = formatFixed(ammount, USD_DECIMALS)
   const opts = options
     ? { ...defaultNumberFormatOption, ...options }
-    : Math.abs(amountUsd) > 100 ? defaultNumberFormatOption : { ...defaultNumberFormatOption, maximumFractionDigits: 1 }
+    : Math.abs(amountUsd) > 100 ? defaultNumberFormatOption : { ...defaultNumberFormatOption, maximumFractionDigits: 2 }
 
   return new Intl.NumberFormat("en-US", opts).format(amountUsd)
 }

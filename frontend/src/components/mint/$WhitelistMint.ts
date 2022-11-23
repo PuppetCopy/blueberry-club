@@ -145,7 +145,6 @@ export const $WhitelistMint = (config: MintCmp) => component((
 
             return $ButtonPrimary({
               disabled: startWith(true, isPrimaryDisabled),
-              buttonOp: style({ alignSelf: 'flex-end' }),
               $content: switchLatest(
                 map(({ selectedMintAmount, account }) => {
 

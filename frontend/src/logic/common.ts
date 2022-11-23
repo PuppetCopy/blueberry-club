@@ -12,8 +12,9 @@ import { IWalletLink } from "@gambitdao/wallet-link"
 import { Closet } from "@gambitdao/gbc-contracts"
 import { BigNumberish, BigNumber } from "@ethersproject/bignumber"
 import { bnToHex } from "../pages/$Berry"
-import { JsonRpcSigner, Web3Provider } from "@ethersproject/providers"
+import { JsonRpcProvider, JsonRpcSigner, Web3Provider } from "@ethersproject/providers"
 import { ContractFactory } from "@ethersproject/contracts"
+import { globalProviderMap } from "./provider"
 
 
 export const latestTokenPriceMap = replayLatest(multicast(awaitPromises(map(() => queryLatestPrices(), periodic(5000)))))
@@ -76,26 +77,30 @@ export function getContract(chain: CHAIN, contractName: keyof typeof ARBITRUM_AD
   return addressMapping[contractName]
 }
 
-export function contractConnect<T extends typeof ContractFactory>(contractCtr: T, provider: Stream<Web3Provider | null>, contractName: keyof typeof ARBITRUM_ADDRESS & keyof typeof AVALANCHE_ADDRESS) {
+export function readContract<TContract extends typeof ContractFactory, TProvider extends JsonRpcProvider>(
+  contractCtr: TContract,
+  provider: Stream<TProvider | null>,
+  contractName: keyof typeof ARBITRUM_ADDRESS & keyof typeof AVALANCHE_ADDRESS
+) {
 
   // @ts-ignore
-  type RType = { address: string, contract: ReturnType<T['connect']>, signer: JsonRpcSigner, provider: Web3Provider, chainId: CHAIN } | null
+  type TReader = { address: string, contract: ReturnType<TContract['connect']>, provider: TProvider, chainId: CHAIN } | null
 
-  const contract: Stream<RType> = map((provider) => {
+  const contract: Stream<TReader> = awaitPromises(map(async (provider) => {
     if (provider === null) {
       return null
     }
 
-    const chainId = provider.network.chainId as CHAIN
+    const network = await provider.getNetwork()
 
-    if (!chainId) {
+    if (!network.chainId) {
       return null
     }
 
-    const address = getContract(chainId, contractName)
+    const address = getContract(network.chainId, contractName)
 
     if (!address) {
-      console.warn(`contract ${contractCtr.name} doesn't support chain ${chainId}`)
+      console.warn(`contract ${contractCtr.name} doesn't support chain ${network}`)
       return null
     }
 
@@ -103,10 +108,12 @@ export function contractConnect<T extends typeof ContractFactory>(contractCtr: T
     // @ts-ignore
     const contract = contractCtr.connect(address, signer)
 
-    return { provider, signer, contract, address, chainId }
-  }, provider)
+    const globalProvider = globalProviderMap[network.chainId as CHAIN] || null
 
-  const run = <R>(op: Op<NonNullable<RType>, Promise<R>>) => O(
+    return { provider, signer, contract, address, chainId: network.chainId, globalProvider }
+  }, provider))
+
+  const run = <R>(op: Op<NonNullable<TReader>, Promise<R>>) => O(
     filter(w3p => {
       return w3p !== null
     }),
@@ -114,7 +121,7 @@ export function contractConnect<T extends typeof ContractFactory>(contractCtr: T
     awaitPromises,
   )(contract)
 
-  const int = (op: Op<NonNullable<RType>, Promise<BigNumber>>): Stream<bigint> => {
+  const readInt = (op: Op<NonNullable<TReader>, Promise<BigNumber>>): Stream<bigint> => {
     const newLocal = O(
       op,
       map(async (n) => {
@@ -133,9 +140,9 @@ export function contractConnect<T extends typeof ContractFactory>(contractCtr: T
     // @ts-ignore
     return listen(res.contract)(name) as Stream<T>
   }, contract))
+  
 
-
-  return { run, int, contract, listen: _listen }
+  return { run, readInt, contract, listen: _listen }
 }
 
 
