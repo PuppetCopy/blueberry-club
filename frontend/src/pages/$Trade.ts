@@ -50,11 +50,13 @@ export interface ITradeComponent {
 type RequestTradeQuery = {
   ctxQuery: Promise<ContractTransaction>
   state: ITradeState
+  acceptablePrice: bigint
 }
 
 type RequestTrade = {
   ctx: ContractTransaction
   state: ITradeState
+  acceptablePrice: bigint
 }
 
 
@@ -403,7 +405,7 @@ export const $Trade = (config: ITradeComponent) => component((
   const requestTradeRow: Stream<RequestTrade[]> = switchLatest(awaitPromises(map(res => {
     const newLocal = res.ctxQuery
       .then(ctx => {
-        return now([{ ctx, state: res.state }])
+        return now([{ ctx, state: res.state, acceptablePrice: res.acceptablePrice }])
       })
       .catch(err => empty())
     return newLocal
@@ -622,7 +624,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
                   ],
                   appendData: switchLatest(map(params => {
-                    console.log(params.selectedPricefeed)
+                    // console.log(params.selectedPricefeed)
                     if (params.selectedPricefeed === null) {
                       return empty()
                     }
@@ -790,7 +792,7 @@ export const $Trade = (config: ITradeComponent) => component((
                       const isIncrease = pos.state.isIncrease
                       return $row(layoutSheet.spacingSmall)(
                         $txHashRef(pos.ctx.hash, chain,
-                          $text(`${isIncrease ? '↑' : '↓'} ${formatReadableUSD(pos.state.indexTokenPrice)} ${isIncrease ? '<' : '>'}`)
+                          $text(`${isIncrease ? '↑' : '↓'} ${formatReadableUSD(pos.acceptablePrice)} ${isIncrease ? '<' : '>'}`)
                         ),
 
                         switchLatest(mergeArray([

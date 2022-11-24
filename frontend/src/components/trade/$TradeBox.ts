@@ -247,15 +247,18 @@ export const $TradeBox = (config: ITradeBox) => component((
     const inputAddress = resolveAddress(chain, state.inputToken)
     const outputToken = state.isLong ? state.indexToken : state.shortCollateralToken
 
-    const allowedSlippage = BigInt(Number(state.slippage) * 100)
-
-    const refPrice = state.isLong ? state.indexTokenPrice : state.indexTokenPrice
-    const priceBasisPoints = state.isLong ? BASIS_POINTS_DIVISOR + allowedSlippage : BASIS_POINTS_DIVISOR - allowedSlippage
-    const acceptablePrice = refPrice * priceBasisPoints / BASIS_POINTS_DIVISOR
-
     const path = state.isIncrease
       ? inputAddress === outputToken ? [state.indexToken] : [inputAddress, outputToken]
-      : inputAddress === outputToken ? [state.indexToken] : [state.indexToken, inputAddress]
+      : inputAddress === outputToken ? [state.indexToken] : [outputToken, inputAddress]
+
+    const slippageN = BigInt(Number(state.slippage) * 100)
+    const allowedSlippage = state.isLong ? state.isIncrease ? slippageN : -slippageN : state.isIncrease ? -slippageN : slippageN
+
+    const refPrice = state.isLong ? state.indexTokenPrice : state.indexTokenPrice
+    const priceBasisPoints = BASIS_POINTS_DIVISOR + allowedSlippage // state.isLong ? BASIS_POINTS_DIVISOR + allowedSlippage : BASIS_POINTS_DIVISOR - allowedSlippage
+    
+    const acceptablePrice = refPrice * priceBasisPoints / BASIS_POINTS_DIVISOR
+
 
 
     const isNative = state.inputToken === AddressZero
@@ -271,7 +274,7 @@ export const $TradeBox = (config: ITradeBox) => component((
           acceptablePrice,
           state.executionFee,
           config.referralCode,
-          account,
+          AddressZero,
           { value: state.collateralDelta + state.executionFee }
         )
         : trade.contract.createIncreasePosition(
@@ -284,7 +287,7 @@ export const $TradeBox = (config: ITradeBox) => component((
           acceptablePrice,
           state.executionFee,
           config.referralCode,
-          account,
+          AddressZero,
           { value: state.executionFee }
         ))
       : trade.contract.createDecreasePosition(
@@ -298,7 +301,8 @@ export const $TradeBox = (config: ITradeBox) => component((
         0,
         state.executionFee,
         isNative,
-        account
+        AddressZero,
+        { value: state.executionFee }
       )
 
     ctxQuery.catch(err => {
@@ -306,7 +310,7 @@ export const $TradeBox = (config: ITradeBox) => component((
     })
 
 
-    return { ctxQuery, state }
+    return { ctxQuery, state, acceptablePrice }
   }, combineObject({ trade: position.positionRouter.contract, state: tradeState, account: config.walletLink.account }), clickRequestTrade))
 
 
@@ -747,9 +751,14 @@ export const $TradeBox = (config: ITradeBox) => component((
               value: config.tradeConfig.slippage,
               inputOp: style({ width: '60px', fontWeight: 'normal' }),
               validation: map(n => {
-                const valid = Number(n) >= 0
+                const val = Number(n)
+                const valid = val >= 0
                 if (!valid) {
                   return 'Invalid Basis point'
+                }
+
+                if (val > 5) {
+                  return 'Slippage should be less than 5%'
                 }
 
                 return null
@@ -969,7 +978,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                 style({
                   pointerEvents: 'none',
                   textAlign: 'center',
-                  fontSize: '1.75em', alignItems: 'baseline', padding: '15px', background: 'radial-gradient(rgba(0, 0, 0, 0.37) 9%, transparent 63%)',
+                  fontSize: '1.5em', alignItems: 'baseline', padding: '6px 15px', background: 'radial-gradient(rgba(0, 0, 0, 0.37) 9%, transparent 63%)',
                   lineHeight: 1,
                   fontWeight: "bold",
                   zIndex: 10,
@@ -985,6 +994,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                   $container: $column(style({ height: '100px' })),
                   trade,
                   pricefeed,
+                  chartConfig: {},
                   latestPrice: config.tradeState.indexTokenPrice
                 })({ crosshairMove: crosshairMoveTether() })
               )
