@@ -256,7 +256,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
     const refPrice = state.isLong ? state.indexTokenPrice : state.indexTokenPrice
     const priceBasisPoints = BASIS_POINTS_DIVISOR + allowedSlippage // state.isLong ? BASIS_POINTS_DIVISOR + allowedSlippage : BASIS_POINTS_DIVISOR - allowedSlippage
-    
+
     const acceptablePrice = refPrice * priceBasisPoints / BASIS_POINTS_DIVISOR
 
 
@@ -312,6 +312,25 @@ export const $TradeBox = (config: ITradeBox) => component((
 
     return { ctxQuery, state, acceptablePrice }
   }, combineObject({ trade: position.positionRouter.contract, state: tradeState, account: config.walletLink.account }), clickRequestTrade))
+
+
+
+  const newLocal_1 = switchLatest(map(trade => {
+    if (!trade) {
+      return now(null)
+    }
+
+    const to = unixTimestampNow()
+    const from = trade.timestamp
+
+    const intervalTime = getPricefeedVisibleColumns(160, from, to)
+    const params = { tokenAddress: '_' + trade.indexToken, interval: '_' + intervalTime, from, to }
+
+    const queryFeed = fromPromise(query.graphClientMap[chain](query.document.pricefeedDoc, params as any, { requestPolicy: 'network-only' }))
+    const priceFeedQuery = map(res => res.pricefeeds.map(fromJson.pricefeedJson), queryFeed)
+
+    return map(feed => ({ feed, trade }), priceFeedQuery)
+  }, config.tradeConfig.trade))
 
 
 
@@ -939,22 +958,14 @@ export const $TradeBox = (config: ITradeBox) => component((
         ),
 
         $column(style({ height: '100px', position: 'relative', overflow: 'hidden', margin: `0 -${BOX_SPACING}`, zIndex: 0, backgroundColor: pallete.background, borderRadius: '20px', }))(
-          switchLatest(map(trade => {
-            if (trade === null) {
+          switchLatest(map((res) => {
+            if (res === null) {
               return empty()
             }
 
-            const to = unixTimestampNow()
-            const from = trade.timestamp
+            const { feed, trade } = res
 
-            const intervalTime = getPricefeedVisibleColumns(160, from, to)
-            const params = { tokenAddress: '_' + trade.indexToken, interval: '_' + intervalTime, from, to }
-
-            const queryFeed = fromPromise(query.graphClientMap[chain](query.document.pricefeedDoc, params as any, { requestPolicy: 'network-only' }))
-            const priceFeedQuery = map(res => res.pricefeeds.map(fromJson.pricefeedJson), queryFeed)
-
-
-            const hoverChartPnl = multicast(switchLatest(map((chartCxChange) => {
+            const hoverChartPnl = switchLatest(map((chartCxChange) => {
               if (chartCxChange) {
                 return now(chartCxChange)
               }
@@ -970,37 +981,37 @@ export const $TradeBox = (config: ITradeBox) => component((
                 return val
               }, config.tradeState.indexTokenPrice)
 
-            }, pnlCrossHairTime)))
+            }, pnlCrossHairTime))
 
+            return $column(style({}))(
+              style({
+                pointerEvents: 'none',
+                textAlign: 'center',
+                fontSize: '1.5em', alignItems: 'baseline', padding: '6px 15px', background: 'radial-gradient(rgba(0, 0, 0, 0.37) 9%, transparent 63%)',
+                lineHeight: 1,
+                fontWeight: "bold",
+                zIndex: 10,
+                position: 'absolute',
+                width: '50%',
+                left: '50%',
+                transform: 'translateX(-50%)'
+              })(
+                $NumberTicker({
+                  value$: map(O((n) => readableNumber(n, false), Number), motion({ ...MOTION_NO_WOBBLE, precision: 15, stiffness: 210 }, 0, hoverChartPnl)),
+                  incrementColor: pallete.positive,
+                  decrementColor: pallete.negative
+                })
+              ),
+              $TradePnlHistory({
+                $container: $column(style({ height: '100px' })),
+                trade,
+                pricefeed: feed,
+                chartConfig: {},
+                latestPrice: config.tradeState.indexTokenPrice
+              })({ crosshairMove: crosshairMoveTether() })
+            )
 
-            return switchLatest(map(pricefeed => {
-              return $column(style({  }))(
-                style({
-                  pointerEvents: 'none',
-                  textAlign: 'center',
-                  fontSize: '1.5em', alignItems: 'baseline', padding: '6px 15px', background: 'radial-gradient(rgba(0, 0, 0, 0.37) 9%, transparent 63%)',
-                  lineHeight: 1,
-                  fontWeight: "bold",
-                  zIndex: 10,
-                  position: 'absolute'
-                })(
-                  $NumberTicker({
-                    value$: map(O((n) => readableNumber(n, false), Number), motion({ ...MOTION_NO_WOBBLE, precision: 15, stiffness: 210 }, 0, hoverChartPnl)),
-                    incrementColor: pallete.positive,
-                    decrementColor: pallete.negative
-                  })
-                ),
-                $TradePnlHistory({
-                  $container: $column(style({ height: '100px' })),
-                  trade,
-                  pricefeed,
-                  chartConfig: {},
-                  latestPrice: config.tradeState.indexTokenPrice
-                })({ crosshairMove: crosshairMoveTether() })
-              )
-            }, priceFeedQuery))
-
-          }, config.tradeConfig.trade))
+          }, newLocal_1))
         )
       )
     ),

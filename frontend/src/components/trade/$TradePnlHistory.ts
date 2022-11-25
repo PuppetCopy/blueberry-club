@@ -210,7 +210,7 @@ export const $TradePnlHistory = (config: ITradePnlPreview) => component((
 
               series.applyOptions({
                 scaleMargins: {
-                  top: 0.3,
+                  top: 0.2,
                   bottom: 0,
                 }
               })

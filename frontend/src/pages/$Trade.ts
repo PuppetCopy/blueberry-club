@@ -93,7 +93,9 @@ export const $Trade = (config: ITradeComponent) => component((
 
   const positionRouter = readContract(PositionRouter__factory, now(globalProviderMap[chain]), 'PositionRouter')
 
-
+  const accountOpenTradeList = map(list => {
+    return list.filter((t): t is ITradeOpen => t.status === TradeStatus.OPEN)
+  }, config.accountTradeList)
 
   const tradingStore = config.store.craete('trade', 'tradeBox')
 
@@ -153,16 +155,20 @@ export const $Trade = (config: ITradeComponent) => component((
 
   const requestPosition = combineObject({ account: config.walletLink.account, shortCollateralToken, indexToken, isLong })
 
-  const requestPositionKey = skipRepeats(map(params => {
+  const requestPositionKey = map(params => {
     if (!params.account) {
       return null
     }
     const collateralToken = params.isLong ? params.indexToken : params.shortCollateralToken
 
     return getPositionKey(params.account.toLowerCase(), collateralToken, params.indexToken, params.isLong)
-  }, requestPosition))
+  }, requestPosition)
 
-  const initialSelectedTrade = combineArray((key, list) => list.find(t => t.key === key) || null, requestPositionKey, config.accountTradeList)
+  const initialSelectedTrade = combineArray((key, list) => {
+    const pos = list.find(t => t.key === key)
+
+    return pos || null
+  }, requestPositionKey, accountOpenTradeList)
 
   const trade = mergeArray([initialSelectedTrade, switchTrade])
 
@@ -217,15 +223,6 @@ export const $Trade = (config: ITradeComponent) => component((
 
       return key === position?.key || position === null ? vault.getPosition(key) : now(null)
     }, updateVaultPositon, accountKeeperExecution)),
-    // switchLatest(map((position) => {
-    //   const { acceptablePrice, account, amountIn, blockGap, executionFee, indexToken, isLong, minOut, path, sizeDelta, timeGap } = update
-
-    //   const collateralToken = path[path.length - 1]
-
-    //   const key = getPositionKey(account.toLowerCase(), collateralToken, indexToken, isLong)
-
-    //   return key === position?.key || position === null ? vault.getPosition(key) : now(null)
-    // }, changeVaultPositon))
   ])))
 
   const swapFee = skipRepeats(combineArray((usdgSupply, totalTokenWeight, tradeParams, vaultPosition, inputTokenDebtUsd, inputTokenWeight, inputTokenDescription, inputTokenPrice, indexTokenDebtUsd, indexTokenWeight, indexTokenDescription, indexTokenPrice, isLong) => {
@@ -410,22 +407,10 @@ export const $Trade = (config: ITradeComponent) => component((
     return newLocal
   }, requestTrade)))
 
+
   return [
     $container(
       $node(layoutSheet.spacingBig, style({ flex: 1, paddingBottom: '50px', display: 'flex', flexDirection: screenUtils.isDesktopScreen ? 'column' : 'column-reverse' }))(
-
-        // executeSt,
-
-        // style({ alignSelf: 'center' })(
-        //   $alert(
-        //     $column(layoutSheet.spacingTiny)(
-        //       $text('Work in Progress. please use with caution'),
-        //       $anchor(attr({ href: 'https://app.gmx.io/#/trade' }))(
-        //         $text('got issues? positons can also be modified in gmx.io')
-        //       )
-        //     )
-        //   )
-        // ),
 
         $TradeBox({
           referralCode: BLUEBERRY_REFFERAL_CODE,
@@ -491,7 +476,7 @@ export const $Trade = (config: ITradeComponent) => component((
             scrollConfig: {
               $container: $column(layoutSheet.spacingBig)
             },
-            dataSource: now(list.filter((t): t is ITradeOpen => t.status === TradeStatus.OPEN)),
+            dataSource: now(list),
             columns: [
               {
                 $head: $text('Entry'),
@@ -547,7 +532,7 @@ export const $Trade = (config: ITradeComponent) => component((
               },
             ],
           })({})
-        }, mergeArray([config.accountTradeList, now(null)])))
+        }, mergeArray([accountOpenTradeList, now(null)])))
 
 
       ),

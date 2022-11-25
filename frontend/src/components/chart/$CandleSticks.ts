@@ -152,12 +152,14 @@ export const $CandleSticks = ({ chartConfig, series, containerOp = O() }: ICandl
           }
 
           const seriesSetup = scan((prev, data) => {
+            if (prev.api) {
+              chartApi.removeSeries(prev.api)
+            }
+
             if (data === null) {
-              if (prev.api) {
-                chartApi.removeSeries(prev.api)
-              }
               return { data: null, api: null }
             }
+
             const api = chartApi.addCandlestickSeries(params.seriesConfig)
 
             api.setData(data)
