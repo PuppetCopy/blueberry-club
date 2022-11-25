@@ -3,8 +3,7 @@ import { $node, $text, component, eventElementTarget, INode, nodeEvent, style, s
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 import {
-  AddressZero, formatFixed, intervalTimeMap, IPricefeed, IPricefeedParamApi, IPriceLatestMap,
-  isTradeOpen, ITrade, unixTimestampNow, IRequestTradeQueryparam, getChainName,
+  AddressZero, formatFixed, intervalTimeMap, IPricefeed, IPricefeedParamApi, ITrade, unixTimestampNow, getChainName,
   ITradeOpen, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, BASIS_POINTS_DIVISOR, getAveragePriceFromDelta,
   getLiquidationPrice, getMarginFees, getTokenUsd, STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, TAX_BASIS_POINTS,
   replayState, getDenominator, USD_PERCISION, periodicRun, formatReadableUSD, timeSince, IVaultPosition, getPositionKey, IPositionIncrease,
@@ -12,7 +11,7 @@ import {
 } from "@gambitdao/gmx-middleware"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { combine, constant, map, mergeArray, multicast, periodic, scan, skipRepeats, switchLatest, debounce, empty, now, startWith, snapshot, merge, awaitPromises, take } from "@most/core"
+import { combine, constant, map, mergeArray, multicast, periodic, scan, skipRepeats, switchLatest, empty, now, startWith, snapshot, merge, awaitPromises, take } from "@most/core"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { $arrowsFlip, $infoTooltip, $Link, $RiskLiquidator, $spinner, $txHashRef } from "@gambitdao/ui-components"
 import { CandlestickData, CrosshairMode, LineStyle, Time } from "lightweight-charts"
@@ -163,7 +162,7 @@ export const $Trade = (config: ITradeComponent) => component((
     return getPositionKey(params.account.toLowerCase(), collateralToken, params.indexToken, params.isLong)
   }, requestPosition))
 
-  const initialSelectedTrade = take(1, combineArray((key, list) => list.find(t => t.key === key) || [], requestPositionKey, config.accountTradeList))
+  const initialSelectedTrade = combineArray((key, list) => list.find(t => t.key === key) || null, requestPositionKey, config.accountTradeList)
 
   const trade = mergeArray([initialSelectedTrade, switchTrade])
 
@@ -613,7 +612,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
                       return {
                         price: formatFixed(val, 30),
-                        color: pallete.negative,
+                        color: pallete.indeterminate,
                         lineVisible: true,
                         lineWidth: 1,
                         axisLabelVisible: true,

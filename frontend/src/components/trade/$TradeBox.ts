@@ -938,7 +938,7 @@ export const $TradeBox = (config: ITradeBox) => component((
           })({ walletChange: walletChangeTether() })
         ),
 
-        $column(style({ height: '100px', margin: `0 -${BOX_SPACING}`, zIndex: 0, backgroundColor: pallete.background, borderRadius: '20px', }))(
+        $column(style({ height: '100px', position: 'relative', overflow: 'hidden', margin: `0 -${BOX_SPACING}`, zIndex: 0, backgroundColor: pallete.background, borderRadius: '20px', }))(
           switchLatest(map(trade => {
             if (trade === null) {
               return empty()
@@ -974,7 +974,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
 
             return switchLatest(map(pricefeed => {
-              return $column(style({ position: 'relative', overflow: 'hidden' }))(
+              return $column(style({  }))(
                 style({
                   pointerEvents: 'none',
                   textAlign: 'center',

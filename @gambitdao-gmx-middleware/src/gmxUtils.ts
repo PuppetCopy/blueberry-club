@@ -93,6 +93,13 @@ export function getLiquidationPriceFromDelta(liquidationAmount: bigint, size: bi
   return isLong ? averagePrice - priceDelta : averagePrice + priceDelta
 }
 
+export function getLiquidationPrice2(collateral: bigint, size: bigint, averagePrice: bigint, isLong: boolean) {
+  const liquidationAmount = div(size, MAX_LEVERAGE)
+  const liquidationDelta = collateral - liquidationAmount
+  const priceDelta = liquidationDelta * averagePrice / size
+
+  return isLong ? averagePrice - priceDelta : averagePrice + priceDelta
+}
 
 export function getLiquidationPrice(
   isLong: boolean,
