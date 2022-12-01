@@ -166,7 +166,8 @@ export default ({ baseRoute = '' }: Website) => component((
             router.match(wardrobeRoute)(
               fadeIn($Wardrobe({ chainList: [CHAIN.ARBITRUM], walletLink: walletLink, parentRoute: wardrobeRoute })({
                 changeRoute: linkClickTether(),
-
+                changeNetwork: changeNetworkTether(),
+                walletChange: walletChangeTether(),
               }))
             ),
             router.match(profileRoute)(

@@ -68,6 +68,8 @@ export const $Wardrobe = (config: IBerryComp) => component((
   [hoverDownloadBtn, hoverDownloadBtnTether]: Behavior<INode, PointerEvent>,
   [setMainBerry, setMainBerryTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
 
+  [changeNetwork, changeNetworkTether]: Behavior<any, CHAIN>,
+  [walletChange, walletChangeTether]: Behavior<IWalletName, IWalletName>,
 ) => {
 
   const connect = connectLab(config.walletLink)
@@ -460,7 +462,10 @@ export const $Wardrobe = (config: IBerryComp) => component((
                 }, isClosetApprovedState))
               }),
               walletLink: config.walletLink,
-            })({}),
+            })({
+              changeNetwork: changeNetworkTether(),
+              walletChange: walletChangeTether()
+            }),
 
           ),
 
@@ -476,7 +481,8 @@ export const $Wardrobe = (config: IBerryComp) => component((
 
     ),
 
-    { changeRoute, setMainBerry }
+    {
+      changeRoute, setMainBerry, changeNetwork, walletChange }
   ]
 })
 
