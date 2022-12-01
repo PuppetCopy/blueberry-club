@@ -2,7 +2,7 @@ import { isStream, O } from "@aelea/core"
 import { $Branch, $element, $node, $Node, $text, attr, component, style, styleBehavior, styleInline, stylePseudo } from "@aelea/dom"
 import { $column, $icon, $row, $seperator, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { bnDiv, CHAIN, formatReadableUSD, getLiquidationPrice, getTxExplorerUrl, IAbstractTrade, ITrade, ITradeOpen, liquidationWeight, readableNumber, shortenTxAddress, TokenDescription } from "@gambitdao/gmx-middleware"
+import { bnDiv, CHAIN, formatReadableUSD, getLiquidationPrice, getTxExplorerUrl, IAbstractPositionStake, IAbstractTrade, ITrade, ITradeOpen, liquidationWeight, readableNumber, shortenTxAddress, TokenDescription } from "@gambitdao/gmx-middleware"
 import { now, multicast, map, empty } from "@most/core"
 import { Stream } from "@most/types"
 import { $alertIcon, $caretDblDown, $info, $skull, $tokenIconMap } from "./$icons"
@@ -62,7 +62,7 @@ export const $risk = (pos: IAbstractTrade) => $column(layoutSheet.spacingTiny, s
   style({ textAlign: 'center', fontSize: '.65em' }, $leverage(pos)),
 )
 
-export const $leverage = (pos: IAbstractTrade) =>
+export const $leverage = (pos: IAbstractPositionStake) =>
   $text(style({ fontWeight: 'bold' }))(`${readableNumber(bnDiv(pos.size, pos.collateral))}x`)
 
 export const $ProfitLossText = (pnl: Stream<bigint> | bigint, colorful = true) => {

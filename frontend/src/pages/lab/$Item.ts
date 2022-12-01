@@ -2,7 +2,7 @@ import { Behavior, combineArray } from "@aelea/core"
 import { $element, $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
-import { IWalletLink } from "@gambitdao/wallet-link"
+import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
 import { $accountIconLink, $addToCalendar, $responsiveFlex } from "../../elements/$common"
 import { attributeIndexToLabel, mintLabelMap, getLabItemTupleIndex, labItemDescriptionListMap, saleMaxSupply, SaleType } from "@gambitdao/gbc-middleware"
 import { CHAIN, countdownFn, displayDate, formatFixed, unixTimestampNow } from "@gambitdao/gmx-middleware"
@@ -13,26 +13,23 @@ import { getMintCount } from "../../logic/contract/sale"
 import { empty, map, multicast, switchLatest } from "@most/core"
 import { $anchor } from "@gambitdao/ui-components"
 import { $opensea } from "../../elements/$icons"
-import { $GbcWhitelist } from "../../components/mint/$HolderMint"
+import { $HolderMint } from "../../components/mint/$HolderMint"
 import { $WhitelistMint } from "../../components/mint/$WhitelistMint"
 import { $PublicMint } from "../../components/mint/$PublicMint"
 import { timeChange } from "../../components/mint/mintUtils2"
-import { IEthereumProvider } from "eip1193-provider"
 import { BrowserStore } from "../../logic/store"
-import { WALLET } from "../../logic/provider"
 
 
 interface ILabItem {
   chainList: CHAIN[],
   walletLink: IWalletLink
   parentRoute: Route
-  walletStore: BrowserStore<"ROOT.v1.walletStore", WALLET | null>
 }
 
-export const $LabItem = ({ walletLink, walletStore, parentRoute, chainList }: ILabItem) => component((
+export const $LabItem = (config: ILabItem) => component((
   [changeRoute, changeRouteTether]: Behavior<string, string>,
   [clickNotifyMint, clickNotifyMintTether]: Behavior<PointerEvent, PointerEvent>,
-  [walletChange, walletChangeTether]: Behavior<IEthereumProvider | null, IEthereumProvider | null>,
+  [walletChange, walletChangeTether]: Behavior<IWalletName, IWalletName>,
 ) => {
 
   const urlFragments = document.location.pathname.split('/')
@@ -41,7 +38,7 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute, chainList }: IL
 
   const item = labItemDescriptionListMap[itemId]
   const berrySize = screenUtils.isDesktopScreen ? '415px' : '100%'
-  const totalMintCount = combineArray((...countList) => countList.reduce((seed, next) => seed + next, 0), ...item.mintRuleList.map(rule => getMintCount(rule, 3500)))
+  const totalMintCount = combineArray((...countList) => countList.reduce((seed, next) => seed + next, 0), ...item.mintRuleList.map(rule => getMintCount(rule, config.walletLink, 3500)))
 
   const externalLinks = [
     $anchor(layoutSheet.spacingTiny, attr({ href: `https://opensea.io/assets/arbitrum/0xf4f935f4272e6fd9c779cf0036589a63b48d77a7/${item.id}` }))(
@@ -96,7 +93,7 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute, chainList }: IL
           $column(style({ gap: '50px' }))(
             ...item.mintRuleList.flatMap((mintRule, idx) => {
 
-              const mintCount = multicast(getMintCount(mintRule, 15000))
+              const mintCount = multicast(getMintCount(mintRule, config.walletLink, 15000))
               const mintPriceEth = mintRule.cost === 0n ? 'Free' : formatFixed(mintRule.cost, 18) + ' ETH'
 
               const publicSaleTime = takeUntilLast(time => time > mintRule.start, timeChange)
@@ -107,10 +104,10 @@ export const $LabItem = ({ walletLink, walletStore, parentRoute, chainList }: IL
               const currentSaleType = mintLabelMap[mintRule.type]
 
               const sale = mintRule.type === SaleType.Public
-                ? $PublicMint({ item, mintRule, chainList, walletLink, walletStore })({})
+                ? $PublicMint({ ...config, item, mintRule })({})
                 : mintRule.type === SaleType.holder
-                  ? $GbcWhitelist({ item, mintRule, chainList, walletLink, walletStore })({}) : mintRule.type === SaleType.whitelist
-                    ? $WhitelistMint({ item, chainList, mintRule, walletLink, walletStore })({}) : empty()
+                  ? $HolderMint({ ...config, item, mintRule })({}) : mintRule.type === SaleType.whitelist
+                    ? $WhitelistMint({ ...config, item, mintRule })({}) : empty()
 
               return [
 

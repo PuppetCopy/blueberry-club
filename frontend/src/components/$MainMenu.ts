@@ -1,12 +1,11 @@
-import { Behavior, combineArray, O, Op } from "@aelea/core"
-import { $Branch, $element, $Node, $text, attr, component, IBranch, nodeEvent, style } from "@aelea/dom"
+import { Behavior, combineArray, O } from "@aelea/core"
+import { $Branch, $element, $Node, $text, attr, component, nodeEvent, style } from "@aelea/dom"
 import { $RouterAnchor, Route } from '@aelea/router'
 import { $column, $icon, $Popover, $row, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { pallete, theme } from "@aelea/ui-components-theme"
 import { CHAIN, formatReadableUSD } from "@gambitdao/gmx-middleware"
-import { IWalletLink } from "@gambitdao/wallet-link"
-import { constant, empty, map, now, switchLatest } from '@most/core'
-import { IEthereumProvider } from "eip1193-provider"
+import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
+import { constant, empty, map, mergeArray, multicast, now, switchLatest, tap } from '@most/core'
 import { $bagOfCoins, $caretDown, $stackedCoins } from "../elements/$icons"
 import { $ButtonSecondary } from "./form/$Button"
 import { totalWalletHoldingsUsd } from "../logic/gbcTreasury"
@@ -16,9 +15,8 @@ import { $anchor, $discord, $gitbook, $github, $instagram, $Link, $moreDots, $tw
 import { $Picker } from "../components/$ThemePicker"
 import { dark, light } from "../common/theme"
 import { Stream } from "@most/types"
-import { $WalletProfile } from "./$WalletProfile"
-import { BrowserStore } from "../logic/store"
-import { WALLET } from "../logic/provider"
+import { $WalletDisplay } from "./$WalletDisplay"
+import { disposeBoth } from "@most/disposable"
 
 
 
@@ -27,15 +25,16 @@ interface MainMenu {
   chainList: CHAIN[]
   parentRoute: Route
   walletLink: IWalletLink
-  walletStore: BrowserStore<"ROOT.v1.walletStore", WALLET | null>
 
   showAccount?: boolean
 }
 
-export const $MainMenu = ({ walletLink, parentRoute, walletStore, chainList, showAccount = true }: MainMenu) => component((
+export const $MainMenu = ({ walletLink, parentRoute, chainList, showAccount = true }: MainMenu) => component((
   [routeChange, routeChangeTether]: Behavior<string, string>,
-  [walletChange, walletChangeTether]: Behavior<any, IEthereumProvider | null>,
+  [walletChange, walletChangeTether]: Behavior<any, IWalletName>,
+
   [clickPopoverClaim, clickPopoverClaimTether]: Behavior<any, any>,
+  [changeNetwork, changeNetworkTether]: Behavior<CHAIN, CHAIN>,
 
 ) => {
 
@@ -134,6 +133,7 @@ export const $MainMenu = ({ walletLink, parentRoute, walletStore, chainList, sho
               ),
             ),
 
+
             switchLatest(map(w3p => {
               if (w3p === null) {
                 return empty()
@@ -143,16 +143,10 @@ export const $MainMenu = ({ walletLink, parentRoute, walletStore, chainList, sho
                 $content: $text('Disconnect Wallet')
               })({
                 click: walletChangeTether(
-                  map(pe => {
-                    pe.preventDefault()
-                    pe.stopImmediatePropagation()
-                  }),
-                  // awaitPromises,
-                  constant(null),
-                  src => walletStore.store(src)
+                  constant(IWalletName.none)
                 )
               })
-            }, walletLink.provider)),
+            }, walletLink.wallet)),
 
             $Picker([light, dark])({}),
           )
@@ -178,14 +172,14 @@ export const $MainMenu = ({ walletLink, parentRoute, walletStore, chainList, sho
             }),
           ),
 
-          $WalletProfile({
+          $WalletDisplay({
             chainList,
-            store: walletStore,
             walletLink,
             parentRoute
           })({
             walletChange: walletChangeTether(),
-            routeChange: routeChangeTether()
+            routeChange: routeChangeTether(),
+            changeNetwork: changeNetworkTether(),
           })
         ),
 
@@ -227,9 +221,7 @@ export const $MainMenu = ({ walletLink, parentRoute, walletStore, chainList, sho
 
     ),
 
-
-
-    { routeChange, walletChange }
+    { routeChange, walletChange, changeNetwork }
   ]
 })
 

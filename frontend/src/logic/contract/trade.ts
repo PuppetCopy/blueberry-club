@@ -1,87 +1,78 @@
-import { awaitPromises, combine, empty, map, multicast, now, switchLatest } from "@most/core"
-import { AddressZero, CHAIN, getDenominator, switchFailedSources, AddressIndex, AddressInput, USD_PERCISION, KeeperExecute, KeeperReject } from "@gambitdao/gmx-middleware"
+import { combine, empty, map, multicast, switchLatest } from "@most/core"
+import { CHAIN, switchFailedSources, ITokenIndex, ITokenInput, ITokenTrade, ARBITRUM_ADDRESS, AVALANCHE_ADDRESS, AddressZero, getChainName, KeeperResponse, IPositionDecrease, IPositionIncrease, IPositionClose, IPositionLiquidated, filterNull, listen, IVaultPosition } from "@gambitdao/gmx-middleware"
 import { combineArray } from "@aelea/core"
-import { ERC20__factory, FastPriceFeed__factory, PositionRouter__factory, Router__factory, Vault__factory } from "./gmx-contracts"
+import { ERC20__factory, PositionRouter__factory, Router__factory, VaultPriceFeed__factory, Vault__factory } from "./gmx-contracts"
 import { periodicRun } from "@gambitdao/gmx-middleware"
-import { getTokenDescription, resolveAddress } from "../utils"
+import { getTokenDescription } from "../utils"
 import { Stream } from "@most/types"
-import { BaseProvider, JsonRpcProvider, Web3Provider } from "@ethersproject/providers"
-import { readContract as readContract, getContract } from "../common"
+import { JsonRpcProvider } from "@ethersproject/providers"
+import { getContractAddress, readContractMapping } from "../common"
+import { IWalletLink, IWalletState } from "@gambitdao/wallet-link"
 
+export const TRADE_CONTRACT_MAPPING = {
+  [CHAIN.ARBITRUM]: ARBITRUM_ADDRESS,
+  [CHAIN.AVALANCHE]: AVALANCHE_ADDRESS
+}
+export interface IPositionGetter {
+  key: string
+  position: IVaultPosition | null
+}
 
-
-export function connectErc20(address: string, provider: Stream<Web3Provider | null>) {
-
-  const contract = map(w3p => {
-
-    if (w3p === null) {
-      return null
-    }
-
-    return ERC20__factory.connect(address, w3p.getSigner())
-  }, provider)
-  // const erc20 = contractConnect(ERC20__factory, provider, 'PositionRouter')
-
-  // const account = filter((a): a is string => a !== null, wallet.account)
-
-  const balance = awaitPromises(map(async w3p => {
-    if (w3p === null) {
-      return 0n
-    }
-
-    return (await w3p.balanceOf(w3p.address)).toBigInt()
-  }, contract))
-
-  return { contract, balance }
+const gmxIOPriceMapSource = {
+  [CHAIN.ARBITRUM]: multicast(periodicRun({
+    interval: 5000,
+    actionOp: map(async time => getGmxIOPriceMap('https://gmx-server-mainnet.uw.r.appspot.com/prices'))
+  })),
+  [CHAIN.AVALANCHE]: multicast(periodicRun({
+    interval: 5000,
+    actionOp: map(async time => getGmxIOPriceMap('https://gmx-avax-server.uc.r.appspot.com/prices'))
+  })),
 }
 
 
-export function connectTrade<T extends JsonRpcProvider>(provider: Stream<T | null>) {
-  const router = readContract(Router__factory, provider, 'Router')
-  const positionRouter = readContract(PositionRouter__factory, provider, 'PositionRouter')
+export async function getErc20Balance(token: ITokenTrade | typeof AddressZero, w3p: IWalletState | null) {
+  if (w3p === null) {
+    return 0n
+  }
+
+  if (token === AddressZero) {
+    return (await w3p.signer.getBalance()).toBigInt()
+  }
+  // @ts-ignore
+  const tokenMap = TRADE_CONTRACT_MAPPING[w3p.chain]
+  if (tokenMap && token in tokenMap) {
+    const erc20 = ERC20__factory.connect(token, w3p.provider)
+
+    return (await erc20.balanceOf(w3p.address)).toBigInt()
+  }
+
+  return 0n
+}
 
 
-  const executeIncreasePosition: Stream<KeeperExecute> = positionRouter.listen('ExecuteIncreasePosition')
-  const cancelIncreasePosition: Stream<KeeperReject> = positionRouter.listen('CancelIncreasePosition')
+export function connectTrade<T extends JsonRpcProvider>(walletLink: IWalletLink) {
+  const router = readContractMapping(TRADE_CONTRACT_MAPPING, Router__factory, walletLink.provider, 'Router')
+  const positionRouter = readContractMapping(TRADE_CONTRACT_MAPPING, PositionRouter__factory, walletLink.provider, 'PositionRouter')
 
-  const executeDecreasePosition: Stream<KeeperExecute> = positionRouter.listen('ExecuteDecreasePosition')
-  const cancelDecreasePosition: Stream<KeeperReject> = positionRouter.listen('CancelDecreasePosition')
 
-  const executionFee = positionRouter.readInt(map(c => c.contract.minExecutionFee()))
+  const executeIncreasePosition: Stream<KeeperResponse> = positionRouter.listen('ExecuteIncreasePosition')
+  const cancelIncreasePosition: Stream<KeeperResponse> = positionRouter.listen('CancelIncreasePosition')
 
-  const getLatestTradeRequest = (key: string, isIncrease: boolean) => positionRouter.run(map(async c => {
-    const resp = isIncrease ? await c.contract.increasePositionRequests(key) : await c.contract.decreasePositionRequests(key)
+  const executeDecreasePosition: Stream<KeeperResponse> = positionRouter.listen('ExecuteDecreasePosition')
+  const cancelDecreasePosition: Stream<KeeperResponse> = positionRouter.listen('CancelDecreasePosition')
 
-    const account = resp.account
-    const indexToken = resp.indexToken
+  const executionFee = positionRouter.readInt(map(c => c.minExecutionFee()))
 
-    const acceptablePrice = resp.acceptablePrice.toBigInt()
-    const sizeDelta = resp.sizeDelta.toBigInt()
 
-    const blockNumber = resp.blockNumber.toBigInt()
-    const blockTime = resp.blockTime.toBigInt()
-    const executionFee = resp.executionFee.toBigInt()
-    const minOut = resp.minOut.toBigInt()
-
-    // const amountIn = resp.amountIn.toBigInt()
-    // const hasCollateralInETH = resp.hasCollateralInETH
-
-    const isLong = resp.isLong
-
-    // amountIn, hasCollateralInETH,
-    return { acceptablePrice, sizeDelta, account, indexToken, blockNumber, blockTime, executionFee, minOut, isLong, }
+  const isPluginEnabled = (address: string) => router.run(map(async (c) => {
+    return c.approvedPlugins(address, getContractAddress(TRADE_CONTRACT_MAPPING, (await c.provider.getNetwork()).chainId, 'PositionRouter'))
   }))
-
-  const isPluginEnabled = (address: Stream<string>) => router.run(combine(async (a, c) => {
-    return c.contract.approvedPlugins(a, getContract(c.chainId, 'PositionRouter'))
-  }, address))
 
   return {
     isPluginEnabled,
     positionRouter,
     router,
     executionFee,
-    getLatestTradeRequest,
     executeIncreasePosition,
     cancelIncreasePosition,
     executeDecreasePosition,
@@ -89,9 +80,7 @@ export function connectTrade<T extends JsonRpcProvider>(provider: Stream<T | nul
   }
 }
 
-
-async function getGmxIOPriceMap(chain: CHAIN): Promise<{ [key in AddressIndex]: bigint }> {
-  const url = chain === CHAIN.ARBITRUM ? 'https://gmx-server-mainnet.uw.r.appspot.com/prices' : 'https://gmx-avax-server.uc.r.appspot.com/prices'
+async function getGmxIOPriceMap(url: string): Promise<{ [key in ITokenIndex]: bigint }> {
   const res = await fetch(url)
   const json = await res.json()
 
@@ -103,155 +92,134 @@ async function getGmxIOPriceMap(chain: CHAIN): Promise<{ [key in AddressIndex]: 
   }, {})
 }
 
-const gmxIOPriceMapSource = {
-  [CHAIN.ARBITRUM]: multicast(periodicRun({
-    interval: 5000,
-    actionOp: map(async time => getGmxIOPriceMap(CHAIN.ARBITRUM))
-  })),
-  [CHAIN.AVALANCHE]: multicast(periodicRun({
-    interval: 5000,
-    actionOp: map(async time => getGmxIOPriceMap(CHAIN.AVALANCHE
-    ))
-  })),
-}
+export const gmxIoLatestPrice = (chain: CHAIN, token: ITokenTrade) => {
+  const source = gmxIOPriceMapSource[chain as keyof typeof gmxIOPriceMapSource]
 
-const gmxIoLatestPrice = (chain: CHAIN, token: AddressIndex) => {
-  // @ts-ignore
-  return map(pmap => BigInt(pmap[token]), gmxIOPriceMapSource[chain])
-}
-
-
-
-
-export async function getErc20Balance(token: AddressInput, w3p: Web3Provider | null, account: null | string) {
-  if (!w3p || !account) {
-    return 0n
+  if (!source) {
+    throw new Error(`no price mapping exists for chain ${getChainName(chain)} ${chain}`)
   }
 
-  if (token === AddressZero) {
-    return (await w3p.getSigner().getBalance()).toBigInt()
-  }
+  return map(pmap => {
+    const val = pmap[token as keyof typeof pmap]
 
-  const ercp = ERC20__factory.connect(token, w3p.getSigner())
-
-  return (await ercp.balanceOf(account)).toBigInt()
-}
-
-
-export function connectPricefeed(provider: Stream<BaseProvider | null>) {
-  const pricefeed = readContract(FastPriceFeed__factory, provider, 'FastPriceFeed')
-
-  // const contract = map(w3p => FastPriceFeed__factory.connect('0x1a0ad27350cccd6f7f168e052100b4960efdb774', w3p), provider)
-
-  const getLatestPrice = (chain: CHAIN, token: AddressInput, maximize = false) => {
-    const desc = getTokenDescription(chain, token)
-
-    if (desc.isStable) {
-      return now(USD_PERCISION)
-    }
-
-    const normalizedAddress = resolveAddress(chain, token)
-        
-    const latestValue = switchLatest(map(c => {
-      if (c === null) {
-        return empty()
-      }
-
-      return periodicRun({
-        recoverError: false,
-        actionOp: map(async () => (await c.contract.prices(token)).toBigInt())
-      })
-    }, pricefeed.contract))
-
-    return switchFailedSources([
-      gmxIoLatestPrice(chain, normalizedAddress as AddressIndex),
-      latestValue
-    ])
-  }
-
-  return { contract: pricefeed.contract, getLatestPrice }
+    return BigInt(val)
+  }, source)
 }
 
 
 
-
-
-export function connectVault(provider: Stream<BaseProvider | null>) {
-  const vault = readContract(Vault__factory, provider, 'Vault')
-  const usdg = readContract(ERC20__factory, provider, 'USDG')
+export function connectVault(walletLink: IWalletLink) {
+  const vault = readContractMapping(TRADE_CONTRACT_MAPPING, Vault__factory, walletLink.provider, 'Vault')
+  const usdg = readContractMapping(TRADE_CONTRACT_MAPPING, ERC20__factory, walletLink.provider, 'USDG')
+  const pricefeed = readContractMapping(TRADE_CONTRACT_MAPPING, VaultPriceFeed__factory, walletLink.provider, 'VaultPriceFeed')
 
   // const usdg = map(w3p => ERC20__factory.connect(ARBITRUM_ADDRESS.USDG, w3p), provider)
 
-  const usdgSupply = usdg.readInt(map(c => c.contract.totalSupply()))
+  const usdgSupply = usdg.readInt(map(c => c.totalSupply()))
+  const totalTokenWeight = vault.readInt(map(c => c.totalTokenWeights()))
 
-  const totalTokenWeight = vault.readInt(map(c => c.contract.totalTokenWeights()))
-  const getTokenWeight = (token: AddressInput) => vault.readInt(map(c => c.contract.tokenWeights(token)))
-  const getTokenDebtUsd = (token: AddressInput) => vault.readInt(map(c => c.contract.usdgAmounts(token)))
-  const getTokenCumulativeFundingRate = (token: AddressInput) => vault.readInt(map(c => c.contract.cumulativeFundingRates(token)))
-  const getPoolAmount = (token: AddressInput) => vault.readInt(map(c => c.contract.poolAmounts(token)))
-  const getReservedAmount = (token: AddressInput) => vault.readInt(map(c => c.contract.reservedAmounts(token)))
-  const getTotalShort = (token: AddressInput) => vault.readInt(map(c => c.contract.globalShortSizes(token)))
-  const getTotalShortCap = (token: AddressInput) => vault.run(map(async c => {
+  const tokenDescription = (t: Stream<ITokenInput>) => vault.run(combine(async (token, c) => getTokenDescription((await c.provider.getNetwork()).chainId, token), t))
+
+  const getTokenWeight = (t: Stream<ITokenInput>) => vault.readInt(combine((token, c) => c.tokenWeights(token), t))
+  const getTokenDebtUsd = (t: Stream<ITokenInput>) => vault.readInt(combine((token, c) => c.usdgAmounts(token), t))
+  const getTokenCumulativeFundingRate = (t: Stream<ITokenInput>) => vault.readInt(combine((token, c) => c.cumulativeFundingRates(token), t))
+  const getPoolAmount = (t: Stream<ITokenInput>) => vault.readInt(combine((token, c) => c.poolAmounts(token), t))
+  const getReservedAmount = (t: Stream<ITokenInput>) => vault.readInt(combine((token, c) => c.reservedAmounts(token), t))
+  const getTotalShort = (t: Stream<ITokenInput>) => vault.readInt(combine((token, c) => c.globalShortSizes(token), t))
+  const getTotalShortCap = (t: Stream<ITokenInput>) => vault.run(combine(async (token, c) => {
     try {
-      return (await c.contract.maxGlobalShortSizes(token)).toBigInt()
+      return (await c.maxGlobalShortSizes(token)).toBigInt()
     } catch (e) {
       return null
     }
-  }))
+  }, t))
+  // vault.listen(contract.filters.IncreasePosition())
 
+  const positionUpdateEvent = (pos: { key: string, position: IVaultPosition | null }) => switchLatest(combineArray((chain, contract) => {
+    const filterQuery = contract.filters.UpdatePosition()
 
+    return listen(contract, filterQuery)
+  }, walletLink.network, vault.contract))
 
-  const getAvailableLiquidityUsd = (chain: CHAIN, token: AddressIndex, isLong: boolean) => {
+  const positionIncreaseEvent: Stream<IPositionIncrease> = filterNull(combineArray((w3p, ev: IPositionIncrease) => w3p?.address === ev.account ? ev : null, walletLink.wallet, vault.listen('IncreasePosition')))
+  const positionDecreaseEvent: Stream<IPositionDecrease> = filterNull(combineArray((w3p, ev: IPositionDecrease) => w3p?.address === ev.account ? ev : null, walletLink.wallet, vault.listen('DecreasePosition')))
+  // const positionUpdateEvent2: Stream<IPositionUpdate> = vault.listen('UpdatePosition') // filterNull(combineArray((w3p, ev: IPositionUpdate) => w3p?.address === ev.account ? ev : null, walletLink.wallet, vault.listen('UpdatePosition'))) 
+  const positionCloseEvent: Stream<IPositionClose> = filterNull(combineArray((w3p, ev: IPositionClose) => w3p?.address === ev.account ? ev : null, walletLink.wallet, vault.listen('ClosePosition')))
+  const positionLiquidateEvent: Stream<IPositionLiquidated> = filterNull(combineArray((w3p, ev: IPositionLiquidated) => w3p?.address === ev.account ? ev : null, walletLink.wallet, vault.listen('LiquidatePosition')))
 
-    const tokenDesc = getTokenDescription(chain, token)
-    const denominator = getDenominator(tokenDesc.decimals)
-    const price = getPrice(token, false)
-    const poolAmount = getPoolAmount(token)
-    const reservedAmount = getReservedAmount(token)
+  const getLatestPrice = (chain: CHAIN, token: ITokenTrade, maximize = false) => {
 
-    return combineArray((poolAmount, reservedAmount, maxGlobalShortSize, globalShortSize, price) => {
-      const availableAmount = poolAmount - reservedAmount
+    return switchFailedSources([
+      gmxIoLatestPrice(chain, token),
+      switchLatest(combineArray((c) => {
+        if (c === null) {
+          return empty()
+        }
 
-      if (isLong) {
-        return availableAmount * price / denominator
-      }
+        return periodicRun({
+          recoverError: false,
+          interval: 5000,
+          actionOp: map(async () => {
+            const newLocal = await c.getPrimaryPrice(token, maximize)
 
-      const maxAvailableShort = globalShortSize ? maxGlobalShortSize - globalShortSize : maxGlobalShortSize
-
-      if (availableAmount > maxAvailableShort) {
-        return maxAvailableShort
-      }
-
-      return availableAmount * price / denominator
-    }, poolAmount, reservedAmount, getTotalShort(token), getTotalShortCap(token), price)
+            return newLocal.toBigInt()
+          })
+        })
+      }, pricefeed.contract))
+    ])
   }
 
-  const getPrice = (token: AddressIndex, maximize: boolean) => switchLatest(map(c => periodicRun({
+  // const getAvailableLiquidityUsd = (token: Stream<ITokenIndex>, isLong: Stream<boolean>) => {
+
+  //   const tokenDesc = tokenDescription(token)
+  //   const denominator = getDenominator(tokenDesc.decimals)
+  //   const price = getPrice(token, false)
+  //   const poolAmount = getPoolAmount(token)
+  //   const reservedAmount = getReservedAmount(token)
+
+  //   return combineArray((c, poolAmount, reservedAmount, maxGlobalShortSize, globalShortSize, price) => {
+  //     const availableAmount = poolAmount - reservedAmount
+
+  //     if (isLong) {
+  //       return availableAmount * price / denominator
+  //     }
+
+  //     const maxAvailableShort = globalShortSize ? maxGlobalShortSize - globalShortSize : maxGlobalShortSize
+
+  //     if (availableAmount > maxAvailableShort) {
+  //       return maxAvailableShort
+  //     }
+
+  //     return availableAmount * price / denominator
+  //   }, vault.contract, poolAmount, reservedAmount, getTotalShort(token), getTotalShortCap(token), price)
+  // }
+
+  const getPrice = (token: ITokenIndex, maximize: boolean) => switchLatest(map(c => periodicRun({
     actionOp: map(async () => {
 
       if (c === null) {
         throw new Error('no connected account')
       }
 
-      const price = (maximize ? await c.contract.getMaxPrice(token) : await c.contract.getMinPrice(token)).toBigInt()
+      const price = (maximize ? await c.getMaxPrice(token) : await c.getMinPrice(token)).toBigInt()
       return price
     })
   }), vault.contract))
 
 
-  const getPosition = (positionKey: string) => vault.run(map(async c => {
-    const position = await c.contract.positions(positionKey)
 
-    if (!position || position.lastIncreasedTime.eq(0)) {
-      return null
+  const getPosition = (key: string): Stream<IPositionGetter> => vault.run(map(async c => {
+    const positionAbstract = await c.positions(key)
+
+    if (!positionAbstract || positionAbstract.lastIncreasedTime.eq(0)) {
+      return { key, position: null }
     }
 
 
-    const [size, collateral, averagePrice, entryFundingRate, reserveAmount, realisedPnl, lastIncreasedTime] = position
+    const [size, collateral, averagePrice, entryFundingRate, reserveAmount, realisedPnl, lastIncreasedTime] = positionAbstract
     const lastIncreasedTimeBn = lastIncreasedTime.toBigInt()
 
-    return {
-      key: positionKey,
+    const position: IVaultPosition = {
       size: size.toBigInt(),
       collateral: collateral.toBigInt(),
       averagePrice: averagePrice.toBigInt(),
@@ -260,10 +228,14 @@ export function connectVault(provider: Stream<BaseProvider | null>) {
       realisedPnl: realisedPnl.toBigInt(),
       lastIncreasedTime: lastIncreasedTimeBn,
     }
+
+    return { position, key }
   }))
 
   return {
-    contract: vault.contract, getPrice, getTokenWeight, getTokenDebtUsd, getTokenCumulativeFundingRate, totalTokenWeight, usdgSupply, getPosition, getPoolAmount, getReservedAmount, getAvailableLiquidityUsd
+    positionIncreaseEvent, positionDecreaseEvent, positionUpdateEvent, positionCloseEvent, positionLiquidateEvent,
+    tokenDescription, getLatestPrice, getTotalShort, getTotalShortCap,
+    vault, getPrice, getTokenWeight, getTokenDebtUsd, getTokenCumulativeFundingRate,
+    totalTokenWeight, usdgSupply, getPosition, getPoolAmount, getReservedAmount, // getAvailableLiquidityUsd
   }
 }
-

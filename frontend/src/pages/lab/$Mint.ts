@@ -6,13 +6,14 @@ import { pallete } from "@aelea/ui-components-theme"
 import { LabItemSale, MintRule, mintLabelMap } from "@gambitdao/gbc-middleware"
 import { unixTimestampNow, timeSince, formatFixed } from "@gambitdao/gmx-middleware"
 import { $Link } from "@gambitdao/ui-components"
+import { IWalletLink } from "@gambitdao/wallet-link"
 import { map, multicast } from "@most/core"
 import { $labItem } from "../../logic/common"
 import { getMintCount } from "../../logic/contract/sale"
 
-export const $Mint = (item: LabItemSale, rule: MintRule, parentRoute: Route, changeRouteTether: Tether<string, string>) => {
+export const $Mint = (item: LabItemSale, rule: MintRule, walletLink: IWalletLink, parentRoute: Route, changeRouteTether: Tether<string, string>) => {
 
-  const mintCount = multicast(getMintCount(rule, 15000))
+  const mintCount = multicast(getMintCount(rule, walletLink, 15000))
 
   const supplyLeft = map(amount => {
     const count = rule.supply - Number(amount)

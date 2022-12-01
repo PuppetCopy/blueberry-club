@@ -4,11 +4,11 @@ import { TOKEN_SYMBOL } from "./address/symbol"
 import { CHAIN, intervalTimeMap } from "./constant"
 
 export type Address = string
+export type ITokenTrade = ITokenIndex | ITokenStable
 
-export type AddressStable = AVALANCHE_ADDRESS_STABLE | ARBITRUM_ADDRESS_STABLE
-export type AddressIndex = AVALANCHE_ADDRESS_INDEX | ARBITRUM_ADDRESS_INDEX
-export type AddressTrade = AddressIndex | AddressStable
-export type AddressInput = AddressTrade | "0x0000000000000000000000000000000000000000"
+export type ITokenInput = ITokenTrade | "0x0000000000000000000000000000000000000000"
+export type ITokenIndex = AVALANCHE_ADDRESS_INDEX | ARBITRUM_ADDRESS_INDEX | "0x0000000000000000000000000000000000000000"
+export type ITokenStable = AVALANCHE_ADDRESS_STABLE | ARBITRUM_ADDRESS_STABLE | "0x0000000000000000000000000000000000000000"
 
 
 export interface TokenDescription {
@@ -36,10 +36,67 @@ export interface IEntityIndexed extends IIdentifiableEntity {
 export type TypeName<T extends string> = { __typename: T }
 export type IndexedType<T extends string> = TypeName<T> & IEntityIndexed
 
+
+export interface IAbstractPositionBase {
+  account: Address
+  collateralToken: ITokenIndex
+  indexToken: ITokenIndex
+  isLong: boolean
+  key: string
+}
+
+export type IAbstractPositionIdentifier = {
+  key: string
+}
+
+export type IAbstractPositionAdjustment = {
+  collateralDelta: bigint
+  sizeDelta: bigint
+}
+
+export type IAbstractPositionStake = {
+  collateral: bigint
+  size: bigint
+  realisedPnl: bigint
+}
+
+
+export interface IVaultPosition extends IAbstractPositionStake {
+  entryFundingRate: bigint
+  reserveAmount: bigint
+  lastIncreasedTime: bigint
+  averagePrice: bigint
+}
+
+export interface IPositionIncrease extends IAbstractPositionBase, IAbstractPositionAdjustment, IndexedType<'IncreasePosition'> {
+  price: bigint, fee: bigint
+}
+export interface IPositionDecrease extends IAbstractPositionBase, IAbstractPositionAdjustment, IndexedType<'DecreasePosition'> {
+  price: bigint, fee: bigint
+}
+
+export interface IPositionUpdate extends IAbstractPositionStake, IAbstractPositionIdentifier, IndexedType<'UpdatePosition'> {
+  markPrice: bigint
+  averagePrice: bigint
+  entryFundingRate: bigint
+  reserveAmount: bigint
+}
+
+export interface IPositionLiquidated extends IAbstractPositionBase, IAbstractPositionStake, IndexedType<'LiquidatePosition'> {
+  markPrice: bigint
+  reserveAmount: bigint
+}
+
+export interface IPositionClose extends IAbstractPositionBase, IAbstractPositionStake, IndexedType<'ClosePosition'> {
+  entryFundingRate: bigint
+  averagePrice: bigint
+  reserveAmount: bigint
+}
+
 export interface KeeperResponse {
   account: string
   path: string[]
-  indexToken: string
+  indexToken: ITokenIndex
   amountIn: bigint
   minOut: bigint
   sizeDelta: bigint
@@ -49,69 +106,12 @@ export interface KeeperResponse {
   blockGap: bigint
   timeGap: bigint
 }
-export interface KeeperExecute extends KeeperResponse, IndexedType<'KeeperExecute'> {}
-export interface KeeperReject extends KeeperResponse, IndexedType<'KeeperReject'> {}
 
-export interface IAbstractPosition {
-  account: Address
-  collateralToken: AddressIndex
-  indexToken: AddressIndex
-  isLong: boolean
-  key: string
+export interface KeeperExecuteAbstract extends KeeperResponse, IAbstractPositionIdentifier {
+  isIncrease: boolean
+  isRejected: boolean
 }
 
-export type IAbstractPositionDelta = {
-  collateralDelta: bigint
-  sizeDelta: bigint
-}
-
-export type IAbstractPositionStake = {
-  collateral: bigint
-  size: bigint
-}
-
-export type IAbstractRealisedPosition = IAbstractPositionStake & {
-  realisedPnl: bigint
-  realisedPnlPercentage: bigint
-}
-
-export type IVaultPosition = {
-  key: string
-  size: bigint
-  // isLong: boolean
-  collateral: bigint
-  averagePrice: bigint
-  entryFundingRate: bigint
-  reserveAmount: bigint
-  realisedPnl: bigint
-  lastIncreasedTime: bigint
-}
-
-export type IPositionIncrease = IAbstractPosition & IAbstractPositionDelta & IndexedType<'IncreasePosition'> & { price: bigint,  fee: bigint }
-export type IPositionDecrease = IAbstractPosition & IAbstractPositionDelta & IndexedType<'DecreasePosition'> & { price: bigint,  fee: bigint }
-
-export type IPositionUpdate = IAbstractPositionStake & {
-  key: string
-  averagePrice: bigint
-  realisedPnl: bigint
-  markPrice: bigint
-  entryFundingRate: bigint
-  reserveAmount: bigint
-} & IndexedType<'UpdatePosition'>
-
-export type IPositionLiquidated = IAbstractPositionStake & {
-  reserveAmount: bigint
-  realisedPnl: bigint
-  markPrice: bigint
-} & IndexedType<'LiquidatePosition'>
-
-export type IPositionClose = IAbstractPosition & IAbstractPositionStake & {
-  size: bigint
-  averagePrice: bigint
-  realisedPnl: bigint
-  entryFundingRate: bigint
-  reserveAmount: bigint
-} & IndexedType<'ClosePosition'>
 
 
 export enum TradeStatus {
@@ -120,9 +120,9 @@ export enum TradeStatus {
   LIQUIDATED = 'liquidated',
 }
 
-export type IAbstractTrade = IAbstractPositionDelta & IAbstractRealisedPosition & IAbstractPositionStake
+export type IAbstractTrade = IAbstractPositionAdjustment & IAbstractPositionStake
 
-interface ITradeAbstract<T extends TradeStatus = TradeStatus> extends IEntityIndexed, IAbstractTrade, IAbstractPosition {
+interface ITradeAbstract<T extends TradeStatus = TradeStatus> extends IEntityIndexed, IVaultPosition, IAbstractPositionBase {
   account: Address
   status: T
   averagePrice: bigint
@@ -134,24 +134,23 @@ interface ITradeAbstract<T extends TradeStatus = TradeStatus> extends IEntityInd
 }
 
 export type ITradeOpen = ITradeAbstract<TradeStatus.OPEN>
-export type ITradeClosed = ITradeAbstract<TradeStatus.CLOSED> & {settledTimestamp: number, closedPosition: IPositionClose}
-export type ITradeLiquidated = ITradeAbstract<TradeStatus.LIQUIDATED> & {settledTimestamp: number, liquidatedPosition: IPositionLiquidated}
+export type ITradeClosed = ITradeAbstract<TradeStatus.CLOSED> & { settledTimestamp: number, closedPosition: IPositionClose }
+export type ITradeLiquidated = ITradeAbstract<TradeStatus.LIQUIDATED> & { settledTimestamp: number, liquidatedPosition: IPositionLiquidated }
 export type ITradeSettled = ITradeClosed | ITradeLiquidated
 export type ITrade = ITradeSettled | ITradeOpen
 
-export interface IAccountSummary extends IAbstractTrade {
+export interface IAccountSummary extends IAbstractPositionStake {
   account: string
   fee: bigint
-  settledTradeCount: number
-  winTradeCount: number
-  openTradeCount: number
+  winCount: number
+  lossCount: number
   claim: IClaim | null,
 }
 
 export interface IPriceTimeline {
   id: string
   value: bigint
-  tokenAddress: AddressIndex
+  tokenAddress: ITokenIndex
   timestamp: string
 }
 
@@ -161,17 +160,17 @@ export interface IPricefeed extends IndexedType<'Pricefeed'> {
   h: bigint
   l: bigint
   c: bigint
-  tokenAddress: AddressIndex
+  tokenAddress: ITokenIndex
 }
 
 export interface IPriceLatest extends IndexedType<'PriceLatest'> {
   value: bigint
-  id: AddressIndex
+  id: ITokenIndex
   timestamp: number
 }
 
 export type IPriceLatestMap = {
-  [P in AddressIndex]: IPriceLatest
+  [P in ITokenIndex]: IPriceLatest
 }
 
 export enum IClaimSource {
@@ -232,11 +231,11 @@ export interface ILeaderboardRequest extends IPagePositionParamApi, IChainParamA
 }
 
 
-export type IPriceTimelineParamApi = IChainParamApi & ITimerangeParamApi & { tokenAddress: AddressIndex }
+export type IPriceTimelineParamApi = IChainParamApi & ITimerangeParamApi & { tokenAddress: ITokenIndex }
 
 export type IOpenTradesParamApi = IChainParamApi & IPagePositionParamApi & ISortParamApi<keyof ITradeOpen>
 export type IAccountTradeListParamApi = IChainParamApi & IAccountQueryParamApi
-export type IPricefeedParamApi = IChainParamApi & ITimerangeParamApi & { interval: intervalTimeMap, tokenAddress: AddressIndex }
+export type IPricefeedParamApi = IChainParamApi & ITimerangeParamApi & { interval: intervalTimeMap, tokenAddress: ITokenIndex }
 
 
 

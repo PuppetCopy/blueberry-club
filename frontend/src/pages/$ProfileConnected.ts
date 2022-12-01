@@ -1,55 +1,38 @@
-import { Behavior, replayLatest } from "@aelea/core"
+import { Behavior } from "@aelea/core"
 import { $node, $text, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet } from "@aelea/ui-components"
 import { saleDescriptionList } from "@gambitdao/gbc-middleware"
 
-import { IWalletLink } from "@gambitdao/wallet-link"
-import { map, multicast, switchLatest } from "@most/core"
+import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
+import { map, multicast, never, now, switchLatest } from "@most/core"
 import { $responsiveFlex } from "../elements/$common"
 import { queryOwnerV2 } from "../logic/query"
 import { IAccountStakingStore } from "@gambitdao/gbc-middleware"
 import { $anchor, $IntermediatePromise, $Link } from "@gambitdao/ui-components"
-import { connectGbc } from "../logic/contract/gbc"
 import { $accountPreview } from "../components/$AccountProfile"
 import { $berryTileId } from "../components/$common"
 import { $ButtonPrimary, $ButtonSecondary } from "../components/form/$Button"
 import { $labItem } from "../logic/common"
-import { connectLab } from "../logic/contract/lab"
 import { pallete } from "@aelea/ui-components-theme"
 import { BrowserStore } from "../logic/store"
+import { connectLab } from "../logic/contract/gbc"
+import { $IntermediateConnectButton } from "../components/$ConnectAccount"
+import { CHAIN } from "@gambitdao/gmx-middleware"
 
 
 export interface IAccount {
   walletLink: IWalletLink
   parentRoute: Route
+  chainList: CHAIN[]
   accountStakingStore: BrowserStore<"ROOT.v1.treasuryStore", IAccountStakingStore>
-  // walletStore: cstate.BrowserStore<"metamask" | "walletConnect" | null, "walletStore">
 }
 
-export const $ProfileConnected = ({ walletLink, parentRoute, accountStakingStore }: IAccount) => component((
+export const $ProfileConnected = (config: IAccount) => component((
   [changeRoute, changeRouteTether]: Behavior<string, string>,
-  [clickTransferItems, clickTransferItemsTether]: Behavior<any, any>,
-
+  [changeNetwork, changeNetworkTether]: Behavior<CHAIN, CHAIN>,
+  [walletChange, walletChangeTether]: Behavior<IWalletName, IWalletName>,
 ) => {
-
-
-
-
-  const queryOwner = replayLatest(multicast(map(address => {
-    if (!address) {
-      throw new Error('No account connected')
-    }
-
-    return queryOwnerV2(address)
-  }, walletLink.account)))
-  const lab = connectLab(walletLink)
-
-
-
-  const gbcWallet = connectGbc(walletLink)
-
-  const ownedItems = multicast(lab.accountListBalance(saleDescriptionList.map(x => x.id)))
 
 
   return [
@@ -57,87 +40,99 @@ export const $ProfileConnected = ({ walletLink, parentRoute, accountStakingStore
 
       $row(layoutSheet.spacingBig, style({ width: '100%', placeContent: 'center' }))(
 
-        $IntermediatePromise({
-          query: queryOwner,
-          $$done: map(owner => {
-            if (owner === null) {
-              return null
-            }
 
-            return $responsiveFlex(layoutSheet.spacingBig)(
+        $IntermediateConnectButton({
+          chainList: config.chainList,
+          walletLink: config.walletLink,
+          $$display: map(w3p => {
+            const lab = connectLab(config.walletLink)
+            const ownedItems = lab.accountListBalance(saleDescriptionList.map(x => x.id))
 
-              $column(layoutSheet.spacingBig, style({ maxWidth: '550px', placeContent: 'center' }))(
-                $responsiveFlex(layoutSheet.spacing, style({ alignItems: 'center' }))(
-                  $accountPreview({
-                    labelSize: '2em',
-                    avatarSize: 130,
-                    address: owner.id
-                  }),
+            return $IntermediatePromise({
+              query: now(queryOwnerV2(w3p.address)),
+              $$done: map(owner => {
+                if (owner === null) {
+                  return null
+                }
 
-                  $node(style({ flex: 1 }))(),
+                return $responsiveFlex(layoutSheet.spacingBig)(
+                  $column(layoutSheet.spacingBig, style({ maxWidth: '550px', placeContent: 'center' }))(
+                    $responsiveFlex(layoutSheet.spacing, style({ alignItems: 'center' }))(
+                      $accountPreview({
+                        labelSize: '2em',
+                        avatarSize: 130,
+                        address: w3p.address
+                      }),
 
-                  $Link({
-                    $content: $anchor(
-                      $ButtonSecondary({
-                        $content: $text('Customize my GBC')
-                      })({}),
-                    ),
-                    url: '/p/wardrobe', route: parentRoute
-                  })({
-                    click: changeRouteTether()
-                  }),
-                ),
+                      $node(style({ flex: 1 }))(),
 
-                $node(style({ flex: 1 }))(),
-
-
-                $row(layoutSheet.spacingSmall, style({ flexWrap: 'wrap', placeContent: 'center' }))(...owner.ownedTokens.map(token => {
-                  return $berryTileId(token, 85)
-                })),
-
-
-
-                $row(
-                  $text('Items'),
-
-                  // switchLatest(map(items => {
-                  //   return $Popover({
-                  //     $$popContent: map(_ => $TransferItems(items.filter(x => x.amount > 0))({}), clickTransferItems),
-
-                  //   })(
-                  //     $ButtonSecondary({ $content: $text('Transfer') })({
-                  //       click: clickTransferItemsTether()
-                  //     })
-                  //   )({})
-                  // }, ownedItems))
-
-                ),
-
-
-                switchLatest(map(items => {
-
-
-                  return $row(layoutSheet.spacing, style({ flexWrap: 'wrap' }))(
-                    ...items.filter(item => item.amount > 0).map(item => {
-                      return $row(style({ position: 'relative' }))(
-                        $text(style({ position: 'absolute', top: '1px', right: '4px', fontSize: '.75em', fontWeight: 'bold', color: pallete.background }))(
-                          item.amount + 'x'
+                      $Link({
+                        $content: $anchor(
+                          $ButtonSecondary({
+                            $content: $text('Customize my GBC')
+                          })({}),
                         ),
-                        $labItem(item.id, 97)
-                      )
-                    })
-                  )
-                }, ownedItems))
+                        url: '/p/wardrobe', route: config.parentRoute
+                      })({
+                        click: changeRouteTether()
+                      }),
+                    ),
 
-              ),
-            )
-          }),
-        })({}),
+                    $node(style({ flex: 1 }))(),
+
+
+                    $row(layoutSheet.spacingSmall, style({ flexWrap: 'wrap', placeContent: 'center' }))(...owner.ownedTokens.map(token => {
+                      return $berryTileId(token, 85)
+                    })),
+
+
+
+                    $row(
+                      $text('Items'),
+
+                      // switchLatest(map(items => {
+                      //   return $Popover({
+                      //     $$popContent: map(_ => $TransferItems(items.filter(x => x.amount > 0))({}), clickTransferItems),
+
+                      //   })(
+                      //     $ButtonSecondary({ $content: $text('Transfer') })({
+                      //       click: clickTransferItemsTether()
+                      //     })
+                      //   )({})
+                      // }, ownedItems))
+
+                    ),
+
+
+                    switchLatest(map(items => {
+                      return $row(layoutSheet.spacing, style({ flexWrap: 'wrap' }))(
+                        ...items.filter(item => item.amount > 0).map(item => {
+                          return $row(style({ position: 'relative' }))(
+                            $text(style({ position: 'absolute', top: '1px', right: '4px', fontSize: '.75em', fontWeight: 'bold', color: pallete.background }))(
+                              item.amount + 'x'
+                            ),
+                            $labItem(item.id, 97)
+                          )
+                        })
+                      )
+                    }, ownedItems))
+
+                  ),
+                )
+              })
+            })({})
+          })
+        })({
+          changeNetwork: changeNetworkTether(),
+          walletChange: walletChangeTether()
+        }),
+
+
       )
 
     ),
 
-    { changeRoute }
+    { changeRoute, changeNetwork, walletChange }
   ]
 })
 

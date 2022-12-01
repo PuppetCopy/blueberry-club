@@ -1,6 +1,6 @@
 import { fromCallback } from "@aelea/core"
-import type { BaseProvider, EventType, ExternalProvider } from "@ethersproject/providers"
-import { at, chain, empty, filter, map, recoverWith, switchLatest } from "@most/core"
+import type { BaseProvider, EventType } from "@ethersproject/providers"
+import { empty, map, switchLatest } from "@most/core"
 import { disposeWith } from "@most/disposable"
 import { Stream } from "@most/types"
 import type { EIP1193Provider, ProviderAccounts, ProviderChainId, ProviderInfo, ProviderMessage, ProviderRpcError } from "eip1193-provider"
@@ -54,17 +54,6 @@ export function parseError(data: any): Error {
   return new Error('Unknown error')
 }
 
-export const resolveWalletProvider = <T extends ExternalProvider>(provider: Stream<T | null>): Stream<T> => {
-  const validProvider = filter(provider => provider !== null, provider)
-
-  const recoverProviderFailure = recoverWith(err => {
-    console.error(err)
-    return chain(() => resolveWalletProvider(provider), at(3000, null))
-  }, validProvider)
-
-  return recoverProviderFailure
-}
-
 
 export interface ProviderEventListener {
   (event: "connect"): Stream<ProviderInfo>
@@ -75,26 +64,14 @@ export interface ProviderEventListener {
 }
 
 
-
-
-export const eip1193ProviderEvent = <A>(provider: Stream<EIP1193Provider | null>): ProviderEventListener => (eventName: string) => switchLatest(
-  map(provider => {
-    if (provider === null) {
-      return empty()
-    }
-
-    const eventChange: Stream<A> = fromCallback<any, any>(
-      (cb) => {
-        provider.on(eventName as any, cb)
-        return disposeWith(() => provider.removeListener(eventName, cb), null)
-      },
-      a => {
-        return a
-      }
-    )
-
-    return eventChange
-  }, provider)
+export const eip1193ProviderEvent = (provider: EIP1193Provider, eventName: string) => fromCallback<any, any>(
+  (cb) => {
+    provider.on(eventName as any, cb)
+    return disposeWith(() => provider.removeListener(eventName, cb), null)
+  },
+  a => {
+    return a
+  }
 )
 
 export const providerEvent = <A>(ps: Stream<BaseProvider | null>) => (eventType: EventType) => switchLatest(

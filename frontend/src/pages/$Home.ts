@@ -5,8 +5,8 @@ import { $column, $icon, $row, layoutSheet, observer, screenUtils } from "@aelea
 import { pallete } from "@aelea/ui-components-theme"
 import { IAccountQueryParamApi, intervalTimeMap, ITimerangeParamApi } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { $anchor, $gitbook, $IntermediatePromise, $Link } from "@gambitdao/ui-components"
-import { fromPromise, map, multicast, now, snapshot, take, tap } from "@most/core"
+import { $anchor, $gitbook, $Link } from "@gambitdao/ui-components"
+import { fromPromise, map, multicast, snapshot, switchLatest, take, tap } from "@most/core"
 import { $card, $teamMember } from "../elements/$common"
 
 import { BI_18_PRECISION, GBC_ADDRESS, IAttributeBody, IAttributeClothes, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat, IBerryDisplayTupleMap, ITreasuryStore, tokenIdAttributeTuple } from "@gambitdao/gbc-middleware"
@@ -15,20 +15,17 @@ import { $seperator2 } from "./common"
 import { $buttonAnchor, $ButtonSecondary } from "../components/form/$Button"
 import { $opensea } from "../elements/$icons"
 import { Stream } from "@most/types"
-import { $berry, $loadBerry } from "../components/$DisplayBerry"
+import { $berry, svgParts } from "../components/$DisplayBerry"
 import { priceFeedHistoryInterval, latestTokenPriceMap } from "../logic/common"
 import { arbitrumContract, avalancheContract } from "../logic/gbcTreasury"
 import { gmxGlpPriceHistory, queryArbitrumRewards, queryAvalancheRewards, StakedTokenArbitrum, StakedTokenAvalanche } from "../logic/query"
-import { SvgPartsMap } from "@gambitdao/gbc-middleware"
 import { BrowserStore } from "../logic/store"
-import { WALLET } from "../logic/provider"
 
 
 export interface ITreasury {
   walletLink: IWalletLink
   parentRoute: Route
   treasuryStore: BrowserStore<"ROOT.v1.treasuryStore", ITreasuryStore>
-  walletStore: BrowserStore<"ROOT.v1.walletStore", WALLET | null>
 }
 
 
@@ -141,9 +138,6 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
   }, arbitrumYieldSourceMap, avalancheYieldSourceMap, feeYieldClaim, newLocal)
 
 
-  const queryParts = now(Promise.all([
-    import("@gambitdao/gbc-middleware/src/mappings/svgParts").then(res => res.default)
-  ]))
 
 
 
@@ -152,135 +146,131 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
 
 
       $row(style({ width: '100vw', marginLeft: 'calc(-50vw + 50%)', height: screenUtils.isDesktopScreen ? '580px' : '', alignItems: 'center', placeContent: 'center' }))(
-        $IntermediatePromise({
-          query: queryParts,
-          $$done: map(([svgParts]) => {
+        switchLatest(map(parts => {
+          const berryDayId = dailyRandom(Date.now() / (intervalTimeMap.HR24 * 1000)) + 0
+          const [background, clothes, body, expression, faceAccessory, hat] = tokenIdAttributeTuple[berryDayId]
 
-            const berryDayId = dailyRandom(Date.now() / (intervalTimeMap.HR24 * 1000)) + 0
-            const [background, clothes, body, expression, faceAccessory, hat] = tokenIdAttributeTuple[berryDayId]
+          const berrySize = screenUtils.isDesktopScreen ? 100 : 70
 
-            const berrySize = screenUtils.isDesktopScreen ? 100 : 70
+          const berryWallRowCount = Math.floor((document.body.clientWidth + 20) / (berrySize + 20))
+          const headlineSize = screenUtils.isDesktopScreen ? 3 * 7 : 0
 
-            const berryWallRowCount = Math.floor((document.body.clientWidth + 20) / (berrySize + 20))
-            const headlineSize = screenUtils.isDesktopScreen ? 3 * 7 : 0
+          const aboutHalf = Math.floor((berryWallRowCount - 7) / 2)
 
-            const aboutHalf = Math.floor((berryWallRowCount - 7) / 2)
+          const wallCount = berryWallRowCount * 5 - headlineSize
+          const randomGBCList = randomIntList(wallCount, 0, 9999)
 
-            const wallCount = berryWallRowCount * 5 - headlineSize
-            const randomGBCList = randomIntList(wallCount, 0, 9999)
+          const berryWallList = randomGBCList
 
-            const berryWallList = randomGBCList
-
-            const $introHeadline = $column(layoutSheet.spacingBig, style({ maxWidth: '820px', alignSelf: 'center' }))(
-              $column(style({ fontSize: '1.5em' }))(
-                $text(style({ fontWeight: 'bold' }))(`GMX Blueberry Club`)
+          const $introHeadline = $column(layoutSheet.spacingBig, style({ maxWidth: '820px', alignSelf: 'center' }))(
+            $column(style({ fontSize: '1.5em' }))(
+              $text(style({ fontWeight: 'bold' }))(`GMX Blueberry Club`)
+            ),
+            $node(
+              $text(style({ lineHeight: '1.5em' }))(`10,000 Blueberries NFT Collection on Arbitrum, building a community driven `),
+              $anchor(style({ display: 'inline' }), attr({ href: `https://twitter.com/GMX_IO`, target: '_blank' }))(
+                $text('@GMX_io')
               ),
-              $node(
-                $text(style({ lineHeight: '1.5em' }))(`10,000 Blueberries NFT Collection on Arbitrum, building a community driven `),
-                $anchor(style({ display: 'inline' }), attr({ href: `https://twitter.com/GMX_IO`, target: '_blank' }))(
-                  $text('@GMX_io')
-                ),
-                $text(' products and having fun together')
+              $text(' products and having fun together')
+            ),
+            $seperator2,
+            $row(layoutSheet.spacingBig, style({}))(
+              $anchor(layoutSheet.spacingSmall, style({ alignItems: 'center', display: 'flex' }), attr({ href: `https://opensea.io/collection/blueberry-club` }))(
+                $icon({
+                  width: '40px',
+                  $content: $opensea,
+                  viewBox: '0 0 32 32'
+                }),
+                $text(style({ paddingBottom: '6px' }))(screenUtils.isDesktopScreen ? 'Trade On Opensea' : 'Trade')
               ),
-              $seperator2,
-              $row(layoutSheet.spacingBig, style({}))(
-                $anchor(layoutSheet.spacingSmall, style({ alignItems: 'center', display: 'flex' }), attr({ href: `https://opensea.io/collection/blueberry-club` }))(
-                  $icon({
-                    width: '40px',
-                    $content: $opensea,
-                    viewBox: '0 0 32 32'
-                  }),
-                  $text(style({ paddingBottom: '6px' }))(screenUtils.isDesktopScreen ? 'Trade On Opensea' : 'Trade')
-                ),
-                $anchor(layoutSheet.spacingSmall, style({ alignItems: 'center', display: 'flex' }), attr({ href: `https://docs.blueberry.club` }))(
-                  $icon({
-                    width: '40px',
-                    $content: $gitbook,
-                    viewBox: '0 0 32 32'
-                  }),
-                  $text(style({ paddingBottom: '6px' }))('Documentation')
-                )
+              $anchor(layoutSheet.spacingSmall, style({ alignItems: 'center', display: 'flex' }), attr({ href: `https://docs.blueberry.club` }))(
+                $icon({
+                  width: '40px',
+                  $content: $gitbook,
+                  viewBox: '0 0 32 32'
+                }),
+                $text(style({ paddingBottom: '6px' }))('Documentation')
               )
             )
+          )
 
-            const $mosaicItem = (id: number, svgBody: SvgPartsMap, size: number) => {
-              const matchTuple: Partial<IBerryDisplayTupleMap> = tokenIdAttributeTuple[id - 1]
+          const $mosaicItem = (id: number, size: number) => {
+            const matchTuple: Partial<IBerryDisplayTupleMap> = tokenIdAttributeTuple[id - 1]
 
-              return $anchor(style({ position: 'relative' }), attr({ href: '/p/berry/' + id, target: '' }))(
-                style({ borderRadius: '10px' }, $berry(svgBody, matchTuple, size)),
-                $text(style({ textAlign: 'left', padding: screenUtils.isDesktopScreen ? '8px 0 0 8px' : '5px 0 0 5px', color: '#fff', textShadow: '#0000005e 0px 0px 5px', fontSize: screenUtils.isDesktopScreen ? '.6em' : '.6em', position: 'absolute', top: 0, fontWeight: 'bold' }))(String(id))
-              )
-            }
+            return $anchor(style({ position: 'relative' }), attr({ href: '/p/berry/' + id, target: '' }))(
+              style({ borderRadius: '10px' }, $berry(matchTuple, size)),
+              $text(style({ textAlign: 'left', padding: screenUtils.isDesktopScreen ? '8px 0 0 8px' : '5px 0 0 5px', color: '#fff', textShadow: '#0000005e 0px 0px 5px', fontSize: screenUtils.isDesktopScreen ? '.6em' : '.6em', position: 'absolute', top: 0, fontWeight: 'bold' }))(String(id))
+            )
+          }
 
-            return screenUtils.isDesktopScreen
-              ? $node(style({ display: 'grid', width: '100%', gap: '20px', justifyContent: 'center', gridTemplateColumns: `repeat(auto-fit, ${berrySize}px)`, gridAutoRows: berrySize + 'px' }))(
-                ...berryWallList.slice(0, berryWallRowCount + aboutHalf).map(id => {
-                  return $mosaicItem(id, svgParts, berrySize)
-                }),
-                $row(style({ gridRow: 'span 3 / auto', gridColumn: 'span 7 / auto', gap: '35px' }))(
-                  $Link({
-                    url: `/p/berry/${berryDayId + 1}`,
-                    route: parentRoute.create({ fragment: 'fefe' }),
-                    $content: $row(style({ maxWidth: 340 + 'px', borderRadius: '30px', overflow: 'hidden', width: '100%', height: 340 + 'px', transformStyle: 'preserve-3d', perspective: '100px', position: 'relative', placeContent: 'center', alignItems: 'flex-end' }))(
-                      $row(style({ alignSelf: 'flex-end', zIndex: 10, color: `white!important`, fontWeight: 'bold', position: 'absolute', left: '20px', top: '16px' }))(
-                        $text(style({ fontSize: '38px', textShadow: '#0000005e 0px 0px 5px' }))(String(berryDayId))
+          return screenUtils.isDesktopScreen
+            ? $node(style({ display: 'grid', width: '100%', gap: '20px', justifyContent: 'center', gridTemplateColumns: `repeat(auto-fit, ${berrySize}px)`, gridAutoRows: berrySize + 'px' }))(
+              ...berryWallList.slice(0, berryWallRowCount + aboutHalf).map(id => {
+                return $mosaicItem(id, berrySize)
+              }),
+              $row(style({ gridRow: 'span 3 / auto', gridColumn: 'span 7 / auto', gap: '35px' }))(
+                $Link({
+                  url: `/p/berry/${berryDayId + 1}`,
+                  route: parentRoute.create({ fragment: 'fefe' }),
+                  $content: $row(style({ maxWidth: 340 + 'px', borderRadius: '30px', overflow: 'hidden', width: '100%', height: 340 + 'px', transformStyle: 'preserve-3d', perspective: '100px', position: 'relative', placeContent: 'center', alignItems: 'flex-end' }))(
+                    $row(style({ alignSelf: 'flex-end', zIndex: 10, color: `white!important`, fontWeight: 'bold', position: 'absolute', left: '20px', top: '16px' }))(
+                      $text(style({ fontSize: '38px', textShadow: '#0000005e 0px 0px 5px' }))(String(berryDayId))
+                    ),
+                    tap(({ element }) => {
+                      element.querySelectorAll('.wakka').forEach(el => el.remove())
+                    }, $berry([background, clothes, undefined, IAttributeExpression.HAPPY, undefined, ' ' as any], 340) as $Branch),
+                    $svg('svg')(
+                      attr({ xmlns: 'http://www.w3.org/2000/svg', fill: 'none', viewBox: `0 0 1500 1500` }),
+                      style({ width: 340 + 'px', height: 340 + 'px', position: 'absolute', zIndex: 1, })
+                    )(
+                      tap(async ({ element }) => {
+                        element.innerHTML = `${parts[4][faceAccessory]}${parts[5][hat]}`
+                      })
+                    )(),
+                    $row(style({ position: 'absolute', width: '95px', left: '158px', placeContent: 'space-between', top: '162px' }))(
+                      $eyeBall(leftEyeContainerPerspectiveTether(observer.resize()), eyeStylePosition(leftEyeContainerPerspective))(
+                        $eyeInner()
                       ),
-                      tap(({ element }) => {
-                        element.querySelectorAll('.wakka').forEach(el => el.remove())
-                      }, $loadBerry([background, clothes, undefined, IAttributeExpression.HAPPY, undefined, ' ' as any], 340) as $Branch),
-                      $svg('svg')(
-                        attr({ xmlns: 'http://www.w3.org/2000/svg', fill: 'none', viewBox: `0 0 1500 1500` }),
-                        style({ width: 340 + 'px', height: 340 + 'px', position: 'absolute', zIndex: 1, })
-                      )(
-                        tap(async ({ element }) => {
-                          element.innerHTML = `${svgParts[4][faceAccessory]}${svgParts[5][hat]}`
-                        })
-                      )(),
-                      $row(style({ position: 'absolute', width: '95px', left: '158px', placeContent: 'space-between', top: '162px' }))(
-                        $eyeBall(leftEyeContainerPerspectiveTether(observer.resize()), eyeStylePosition(leftEyeContainerPerspective))(
-                          $eyeInner()
-                        ),
-                        $eyeBall(rightEyeContainerPerspectiveTether(observer.resize()), eyeStylePosition(rightEyeContainerPerspective))(
-                          $eyeInner()
-                        )
-                      ),
-                      $text(
-                        style({ zIndex: 1, color: pallete.background, backgroundColor: pallete.message, textAlign: 'center', padding: '9px 13px', fontWeight: 'bold', borderRadius: '15px', position: 'absolute', top: '17px', right: '20px' }),
-                        stylePseudo(':after', {
-                          border: '11px solid transparent',
-                          borderTop: `5px solid ${pallete.message}`,
-                          content: "''",
-                          position: 'absolute',
-                          top: '100%',
-                          left: '56%',
-                          width: 0,
-                          height: 0
-                        })
-                      )('gm anon')
-                    )
-                  })({
-                    click: linkClickTether()
-                  }),
-
-                  $row(gutterSpacingStyle, style({ display: 'flex', gap: '36px', placeContent: 'center', alignItems: 'center' }))(
-                    $introHeadline
+                      $eyeBall(rightEyeContainerPerspectiveTether(observer.resize()), eyeStylePosition(rightEyeContainerPerspective))(
+                        $eyeInner()
+                      )
+                    ),
+                    $text(
+                      style({ zIndex: 1, color: pallete.background, backgroundColor: pallete.message, textAlign: 'center', padding: '9px 13px', fontWeight: 'bold', borderRadius: '15px', position: 'absolute', top: '17px', right: '20px' }),
+                      stylePseudo(':after', {
+                        border: '11px solid transparent',
+                        borderTop: `5px solid ${pallete.message}`,
+                        content: "''",
+                        position: 'absolute',
+                        top: '100%',
+                        left: '56%',
+                        width: 0,
+                        height: 0
+                      })
+                    )('gm anon')
                   )
-                ),
-                ...berryWallList.slice(berryWallRowCount + aboutHalf, wallCount).map(id => {
-                  return $mosaicItem(id, svgParts, berrySize)
+                })({
+                  click: linkClickTether()
                 }),
-              )
-              : $row(style({ flexWrap: 'wrap', gap: '10px', placeContent: 'center', flex: 1 }))(
-                ...randomGBCList.slice(0, berryWallRowCount * 2).map(id => {
-                  return $mosaicItem(id, svgParts, berrySize)
-                }),
-                style({ padding: '25px' }, $introHeadline),
-                ...randomGBCList.slice(berryWallRowCount * 2, berryWallRowCount * 4).map(id => {
-                  return $mosaicItem(id, svgParts, berrySize)
-                }),
-              )
-          })
-        })({})
+
+                $row(gutterSpacingStyle, style({ display: 'flex', gap: '36px', placeContent: 'center', alignItems: 'center' }))(
+                  $introHeadline
+                )
+              ),
+              ...berryWallList.slice(berryWallRowCount + aboutHalf, wallCount).map(id => {
+                return $mosaicItem(id, berrySize)
+              }),
+            )
+            : $row(style({ flexWrap: 'wrap', gap: '10px', placeContent: 'center', flex: 1 }))(
+              ...randomGBCList.slice(0, berryWallRowCount * 2).map(id => {
+                return $mosaicItem(id, berrySize)
+              }),
+              style({ padding: '25px' }, $introHeadline),
+              ...randomGBCList.slice(berryWallRowCount * 2, berryWallRowCount * 4).map(id => {
+                return $mosaicItem(id, berrySize)
+              }),
+            )
+        }, svgParts))
       ),
 
 
@@ -422,7 +412,7 @@ export const $Home = ({ walletLink, parentRoute, treasuryStore }: ITreasury) => 
         $card(layoutSheet.spacingBig, style({ flexDirection: screenUtils.isDesktopScreen ? 'row' : 'column-reverse', alignItems: 'center', position: 'relative', padding: '40px' }))(
 
           $row(style({ width: screenUtils.isDesktopScreen ? '280px' : '' }))(
-            style({ margin: '-40px' }, $loadBerry([undefined, IAttributeClothes.BUILDER, IAttributeBody.BLUEBERRY, IAttributeExpression.HAPPY, IAttributeFaceAccessory.RICH, IAttributeHat.BRAIN], screenUtils.isDesktopScreen ? 350 : 200))
+            style({ margin: '-40px' }, $berry([undefined, IAttributeClothes.BUILDER, IAttributeBody.BLUEBERRY, IAttributeExpression.HAPPY, IAttributeFaceAccessory.RICH, IAttributeHat.BRAIN], screenUtils.isDesktopScreen ? 350 : 200))
           ),
 
           $column(layoutSheet.spacing)(

@@ -1,25 +1,16 @@
-import { Behavior, fromCallback, replayLatest } from "@aelea/core"
+import { Behavior } from "@aelea/core"
 import { $element, $node, $text, component, eventElementTarget, style } from "@aelea/dom"
 import * as router from '@aelea/router'
 import { $column, designSheet, layoutSheet, screenUtils } from '@aelea/ui-components'
 import {
-  AddressIndex, AddressStable, api,
-  ARBITRUM_ADDRESS, AVALANCHE_ADDRESS, CHAIN,
-  ETH_ADDRESS_REGEXP, fromJson, groupByMap, IAccountTradeListParamApi, IChainParamApi,
-  intervalTimeMap, IPricefeedParamApi, IPriceLatestMap, IRequestTradeQueryparam
+  api, ARBITRUM_ADDRESS, AVALANCHE_ADDRESS, CHAIN,
+  ETH_ADDRESS_REGEXP, fromJson, IAccountTradeListParamApi, intervalTimeMap, IPricefeedParamApi, IRequestTradeQueryparam
 } from '@gambitdao/gmx-middleware'
-import { initWalletLink } from "@gambitdao/wallet-link"
-import {
-  awaitPromises, constant, empty, map, merge, mergeArray, multicast, now,
-  startWith, switchLatest
-} from '@most/core'
-import { Stream } from "@most/types"
-import { IEthereumProvider } from "eip1193-provider"
+import { initWalletLink, IWalletName } from "@gambitdao/wallet-link"
+import { map, merge, mergeArray, multicast, now, tap } from '@most/core'
 import { $MainMenu } from '../components/$MainMenu'
-import * as wallet from "../logic/provider"
-import { WALLET } from "../logic/provider"
 import { helloBackend } from '../logic/websocket'
-import { IAccountStakingStore, ITreasuryStore } from "@gambitdao/gbc-middleware"
+import { BLUEBERRY_REFFERAL_CODE, IAccountStakingStore, ITreasuryStore } from "@gambitdao/gbc-middleware"
 import { $BerryPage } from "./$Berry"
 import { $Profile } from "./$Profile"
 import { $Treasury } from "./$Treasury"
@@ -48,11 +39,15 @@ interface Website {
 
 export default ({ baseRoute = '' }: Website) => component((
   [routeChanges, linkClickTether]: Behavior<any, string>,
-  [walletChange, walletChangeTether]: Behavior<IEthereumProvider | null, IEthereumProvider | null>,
 
   [requestAccountTradeList, requestAccountTradeListTether]: Behavior<IAccountTradeListParamApi, IAccountTradeListParamApi>,
   [requestPricefeed, requestPricefeedTether]: Behavior<IPricefeedParamApi, IPricefeedParamApi>,
   [requestTrade, requestTradeTether]: Behavior<IRequestTradeQueryparam, IRequestTradeQueryparam>,
+
+  [walletChange, walletChangeTether]: Behavior<IWalletName, IWalletName>,
+  [changeNetwork, changeNetworkTether]: Behavior<CHAIN, CHAIN>,
+
+
 ) => {
 
   const changes = merge(locationChange, multicast(routeChanges))
@@ -93,7 +88,6 @@ export default ({ baseRoute = '' }: Website) => component((
 
   const clientApi = {
     ...serverApi,
-
     requestTrade: map(json => json ? fromJson.toTradeJson(json) : null, api.trade(requestTrade)),
     pricefeed: map(json => json.map(fromJson.pricefeedJson), api.pricefeed(requestPricefeed)),
     accountTradeList: map(json => json.map(fromJson.toTradeJson), api.accountTradeList(requestAccountTradeList)),
@@ -107,49 +101,28 @@ export default ({ baseRoute = '' }: Website) => component((
   const treasuryStore = store.craete('treasuryStore', { startedStakingGlpTimestamp: 1639431367, startedStakingGmxTimestamp: 1639432924 - intervalTimeMap.MIN5 } as ITreasuryStore)
   const accountStakingStore = store.craete('treasuryStore', {} as IAccountStakingStore)
 
-  const walletStore = store.craete('walletStore', null as WALLET | null)
+  const chainStore = store.craete('chain', CHAIN.ARBITRUM)
+  const walletStore = store.craete('wallet', IWalletName.none)
+  
 
-  const walletProvider: Stream<IEthereumProvider | null> = mergeArray([
-    switchLatest(awaitPromises(map(async () => {
-      const name = walletStore.getState()
-      const isWC = name === WALLET.walletConnect
-      const wp = isWC ? wallet.walletConnect : await wallet.metamaskQuery
+  const walletLink = initWalletLink(
+    walletStore.storeReplay(walletChange),
+    chainStore.store(changeNetwork)
+  )
 
-      if (name && wp) {
-        const [mainAccount]: string[] = await wp.request({ method: 'eth_accounts' }) as any
-
-        if (mainAccount) {
-          if (isWC) {
-            const connector = wallet.walletConnect
-            const wcDisconnected = constant(null, fromCallback(cb => connector.on('disconnect', cb)))
-
-            return startWith(wp, wcDisconnected)
-          }
-
-          return now(wp)
-        }
-      }
-
-      return now(null)
-    }, now(null)))),
-    walletChange
-  ])
-
-
-
-  const walletLink = initWalletLink(walletProvider)
   const $liItem = $element('li')(style({ marginBottom: '14px' }))
 
 
   return [
 
-    $column(designSheet.main, style({ fontWeight: 400, alignItems: 'center', gap: screenUtils.isDesktopScreen ? '85px' : '55px', overflowX: 'hidden', placeContent: 'center', padding: screenUtils.isMobileScreen ? '0 15px' : '0 55px' }))(
+    $column(designSheet.main, style({ fontWeight: 400, alignItems: 'center', gap: screenUtils.isDesktopScreen ? '85px' : '55px', overflowX: 'hidden', placeContent: 'center', padding: screenUtils.isMobileScreen ? '0 15px' : '0 15px' }))(
 
-      $column(style({ gap: '45px' }))(
+      $column(style({ gap: '25px' }))(
         $column(
-          $MainMenu({ walletLink, parentRoute: rootRoute, walletStore, chainList: [CHAIN.ARBITRUM, CHAIN.AVALANCHE] })({
+          $MainMenu({ walletLink, parentRoute: rootRoute, chainList: [CHAIN.ARBITRUM, CHAIN.AVALANCHE] })({
             routeChange: linkClickTether(),
-            walletChange: walletChangeTether()
+            walletChange: walletChangeTether(),
+            changeNetwork: changeNetworkTether(),
           }),
 
           style({ margin: '0 -100vw' }, $seperator2),
@@ -162,7 +135,6 @@ export default ({ baseRoute = '' }: Website) => component((
               walletLink,
               parentRoute: pagesRoute,
               treasuryStore,
-              walletStore
             })({ routeChanges: linkClickTether() })
           )
         ),
@@ -177,7 +149,7 @@ export default ({ baseRoute = '' }: Website) => component((
               })
             ),
             router.match(labRoute)(
-              fadeIn($LabHome({ walletLink, parentRoute: labRoute, walletStore })({
+              fadeIn($LabHome({ walletLink, parentRoute: labRoute })({
                 changeRoute: linkClickTether(), walletChange: walletChangeTether()
               }))
             ),
@@ -187,12 +159,12 @@ export default ({ baseRoute = '' }: Website) => component((
               }))
             ),
             router.match(itemRoute)(
-              fadeIn($LabItem({ walletLink, chainList: [CHAIN.ARBITRUM], walletStore, parentRoute: itemRoute })({
+              fadeIn($LabItem({ walletLink, chainList: [CHAIN.ARBITRUM], parentRoute: itemRoute })({
                 changeRoute: linkClickTether(), walletChange: walletChangeTether()
               }))
             ),
             router.match(wardrobeRoute)(
-              fadeIn($Wardrobe({ chainList: [CHAIN.ARBITRUM], walletLink: walletLink, parentRoute: wardrobeRoute, walletStore })({
+              fadeIn($Wardrobe({ chainList: [CHAIN.ARBITRUM], walletLink: walletLink, parentRoute: wardrobeRoute })({
                 changeRoute: linkClickTether(),
 
               }))
@@ -201,65 +173,56 @@ export default ({ baseRoute = '' }: Website) => component((
               fadeIn($Profile({ walletLink, parentRoute: pagesRoute, accountStakingStore })({}))
             ),
             router.match(profileWalletRoute)(
-              fadeIn($ProfileConnected({ walletLink, parentRoute: pagesRoute, accountStakingStore })({ changeRoute: linkClickTether() }))
+              fadeIn($ProfileConnected({ walletLink, parentRoute: pagesRoute, chainList: [CHAIN.ARBITRUM], accountStakingStore })({
+                changeRoute: linkClickTether(),
+                changeNetwork: changeNetworkTether(),
+                walletChange: walletChangeTether()
+              }))
             ),
             router.match(tradeRoute)(
-              switchLatest(map(chain => {
-
-                if (chain === null) {
-                  return empty()
-                }
-
-                const indexTokens: AddressIndex[] = chain === CHAIN.ARBITRUM
-                  ? [
+              $Trade({
+                walletLink,
+                referralCode: BLUEBERRY_REFFERAL_CODE,
+                chainList: [CHAIN.ARBITRUM, CHAIN.AVALANCHE],
+                tokenIndexMap: {
+                  [CHAIN.ARBITRUM]: [
                     ARBITRUM_ADDRESS.NATIVE_TOKEN,
                     ARBITRUM_ADDRESS.LINK,
                     ARBITRUM_ADDRESS.UNI,
                     ARBITRUM_ADDRESS.WBTC,
+                  ],
+                  [CHAIN.AVALANCHE]: [
+                    AVALANCHE_ADDRESS.NATIVE_TOKEN,
+                    AVALANCHE_ADDRESS.WETHE,
+                    AVALANCHE_ADDRESS.WBTCE,
+                    AVALANCHE_ADDRESS.BTCB,
                   ]
-                  : chain === CHAIN.AVALANCHE ?
-                    [
-                      AVALANCHE_ADDRESS.NATIVE_TOKEN,
-                      AVALANCHE_ADDRESS.WETHE,
-                      AVALANCHE_ADDRESS.WBTCE,
-                      AVALANCHE_ADDRESS.BTCB,
-                    ]
-                    : []
-
-                const stableTokens: AddressStable[] = chain === CHAIN.ARBITRUM ?
-                  [
+                },
+                tokenStableMap: {
+                  [CHAIN.ARBITRUM]: [
                     ARBITRUM_ADDRESS.USDC,
                     ARBITRUM_ADDRESS.USDT,
                     ARBITRUM_ADDRESS.DAI,
                     ARBITRUM_ADDRESS.FRAX,
                     // ARBITRUM_ADDRESS.MIM,
+                  ],
+                  [CHAIN.AVALANCHE]: [
+                    AVALANCHE_ADDRESS.USDC,
+                    AVALANCHE_ADDRESS.USDCE,
+                    // AVALANCHE_ADDRESS.MIM,
                   ]
-                  : chain === CHAIN.AVALANCHE
-                    ? [
-                      AVALANCHE_ADDRESS.USDC,
-                      AVALANCHE_ADDRESS.USDCE,
-                      // AVALANCHE_ADDRESS.MIM,
-                    ]
-                    : []
-
-
-                return $Trade({
-                  chainList: [CHAIN.ARBITRUM, CHAIN.AVALANCHE],
-                  chain,
-                  stableTokens, indexTokens,
-                  walletLink,
-                  parentRoute: tradeRoute,
-                  walletStore,
-                  accountTradeList: clientApi.accountTradeList,
-                  pricefeed: clientApi.pricefeed,
-                  store
-                })({
-                  requestPricefeed: requestPricefeedTether(),
-                  requestAccountTradeList: requestAccountTradeListTether(),
-                  changeRoute: linkClickTether(),
-                  walletChange: walletChangeTether(),
-                })
-              }, walletLink.network))
+                },
+                // walletLink,
+                parentRoute: tradeRoute,
+                accountTradeList: clientApi.accountTradeList,
+                pricefeed: clientApi.pricefeed,
+                store
+              })({
+                requestPricefeed: requestPricefeedTether(),
+                requestAccountTradeList: requestAccountTradeListTether(),
+                changeRoute: linkClickTether(),
+                walletChange: walletChangeTether(),
+              })
             ),
             router.match(tradeTermsAndConditions)(
               $column(layoutSheet.spacing, style({ maxWidth: '680px', alignSelf: 'center' }))(

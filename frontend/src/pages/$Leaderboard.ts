@@ -10,12 +10,11 @@ import { fromPromise, map, startWith } from "@most/core"
 import { $responsiveFlex } from "../elements/$common"
 import { queryLatestPrices, queryOwnerV2 } from "../logic/query"
 import { IAccountStakingStore } from "@gambitdao/gbc-middleware"
-import { connectGbc } from "../logic/contract/gbc"
 import { ContractTransaction } from "@ethersproject/contracts"
 import { Stream } from "@most/types"
 import { $bear, $bull, $ProfitLossText, $tokenIconMap, TablePageResponse } from "@gambitdao/ui-components"
-import { connectRewardDistributor } from "../logic/contract/rewardDistributor"
 import { pallete } from "@aelea/ui-components-theme"
+import { resolveAddress } from "../logic/utils"
 
 
 export interface IAccount {
@@ -44,7 +43,7 @@ export const $Leaderboard = ({ walletLink, openTrades, leaderboardTopList, paren
       timeInterval: intervalTimeMap.DAY7,
       offset: page * 20,
       pageSize: 20,
-      sortBy: 'realisedPnlPercentage',
+      sortBy: 'realisedPnl',
       chain: CHAIN.ARBITRUM,
       sortDirection: 'asc'
     }
@@ -67,8 +66,8 @@ export const $Leaderboard = ({ walletLink, openTrades, leaderboardTopList, paren
   // const stakedList = map(owner => owner.stakedTokenList, queryOwner)
 
 
-  const gbcWallet = connectGbc(walletLink)
-  const rewardDistributor = connectRewardDistributor(walletLink)
+  // const gbcWallet = connectGbc(walletLink)
+  // const rewardDistributor = connectRewardDistributor(walletLink)
 
   const priceMap = fromPromise(queryLatestPrices())
 
@@ -232,18 +231,20 @@ export const $livePnl = (trade: ITrade, pos: Stream<bigint>) => $row(
   )
 )
 
-export const $Entry = (pos: ITrade) =>
+export const $Entry = (chain: CHAIN, pos: ITrade) =>
   $row(
     $column(layoutSheet.spacingTiny, style({ alignSelf: 'flex-start' }))(
-      $entryDisplay(pos),
+      $entryDisplay(chain, pos),
       $text(style({ fontSize: '.65em', textAlign: 'center', color: pallete.primary }))(formatReadableUSD(pos.averagePrice))
     )
   )
 
 
-export function $entryDisplay(pos: ITrade) {
+export function $entryDisplay(chain: CHAIN, pos: ITrade) {
+  const newLocal = resolveAddress(chain, pos.indexToken)
   return $row(style({ position: 'relative', flexDirection: 'row-reverse', alignSelf: 'center' }))(
-    $TokenIcon(CHAIN_TOKEN_ADDRESS_TO_SYMBOL[pos.indexToken]),
+    // @ts-ignore
+    $TokenIcon(CHAIN_TOKEN_ADDRESS_TO_SYMBOL[newLocal]),
     style({ borderRadius: '50%', padding: '3px', marginRight: '-5px', backgroundColor: pallete.background, })(
       $icon({
         $content: pos.isLong ? $bull : $bear,

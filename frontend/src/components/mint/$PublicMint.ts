@@ -1,32 +1,25 @@
-import { Behavior, combineObject } from "@aelea/core"
+import { Behavior } from "@aelea/core"
 import { component, style, $text, attr, nodeEvent, styleInline, stylePseudo, INode } from "@aelea/dom"
-import { $column, layoutSheet, $row, $icon, state } from "@aelea/ui-components"
+import { $column, layoutSheet, $row, $icon } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { ContractTransaction } from "@ethersproject/contracts"
 import { LabItemSale, MintRule, LAB_CHAIN } from "@gambitdao/gbc-middleware"
-import { CHAIN, ETH_ADDRESS_REGEXP, formatFixed, replayState } from "@gambitdao/gmx-middleware"
-import { IWalletLink } from "@gambitdao/wallet-link"
-import { switchLatest, multicast, startWith, snapshot, map, tap, skipRepeats, merge } from "@most/core"
+import { CHAIN, filterNull, formatFixed } from "@gambitdao/gmx-middleware"
+import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
+import { switchLatest, multicast, startWith, snapshot, map, tap, merge } from "@most/core"
 import { $caretDown } from "../../elements/$icons"
 import { takeUntilLast } from "../../logic/common"
-import { connectLab } from "../../logic/contract/lab"
-import { connectPublic, getMintCount } from "../../logic/contract/sale"
+import { getMintCount } from "../../logic/contract/sale"
 import { $ButtonPrimary } from "../form/$Button"
 import { $Dropdown, $defaultSelectContainer } from "../form/$Dropdown"
 import { $displayMintEvents } from "./mintUtils2"
 import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
-import { IEthereumProvider } from "eip1193-provider"
-import { WALLET } from "../../logic/provider"
-import { Stream } from "@most/types"
 import { BrowserStore } from "../../logic/store"
+import { Public__factory } from "@gambitdao/gbc-contracts"
+import { connectLab } from "../../logic/contract/gbc"
 
 
 
-interface IFormState {
-  // isSaleLive: boolean
-  selectedMintAmount: null | number
-  account: string | null
-}
 
 interface MintCmp {
   chainList: CHAIN[],
@@ -34,37 +27,34 @@ interface MintCmp {
   item: LabItemSale
   mintRule: MintRule
   walletLink: IWalletLink
-  walletStore: BrowserStore<"ROOT.v1.walletStore", WALLET | null>
 }
 
 export const $PublicMint = (config: MintCmp) => component((
   [clickMintPublic, clickMintPublicTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
   [customNftAmount, customNftAmountTether]: Behavior<INode, number>,
   [selectMintAmount, selectMintAmountTether]: Behavior<number, number>,
-  [walletChange, walletChangeTether]: Behavior<IEthereumProvider | null, IEthereumProvider | null>,
+  [walletChange, walletChangeTether]: Behavior<IWalletName, IWalletName>,
 
 ) => {
 
-  const hasAccount = map(address => address && !ETH_ADDRESS_REGEXP.test(address), config.walletLink.account)
+  const account = filterNull(map(signer => signer ? signer.address : null, config.walletLink.wallet))
 
   const supportedNetwork = map(x => x !== LAB_CHAIN, config.walletLink.network)
-  const mintCount = getMintCount(config.mintRule)
+  const mintCount = getMintCount(config.mintRule, config.walletLink)
 
   const totalMintedChange = takeUntilLast(isLive => Number(isLive) === config.mintRule.supply, mintCount)
 
-  const saleWallet = connectPublic(config.walletLink, config.mintRule.contractAddress)
+
   
   const labWallet = connectLab(config.walletLink)
 
-  const hasMintEnded = skipRepeats(map(amount => Number(amount) === config.mintRule.supply, totalMintedChange))
-  const accountChange = merge(hasAccount, supportedNetwork)
+  const accountChange = merge(account, supportedNetwork)
   const selectedMintAmount = merge(customNftAmount, selectMintAmount)
 
   const buttonState = multicast(map(amount => {
     return amount === null
   }, selectedMintAmount))
 
-  const formState: Stream<IFormState> = replayState({ selectedMintAmount, account: config.walletLink.account })
 
 
   return [
@@ -129,52 +119,48 @@ export const $PublicMint = (config: MintCmp) => component((
           select: selectMintAmountTether()
         }),
 
-        $IntermediateConnectButton({
-          walletStore: config.walletStore,
-          chainList: config.chainList,
-          $container: $column(layoutSheet.spacingBig),
-          $$display: map(() => {
+        $column(layoutSheet.spacingBig)(
+          $IntermediateConnectButton({
+            chainList: config.chainList,
+            $$display: map(w3p => {
+              const sale = Public__factory.connect(config.mintRule.contractAddress, w3p.signer)
 
-            return $ButtonPrimary({
-              disabled: startWith(true, buttonState),
-              $content: switchLatest(
-                map(({ selectedMintAmount, account }) => {
+              return $ButtonPrimary({
+                disabled: startWith(true, buttonState),
+                $content: switchLatest(
+                  map(amount => {
 
-                  if (selectedMintAmount === null) {
-                    return $text('Select amount')
-                  }
+                    if (amount === null) {
+                      return $text('Select amount')
+                    }
 
-                  const priceFormated = formatFixed(config.mintRule.cost, 18)
-                  const total = selectedMintAmount * priceFormated
+                    const priceFormated = formatFixed(config.mintRule.cost, 18)
+                    const total = amount * priceFormated
 
-                  return $text(`Mint ${selectedMintAmount} (${total > 0n ? total + 'ETH' : 'Free'})`)
+                    return $text(`Mint ${amount} (${total > 0n ? total + 'ETH' : 'Free'})`)
 
-                }, formState)
-              ),
-            })({
-              click: clickMintPublicTether(
-                snapshot(async ({ formState: { selectedMintAmount }, saleContract, account }) => {
+                  }, selectedMintAmount)
+                ),
+              })({
+                click: clickMintPublicTether(
+                  snapshot(async amount => {
+                    const value = BigInt(amount) * config.mintRule.cost
 
-                  if (saleContract === null || selectedMintAmount === null) {
-                    throw new Error('could not resolve sales contract')
-                  }
-                  const value = BigInt(selectedMintAmount) * config.mintRule.cost
+                    const contractAction = sale.mint(amount, { value })
 
-                  const contractAction = saleContract.mint(selectedMintAmount, { value })
-
-                  return contractAction
-                }, combineObject({ formState, saleContract: saleWallet.contract, account: config.walletLink.account })),
-              )
-            })
-          }),
-          ensureNetwork: true,
-          walletLink: config.walletLink
-        })({
-          walletChange: walletChangeTether(),
-        })
+                    return contractAction
+                  }, selectedMintAmount),
+                )
+              })
+            }),
+            walletLink: config.walletLink
+          })({
+            walletChange: walletChangeTether(),
+          })
+        )
       ),
 
-      $displayMintEvents(labWallet.contract, clickMintPublic)
+      $displayMintEvents(labWallet.lab.contract, clickMintPublic)
     ),
 
     { walletChange }

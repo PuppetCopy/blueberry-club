@@ -1,8 +1,8 @@
 import { isTradeClosed, isTradeLiquidated } from "."
 import {
   ITrade, IIdentifiableEntity, IPositionClose, IPositionDecrease,
-  IPositionIncrease, IPositionLiquidated, IPositionUpdate, IAccountSummary, IAbstractPositionDelta,
-  IPricefeed, IPriceLatest, AddressIndex,
+  IPositionIncrease, IPositionLiquidated, IPositionUpdate, IAccountSummary, IAbstractPositionAdjustment,
+  IPricefeed, IPriceLatest, ITokenIndex,
 } from "./types"
 
 
@@ -35,7 +35,7 @@ export function pricefeedJson(json: IPricefeed): IPricefeed {
   const h = BigInt(json.h)
   const l = BigInt(json.l)
   const o = BigInt(json.o)
-  const tokenAddress = json.tokenAddress.slice(1) as AddressIndex
+  const tokenAddress = json.tokenAddress.slice(1) as ITokenIndex
 
   return { ...json, c, h, l, o, tokenAddress }
 }
@@ -46,7 +46,7 @@ export function priceLatestJson(json: IPriceLatest): IPriceLatest {
   return { ...json, value }
 }
 
-export function positionDeltaJson<T extends IAbstractPositionDelta>(json: T): T {
+export function positionDeltaJson<T extends IAbstractPositionAdjustment>(json: T): T {
   const sizeDelta = BigInt(json.sizeDelta)
   const collateralDelta = BigInt(json.collateralDelta)
 
@@ -88,7 +88,6 @@ export function toTradeJson<T extends ITrade>(json: T): T {
   const realisedPnl = BigInt(json.realisedPnl)
   const averagePrice = BigInt(json.averagePrice)
   const collateral = BigInt(json.collateral)
-  const collateralDelta = BigInt(json.collateralDelta)
 
   
   const closedPosition = isTradeClosed(json) ? positonCloseJson(json.closedPosition) : null
@@ -96,19 +95,18 @@ export function toTradeJson<T extends ITrade>(json: T): T {
 
 
   return {
-    ...json, decreaseList, increaseList, updateList,
+    ...json,
+    decreaseList, increaseList, updateList,
+
     closedPosition,
     liquidatedPosition,
 
     realisedPnl,
-    realisedPnlPercentage: BigInt(json.realisedPnlPercentage),
 
     averagePrice,
     collateral,
-    collateralDelta,
     fee: BigInt(json.fee),
     size: BigInt(json.size),
-    sizeDelta: BigInt(json.sizeDelta),
   }
 }
 
@@ -124,15 +122,15 @@ export function toTradeSummary<T extends ITrade>(json: T): T {
 }
 
 
-export function accountSummaryJson(json: IAccountSummary): IAccountSummary {
-  const realisedPnl = BigInt(json.realisedPnl)
-  const realisedPnlPercentage = BigInt(json.realisedPnlPercentage)
-  const fee = BigInt(json.fee)
-  const collateral = BigInt(json.collateral)
-  const size = BigInt(json.size)
+// export function accountSummaryJson(json: IAccountSummary): IAccountSummary {
+//   const realisedPnl = BigInt(json.realisedPnl)
+//   const realisedPnlPercentage = BigInt(json.realisedPnlPercentage)
+//   const fee = BigInt(json.fee)
+//   const collateral = BigInt(json.collateral)
+//   const size = BigInt(json.size)
 
-  return { ...json, ...positionDeltaJson(json),  collateral, fee, size, realisedPnl, realisedPnlPercentage }
-}
+//   return { ...json, ...positionDeltaJson(json),  collateral, fee, size, realisedPnl, realisedPnlPercentage }
+// }
 
 
 

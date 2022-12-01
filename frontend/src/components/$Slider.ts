@@ -53,7 +53,7 @@ export const $Slider = ({
   [thumbePositionDelta, thumbePositionDeltaTether]: Behavior<IBranch<HTMLInputElement>, number>
 ) => {
 
-  const $rangeWrapper = $row(style({ height: '2px', pointerEvents: 'none', background: pallete.background, position: 'relative', zIndex: 10 }))
+  const $rangeWrapper = $row(style({ height: '2px', pointerEvents: 'none', background: pallete.background, position: 'relative' }))
 
 
   const state = multicast(combineObject({ value, min, max }))

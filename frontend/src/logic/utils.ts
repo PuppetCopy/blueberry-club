@@ -1,6 +1,6 @@
 import {
   AddressZero, ARBITRUM_ADDRESS, CHAIN, TOKEN_DESCRIPTION_MAP, TOKEN_SYMBOL, AVALANCHE_ADDRESS, getDenominator,
-  TokenDescription, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, AddressInput, AddressTrade
+  TokenDescription, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, ITokenInput, ITokenTrade
 } from "@gambitdao/gmx-middleware"
 
 
@@ -10,27 +10,29 @@ export const CHAIN_NATIVE_TO_SYMBOL = {
   [CHAIN.ARBITRUM]: TOKEN_SYMBOL.ETH,
 } as const
 
-export const CHAIN_NATIVE_TO_ADDRESS = {
-  [CHAIN.AVALANCHE]: AVALANCHE_ADDRESS.NATIVE_TOKEN,
-  [CHAIN.ARBITRUM]: ARBITRUM_ADDRESS.NATIVE_TOKEN,
+export const CHAIN_ADDRESS_MAP = {
+  [CHAIN.AVALANCHE]: AVALANCHE_ADDRESS,
+  [CHAIN.ARBITRUM]: ARBITRUM_ADDRESS,
 } as const
 
 
 
-export function resolveAddress(chain: CHAIN, indexToken: AddressInput): AddressTrade {
-  if (indexToken === AddressZero) {
-    if (!(chain in CHAIN_NATIVE_TO_ADDRESS)) {
-      throw new Error(`Token ${indexToken} does not exist`)
-    }
+export function resolveAddress(chain: CHAIN, indexToken: ITokenInput | null): ITokenTrade {
+  // @ts-ignore
+  const contractList = CHAIN_ADDRESS_MAP[chain]
 
-    // @ts-ignore
-    return CHAIN_NATIVE_TO_ADDRESS[chain]
+  if (!contractList) {
+    throw new Error(`Token ${indexToken} does not exist`)
   }
 
-  return indexToken
+  if (indexToken === null || indexToken === AddressZero) {
+    return contractList.NATIVE_TOKEN
+  }
+  // @ts-ignore
+  return indexToken in contractList ? indexToken : contractList.NATIVE_TOKEN
 }
 
-export function getTokenDescription(chain: CHAIN | null, token: AddressInput): TokenDescription {
+export function getTokenDescription(chain: CHAIN | null, token: ITokenInput): TokenDescription {
   if (!chain) {
     return TOKEN_DESCRIPTION_MAP.ETH
   }

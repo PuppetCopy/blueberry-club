@@ -169,9 +169,6 @@ export const $CandleSticks = ({ chartConfig, series, containerOp = O() }: ICandl
 
           return [
             switchLatest(map(setup => {
-              // const liveData = params.appendData
-              //   ? switchLatest(params.appendData(now(ss.data)))
-              //   : empty()
 
               return mergeArray([
                 params.appendData
@@ -184,15 +181,20 @@ export const $CandleSticks = ({ chartConfig, series, containerOp = O() }: ICandl
                   : empty(),
                 ...priceLineConfigList.map(lineStreamConfig => {
                   return scan((prev, params) => {
-                    if (prev && setup.api) {
+                    if (setup.api && prev && params === null) {
                       setup.api.removePriceLine(prev)
                     }
 
-                    if (params === null || !setup.api) {
-                      return null
+                    if (setup.api && params) {
+                      if (prev) {
+                        prev.applyOptions(params)
+                        return prev
+                      } else {
+                        return setup.api.createPriceLine(params)
+                      }
                     }
 
-                    return setup.api.createPriceLine(params)
+                    return null
                   }, null as IPriceLine | null, lineStreamConfig)
                 }),
                 tap(next => {

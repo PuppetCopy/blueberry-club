@@ -122,7 +122,9 @@ export const $profilePreview = ({
 }: IProfilePreview) => {
 
   return $row(layoutSheet.row, layoutSheet.spacingSmall, style({ alignItems: 'center', pointerEvents: 'none', textDecoration: 'none' }))(
-    profile.token ? style({ borderRadius: '50%' }, $berryByToken(profile.token, avatarSize)) : $AccountPhoto(profile.id, claim, avatarSize),
+    profile.token
+      ? style({ borderRadius: '50%' }, $berryByToken(profile.token, avatarSize))
+      : $AccountPhoto(profile.id, claim, avatarSize),
     showAddress
       ? profile.name
         ? $text(style({ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', fontSize: labelSize }))(profile.name)

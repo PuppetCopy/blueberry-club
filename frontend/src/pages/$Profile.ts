@@ -1,34 +1,26 @@
-import { Behavior, combineArray, combineObject, replayLatest } from "@aelea/core"
-import { $node, $text, component, style } from "@aelea/dom"
+import { Behavior } from "@aelea/core"
+import { $text, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
-import { $column, $row, layoutSheet, state } from "@aelea/ui-components"
-import { GBC_ADDRESS, IToken, MINT_MAX_SUPPLY, REWARD_DISTRIBUTOR, LAB_CHAIN } from "@gambitdao/gbc-middleware"
-import { formatFixed, formatReadableUSD, readableNumber } from "@gambitdao/gmx-middleware"
+import { $column, $row, layoutSheet } from "@aelea/ui-components"
+import { IToken } from "@gambitdao/gbc-middleware"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { empty, fromPromise, map, merge, multicast, now, snapshot, startWith, switchLatest } from "@most/core"
+import { fromPromise, map, now } from "@most/core"
 import { $responsiveFlex } from "../elements/$common"
 import { queryLatestPrices, queryOwnerV2 } from "../logic/query"
 import { IAccountStakingStore } from "@gambitdao/gbc-middleware"
-import { pallete } from "@aelea/ui-components-theme"
-import { $seperator2 } from "./common"
-import { $alert, $IntermediatePromise, $IntermediateTx } from "@gambitdao/ui-components"
-import { connectGbc } from "../logic/contract/gbc"
-import { $ButtonPrimary } from "../components/form/$Button"
-import { connectRewardDistributor } from "../logic/contract/rewardDistributor"
+import { $alert, $IntermediatePromise } from "@gambitdao/ui-components"
 import { $accountPreview } from "../components/$AccountProfile"
-import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
-import { $SelectBerries } from "../components/$SelectBerries"
+import { ContractTransaction } from "@ethersproject/contracts"
 import { $berryTileId } from "../components/$common"
-import { $berryByToken } from "../logic/common"
 import { BrowserStore } from "../logic/store"
+import { connectLab } from "../logic/contract/gbc"
 
 
 export interface IAccount {
   walletLink: IWalletLink
   parentRoute: Route
   accountStakingStore: BrowserStore<"ROOT.v1.treasuryStore", IAccountStakingStore>
-  // walletStore: cstate.BrowserStore<"metamask" | "walletConnect" | null, "walletStore">
 }
 
 export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAccount) => component((
@@ -113,10 +105,10 @@ export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAcco
   // const stakedList = map(owner => owner.stakedTokenList, queryOwner)
 
 
-  const gbcWallet = connectGbc(walletLink)
-  const rewardDistributor = connectRewardDistributor(walletLink)
+  // const gbcWallet = connectLab(walletLink)
+  // // const rewardDistributor = connectRewardDistributor(walletLink)
 
-  const priceMap = fromPromise(queryLatestPrices())
+  // const priceMap = fromPromise(queryLatestPrices())
 
 
   // const isApprovedForAll = replayLatest(multicast(rewardDistributor.isApprovedForAll))

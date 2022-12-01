@@ -1,9 +1,9 @@
 import { Behavior, combineArray, combineObject, Op } from "@aelea/core"
-import { $element, $node, $Node, $text, attr, attrBehavior, component, INode, nodeEvent, style, stylePseudo } from "@aelea/dom"
+import { $node, $Node, $text, attr, attrBehavior, component, INode, nodeEvent, style, stylePseudo } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 
-import { IWalletLink } from "@gambitdao/wallet-link"
+import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
 import { awaitPromises, constant, empty, filter, map, merge, mergeArray, multicast, now, snapshot, startWith, switchLatest, tap } from "@most/core"
 import { $buttonAnchor, $ButtonPrimary, $ButtonSecondary } from "../../components/form/$Button"
 import { $defaultSelectContainer, $Dropdown } from "../../components/form/$Dropdown"
@@ -12,21 +12,19 @@ import { $labItem, getBerryFromToken, getTokenSlots } from "../../logic/common"
 import { $berryTileId } from "../../components/$common"
 import { fadeIn } from "../../transitions/enter"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
-import { $loadBerry } from "../../components/$DisplayBerry"
+import { $berry } from "../../components/$DisplayBerry"
 import { $caretDown } from "../../elements/$icons"
 import { $alert, $arrowsFlip, $IntermediateTx, $xCross } from "@gambitdao/ui-components"
 import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
 import { Stream } from "@most/types"
 import { $iconCircular, $responsiveFlex } from "../../elements/$common"
-import { connectManager } from "../../logic/contract/manager"
-import { connectLab } from "../../logic/contract/lab"
 import { $seperator2 } from "../common"
-import { CHAIN, unixTimestampNow } from "@gambitdao/gmx-middleware"
-import { WALLET } from "../../logic/provider"
+import { CHAIN, filterNull, unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 import { queryOwnerV2 } from "../../logic/query"
 import { Closet, GBCLab } from "@gambitdao/gbc-contracts"
 import { BrowserStore } from "../../logic/store"
+import { connectLab } from "../../logic/contract/gbc"
 
 
 interface IBerryComp {
@@ -34,7 +32,6 @@ interface IBerryComp {
 
   walletLink: IWalletLink
   parentRoute: Route
-  walletStore: BrowserStore<"ROOT.v1.walletStore", WALLET | null>
 
   initialBerry?: IToken
 }
@@ -53,7 +50,7 @@ interface ExchangeState {
   selectedBerry: IToken | null
   selectedBerryItems: IBerryLabItems
 
-  account: string | null
+  account: string
 }
 
 type Slot = 0 | 7 | null
@@ -61,13 +58,11 @@ type Slot = 0 | 7 | null
 export const $Wardrobe = (config: IBerryComp) => component((
   [changeRoute, changeRouteTether]: Behavior<any, string>,
   [changeBerry, changeBerryTether]: Behavior<IToken, IToken>,
-  // [selectedAttribute, selectedAttributeTether]: Behavior<ILabAttributeOptions, ILabAttributeOptions>,
   [selectedSlot, selectedSlotTether]: Behavior<Slot, Slot>,
   [clickSave, clickSaveTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
 
   [changeItemState, changeItemStateTether]: Behavior<any, ItemSlotState | null>,
   [changeBackgroundState, changeBackgroundStateTether]: Behavior<any, ItemSlotState | null>,
-  [changeDecoState, changeDecoStateTether]: Behavior<any, ItemSlotState | null>,
   [setApproval, setApprovalTether]: Behavior<any, Promise<ContractTransaction>>,
 
   [hoverDownloadBtn, hoverDownloadBtnTether]: Behavior<INode, PointerEvent>,
@@ -75,17 +70,18 @@ export const $Wardrobe = (config: IBerryComp) => component((
 
 ) => {
 
-  const lab = connectLab(config.walletLink)
+  const connect = connectLab(config.walletLink)
   // const gbc = connectGbc(walletLink)
-  const closet = connectManager(config.walletLink)
+  // const closet = connectManager(config.walletLink)
+  const account = filterNull(map(w3p => w3p ? w3p.address : null, config.walletLink.wallet))
 
 
-  const owner = multicast(awaitPromises(map(async n => {
-    if (n === null) {
+  const owner = multicast(awaitPromises(map(async w3p => {
+    if (w3p === null) {
       return null
     }
-    return queryOwnerV2(n)
-  }, config.walletLink.account)))
+    return queryOwnerV2(w3p.address)
+  }, config.walletLink.wallet)))
 
   const tokenList = map(xz => xz ? xz.ownedTokens : [], owner)
 
@@ -102,15 +98,13 @@ export const $Wardrobe = (config: IBerryComp) => component((
   const selectedBerry = mergeArray([constant(null, owner), changeBerry])
 
   const ownedItemList = mergeArray([
-    lab.accountListBalance(saleDescriptionList.map(x => x.id)),
-    switchLatest(map(() => lab.accountListBalance(saleDescriptionList.map(x => x.id)), savedItemsTxSucceed))
+    connect.accountListBalance(saleDescriptionList.map(x => x.id)),
+    switchLatest(map(() => connect.accountListBalance(saleDescriptionList.map(x => x.id)), savedItemsTxSucceed))
   ])
 
-  const isClosetApproved = awaitPromises(combineArray(async (c, acc) => {
-    if (acc === null) return null
-
-    return c.isApprovedForAll(acc, GBC_ADDRESS.CLOSET)
-  }, lab.contract, config.walletLink.account))
+  const isClosetApproved = awaitPromises(combineArray(async (c) => {
+    return c.isApprovedForAll(c.signer.getAddress(), GBC_ADDRESS.CLOSET)
+  }, connect.lab.contract))
 
   const isClosetApprovedState = mergeArray([isClosetApproved, switchLatest(awaitPromises(map(async tx => {
     await (await tx).wait()
@@ -130,17 +124,17 @@ export const $Wardrobe = (config: IBerryComp) => component((
 
     const newLocal = await getTokenSlots(token.id, closet)
     return newLocal
-  }, closet.contract, berryItemState))))
+  }, connect.closet.contract, berryItemState))))
 
 
   const exchangeState: Stream<ExchangeState> = multicast(combineObject({
     updateItemState: itemChangeState,
     updateBackgroundState: backgroundChangeState,
     selectedBerry,
-    closet: closet.contract,
+    closet: connect.closet.contract,
     selectedBerryItems,
-    lab: lab.contract,
-    account: config.walletLink.account
+    lab: connect.lab.contract,
+    account
   }))
 
 
@@ -213,7 +207,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
 
           switchLatest(map(({ selectedBerry, updateItemState, updateBackgroundState, selectedBerryItems }) => {
 
-            let $berry: $Node | null = null
+            let $berry2: $Node | null = null
 
             const labCustom = !updateItemState?.isRemove && (updateItemState?.id || selectedBerryItems?.custom)
             const labBackground = !updateBackgroundState?.isRemove && (updateBackgroundState?.id || selectedBerryItems?.background)
@@ -227,11 +221,11 @@ export const $Wardrobe = (config: IBerryComp) => component((
                 displaytuple.splice(getLabItemTupleIndex(labCustom), 1, labCustom)
               }
 
-              $berry = style({ borderRadius: '30px' }, $loadBerry(displaytuple, previewSize))
+              $berry2 = style({ borderRadius: '30px' }, $berry(displaytuple, previewSize))
             }
 
-            return $berry ? $row(
-              attr({ id: 'BERRY' }, $berry)
+            return $berry2 ? $row(
+              attr({ id: 'BERRY' }, $berry2)
             ) : $row(style({}))()
 
           }, exchangeState)),
@@ -277,14 +271,14 @@ export const $Wardrobe = (config: IBerryComp) => component((
                 return (await contract.chooseMain(berry!.id))
               }))
             })
-          }, closet.profileContract, config.walletLink.account, selectedBerry))),
+          }, connect.profile.contract, account, selectedBerry))),
         ),
       ),
 
 
       $column(layoutSheet.spacingBig, style({ flex: 1, }))(
 
-        switchLatest(combineArray((ownedItems, selected, account, lab) => {
+        switchLatest(combineArray((ownedItems, selected, account) => {
           const storeItemList: LabItemSale[] = selected === 0 || selected === 7
             ? saleDescriptionList.filter(item => getLabItemTupleIndex(item.id) === selected)
             : saleDescriptionList.filter(item => {
@@ -346,7 +340,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
               )
             })
           )
-        }, ownedItemList, selectedSlotState, config.walletLink.account, lab.contract)),
+        }, ownedItemList, selectedSlotState, account)),
 
 
         $row(style({ placeContent: 'center' }))(
@@ -386,7 +380,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
 
             $IntermediateConnectButton({
               chainList: config.chainList,
-              $$display: map(() => {
+              $$display: map((w3p) => {
                 return switchLatest(map(isApproved => {
 
                   if (isApproved === true) {
@@ -405,7 +399,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
                       }, exchangeState)
                     })({
                       click: clickSaveTether(
-                        snapshot(async ({ selectedBerry, selectedBerryItems, updateBackgroundState, updateItemState, closet: contract, lab, account }) => {
+                        snapshot(async ({ selectedBerry, selectedBerryItems, updateBackgroundState, updateItemState, closet: contract, account }) => {
 
                           if (!selectedBerry || !account) {
                             throw 'no berry selected'
@@ -459,14 +453,13 @@ export const $Wardrobe = (config: IBerryComp) => component((
                     $content: $text('Approve Contract'),
                   })({
                     click: setApprovalTether(
-                      snapshot(contract => contract.setApprovalForAll(GBC_ADDRESS.CLOSET, true), lab.contract),
+                      snapshot(contract => contract.setApprovalForAll(GBC_ADDRESS.CLOSET, true), connect.lab.contract),
                       multicast
                     )
                   })
                 }, isClosetApprovedState))
               }),
               walletLink: config.walletLink,
-              walletStore: config.walletStore,
             })({}),
 
           ),

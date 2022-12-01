@@ -4,7 +4,7 @@ import { $column, observer } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import {
   unixTimestampNow, isTradeSettled, getDeltaPercentage, intervalListFillOrderMap,
-  isTradeOpen, ITrade, formatFixed, getPnL, IPricefeed
+  isTradeOpen, ITrade, formatFixed, getPnL, IPricefeed, USD_PERCISION
 } from "@gambitdao/gmx-middleware"
 import { multicast, switchLatest, empty, skipRepeatsWith, map, skip } from "@most/core"
 import { Stream } from "@most/types"
@@ -78,10 +78,12 @@ export const $TradePnlHistory = (config: ITradePnlPreview) => component((
           const pnl = getPnL(config.trade.isLong, next.averagePrice, next.markPrice, next.size)
           const realisedPnl = next.realisedPnl
           const pnlPercentage = getDeltaPercentage(pnl, next.collateral)
+
+          const averagePrice = next.averagePrice
           const size = next.size
           const collateral = next.collateral
 
-          return { ...prev, pnl, pnlPercentage, time, realisedPnl, size, collateral }
+          return { ...prev, pnl, pnlPercentage, time, realisedPnl, size, collateral, averagePrice }
         }
 
         const pnl = getPnL(config.trade.isLong, prev.averagePrice, next.c, prev.size)

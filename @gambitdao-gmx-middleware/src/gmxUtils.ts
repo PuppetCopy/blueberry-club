@@ -79,6 +79,13 @@ export function getMarginFees(size: bigint) {
   return size * MARGIN_FEE_BASIS_POINTS / BASIS_POINTS_DIVISOR
 }
 
+export function getLiquidationPrice2(collateral: bigint, size: bigint, averagePrice: bigint, isLong: boolean) {
+  const liquidationAmount = div(size, MAX_LEVERAGE)
+  const liquidationDelta = collateral - liquidationAmount
+  const priceDelta = liquidationDelta * averagePrice / size
+
+  return isLong ? averagePrice - priceDelta : averagePrice + priceDelta
+}
 
 export function getLiquidationPriceFromDelta(liquidationAmount: bigint, size: bigint, collateral: bigint, averagePrice: bigint, isLong: boolean) {
   if (liquidationAmount > collateral) {
@@ -93,13 +100,7 @@ export function getLiquidationPriceFromDelta(liquidationAmount: bigint, size: bi
   return isLong ? averagePrice - priceDelta : averagePrice + priceDelta
 }
 
-export function getLiquidationPrice2(collateral: bigint, size: bigint, averagePrice: bigint, isLong: boolean) {
-  const liquidationAmount = div(size, MAX_LEVERAGE)
-  const liquidationDelta = collateral - liquidationAmount
-  const priceDelta = liquidationDelta * averagePrice / size
 
-  return isLong ? averagePrice - priceDelta : averagePrice + priceDelta
-}
 
 export function getLiquidationPrice(
   isLong: boolean,
@@ -215,13 +216,8 @@ export function toAccountSummary(list: ITrade[]): IAccountSummary[] {
       fee: 0n,
       realisedPnl: 0n,
 
-      collateralDelta: 0n,
-      sizeDelta: 0n,
-      realisedPnlPercentage: 0n,
-
-      winTradeCount: 0,
-      settledTradeCount: 0,
-      openTradeCount: 0,
+      lossCount: 0,
+      winCount: 0,
     }
 
     const summary = allSettled.reduce((seed, next): IAccountSummary => {
@@ -230,15 +226,9 @@ export function toAccountSummary(list: ITrade[]): IAccountSummary[] {
         ...seed,
         fee: seed.fee + next.fee,
         collateral: seed.collateral + next.collateral,
-        collateralDelta: seed.collateralDelta + next.collateralDelta,
         realisedPnl: seed.realisedPnl + next.realisedPnl,
         size: seed.size + next.size,
-        sizeDelta: seed.sizeDelta + next.sizeDelta,
-        realisedPnlPercentage: seed.realisedPnlPercentage + next.realisedPnlPercentage,
-
-        winTradeCount: next.realisedPnl > 0n ? seed.winTradeCount + 1 : seed.winTradeCount,
-        settledTradeCount: next.status === TradeStatus.CLOSED || next.status === TradeStatus.LIQUIDATED ? seed.settledTradeCount + 1 : seed.settledTradeCount,
-        openTradeCount: next.status === TradeStatus.OPEN ? seed.openTradeCount + 1 : seed.openTradeCount,
+        winCount: next.realisedPnl > 0n ? seed.winCount + 1 : seed.winCount,
 
       }
     }, seedAccountSummary)

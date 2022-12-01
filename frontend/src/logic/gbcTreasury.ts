@@ -2,10 +2,10 @@ import { combineArray } from "@aelea/core"
 import { IERC20__factory } from "@gambitdao/gbc-contracts"
 import { GBC_ADDRESS, BI_18_PRECISION,  } from "@gambitdao/gbc-middleware"
 import { ARBITRUM_ADDRESS, AVALANCHE_ADDRESS } from "@gambitdao/gmx-middleware"
+import { arbOneWeb3Provider, w3pAva } from "@gambitdao/wallet-link"
 import { fromPromise, map } from "@most/core"
 import { latestTokenPriceMap } from "./common"
 import { IGmxContractInfo, initContractChain } from "./contract"
-import { w3pAva, arbOneWeb3Provider } from "./provider"
 
 const avalancheWethContract = IERC20__factory.connect(AVALANCHE_ADDRESS.WETHE, w3pAva)
 

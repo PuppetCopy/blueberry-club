@@ -1,11 +1,32 @@
 import { $svg, attr, $Node, $wrapNativeElement, style } from "@aelea/dom"
-import { map, now, tap } from "@most/core"
+import { combine, fromPromise } from "@most/core"
 
 import { IBerryDisplayTupleMap, berryPartsToSvg } from "@gambitdao/gbc-middleware"
-import { $IntermediatePromise } from "@gambitdao/ui-components"
-import { SvgPartsMap } from "@gambitdao/gbc-middleware"
+import { Stream } from "@most/types"
+import { disposeNone } from "@most/disposable"
 
 
+function importGlobal<T extends { default: any }>(query: Promise<T>): Stream<T['default']> {
+
+  let cache: T['default'] | null = null
+
+  return {
+    run(sink, scheduler) {
+      if (cache === null) {
+        fromPromise(query.then(res => {
+          cache = (res as any).default
+          sink.event(scheduler.currentTime(), cache)
+        }))
+      } else {
+        sink.event(scheduler.currentTime(), cache)
+      }
+      
+      return disposeNone()
+    },
+  }
+}
+
+export const svgParts = importGlobal(import("@gambitdao/gbc-middleware/src/mappings/svgParts"))
 
 export function $svgContent(content: string): $Node[] {
   const parser = new DOMParser()
@@ -21,7 +42,6 @@ export function $svgContent(content: string): $Node[] {
 
 
 export const $berry = (
-  svgParts: SvgPartsMap,
   displayTuple: Partial<IBerryDisplayTupleMap>,
   size: string | number = 250
 ) => {
@@ -31,24 +51,26 @@ export const $berry = (
     style({ minWidth: sizeNorm, height: sizeNorm }),
     attr({ xmlns: 'http://www.w3.org/2000/svg', preserveAspectRatio: "xMidYMin meet", fill: 'none', viewBox: `0 0 1500 1500` })
   )(
-    tap(async ({ element }) => {
-      element.innerHTML = berryPartsToSvg(svgParts, displayTuple)
-    })
+    combine((parts, node) => {
+      const newLocal = berryPartsToSvg(parts, displayTuple)
+      node.element.innerHTML = newLocal
+      return node
+    }, svgParts)
   )()
 }
 
-export const $loadBerry = (
-  attributeTuple: Partial<IBerryDisplayTupleMap>,
-  size: string | number = 250
-) => {
+// export const $loadBerry = (
+//   attributeTuple: Partial<IBerryDisplayTupleMap>,
+//   size: string | number = 250
+// ) => {
 
-  const query = now(import("@gambitdao/gbc-middleware/src/mappings/svgParts").then(res => res.default))
+//   const query = now(import("@gambitdao/gbc-middleware/src/mappings/svgParts").then(res => res.default))
 
-  return $IntermediatePromise({
-    query,
-    $$done: map(svgBody => {
-      return $berry(svgBody, attributeTuple, size)
-    })
-  })({})
-}
+//   return $IntermediatePromise({
+//     query,
+//     $$done: map(svgBody => {
+//       return $berry(svgBody, attributeTuple, size)
+//     })
+//   })({})
+// }
 

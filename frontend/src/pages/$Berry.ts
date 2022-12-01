@@ -25,11 +25,9 @@ export function bnToHex(n: bigint) {
 
 
 
-
 interface IBerry {
   walletLink: IWalletLink
   parentRoute: Route
-  // walletStore: cstate.BrowserStore<"metamask" | "walletConnect" | null, "walletStore">
 }
 
 export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
@@ -68,17 +66,18 @@ export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
             ),
 
             $row(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
-              switchLatest(map(account => {
-                const isOwner = account && account.toLowerCase() === token.owner.id.toLowerCase()
+              switchLatest(map(w3p => {
 
-                if (!isOwner) {
+                if (w3p === null) {
                   return empty()
                 }
+                const signer = w3p.getSigner()
+
 
                 return $row(
                   $Popover({
                     $$popContent: map(() => {
-                      return $TrasnferOwnership(account, token, walletLink)({
+                      return $TrasnferOwnership(signer._address, token, walletLink)({
                         // transfer: trasnferOwnershipTether()
                       })
                     }, trasnferPopup),
@@ -92,7 +91,7 @@ export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
                     )
                   )({})
                 )
-              }, walletLink.account)),
+              }, walletLink.provider)),
 
               $row(layoutSheet.spacingSmall)(
                 $icon({

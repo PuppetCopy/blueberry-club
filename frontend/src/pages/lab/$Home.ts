@@ -1,25 +1,20 @@
 import { Behavior } from "@aelea/core"
 import { $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
-import { $column, $row, layoutSheet, screenUtils, state } from "@aelea/ui-components"
-import { $anchor, $AnchorLink, $IntermediatePromise, $Link } from "@gambitdao/ui-components"
+import { $column, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
+import { $anchor, $IntermediatePromise, $Link } from "@gambitdao/ui-components"
 
-import { IWalletLink } from "@gambitdao/wallet-link"
-import { $loadBerry } from "../../components/$DisplayBerry"
+import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
+import { $berry } from "../../components/$DisplayBerry"
 import { $buttonAnchor, $ButtonPrimary, $ButtonSecondary } from "../../components/form/$Button"
 import { $responsiveFlex } from "../../elements/$common"
 import { IAttributeHat, IAttributeFaceAccessory, IAttributeClothes, IAttributeExpression, IProfile } from "@gambitdao/gbc-middleware"
 import { $seperator2 } from "../common"
-import { empty, map, mergeArray, now } from "@most/core"
+import { map, mergeArray, now } from "@most/core"
 import { ContractTransaction } from "@ethersproject/contracts"
-import { pallete } from "@aelea/ui-components-theme"
-import { WALLET } from "../../logic/provider"
-import { IEthereumProvider } from "eip1193-provider"
 import { queryProfileList } from "../../logic/query"
-import { $berryByToken, takeUntilLast } from "../../logic/common"
+import { $berryByToken } from "../../logic/common"
 import { $profilePreview } from "../../components/$AccountProfile"
-import { countdownFn } from "@gambitdao/gmx-middleware"
-import { timeChange } from "../../components/mint/mintUtils2"
 import { BrowserStore } from "../../logic/store"
 
 
@@ -69,11 +64,10 @@ export const $bgAnimation = style({
 interface IBerry {
   walletLink: IWalletLink
   parentRoute: Route
-  walletStore: BrowserStore<"ROOT.v1.walletStore", WALLET | null>
 }
 
-export const $LabHome = ({ walletLink, parentRoute, walletStore }: IBerry) => component((
-  [walletChange, walletChangeTether]: Behavior<IEthereumProvider | null, IEthereumProvider | null>,
+export const $LabHome = ({ walletLink, parentRoute }: IBerry) => component((
+  [walletChange, walletChangeTether]: Behavior<IWalletName, IWalletName>,
   [changeRoute, changeRouteTether]: Behavior<string, string>,
   [mintTestGbc, mintTestGbcTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
 ) => {
@@ -120,37 +114,9 @@ export const $LabHome = ({ walletLink, parentRoute, walletStore }: IBerry) => co
 
         ),
         $bgAnimation(
-          // switchLatest(combineArray((selectedItem, selectedBackground) => {
-
-
-
-          //   const displaytuple: Partial<IBerryDisplayTupleMap> = [selectedBackground || background, clothes, IAttributeBody.BLUEBERRY, expression, faceAccessory, hat]
-
-          //   if (selectedItem) {
-          //     displaytuple.splice(getLabItemTupleIndex(selectedItem), 1, selectedItem)
-          //   }
-
-          //   $berry = $displayBerry(displaytuple, 585, true)
-
-          //   const labItemStyle = O(labItemBackground, style({ flex: 1 }))
-
-          //   const gbcBackground: undefined | IAttributeBackground = undefined // IAttributeBackground.BLUE
-          //   const gbcItem: undefined | IAttributeClothes = undefined // IAttributeClothes.AVALANCHE_HOODIE
-
-
-          //   const $tradeBox = $row(style({
-          //     height: '80px', minWidth: '80px', borderRadius: '8px', gap: '2px', overflow: 'hidden', boxShadow: '-1px 2px 7px 2px #0000002e',
-          //     position: 'relative', backgroundColor: pallete.middleground,
-          //     // backgroundImage: 'linear-gradient(to top right, #fff0 calc(50% - 2px), black , #fff0 calc(50% + 2px))'
-          //   }))
-
-
-          //   return $text('fe')
-
-          // }, itemSelection, backgroundSelection)),
           style(
             screenUtils.isDesktopScreen ? { maxWidth: '80vw', placeSelf: 'center', overflow: 'hidden', minWidth: '460px', borderRadius: '30px' } : { alignSelf: 'center', borderRadius: '30px' },
-            $loadBerry([
+            $berry([
               undefined, IAttributeClothes.AVALANCHE_HOODIE, undefined, IAttributeExpression.DEAD, IAttributeFaceAccessory.BEARD_WHITE, IAttributeHat.CHRISTMAS_HAT
             ], screenUtils.isDesktopScreen ? 460 : 300)
           )

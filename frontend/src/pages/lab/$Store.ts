@@ -18,7 +18,7 @@ interface ILabStore {
   parentRoute: Route
 }
 
-export const $LabStore = ({ walletLink, parentRoute }: ILabStore) => component((
+export const $LabStore = (config: ILabStore) => component((
   [trasnferPopup, trasnferPopupTether]: Behavior<any, any>,
   [changeRoute, changeRouteTether]: Behavior<string, string>,
 
@@ -58,7 +58,7 @@ export const $LabStore = ({ walletLink, parentRoute }: ILabStore) => component((
           ...saleDescriptionList.map(sale => {
 
             const rule = getLatestSaleRule(sale)
-            return $Mint(sale, rule, parentRoute, changeRouteTether)
+            return $Mint(sale, rule, config.walletLink, config.parentRoute, changeRouteTether)
 
           })
         ),

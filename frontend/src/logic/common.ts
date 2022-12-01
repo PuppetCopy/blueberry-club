@@ -1,24 +1,31 @@
 import { combineArray, O, Op, replayLatest } from "@aelea/core"
-import { ARBITRUM_ADDRESS, AVALANCHE_ADDRESS, CHAIN, filterNull, intervalListFillOrderMap, listen, NETWORK_METADATA } from "@gambitdao/gmx-middleware"
-import { awaitPromises, continueWith, filter, fromPromise, map, multicast, now, periodic, switchLatest, takeWhile, tap } from "@most/core"
+import { CHAIN, filterNull, intervalListFillOrderMap, listen } from "@gambitdao/gmx-middleware"
+import { awaitPromises, continueWith, empty, filter, fromPromise, map, multicast, never, now, periodic, switchLatest, takeWhile, tap } from "@most/core"
 import { Stream } from "@most/types"
-import { $loadBerry } from "../components/$DisplayBerry"
+import { $berry } from "../components/$DisplayBerry"
 import { IValueInterval } from "../components/$StakingGraph"
-import { IBerryDisplayTupleMap, getLabItemTupleIndex, IAttributeExpression, LAB_CHAIN, IAttributeBackground, IAttributeMappings, IBerryLabItems, IToken, IAttributeHat, tokenIdAttributeTuple } from "@gambitdao/gbc-middleware"
+import {
+  IBerryDisplayTupleMap, getLabItemTupleIndex, IAttributeExpression, IAttributeBackground, IAttributeMappings,
+  IBerryLabItems, IToken, IAttributeHat, tokenIdAttributeTuple
+} from "@gambitdao/gbc-middleware"
 import { IPricefeed, IStakeSource, queryLatestPrices, queryTokenv2 } from "./query"
 import { $Node, $svg, attr, style } from "@aelea/dom"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
-import { IWalletLink } from "@gambitdao/wallet-link"
 import { Closet } from "@gambitdao/gbc-contracts"
 import { BigNumberish, BigNumber } from "@ethersproject/bignumber"
 import { bnToHex } from "../pages/$Berry"
-import { JsonRpcProvider, JsonRpcSigner, Web3Provider } from "@ethersproject/providers"
-import { ContractFactory } from "@ethersproject/contracts"
-import { globalProviderMap } from "./provider"
+import { JsonRpcProvider, Web3Provider } from "@ethersproject/providers"
+import { ContractFactory, EventFilter } from "@ethersproject/contracts"
+
+export type TContractMapping<T> = {
+  [P in CHAIN]?: {
+    [Z in keyof T]: T[Z]
+  }
+}
+
 
 
 export const latestTokenPriceMap = replayLatest(multicast(awaitPromises(map(() => queryLatestPrices(), periodic(5000)))))
-
 
 
 function getByAmoutFromFeed(amount: bigint, priceUsd: bigint, decimals: number) {
@@ -40,88 +47,50 @@ export function takeUntilLast<T>(fn: (t: T) => boolean, s: Stream<T>) {
   }, s))
 }
 
-export function getWalletProvider(wallet: IWalletLink,) {
-  const provider = filterNull(wallet.provider)
+export function getContractAddress<T, Z extends TContractMapping<T>>(contractMap: Z, chain: CHAIN, contractName: keyof T): T[keyof T] | null {
+  const addressMapping = contractMap[chain]
 
-  return replayLatest(multicast(awaitPromises(combineArray(async w3p => {
-    // if (w3p === null) {
-    //   throw new Error('no Ethereum Provider available')
-    // }
-
-    if (w3p?.network?.chainId !== LAB_CHAIN) {
-      throw new Error(`Please connect to ${NETWORK_METADATA[LAB_CHAIN].chainName} network`)
-    }
-
-    return w3p
-  }, provider))))
-}
-
-const contractMapping = {
-  [CHAIN.ARBITRUM]: ARBITRUM_ADDRESS,
-  [CHAIN.AVALANCHE]: AVALANCHE_ADDRESS
-} as const
-
-
-export function getContract(chain: CHAIN, contractName: keyof typeof ARBITRUM_ADDRESS & keyof typeof AVALANCHE_ADDRESS): string {
-  // @ts-ignore
-  const addressMapping = contractMapping[chain]
-
-  if (addressMapping === null) {
-    throw new Error(`no contract PositionRouter found on chain (${chain})`)
+  if (!addressMapping) {
+    return null
   }
 
-  // if (!addressMapping) {
-  //   return null
-  // }
-
-  return addressMapping[contractName]
+  const newLocal = addressMapping[contractName]
+  return newLocal
 }
 
-export function readContract<TContract extends typeof ContractFactory, TProvider extends JsonRpcProvider>(
+export function readContractMapping<TProvider extends JsonRpcProvider, TMap, TCmap extends TContractMapping<TMap>, TContract extends typeof ContractFactory>(
+  contractMap: TCmap,
   contractCtr: TContract,
-  provider: Stream<TProvider | null>,
-  contractName: keyof typeof ARBITRUM_ADDRESS & keyof typeof AVALANCHE_ADDRESS
+  connect: Stream<TProvider>,
+  contractName: keyof TMap
 ) {
 
   // @ts-ignore
-  type TReader = { address: string, contract: ReturnType<TContract['connect']>, provider: TProvider, chainId: CHAIN } | null
+  type RetContract = ReturnType<TContract['connect']>
 
-  const contract: Stream<TReader> = awaitPromises(map(async (provider) => {
-    if (provider === null) {
+  const contract = filterNull(awaitPromises(map(async (provider): Promise<RetContract | null> => {
+
+    const chain = (await provider.getNetwork()).chainId as CHAIN
+    const address = getContractAddress(contractMap, chain, contractName)
+
+    if (address === null) {
       return null
     }
 
-    const network = await provider.getNetwork()
-
-    if (!network.chainId) {
-      return null
-    }
-
-    const address = getContract(network.chainId, contractName)
-
-    if (!address) {
-      console.warn(`contract ${contractCtr.name} doesn't support chain ${network}`)
-      return null
-    }
-
-    const signer = provider.getSigner()
     // @ts-ignore
-    const contract = contractCtr.connect(address, signer)
+    const contract = contractCtr.connect(address, provider instanceof Web3Provider ? provider.getSigner() : provider)
 
-    const globalProvider = globalProviderMap[network.chainId as CHAIN] || null
+    return contract
+  }, connect)))
 
-    return { provider, signer, contract, address, chainId: network.chainId, globalProvider }
-  }, provider))
 
-  const run = <R>(op: Op<NonNullable<TReader>, Promise<R>>) => O(
-    filter(w3p => {
-      return w3p !== null
-    }),
+  const run = <R>(op: Op<RetContract, Promise<R>>) => O(
     op,
     awaitPromises,
   )(contract)
 
-  const readInt = (op: Op<NonNullable<TReader>, Promise<BigNumber>>): Stream<bigint> => {
+
+  const readInt = (op: Op<RetContract, Promise<BigNumber>>): Stream<bigint> => {
     const newLocal = O(
       op,
       map(async (n) => {
@@ -132,15 +101,60 @@ export function readContract<TContract extends typeof ContractFactory, TProvider
     return run(newLocal)
   }
 
-  const _listen = <T>(name: string) => switchLatest(map(res => {
+  const _listen = <T>(name: string | EventFilter) => switchLatest(map(res => {
     if (res === null) {
       return now(null)
     }
 
     // @ts-ignore
-    return listen(res.contract)(name) as Stream<T>
+    return listen(res, name) as Stream<T>
   }, contract))
-  
+
+
+  return { run, readInt, contract, listen: _listen }
+}
+
+export function readContract<T extends string, TContract extends typeof ContractFactory, TProvider extends JsonRpcProvider>(
+  contractCtr: TContract,
+  provider: Stream<TProvider>,
+  address: T
+) {
+  // @ts-ignore
+  type RetContract = ReturnType<TContract['connect']>
+
+  const contract = awaitPromises(map(async (provider): Promise<RetContract> => {
+    const signerOrProvider = provider instanceof Web3Provider ? provider.getSigner() : provider
+    // @ts-ignore
+    const contract = contractCtr.connect(address, signerOrProvider)
+
+    return contract
+  }, provider))
+
+  const run = <R>(op: Op<RetContract, Promise<R>>) => O(
+    filter(w3p => {
+      return w3p !== null
+    }),
+    op,
+    awaitPromises,
+  )(contract)
+
+  const readInt = (op: Op<RetContract, Promise<BigNumber>>): Stream<bigint> => {
+    const newLocal = O(
+      op,
+      map(async (n) => {
+        return (await n).toBigInt()
+      })
+    )
+
+    return run(newLocal)
+  }
+
+  const _listen = <Z>(name: string | EventFilter) => switchLatest(map(res => {
+    // @ts-ignore
+    const newLocal = listen(res, name) as Stream<Z>
+    return newLocal
+  }, contract))
+
 
   return { run, readInt, contract, listen: _listen }
 }
@@ -212,7 +226,7 @@ export const $berryByLabItems = (berryId: number, backgroundId: IAttributeBackgr
     tuple.splice(0, 1, backgroundId)
   }
 
-  return $loadBerry(tuple, size)
+  return $berry(tuple, size)
 }
 
 export const $labItem = (id: number, size: string | number = 85, background = true, showFace = false): $Node => {
@@ -235,7 +249,7 @@ export const $labItem = (id: number, size: string | number = 85, background = tr
   )
 
 
-  return backgroundStyle($loadBerry(localTuple, sizeNorm))
+  return backgroundStyle($berry(localTuple, sizeNorm))
 }
 
 export const $labItemAlone = (id: number, size = 80) => {

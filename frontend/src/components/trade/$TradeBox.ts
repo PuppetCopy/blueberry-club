@@ -1,33 +1,35 @@
 import { Behavior, combineArray, combineObject, O, replayLatest } from "@aelea/core"
-import { component, INode, $element, attr, style, $text, nodeEvent, stylePseudo, $node, styleBehavior, motion, MOTION_NO_WOBBLE } from "@aelea/dom"
+import { component, INode, $element, attr, style, $text, nodeEvent, stylePseudo, $node, styleBehavior, motion, MOTION_NO_WOBBLE, styleInline } from "@aelea/dom"
 import { $row, layoutSheet, $icon, $column, screenUtils, $TextField, $NumberTicker, $Popover } from "@aelea/ui-components"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import {
-  ARBITRUM_ADDRESS_INDEX, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, ARBITRUM_ADDRESS, formatFixed, readableNumber,
-  parseFixed, formatReadableUSD, BASIS_POINTS_DIVISOR,
-  ITrade, IVaultPosition, getTokenAmount, TokenDescription, LIMIT_LEVERAGE, bnDiv, replayState,
-  div, StateStream, getPnL, MIN_LEVERAGE, formatToBasis, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE, AVALANCHE_ADDRESS_INDEX, isTradeSettled, CHAIN, unixTimestampNow, query, fromJson, AddressInput, AddressIndex, AddressStable, AddressZero
+  ARBITRUM_ADDRESS, formatFixed, readableNumber, parseFixed, formatReadableUSD, BASIS_POINTS_DIVISOR,
+  ITrade, getTokenAmount, TokenDescription, LIMIT_LEVERAGE, bnDiv, replayState,
+  div, StateStream, getPnL, MIN_LEVERAGE, formatToBasis, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE, isTradeSettled,
+  CHAIN, unixTimestampNow, query, fromJson, ITokenInput, ITokenIndex, ITokenStable, AddressZero
 } from "@gambitdao/gmx-middleware"
 import { $alertIcon, $anchor, $ButtonToggle, $infoTooltip, $tokenIconMap, $tokenLabelFromSummary, $Tooltip, getPricefeedVisibleColumns } from "@gambitdao/ui-components"
-import { IWalletLink } from "@gambitdao/wallet-link"
-import { merge, multicast, mergeArray, now, snapshot, map, switchLatest, filter, skipRepeats, empty, combine, fromPromise, constant, sample, startWith, skipRepeatsWith, awaitPromises, debounce } from "@most/core"
+import {
+  merge, multicast, mergeArray, now, snapshot, map, switchLatest, filter,
+  skipRepeats, empty, combine, fromPromise, constant, sample, startWith, skipRepeatsWith, awaitPromises
+} from "@most/core"
 import { Stream } from "@most/types"
 import { $Slider } from "../$Slider"
 import { $ButtonPrimary, $ButtonPrimaryCtx, $ButtonSecondary } from "../form/$Button"
 import { $Dropdown, $defaultSelectContainer } from "../form/$Dropdown"
 import { $card } from "../../elements/$common"
 import { $caretDown } from "../../elements/$icons"
-import { CHAIN_NATIVE_TO_ADDRESS, getTokenDescription, resolveAddress } from "../../logic/utils"
-import { IEthereumProvider } from "eip1193-provider"
-import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
-import { WALLET } from "../../logic/provider"
+import { CHAIN_ADDRESS_MAP, getTokenDescription, resolveAddress } from "../../logic/utils"
+import { $IntermediateConnectPopover } from "../../components/$ConnectAccount"
 import { BrowserStore } from "../../logic/store"
-import { connectErc20, connectTrade, connectVault, getErc20Balance } from "../../logic/contract/trade"
+import { connectTrade, connectVault, getErc20Balance, TRADE_CONTRACT_MAPPING } from "../../logic/contract/trade"
 import { MouseEventParams } from "lightweight-charts"
 import { $TradePnlHistory } from "./$TradePnlHistory"
 import { ContractTransaction } from "@ethersproject/contracts"
 import { MaxUint256 } from "@ethersproject/constants"
-import { getContract } from "../../logic/common"
+import { getContractAddress } from "../../logic/common"
+import { ERC20__factory } from "../../logic/contract/gmx-contracts"
+import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
 
 
 
@@ -35,7 +37,7 @@ export interface ITradeParams {
   isTradingEnabled: boolean
   isInputTokenApproved: boolean
 
-  vaultPosition: IVaultPosition | null
+  trade: ITrade | null
   collateralDeltaUsd: bigint
   inputTokenPrice: bigint
   collateralTokenPrice: bigint
@@ -57,12 +59,11 @@ export interface ITradeParams {
 }
 
 export interface ITradeConfig {
-  trade: ITrade | null
   isLong: boolean
 
-  inputToken: AddressInput
-  shortCollateralToken: ARBITRUM_ADDRESS_STABLE | AVALANCHE_ADDRESS_STABLE
-  indexToken: ARBITRUM_ADDRESS_INDEX | AVALANCHE_ADDRESS_INDEX
+  inputToken: ITokenInput
+  shortCollateralToken: ITokenStable
+  indexToken: ITokenIndex
   isIncrease: boolean
 
   collateralRatio: bigint
@@ -80,18 +81,25 @@ export interface ITradeState extends ITradeConfig, ITradeParams {
 
 interface ITradeBox {
   referralCode: string
+  walletLink: IWalletLink
+
   chainList: CHAIN[],
-  chain: CHAIN | null
-  indexTokens: AddressIndex[]
-  stableTokens: AddressStable[]
+  tokenIndexMap: Partial<Record<CHAIN, ITokenIndex[]>>
+  tokenStableMap: Partial<Record<CHAIN, ITokenStable[]>>
   store: BrowserStore<"ROOT.v1.trade", string>
 
   tradeConfig: StateStream<ITradeConfig> // ITradeParams
   tradeState: StateStream<ITradeParams>
-
-  walletLink: IWalletLink
-  walletStore: BrowserStore<"ROOT.v1.walletStore", WALLET | null>
 }
+
+export type RequestTradeQuery = {
+  ctxQuery: Promise<ContractTransaction>
+  state: ITradeState
+  acceptablePrice: bigint
+}
+
+const BOX_SPACING = '20px'
+const MAX_LEVERAGE_NORMAL = formatToBasis(LIMIT_LEVERAGE)
 
 
 export const $TradeBox = (config: ITradeBox) => component((
@@ -107,8 +115,8 @@ export const $TradeBox = (config: ITradeBox) => component((
   [inputCollateral, inputCollateralTether]: Behavior<INode, bigint>,
   [inputSizeDelta, inputSizeDeltaTether]: Behavior<INode, bigint>,
 
-  [changeInputToken, changeInputTokenTether]: Behavior<AddressInput, AddressInput>,
-  [changeIndexToken, changeIndexTokenTether]: Behavior<AddressIndex, AddressIndex>,
+  [changeInputToken, changeInputTokenTether]: Behavior<ITokenInput, ITokenInput>,
+  [changeIndexToken, changeIndexTokenTether]: Behavior<ITokenIndex, ITokenIndex>,
   [changeCollateralToken, changeCollateralTokenTether]: Behavior<ARBITRUM_ADDRESS_STABLE | AVALANCHE_ADDRESS_STABLE, ARBITRUM_ADDRESS_STABLE | AVALANCHE_ADDRESS_STABLE>,
 
   [switchIsIncrease, switchisIncreaseTether]: Behavior<boolean, boolean>,
@@ -116,19 +124,20 @@ export const $TradeBox = (config: ITradeBox) => component((
   [slideLeverage, slideLeverageTether]: Behavior<number, bigint>,
   [changeSlippage, changeSlippageTether]: Behavior<string, string>,
 
-  [walletChange, walletChangeTether]: Behavior<IEthereumProvider | null, IEthereumProvider | null>,
-  [clickRequestTrade, clickRequestTradeTether]: Behavior<PointerEvent, PointerEvent>,
+  [walletChange, walletChangeTether]: Behavior<IWalletName, IWalletName>,
+  [changeNetwork, changeNetworkTether]: Behavior<CHAIN, CHAIN>,
+
+  [clickRequestTrade, clickRequestTradeTether]: Behavior<PointerEvent, RequestTradeQuery>,
 
   [crosshairMove, crosshairMoveTether]: Behavior<MouseEventParams, MouseEventParams>,
   [clickReset, clickResetTether]: Behavior<any, any>,
 
 ) => {
 
-  const vault = connectVault(config.walletLink.provider)
-  const trade = connectTrade(config.walletLink.provider)
-  const position = connectTrade(config.walletLink.provider)
+  const vault = connectVault(config.walletLink)
+  const trade = connectTrade(config.walletLink)
+  const position = connectTrade(config.walletLink)
 
-  const chain = config.chain || CHAIN.ARBITRUM
   const tradeState: Stream<ITradeState> = replayState({ ...config.tradeState, ...config.tradeConfig })
 
 
@@ -149,17 +158,16 @@ export const $TradeBox = (config: ITradeBox) => component((
 
     }
 
-    if (!state.isIncrease && !state.vaultPosition) {
+    if (!state.isIncrease && !state.trade) {
       return `No ${state.indexTokenDescription.symbol} position to reduce`
     }
 
-    if (state.vaultPosition && state.liquidationPrice && (state.isLong ? state.liquidationPrice > state.indexTokenPrice : state.liquidationPrice < state.indexTokenPrice)) {
+    if (state.trade && state.liquidationPrice && (state.isLong ? state.liquidationPrice > state.indexTokenPrice : state.liquidationPrice < state.indexTokenPrice)) {
       return `Exceeding liquidation price`
     }
 
     return null
   }, tradeState)
-
 
   const ratioAdjustments = mergeArray([sample(slideCollateralRatio, config.tradeState.walletBalance), slideCollateralRatio])
 
@@ -168,28 +176,27 @@ export const $TradeBox = (config: ITradeBox) => component((
       return params.walletBalance * ratio / BASIS_POINTS_DIVISOR
     }
 
-    if (!params.vaultPosition) {
+    if (!params.trade) {
       return 0n
     }
 
     // const positionCollateral = params.vaultPosition.collateral * (BASIS_POINTS_DIVISOR - DEPOSIT_FEE) / BASIS_POINTS_DIVISOR
-    const positionCollateralUsd = params.vaultPosition.collateral / BASIS_POINTS_DIVISOR
+    const positionCollateralUsd = params.trade.collateral / BASIS_POINTS_DIVISOR
     const removeCollateral = positionCollateralUsd * ratio
     const amount = getTokenAmount(removeCollateral, params.inputTokenPrice, params.inputTokenDescription)
 
     return amount
   }, tradeState, ratioAdjustments)
 
-
   const changeSizeByRatio = snapshot((params, leverage) => {
-    const collateral = params.collateralDeltaUsd + (params.vaultPosition?.collateral || 0n)
+    const collateral = params.collateralDeltaUsd + (params.trade?.collateral || 0n)
     const size = collateral * leverage / BASIS_POINTS_DIVISOR
 
-    if (!params.vaultPosition) {
+    if (!params.trade) {
       return size
     }
 
-    const currentMultiplier = div(params.vaultPosition.size, collateral)
+    const currentMultiplier = div(params.trade.size, collateral)
 
     if (params.isIncrease) {
 
@@ -197,12 +204,12 @@ export const $TradeBox = (config: ITradeBox) => component((
         return 0n
       }
 
-      return size - params.vaultPosition.size
+      return size - params.trade.size
     }
 
-    const sizeM = (params.vaultPosition.collateral - params.collateralDeltaUsd) * leverage / BASIS_POINTS_DIVISOR
+    const sizeM = (params.trade.collateral - params.collateralDeltaUsd) * leverage / BASIS_POINTS_DIVISOR
 
-    return params.vaultPosition.size - sizeM
+    return params.trade.size - sizeM
 
   }, tradeState, slideLeverage)
 
@@ -218,7 +225,7 @@ export const $TradeBox = (config: ITradeBox) => component((
     }
 
     return div(pos.size, pos.collateral)
-  }, config.tradeState.vaultPosition)
+  }, config.tradeState.trade)
 
 
 
@@ -232,330 +239,245 @@ export const $TradeBox = (config: ITradeBox) => component((
     return null
   }, pnlCrossHairTimeChange)
 
-  const BOX_SPACING = '20px'
 
-  const MAX_LEVERAGE_NORMAL = formatToBasis(LIMIT_LEVERAGE)
 
   const clickResetVal = constant(0n, clickReset)
 
-
-  const requestTrade = multicast(snapshot(({ state, trade, account }) => {
-    if (trade === null || account === null) {
-      throw new Error('No wallet provider connected')
+  const inTradeMode = replayLatest(multicast(combineArray((sizeDelta, collateralDelta) => {
+    if (sizeDelta === 0n && collateralDelta === 0n) {
+      return false
     }
 
-    const inputAddress = resolveAddress(chain, state.inputToken)
-    const outputToken = state.isLong ? state.indexToken : state.shortCollateralToken
-
-    const path = state.isIncrease
-      ? inputAddress === outputToken ? [state.indexToken] : [inputAddress, outputToken]
-      : inputAddress === outputToken ? [state.indexToken] : [outputToken, inputAddress]
-
-    const slippageN = BigInt(Number(state.slippage) * 100)
-    const allowedSlippage = state.isLong ? state.isIncrease ? slippageN : -slippageN : state.isIncrease ? -slippageN : slippageN
-
-    const refPrice = state.isLong ? state.indexTokenPrice : state.indexTokenPrice
-    const priceBasisPoints = BASIS_POINTS_DIVISOR + allowedSlippage // state.isLong ? BASIS_POINTS_DIVISOR + allowedSlippage : BASIS_POINTS_DIVISOR - allowedSlippage
-
-    const acceptablePrice = refPrice * priceBasisPoints / BASIS_POINTS_DIVISOR
-
-
-
-    const isNative = state.inputToken === AddressZero
-
-    const ctxQuery = state.isIncrease
-      ? (isNative
-        ? trade.contract.createIncreasePositionETH(
-          path,
-          state.indexToken,
-          0,
-          state.sizeDelta,
-          state.isLong,
-          acceptablePrice,
-          state.executionFee,
-          config.referralCode,
-          AddressZero,
-          { value: state.collateralDelta + state.executionFee }
-        )
-        : trade.contract.createIncreasePosition(
-          path,
-          state.indexToken,
-          state.collateralDelta,
-          0,
-          state.sizeDelta,
-          state.isLong,
-          acceptablePrice,
-          state.executionFee,
-          config.referralCode,
-          AddressZero,
-          { value: state.executionFee }
-        ))
-      : trade.contract.createDecreasePosition(
-        path,
-        state.indexToken,
-        state.collateralDelta,
-        state.sizeDelta,
-        state.isLong,
-        account,
-        acceptablePrice,
-        0,
-        state.executionFee,
-        isNative,
-        AddressZero,
-        { value: state.executionFee }
-      )
-
-    ctxQuery.catch(err => {
-      console.error(err)
-    })
-
-
-    return { ctxQuery, state, acceptablePrice }
-  }, combineObject({ trade: position.positionRouter.contract, state: tradeState, account: config.walletLink.account }), clickRequestTrade))
-
-
-
-  const newLocal_1 = switchLatest(map(trade => {
-    if (!trade) {
-      return now(null)
-    }
-
-    const to = unixTimestampNow()
-    const from = trade.timestamp
-
-    const intervalTime = getPricefeedVisibleColumns(160, from, to)
-    const params = { tokenAddress: '_' + trade.indexToken, interval: '_' + intervalTime, from, to }
-
-    const queryFeed = fromPromise(query.graphClientMap[chain](query.document.pricefeedDoc, params as any, { requestPolicy: 'network-only' }))
-    const priceFeedQuery = map(res => res.pricefeeds.map(fromJson.pricefeedJson), queryFeed)
-
-    return map(feed => ({ feed, trade }), priceFeedQuery)
-  }, config.tradeConfig.trade))
+    return true
+  }, config.tradeConfig.sizeDelta, config.tradeConfig.collateralDelta)))
 
 
 
   return [
-    $column(
+    $card(screenUtils.isDesktopScreen ? layoutSheet.spacing : layoutSheet.spacing, style({ boxShadow: `2px 2px 13px 3px #00000040`, border: `1px solid ${colorAlpha(pallete.foreground, .15)}`, padding: `${BOX_SPACING} ${BOX_SPACING} 0`, margin: screenUtils.isMobileScreen ? '0 10px' : '' }))(
+      $column(layoutSheet.spacing)(
+        $row(layoutSheet.spacingSmall, style({ position: 'relative', alignItems: 'center' }))(
 
-      $card(screenUtils.isDesktopScreen ? layoutSheet.spacing : layoutSheet.spacing, style({ boxShadow: `2px 2px 13px 3px #00000040`, border: `1px solid ${colorAlpha(pallete.foreground, .15)}`, padding: `${BOX_SPACING} ${BOX_SPACING} 0`, margin: screenUtils.isMobileScreen ? '0 10px' : '' }))(
-        $column(layoutSheet.spacing)(
-          $row(layoutSheet.spacingSmall, style({ position: 'relative', alignItems: 'center' }))(
+          $field(
+            O(
+              map(node =>
+                merge(
+                  now(node),
+                  filter(() => false, snapshot((params, val) => {
+                    if (val === 0n) {
+                      node.element.value = ''
+                      return
+                    }
 
-            $field(
-              O(
-                map(node =>
-                  merge(
-                    now(node),
-                    filter(() => false, snapshot((params, val) => {
-                      if (val === 0n) {
-                        node.element.value = ''
-                        return
-                      }
-
-                      node.element.value = formatFixed(val, params.isIncrease ? params.inputTokenDescription.decimals : params.inputTokenDescription.decimals).toString()
-                    }, tradeState, mergeArray([slideCollateral, clickResetVal])))
-                  )
-                ),
-                switchLatest
+                    node.element.value = formatFixed(val, params.isIncrease ? params.inputTokenDescription.decimals : params.inputTokenDescription.decimals).toString()
+                  }, tradeState, mergeArray([slideCollateral, clickResetVal])))
+                )
               ),
+              switchLatest
+            ),
 
-              inputCollateralTether(nodeEvent('input'), combine(({ isIncrease, tokenDescription }, inputEvent) => {
-                const target = inputEvent.currentTarget
+            inputCollateralTether(nodeEvent('input'), combine(({ isIncrease, tokenDescription }, inputEvent) => {
+              const target = inputEvent.target
 
-                if (!(target instanceof HTMLInputElement)) {
-                  throw new Error('Target is not type of input')
-                }
+              if (!(target instanceof HTMLInputElement)) {
+                throw new Error('Target is not type of input')
+              }
 
-                const decimals = isIncrease ? tokenDescription.decimals : tokenDescription.decimals
-                return BigInt(parseFixed(target.value.replace(/(\+|-)/, ''), decimals))
-              }, combineObject({ tokenDescription: config.tradeState.inputTokenDescription, isIncrease: config.tradeConfig.isIncrease }))),
-            )(),
+              const decimals = isIncrease ? tokenDescription.decimals : tokenDescription.decimals
+              return BigInt(parseFixed(target.value.replace(/(\+|-)/, ''), decimals))
+            }, combineObject({ tokenDescription: config.tradeState.inputTokenDescription, isIncrease: config.tradeConfig.isIncrease }))),
+          )(),
 
 
-            $ButtonToggle({
-              selected: config.tradeConfig.isIncrease,
-              options: [
-                false,
-                true,
-              ],
-              $$option: map(option => {
-                return $text(style({ fontSize: '0.85em' }))(option ? 'Increase' : 'Reduce')
-              })
-            })({ select: switchisIncreaseTether() }),
+          $ButtonToggle({
+            selected: config.tradeConfig.isIncrease,
+            options: [
+              false,
+              true,
+            ],
+            $$option: map(option => {
+              return $text(style({ fontSize: '0.85em' }))(option ? 'Increase' : 'Reduce')
+            })
+          })({ select: switchisIncreaseTether() }),
 
-            $Dropdown<AddressInput>({
+          switchLatest(map((w3p) => {
+            const chain = w3p ? w3p.chain : CHAIN.ARBITRUM
+
+            return $Dropdown<ITokenInput>({
               $container: $row(style({ position: 'relative', alignSelf: 'center' })),
               $selection: $row(style({ alignItems: 'center', cursor: 'pointer' }))(
                 switchLatest(map(option => {
-                  const symbol = CHAIN_TOKEN_ADDRESS_TO_SYMBOL[resolveAddress(chain, option)]
-
                   return $icon({
-                    $content: $tokenIconMap[symbol],
+                    $content: $tokenIconMap[option.symbol],
                     svgOps: styleBehavior(map(isIncrease => ({ fill: isIncrease ? pallete.message : pallete.indeterminate }), config.tradeConfig.isIncrease)),
                     width: '34px', viewBox: '0 0 32 32'
                   })
-                }, config.tradeConfig.inputToken)),
+                }, config.tradeState.inputTokenDescription)),
                 $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginTop: '3px', marginLeft: '5px' }), viewBox: '0 0 32 32' }),
               ),
               value: {
                 value: config.tradeConfig.inputToken,
                 $container: $defaultSelectContainer(style({ minWidth: '300px', right: 0 })),
-                $$option: combine(({ w3p, account }, option) => {
+                $$option: map((option) => {
+                  const balanceAmount = fromPromise(getErc20Balance(option, w3p))
                   const tokenDesc = getTokenDescription(chain, option)
-                  const balanceAmount = fromPromise(getErc20Balance(option, w3p, account))
 
                   return $row(style({ placeContent: 'space-between', flex: 1 }))(
                     $tokenLabelFromSummary(tokenDesc),
                     $text(map(bn => readableNumber(formatFixed(bn, tokenDesc.decimals)), balanceAmount))
                   )
-                }, combineObject({ w3p: config.walletLink.provider, account: config.walletLink.account })),
+                }),
                 list: [
                   AddressZero,
-                  ...config.indexTokens,
-                  ...config.stableTokens,
+                  ...config.tokenIndexMap[chain] || [],
+                  ...config.tokenStableMap[chain] || [],
                 ],
               }
             })({
               select: changeInputTokenTether()
-            }),
-          ),
-          $row(layoutSheet.spacingSmall, style({ alignItems: 'center', placeContent: 'stretch' }))(
-            $hintInput(
-              now(`Collateral`),
-              config.tradeConfig.isIncrease,
-              'The amount you will deposit to open a leverage position',
-              map(pos => formatReadableUSD(pos?.collateral || 0n), config.tradeState.vaultPosition),
-              combineArray(params => {
-
-                const posCollateral = params.vaultPosition?.collateral || 0n
-
-                if (params.isIncrease) {
-                  const totalCollateral = posCollateral + params.collateralDeltaUsd
-                  const collateralUsd = formatReadableUSD(totalCollateral - params.fee)
-
-                  return collateralUsd
-                }
-
-                if (!params.vaultPosition) {
-                  return formatReadableUSD(0n)
-                }
-
-                const pnl = getPnL(params.isLong, params.vaultPosition.averagePrice, params.indexTokenPrice, params.vaultPosition.size)
-                const adjustedPnlDelta = pnl < 0n ? pnl * params.sizeDelta / params.vaultPosition.size : 0n
-                const netCollateral = posCollateral - params.collateralDeltaUsd + adjustedPnlDelta
-
-                return formatReadableUSD(netCollateral)
-              }, tradeState)
-            ),
-
-            $node(style({ flex: 1 }))(),
-
-            O(stylePseudo(':hover', { color: pallete.primary }))(
-              $row(layoutSheet.spacingTiny, style({ fontSize: '0.75em' }))(
-                $text(style({ color: pallete.foreground }))(`Balance`),
-                $text(combineArray((tokenDesc, balance) => {
-
-                  return readableNumber(formatFixed(balance, tokenDesc.decimals))
-                }, config.tradeState.inputTokenDescription, config.tradeState.walletBalance)),
-              ),
-            ),
-          ),
+            })
+          }, config.walletLink.wallet)),
         ),
+        $row(layoutSheet.spacingSmall, style({ alignItems: 'center', placeContent: 'stretch' }))(
+          $hintInput(
+            now(`Collateral`),
+            config.tradeConfig.isIncrease,
+            'The amount you will deposit to open a leverage position',
+            map(pos => formatReadableUSD(pos?.collateral || 0n), config.tradeState.trade),
+            combineArray(params => {
 
-        style({ margin: `0 -${BOX_SPACING}` })(
-          $Slider({
-            value: map(lm => {
-              if (lm === null) {
-                return 0
-              }
+              const posCollateral = params.trade?.collateral || 0n
 
-              return bnDiv(lm, BASIS_POINTS_DIVISOR)
-            }, config.tradeConfig.collateralRatio),
-            color: map(isIncrease => isIncrease ? pallete.middleground : pallete.indeterminate, config.tradeConfig.isIncrease),
-            step: 0.01,
-            disabled: map(params => !params.isIncrease && params.vaultPosition === null, tradeState),
-            // min: map(n => formatBasis(n), state.minCollateralRatio),
-            max: map(params => {
               if (params.isIncrease) {
-                return 1
+                const totalCollateral = posCollateral + params.collateralDeltaUsd
+                const collateralUsd = formatReadableUSD(totalCollateral - params.fee)
+
+                return collateralUsd
               }
 
-              if (!params.vaultPosition) {
-                return 0
+              if (!params.trade) {
+                return formatReadableUSD(0n)
               }
 
-              const minWithdraw = div(params.vaultPosition.size, LIMIT_LEVERAGE)
-              const maxWithdraw = params.vaultPosition.collateral - minWithdraw // - state.fee
+              const pnl = getPnL(params.isLong, params.trade.averagePrice, params.indexTokenPrice, params.trade.size)
+              const adjustedPnlDelta = pnl < 0n ? pnl * params.sizeDelta / params.trade.size : 0n
+              const netCollateral = posCollateral - params.collateralDeltaUsd + adjustedPnlDelta
 
-              return bnDiv(maxWithdraw, params.vaultPosition.collateral)
-            }, tradeState),
-            thumbText: map(n => Math.round(n * 100) + '\n%')
-          })({
-            change: slideCollateralRatioTether(
-              map(ratio => {
-                const leverageRatio = BigInt(Math.floor(Math.abs(ratio) * Number(BASIS_POINTS_DIVISOR)))
+              return formatReadableUSD(netCollateral)
+            }, tradeState)
+          ),
 
-                return leverageRatio
-              }),
-              multicast
-            )
-          })
+          $node(style({ flex: 1 }))(),
+
+          O(stylePseudo(':hover', { color: pallete.primary }))(
+            $row(layoutSheet.spacingTiny, style({ fontSize: '0.75em' }))(
+              $text(style({ color: pallete.foreground }))(`Balance`),
+              $text(combineArray((tokenDesc, balance) => {
+
+                return readableNumber(formatFixed(balance, tokenDesc.decimals))
+              }, config.tradeState.inputTokenDescription, config.tradeState.walletBalance)),
+            ),
+          ),
         ),
+      ),
 
-        $column(layoutSheet.spacing)(
-          $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+      style({ margin: `0 -${BOX_SPACING}` })(
+        $Slider({
+          value: map(lm => {
+            if (lm === null) {
+              return 0
+            }
+
+            return bnDiv(lm, BASIS_POINTS_DIVISOR)
+          }, config.tradeConfig.collateralRatio),
+          color: map(isIncrease => isIncrease ? pallete.middleground : pallete.indeterminate, config.tradeConfig.isIncrease),
+          step: 0.01,
+          disabled: map(params => !params.isIncrease && params.trade === null, tradeState),
+          // min: map(n => formatBasis(n), state.minCollateralRatio),
+          max: map(params => {
+            if (params.isIncrease) {
+              return 1
+            }
+
+            if (!params.trade) {
+              return 0
+            }
+
+            const minWithdraw = div(params.trade.size, LIMIT_LEVERAGE)
+            const maxWithdraw = params.trade.collateral - minWithdraw // - state.fee
+
+            return bnDiv(maxWithdraw, params.trade.collateral)
+          }, tradeState),
+          thumbText: map(n => Math.round(n * 100) + '\n%')
+        })({
+          change: slideCollateralRatioTether(
+            map(ratio => {
+              const leverageRatio = BigInt(Math.floor(Math.abs(ratio) * Number(BASIS_POINTS_DIVISOR)))
+
+              return leverageRatio
+            }),
+            multicast
+          )
+        })
+      ),
+
+      $column(layoutSheet.spacing)(
+        $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
 
 
-            $field(
-              O(
-                map(node =>
-                  merge(
-                    now(node),
-                    filter(() => false, combineArray((val, price, tokenDesc) => {
+          $field(
+            O(
+              map(node =>
+                merge(
+                  now(node),
+                  filter(() => false, combineArray((val, price, tokenDesc) => {
 
-                      if (val === 0n) {
-                        node.element.value = ''
-                        return
-                      }
+                    if (val === 0n) {
+                      node.element.value = ''
+                      return
+                    }
 
-                      // const valF = formatFixed(val.outputAmountUsd, val.outputTokenDescription.decimals)
+                    // const valF = formatFixed(val.outputAmountUsd, val.outputTokenDescription.decimals)
 
-                      const amount = getTokenAmount(val, price, tokenDesc)
-                      const valF = formatFixed(amount, tokenDesc.decimals)
+                    const amount = getTokenAmount(val, price, tokenDesc)
+                    const valF = formatFixed(amount, tokenDesc.decimals)
 
 
-                      // applying by setting `HTMLInputElement.value` imperatively(only way known to me)
-                      node.element.value = valF.toString()
+                    // applying by setting `HTMLInputElement.value` imperatively(only way known to me)
+                    node.element.value = valF.toString()
 
-                    }, mergeArray([clickResetVal, changeSizeByRatio]), config.tradeState.indexTokenPrice, config.tradeState.indexTokenDescription))
-                  )
-                ),
-                switchLatest
+                  }, mergeArray([clickResetVal, changeSizeByRatio]), config.tradeState.indexTokenPrice, config.tradeState.indexTokenDescription))
+                )
               ),
-              inputSizeDeltaTether(nodeEvent('input'), combine((tokenDesc, inputEvent) => {
-                const target = inputEvent.currentTarget
+              switchLatest
+            ),
+            inputSizeDeltaTether(nodeEvent('input'), combine((tokenDesc, inputEvent) => {
+              const target = inputEvent.currentTarget
 
-                if (!(target instanceof HTMLInputElement)) {
-                  throw new Error('Target is not type of input')
-                }
+              if (!(target instanceof HTMLInputElement)) {
+                throw new Error('Target is not type of input')
+              }
 
-                return BigInt(parseFixed(target.value.replace(/(\+|-)/, ''), tokenDesc.decimals))
-              }, config.tradeState.indexTokenDescription))
-            )(),
+              return BigInt(parseFixed(target.value.replace(/(\+|-)/, ''), tokenDesc.decimals))
+            }, config.tradeState.indexTokenDescription))
+          )(),
 
 
-            $ButtonToggle({
-              selected: config.tradeConfig.isLong,
-              options: [
-                false,
-                true,
-              ],
-              $$option: map(option => {
-                return $text(style({ fontSize: '0.85em' }))(option ? 'Long' : 'Short')
-              })
-            })({ select: switchIsLongTether() }),
+          $ButtonToggle({
+            selected: config.tradeConfig.isLong,
+            options: [
+              false,
+              true,
+            ],
+            $$option: map(option => {
+              return $text(style({ fontSize: '0.85em' }))(option ? 'Long' : 'Short')
+            })
+          })({ select: switchIsLongTether() }),
 
-            $Dropdown<AddressIndex>({
+
+          switchLatest(map(chain => {
+
+            return $Dropdown<ITokenIndex>({
               $container: $row(style({ position: 'relative', alignSelf: 'center' })),
               $selection: $row(style({ alignItems: 'center', cursor: 'pointer' }))(
                 switchLatest(map(option => {
@@ -571,449 +493,548 @@ export const $TradeBox = (config: ITradeBox) => component((
                 $$option: snapshot((isLong, option) => {
 
                   // @ts-ignore
-                  const token = CHAIN_NATIVE_TO_ADDRESS[chain] === option ? AddressZero : option
+                  const token = CHAIN_ADDRESS_MAP[chain] === option ? AddressZero : option
 
                   const tokenDesc = getTokenDescription(chain, token)
-                  const availableLiquidityUsd = vault.getAvailableLiquidityUsd(chain, option, isLong)
+                  // const availableLiquidityUsd = vault.getAvailableLiquidityUsd(chain, option, isLong)
 
                   return $row(style({ placeContent: 'space-between', flex: 1 }))(
                     $tokenLabelFromSummary(tokenDesc),
                     // $text(map(amountUsd => formatReadableUSD(amountUsd), availableLiquidityUsd))
                   )
                 }, config.tradeConfig.isLong),
-                list: config.indexTokens,
+                list: config.tokenIndexMap[chain] || [],
               }
             })({
               select: changeIndexTokenTether()
-            }),
+            })
+          }, config.walletLink.network)),
 
-          ),
-
-          $row(layoutSheet.spacing, style({ placeContent: 'space-between', padding: '0' }))(
-            $hintInput(
-              now(`Size`),
-              config.tradeConfig.isIncrease,
-              'Amount amplified relative to collateral, higher Size to Collateral means higher risk of being liquidated',
-              map(pos => formatReadableUSD(pos ? pos.size : 0n), config.tradeState.vaultPosition),
-
-              map((params) => {
-                const posSize = params.vaultPosition?.size || 0n
-
-                if (params.isIncrease) {
-                  const posCollateral = params.vaultPosition?.collateral || 0n
-                  const addCollateral = params.collateralDeltaUsd - params.fee
-                  const collateral = addCollateral + posCollateral
-                  const sizeDelta = collateral * params.leverage / BASIS_POINTS_DIVISOR
-
-                  return formatReadableUSD(sizeDelta)
-                }
-
-                return formatReadableUSD(posSize - params.sizeDelta)
-              }, tradeState)
-            ),
-
-            $node(style({ flex: 1 }))(),
-
-            switchLatest(combineArray((isLong, indexToken) => {
-
-
-              if (isLong) {
-
-                const tokenDesc = getTokenDescription(chain, indexToken)
-
-                return $row(layoutSheet.spacingTiny, style({ fontSize: '.75em', alignItems: 'center' }))(
-                  $text(style({ color: pallete.foreground, marginRight: '3px' }))('Collateral In'),
-                  $icon({ $content: $tokenIconMap[tokenDesc.symbol], width: '14px', viewBox: '0 0 32 32' }),
-                  $text(tokenDesc.symbol)
-                )
-              }
-
-              return $Dropdown<ARBITRUM_ADDRESS_STABLE | AVALANCHE_ADDRESS_STABLE>({
-                $container: $row(style({ position: 'relative', alignSelf: 'center' })),
-                $selection: $row(style({ alignItems: 'center', cursor: 'pointer' }))(
-                  switchLatest(combineArray((collateralToken) => {
-                    const tokenDesc = getTokenDescription(chain, collateralToken)
-
-
-                    return $row(layoutSheet.spacingTiny, style({ fontSize: '.75em', alignItems: 'center' }))(
-                      $text(style({ color: pallete.foreground, marginRight: '3px' }))('Collateral In'),
-                      $icon({ $content: $tokenIconMap[tokenDesc.symbol], width: '14px', viewBox: '0 0 32 32' }),
-                      $text(tokenDesc.symbol)
-                    )
-                  }, config.tradeConfig.shortCollateralToken)),
-                  $icon({ $content: $caretDown, width: '14px', viewBox: '0 0 32 32' })
-                ),
-                value: {
-                  value: config.tradeConfig.shortCollateralToken,
-                  $container: $defaultSelectContainer(style({ minWidth: '300px', right: 0 })),
-                  $$option: map(option => {
-                    const tokenDesc = getTokenDescription(chain, option)
-
-                    return $tokenLabelFromSummary(tokenDesc)
-                  }),
-                  list: [
-                    ARBITRUM_ADDRESS.USDC,
-                    ARBITRUM_ADDRESS.USDT,
-                    ARBITRUM_ADDRESS.DAI,
-                    ARBITRUM_ADDRESS.FRAX,
-                  ],
-                }
-              })({
-                select: changeCollateralTokenTether()
-              })
-            }, config.tradeConfig.isLong, config.tradeConfig.indexToken)),
-          ),
         ),
 
-        style({ margin: `0 -${BOX_SPACING}` })($Slider({
-          value: map(lm => {
-            if (lm === null) {
-              return 0
-            }
+        $row(layoutSheet.spacing, style({ placeContent: 'space-between', padding: '0' }))(
+          $hintInput(
+            now(`Size`),
+            config.tradeConfig.isIncrease,
+            'Amount amplified relative to collateral, higher Size to Collateral means higher risk of being liquidated',
+            map(pos => formatReadableUSD(pos ? pos.size : 0n), config.tradeState.trade),
 
-            return bnDiv(lm, LIMIT_LEVERAGE)
-          }, mergeArray([
-            initialLeverage,
-            config.tradeConfig.leverage
-          ])),
-          disabled: map(state => {
+            map((params) => {
+              const posSize = params.trade?.size || 0n
 
-            if (state.vaultPosition === null) {
-              return !state.isIncrease || state.collateralDelta === 0n
-            }
+              if (params.isIncrease) {
+                const posCollateral = params.trade?.collateral || 0n
+                const addCollateral = params.collateralDeltaUsd - params.fee
+                const collateral = addCollateral + posCollateral
+                const sizeDelta = collateral * params.leverage / BASIS_POINTS_DIVISOR
 
-            return false
-          }, tradeState),
-          color: map(isLong => isLong ? pallete.positive : pallete.negative, config.tradeConfig.isLong),
-          min: map(({ collateralDeltaUsd, pos, isIncrease }) => {
-            if (!isIncrease) {
-              return 0
-            }
+                return formatReadableUSD(sizeDelta)
+              }
 
-            const totalCollateral = (pos?.collateral || 0n) + collateralDeltaUsd
-            const totalSize = pos?.size || 0n
-            const leverage = div(totalSize, totalCollateral)
-
-            const leverageBasis = bnDiv(leverage, LIMIT_LEVERAGE)
-
-            return leverageBasis
-          }, combineObject({ collateralDeltaUsd: config.tradeState.collateralDeltaUsd, pos: config.tradeState.vaultPosition, isIncrease: config.tradeConfig.isIncrease })),
-          max: map(({ collateralDeltaUsd, pos, isIncrease }) => {
-            if (isIncrease) {
-              return 1
-            }
-
-            const totalCollateral = (pos?.collateral || 0n) - collateralDeltaUsd
-            const totalSize = (pos?.size || 0n)
-            const multiplier = bnDiv(div(totalSize, totalCollateral), LIMIT_LEVERAGE)
-
-            return multiplier
-          }, combineObject({ collateralDeltaUsd: config.tradeState.collateralDeltaUsd, pos: config.tradeState.vaultPosition, isIncrease: config.tradeConfig.isIncrease })),
-          thumbText: map(n => formatLeverageNumber.format(n * MAX_LEVERAGE_NORMAL) + '\nx')
-        })({
-          change: slideLeverageTether(
-            map(leverage => {
-              const leverageRatio = BigInt(Math.floor(Math.abs(leverage) * Number(BASIS_POINTS_DIVISOR)))
-              const leverageMultiplier = LIMIT_LEVERAGE * leverageRatio / BASIS_POINTS_DIVISOR
-
-              return leverageMultiplier
-            }),
-            multicast
-          )
-        })),
-
-        $row(layoutSheet.spacing, style({ placeContent: 'space-between', paddingBottom: '18px' }))(
-          $column(
-            $row(layoutSheet.spacingTiny, style({ fontSize: '0.75em' }))(
-              $Tooltip({
-                $anchor: $text(style({ color: pallete.foreground }))('Fees'),
-                $content: switchLatest(map(params => {
-                  const depositTokenNorm = resolveAddress(chain, params.inputToken)
-
-                  return $column(
-                    depositTokenNorm !== params.indexToken ? $row(layoutSheet.spacingTiny)(
-                      $text(style({ color: pallete.foreground }))('Swap'),
-                      $text(formatReadableUSD(params.swapFee))
-                    ) : empty(),
-                    $row(layoutSheet.spacingTiny)(
-                      $text(style({ color: pallete.foreground }))('Margin'),
-                      $text(formatReadableUSD(params.marginFee))
-                    )
-                  )
-                }, tradeState))
-              })({}),
-              $text(style({ color: pallete.negative }))(map(params => formatReadableUSD(params.fee), tradeState))
-            ),
-            $row(layoutSheet.spacingTiny, style({ fontSize: '0.75em' }))(
-              $Tooltip({
-                $anchor: $text(style({ color: pallete.foreground }))('Discount'),
-                $content: switchLatest(map(params => {
-
-                  return $column(
-                    $text(style({ color: pallete.foreground }))('BLUEBERRY Referral applied for 10% discount'),
-                    // depositTokenNorm !== params.indexToken ? $row(layoutSheet.spacingTiny)(
-                    //   $text(style({ color: pallete.foreground }))('Swap'),
-                    //   $text(getRebateDiscountUsd(params.swapFee))
-                    // ) : empty(),
-                    // $row(layoutSheet.spacingTiny)(
-                    //   $text(style({ color: pallete.foreground }))('Margin'),
-                    //   $text(getRebateDiscountUsd(params.marginFee))
-                    // )
-                  )
-                }, tradeState))
-              })({}),
-              $text(style({ color: pallete.positive }))(map(params => getRebateDiscountUsd(params.marginFee), tradeState))
-            ),
-
-            $TextField({
-              label: 'Slippage %',
-              value: config.tradeConfig.slippage,
-              inputOp: style({ width: '60px', fontWeight: 'normal' }),
-              validation: map(n => {
-                const val = Number(n)
-                const valid = val >= 0
-                if (!valid) {
-                  return 'Invalid Basis point'
-                }
-
-                if (val > 5) {
-                  return 'Slippage should be less than 5%'
-                }
-
-                return null
-              }),
-            })({
-              change: changeSlippageTether()
-            }),
+              return formatReadableUSD(posSize - params.sizeDelta)
+            }, tradeState)
           ),
 
-          $IntermediateConnectButton({
-            chainList: config.chainList,
-            walletStore: config.walletStore,
-            $connectLabel: $text(screenUtils.isDesktopScreen ? 'Connect To Trade' : 'Connect'),
-            $container: $column(layoutSheet.spacingBig, style({})),
-            $$display: map(() => {
+          $node(style({ flex: 1 }))(),
 
-              return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+          switchLatest(combineArray((chain, isLong, indexToken) => {
+            if (isLong) {
+              const tokenDesc = getTokenDescription(chain, indexToken)
 
-                style({ padding: '8px', placeSelf: 'center', fontSize: '.75em' })(
-                  $ButtonSecondary({
-                    disabled: map(params => {
-                      if (params.sizeDelta > 0n || params.collateralDelta > 0n) {
-                        return false
+              return $row(layoutSheet.spacingTiny, style({ fontSize: '.75em', alignItems: 'center' }))(
+                $text(style({ color: pallete.foreground, marginRight: '3px' }))('Collateral In'),
+                $icon({ $content: $tokenIconMap[tokenDesc.symbol], width: '14px', viewBox: '0 0 32 32' }),
+                $text(tokenDesc.symbol)
+              )
+            }
+
+            return $Dropdown<ARBITRUM_ADDRESS_STABLE | AVALANCHE_ADDRESS_STABLE>({
+              $container: $row(style({ position: 'relative', alignSelf: 'center' })),
+              $selection: $row(style({ alignItems: 'center', cursor: 'pointer' }))(
+                switchLatest(combineArray((collateralToken) => {
+                  const tokenDesc = getTokenDescription(chain, collateralToken)
+
+
+                  return $row(layoutSheet.spacingTiny, style({ fontSize: '.75em', alignItems: 'center' }))(
+                    $text(style({ color: pallete.foreground, marginRight: '3px' }))('Collateral In'),
+                    $icon({ $content: $tokenIconMap[tokenDesc.symbol], width: '14px', viewBox: '0 0 32 32' }),
+                    $text(tokenDesc.symbol)
+                  )
+                }, config.tradeConfig.shortCollateralToken)),
+                $icon({ $content: $caretDown, width: '14px', viewBox: '0 0 32 32' })
+              ),
+              value: {
+                value: config.tradeConfig.shortCollateralToken,
+                $container: $defaultSelectContainer(style({ minWidth: '300px', right: 0 })),
+                $$option: map(option => {
+                  const tokenDesc = getTokenDescription(chain, option)
+
+                  return $tokenLabelFromSummary(tokenDesc)
+                }),
+                list: [
+                  ARBITRUM_ADDRESS.USDC,
+                  ARBITRUM_ADDRESS.USDT,
+                  ARBITRUM_ADDRESS.DAI,
+                  ARBITRUM_ADDRESS.FRAX,
+                ],
+              }
+            })({
+              select: changeCollateralTokenTether()
+            })
+          }, config.walletLink.network, config.tradeConfig.isLong, config.tradeConfig.indexToken)),
+        ),
+      ),
+
+      style({ margin: `0 -${BOX_SPACING}` })($Slider({
+        value: map(lm => {
+          if (lm === null) {
+            return 0
+          }
+
+          return bnDiv(lm, LIMIT_LEVERAGE)
+        }, mergeArray([
+          initialLeverage,
+          config.tradeConfig.leverage
+        ])),
+        disabled: map(state => {
+
+          if (state.trade === null) {
+            return !state.isIncrease || state.collateralDelta === 0n
+          }
+
+          return false
+        }, tradeState),
+        color: map(isLong => isLong ? pallete.positive : pallete.negative, config.tradeConfig.isLong),
+        min: map(({ collateralDeltaUsd, pos, isIncrease }) => {
+          if (!isIncrease) {
+            return 0
+          }
+
+          const totalCollateral = (pos?.collateral || 0n) + collateralDeltaUsd
+          const totalSize = pos?.size || 0n
+          const leverage = div(totalSize, totalCollateral)
+
+          const leverageBasis = bnDiv(leverage, LIMIT_LEVERAGE)
+
+          return leverageBasis
+        }, combineObject({ collateralDeltaUsd: config.tradeState.collateralDeltaUsd, pos: config.tradeState.trade, isIncrease: config.tradeConfig.isIncrease })),
+        max: map(({ collateralDeltaUsd, pos, isIncrease }) => {
+          if (isIncrease) {
+            return 1
+          }
+
+          const totalCollateral = (pos?.collateral || 0n) - collateralDeltaUsd
+          const totalSize = (pos?.size || 0n)
+          const multiplier = bnDiv(div(totalSize, totalCollateral), LIMIT_LEVERAGE)
+
+          return multiplier
+        }, combineObject({ collateralDeltaUsd: config.tradeState.collateralDeltaUsd, pos: config.tradeState.trade, isIncrease: config.tradeConfig.isIncrease })),
+        thumbText: map(n => formatLeverageNumber.format(n * MAX_LEVERAGE_NORMAL) + '\nx')
+      })({
+        change: slideLeverageTether(
+          map(leverage => {
+            const leverageRatio = BigInt(Math.floor(Math.abs(leverage) * Number(BASIS_POINTS_DIVISOR)))
+            const leverageMultiplier = LIMIT_LEVERAGE * leverageRatio / BASIS_POINTS_DIVISOR
+
+            return leverageMultiplier
+          }),
+          multicast
+        )
+      })),
+
+      $column(style({
+        height: '100px',
+        margin: `0 -${BOX_SPACING}`, zIndex: 0,
+        // backgroundColor: pallete./background, borderRadius: '20px',
+      }))(
+        $IntermediateConnectPopover({
+          chainList: config.chainList,
+          $button: style({
+            alignSelf: 'center'
+          })($ButtonPrimary({
+            $content: $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+              $text('Connect To Trade'),
+              $icon({ $content: $caretDown, viewBox: '0 0 32 32', width: '16px', fill: pallete.background, svgOps: style({ marginTop: '2px' }) }),
+            )
+          })({})),
+          $$display: map(w3p => {
+            const tradePricefeed = switchLatest(combineArray((trade) => {
+              if (!trade) {
+                return now(null)
+              }
+
+              const to = unixTimestampNow()
+              const from = trade.timestamp
+
+              const intervalTime = getPricefeedVisibleColumns(160, from, to)
+              const params = { tokenAddress: '_' + trade.indexToken, interval: '_' + intervalTime, from, to }
+
+              const queryFeed = fromPromise(query.graphClientMap[w3p.chain](query.document.pricefeedDoc, params as any, { requestPolicy: 'network-only' }))
+              const priceFeedQuery = map(res => res.pricefeeds.map(fromJson.pricefeedJson), queryFeed)
+
+              return map(feed => ({ feed, trade }), priceFeedQuery)
+            }, config.tradeState.trade))
+
+            return $column(style({ flex: 1 }))(
+              $row(
+                layoutSheet.spacing,
+                style({ padding: '18px', placeContent: 'space-between' }),
+                styleInline(map(mode => ({ display: mode ? 'flex' : 'none' }), inTradeMode))
+              )(
+                $column(
+                  $row(layoutSheet.spacingTiny, style({ fontSize: '0.75em' }))(
+                    $Tooltip({
+                      $anchor: $text(style({ color: pallete.foreground }))('Fees'),
+                      $content: switchLatest(map(params => {
+                        const depositTokenNorm = resolveAddress(w3p.chain, params.inputToken)
+                        const outputToken = params.isLong ? params.indexToken : params.shortCollateralToken
+
+                        return $column(
+                          depositTokenNorm !== outputToken ? $row(layoutSheet.spacingTiny)(
+                            $text(style({ color: pallete.foreground }))('Swap'),
+                            $text(formatReadableUSD(params.swapFee))
+                          ) : empty(),
+                          $row(layoutSheet.spacingTiny)(
+                            $text(style({ color: pallete.foreground }))('Margin'),
+                            $text(formatReadableUSD(params.marginFee))
+                          )
+                        )
+                      }, tradeState))
+                    })({}),
+                    $text(style({ color: pallete.negative }))(map(params => formatReadableUSD(params.fee), tradeState))
+                  ),
+                  $row(layoutSheet.spacingTiny, style({ fontSize: '0.75em' }))(
+                    $Tooltip({
+                      $anchor: $text(style({ color: pallete.foreground }))('Discount'),
+                      $content: switchLatest(map(params => {
+
+                        return $column(
+                          $text(style({ color: pallete.foreground }))('BLUEBERRY Referral applied for 10% discount'),
+                          // depositTokenNorm !== params.indexToken ? $row(layoutSheet.spacingTiny)(
+                          //   $text(style({ color: pallete.foreground }))('Swap'),
+                          //   $text(getRebateDiscountUsd(params.swapFee))
+                          // ) : empty(),
+                          // $row(layoutSheet.spacingTiny)(
+                          //   $text(style({ color: pallete.foreground }))('Margin'),
+                          //   $text(getRebateDiscountUsd(params.marginFee))
+                          // )
+                        )
+                      }, tradeState))
+                    })({}),
+                    $text(style({ color: pallete.positive }))(map(params => getRebateDiscountUsd(params.marginFee), tradeState))
+                  ),
+
+                  $TextField({
+                    label: 'Slippage %',
+                    value: config.tradeConfig.slippage,
+                    inputOp: style({ width: '60px', fontWeight: 'normal' }),
+                    validation: map(n => {
+                      const val = Number(n)
+                      const valid = val >= 0
+                      if (!valid) {
+                        return 'Invalid Basis point'
                       }
 
-                      return true
-                    }, tradeState),
-                    $content: $text('Reset')
-                  })({ click: clickResetTether() })
+                      if (val > 5) {
+                        return 'Slippage should be less than 5%'
+                      }
+
+                      return null
+                    }),
+                  })({
+                    change: changeSlippageTether()
+                  }),
                 ),
 
-                switchLatest(combineArray((isPluginEnabled, isEnabled, isInputTokenApproved, inputToken, inputTokenDesc) => {
-                  if (!isPluginEnabled || !isEnabled) {
-                    return $Popover({
-                      $$popContent: map((xx) => {
+                $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
 
-                        return $column(layoutSheet.spacing, style({ maxWidth: '400px' }))(
-                          $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(`By using GBC Trading, I agree to the following Disclaimer`),
-                          $text(style({ whiteSpace: 'pre-wrap', fontSize: '.75em' }))(`By accessing, I agree that ${document.location.href} is an interface (hereinafter the "Interface") to interact with external GMX smart contracts, and does not have access to my funds.`),
-                          $node(
-                            $text(style({ whiteSpace: 'pre-wrap', fontSize: '.75em' }))(`By clicking Agree you accept the `),
-                            $anchor(attr({ href: '/p/trading-terms-and-conditions' }))($text('Terms & Conditions'))
-                          ),
+                  style({ padding: '8px', placeSelf: 'center', fontSize: '.75em' })(
+                    $ButtonSecondary({
+                      disabled: map(params => {
+                        if (params.sizeDelta > 0n || params.collateralDelta > 0n) {
+                          return false
+                        }
 
-                          !isPluginEnabled
-                            ? $ButtonPrimaryCtx({
-                              ctx: clickEnablePlugin,
-                              $content: $text(!isPluginEnabled ? 'Enable Leverage(GMX) & Agree' : 'Agree')
-                            })({
-                              click: clickEnablePluginTether(
-                                snapshot((c) => {
-                                  const contractAddress = getContract(chain, 'PositionRouter')
-                                  return c!.contract.approvePlugin(contractAddress)
-                                }, trade.router.contract),
-                                multicast
-                              )
-                            })
-                            : $ButtonPrimary({
-                              $content: $text('Agree')
-                            })({
-                              click: enableTradingTether(
-                                constant(true)
-                              )
-                            })
+                        return true
+                      }, tradeState),
+                      $content: $text('Reset')
+                    })({ click: clickResetTether() })
+                  ),
+
+                  switchLatest(combineArray((isPluginEnabled, isEnabled, isInputTokenApproved, inputToken, inputTokenDesc) => {
+                    if (!isPluginEnabled || !isEnabled) {
+                      return $Popover({
+                        $$popContent: map((xx) => {
+
+                          return $column(layoutSheet.spacing, style({ maxWidth: '400px' }))(
+                            $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(`By using GBC Trading, I agree to the following Disclaimer`),
+                            $text(style({ whiteSpace: 'pre-wrap', fontSize: '.75em' }))(`By accessing, I agree that ${document.location.href} is an interface (hereinafter the "Interface") to interact with external GMX smart contracts, and does not have access to my funds.`),
+                            $node(
+                              $text(style({ whiteSpace: 'pre-wrap', fontSize: '.75em' }))(`By clicking Agree you accept the `),
+                              $anchor(attr({ href: '/p/trading-terms-and-conditions' }))($text('Terms & Conditions'))
+                            ),
+
+                            !isPluginEnabled
+                              ? $ButtonPrimaryCtx({
+                                ctx: clickEnablePlugin,
+                                $content: $text(!isPluginEnabled ? 'Enable Leverage(GMX) & Agree' : 'Agree')
+                              })({
+                                click: clickEnablePluginTether(
+                                  snapshot((c) => {
+                                    const contractAddress = getContractAddress(TRADE_CONTRACT_MAPPING, w3p.chain, 'PositionRouter')
+                                    return c.approvePlugin(contractAddress)
+                                  }, trade.router.contract),
+                                  multicast
+                                )
+                              })
+                              : $ButtonPrimary({
+                                $content: $text('Agree')
+                              })({
+                                click: enableTradingTether(
+                                  constant(true)
+                                )
+                              })
+                          )
+                        }, openEnableTradingPopover),
+                      })(
+                        $row(
+                          $ButtonSecondary({
+                            $content: $text('Enable Trading'),
+                            disabled: mergeArray([
+                              dismissEnableTradingOverlay,
+                              openEnableTradingPopover
+                            ])
+                          })({
+                            click: openEnableTradingPopoverTether()
+                          })
                         )
-                      }, openEnableTradingPopover),
-                    })(
-                      $row(
-                        $ButtonSecondary({
-                          $content: $text('Enable Trading'),
-                          disabled: mergeArray([
-                            dismissEnableTradingOverlay,
-                            openEnableTradingPopover
-                          ])
-                        })({
-                          click: openEnableTradingPopoverTether()
-                        })
-                      )
-                    )({
-                      overlayClick: dismissEnableTradingOverlayTether(constant(false))
-                    })
-                  }
+                      )({
+                        overlayClick: dismissEnableTradingOverlayTether(constant(false))
+                      })
+                    }
 
-                  if (!isInputTokenApproved) {
-                    const erc20 = connectErc20(inputToken, config.walletLink.provider)
-                    return $ButtonPrimary({
-                      $content: $text(`Approved ${inputTokenDesc.symbol}`)
+                    if (!isInputTokenApproved) {
+                      const erc20 = ERC20__factory.connect(inputToken, w3p.signer)
+
+                      return $ButtonPrimary({
+                        $content: $text(`Approved ${inputTokenDesc.symbol}`)
+                      })({
+                        click: approveInputTokenTether(
+                          map(async (c) => {
+                            const contractAddress = getContractAddress(TRADE_CONTRACT_MAPPING, w3p.chain, 'PositionRouter')
+
+                            if (c === null) {
+                              return false
+                            }
+
+                            await erc20.approve(contractAddress, MaxUint256)
+
+                            return true
+                          }),
+                          awaitPromises
+                        )
+                      })
+                    }
+
+                    return $ButtonPrimaryCtx({
+                      ctx: map(req => req.ctxQuery, clickRequestTrade),
+                      disabled: combineArray((error, params) => {
+
+                        if (error) {
+                          return true
+                        }
+
+                        return false
+                      }, validationError, tradeState),
+                      $content: $text(map(params => {
+                        const outputToken = getTokenDescription(w3p.chain, params.indexToken)
+
+                        let modLabel: string
+
+                        if (params.trade) {
+                          if (params.isIncrease) {
+                            modLabel = 'Increase'
+                          } else {
+                            modLabel = params.sizeDelta === params.trade.size || params.collateralDeltaUsd === params.trade.collateral ? 'Close' : 'Reduce'
+                          }
+                        } else {
+                          modLabel = 'Open'
+                        }
+
+                        if (screenUtils.isMobileScreen) {
+                          return modLabel
+                        }
+
+                        return `${modLabel} ${params.isLong ? 'Long' : 'Short'} ${outputToken.symbol}`
+                      }, tradeState)),
                     })({
-                      click: approveInputTokenTether(
-                        snapshot(async (c) => {
-                          const contractAddress = getContract(chain, 'PositionRouter')
+                      click: clickRequestTradeTether(
+                        snapshot(({ state, trade }) => {
+                          const signer = trade.signer
 
-                          if (c === null) {
-                            return false
+                          if (signer === null) {
+                            throw new Error('Signer does not exists')
                           }
 
-                          await c.approve(contractAddress, MaxUint256)
+                          const inputAddress = resolveAddress(w3p.chain, state.inputToken)
+                          const outputToken = state.isLong ? state.indexToken : state.shortCollateralToken
 
-                          return true
-                        }, erc20.contract),
-                        awaitPromises
+                          const path = state.isIncrease
+                            ? inputAddress === outputToken ? [state.indexToken] : [inputAddress, outputToken]
+                            : inputAddress === outputToken ? [state.indexToken] : [outputToken, inputAddress]
+
+                          const slippageN = BigInt(Number(state.slippage) * 100)
+                          const allowedSlippage = state.isLong ? state.isIncrease ? slippageN : -slippageN : state.isIncrease ? -slippageN : slippageN
+
+                          const refPrice = state.isLong ? state.indexTokenPrice : state.indexTokenPrice
+                          const priceBasisPoints = BASIS_POINTS_DIVISOR + allowedSlippage // state.isLong ? BASIS_POINTS_DIVISOR + allowedSlippage : BASIS_POINTS_DIVISOR - allowedSlippage
+
+                          const acceptablePrice = refPrice * priceBasisPoints / BASIS_POINTS_DIVISOR
+
+
+
+                          const isNative = state.inputToken === AddressZero
+
+                          const ctxQuery = state.isIncrease
+                            ? (isNative
+                              ? trade.createIncreasePositionETH(
+                                path,
+                                state.indexToken,
+                                0,
+                                state.sizeDelta,
+                                state.isLong,
+                                acceptablePrice,
+                                state.executionFee,
+                                config.referralCode,
+                                AddressZero,
+                                { value: state.collateralDelta + state.executionFee }
+                              )
+                              : trade.createIncreasePosition(
+                                path,
+                                state.indexToken,
+                                state.collateralDelta,
+                                0,
+                                state.sizeDelta,
+                                state.isLong,
+                                acceptablePrice,
+                                state.executionFee,
+                                config.referralCode,
+                                AddressZero,
+                                { value: state.executionFee }
+                              ))
+                            : trade.createDecreasePosition(
+                              path,
+                              state.indexToken,
+                              state.collateralDelta,
+                              state.sizeDelta,
+                              state.isLong,
+                              w3p.address,
+                              acceptablePrice,
+                              0,
+                              state.executionFee,
+                              isNative,
+                              AddressZero,
+                              { value: state.executionFee }
+                            )
+
+                          ctxQuery.catch(err => {
+                            console.error(err)
+                          })
+
+
+                          return { ctxQuery, state, acceptablePrice }
+                        }, combineObject({ trade: position.positionRouter.contract, state: tradeState })),
+                        multicast
                       )
                     })
-                  }
+                  }, trade.isPluginEnabled(w3p.address), config.tradeState.isTradingEnabled, config.tradeState.isInputTokenApproved, config.tradeConfig.inputToken, config.tradeState.inputTokenDescription)),
 
-                  return $ButtonPrimaryCtx({
-                    ctx: map(req => req.ctxQuery, requestTrade),
-                    disabled: combineArray((error, params) => {
 
-                      if (error) {
-                        return true
+                  $row(style({ width: '0px' }))(
+                    switchLatest(map(error => {
+                      if (error === null) {
+                        return empty()
                       }
 
-                      if (params.sizeDelta === 0n && params.collateralDelta === 0n) {
-                        return true
-                      }
-
-                      // if (params.isIncrease && (params.leverage > LIMIT_LEVERAGE || params.leverage < MIN_LEVERAGE)) {
-                      //   return true
-                      // }
-
-                      // if (params.vaultPosition && params.liquidationPrice! > params.indexTokenPrice) {
-                      //   return true
-                      // }
-
-                      // if (params.isIncrease && (params.collateralDeltaUsd > 0n || params.sizeDelta > 0n) && params.collateralDelta <= params.walletBalance) {
-                      //   return false
-                      // }
-
-                      return false
-                    }, validationError, tradeState),
-                    $content: $text(map(params => {
-                      const outputToken = getTokenDescription(chain, params.indexToken)
-
-                      let modLabel: string
-
-                      if (params.vaultPosition) {
-                        if (params.isIncrease) {
-                          modLabel = 'Increase'
-                        } else {
-                          modLabel = params.sizeDelta === params.vaultPosition.size || params.collateralDeltaUsd === params.vaultPosition.collateral ? 'Close' : 'Reduce'
-                        }
-                      } else {
-                        modLabel = 'Open'
-                      }
-
-                      if (screenUtils.isMobileScreen) {
-                        return modLabel
-                      }
-
-                      return `${modLabel} ${params.isLong ? 'Long' : 'Short'} ${outputToken.symbol}`
-                    }, tradeState)),
-                  })({
-                    click: clickRequestTradeTether()
-                  })
-                }, trade.isPluginEnabled(config.walletLink.account), config.tradeState.isTradingEnabled, config.tradeState.isInputTokenApproved, config.tradeConfig.inputToken, config.tradeState.inputTokenDescription)),
-
-
-                switchLatest(map(error => {
-                  if (error === null) {
-                    return empty()
-                  }
-
-                  return $Tooltip({
-                    $content: $text(style({ fontSize: '.75em', }))(error),
-                    $container: $column(style({ marginLeft: '-25px', zIndex: 5, backgroundColor: '#000', borderRadius: '50%', })),
-                    $anchor: $icon({
-                      $content: $alertIcon, viewBox: '0 0 24 24', width: '28px',
-                      svgOps: style({ fill: pallete.negative, padding: '3px', filter: 'drop-shadow(black 0px 0px 10px) drop-shadow(black 0px 0px 10px) drop-shadow(black 0px 0px 1px)' })
-                    })
-                  })({})
-                }, skipRepeats(validationError)))
-              )
-            }),
-            ensureNetwork: true,
-            walletLink: config.walletLink
-          })({ walletChange: walletChangeTether() })
-        ),
-
-        $column(style({ height: '100px', position: 'relative', overflow: 'hidden', margin: `0 -${BOX_SPACING}`, zIndex: 0, backgroundColor: pallete.background, borderRadius: '20px', }))(
-          switchLatest(map((res) => {
-            if (res === null) {
-              return empty()
-            }
-
-            const { feed, trade } = res
-
-            const hoverChartPnl = switchLatest(map((chartCxChange) => {
-              if (chartCxChange) {
-                return now(chartCxChange)
-              }
-
-              if (isTradeSettled(trade)) {
-                return now(formatFixed(trade.realisedPnl - trade.fee, 30))
-              }
-
-              return map(price => {
-                const delta = getPnL(trade.isLong, trade.averagePrice, price, trade.size)
-                const val = formatFixed(delta + trade.realisedPnl - trade.fee, 30)
-
-                return val
-              }, config.tradeState.indexTokenPrice)
-
-            }, pnlCrossHairTime))
-
-            return $column(style({}))(
-              style({
-                pointerEvents: 'none',
-                textAlign: 'center',
-                fontSize: '1.5em', alignItems: 'baseline', padding: '6px 15px', background: 'radial-gradient(rgba(0, 0, 0, 0.37) 9%, transparent 63%)',
-                lineHeight: 1,
-                fontWeight: "bold",
-                zIndex: 10,
-                position: 'absolute',
-                width: '50%',
-                left: '50%',
-                transform: 'translateX(-50%)'
-              })(
-                $NumberTicker({
-                  value$: map(O((n) => readableNumber(n, false), Number), motion({ ...MOTION_NO_WOBBLE, precision: 15, stiffness: 210 }, 0, hoverChartPnl)),
-                  incrementColor: pallete.positive,
-                  decrementColor: pallete.negative
-                })
+                      return $Tooltip({
+                        $content: $text(style({ fontSize: '.75em', }))(error),
+                        $container: $column(style({ zIndex: 5, marginLeft: '-20px', backgroundColor: '#000', borderRadius: '50%', })),
+                        $anchor: $icon({
+                          $content: $alertIcon, viewBox: '0 0 24 24', width: '28px',
+                          svgOps: style({ fill: pallete.negative, padding: '3px', filter: 'drop-shadow(black 0px 0px 10px) drop-shadow(black 0px 0px 10px) drop-shadow(black 0px 0px 1px)' })
+                        })
+                      })({})
+                    }, skipRepeats(validationError)))
+                  )
+                )
               ),
-              $TradePnlHistory({
-                $container: $column(style({ height: '100px' })),
-                trade,
-                pricefeed: feed,
-                chartConfig: {},
-                latestPrice: config.tradeState.indexTokenPrice
-              })({ crosshairMove: crosshairMoveTether() })
-            )
+              switchLatest(map((res) => {
 
-          }, newLocal_1))
-        )
+                if (res === null) {
+                  return $row(style({ flex: 1, placeContent: 'center', alignItems: 'center' }), styleInline(map(mode => ({ display: mode ? 'none' : 'flex' }), inTradeMode)))(
+                    $text(style({ color: pallete.foreground }))('no trade')
+                  )
+                }
+
+                const hoverChartPnl = switchLatest(map((chartCxChange) => {
+                  if (chartCxChange) {
+                    return now(chartCxChange)
+                  }
+
+                  if (isTradeSettled(res.trade)) {
+                    return now(formatFixed(res.trade.realisedPnl - res.trade.fee, 30))
+                  }
+
+                  return map(price => {
+                    const delta = getPnL(res.trade.isLong, res.trade.averagePrice, price, res.trade.size)
+                    const val = formatFixed(delta + res.trade.realisedPnl - res.trade.fee, 30)
+
+                    return val
+                  }, config.tradeState.indexTokenPrice)
+
+                }, pnlCrossHairTime))
+
+                return $column(
+                  style({ position: 'relative' }),
+                  styleInline(map(mode => ({ display: mode ? 'none' : 'flex' }), inTradeMode))
+                )(
+                  style({
+                    pointerEvents: 'none',
+                    textAlign: 'center',
+                    fontSize: '1.5em', alignItems: 'baseline', padding: '6px 15px', background: 'radial-gradient(rgba(0, 0, 0, 0.37) 9%, transparent 63%)',
+                    lineHeight: 1,
+                    fontWeight: "bold",
+                    zIndex: 10,
+                    position: 'absolute',
+                    width: '50%',
+                    left: '50%',
+                    transform: 'translateX(-50%)'
+                  })(
+                    $NumberTicker({
+                      value$: map(O((n) => readableNumber(n, false), Number), motion({ ...MOTION_NO_WOBBLE, precision: 15, stiffness: 210 }, 0, hoverChartPnl)),
+                      incrementColor: pallete.positive,
+                      decrementColor: pallete.negative
+                    })
+                  ),
+                  $TradePnlHistory({
+                    $container: $column(style({ height: '100px' })),
+                    trade: res.trade,
+                    pricefeed: res.feed,
+                    chartConfig: {},
+                    latestPrice: config.tradeState.indexTokenPrice
+                  })({ crosshairMove: crosshairMoveTether() })
+                )
+
+              }, tradePricefeed))
+            )
+          }),
+          walletLink: config.walletLink
+        })({
+          changeNetwork: changeNetworkTether(),
+          walletChange: walletChangeTether(),
+        }),
       )
+
     ),
 
     {
@@ -1022,8 +1043,8 @@ export const $TradeBox = (config: ITradeBox) => component((
       changeIndexToken,
       leverage: mergeArray([
         snapshot((params, size) => {
-          const posCollateral = params.vaultPosition?.collateral || 0n
-          const posSize = params.vaultPosition?.size || 0n
+          const posCollateral = params.trade?.collateral || 0n
+          const posSize = params.trade?.size || 0n
           const totalSize = posSize + size
 
           if (params.isIncrease) {
@@ -1031,7 +1052,7 @@ export const $TradeBox = (config: ITradeBox) => component((
             return div(totalSize, totalCollateral)
           }
 
-          if (!params.vaultPosition) {
+          if (!params.trade) {
             return 0n
           }
 
@@ -1062,7 +1083,7 @@ export const $TradeBox = (config: ITradeBox) => component((
             return newLocal
           }
 
-          return params.vaultPosition ? div(params.collateralDelta, params.vaultPosition.collateral) : 0n
+          return params.trade ? div(params.collateralDelta, params.trade.collateral) : 0n
         }, tradeState, mergeArray([constant(0n, clickReset), inputCollateral])),
 
         constant(0n, switchIsIncrease)
@@ -1082,29 +1103,36 @@ export const $TradeBox = (config: ITradeBox) => component((
       ]),
       approveInputToken: mergeArray([
         approveInputToken,
-        switchLatest(snapshot((collateralDelta, { account, inputToken }) => {
-          const erc20 = connectErc20(inputToken, config.walletLink.provider)
-          return awaitPromises(map(async c => {
-            if (inputToken === AddressZero) {
-              return true
-            }
+        awaitPromises(snapshot(async (collateralDelta, { w3p, chain, inputToken }) => {
+          if (w3p === null) {
+            throw new Error('No wallet connected')
+          }
 
-            if (c === null || account === null) {
-              return null
-            }
+          const signer = w3p.getSigner()
 
-            const contractAddress = getContract(chain, 'Router')
+          // const erc20 = connectErc20(inputToken, map(w3p => , config.walletProvider))
+          const c = ERC20__factory.connect(inputToken, w3p.getSigner())
 
-            if (contractAddress === null) {
-              return null
-            }
+          if (inputToken === AddressZero) {
+            return true
+          }
 
-            const allowedSpendAmount = (await c.allowance(account, contractAddress)).toBigInt()
-            return allowedSpendAmount >= collateralDelta
-          }, erc20.contract))
-        }, config.tradeConfig.collateralDelta, debounce(100, combineObject({ account: config.walletLink.account, inputToken: config.tradeConfig.inputToken }))))
+          if (c === null || signer._address === null) {
+            return null
+          }
+
+          const contractAddress = getContractAddress(TRADE_CONTRACT_MAPPING, chain, 'Router')
+
+          if (contractAddress === null) {
+            return null
+          }
+
+          const allowedSpendAmount = (await c.allowance(signer._address, contractAddress)).toBigInt()
+          return allowedSpendAmount >= collateralDelta
+        }, config.tradeConfig.collateralDelta, combineObject({ w3p: config.walletLink.provider, chain: config.walletLink.network, inputToken: config.tradeConfig.inputToken })))
       ]),
-      requestTrade,
+      requestTrade: clickRequestTrade,
+      changeNetwork,
     }
   ]
 })

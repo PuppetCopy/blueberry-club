@@ -50,7 +50,8 @@ export const latestPriceMap = O(
 
 export const accountTradeList = O(
   map(async (queryParams: IAccountTradeListParamApi) => {
-    if (!queryParams.account) {
+
+    if (queryParams === null) {
       return []
     }
 
