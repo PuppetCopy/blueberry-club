@@ -1,11 +1,11 @@
 import { fromCallback, replayLatest } from "@aelea/core"
 import { ExternalProvider, JsonRpcProvider, JsonRpcSigner, Web3Provider } from "@ethersproject/providers"
 import { CHAIN, filterNull, NETWORK_METADATA } from "@gambitdao/gmx-middleware"
-import { awaitPromises, constant, empty, map, mergeArray, multicast, never, now, snapshot, switchLatest, tap, zip } from "@most/core"
+import { awaitPromises, constant, empty, map, mergeArray, multicast, now, switchLatest, zip } from "@most/core"
 import { Stream } from "@most/types"
 import { IEthereumProvider } from "eip1193-provider"
 import { eip1193ProviderEvent, parseError } from "./common"
-import { arbOneWeb3Provider, metamaskQuery, w3pAva, walletConnect } from "./provider"
+import { metamaskQuery, walletConnect } from "./provider"
 
 
 export interface IWalletState {
@@ -32,10 +32,6 @@ export enum IWalletName {
 }
 
 
-export const defaultGlobalProviderMap: Partial<Record<CHAIN, JsonRpcProvider>> = {
-  [CHAIN.ARBITRUM]: arbOneWeb3Provider,
-  [CHAIN.AVALANCHE]: w3pAva,
-}
 
 
 interface IWalletLinkConfig {
@@ -43,21 +39,17 @@ interface IWalletLinkConfig {
   defaultGlobalChain: CHAIN
 }
 
-const defaultConfig: IWalletLinkConfig = {
-  globalProviderMap: defaultGlobalProviderMap,
-  defaultGlobalChain: CHAIN.ARBITRUM
-}
 
 // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1193.md
 // walletconnect chaining chain issue https://github.com/WalletConnect/walletconnect-monorepo/issues/612
 // attempting to manage wallet connection and event flow
 export function initWalletLink(
+  config: IWalletLinkConfig,
   walletName: Stream<IWalletName>,
   networkChange?: Stream<CHAIN>,
-  givenConfig?: Partial<IWalletLinkConfig>
 ): IWalletLink {
 
-  const config = { ...defaultConfig, ...givenConfig }
+
 
   const walletProvider: Stream<IEthereumProvider | null> = replayLatest(multicast(switchLatest(mergeArray([
     awaitPromises(map(async (name) => {
@@ -146,7 +138,7 @@ export function initWalletLink(
 
         return { signer: _signer, address, provider: prov, chain, }
       } catch (err) {
-        debugger
+        console.warn(err)
       }
     }
 
@@ -158,7 +150,6 @@ export function initWalletLink(
     try {
       return (await provider.getNetwork()).chainId as CHAIN
     } catch (err) {
-      debugger
       console.warn(err)
     }
   }, defaultProvider))))

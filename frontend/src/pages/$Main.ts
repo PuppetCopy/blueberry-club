@@ -24,6 +24,7 @@ import { $Home } from "./$Home"
 import { $ProfileConnected } from "./$ProfileConnected"
 import { $Trade } from "./$Trade"
 import { createLocalStorageChain } from "../logic/store"
+import { arbOneWeb3Provider, w3pAva } from "../logic/provider"
 
 
 const popStateEvent = eventElementTarget('popstate', window)
@@ -106,6 +107,13 @@ export default ({ baseRoute = '' }: Website) => component((
   
 
   const walletLink = initWalletLink(
+    {
+      globalProviderMap: {
+        [CHAIN.ARBITRUM]: arbOneWeb3Provider,
+        [CHAIN.AVALANCHE]: w3pAva,
+      },
+      defaultGlobalChain: CHAIN.ARBITRUM
+    },
     walletStore.storeReplay(walletChange),
     chainStore.store(changeNetwork)
   )

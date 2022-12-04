@@ -215,7 +215,6 @@ export const $TradeBox = (config: ITradeBox) => component((
       const totalSize = state.sizeDelta + reserveAmount
       const newLocal = div(totalSize, leverage)
 
-      debugger
       return state.trade.reserveAmount - newLocal
     }
 
