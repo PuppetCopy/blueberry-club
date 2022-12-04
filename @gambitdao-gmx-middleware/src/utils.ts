@@ -40,13 +40,15 @@ export function parseReadableNumber(stringNumber: string, locale?: Intl.NumberFo
   )
 }
 
+const readableLargeNumber = Intl.NumberFormat("en-US", { maximumFractionDigits: 0 })
 const readableTinyNumber = Intl.NumberFormat("en-US", { maximumFractionDigits: 5, minimumFractionDigits: 2 })
 const readableSmallNumber = Intl.NumberFormat("en-US", { maximumFractionDigits: 2, minimumFractionDigits: 2 })
 
 export function readableNumber(ammount: number | bigint) {
-  return ammount > 1
-    ? readableSmallNumber.format(ammount)
-    : readableTinyNumber.format(ammount)
+  return ammount > 100
+    ? readableLargeNumber.format(ammount) : ammount > 1
+      ? readableSmallNumber.format(ammount)
+      : readableTinyNumber.format(ammount)
 
   // const parts = ammount.toString().split('.')
   // const [whole = '', decimal = ''] = parts
