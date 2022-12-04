@@ -1,7 +1,7 @@
 import { Behavior, combineArray, fromCallback, O, Op } from "@aelea/core"
 import { $wrapNativeElement, component, INode, style } from "@aelea/dom"
 import { observer } from '@aelea/ui-components'
-import { pallete } from '@aelea/ui-components-theme'
+import { colorAlpha, pallete } from '@aelea/ui-components-theme'
 import { drawWithinFrame } from "@gambitdao/gmx-middleware"
 import { empty, filter, map, mergeArray, multicast, scan, switchLatest, tap } from '@most/core'
 import { disposeWith } from '@most/disposable'
@@ -82,20 +82,18 @@ export const $CandleSticks = ({ chartConfig, series, containerOp = O() }: ICandl
 
     },
     crosshair: {
-      mode: CrosshairMode.Magnet,
+      mode: CrosshairMode.Normal,
       horzLine: {
-        // visible: false,
         labelBackgroundColor: pallete.foreground,
-        // labelVisible: false,
-        color: pallete.indeterminate,
+        color: colorAlpha(pallete.foreground, .25),
         width: 1,
-        style: LineStyle.Dotted,
+        style: LineStyle.Solid
       },
       vertLine: {
-        color: pallete.indeterminate,
         labelBackgroundColor: pallete.foreground,
+        color: colorAlpha(pallete.foreground, .25),
         width: 1,
-        style: LineStyle.Dotted,
+        style: LineStyle.Solid,
       }
     },
     ...chartConfig

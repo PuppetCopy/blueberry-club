@@ -7,13 +7,13 @@ import {
   getLiquidationPrice, getMarginFees, getTokenUsd, STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, TAX_BASIS_POINTS,
   replayState, getDenominator, USD_PERCISION, formatReadableUSD, timeSince, IVaultPosition, getPositionKey, IPositionIncrease,
   IPositionDecrease, getPnL, filterNull, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE,
-  CHAIN, ITokenIndex, ITokenStable, ITokenInput, TradeStatus, getLiquidationPrice2, KeeperResponse, KeeperExecuteAbstract, LIMIT_LEVERAGE, div
+  CHAIN, ITokenIndex, ITokenStable, ITokenInput, TradeStatus, KeeperResponse, KeeperExecuteAbstract, LIMIT_LEVERAGE, div
 } from "@gambitdao/gmx-middleware"
 
-import { combine, constant, map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, startWith, merge, awaitPromises, never, filter, skipRepeatsWith, tap } from "@most/core"
+import { combine, constant, map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, merge, awaitPromises, never, filter, skipRepeatsWith } from "@most/core"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { $arrowsFlip, $infoTooltip, $RiskLiquidator, $spinner, $txHashRef } from "@gambitdao/ui-components"
-import { CandlestickData, CrosshairMode, LineStyle, Time } from "lightweight-charts"
+import { CandlestickData, LineStyle, Time } from "lightweight-charts"
 import { Stream } from "@most/types"
 import { TRADE_CONTRACT_MAPPING, connectTrade, connectVault, getErc20Balance, IPositionGetter } from "../logic/contract/trade"
 import { $TradeBox, ITradeFocusMode, ITradeState, RequestTradeQuery } from "../components/trade/$TradeBox"
@@ -26,7 +26,7 @@ import { getFeeBasisPoints, resolveAddress } from "../logic/utils"
 import { BrowserStore } from "../logic/store"
 import { ContractTransaction } from "@ethersproject/contracts"
 import { readContract } from "../logic/common"
-import { PositionRouter__factory } from "../logic/contract/gmx-contracts"
+import { ERC20__factory, PositionRouter__factory } from "../logic/contract/gmx-contracts"
 import { IWalletLink, IWalletName, IWalletState } from "@gambitdao/wallet-link"
 import { JsonRpcProvider } from "@ethersproject/providers"
 
@@ -86,7 +86,7 @@ export const $Trade = (config: ITradeComponent) => component((
   [changeCollateralRatio, changeCollateralRatioTether]: Behavior<bigint, bigint>,
   [changeSlippage, changeSlippageTether]: Behavior<string, string>,
 
-  [approveInputToken, approveInputTokenTether]: Behavior<boolean, boolean>,
+  [changeInputTokenApproved, changeInputTokenApprovedTether]: Behavior<boolean, boolean>,
 
   [enableTrading, enableTradingTether]: Behavior<boolean, boolean>,
 
@@ -184,6 +184,8 @@ export const $Trade = (config: ITradeComponent) => component((
     }
 
   }
+
+
 
   const inputToken: Stream<ITokenInput> = inputTokenStore.storeReplay(
     changeInputToken,
@@ -301,8 +303,6 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
   const trade: Stream<ITradeOpen | null> = combineArray((vpos, list) => {
-    console.log(vpos.position?.size)
-
     if (vpos === null) {
       return null
     }
@@ -538,8 +538,11 @@ export const $Trade = (config: ITradeComponent) => component((
 
             tradeConfig,
             tradeState: {
-              isTradingEnabled,
               trade,
+
+              isTradingEnabled,
+              isInputTokenApproved: changeInputTokenApproved,
+
               collateralDeltaUsd,
               sizeDeltaUsd,
               inputTokenPrice,
@@ -555,7 +558,7 @@ export const $Trade = (config: ITradeComponent) => component((
               liquidationPrice,
               executionFee,
               walletBalance,
-              isInputTokenApproved: approveInputToken,
+
             }
           })({
             leverage: changeLeverageTether(),
@@ -571,7 +574,7 @@ export const $Trade = (config: ITradeComponent) => component((
             changeSlippage: changeSlippageTether(),
             walletChange: walletChangeTether(),
             enableTrading: enableTradingTether(),
-            approveInputToken: approveInputTokenTether(),
+            approveInputToken: changeInputTokenApprovedTether(),
             changeNetwork: changeNetworkTether(),
             switchFocusMode: switchFocusModeTether(),
           }),
@@ -820,21 +823,6 @@ export const $Trade = (config: ITradeComponent) => component((
                   rightOffset: 15,
                   shiftVisibleRangeOnNewBar: true,
                   borderColor: pallete.horizon,
-                },
-                crosshair: {
-                  mode: CrosshairMode.Normal,
-                  horzLine: {
-                    labelBackgroundColor: pallete.primary,
-                    color: pallete.foreground,
-                    width: 1,
-                    style: LineStyle.Solid
-                  },
-                  vertLine: {
-                    labelBackgroundColor: pallete.primary,
-                    color: pallete.foreground,
-                    width: 1,
-                    style: LineStyle.Solid,
-                  }
                 }
               },
             })({

@@ -6,7 +6,7 @@ import {
   ARBITRUM_ADDRESS, formatFixed, readableNumber, parseFixed, formatReadableUSD, BASIS_POINTS_DIVISOR,
   ITrade, getTokenAmount, TokenDescription, LIMIT_LEVERAGE, bnDiv, replayState,
   div, StateStream, getPnL, MIN_LEVERAGE, formatToBasis, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE, isTradeSettled,
-  CHAIN, unixTimestampNow, query, fromJson, ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd, MAX_LEVERAGE
+  CHAIN, unixTimestampNow, query, fromJson, ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd
 } from "@gambitdao/gmx-middleware"
 import { $alertIcon, $anchor, $ButtonToggle, $infoTooltip, $tokenIconMap, $tokenLabelFromSummary, $Tooltip, getPricefeedVisibleColumns } from "@gambitdao/ui-components"
 import {
@@ -193,30 +193,27 @@ export const $TradeBox = (config: ITradeBox) => component((
   const slideCollateralLeverage = switchLatest(map((focus) => focus === ITradeFocusMode.collateral ? slideLeverage : empty(), config.tradeConfig.focusMode))
 
   const leverageCollateralFocus = skipRepeats(snapshot((state, leverage) => {
-    const totalCollateral = getTokenUsd(state.walletBalance, state.inputTokenPrice, state.inputTokenDescription.decimals) + (state.trade?.collateral || 0n)
-    const maxSize = (totalCollateral * LIMIT_LEVERAGE / BASIS_POINTS_DIVISOR)
-    const size = (totalCollateral * leverage / BASIS_POINTS_DIVISOR)
+    const sizeDelta = getTokenAmount(state.sizeDeltaUsd, state.indexTokenPrice, state.indexTokenDescription.decimals)
+    const totalSize = sizeDelta + (state.trade?.size || 0n)
+    const collateralDelta = div(totalSize, leverage)
 
-    const deltaCollateral = div(maxSize, leverage) - size
-    const sizeAmount = getTokenAmount(deltaCollateral, state.inputTokenPrice, state.inputTokenDescription.decimals)
+    return collateralDelta
 
+    // if (state.trade) {
+    //   // const currentMultiplier = div(size, totalCollateral)
+    //   // const multiplierDelta = currentMultiplier - leverage
+    //   // console.log(multiplierDelta, currentMultiplier, leverage)
 
+    //   // if (multiplierDelta < 50) {
+    //   //   return 0n
+    //   // }
 
-    if (state.trade) {
-      // const currentMultiplier = div(size, totalCollateral)
-      // const multiplierDelta = currentMultiplier - leverage
-      // console.log(multiplierDelta, currentMultiplier, leverage)
+    //   const reserveAmount = state.trade.reserveAmount
+    //   const totalSize = state.sizeDelta + reserveAmount
+    //   const newLocal = div(totalSize, leverage)
 
-      // if (multiplierDelta < 50) {
-      //   return 0n
-      // }
-
-      const reserveAmount = state.trade.reserveAmount
-      const totalSize = state.sizeDelta + reserveAmount
-      const newLocal = div(totalSize, leverage)
-
-      return state.trade.reserveAmount - newLocal
-    }
+    //   return state.trade.reserveAmount - newLocal
+    // }
 
 
 
@@ -311,11 +308,12 @@ export const $TradeBox = (config: ITradeBox) => component((
 
   return [
     $column(style({ borderRadius: BOX_SPACING, boxShadow: `2px 2px 13px 3px #00000040`, padding: 0, margin: screenUtils.isMobileScreen ? '0 10px' : '' }))(
-      $column(style({
+      $row(style({
         height: `80px`,
+        padding: '0 16px',
         marginBottom: `-${BOX_SPACING}`,
         paddingBottom: `${BOX_SPACING}`,
-        placeContent: 'center',
+        placeContent: 'space-between',
         alignItems: 'center',
         // backgroundColor: pallete.horizon,
         border: `1px solid ${colorAlpha(pallete.foreground, .15)}`,
@@ -325,91 +323,91 @@ export const $TradeBox = (config: ITradeBox) => component((
 
 
 
-        $row(layoutSheet.spacing)(
-          $ButtonToggle({
-            selected: config.tradeConfig.isIncrease,
-            options: [
-              false,
-              true,
-            ],
-            $$option: map(option => {
-              return $text(style({ fontSize: '0.85em' }))(option ? 'Deposit' : 'Withdraw')
-            })
-          })({ select: switchisIncreaseTether() }),
 
-          $ButtonToggle({
-            selected: config.tradeConfig.isLong,
-            options: [
-              false,
-              true,
-            ],
-            $$option: map(option => {
-              return $text(style({ fontSize: '0.85em' }))(option ? 'Long' : 'Short')
-            })
-          })({ select: switchIsLongTether() }),
+        $ButtonToggle({
+          selected: config.tradeConfig.isIncrease,
+          options: [
+            true,
+            false,
+          ],
+          $$option: map(option => {
+            return $text(style({ fontSize: '0.85em' }))(option ? 'Deposit' : 'Withdraw')
+          })
+        })({ select: switchisIncreaseTether() }),
 
-          // $Dropdown({
-          //   $container: $row(style({ position: 'relative', alignSelf: 'center' })),
-          //   $selection: $row(style({ alignItems: 'center', cursor: 'pointer' }))(
-          //     switchLatest(combineArray((isIncrease) => {
-          //       return $row(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
-          //         $icon({
-          //           $content: $bagOfCoins,
-          //           svgOps: styleBehavior(map(isIncrease => ({ fill: isIncrease ? pallete.message : pallete.indeterminate }), config.tradeConfig.isIncrease)),
-          //           width: '18px', viewBox: '0 0 32 32'
-          //         }),
-          //         $text(isIncrease ? 'Deposit' : 'Withdraw'),
-          //       )
-          //     }, config.tradeConfig.isIncrease)),
-          //     // switchLatest(combineArray((isIncrease, w3p) => {
-          //     //   return $row(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
-          //     //     $WalletLogoMap[w3p ? w3p.provider.provider.isMetaMask ? IWalletName.metamask : IWalletName.walletConnect : IWalletName.none],
-          //     //     $text(isIncrease ? 'Deposit' : 'Withdraw'),
-          //     //   )
-          //     // }, config.tradeConfig.isIncrease, config.walletLink.wallet)),
-          //     $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginTop: '3px', marginLeft: '5px' }), viewBox: '0 0 32 32' }),
-          //   ),
-          //   value: {
-          //     value: config.tradeConfig.isIncrease,
-          //     $container: $defaultSelectContainer(style({ minWidth: '100px', right: 0 })),
-          //     $$option: map((isIncrease) => {
-          //       return $text(style({ fontSize: '0.85em' }))(isIncrease ? 'Deposit' : 'Withdraw')
-          //     }),
-          //     list: [
-          //       true,
-          //       false,
-          //     ],
-          //   }
-          // })({
-          //   select: switchisIncreaseTether()
-          // }),
+        $ButtonToggle({
+          selected: config.tradeConfig.isLong,
+          options: [
+            true,
+            false,
+          ],
+          $$option: map(option => {
+            return $text(style({ fontSize: '0.85em' }))(option ? 'Long' : 'Short')
+          })
+        })({ select: switchIsLongTether() }),
 
-          // $Dropdown({
-          //   $container: $row(style({ position: 'relative', alignSelf: 'center' })),
-          //   $selection: $row(style({ alignItems: 'center', cursor: 'pointer' }))(
-          //     switchLatest(map(isLong => {
-          //       return $row(layoutSheet.spacingTiny)(
-          //         $icon({ $content: isLong ? $bull : $bear, width: '18px', viewBox: '0 0 32 32' }),
-          //         $text(isLong ? 'Long' : 'Short'),
-          //       )
-          //     }, config.tradeConfig.isLong)),
-          //     $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginTop: '3px', marginLeft: '5px' }), viewBox: '0 0 32 32' }),
-          //   ),
-          //   value: {
-          //     value: config.tradeConfig.isLong,
-          //     $container: $defaultSelectContainer(style({ minWidth: '100px', right: 0 })),
-          //     $$option: map((option) => {
-          //       return $text(style({ fontSize: '0.85em' }))(option ? 'Long' : 'Short')
-          //     }),
-          //     list: [
-          //       true,
-          //       false,
-          //     ],
-          //   }
-          // })({
-          //   select: switchIsLongTether()
-          // }),
-        ),
+        // $Dropdown({
+        //   $container: $row(style({ position: 'relative', alignSelf: 'center' })),
+        //   $selection: $row(style({ alignItems: 'center', cursor: 'pointer' }))(
+        //     switchLatest(combineArray((isIncrease) => {
+        //       return $row(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
+        //         $icon({
+        //           $content: $bagOfCoins,
+        //           svgOps: styleBehavior(map(isIncrease => ({ fill: isIncrease ? pallete.message : pallete.indeterminate }), config.tradeConfig.isIncrease)),
+        //           width: '18px', viewBox: '0 0 32 32'
+        //         }),
+        //         $text(isIncrease ? 'Deposit' : 'Withdraw'),
+        //       )
+        //     }, config.tradeConfig.isIncrease)),
+        //     // switchLatest(combineArray((isIncrease, w3p) => {
+        //     //   return $row(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
+        //     //     $WalletLogoMap[w3p ? w3p.provider.provider.isMetaMask ? IWalletName.metamask : IWalletName.walletConnect : IWalletName.none],
+        //     //     $text(isIncrease ? 'Deposit' : 'Withdraw'),
+        //     //   )
+        //     // }, config.tradeConfig.isIncrease, config.walletLink.wallet)),
+        //     $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginTop: '3px', marginLeft: '5px' }), viewBox: '0 0 32 32' }),
+        //   ),
+        //   value: {
+        //     value: config.tradeConfig.isIncrease,
+        //     $container: $defaultSelectContainer(style({ minWidth: '100px', right: 0 })),
+        //     $$option: map((isIncrease) => {
+        //       return $text(style({ fontSize: '0.85em' }))(isIncrease ? 'Deposit' : 'Withdraw')
+        //     }),
+        //     list: [
+        //       true,
+        //       false,
+        //     ],
+        //   }
+        // })({
+        //   select: switchisIncreaseTether()
+        // }),
+
+        // $Dropdown({
+        //   $container: $row(style({ position: 'relative', alignSelf: 'center' })),
+        //   $selection: $row(style({ alignItems: 'center', cursor: 'pointer' }))(
+        //     switchLatest(map(isLong => {
+        //       return $row(layoutSheet.spacingTiny)(
+        //         $icon({ $content: isLong ? $bull : $bear, width: '18px', viewBox: '0 0 32 32' }),
+        //         $text(isLong ? 'Long' : 'Short'),
+        //       )
+        //     }, config.tradeConfig.isLong)),
+        //     $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginTop: '3px', marginLeft: '5px' }), viewBox: '0 0 32 32' }),
+        //   ),
+        //   value: {
+        //     value: config.tradeConfig.isLong,
+        //     $container: $defaultSelectContainer(style({ minWidth: '100px', right: 0 })),
+        //     $$option: map((option) => {
+        //       return $text(style({ fontSize: '0.85em' }))(option ? 'Long' : 'Short')
+        //     }),
+        //     list: [
+        //       true,
+        //       false,
+        //     ],
+        //   }
+        // })({
+        //   select: switchIsLongTether()
+        // }),
+
 
       ),
 
@@ -827,6 +825,17 @@ export const $TradeBox = (config: ITradeBox) => component((
               return map(feed => ({ feed, trade }), priceFeedQuery)
             }, config.tradeState.trade))
 
+            const routerContractAddress = getContractAddress(TRADE_CONTRACT_MAPPING, w3p.chain, 'Router')
+            const positionRouterAddress = getContractAddress(TRADE_CONTRACT_MAPPING, w3p.chain, 'PositionRouter')
+
+            const isSpendApproved = awaitPromises(map(async token => {
+              const erc20 = ERC20__factory.connect(token, w3p.signer)
+              const spend = await erc20.allowance(w3p.address, routerContractAddress)
+              const newLocal = spend.gt(0)
+
+              return newLocal
+            }, config.tradeConfig.indexToken))
+
             return $column(style({ flex: 1 }))(
 
               $column(layoutSheet.spacing, style({ padding: '16px', placeContent: 'space-between' }), styleInline(map(mode => ({ display: mode ? 'flex' : 'none' }), inTradeMode)))(
@@ -919,10 +928,10 @@ export const $TradeBox = (config: ITradeBox) => component((
                     //   })({ click: clickResetTether() })
                     // ),
 
-                    switchLatest(combineArray((isPluginEnabled, isEnabled, isInputTokenApproved, inputToken, inputTokenDesc) => {
+                    switchLatest(combineArray((isPluginEnabled, isEnabled, isInputTokenApproved, indexToken, inputTokenDesc) => {
                       if (!isPluginEnabled || !isEnabled) {
                         return $Popover({
-                          $$popContent: map((xx) => {
+                          $$popContent: map(() => {
 
                             return $column(layoutSheet.spacing, style({ maxWidth: '400px' }))(
                               $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(`By using GBC Trading, I agree to the following Disclaimer`),
@@ -939,8 +948,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                                 })({
                                   click: clickEnablePluginTether(
                                     snapshot((c) => {
-                                      const contractAddress = getContractAddress(TRADE_CONTRACT_MAPPING, w3p.chain, 'PositionRouter')
-                                      return c.approvePlugin(contractAddress)
+                                      return c.approvePlugin(positionRouterAddress)
                                     }, trade.router.contract),
                                     multicast
                                   )
@@ -972,7 +980,6 @@ export const $TradeBox = (config: ITradeBox) => component((
                       }
 
                       if (!isInputTokenApproved) {
-                        const erc20 = ERC20__factory.connect(inputToken, w3p.signer)
 
                         return $ButtonPrimary({
                           $content: $text(`Approved ${inputTokenDesc.symbol}`)
@@ -980,6 +987,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                           click: approveInputTokenTether(
                             map(async (c) => {
                               const contractAddress = getContractAddress(TRADE_CONTRACT_MAPPING, w3p.chain, 'PositionRouter')
+                              const erc20 = ERC20__factory.connect(indexToken, w3p.signer)
 
                               if (c === null) {
                                 return false
@@ -1105,7 +1113,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                           multicast
                         )
                       })
-                    }, trade.isPluginEnabled(w3p.address), config.tradeState.isTradingEnabled, config.tradeState.isInputTokenApproved, config.tradeConfig.inputToken, config.tradeState.inputTokenDescription)),
+                    }, trade.isPluginEnabled(w3p.address), config.tradeState.isTradingEnabled, mergeArray([isSpendApproved, config.tradeState.isInputTokenApproved]), config.tradeConfig.indexToken, config.tradeState.inputTokenDescription)),
 
                     switchLatest(map(error => {
                       if (error === null) {
@@ -1325,15 +1333,14 @@ const $field = $element('input')(attr({ placeholder: '0.0' }), style({ width: '1
 
 const $hintInput = (label: Stream<string>, isIncrease: Stream<boolean>, tooltip: string | Stream<string>, val: Stream<string>, change: Stream<string>) => $row(layoutSheet.spacing, style({ placeContent: 'space-between', fontSize: '0.75em' }))(
   $row(layoutSheet.spacingTiny)(
-    $text(style({ color: pallete.foreground }))(label),
-    $infoTooltip(tooltip),
-  ),
-  $row(layoutSheet.spacingTiny)(
     $text(style({ color: pallete.foreground }))(val),
     $text(styleBehavior(map(isIncrease => isIncrease ? { color: pallete.positive } : { color: pallete.negative }, isIncrease)))('→'),
     $text(style({}))(change),
   ),
-
+  $row(layoutSheet.spacingTiny)(
+    $text(style({ color: pallete.foreground }))(label),
+    $infoTooltip(tooltip),
+  ),
 )
 
 

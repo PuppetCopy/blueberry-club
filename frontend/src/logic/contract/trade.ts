@@ -41,7 +41,7 @@ export async function getErc20Balance(token: ITokenTrade | typeof AddressZero, w
     }
     // @ts-ignore
     const tokenMap = TRADE_CONTRACT_MAPPING[w3p.chain]
-    if (tokenMap && token in tokenMap) {
+    if (tokenMap && Object.values(tokenMap).indexOf(token) > -1) {
       const erc20 = ERC20__factory.connect(token, w3p.provider)
 
       return (await erc20.balanceOf(w3p.address)).toBigInt()
