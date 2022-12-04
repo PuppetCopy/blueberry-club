@@ -35,7 +35,7 @@ function getStateFromLS<STORE>(key: string, defaultState: STORE): STORE {
   if (storeData === null) {
     return defaultState
   } else if (ES_BIGINT_EXP.test(storeData)) {
-    return BigInt(storeData) as STORE
+    return BigInt(storeData.slice(0, -1)) as STORE
   } else {
     return JSON.parse(storeData)
   }

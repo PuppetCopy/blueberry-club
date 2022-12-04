@@ -1,6 +1,6 @@
 import { combineArray, O, Op, replayLatest } from "@aelea/core"
 import { CHAIN, filterNull, intervalListFillOrderMap, listen } from "@gambitdao/gmx-middleware"
-import { awaitPromises, continueWith, empty, filter, fromPromise, map, multicast, never, now, periodic, switchLatest, takeWhile, tap } from "@most/core"
+import { awaitPromises, continueWith, empty, filter, fromPromise, map, multicast, never, now, periodic, recoverWith, switchLatest, takeWhile, tap } from "@most/core"
 import { Stream } from "@most/types"
 import { $berry } from "../components/$DisplayBerry"
 import { IValueInterval } from "../components/$StakingGraph"
@@ -87,6 +87,10 @@ export function readContractMapping<TProvider extends JsonRpcProvider, TMap, TCm
   const run = <R>(op: Op<RetContract, Promise<R>>) => O(
     op,
     awaitPromises,
+    recoverWith(err => {
+      console.warn(err)
+      return empty()
+    })
   )(contract)
 
 
@@ -136,6 +140,10 @@ export function readContract<T extends string, TContract extends typeof Contract
     }),
     op,
     awaitPromises,
+    recoverWith(err => {
+      console.warn(err)
+      return empty()
+    })
   )(contract)
 
   const readInt = (op: Op<RetContract, Promise<BigNumber>>): Stream<bigint> => {

@@ -28,8 +28,7 @@ export function resolveAddress(chain: CHAIN, indexToken: ITokenInput | null): IT
   if (indexToken === null || indexToken === AddressZero) {
     return contractList.NATIVE_TOKEN
   }
-  // @ts-ignore
-  return indexToken in contractList ? indexToken : contractList.NATIVE_TOKEN
+  return indexToken in CHAIN_TOKEN_ADDRESS_TO_SYMBOL ? indexToken : contractList.NATIVE_TOKEN
 }
 
 export function getTokenDescription(chain: CHAIN | null, token: ITokenInput): TokenDescription {

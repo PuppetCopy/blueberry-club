@@ -154,7 +154,7 @@ export const $StakingGraph = <T>(config: ITreasuryChart<T>) => component((
                 fontWeight: 'bold',
                 fontFamily: 'RelativeMono'
               },
-              value$: map(O((n) => readableNumber(n, false), Number), motion({ ...MOTION_NO_WOBBLE, precision: 15, stiffness: 210 }, 0, chartPnLCounter)),
+              value$: map(O((n) => readableNumber(n), Number), motion({ ...MOTION_NO_WOBBLE, precision: 15, stiffness: 210 }, 0, chartPnLCounter)),
               incrementColor: pallete.positive,
               decrementColor: pallete.negative
             }),

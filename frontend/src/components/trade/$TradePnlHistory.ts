@@ -212,7 +212,7 @@ export const $TradePnlHistory = (config: ITradePnlPreview) => component((
 
               series.applyOptions({
                 scaleMargins: {
-                  top: 0.2,
+                  top: 0.4,
                   bottom: 0,
                 }
               })
@@ -220,6 +220,12 @@ export const $TradePnlHistory = (config: ITradePnlPreview) => component((
               return series
             }),
             chartConfig: {
+              layout: {
+                textColor: pallete.foreground,
+                backgroundColor: 'transparent',
+                fontFamily: 'RelativePro',
+                fontSize: 10
+              },
               rightPriceScale: {
                 // mode: PriceScaleMode.Logarithmic,
                 autoScale: true,
@@ -233,8 +239,8 @@ export const $TradePnlHistory = (config: ITradePnlPreview) => component((
                 secondsVisible: false,
                 timeVisible: true,
                 rightOffset: 0,
-                // fixLeftEdge: true,
-                // fixRightEdge: true,
+                fixLeftEdge: true,
+                fixRightEdge: true,
                 // visible: false,
                 rightBarStaysOnScroll: true,
               },

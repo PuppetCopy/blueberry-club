@@ -3,7 +3,7 @@ import { $text, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, state } from "@aelea/ui-components"
 import { IToken } from "@gambitdao/gbc-middleware"
-import { CHAIN, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, formatReadableUSD, getPnL, IAccountSummary, IChainParamApi, ILeaderboardRequest, intervalTimeMap, IPageParapApi, ITrade,  ITradeOpen, TOKEN_SYMBOL } from "@gambitdao/gmx-middleware"
+import { CHAIN, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, formatReadableUSD, getPnL, IAccountSummary, IChainParamApi, ILeaderboardRequest, intervalTimeMap, IPageParapApi, ITrade, ITradeOpen, TOKEN_SYMBOL } from "@gambitdao/gmx-middleware"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { fromPromise, map, startWith } from "@most/core"
@@ -242,10 +242,12 @@ export const $Entry = (chain: CHAIN, pos: ITrade) =>
 
 export function $entryDisplay(chain: CHAIN, pos: ITrade) {
   const newLocal = resolveAddress(chain, pos.indexToken)
-  return $row(style({ position: 'relative', flexDirection: 'row-reverse', alignSelf: 'center' }))(
-    // @ts-ignore
-    $TokenIcon(CHAIN_TOKEN_ADDRESS_TO_SYMBOL[newLocal]),
-    style({ borderRadius: '50%', padding: '3px', marginRight: '-5px', backgroundColor: pallete.background, })(
+  return $row(style({ position: 'relative', flexDirection: 'row', alignSelf: 'center' }))(
+    style({ marginRight: '-5px' })(
+      // @ts-ignore
+      $TokenIcon(CHAIN_TOKEN_ADDRESS_TO_SYMBOL[newLocal])
+    ),
+    style({ borderRadius: '50%', padding: '3px', backgroundColor: pallete.background, })(
       $icon({
         $content: pos.isLong ? $bull : $bear,
         viewBox: '0 0 32 32',

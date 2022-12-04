@@ -30,20 +30,42 @@ export function shortPostAdress(address: string) {
   return address.slice(address.length - 4, address.length)
 }
 
-export function readableNumber(ammount: number | bigint, localize = true) {
-  const parts = ammount.toString().split('.')
-  const [whole = '', decimal = ''] = parts
+export function parseReadableNumber(stringNumber: string, locale?: Intl.NumberFormatOptions) {
+  const thousandSeparator = Intl.NumberFormat('en-US', locale).format(11111).replace(/\p{Number}/gu, '')
+  const decimalSeparator = Intl.NumberFormat('en-US', locale).format(1.1).replace(/\p{Number}/gu, '')
 
-  if (whole === '' && decimal === '') {
-    return EMPTY_MESSAGE
-  }
+  return parseFloat(stringNumber
+    .replace(new RegExp('\\' + thousandSeparator, 'g'), '')
+    .replace(new RegExp('\\' + decimalSeparator), '.')
+  )
+}
 
-  if (whole.replace(/^-/, '') === '0' || whole.length < 2) {
-    const shortDecimal = trimTrailingNumber(decimal)
-    return whole + (shortDecimal ? '.' + shortDecimal : '')
-  }
+const readableTinyNumber = Intl.NumberFormat("en-US", { maximumFractionDigits: 5, minimumFractionDigits: 2 })
+const readableSmallNumber = Intl.NumberFormat("en-US", { maximumFractionDigits: 2, minimumFractionDigits: 2 })
 
-  return localize ? Number(whole).toLocaleString() : whole
+export function readableNumber(ammount: number | bigint) {
+  return ammount > 1
+    ? readableSmallNumber.format(ammount)
+    : readableTinyNumber.format(ammount)
+
+  // const parts = ammount.toString().split('.')
+  // const [whole = '', decimal = ''] = parts
+
+  // if (whole === '' && decimal === '') {
+  //   return EMPTY_MESSAGE
+  // }
+
+  // const belowWhole = whole.replace(/^-/, '') === '0'
+  // if (belowWhole || whole.length < 3) {
+  //   if (whole.length < 1) {
+  //     const shortDecimal = trimTrailingNumber(decimal)
+  //     return whole + (shortDecimal ? '.' + shortDecimal : '')
+  //   }
+
+  //   return `${whole}.${Number(decimal).toLocaleString('en', { maximumFractionDigits: 2, minimumFractionDigits: 2, signDisplay useGrouping: false }).slice(0, 2) }`
+  // }
+
+  // return localize ? Number(whole).toLocaleString() : whole
 }
 
 export const trimTrailingNumber = (n: string) => {

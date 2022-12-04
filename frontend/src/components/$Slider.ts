@@ -60,18 +60,18 @@ export const $Slider = ({
 
   const sliderStyle = styleInline(combineArray(({ min, max, value }, color) => {
     const gutterColor = colorAlpha(pallete.background, .35)
-    const minArea = `${gutterColor} ${min * 100}%,`
+    const minArea = `${colorAlpha(color, .5)} ${min * 100}%,`
     const valArea = `${color} ${min * 100}% ${value * 100}%,`
     const freeArea = `#000 ${value * 100}% ${max * 100}%,`
     const maxArea = `${gutterColor} ${max * 100}%`
 
     const background = `linear-gradient(90deg, ${minArea} ${valArea} ${freeArea} ${maxArea}`
     return { background }
-  }, state, map(x => colorAlpha(x, .5), color)))
+  }, state, color))
 
 
   return [
-    $column(style({ height: '30px', touchAction: 'none', placeContent: 'center', cursor: 'pointer' }))(
+    $column(style({ minHeight: '36px', touchAction: 'none', placeContent: 'center', cursor: 'pointer' }))(
       sliderDimensionTether(observer.resize({}), map(res => res[0])),
       thumbePositionDeltaTether(
         nodeEvent('pointerdown'),

@@ -4,7 +4,7 @@ import { $column, $icon, $row, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { awaitPromises, constant, empty, fromPromise, map, mergeArray, now, snapshot, switchLatest, take, tap } from "@most/core"
 import { attemptToSwitchNetwork, IWalletLink, IWalletName, IWalletState, metamaskQuery, walletConnect } from "@gambitdao/wallet-link"
-import { $walletConnectLogo } from "../common/$icons"
+import { $bagOfCoinsCircle, $walletConnectLogo } from "../common/$icons"
 import { $ButtonPrimary, $ButtonSecondary } from "./form/$Button"
 import { CHAIN, NETWORK_METADATA } from "@gambitdao/gmx-middleware"
 import { $caretDown } from "../elements/$icons"
@@ -12,6 +12,22 @@ import { $Dropdown, $defaultSelectContainer } from "./form/$Dropdown"
 import { $Popover } from "./$Popover"
 
 
+
+export const $WalletLogoMap = {
+  [IWalletName.metamask]: $element('img')(attr({ src: '/assets/metamask-fox.svg' }), style({ width: '24px' }))(),
+  [IWalletName.walletConnect]: $icon({
+    viewBox: '0 0 32 32',
+    width: '18px',
+    fill: 'white',
+    $content: $walletConnectLogo,
+  }),
+  [IWalletName.none]: $icon({
+    viewBox: '0 0 32 32',
+    width: '18px',
+    fill: 'white',
+    $content: $bagOfCoinsCircle,
+  }),
+}
 
 
 export interface IConnectWalletPopover {
@@ -66,12 +82,8 @@ export const $IntermediateConnectPopover = (config: IConnectWalletPopover) => co
         const $walletConnectBtn = $ButtonSecondary({
           $content: $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
             $row(style({ margin: '1px', backgroundColor: '#3B99FC', padding: '2px', borderRadius: '6px' }))(
-              $icon({
-                viewBox: '0 0 32 32',
-                width: '18px',
-                fill: 'white',
-                $content: $walletConnectLogo,
-              })
+              $WalletLogoMap[IWalletName.walletConnect]
+              
             ),
             $text('Wallet-Connect'),
           )
@@ -87,7 +99,7 @@ export const $IntermediateConnectPopover = (config: IConnectWalletPopover) => co
           ? $column(layoutSheet.spacing)(
             $ButtonSecondary({
               $content: $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
-                $element('img')(attr({ src: '/assets/metamask-fox.svg' }), style({ width: '24px' }))(),
+                $WalletLogoMap[IWalletName.metamask],
                 $text('Connect Metamask')
               )
             })({

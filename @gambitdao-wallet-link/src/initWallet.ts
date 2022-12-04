@@ -9,6 +9,7 @@ import { arbOneWeb3Provider, metamaskQuery, w3pAva, walletConnect } from "./prov
 
 
 export interface IWalletState {
+  walletName: IWalletName
   address: string
   provider: Web3Provider
   chain: CHAIN
@@ -58,41 +59,44 @@ export function initWalletLink(
 
   const config = { ...defaultConfig, ...givenConfig }
 
-  const walletProvider: Stream<IEthereumProvider | null> = replayLatest(multicast(switchLatest(awaitPromises(map(async (name) => {
-    if (name === IWalletName.none) {
-      return now(null)
-    }
-
-    const isWC = name === IWalletName.walletConnect
-    const wp = isWC ? walletConnect : await metamaskQuery
-
-
-    if (name && wp) {
-      const [address]: string[] = await wp.request({ method: 'eth_accounts' }) as any
-
-      const disconnect = isWC
-        ? constant(null, fromCallback(cb => walletConnect.on('disconnect', cb))) // wallet-connet doesn't emit standart disconnect
-        : constant(null, eip1193ProviderEvent(wp, 'disconnect'))
-
-      const walletNetworkChange = eip1193ProviderEvent(wp, 'chainChanged')
-      const userNetworkChange = filterNull(awaitPromises(map(async (chain) => {
-        await attemptToSwitchNetwork(wp, chain).catch(error => {
-          alert(error.message)
-          console.error(error)
-          return Promise.reject('unable to switch network')
-        })
-        return null
-      }, networkChange || empty())))
-      const netchange = constant(wp, mergeArray([userNetworkChange, walletNetworkChange]))
-      const accountChange = constant(wp, eip1193ProviderEvent(wp, 'accountsChanged'))
-
-      if (address) {
-        return mergeArray([now(wp),  netchange, accountChange])
+  const walletProvider: Stream<IEthereumProvider | null> = replayLatest(multicast(switchLatest(mergeArray([
+    awaitPromises(map(async (name) => {
+      if (name === IWalletName.none) {
+        return now(null)
       }
-    }
 
-    return now(null)
-  }, walletName)))))
+      const isWC = name === IWalletName.walletConnect
+      const wp = isWC ? walletConnect : await metamaskQuery
+
+
+      if (name && wp) {
+        const [address]: string[] = await wp.request({ method: 'eth_accounts' }) as any
+
+        // WalletConnet doesn't emit standart disconnect
+        const disconnect = isWC
+          ? fromCallback(cb => walletConnect.on('disconnect', cb))
+          : eip1193ProviderEvent(wp, 'disconnect')
+
+        const walletNetworkChange = eip1193ProviderEvent(wp, 'chainChanged')
+        const userNetworkChange = filterNull(awaitPromises(map(async (chain) => {
+          await attemptToSwitchNetwork(wp, chain).catch(error => {
+            alert(error.message)
+            console.error(error)
+            return Promise.reject('unable to switch network')
+          })
+          return null
+        }, networkChange || empty())))
+        const netchange = constant(wp, mergeArray([userNetworkChange, walletNetworkChange]))
+        const accountChange = constant(wp, eip1193ProviderEvent(wp, 'accountsChanged'))
+
+        if (address) {
+          return mergeArray([now(wp), netchange, accountChange])
+        }
+      }
+
+      return now(null)
+    }, walletName))
+  ]))))
 
   const defaultProvider: Stream<Web3Provider | JsonRpcProvider> = awaitPromises(map(async (wallet) => {
     const chain = wallet ? Number(await wallet.request({ method: 'eth_chainId' })) as CHAIN : config.defaultGlobalChain
@@ -103,7 +107,7 @@ export function initWalletLink(
         const w3p = new Web3Provider(wallet, chain)
         return w3p
       }
-      
+
       const gp = config.globalProviderMap[chain]!
       await gp.getNetwork()
 
@@ -135,11 +139,15 @@ export function initWalletLink(
 
   const wallet: Stream<IWalletState | null> = replayLatest(multicast(awaitPromises(map(async prov => {
     if (prov instanceof Web3Provider) {
-      const _signer = prov.getSigner()
-      const address = await _signer.getAddress()
-      const chain = await _signer.getChainId() as CHAIN
+      try {
+        const _signer = prov.getSigner()
+        const address = await _signer.getAddress()
+        const chain = await _signer.getChainId() as CHAIN
 
-      return { signer: _signer, address, provider: prov, chain, }
+        return { signer: _signer, address, provider: prov, chain, }
+      } catch (err) {
+        debugger
+      }
     }
 
     return null
@@ -147,7 +155,12 @@ export function initWalletLink(
 
 
   const network: Stream<CHAIN> = replayLatest(multicast(awaitPromises(map(async (provider) => {
-    return (await provider.getNetwork()).chainId as CHAIN
+    try {
+      return (await provider.getNetwork()).chainId as CHAIN
+    } catch (err) {
+      debugger
+      console.warn(err)
+    }
   }, defaultProvider))))
 
   return { network, wallet, provider, defaultProvider }

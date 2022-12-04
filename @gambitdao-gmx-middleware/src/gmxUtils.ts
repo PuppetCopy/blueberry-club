@@ -17,7 +17,7 @@ export function div(a: bigint, b: bigint): bigint {
 }
 
 export function bnDiv(a: bigint, b: bigint): number {
-  return formatFixed(div(a, b), 4)
+  return formatToBasis(div(a, b))
 }
 
 export function formatToBasis(a: bigint): number {
@@ -66,8 +66,8 @@ export function getAveragePriceFromDelta(islong: boolean, size: bigint, price: b
 }
 
 
-export function getTokenAmount(amountUsd: bigint, price: bigint, tokenDescription: TokenDescription) {
-  return amountUsd * getDenominator(tokenDescription.decimals) / price
+export function getTokenAmount(amountUsd: bigint, price: bigint, decimals: number) {
+  return amountUsd * getDenominator(decimals) / price
 }
 
 export function getTokenUsd(amount: bigint, price: bigint, decimals: number) {

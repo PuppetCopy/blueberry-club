@@ -45,7 +45,7 @@ query($adress: String, $id: String) {
 const arWeavce = createClient({
   fetch,
   url: `${baseUrl}/graphql`,
-  requestPolicy: 'network-only'
+  // requestPolicy: 'network-only'
 })
 
 

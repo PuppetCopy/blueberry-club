@@ -29,7 +29,9 @@ export const trade = O(
     }
 
     const id = queryParams.id
-    const priceFeedQuery = await graphClientMap[queryParams.chain](tradeQuery, { id }, { requestPolicy: 'network-only' })
+    const priceFeedQuery = await graphClientMap[queryParams.chain](tradeQuery, { id }, {
+      // requestPolicy: 'network-only'
+    })
 
     if (priceFeedQuery === null) {
       throw new Error('Trade not found')
@@ -42,7 +44,9 @@ export const trade = O(
 
 export const latestPriceMap = O(
   map(async (queryParams: IChainParamApi): Promise<IPriceLatest[]> => {
-    const priceList = await graphClientMap[queryParams.chain](latestPriceTimelineQuery, {}, { requestPolicy: 'network-only' })
+    const priceList = await graphClientMap[queryParams.chain](latestPriceTimelineQuery, {}, {
+      // requestPolicy: 'network-only'
+    })
     return priceList.priceLatests
   }),
   awaitPromises
@@ -55,7 +59,9 @@ export const accountTradeList = O(
       return []
     }
 
-    const allAccounts = await graphClientMap[queryParams.chain](accountTradeListQuery, { ...queryParams, account: queryParams.account.toLowerCase() }, { requestPolicy: 'network-only' })
+    const allAccounts = await graphClientMap[queryParams.chain](accountTradeListQuery, { ...queryParams, account: queryParams.account.toLowerCase() }, {
+      // requestPolicy: 'network-only'
+    })
     return allAccounts.trades
   }),
   awaitPromises
@@ -75,7 +81,9 @@ async function fetchTrades(chain: CHAIN, offset: number, from: number, to: numbe
     return (await Promise.all([query0, query1])).flatMap(res => res)
   }
 
-  const list = (await graphClientMap[chain](tradeListQuery, { from, to, pageSize: 1000, offset }, { requestPolicy: 'network-only' })).trades
+  const list = (await graphClientMap[chain](tradeListQuery, { from, to, pageSize: 1000, offset }, {
+    // requestPolicy: 'network-only'
+  })).trades
 
   if (list.length === 1000) {
     const newPage = await fetchTrades(chain, offset + 1000, from, to)

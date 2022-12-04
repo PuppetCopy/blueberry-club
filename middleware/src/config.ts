@@ -5,10 +5,9 @@ import { IAttributeMappings, LabItemSale, SaleType } from "./types"
 
 export const LAB_CHAIN = CHAIN.ARBITRUM
 
-export const GLOBAL_W3P = 'wss://arb-mainnet.g.alchemy.com/v2/Rf-9XHJG_C6xvhApXKg1tNCZmAOBaA5A'
 export const GLOBAL_W3P_HTTP = 'https://arbitrum-mainnet.infura.io/v3/6d7e461ad6644743b92327579860b662'
 
-export const GLOBAL_W3P_ARBITRUM = GLOBAL_W3P
+export const GLOBAL_W3P_ARBITRUM = 'wss://arb-mainnet.g.alchemy.com/v2/RBsflxWv6IhITsLxAWcQlhCqSuxV7Low'
 export const GLOBAL_W3P_AVALANCHE = 'https://api.avax.network/ext/bc/C/rpc'
 
 export const BLUEBERRY_REFFERAL_CODE = '0x424c554542455252590000000000000000000000000000000000000000000000'
@@ -43,6 +42,33 @@ export const saleConfig = {
 }
 
 export const saleDescriptionList: LabItemSale[] = [
+  {
+    name: "Birthday Hat",
+    description: `Happy birthday, dear blueberry
+today, we celebrate you, that's the goal
+
+Blueberries are sweet and oh so good
+In smoothies, cakes, or just eaten plain
+So let's celebrate your special day
+With some tasty treats, and maybe a little champagne
+
+Here's to another year of growth
+May you continue to be ripe and juicy, no one can doth
+Happy birthday, little blueberry friend
+We're glad you're here, let the celebrations never end!`,
+    id: IAttributeMappings.Birthday,
+    mintRuleList: [
+      {
+        supply: 300,
+        type: SaleType.holder,
+        cost: 0n,
+        contractAddress: "0xa7c0b1F830D3427688Ea56FAEc42eF2674E1Be6C",
+        start: toTime(2022, 11, 5, 18),
+        finish: toTime(2023, 0, 5, 18),
+        accountLimit: 1
+      }
+    ]
+  },
   {
     name: "Skeleton",
     description: "Frankenstein and Dracula have nothing on Bloody Mary, although all these Classics are definitely scary. Here’s some thing from GBC for you it’s a real gusher, please let me introduce to you the infamous Mr. BoneCrusher!",

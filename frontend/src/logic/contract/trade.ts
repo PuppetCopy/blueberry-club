@@ -31,19 +31,23 @@ const gmxIOPriceMapSource = {
 
 
 export async function getErc20Balance(token: ITokenTrade | typeof AddressZero, w3p: IWalletState | null) {
-  if (w3p === null) {
+  try {
+    if (w3p === null) {
+      return 0n
+    }
+
+    if (token === AddressZero) {
+      return (await w3p.signer.getBalance()).toBigInt()
+    }
+    // @ts-ignore
+    const tokenMap = TRADE_CONTRACT_MAPPING[w3p.chain]
+    if (tokenMap && token in tokenMap) {
+      const erc20 = ERC20__factory.connect(token, w3p.provider)
+
+      return (await erc20.balanceOf(w3p.address)).toBigInt()
+    }
+  } catch (err) {
     return 0n
-  }
-
-  if (token === AddressZero) {
-    return (await w3p.signer.getBalance()).toBigInt()
-  }
-  // @ts-ignore
-  const tokenMap = TRADE_CONTRACT_MAPPING[w3p.chain]
-  if (tokenMap && token in tokenMap) {
-    const erc20 = ERC20__factory.connect(token, w3p.provider)
-
-    return (await erc20.balanceOf(w3p.address)).toBigInt()
   }
 
   return 0n
