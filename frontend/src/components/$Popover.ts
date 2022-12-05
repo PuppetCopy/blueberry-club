@@ -10,6 +10,7 @@ import { observer } from '@aelea/ui-components'
 
 interface IPocus {
   
+  $target: $Node
   $popContent: Stream<$Node>
 
   $container?: NodeComposeFn<$Node>
@@ -21,7 +22,7 @@ interface IPocus {
   // overlayAlpha?: string
 }
 
-export const $Popover = ({ $popContent, offset = 30, padding = 76, dismiss = empty(), $container = $node }: IPocus) => ($target: $Node) => component((
+export const $Popover = ({ $popContent, offset = 30, padding = 76, dismiss = empty(), $container = $node, $target }: IPocus) => component((
   [overlayClick, overlayClickTether]: Behavior<INode, any>,
   [targetIntersection, targetIntersectionTether]: Behavior<INode, IntersectionObserverEntry[]>,
   [popoverContentDimension, popoverContentDimensionTether]: Behavior<INode, ResizeObserverEntry[]>,

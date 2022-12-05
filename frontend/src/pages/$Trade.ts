@@ -302,7 +302,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
 
-  const trade: Stream<ITradeOpen | null> = combineArray((vpos, list) => {
+  const trade: Stream<ITradeOpen | null> = replayLatest(multicast(combineArray((vpos, list) => {
     if (vpos === null) {
       return null
     }
@@ -310,7 +310,7 @@ export const $Trade = (config: ITradeComponent) => component((
     const pos = list.find(t => t.key === vpos.key)
 
     return vpos.position ? { ...pos, ...vpos.position } : null
-  }, updateVaultPositon, accountOpenTradeList)
+  }, updateVaultPositon, accountOpenTradeList)))
 
 
   const tradeConfig = { trade, focusMode, slippage, isLong, isIncrease, inputToken, shortCollateralToken, indexToken, leverage, collateralDelta, sizeDelta, collateralRatio, }

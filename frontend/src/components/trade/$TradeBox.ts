@@ -8,7 +8,7 @@ import {
   div, StateStream, getPnL, MIN_LEVERAGE, formatToBasis, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE, isTradeSettled,
   CHAIN, unixTimestampNow, query, fromJson, ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd
 } from "@gambitdao/gmx-middleware"
-import { $alertIcon, $anchor, $ButtonToggle, $infoTooltip, $tokenIconMap, $tokenLabelFromSummary, $Tooltip, getPricefeedVisibleColumns } from "@gambitdao/ui-components"
+import { $anchor, $ButtonToggle, $infoTooltip, $tokenIconMap, $tokenLabelFromSummary, $Tooltip, getPricefeedVisibleColumns } from "@gambitdao/ui-components"
 import {
   merge, multicast, mergeArray, now, snapshot, map, switchLatest, filter,
   skipRepeats, empty, combine, fromPromise, constant, sample, startWith, skipRepeatsWith, awaitPromises
@@ -19,7 +19,7 @@ import { $ButtonPrimary, $ButtonPrimaryCtx, $ButtonSecondary } from "../form/$Bu
 import { $Dropdown, $defaultSelectContainer } from "../form/$Dropdown"
 import { $caretDown } from "../../elements/$icons"
 import { CHAIN_ADDRESS_MAP, getTokenDescription, resolveAddress } from "../../logic/utils"
-import { $IntermediateConnectPopover } from "../../components/$ConnectAccount"
+import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 import { BrowserStore } from "../../logic/store"
 import { connectTrade, getErc20Balance, TRADE_CONTRACT_MAPPING } from "../../logic/contract/trade"
 import { MouseEventParams } from "lightweight-charts"
@@ -741,46 +741,55 @@ export const $TradeBox = (config: ITradeBox) => component((
               if (isLong) {
                 const tokenDesc = getTokenDescription(chain, indexToken)
 
-                return $row(layoutSheet.spacingTiny, style({ fontSize: '.75em', alignItems: 'center' }))(
-                  $text(style({ color: pallete.foreground, marginRight: '3px' }))('Indexed In'),
-                  $icon({ $content: $tokenIconMap[tokenDesc.symbol], width: '14px', viewBox: '0 0 32 32' }),
-                  $text(tokenDesc.symbol)
+                return $row(layoutSheet.spacing, style({ fontSize: '.75em', alignItems: 'center' }))(
+                  $row(layoutSheet.spacingTiny)(
+                    $text(style({ color: pallete.foreground }))('Indexed In'),
+                    $infoTooltip(`${tokenDesc.symbol} will be borrowed to maintain a Long Position`),
+                  ),
+                  $row(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
+                    $icon({ $content: $tokenIconMap[tokenDesc.symbol], width: '14px', viewBox: '0 0 32 32' }),
+                    $text(tokenDesc.symbol)
+                  )
                 )
               }
 
-              return $Dropdown<ARBITRUM_ADDRESS_STABLE | AVALANCHE_ADDRESS_STABLE>({
-                $container: $row(style({ position: 'relative', alignSelf: 'center' })),
-                $selection: $row(style({ alignItems: 'center', cursor: 'pointer' }))(
-                  switchLatest(combineArray((collateralToken) => {
-                    const tokenDesc = getTokenDescription(chain, collateralToken)
-
-
-                    return $row(layoutSheet.spacingTiny, style({ fontSize: '.75em', alignItems: 'center' }))(
-                      $text(style({ color: pallete.foreground, marginRight: '3px' }))('Collateral In'),
-                      $icon({ $content: $tokenIconMap[tokenDesc.symbol], width: '14px', viewBox: '0 0 32 32' }),
-                      $text(tokenDesc.symbol)
-                    )
-                  }, config.tradeConfig.shortCollateralToken)),
-                  $icon({ $content: $caretDown, width: '14px', viewBox: '0 0 32 32' })
+              return $row(layoutSheet.spacing)(
+                $row(layoutSheet.spacingTiny, style({ fontSize: '.75em', alignItems: 'center' }))(
+                  $text(style({ color: pallete.foreground }))('Indexed In'),
+                  $infoTooltip(map(token => `${getTokenDescription(chain, token).symbol} will be borrowed to maintain a Short Position. you can switch with other USD tokens to receive it later`, config.tradeConfig.shortCollateralToken)),
                 ),
-                value: {
-                  value: config.tradeConfig.shortCollateralToken,
-                  $container: $defaultSelectContainer(style({ minWidth: '300px', right: 0 })),
-                  $$option: map(option => {
-                    const tokenDesc = getTokenDescription(chain, option)
+                $Dropdown<ARBITRUM_ADDRESS_STABLE | AVALANCHE_ADDRESS_STABLE>({
+                  $container: $row(style({ position: 'relative', alignSelf: 'center' })),
+                  $selection: $row(style({ alignItems: 'center', cursor: 'pointer' }))(
+                    switchLatest(combineArray((collateralToken) => {
+                      const tokenDesc = getTokenDescription(chain, collateralToken)
 
-                    return $tokenLabelFromSummary(tokenDesc)
-                  }),
-                  list: [
-                    ARBITRUM_ADDRESS.USDC,
-                    ARBITRUM_ADDRESS.USDT,
-                    ARBITRUM_ADDRESS.DAI,
-                    ARBITRUM_ADDRESS.FRAX,
-                  ],
-                }
-              })({
-                select: changeCollateralTokenTether()
-              })
+                      return $row(layoutSheet.spacingTiny, style({ fontSize: '.75em', alignItems: 'center' }))(
+                        $icon({ $content: $tokenIconMap[tokenDesc.symbol], width: '14px', viewBox: '0 0 32 32' }),
+                        $text(tokenDesc.symbol)
+                      )
+                    }, config.tradeConfig.shortCollateralToken)),
+                    $icon({ $content: $caretDown, width: '14px', viewBox: '0 0 32 32' })
+                  ),
+                  value: {
+                    value: config.tradeConfig.shortCollateralToken,
+                    $container: $defaultSelectContainer(style({ minWidth: '300px', right: 0 })),
+                    $$option: map(option => {
+                      const tokenDesc = getTokenDescription(chain, option)
+
+                      return $tokenLabelFromSummary(tokenDesc)
+                    }),
+                    list: [
+                      ARBITRUM_ADDRESS.USDC,
+                      ARBITRUM_ADDRESS.USDT,
+                      ARBITRUM_ADDRESS.DAI,
+                      ARBITRUM_ADDRESS.FRAX,
+                    ],
+                  }
+                })({
+                  select: changeCollateralTokenTether()
+                })
+              )
             }, config.walletLink.network, config.tradeConfig.isLong, config.tradeConfig.indexToken)),
 
           ),
@@ -795,18 +804,25 @@ export const $TradeBox = (config: ITradeBox) => component((
         // backgroundColor: pallete.horizon,
         border: `1px solid ${colorAlpha(pallete.foreground, .15)}`,
         // borderTop: 'none',
-        borderRadius: `0px 0px ${BOX_SPACING} ${BOX_SPACING}`, overflow: 'hidden',
+        borderRadius: `0px 0px ${BOX_SPACING} ${BOX_SPACING}`,
       }))(
-        $IntermediateConnectPopover({
+        $IntermediateConnectButton({
           chainList: config.chainList,
-          $button: style({
-            alignSelf: 'center'
-          })($ButtonPrimary({
-            $content: $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
-              $text('Connect To Trade'),
-              $icon({ $content: $caretDown, viewBox: '0 0 32 32', width: '16px', fill: pallete.background, svgOps: style({ marginTop: '2px' }) }),
-            )
-          })({})),
+          primaryButtonConfig: {
+            $container: $element('button')(style({ alignSelf: 'center', placeSelf: 'center' })),
+            // $content: $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+            //   $text('Connect To Trade'),
+            //   $icon({ $content: $caretDown, viewBox: '0 0 32 32', width: '16px', fill: pallete.background, svgOps: style({ marginTop: '2px' }) }),
+            // )
+          },
+          // $button: style({
+          //   alignSelf: 'center'
+          // })($ButtonPrimary({
+          //   $content: $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+          //     $text('Connect To Trade'),
+          //     $icon({ $content: $caretDown, viewBox: '0 0 32 32', width: '16px', fill: pallete.background, svgOps: style({ marginTop: '2px' }) }),
+          //   )
+          // })({})),
           $$display: map(w3p => {
             const tradePricefeed = switchLatest(combineArray((trade) => {
               if (!trade) {

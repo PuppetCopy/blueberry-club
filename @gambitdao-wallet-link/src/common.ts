@@ -1,5 +1,6 @@
 import { fromCallback } from "@aelea/core"
-import type { BaseProvider, EventType } from "@ethersproject/providers"
+import type { BaseProvider, EventType, ExternalProvider } from "@ethersproject/providers"
+import { CHAIN, NETWORK_METADATA } from "@gambitdao/gmx-middleware"
 import { empty, map, switchLatest } from "@most/core"
 import { disposeWith } from "@most/disposable"
 import { Stream } from "@most/types"
@@ -95,3 +96,38 @@ export const providerEvent = <A>(ps: Stream<BaseProvider | null>) => (eventType:
 )
 
 
+
+// https://eips.ethereum.org/EIPS/eip-3085
+export async function attemptToSwitchNetwork(metamask: ExternalProvider, chain: CHAIN) {
+  if (!('request' in metamask)) {
+    return console.error('External Provider does not contain request() method')
+  }
+
+  try {
+    // check if the chain to connect to is installed
+    await metamask.request!({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: '0x' + chain.toString(16) }], // chainId must be in hexadecimal numbers
+    })
+  } catch (error: any) {
+    if (!NETWORK_METADATA[chain]) {
+      throw new Error(`Could not add metamask network, chainId ${chain} is not supported`)
+    }
+    // This error code indicates that the chain has not been added to MetaMask
+    // if it is not, then install it into the user MetaMask
+    if (error.code === 4902) {
+      try {
+        await metamask.request!({
+          method: 'wallet_addEthereumChain',
+          params: [
+            NETWORK_METADATA[chain]
+          ],
+        })
+      } catch (addError: any) {
+        throw parseError(addError)
+      }
+    }
+
+    throw parseError(parseError(error))
+  }
+}

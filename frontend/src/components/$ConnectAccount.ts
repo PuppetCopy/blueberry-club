@@ -1,8 +1,8 @@
-import { Behavior, combineArray, Op } from "@aelea/core"
+import { Behavior, Op } from "@aelea/core"
 import { $element, $Node, $text, attr, component, nodeEvent, style } from "@aelea/dom"
 import { $column, $icon, $row, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { awaitPromises, constant, empty, fromPromise, map, mergeArray, now, snapshot, switchLatest, take, tap } from "@most/core"
+import { awaitPromises, constant, empty, fromPromise, map, now, snapshot, switchLatest } from "@most/core"
 import { attemptToSwitchNetwork, IWalletLink, IWalletName, IWalletState, metamaskQuery, walletConnect } from "@gambitdao/wallet-link"
 import { $bagOfCoinsCircle, $walletConnectLogo } from "../common/$icons"
 import { $ButtonPrimary, $ButtonSecondary } from "./form/$Button"
@@ -10,6 +10,8 @@ import { CHAIN, NETWORK_METADATA } from "@gambitdao/gmx-middleware"
 import { $caretDown } from "../elements/$icons"
 import { $Dropdown, $defaultSelectContainer } from "./form/$Dropdown"
 import { $Popover } from "./$Popover"
+import { IButton } from "./form/$buttonCore"
+import { Stream } from "@most/types"
 
 
 
@@ -35,69 +37,164 @@ export interface IConnectWalletPopover {
   walletLink: IWalletLink
 
   $$display: Op<IWalletState, $Node>
-  $button: $Node
-
-  forceNetworkChange?: boolean
+  primaryButtonConfig?: Partial<IButton>
 }
 
-export interface IIntermediateDisplay {
-  chainList: CHAIN[]
-  $$display: Op<IWalletState, $Node>
-  walletLink: IWalletLink
-
-  forceNetworkChange?: boolean
-}
-
-export const $IntermediateConnectButton = ({
-  $$display,
-  walletLink,
-  forceNetworkChange = true,
-  chainList
-}: IIntermediateDisplay) => $IntermediateConnectPopover({
-  chainList,
-  forceNetworkChange,
-  $button: $ButtonPrimary({
-    $content: $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
-      $text('Connect Wallet'),
-      $icon({ $content: $caretDown, viewBox: '0 0 32 32', width: '16px', fill: pallete.background, svgOps: style({ marginTop: '2px' }) }),
-    )
-  })({}),
-  $$display,
-  walletLink
-})
 
 
-export const $IntermediateConnectPopover = (config: IConnectWalletPopover) => component((
+
+export const $IntermediateConnectButton = (config: IConnectWalletPopover) => component((
   [clickOpenPopover, clickOpenPopoverTether]: Behavior<any, any>,
   [changeNetwork, changeNetworkTether]: Behavior<any, CHAIN>,
-  [walletChange, walletChangeTether]: Behavior<PointerEvent, IWalletName>,
+  [walletChange, walletChangeTether]: Behavior<IWalletName, IWalletName>,
 ) => {
 
 
   return [
-    switchLatest(combineArray((metamask, w3p) => {
+    switchLatest(map((w3p) => {
 
       // no wallet connected, show connection flow
       if (w3p === null) {
-        const $walletConnectBtn = $ButtonSecondary({
-          $content: $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
-            $row(style({ margin: '1px', backgroundColor: '#3B99FC', padding: '2px', borderRadius: '6px' }))(
-              $WalletLogoMap[IWalletName.walletConnect]
-              
-            ),
-            $text('Wallet-Connect'),
-          )
-        })({
-          click: walletChangeTether(
-            map(() => walletConnect.request({ method: 'eth_requestAccounts' })),
-            awaitPromises,
-            constant(IWalletName.walletConnect),
-          )
+        return $ConnectDropdown(
+          $ButtonPrimary({
+            $content: $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+              $text('Connect Wallet'),
+              $icon({ $content: $caretDown, viewBox: '0 0 32 32', width: '16px', fill: pallete.background, svgOps: style({ marginTop: '2px' }) }),
+            )
+          })({
+            click: clickOpenPopoverTether()
+          }),
+          clickOpenPopover
+        )({
+          walletChange: walletChangeTether()
         })
+      }
 
-        const $connectButtonOptions = metamask
-          ? $column(layoutSheet.spacing)(
-            $ButtonSecondary({
+
+      const isCompatibleChain = config.chainList.some(c => c === w3p.chain)
+
+      if (isCompatibleChain) {
+        return switchLatest(config.$$display(now(w3p)))
+      }
+
+      const fstChain = config.chainList[0]
+
+      if (config.chainList.length > 1) {
+        return $switchNetworkDropdown(config.walletLink, config.chainList,
+          $ButtonPrimary({
+            $content: $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+              $text('Switch Network'),
+              $icon({ $content: $caretDown, viewBox: '0 0 32 32', width: '16px', fill: pallete.background, svgOps: style({ marginTop: '2px' }) }),
+            ),
+            ...config.primaryButtonConfig
+          })({})
+        )({
+          changeNetwork: changeNetworkTether()
+        })
+      }
+
+
+      return $ButtonPrimary({
+        $content: $row(layoutSheet.spacingSmall)(
+          $text(`Switch to ${NETWORK_METADATA[fstChain].chainName}`),
+          $element('img')(attr({ src: `/assets/chain/${fstChain}.svg` }), style({ width: '20px' }))(),
+        ),
+        ...config.primaryButtonConfig
+      })({
+        click: changeNetworkTether(
+          // constant(fstChain)
+          snapshot(async (wallet) => {
+            if (wallet) {
+              const externalProvider = wallet.provider.provider
+              await attemptToSwitchNetwork(externalProvider, fstChain).catch(error => {
+                alert(error.message)
+                console.error(error)
+                return Promise.reject('unable to switch network')
+              })
+            }
+
+            return fstChain
+          }, config.walletLink.wallet),
+          awaitPromises
+        )
+      })
+
+    }, config.walletLink.wallet)),
+
+    {
+      walletChange, changeNetwork
+    }
+  ]
+})
+
+
+export const $switchNetworkDropdown = (walletLink: IWalletLink, chainList: CHAIN[], $trigger: $Node) => component((
+  [changeNetwork, changeNetworkTether]: Behavior<any, CHAIN>,
+) => {
+
+  return [
+    $Dropdown({
+      value: {
+        value: walletLink.network,
+        $$option: map(option => {
+          if (option === null) {
+            return $text('?')
+          }
+
+          const chainName = NETWORK_METADATA[option].chainName
+
+          return $row(
+            changeNetworkTether(
+              nodeEvent('click'),
+              // constant(option)
+              snapshot(async (wallet) => {
+                if (wallet) {
+                  const externalProvider = wallet.provider.provider
+                  await attemptToSwitchNetwork(externalProvider, option).catch(error => {
+                    console.warn(error)
+                    return Promise.reject('unable to switch network')
+                  })
+                }
+
+                return option
+              }, walletLink.wallet),
+              awaitPromises
+            ),
+            style({ alignItems: 'center', width: '100%' })
+          )(
+            $element('img')(attr({ src: `/assets/chain/${option}.svg` }), style({ width: '32px', padding: '3px 6px' }))(),
+            $text(chainName)
+          )
+        }),
+        $container: $defaultSelectContainer(style({ left: 'auto', right: 0, })),
+        list: chainList,
+      },
+      $container: $column(style({ placeContent: 'center', position: 'relative' })),
+      $selection: $trigger,
+    })({}),
+
+    {
+      changeNetwork
+    }
+  ]
+})
+
+
+export const $ConnectDropdown = ($trigger: $Node, clickOpenPopover: Stream<any>) => component((
+  [walletChange, walletChangeTether]: Behavior<PointerEvent, IWalletName>,
+) => {
+
+  return [
+    $Popover({
+      $target: $trigger,
+      $popContent: map(() => {
+        return $column(layoutSheet.spacing)(
+          switchLatest(map(metamask => {
+            if (!metamask) {
+              return empty()
+            }
+
+            return $ButtonSecondary({
               $content: $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
                 $WalletLogoMap[IWalletName.metamask],
                 $text('Connect Metamask')
@@ -108,105 +205,29 @@ export const $IntermediateConnectPopover = (config: IConnectWalletPopover) => co
                 awaitPromises,
                 constant(IWalletName.metamask)
               ),
-            }),
-            $walletConnectBtn
-          )
-          : $walletConnectBtn
+            })
+          }, fromPromise(metamaskQuery))),
+          $ButtonSecondary({
+            $content: $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
+              $row(style({ margin: '1px', backgroundColor: '#3B99FC', padding: '2px', borderRadius: '6px' }))(
+                $WalletLogoMap[IWalletName.walletConnect]
 
-        return $Popover({
-          $popContent: constant($connectButtonOptions, clickOpenPopover)
-        })(
-          clickOpenPopoverTether(nodeEvent('click'))(config.$button)
-        )({})
-
-      }
-
-
-      const isCompatibleChain = config.chainList.some(c => c === w3p.chain)
-
-      if (!config.forceNetworkChange || isCompatibleChain) {
-        return switchLatest(config.$$display(now(w3p)))
-      }
-
-      const fstChain = config.chainList[0]
-
-      if (config.chainList.length > 1) {
-        return $Dropdown({
-          value: {
-            value: now(w3p.chain),
-            $$option: map(option => {
-              if (option === null) {
-                return $text('?')
-              }
-
-              const chainName = NETWORK_METADATA[option].chainName
-
-              return $row(
-                changeNetworkTether(
-                  nodeEvent('click'),
-                  constant(option)
-                  // snapshot(async (wallet) => {
-                  //   if (wallet) {
-                  //     const externalProvider = wallet.provider.provider
-                  //     await attemptToSwitchNetwork(externalProvider, option).catch(error => {
-                  //       alert(error.message)
-                  //       console.error(error)
-                  //       return Promise.reject('unable to switch network')
-                  //     })
-                  //   }
-
-                  //   return option
-                  // }, config.walletLink.wallet),
-                  // awaitPromises
-                ),
-                style({ alignItems: 'center', width: '100%' })
-              )(
-                $element('img')(attr({ src: `/assets/chain/${option}.svg` }), style({ width: '32px', padding: '3px 6px' }))(),
-                $text(chainName)
-              )
-            }),
-            $container: $defaultSelectContainer(style({ left: 'auto', right: 0, })),
-            list: config.chainList,
-          },
-          $container: $column(style({ placeContent: 'center', position: 'relative' })),
-          $selection: $ButtonPrimary({
-            $content: $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
-              $text('Choose Network'),
-              $icon({ $content: $caretDown, viewBox: '0 0 32 32', width: '16px', fill: pallete.background, svgOps: style({ marginTop: '2px' }) }),
+              ),
+              $text('Wallet-Connect'),
             )
-          })({}),
-        })({})
-      }
-
-
-      return $ButtonPrimary({
-        $content: $row(layoutSheet.spacingSmall)(
-          $text(`Switch to ${NETWORK_METADATA[fstChain].chainName}`),
-          $element('img')(attr({ src: `/assets/chain/${fstChain}.svg` }), style({ width: '20px' }))(),
-        ),
-      })({
-        click: changeNetworkTether(
-          constant(fstChain)
-          // snapshot(async (wallet) => {
-          //   if (wallet) {
-          //     const externalProvider = wallet.provider.provider
-          //     await attemptToSwitchNetwork(externalProvider, fstChain).catch(error => {
-          //       alert(error.message)
-          //       console.error(error)
-          //       return Promise.reject('unable to switch network')
-          //     })
-          //   }
-
-          //   return fstChain
-          // }, config.walletLink.wallet),
-          // awaitPromises
+          })({
+            click: walletChangeTether(
+              map(() => walletConnect.request({ method: 'eth_requestAccounts' })),
+              awaitPromises,
+              constant(IWalletName.walletConnect),
+            )
+          })
         )
-      })
-
-    }, fromPromise(metamaskQuery), config.walletLink.wallet)),
+      }, clickOpenPopover)
+    })({}),
 
     {
-      walletChange, changeNetwork
+      walletChange
     }
   ]
 })

@@ -9,7 +9,7 @@ import { takeUntilLast } from "../common"
 
 
 export function getMintCount(rule: MintRule, walletLink: IWalletLink, updateInterval = 1500) {
-  const contract = map(p => Mintable__factory.connect(rule.contractAddress, p), filterNull(walletLink.provider))
+  const contract = map(p => Mintable__factory.connect(rule.contractAddress, p), filterNull(walletLink.defaultProvider))
   
   const count = periodicRun({
     interval: updateInterval,

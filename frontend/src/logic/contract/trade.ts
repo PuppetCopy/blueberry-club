@@ -1,4 +1,4 @@
-import { combine, empty, map, multicast, switchLatest } from "@most/core"
+import { combine, empty, map, multicast, switchLatest, tap } from "@most/core"
 import { CHAIN, switchFailedSources, ITokenIndex, ITokenInput, ITokenTrade, ARBITRUM_ADDRESS, AVALANCHE_ADDRESS, AddressZero, getChainName, KeeperResponse, IPositionDecrease, IPositionIncrease, IPositionClose, IPositionLiquidated, filterNull, listen, IVaultPosition } from "@gambitdao/gmx-middleware"
 import { combineArray } from "@aelea/core"
 import { ERC20__factory, PositionRouter__factory, Router__factory, VaultPriceFeed__factory, Vault__factory } from "./gmx-contracts"
@@ -142,7 +142,9 @@ export function connectVault(walletLink: IWalletLink) {
   const positionUpdateEvent = (pos: { key: string, position: IVaultPosition | null }) => switchLatest(combineArray((chain, contract) => {
     const filterQuery = contract.filters.UpdatePosition()
 
-    return listen(contract, filterQuery)
+    return tap(xxx => {
+      debugger
+    }, listen(contract, filterQuery))
   }, walletLink.network, vault.contract))
 
   const positionIncreaseEvent: Stream<IPositionIncrease> = filterNull(combineArray((w3p, ev: IPositionIncrease) => w3p?.address === ev.account ? ev : null, walletLink.wallet, vault.listen('IncreasePosition')))

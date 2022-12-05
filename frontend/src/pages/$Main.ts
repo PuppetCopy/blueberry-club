@@ -115,7 +115,7 @@ export default ({ baseRoute = '' }: Website) => component((
       defaultGlobalChain: CHAIN.ARBITRUM
     },
     walletStore.storeReplay(walletChange),
-    chainStore.store(changeNetwork)
+    chainStore.storeReplay(changeNetwork)
   )
 
   const $liItem = $element('li')(style({ marginBottom: '14px' }))
@@ -262,6 +262,8 @@ export default ({ baseRoute = '' }: Website) => component((
             router.match(treasuryRoute)(
               $Treasury({ walletLink, parentRoute: treasuryRoute, treasuryStore })({})
             ),
+
+            $node(),
           )
         ),
 

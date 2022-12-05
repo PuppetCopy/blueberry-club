@@ -72,7 +72,7 @@ export const $Slider = ({
 
 
   return [
-    $column(style({ minHeight: '36px', touchAction: 'none', placeContent: 'center', cursor: 'pointer' }))(
+    $column(style({ minHeight: '36px', zIndex: 0, touchAction: 'none', placeContent: 'center', cursor: 'pointer' }))(
       sliderDimensionTether(observer.resize({}), map(res => res[0])),
       thumbePositionDeltaTether(
         nodeEvent('pointerdown'),
