@@ -193,9 +193,9 @@ export const $TradeBox = (config: ITradeBox) => component((
   const slideCollateralLeverage = switchLatest(map((focus) => focus === ITradeFocusMode.collateral ? slideLeverage : empty(), config.tradeConfig.focusMode))
 
   const leverageCollateralFocus = skipRepeats(snapshot((state, leverage) => {
-    const sizeDelta = getTokenAmount(state.sizeDeltaUsd, state.indexTokenPrice, state.indexTokenDescription.decimals)
-    const totalSize = sizeDelta + (state.trade?.size || 0n)
-    const collateralDelta = div(totalSize, leverage)
+    const totalSizeUsd = state.sizeDeltaUsd + (state.trade?.size || 0n)
+    const totalSizeAmount = getTokenAmount(totalSizeUsd, state.inputTokenPrice, state.inputTokenDescription.decimals)
+    const collateralDelta = div(totalSizeAmount, leverage)
 
     return collateralDelta
 
@@ -325,6 +325,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
 
         $ButtonToggle({
+          $container: $row(layoutSheet.spacingSmall),
           selected: config.tradeConfig.isIncrease,
           options: [
             true,
@@ -336,6 +337,7 @@ export const $TradeBox = (config: ITradeBox) => component((
         })({ select: switchisIncreaseTether() }),
 
         $ButtonToggle({
+          $container: $row(layoutSheet.spacingSmall),
           selected: config.tradeConfig.isLong,
           options: [
             true,
@@ -473,7 +475,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                       }
 
                       node.element.value = readableNumber(formatFixed(val, params.isIncrease ? params.inputTokenDescription.decimals : params.inputTokenDescription.decimals))
-                    }, tradeState, mergeArray([leverageCollateralFocus, maxBalance])))
+                    }, tradeState, mergeArray([clickResetVal, leverageCollateralFocus, maxBalance])))
                   )
                 ),
                 switchLatest
@@ -539,7 +541,7 @@ export const $TradeBox = (config: ITradeBox) => component((
           ),
         ),
 
-        $column(style({ height: `2px`, zIndex: 0, placeContent: 'center' }))(
+        $column(style({ height: `2px`, placeContent: 'center' }))(
           $Slider({
             value: map(leverage => {
               if (leverage === null) {
@@ -846,7 +848,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
                 $row(
                   layoutSheet.spacing,
-                  style({ placeContent: 'space-between' }),
+                  style({ placeContent: 'space-between', alignItems: 'center' }),
                 )(
                   $column(layoutSheet.spacingTiny)(
                     $row(layoutSheet.spacingTiny, style({ fontSize: '0.75em', placeContent: 'space-between' }))(
@@ -913,22 +915,22 @@ export const $TradeBox = (config: ITradeBox) => component((
                     }),
                   ),
 
-                  $row(style({ alignItems: 'center' }))(
+                  $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
 
-                    // style({ padding: '8px', placeSelf: 'center', fontSize: '.75em' })(
-                    //   $ButtonSecondary({
-                    //     disabled: map(params => {
-                    //       if (params.sizeDelta > 0n || params.collateralDelta > 0n) {
-                    //         return false
-                    //       }
+                    style({ padding: '8px', fontSize: '.75em', alignSelf: 'center' })(
+                      $ButtonSecondary({
+                        disabled: map(params => {
+                          if (params.sizeDelta > 0n || params.collateralDelta > 0n) {
+                            return false
+                          }
 
-                    //       return true
-                    //     }, tradeState),
-                    //     $content: $text('Reset')
-                    //   })({ click: clickResetTether() })
-                    // ),
+                          return true
+                        }, tradeState),
+                        $content: $text('Reset')
+                      })({ click: clickResetTether() })
+                    ),
 
-                    switchLatest(combineArray((isPluginEnabled, isEnabled, isInputTokenApproved, indexToken, inputTokenDesc) => {
+                    switchLatest(combineArray((isPluginEnabled, isEnabled, isInputTokenApproved, indexToken, indexTokenDesc) => {
                       if (!isPluginEnabled || !isEnabled) {
                         return $Popover({
                           $$popContent: map(() => {
@@ -982,18 +984,17 @@ export const $TradeBox = (config: ITradeBox) => component((
                       if (!isInputTokenApproved) {
 
                         return $ButtonPrimary({
-                          $content: $text(`Approved ${inputTokenDesc.symbol}`)
+                          $content: $text(`Approve ${indexTokenDesc.symbol}`)
                         })({
                           click: approveInputTokenTether(
                             map(async (c) => {
-                              const contractAddress = getContractAddress(TRADE_CONTRACT_MAPPING, w3p.chain, 'PositionRouter')
                               const erc20 = ERC20__factory.connect(indexToken, w3p.signer)
 
                               if (c === null) {
                                 return false
                               }
 
-                              await erc20.approve(contractAddress, MaxUint256)
+                              await (await erc20.approve(routerContractAddress, MaxUint256)).wait()
 
                               return true
                             }),
@@ -1033,6 +1034,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
                           return `${modLabel} ${params.isLong ? 'Long' : 'Short'} ${outputToken.symbol}`
                         }, tradeState)),
+                        alert: validationError
                       })({
                         click: clickRequestTradeTether(
                           snapshot(({ state, trade }) => {
@@ -1113,24 +1115,8 @@ export const $TradeBox = (config: ITradeBox) => component((
                           multicast
                         )
                       })
-                    }, trade.isPluginEnabled(w3p.address), config.tradeState.isTradingEnabled, mergeArray([isSpendApproved, config.tradeState.isInputTokenApproved]), config.tradeConfig.indexToken, config.tradeState.inputTokenDescription)),
+                    }, trade.isPluginEnabled(w3p.address), config.tradeState.isTradingEnabled, mergeArray([isSpendApproved, config.tradeState.isInputTokenApproved]), config.tradeConfig.indexToken, config.tradeState.indexTokenDescription)),
 
-                    switchLatest(map(error => {
-                      if (error === null) {
-                        return empty()
-                      }
-
-                      return $row(style({ width: '0px' }))(
-                        $Tooltip({
-                          $content: $text(style({ fontSize: '.75em', }))(error),
-                          $container: $column(style({ zIndex: 5, marginLeft: '-20px', backgroundColor: '#000', borderRadius: '50%', })),
-                          $anchor: $icon({
-                            $content: $alertIcon, viewBox: '0 0 24 24', width: '28px',
-                            svgOps: style({ fill: pallete.negative, padding: '3px', filter: 'drop-shadow(black 0px 0px 10px) drop-shadow(black 0px 0px 10px) drop-shadow(black 0px 0px 1px)' })
-                          })
-                        })({})
-                      )
-                    }, skipRepeats(validationError)))
 
 
                   ),
@@ -1247,12 +1233,13 @@ export const $TradeBox = (config: ITradeBox) => component((
       switchIsIncrease,
       changeCollateralToken,
       changeCollateralDelta: mergeArray([
+        clickResetVal,
         leverageCollateralFocus,
         inputCollateralDelta,
         maxBalance,
       ]),
       changeSizeDelta: mergeArray([
-        // clickResetVal,
+        clickResetVal,
         inputSizeDelta,
         leverageSizeFocus,
         sizeDeltaFromMaxBalance,

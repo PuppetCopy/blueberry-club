@@ -2,6 +2,7 @@ import { Behavior, combineArray, combineObject, Op } from "@aelea/core"
 import { component, IBranch, style, nodeEvent, eventElementTarget, styleInline, $Node, NodeComposeFn, $text, drawLatest, styleBehavior } from "@aelea/dom"
 import { Input, $row, observer, screenUtils, $column } from "@aelea/ui-components"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
+import { invertColor } from "@gambitdao/ui-components"
 import { skipRepeats, snapshot, until, multicast, join, map, now, tap, mergeArray } from "@most/core"
 import { Stream } from "@most/types"
 
@@ -62,7 +63,7 @@ export const $Slider = ({
     const gutterColor = colorAlpha(pallete.background, .35)
     const minArea = `${colorAlpha(color, .5)} ${min * 100}%,`
     const valArea = `${color} ${min * 100}% ${value * 100}%,`
-    const freeArea = `#000 ${value * 100}% ${max * 100}%,`
+    const freeArea = `${invertColor(pallete.message) } ${value * 100}% ${max * 100}%,`
     const maxArea = `${gutterColor} ${max * 100}%`
 
     const background = `linear-gradient(90deg, ${minArea} ${valArea} ${freeArea} ${maxArea}`

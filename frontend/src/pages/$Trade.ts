@@ -350,8 +350,8 @@ export const $Trade = (config: ITradeComponent) => component((
   }, combineObject({ inputTokenPrice, inputTokenDescription, collateralRatio, collateralDelta })))
 
   const sizeDeltaUsd = multicast(map(params => {
-    return getTokenUsd(params.sizeDelta, params.indexTokenPrice, params.inputTokenDescription.decimals)
-  }, combineObject({ inputTokenDescription, indexTokenPrice, sizeDelta })))
+    return getTokenUsd(params.sizeDelta, params.indexTokenPrice, params.indexTokenDescription.decimals)
+  }, combineObject({ indexTokenDescription, indexTokenPrice, sizeDelta })))
 
 
   const swapFee = skipRepeats(combineArray((chain, usdgSupply, totalTokenWeight, tradeParams, pos, inputTokenDebtUsd, inputTokenWeight, inputTokenDescription, inputTokenPrice, indexTokenDebtUsd, indexTokenWeight, indexTokenDescription, indexTokenPrice, isLong) => {

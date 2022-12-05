@@ -3,6 +3,7 @@ import { $Node, component, eventElementTarget, INode, NodeComposeFn, nodeEvent, 
 import { $row, observer } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { constant, switchLatest, empty, map, skipRepeats, startWith, never } from "@most/core"
+import { invertColor } from "./common"
 
 
 
@@ -63,6 +64,8 @@ export const $Tooltip = ({ $anchor, $content, $container = $row }: TooltipConfig
             padding: '8px',
             maxWidth: '250px',
             borderRadius: '8px',
+            fontWeight: 'normal',
+            color: pallete.message,
             // fontSize: '.75em',
           }),
           styleInline(

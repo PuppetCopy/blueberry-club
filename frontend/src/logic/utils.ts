@@ -19,16 +19,16 @@ export const CHAIN_ADDRESS_MAP = {
 
 export function resolveAddress(chain: CHAIN, indexToken: ITokenInput | null): ITokenTrade {
   // @ts-ignore
-  const contractList = CHAIN_ADDRESS_MAP[chain]
+  const contractAddressMap = CHAIN_ADDRESS_MAP[chain]
 
-  if (!contractList) {
+  if (!contractAddressMap) {
     throw new Error(`Token ${indexToken} does not exist`)
   }
 
   if (indexToken === null || indexToken === AddressZero) {
-    return contractList.NATIVE_TOKEN
+    return contractAddressMap.NATIVE_TOKEN
   }
-  return indexToken in CHAIN_TOKEN_ADDRESS_TO_SYMBOL ? indexToken : contractList.NATIVE_TOKEN
+  return Object.values(contractAddressMap).indexOf(indexToken) > -1 ? indexToken : contractAddressMap.NATIVE_TOKEN
 }
 
 export function getTokenDescription(chain: CHAIN | null, token: ITokenInput): TokenDescription {

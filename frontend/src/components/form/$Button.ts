@@ -1,13 +1,12 @@
-import { Behavior, combineArray, O } from "@aelea/core"
-import { $element, $text, component, style, stylePseudo } from "@aelea/dom"
-import { $row, layoutSheet } from "@aelea/ui-components"
+import { combineArray, O } from "@aelea/core"
+import { $element, $text, style, stylePseudo } from "@aelea/dom"
+import { $column, $icon, $row, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { ContractTransaction } from "@ethersproject/contracts"
-import { $alertTooltip, $spinner } from "@gambitdao/ui-components"
-import { constant, empty, fromPromise, map, mergeArray, now, recoverWith, startWith, switchLatest } from "@most/core"
+import { $alertIcon, $Tooltip } from "@gambitdao/ui-components"
+import { constant, empty, fromPromise, map, mergeArray, now, recoverWith, skipRepeats, startWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
 import { $Button, IButton } from "./$buttonCore"
-import { parseError } from "@gambitdao/wallet-link"
 
 
 
@@ -39,6 +38,7 @@ export const $ButtonPrimary = (config: IButton) => {
 
 export interface IButtonPrimaryCtx extends IButton {
   ctx: Stream<Promise<ContractTransaction>>
+  alert?: Stream<string | null>
 }
 
 export const $ButtonPrimaryCtx = (config: IButtonPrimaryCtx) => {
@@ -82,7 +82,29 @@ export const $ButtonPrimaryCtx = (config: IButtonPrimaryCtx) => {
       //   ),
       // )
     }),
-    buttonPrimaryStyle
+    src => {
+      return config.alert
+        ? mergeArray([
+          buttonPrimaryStyle(src),
+          switchLatest(map(error => {
+            if (error === null) {
+              return empty()
+            }
+
+            return $row(style({ width: '0px' }))(
+              $Tooltip({
+                $content: $text(style({ fontSize: '.75em', }))(error),
+                $container: $column(style({ zIndex: 5, marginLeft: '6px', backgroundColor: '#000', borderRadius: '50%', })),
+                $anchor: $icon({
+                  $content: $alertIcon, viewBox: '0 0 24 24', width: '28px',
+                  svgOps: style({ fill: pallete.negative, padding: '3px', filter: 'drop-shadow(black 0px 0px 10px) drop-shadow(black 0px 0px 10px) drop-shadow(black 0px 0px 1px)' })
+                })
+              })({})
+            )
+          }, skipRepeats(config.alert)))
+        ])
+        : buttonPrimaryStyle(src)
+    }
   )
 }
 
