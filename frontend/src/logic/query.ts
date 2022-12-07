@@ -189,9 +189,9 @@ query ($id: String) {
 
 const gmxGlpEthHistoricPriceDoc: TypedDocumentNode<{ gmx: IPricefeed[], glpArbitrum: IPricefeed[], eth: IPricefeed[] }, IQueryGmxEthHistoricPrice> = gql`
 query ($first: Int = 1000, $period: IntervalTime = _86400, $from: Int = 0, $to: Int = 1999999999) {
-  glpArbitrum: pricefeeds(first: $first, where: {timestamp_gt: $from, timestamp_lt: $to, interval: $period, feed: _0x321F653eED006AD1C29D174e17d96351BDe22649}) {
+  glpArbitrum: pricefeeds(first: $first, where: {timestamp_gt: $from, timestamp_lt: $to, interval: $period, feed: _0x4277f8f2c384827b5273592ff7cebd9f2c1ac258}) {
     id
-    feed
+    tokenAddress
     o
     h
     l
@@ -201,7 +201,7 @@ query ($first: Int = 1000, $period: IntervalTime = _86400, $from: Int = 0, $to: 
   }
   gmx: pricefeeds(first: $first, where: {timestamp_gt: $from, timestamp_lt: $to, interval: $period, feed: _0xfc5a1a6eb076a2c7ad06ed22c90d7e710e35ad0a}) {
     id
-    feed
+    tokenAddress
     o
     h
     l
@@ -211,7 +211,7 @@ query ($first: Int = 1000, $period: IntervalTime = _86400, $from: Int = 0, $to: 
   }
   eth: pricefeeds(first: $first, where: {timestamp_gt: $from, timestamp_lt: $to, interval: $period, feed: _0x82af49447d8a07e3bd95bd0d56f35241523fbab1}) {
     id
-    feed
+    tokenAddress
     o
     h
     l
@@ -227,7 +227,7 @@ const avalancheHistoricPriceDoc: TypedDocumentNode<{ avax: IPricefeed[], glpAval
 query ($first: Int = 1000, $period: IntervalTime = _86400, $from: Int = 0, $to: Int = 1999999999) {
   avax: pricefeeds(first: $first, where: {timestamp_gt: $from, timestamp_lt: $to, interval: $period, feed: _0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7}) {
     id
-    feed
+    tokenAddress
     o
     h
     l
@@ -235,9 +235,9 @@ query ($first: Int = 1000, $period: IntervalTime = _86400, $from: Int = 0, $to: 
     timestamp
     interval
   }
-  glpAvalanche: pricefeeds(first: $first, where: {timestamp_gt: $from, timestamp_lt: $to, interval: $period, feed: _0xe1ae4d4b06A5Fe1fc288f6B4CD72f9F8323B107F}) {
+  glpAvalanche: pricefeeds(first: $first, where: {timestamp_gt: $from, timestamp_lt: $to, interval: $period, feed: _0x01234181085565ed162a948b6a5e88758cd7c7b8}) {
     id
-    feed
+    tokenAddress
     o
     h
     l
@@ -264,7 +264,7 @@ query {
     value
     timestamp
   }
-  glpArbitrum: priceLatest(id: "0x321F653eED006AD1C29D174e17d96351BDe22649") {
+  glpArbitrum: priceLatest(id: "0x4277f8f2c384827b5273592ff7cebd9f2c1ac258") {
     id
     value
     timestamp
@@ -279,7 +279,7 @@ query {
     value
     timestamp
   }
-  glpAvalanche: priceLatest(id: "0xe1ae4d4b06A5Fe1fc288f6B4CD72f9F8323B107F") {
+  glpAvalanche: priceLatest(id: "0x01234181085565ed162a948b6a5e88758cd7c7b8") {
     id
     value
     timestamp
@@ -498,35 +498,32 @@ query ($first: Int = 1000, $account: String, $period: IntervalTime = _86400, $fr
   stakes(first: $first, orderBy: timestamp, orderDirection: desc, where:{account: $account, timestamp_gte: $from, timestamp_lte: $to}) {
     account
     amount
-    amountUsd
     token
     timestamp
     id
   }
 
 
-  feeGmxTrackerClaims(first: $first, orderBy: timestamp, orderDirection: desc, where:{receiver: $account, timestamp_gte: $from, timestamp_lte: $to}) {
-    ${claim}
-  }
+  # feeGmxTrackerClaims(first: $first, orderBy: timestamp, orderDirection: desc, where:{receiver: $account, timestamp_gte: $from, timestamp_lte: $to}) {
+  #   ${claim}
+  # }
 
-  feeGlpTrackerClaims(first: $first, orderBy: timestamp, orderDirection: desc, where:{receiver: $account, timestamp_gte: $from, timestamp_lte: $to}) {
-    ${claim}
-  }
+  # feeGlpTrackerClaims(first: $first, orderBy: timestamp, orderDirection: desc, where:{receiver: $account, timestamp_gte: $from, timestamp_lte: $to}) {
+  #   ${claim}
+  # }
 
-  stakedGmxTrackerClaims(first: $first, orderBy: timestamp, orderDirection: desc, where:{receiver: $account, timestamp_gte: $from, timestamp_lte: $to}) {
-    ${claim}
-  }
+  # stakedGmxTrackerClaims(first: $first, orderBy: timestamp, orderDirection: desc, where:{receiver: $account, timestamp_gte: $from, timestamp_lte: $to}) {
+  #   ${claim}
+  # }
 
-  stakedGlpTrackerClaims(first: $first, orderBy: timestamp, orderDirection: desc, where:{receiver: $account, timestamp_gte: $from, timestamp_lte: $to}) {
-    ${claim}
-  }
+  # stakedGlpTrackerClaims(first: $first, orderBy: timestamp, orderDirection: desc, where:{receiver: $account, timestamp_gte: $from, timestamp_lte: $to}) {
+  #   ${claim}
+  # }
 
-  bonusGmxTrackerTransfers(first: $first, orderBy: timestamp, orderDirection: desc, where:{to: $account, timestamp_gte: $from, timestamp_lte: $to}) {
-    ${trasnfer}
-  }
+  # bonusGmxTrackerTransfers(first: $first, orderBy: timestamp, orderDirection: desc, where:{to: $account, timestamp_gte: $from, timestamp_lte: $to}) {
+  #   ${trasnfer}
+  # }
 }
-
-
 `
 
 
@@ -549,10 +546,6 @@ const prepareClient = (opts: ClientOptions) => {
   }
 }
 
-const blueberryGraph = prepareClient({
-  fetch: fetch,
-  url: 'https://api.thegraph.com/subgraphs/name/nissoh/blueberry-club',
-})
 
 const blueberryGraphV2 = prepareClient({
   fetch: fetch,
@@ -562,12 +555,12 @@ const blueberryGraphV2 = prepareClient({
 
 const gmxAvalancheStats = prepareClient({
   fetch: fetch,
-  url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-staking-avalanche',
+  url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-avalanche',
 })
 
 const gmxArbitrumStats = prepareClient({
   fetch: fetch,
-  url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-rewards',
+  url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-arbitrum',
 })
 
 
@@ -583,16 +576,6 @@ export const queryProfile = async (queryParams: QueryIdentifiable) => {
   return fromProfileJson(owner)
 }
 
-
-export const queryOwnerTrasnferNfts = async (account: string) => {
-  const owner = (await blueberryGraph(ownerTransferList, { account: account.toLowerCase() })).owner
-
-  if (owner === null) {
-    return []
-  }
-
-  return Object.entries(groupByMapMany(owner.ownedTokens, token => token.transfers[0].transaction.id))
-}
 
 export const queryOwnerList = async (): Promise<IOwner[]> => {
   const owners = (await blueberryGraphV2(ownerListDoc, {  })).owners
@@ -611,15 +594,7 @@ export const queryOwnerV2 = async (account: string): Promise<IOwner | null> => {
   return fromOwnerJson(owner)
 }
  
-export const queryToken = async (id: string) => {
-  const owner = (await blueberryGraph(tokenDoc, { id })).token
 
-  if (owner === null) {
-    throw new Error(`Token #${id} not found`)
-  }
-
-  return owner
-}
 
 export const queryTokenv2 = async (id: string) => {
   const owner = (await blueberryGraphV2(tokenV2, { id })).token
@@ -654,7 +629,7 @@ export const queryLatestPrices = async (): Promise<ILatestPriceMap> => {
   const { eth, glpArbitrum, gmx } = await queryArbi
   const { glpAvalanche, avax } = await queryAvax
 
-
+  
   return {
     gmx: fromLatestPriceJson(gmx),
     eth: fromLatestPriceJson(eth),
