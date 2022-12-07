@@ -10,7 +10,7 @@ import {
   CHAIN, ITokenIndex, ITokenStable, ITokenInput, TradeStatus, KeeperResponse, KeeperExecuteAbstract, LIMIT_LEVERAGE, div
 } from "@gambitdao/gmx-middleware"
 
-import { combine, constant, map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, merge, awaitPromises, never, filter, skipRepeatsWith } from "@most/core"
+import { combine, constant, map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, merge, awaitPromises, never, filter, skipRepeatsWith, take } from "@most/core"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { $arrowsFlip, $infoTooltip, $RiskLiquidator, $spinner, $txHashRef } from "@gambitdao/ui-components"
 import { CandlestickData, LineStyle, Time } from "lightweight-charts"
@@ -273,9 +273,9 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
 
-  const adjustPosition: Stream<IVaultPosition> = switchLatest(map(pos => {
+  const adjustPosition = take(1, switchLatest(map(pos => {
     return vault.positionUpdateEvent(pos)
-  }, position))
+  }, position)))
   // const adjustPosition: Stream<IVaultPosition> = filterNull(combineArray((pos, posEv) => {
   //   if (pos === null) {
   //     return { ...posEv, lastIncreasedTime: BigInt(unixTimestampNow()) }
@@ -295,7 +295,7 @@ export const $Trade = (config: ITradeComponent) => component((
     }, positionKey)),
 
     mergeArray([
-      adjustPosition,
+      // adjustPosition,
       removePosition
     ])
   ])
@@ -690,7 +690,7 @@ export const $Trade = (config: ITradeComponent) => component((
           ),
 
 
-          $row(style({ position: 'relative', height: '400px' }))(
+          $row(style({ position: 'relative', height: '400px', maxHeight: '60vh' }))(
             $CandleSticks({
               series: [
                 {

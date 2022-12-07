@@ -496,7 +496,7 @@ export const periodicRun = <T>({ actionOp, interval = 1000, startImmediate = tru
 export const switchFailedSources = <T>(sourceList: Stream<T>[], activeSource = 0): Stream<T> => {
   const source = sourceList[activeSource]
   return recoverWith((err) => {
-    console.error(err)
+    console.warn(err)
     const nextActive = activeSource + 1
     if (!sourceList[nextActive]) {
       throw new Error('No sources left to recover with')

@@ -1,5 +1,5 @@
-import { combine, empty, map, multicast, switchLatest, tap } from "@most/core"
-import { CHAIN, switchFailedSources, ITokenIndex, ITokenInput, ITokenTrade, ARBITRUM_ADDRESS, AVALANCHE_ADDRESS, AddressZero, getChainName, KeeperResponse, IPositionDecrease, IPositionIncrease, IPositionClose, IPositionLiquidated, filterNull, listen, IVaultPosition } from "@gambitdao/gmx-middleware"
+import { awaitPromises, combine, empty, map, multicast, switchLatest, tap } from "@most/core"
+import { CHAIN, switchFailedSources, ITokenIndex, ITokenInput, ITokenTrade, ARBITRUM_ADDRESS, AVALANCHE_ADDRESS, AddressZero, getChainName, KeeperResponse, IPositionDecrease, IPositionIncrease, IPositionClose, IPositionLiquidated, filterNull, listen, IVaultPosition, unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { combineArray } from "@aelea/core"
 import { ERC20__factory, PositionRouter__factory, Router__factory, VaultPriceFeed__factory, Vault__factory } from "./gmx-contracts"
 import { periodicRun } from "@gambitdao/gmx-middleware"
@@ -8,6 +8,9 @@ import { Stream } from "@most/types"
 import { JsonRpcProvider } from "@ethersproject/providers"
 import { getContractAddress, readContractMapping } from "../common"
 import { IWalletLink, IWalletState } from "@gambitdao/wallet-link"
+import { globalProviderMap } from "../provider"
+import { id } from "@ethersproject/hash"
+import { Interface } from "@ethersproject/abi"
 
 export const TRADE_CONTRACT_MAPPING = {
   [CHAIN.ARBITRUM]: ARBITRUM_ADDRESS,
@@ -114,6 +117,7 @@ export const gmxIoLatestPrice = (chain: CHAIN, token: ITokenTrade) => {
 
 export function connectVault(walletLink: IWalletLink) {
   const vault = readContractMapping(TRADE_CONTRACT_MAPPING, Vault__factory, walletLink.provider, 'Vault')
+  const vaultGlobal = readContractMapping(TRADE_CONTRACT_MAPPING, Vault__factory, walletLink.defaultProvider, 'Vault')
   const usdg = readContractMapping(TRADE_CONTRACT_MAPPING, ERC20__factory, walletLink.provider, 'USDG')
   const pricefeed = readContractMapping(TRADE_CONTRACT_MAPPING, VaultPriceFeed__factory, walletLink.provider, 'VaultPriceFeed')
 
@@ -139,13 +143,46 @@ export function connectVault(walletLink: IWalletLink) {
   }, t))
   // vault.listen(contract.filters.IncreasePosition())
 
-  const positionUpdateEvent = (pos: { key: string, position: IVaultPosition | null }) => switchLatest(combineArray((chain, contract) => {
-    const filterQuery = contract.filters.UpdatePosition()
+  const positionUpdateEvent = ({ key, position }: IPositionGetter) => switchLatest(combineArray((chain, contract) => {
 
-    return tap(xxx => {
-      debugger
-    }, listen(contract, filterQuery))
-  }, walletLink.network, vault.contract))
+    return switchLatest(awaitPromises(map(async c => {
+      const network = await c.provider.getNetwork()
+
+      if (network.chainId === CHAIN.ARBITRUM) {
+        const filter = {
+          address: c.address, topics: [
+            id("UpdatePosition(bytes32,uint256,uint256,uint256,uint256,uint256,int256)")
+          ]
+        }
+
+        return map((ev) => {
+          const { data, topics } = ev.__event
+          const abi = ["event UpdatePosition(bytes32,uint256,uint256,uint256,uint256,uint256,int256)"]
+          const iface = new Interface(abi)
+          const [key, size, collateral, averagePrice, entryFundingRate, reserveAmount, realisedPnl] = iface.parseLog({
+            data,
+            topics
+          }).args
+
+
+          const pos: IPositionGetter = {
+            key,
+            position: {
+              lastIncreasedTime: BigInt(unixTimestampNow()),
+              size: size.toBigInt(), collateral: collateral.toBigInt(),
+              averagePrice: averagePrice.toBigInt(), entryFundingRate: entryFundingRate.toBigInt(),
+              reserveAmount: reserveAmount.toBigInt(), realisedPnl: realisedPnl.toBigInt()
+            }
+          }
+          return pos
+        }, listen(contract, filter))
+      }
+
+
+
+      return listen(contract, contract.filters.UpdatePosition())
+    }, vaultGlobal.contract)))
+  }, walletLink.network, vaultGlobal.contract))
 
   const positionIncreaseEvent: Stream<IPositionIncrease> = filterNull(combineArray((w3p, ev: IPositionIncrease) => w3p?.address === ev.account ? ev : null, walletLink.wallet, vault.listen('IncreasePosition')))
   const positionDecreaseEvent: Stream<IPositionDecrease> = filterNull(combineArray((w3p, ev: IPositionDecrease) => w3p?.address === ev.account ? ev : null, walletLink.wallet, vault.listen('DecreasePosition')))

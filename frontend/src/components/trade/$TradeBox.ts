@@ -8,7 +8,7 @@ import {
   div, StateStream, getPnL, MIN_LEVERAGE, formatToBasis, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE, isTradeSettled,
   CHAIN, unixTimestampNow, query, fromJson, ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd
 } from "@gambitdao/gmx-middleware"
-import { $anchor, $ButtonToggle, $infoTooltip, $tokenIconMap, $tokenLabelFromSummary, $Tooltip, getPricefeedVisibleColumns } from "@gambitdao/ui-components"
+import { $anchor, $bear, $bull, $ButtonToggle, $infoTooltip, $tokenIconMap, $tokenLabelFromSummary, $Tooltip, getPricefeedVisibleColumns } from "@gambitdao/ui-components"
 import {
   merge, multicast, mergeArray, now, snapshot, map, switchLatest, filter,
   skipRepeats, empty, combine, fromPromise, constant, sample, startWith, skipRepeatsWith, awaitPromises, delay
@@ -137,7 +137,7 @@ export const $TradeBox = (config: ITradeBox) => component((
   [clickRequestTrade, clickRequestTradeTether]: Behavior<PointerEvent, RequestTradeQuery>,
 
   [crosshairMove, crosshairMoveTether]: Behavior<MouseEventParams, MouseEventParams>,
-  [clickReset, clickResetTether]: Behavior<any, any>,
+  [resetTradeMode, resetTradeModeTether]: Behavior<any, any>,
   [clickMaxBalance, clickMaxBalanceTether]: Behavior<any, any>,
 
 ) => {
@@ -176,7 +176,6 @@ export const $TradeBox = (config: ITradeBox) => component((
     return null
   }, tradeState)
 
-  const ratioAdjustments = mergeArray([sample(slideCollateralRatio, config.tradeState.walletBalance), slideCollateralRatio])
 
   const maxBalance = sample(config.tradeState.walletBalance, clickMaxBalance)
 
@@ -193,64 +192,57 @@ export const $TradeBox = (config: ITradeBox) => component((
   const slideCollateralLeverage = switchLatest(map((focus) => focus === ITradeFocusMode.collateral ? slideLeverage : empty(), config.tradeConfig.focusMode))
 
   const leverageCollateralFocus = skipRepeats(snapshot((state, leverage) => {
-    const positionSizeUsd = state.trade?.size || 0n
-    const totalSizeUsd = state.sizeDeltaUsd + positionSizeUsd
-    const totalSizeAmount = getTokenAmount(totalSizeUsd, state.inputTokenPrice, state.inputTokenDescription.decimals)
-    const collateralDelta = div(totalSizeAmount, leverage)
+    if (!state.trade) {
+      const adjustedCollateral = div(state.sizeDeltaUsd, leverage)
 
-    if (state.isIncrease) {
-      return collateralDelta
+      return getTokenAmount(adjustedCollateral, state.inputTokenPrice, state.inputTokenDescription.decimals)
     }
 
-    if (state.trade) {
-      const adjustedCollateral = div(totalSizeUsd, leverage)
-      const adjustedDeltaUsd = state.trade.collateral - adjustedCollateral
-      const amount = getTokenAmount(adjustedDeltaUsd, state.inputTokenPrice, state.inputTokenDescription.decimals)
+    const totalSize = state.sizeDeltaUsd + state.trade.size
+    const collateral = div(totalSize, leverage)
+    const deltaUsd = collateral - state.trade.collateral
 
-      return amount > 0n ? -amount : 0n
+    const currentMultiplier = div(totalSize, state.trade.collateral)
+
+    const multiplierDelta = state.isIncrease ? currentMultiplier - leverage : leverage - currentMultiplier
+
+    if (multiplierDelta < 50) {
+      return 0n
     }
 
-    return 0n
+    const amount = getTokenAmount(deltaUsd, state.inputTokenPrice, state.inputTokenDescription.decimals)
+
+    return amount
+
   }, tradeState, slideCollateralLeverage))
 
 
   const slideSizeLeverage = switchLatest(map((focus) => focus === ITradeFocusMode.size ? slideLeverage : empty(), config.tradeConfig.focusMode))
 
   const leverageSizeFocus = skipRepeats(snapshot((state, leverage) => {
-    const collateralDeltaUsd = getTokenUsd(state.collateralDelta, state.inputTokenPrice, state.inputTokenDescription.decimals)
-    const totalCollateralUsd = collateralDeltaUsd + (state.trade?.collateral || 0n)
-
-    const toSizeUsd = totalCollateralUsd * leverage / BASIS_POINTS_DIVISOR
-    const sizeAmount = getTokenAmount(toSizeUsd, state.indexTokenPrice, state.indexTokenDescription.decimals)
-
-
     if (!state.trade) {
-      return sizeAmount
-    }
-
-
-    if (state.isIncrease) {
-      const currentMultiplier = div(state.trade.size, totalCollateralUsd)
-      if (currentMultiplier >= leverage) {
-        return 0n
-      }
+      const adjustedCollateral = div(state.collateralDeltaUsd, leverage)
+      const sizeAmount = getTokenAmount(adjustedCollateral, state.indexTokenPrice, state.indexTokenDescription.decimals)
 
       return sizeAmount
     }
 
-    const adjustedSizeUsd = totalCollateralUsd * leverage / BASIS_POINTS_DIVISOR
-    const adjustedDeltaUsd = state.trade.size - adjustedSizeUsd
+
+    const totalCollateralUsd = state.collateralDeltaUsd + state.trade.collateral
+    const toSizeUsd = totalCollateralUsd * leverage / BASIS_POINTS_DIVISOR
+
+    const currentMultiplier = div(state.trade.size, totalCollateralUsd)
+    const multiplierDelta = state.isIncrease ? leverage - currentMultiplier : currentMultiplier - leverage
+    const adjustedDeltaUsd = toSizeUsd - state.trade.size
+
+    if (multiplierDelta < 50) {
+      return 0n
+    }
+
     const amount = getTokenAmount(adjustedDeltaUsd, state.indexTokenPrice, state.indexTokenDescription.decimals)
 
-    return amount > 0n ? -amount : 0n
-
-    // const sizeM = (state.trade.collateral - state.collateralDeltaUsd) * leverage / BASIS_POINTS_DIVISOR
-
-    // return state.trade.size - sizeM
-
+    return amount
   }, tradeState, slideSizeLeverage))
-
-
 
   const pnlCrossHairTimeChange = replayLatest(multicast(startWith(null, skipRepeatsWith(((xsx, xsy) => xsx.time === xsy.time), crosshairMove))))
 
@@ -262,9 +254,7 @@ export const $TradeBox = (config: ITradeBox) => component((
     return null
   }, pnlCrossHairTimeChange)
 
-
-
-  const clickResetVal = constant(0n, clickReset)
+  const clickResetVal = constant(0n, resetTradeMode)
 
   const inTradeMode = replayLatest(multicast(combineArray((sizeDelta, collateralDelta) => {
     if (sizeDelta === 0n && collateralDelta === 0n) {
@@ -273,13 +263,6 @@ export const $TradeBox = (config: ITradeBox) => component((
 
     return true
   }, config.tradeConfig.sizeDelta, config.tradeConfig.collateralDelta)))
-
-
-
-  // const sizeDeltaFromMaxBalance = snapshot((state, balance) => {
-  //   return balance * state.leverage / BASIS_POINTS_DIVISOR
-  // }, tradeState, maxBalanceCollateral)
-
 
 
 
@@ -298,8 +281,20 @@ export const $TradeBox = (config: ITradeBox) => component((
         borderRadius: `${BOX_SPACING} ${BOX_SPACING} 0px 0px`,
       }))(
 
-
-
+        $ButtonToggle({
+          $container: $row(layoutSheet.spacingSmall),
+          selected: config.tradeConfig.isLong,
+          options: [
+            true,
+            false,
+          ],
+          $$option: map(isLong => {
+            return $row(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
+              $icon({ $content: isLong ? $bull : $bear, width: '18px', viewBox: '0 0 32 32' }),
+              $text(isLong ? 'Long' : 'Short'),
+            )
+          })
+        })({ select: switchIsLongTether() }),
 
         $ButtonToggle({
           $container: $row(layoutSheet.spacingSmall),
@@ -309,21 +304,10 @@ export const $TradeBox = (config: ITradeBox) => component((
             false,
           ],
           $$option: map(option => {
-            return $text(style({ fontSize: '0.85em' }))(option ? 'Deposit' : 'Withdraw')
+            return $text(style({  }))(option ? 'Deposit' : 'Withdraw')
           })
         })({ select: switchisIncreaseTether() }),
 
-        $ButtonToggle({
-          $container: $row(layoutSheet.spacingSmall),
-          selected: config.tradeConfig.isLong,
-          options: [
-            true,
-            false,
-          ],
-          $$option: map(option => {
-            return $text(style({ fontSize: '0.85em' }))(option ? 'Long' : 'Short')
-          })
-        })({ select: switchIsLongTether() }),
 
         // $Dropdown({
         //   $container: $row(style({ position: 'relative', alignSelf: 'center' })),
@@ -576,20 +560,15 @@ export const $TradeBox = (config: ITradeBox) => component((
             max: map(state => {
               const collateralDeltaUsd = getTokenUsd(state.collateralDelta, state.inputTokenPrice, state.inputTokenDescription.decimals)
 
-              const deltaSizeUsd = getTokenUsd(state.sizeDelta, state.indexTokenPrice, state.indexTokenDescription.decimals)
-              const totalSize = deltaSizeUsd + (state.trade?.size || 0n)
+              const totalSize = state.sizeDeltaUsd + (state.trade?.size || 0n)
 
               if (state.isIncrease) {
-                // if (state.trade) {
-                //   if (state.focusMode === ITradeFocusMode.collateral) {
-                //     // const currentMultiplier = div(totalSize, totalCollateral)
-                //     const walletBalanceUsd = getTokenUsd(state.sizeDelta, state.inputTokenPrice, state.inputTokenDescription.decimals)
-
-                //     const currentMultiplier = div(totalSize, walletBalanceUsd + state.trade.collateral)
-                //     const newLocal = bnDiv(currentMultiplier, LIMIT_LEVERAGE)
-                //     return 1
-                //   }
-                // }
+                if (state.trade) {
+                  if (state.focusMode === ITradeFocusMode.collateral) {
+                    const currentMultiplier = div(totalSize, state.trade.collateral)
+                    return bnDiv(currentMultiplier, LIMIT_LEVERAGE)
+                  }
+                }
 
                 return 1
               } else {
@@ -914,7 +893,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
                     style({ padding: '8px', fontSize: '.75em', alignSelf: 'center' })(
                       $ButtonSecondary({ $content: $text('Reset') })({
-                        click: clickResetTether()
+                        click: resetTradeModeTether()
                       })
                     ),
 

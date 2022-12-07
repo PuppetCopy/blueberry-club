@@ -15,8 +15,15 @@ export interface IButtonToggle<T> {
   $$option?: Op<T, $Node>
 }
 
-const $toggleBtn = $row(style({ placeContent: 'center', borderRadius: '12px',  padding: '6px 8px', alignItems: 'center', cursor: 'pointer', backgroundColor: pallete.background }))
-const $defaultContainer = $row(layoutSheet.spacingSmall, style({ borderRadius: '12px', padding: '6px', border: `1px solid ${pallete.horizon}`, backgroundColor: pallete.background }))
+const $toggleBtn = $row(style({
+  placeContent: 'center', fontSize: '.75em', fontWeight: 'bold',
+  borderRadius: '12px', padding: '6px 8px', alignItems: 'center',
+  cursor: 'pointer'
+}))
+const $defaultContainer = $row(layoutSheet.spacingSmall, style({
+  borderRadius: '12px', padding: '6px',
+  border: `1px solid ${pallete.horizon}`, backgroundColor: pallete.background
+}))
 
 
 const defaultOption = map(<T>(o: T) => $text(String(o)))
@@ -37,8 +44,8 @@ export const $ButtonToggle = <T>({ options, selected, $$option = defaultOption, 
             map(selectedOpt => {
               const color = invertColor(pallete.message, false)
               return selectedOpt === opt
-                ? { backgroundColor: pallete.primary, color: color, cursor: 'default' }
-                : { color: pallete.foreground }
+                ? { border: `1px solid ${pallete.middleground}`, cursor: 'default' }
+                : { border: 'none' }
             }, selected)
           )
         )(

@@ -63,7 +63,7 @@ We're glad you're here, let the celebrations never end!`,
         type: SaleType.holder,
         cost: 0n,
         contractAddress: "0x8da1Dd6967E018C9d9E31aA1C9e3fc51b95Be3C9",
-        start: toTime(2022, 11, 5, 18),
+        start: toTime(2021, 11, 5, 18),
         finish: toTime(2023, 0, 5, 18),
         accountLimit: 1
       }
