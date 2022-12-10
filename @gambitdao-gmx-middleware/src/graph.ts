@@ -6,7 +6,7 @@ import { toAccountSummary } from "./gmxUtils"
 import { IAccountHistoricalDataApi, IAccountQueryParamApi, IChainParamApi, ILeaderboardRequest, IPricefeed, IPricefeedParamApi, IPriceLatest, IRequestTradeQueryparam, IStake, ITrade, TradeStatus } from "./types"
 import { cacheMap, createSubgraphClient, pagingQuery, unixTimestampNow } from "./utils"
 import { gql } from "@urql/core"
-import { fromJson } from "."
+import * as fromJson from "./fromJson"
 
 export type IAccountTradeListParamApi = IChainParamApi & IAccountQueryParamApi & { status: TradeStatus };
 
