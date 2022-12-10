@@ -7,7 +7,7 @@ import ws from 'ws'
 import compression from 'compression'
 import { helloFrontend } from './messageBus'
 import { scheduler } from './logic/scheduler'
-import { api } from '@gambitdao/gmx-middleware'
+import { gmxSubgraph } from '@gambitdao/gmx-middleware'
 
 
 
@@ -72,11 +72,11 @@ function heartbeat() {
 
 
 const apiComponent = helloFrontend(wss, {
-  requestLeaderboardTopList: api.leaderboardTopList,
-  requestLatestPriceMap: api.latestPriceMap,
-  requestAccountTradeList: api.accountTradeList,
-  requestTrade: api.trade,
-  requestPricefeed: api.pricefeed,
+  requestLeaderboardTopList: gmxSubgraph.leaderboardTopList,
+  requestLatestPriceMap: gmxSubgraph.latestPriceMap,
+  requestAccountTradeList: gmxSubgraph.accountTradeList,
+  requestTrade: gmxSubgraph.trade,
+  requestPricefeed: gmxSubgraph.pricefeed,
 })
 
 
