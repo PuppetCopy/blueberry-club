@@ -27,6 +27,6 @@
         "eip1193-provider": "1.0.1"
     },
     "devDependencies": {
-        "@types/node": "18.11.9"
+        "@types/node": "18.11.11"
     }
 }

@@ -10,8 +10,8 @@ export * from './constant'
 export * from './tether'
 export * from './comTypes'
 export * from './common'
+export * from './pool/tradingPools'
 
 export * as fromJson from './fromJson'
-export * as query from './graph/graph'
-export * as api from './graph/api'
+export * as gmxSubgraph from './graph'
 

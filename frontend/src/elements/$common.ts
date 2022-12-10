@@ -3,9 +3,10 @@ import { $ButtonIcon, $column, $icon, $row, layoutSheet, screenUtils } from "@ae
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
 import { getAccountExplorerUrl, getTxExplorerUrl, shortenAddress } from "@gambitdao/gmx-middleware"
 import { $trash } from "./$icons"
-import { LAB_CHAIN } from "@gambitdao/gbc-middleware"
+import { IToken, LAB_CHAIN } from "@gambitdao/gbc-middleware"
 import { $anchor, $calendar, $caretDblDown, $discord, $ethScan } from "@gambitdao/ui-components"
-import { $berryById } from "../logic/common"
+import { $berryByToken } from "../logic/common"
+import { hexValue } from "@ethersproject/bytes"
 
 export const $TrashBtn = $ButtonIcon($trash)
 
@@ -109,13 +110,15 @@ interface ITeamMember {
   name: string
   title: string
   size?: 'small' | 'big'
-  tokenId: number
+  token: IToken
 }
 
-export const $teamMember = ({ name, title, size = 'big', tokenId }: ITeamMember) => $column(layoutSheet.spacing, style({ flexBasis: size === 'small' ? '110px' : '', alignItems: 'center', fontSize: screenUtils.isDesktopScreen ? '' : '75%' }))(
-  style({ borderRadius: '15px' }, $berryById(tokenId, size === 'big' ? 100 : 75)),
-  $column(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
-    $anchor(attr(({ href: `https://twitter.com/${name}` })), style({ fontWeight: 900, textDecoration: 'none', fontSize: size === 'big' ? '1em' : '.75em' }))($text(`@${name}`)),
-    $text(style({ fontSize: '.75em', color: pallete.foreground, textAlign: 'center', lineHeight: '1.3' }))(title),
+export const $teamMember = ({ name, title, size = 'big', token }: ITeamMember) => {
+  return $column(layoutSheet.spacing, style({ flexBasis: size === 'small' ? '110px' : '', alignItems: 'center', fontSize: screenUtils.isDesktopScreen ? '' : '75%' }))(
+    style({ borderRadius: '15px' }, $berryByToken(token, size === 'big' ? 100 : 75)),
+    $column(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
+      $anchor(attr(({ href: `https://twitter.com/${name}` })), style({ fontWeight: 900, textDecoration: 'none', fontSize: size === 'big' ? '1em' : '.75em' }))($text(`@${name}`)),
+      $text(style({ fontSize: '.75em', color: pallete.foreground, textAlign: 'center', lineHeight: '1.3' }))(title),
+    )
   )
-)
+}

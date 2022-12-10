@@ -171,7 +171,7 @@
 //           // $row(style({ flex: 1 }))(),
 
 //           // switchLatest(map(cMap => {
-//           //   return $AccountPreview({ ...accountPreview, chain, address: trade.account, claim: cMap[trade.account.toLocaleLowerCase()] })({
+//           //   return $AccountPreview({ ...accountPreview, chain, address: trade.account, claim: cMap[trade.account.toLowerCase()] })({
 //           //     profileClick: accountPreviewClickTether()
 //           //   })
 //           // }, claimMap)),

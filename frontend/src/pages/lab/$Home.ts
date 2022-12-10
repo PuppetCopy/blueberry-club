@@ -8,14 +8,12 @@ import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
 import { $berry } from "../../components/$DisplayBerry"
 import { $buttonAnchor, $ButtonPrimary, $ButtonSecondary } from "../../components/form/$Button"
 import { $responsiveFlex } from "../../elements/$common"
-import { IAttributeHat, IAttributeFaceAccessory, IAttributeClothes, IAttributeExpression, IProfile } from "@gambitdao/gbc-middleware"
+import { IAttributeHat, IAttributeFaceAccessory, IAttributeClothes, IAttributeExpression, IProfile, blueberrySubgraph } from "@gambitdao/gbc-middleware"
 import { $seperator2 } from "../common"
 import { map, mergeArray, now } from "@most/core"
 import { ContractTransaction } from "@ethersproject/contracts"
-import { queryProfileList } from "../../logic/query"
 import { $berryByToken } from "../../logic/common"
 import { $profilePreview } from "../../components/$AccountProfile"
-import { BrowserStore } from "../../logic/store"
 
 
 
@@ -84,7 +82,7 @@ export const $LabHome = ({ walletLink, parentRoute }: IBerry) => component((
             ),
           ),
 
-          $text(style({ lineHeight: '1.5em' }))(`The Blueberry Lab is a tool that allows GBC owners to customize their Berries with new attributes which must be owned on-chain. Stay tuned for upcoming item releases on the Blueberry Lab Store or on our Twitter.`),
+          $text(style({ lineHeight: '1.5em' }))(`The Lab is a product that allows hodlers to customize their Berries with new attributes on-chain. Stay tuned for upcoming item releases on the Blueberry Lab Store or on our Twitter.`),
 
           $seperator2,
 
@@ -129,7 +127,7 @@ export const $LabHome = ({ walletLink, parentRoute }: IBerry) => component((
         $node(),
         $row(
           $IntermediatePromise({
-            query: now(queryProfileList({ pageSize: screenUtils.isDesktopScreen ? 12 : 8 })),
+            query: blueberrySubgraph.profileList(now({ pageSize: screenUtils.isDesktopScreen ? 12 : 8 })),
             $$done: map(berryWallList => {
 
               if (berryWallList.length === 0) {

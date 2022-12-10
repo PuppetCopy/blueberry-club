@@ -10,16 +10,52 @@ export type ITokenInput = ITokenTrade | "0x0000000000000000000000000000000000000
 export type ITokenIndex = AVALANCHE_ADDRESS_INDEX | ARBITRUM_ADDRESS_INDEX | "0x0000000000000000000000000000000000000000"
 export type ITokenStable = AVALANCHE_ADDRESS_STABLE | ARBITRUM_ADDRESS_STABLE | "0x0000000000000000000000000000000000000000"
 
+export interface IGmxContractAddress {
+  NATIVE_TOKEN: string
 
-export interface TokenDescription {
+  Vault: string
+  VaultPriceFeed: string
+  Router: string
+  Reader: string
+  GlpManager: string
+  RewardRouter: string
+  RewardReader: string
+
+  GLP: string
+  GMX: string
+  ES_GMX: string
+  BN_GMX: string
+  USDG: string
+
+  StakedGmxTracker: string
+  BonusGmxTracker: string
+  FeeGmxTracker: string
+  StakedGlpTracker: string
+  FeeGlpTracker: string
+  StakedGmxDistributor: string
+  StakedGlpDistributor: string
+
+  GmxVester: string
+  GlpVester: string
+  
+  OrderBook: string
+  OrderBookReader: string
+
+  FastPriceFeed: string
+  PositionRouter: string
+  PositionManager: string
+}
+
+
+export interface ITokenDescription {
   name: string
   symbol: TOKEN_SYMBOL
   isStable: boolean
   decimals: number
 }
 
-export interface Transaction {
-  token: TokenDescription,
+export interface ITransaction {
+  token: ITokenDescription,
   from: Address
   to: Address
   value: bigint
@@ -139,6 +175,17 @@ export type ITradeLiquidated = ITradeAbstract<TradeStatus.LIQUIDATED> & { settle
 export type ITradeSettled = ITradeClosed | ITradeLiquidated
 export type ITrade = ITradeSettled | ITradeOpen
 
+export interface IStake extends IndexedType<"Stake"> {
+  id: string
+  account: string
+  contract: string
+  token: string
+  amount: bigint
+  amountUsd: bigint
+  timestamp: number
+}
+
+
 export interface IAccountSummary extends IAbstractPositionStake {
   account: string
   fee: bigint
@@ -202,9 +249,7 @@ export interface IAccountQueryParamApi {
   account: Address
 }
 
-export interface AccountHistoricalDataApi extends IAccountQueryParamApi {
-  timeInterval: intervalTimeMap
-}
+
 
 export interface ITimerangeParamApi {
   from: number
@@ -232,10 +277,10 @@ export interface ILeaderboardRequest extends IPagePositionParamApi, IChainParamA
 
 
 export type IPriceTimelineParamApi = IChainParamApi & ITimerangeParamApi & { tokenAddress: ITokenIndex }
-
+export type IAccountHistoricalDataApi = IChainParamApi & IAccountQueryParamApi & ITimerangeParamApi
 export type IOpenTradesParamApi = IChainParamApi & IPagePositionParamApi & ISortParamApi<keyof ITradeOpen>
-export type IAccountTradeListParamApi = IChainParamApi & IAccountQueryParamApi
 export type IPricefeedParamApi = IChainParamApi & ITimerangeParamApi & { interval: intervalTimeMap, tokenAddress: ITokenIndex }
+export type IAccountParamApi = IChainParamApi & IAccountQueryParamApi
 
 
 

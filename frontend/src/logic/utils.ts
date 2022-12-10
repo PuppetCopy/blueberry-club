@@ -1,6 +1,6 @@
 import {
   AddressZero, ARBITRUM_ADDRESS, CHAIN, TOKEN_DESCRIPTION_MAP, TOKEN_SYMBOL, AVALANCHE_ADDRESS, getDenominator,
-  TokenDescription, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, ITokenInput, ITokenTrade
+  ITokenDescription, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, ITokenInput, ITokenTrade
 } from "@gambitdao/gmx-middleware"
 
 
@@ -13,7 +13,7 @@ export const CHAIN_NATIVE_TO_SYMBOL = {
 export const CHAIN_ADDRESS_MAP = {
   [CHAIN.AVALANCHE]: AVALANCHE_ADDRESS,
   [CHAIN.ARBITRUM]: ARBITRUM_ADDRESS,
-} as const
+}
 
 
 
@@ -31,9 +31,14 @@ export function resolveAddress(chain: CHAIN, indexToken: ITokenInput | null): IT
   return Object.values(contractAddressMap).indexOf(indexToken) > -1 ? indexToken : contractAddressMap.NATIVE_TOKEN
 }
 
-export function getTokenDescription(chain: CHAIN | null, token: ITokenInput): TokenDescription {
-  if (!chain) {
-    return TOKEN_DESCRIPTION_MAP.ETH
+export function getTokenDescription(chain: CHAIN | null, token: ITokenInput): ITokenDescription {
+  if (token in CHAIN_TOKEN_ADDRESS_TO_SYMBOL) {
+    // @ts-ignore
+    const symbol = CHAIN_TOKEN_ADDRESS_TO_SYMBOL[token]
+    // @ts-ignore
+    const desc = TOKEN_DESCRIPTION_MAP[symbol]
+
+    return desc
   }
 
   if (token === AddressZero) {
@@ -41,10 +46,7 @@ export function getTokenDescription(chain: CHAIN | null, token: ITokenInput): To
     return TOKEN_DESCRIPTION_MAP[CHAIN_NATIVE_TO_SYMBOL[chain]]
   }
 
-  const symbol = CHAIN_TOKEN_ADDRESS_TO_SYMBOL[token]
-  const desc = TOKEN_DESCRIPTION_MAP[symbol]
-
-  return desc
+  throw new Error(`unable to identity token ${token}`)
 }
 
 export function getTargetUsdgAmount(weight: bigint, usdgSupply: bigint, totalTokenWeights: bigint) {

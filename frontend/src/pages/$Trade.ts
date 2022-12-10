@@ -7,7 +7,7 @@ import {
   getLiquidationPrice, getMarginFees, getTokenUsd, STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, TAX_BASIS_POINTS,
   replayState, getDenominator, USD_PERCISION, formatReadableUSD, timeSince, IVaultPosition, getPositionKey, IPositionIncrease,
   IPositionDecrease, getPnL, filterNull, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE,
-  CHAIN, ITokenIndex, ITokenStable, ITokenInput, TradeStatus, KeeperResponse, KeeperExecuteAbstract, LIMIT_LEVERAGE, div
+  CHAIN, ITokenIndex, ITokenStable, ITokenInput, TradeStatus, KeeperResponse, KeeperExecuteAbstract, LIMIT_LEVERAGE, div, readableDate, TRADE_CONTRACT_MAPPING
 } from "@gambitdao/gmx-middleware"
 
 import { combine, constant, map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, merge, awaitPromises, never, filter, skipRepeatsWith, take } from "@most/core"
@@ -15,7 +15,7 @@ import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { $arrowsFlip, $infoTooltip, $RiskLiquidator, $spinner, $txHashRef } from "@gambitdao/ui-components"
 import { CandlestickData, LineStyle, Time } from "lightweight-charts"
 import { Stream } from "@most/types"
-import { TRADE_CONTRACT_MAPPING, connectTrade, connectVault, getErc20Balance, IPositionGetter } from "../logic/contract/trade"
+import { connectTrade, connectVault, getErc20Balance, IPositionGetter } from "../logic/contract/trade"
 import { $TradeBox, ITradeFocusMode, ITradeState, RequestTradeQuery } from "../components/trade/$TradeBox"
 import { $ButtonToggle } from "../common/$Toggle"
 import { $Table2 } from "../common/$Table2"
@@ -26,7 +26,7 @@ import { getFeeBasisPoints, resolveAddress } from "../logic/utils"
 import { BrowserStore } from "../logic/store"
 import { ContractTransaction } from "@ethersproject/contracts"
 import { readContract } from "../logic/common"
-import { ERC20__factory, PositionRouter__factory } from "../logic/contract/gmx-contracts"
+import { PositionRouter__factory } from "../logic/contract/gmx-contracts"
 import { IWalletLink, IWalletName, IWalletState } from "@gambitdao/wallet-link"
 import { JsonRpcProvider } from "@ethersproject/providers"
 
@@ -41,6 +41,7 @@ export interface ITradeComponent {
   accountTradeList: Stream<ITrade[]>
   walletLink: IWalletLink
   pricefeed: Stream<IPricefeed[]>
+  tradePricefeed: Stream<IPricefeed[]>
 }
 
 
@@ -92,6 +93,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
   [switchTrade, switchTradeTether]: Behavior<INode, ITrade>,
   [requestTrade, requestTradeTether]: Behavior<RequestTradeQuery, RequestTradeQuery>,
+  [requestTradePricefeed, requestTradePricefeedTether]: Behavior<IPricefeedParamApi, IPricefeedParamApi>,
 
 ) => {
 
@@ -102,44 +104,6 @@ export const $Trade = (config: ITradeComponent) => component((
 
   const prov = new JsonRpcProvider("https://api.avax.network/ext/bc/C/rpc")
 
-
-  // join(map(w3p => {
-
-  //   const filter = {
-  //     address: "0x9ab2De34A33fB459b538c43f251eB825645e8595",
-  //     topics: [
-  //       id("UpdatePosition(bytes32,uint256,uint256,uint256,uint256,uint256,int256,uint256)"),
-  //       // hexZeroPad(myAddress, 32)
-  //     ]
-  //   }
-  //   // w3p?.provider.on(filter, ev => {
-  //   //   debugger
-  //   // })
-
-
-  //   if (w3p) {
-
-  //     const www = Vault__factory.connect('0x9ab2De34A33fB459b538c43f251eB825645e8595', w3p.provider)
-
-  //     const filterQuery = www.filters.UpdatePosition(null)
-
-  //     www.on(filterQuery, (...arrgs) => {
-  //       debugger
-  //     })
-
-  //     const cv = readContract(Vault__factory, now(w3p.provider), "0x9ab2De34A33fB459b538c43f251eB825645e8595")
-
-
-  //     return map(c => {
-  //       debugger
-
-
-  //     }, cv.listen(filterQuery))
-  //   }
-
-  //   return empty()
-  // }, config.walletLink.wallet))
-  //   .run(nullSink, newDefaultScheduler())
 
   const accountOpenTradeList = map(list => {
     return list.filter((t): t is ITradeOpen => t.status === TradeStatus.OPEN)
@@ -535,6 +499,8 @@ export const $Trade = (config: ITradeComponent) => component((
           // ),
           $TradeBox({
             ...config,
+            tradePricefeed: config.pricefeed,
+
 
             tradeConfig,
             tradeState: {
@@ -577,6 +543,7 @@ export const $Trade = (config: ITradeComponent) => component((
             approveInputToken: changeInputTokenApprovedTether(),
             changeNetwork: changeNetworkTether(),
             switchFocusMode: switchFocusModeTether(),
+            requestTradePricefeed: requestTradePricefeedTether(),
           }),
         ),
 
@@ -900,7 +867,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
                       return $column(layoutSheet.spacingTiny, style({ fontSize: '.65em' }))(
                         $text(timeSince(timestamp) + ' ago'),
-                        $text(new Date(timestamp * 1000).toLocaleDateString()),
+                        $text(readableDate(timestamp)),
                       )
                     })
                   },
@@ -986,7 +953,10 @@ export const $Trade = (config: ITradeComponent) => component((
     ),
 
     {
-      requestPricefeed,
+      requestPricefeed: mergeArray([
+        requestTradePricefeed,
+        requestPricefeed
+      ]),
       requestAccountTradeList: map(w3p => {
         if (w3p === null || config.chainList.indexOf(w3p.chain) === -1) {
           return null

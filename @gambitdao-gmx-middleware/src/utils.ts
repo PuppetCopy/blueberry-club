@@ -1,10 +1,13 @@
 import { combineObject, O, Op, replayLatest } from "@aelea/core"
 import { AnimationFrames } from "@aelea/dom"
 import { Disposable, Scheduler, Sink, Stream } from "@most/types"
-import { at, awaitPromises, constant, continueWith, filter, merge, multicast, now, recoverWith, combineArray as combineArrayMost } from "@most/core"
+import { at, awaitPromises, constant, continueWith, filter, merge, multicast, now, recoverWith } from "@most/core"
 import { CHAIN, EXPLORER_URL, intervalTimeMap, NETWORK_METADATA, USD_DECIMALS } from "./constant"
 import { IPageParapApi, IPagePositionParamApi, ISortParamApi } from "./types"
 import { keccak256 } from "@ethersproject/solidity"
+import { ClientOptions, createClient, OperationContext, TypedDocumentNode } from "@urql/core"
+
+
 
 export const ETH_ADDRESS_REGEXP = /^0x[a-fA-F0-9]{40}$/i
 export const TX_HASH_REGEX = /^0x([A-Fa-f0-9]{64})$/i
@@ -40,34 +43,23 @@ export function parseReadableNumber(stringNumber: string, locale?: Intl.NumberFo
   )
 }
 
-const readableLargeNumber = Intl.NumberFormat("en-US", { maximumFractionDigits: 0 })
-const readableTinyNumber = Intl.NumberFormat("en-US", { maximumFractionDigits: 5, minimumFractionDigits: 2 })
+const readableLargeNumber = Intl.NumberFormat("en-US", { maximumFractionDigits: 0, })
 const readableSmallNumber = Intl.NumberFormat("en-US", { maximumFractionDigits: 2, minimumFractionDigits: 2 })
+const readableTinyNumber = Intl.NumberFormat("en-US", { maximumSignificantDigits: 2 })
 
 export function readableNumber(ammount: number | bigint) {
-  return ammount > 100
-    ? readableLargeNumber.format(ammount) : ammount > 1
-      ? readableSmallNumber.format(ammount)
-      : readableTinyNumber.format(ammount)
+  const absAmount = typeof ammount === 'bigint' ? ammount > 0n ? ammount : -ammount : Math.abs(ammount)
+  
+  if (absAmount > 100) {
+    return readableLargeNumber.format(ammount)
+  }
 
-  // const parts = ammount.toString().split('.')
-  // const [whole = '', decimal = ''] = parts
+  if (absAmount > 1) {
+    return readableSmallNumber.format(ammount)
+  }
 
-  // if (whole === '' && decimal === '') {
-  //   return EMPTY_MESSAGE
-  // }
-
-  // const belowWhole = whole.replace(/^-/, '') === '0'
-  // if (belowWhole || whole.length < 3) {
-  //   if (whole.length < 1) {
-  //     const shortDecimal = trimTrailingNumber(decimal)
-  //     return whole + (shortDecimal ? '.' + shortDecimal : '')
-  //   }
-
-  //   return `${whole}.${Number(decimal).toLocaleString('en', { maximumFractionDigits: 2, minimumFractionDigits: 2, signDisplay useGrouping: false }).slice(0, 2) }`
-  // }
-
-  // return localize ? Number(whole).toLocaleString() : whole
+  
+  return readableTinyNumber.format(ammount)
 }
 
 export const trimTrailingNumber = (n: string) => {
@@ -76,10 +68,16 @@ export const trimTrailingNumber = (n: string) => {
   return match ? match[0] : ''
 }
 
-const defaultNumberFormatOption: Intl.NumberFormatOptions = {
+const defaultUsdNumberFormatOption: Intl.NumberFormatOptions = {
   style: "currency",
   currency: "USD",
   maximumFractionDigits: 0
+}
+
+const options: Intl.DateTimeFormatOptions = { year: '2-digit', month: 'short', day: '2-digit' }
+
+export function readableDate(timestamp: number) {
+  return new Date(timestamp * 1000).toLocaleDateString(undefined, options)
 }
 
 export function formatReadableUSD(ammount: bigint, options?: Intl.NumberFormatOptions) {
@@ -89,8 +87,8 @@ export function formatReadableUSD(ammount: bigint, options?: Intl.NumberFormatOp
 
   const amountUsd = formatFixed(ammount, USD_DECIMALS)
   const opts = options
-    ? { ...defaultNumberFormatOption, ...options }
-    : Math.abs(amountUsd) > 100 ? defaultNumberFormatOption : { ...defaultNumberFormatOption, maximumFractionDigits: 2 }
+    ? { ...defaultUsdNumberFormatOption, ...options }
+    : Math.abs(amountUsd) > 100 ? defaultUsdNumberFormatOption : { ...defaultUsdNumberFormatOption, maximumFractionDigits: 2 }
 
   return new Intl.NumberFormat("en-US", opts).format(amountUsd)
 }
@@ -191,49 +189,6 @@ export function parseFixed(input: string | number, decimals = 18) {
   return wei
 }
 
-export const limitDecimals = (amount: string, maxDecimals: number) => {
-  let amountStr = amount.toString()
-
-  if (maxDecimals === 0) {
-    return amountStr.split(".")[0]
-  }
-  const dotIndex = amountStr.indexOf(".")
-  if (dotIndex !== -1) {
-    const decimals = amountStr.length - dotIndex - 1
-    if (decimals > maxDecimals) {
-      amountStr = amountStr.substr(0, amountStr.length - (decimals - maxDecimals))
-    }
-  }
-  return amountStr
-}
-
-export const padDecimals = (amount: string, minDecimals: number) => {
-  let amountStr = amount.toString()
-  const dotIndex = amountStr.indexOf(".")
-  if (dotIndex !== -1) {
-    const decimals = amountStr.length - dotIndex - 1
-    if (decimals < minDecimals) {
-      amountStr = amountStr.padEnd(amountStr.length + (minDecimals - decimals), "0")
-    }
-  } else {
-    amountStr = amountStr + ".0000"
-  }
-  return amountStr
-}
-
-
-/* converts bigInt(positive) to hex */
-export function bnToHex(n: bigint) {
-  if (n < 0n) {
-    throw new Error('expected positive integer')
-  }
-
-  let hex = n.toString(16)
-  if (hex.length % 2) {
-    hex = 'x' + hex
-  }
-  return hex
-}
 
 export function bytesToHex(uint8a: Uint8Array): string {
   let hex = ''
@@ -574,4 +529,25 @@ export function groupByMap<A, B extends string | symbol | number>(list: A[], get
   })
 
   return map
+}
+
+export const createSubgraphClient = (opts: ClientOptions) => {
+
+  const client = createClient(opts)
+
+  return async <Data, Variables extends object = {}>(document: TypedDocumentNode<Data, Variables>, params: Variables, context?: Partial<OperationContext>): Promise<Data> => {
+    const result = await client.query(document, params, context)
+      .toPromise()
+
+    if (result.error) {
+      throw new Error(result.error.message)
+    }
+
+    return result.data!
+  }
+}
+
+
+export function easeInExpo(x: number) {
+  return x === 0 ? 0 : Math.pow(2, 10 * x - 10)
 }

@@ -1,6 +1,6 @@
 import { intervalTimeMap } from "@gambitdao/gmx-middleware"
 
-export function getPricefeedVisibleColumns(maxColumns: number, from: number, to: number) {
+export function getIntervalBasedOnTimeframe(maxColumns: number, from: number, to: number) {
   const delta = to - from
 
   const interval = maxColumns < delta / intervalTimeMap.DAY7

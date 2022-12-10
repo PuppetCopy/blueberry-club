@@ -3,17 +3,17 @@ import { $element, $node, $text, component, eventElementTarget, style } from "@a
 import * as router from '@aelea/router'
 import { $column, designSheet, layoutSheet, screenUtils } from '@aelea/ui-components'
 import {
-  api, ARBITRUM_ADDRESS, AVALANCHE_ADDRESS, CHAIN,
-  ETH_ADDRESS_REGEXP, fromJson, IAccountTradeListParamApi, intervalTimeMap, IPricefeedParamApi, IRequestTradeQueryparam
+  gmxSubgraph, ARBITRUM_ADDRESS, AVALANCHE_ADDRESS, CHAIN,
+  ETH_ADDRESS_REGEXP, fromJson, IAccountParamApi, intervalTimeMap, IPricefeedParamApi
 } from '@gambitdao/gmx-middleware'
 import { initWalletLink, IWalletName } from "@gambitdao/wallet-link"
-import { map, merge, mergeArray, multicast, now, tap } from '@most/core'
+import { map, merge, multicast, now } from '@most/core'
 import { $MainMenu } from '../components/$MainMenu'
 import { helloBackend } from '../logic/websocket'
 import { BLUEBERRY_REFFERAL_CODE, IAccountStakingStore, ITreasuryStore } from "@gambitdao/gbc-middleware"
 import { $BerryPage } from "./$Berry"
 import { $Profile } from "./$Profile"
-import { $Treasury } from "./$Treasury"
+
 import { $seperator2 } from "./common"
 import { $LabHome } from "./lab/$Home"
 import { fadeIn } from "../transitions/enter"
@@ -24,7 +24,7 @@ import { $Home } from "./$Home"
 import { $ProfileConnected } from "./$ProfileConnected"
 import { $Trade } from "./$Trade"
 import { createLocalStorageChain } from "../logic/store"
-import { arbOneWeb3Provider, globalProviderMap, w3pAva } from "../logic/provider"
+import { globalProviderMap } from "../logic/provider"
 
 
 const popStateEvent = eventElementTarget('popstate', window)
@@ -38,12 +38,13 @@ interface Website {
   baseRoute?: string
 }
 
-export default ({ baseRoute = '' }: Website) => component((
+export const $Main = ({ baseRoute = '' }: Website) => component((
   [routeChanges, linkClickTether]: Behavior<any, string>,
 
-  [requestAccountTradeList, requestAccountTradeListTether]: Behavior<IAccountTradeListParamApi, IAccountTradeListParamApi>,
+  [requestAccountTradeList, requestAccountTradeListTether]: Behavior<IAccountParamApi, IAccountParamApi>,
   [requestPricefeed, requestPricefeedTether]: Behavior<IPricefeedParamApi, IPricefeedParamApi>,
-  [requestTrade, requestTradeTether]: Behavior<IRequestTradeQueryparam, IRequestTradeQueryparam>,
+  [requestStake, requestStakeTether]: Behavior<IAccountParamApi, IAccountParamApi>,
+  // [requestTrade, requestTradeTether]: Behavior<IRequestTradeQueryparam, IRequestTradeQueryparam>,
 
   [walletChange, walletChangeTether]: Behavior<IWalletName, IWalletName>,
   [changeNetwork, changeNetworkTether]: Behavior<CHAIN, CHAIN>,
@@ -89,10 +90,12 @@ export default ({ baseRoute = '' }: Website) => component((
 
   const clientApi = {
     ...serverApi,
-    requestTrade: map(json => json ? fromJson.toTradeJson(json) : null, api.trade(requestTrade)),
-    pricefeed: map(json => json.map(fromJson.pricefeedJson), api.pricefeed(requestPricefeed)),
-    accountTradeList: map(json => json.map(fromJson.toTradeJson), api.accountTradeList(requestAccountTradeList)),
-    latestPriceMap: map(json => json.map(fromJson.priceLatestJson), api.latestPriceMap(requestAccountTradeList)),
+    // requestTrade: map(json => json ? fromJson.toTradeJson(json) : null, api.trade(requestTrade)),
+    stake: gmxSubgraph.stake(requestStake),
+    pricefeed: gmxSubgraph.pricefeed(requestPricefeed),
+    tradePricefeed: gmxSubgraph.pricefeed(requestPricefeed),
+    accountTradeList: gmxSubgraph.accountTradeList(requestAccountTradeList),
+    latestPriceMap: gmxSubgraph.latestPriceMap(requestAccountTradeList),
   }
 
 
@@ -104,7 +107,7 @@ export default ({ baseRoute = '' }: Website) => component((
 
   const chainStore = store.craete('chain', CHAIN.ARBITRUM)
   const walletStore = store.craete('wallet', IWalletName.none)
-  
+
 
   const walletLink = initWalletLink(
     {
@@ -176,17 +179,40 @@ export default ({ baseRoute = '' }: Website) => component((
               }))
             ),
             router.match(profileRoute)(
-              fadeIn($Profile({ walletLink, parentRoute: pagesRoute, accountStakingStore })({}))
+              {
+                run(sink, scheduler) {
+                  const urlFragments = document.location.pathname.split('/')
+                  const account = urlFragments[urlFragments.length - 1].toLowerCase()
+
+                  return $Profile({
+                    account: account,
+                    provider: walletLink.defaultProvider,
+                    parentRoute: pagesRoute,
+                    stake: clientApi.stake
+                  })({
+                    // pricefeed: requestPricefeedTether(),
+                    stake: requestStakeTether(),
+                  }).run(sink, scheduler)
+                },
+              }
             ),
             router.match(profileWalletRoute)(
-              fadeIn($ProfileConnected({ walletLink, parentRoute: pagesRoute, chainList: [CHAIN.ARBITRUM], accountStakingStore })({
+              fadeIn($ProfileConnected({
+                walletLink,
+                parentRoute: pagesRoute,
+                chainList: [CHAIN.ARBITRUM],
+                accountStakingStore,
+                stake: clientApi.stake
+              })({
                 changeRoute: linkClickTether(),
                 changeNetwork: changeNetworkTether(),
-                walletChange: walletChangeTether()
+                walletChange: walletChangeTether(),
+                requestStake: requestStakeTether()
               }))
             ),
             router.match(tradeRoute)(
               $Trade({
+                tradePricefeed: clientApi.tradePricefeed,
                 walletLink,
                 referralCode: BLUEBERRY_REFFERAL_CODE,
                 chainList: [CHAIN.ARBITRUM, CHAIN.AVALANCHE],
@@ -256,9 +282,9 @@ export default ({ baseRoute = '' }: Website) => component((
               ),
 
             ),
-            router.match(treasuryRoute)(
-              $Treasury({ walletLink, parentRoute: treasuryRoute, treasuryStore })({})
-            ),
+            // router.match(treasuryRoute)(
+            //   $Treasury({ walletLink, parentRoute: treasuryRoute, treasuryStore })({})
+            // ),
 
             $node(),
           )

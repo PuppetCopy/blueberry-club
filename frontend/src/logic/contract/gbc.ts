@@ -5,6 +5,8 @@ import { Closet__factory, Profile__factory } from "@gambitdao/gbc-contracts"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { map } from "@most/core"
 import { readContractMapping } from "../common"
+import { Stream } from "@most/types"
+import { BaseProvider } from "@ethersproject/providers"
 
 
 export const GBC_CONTRACT_MAPPING = {
@@ -14,12 +16,12 @@ export const GBC_CONTRACT_MAPPING = {
 }
 
 
-export function connectLab(wallet: IWalletLink) {
+export function connectLab(provider: Stream<BaseProvider>) {
 
-  const closet = readContractMapping(GBC_CONTRACT_MAPPING, Closet__factory, wallet.provider, 'CLOSET')
-  const lab = readContractMapping(GBC_CONTRACT_MAPPING, GBCLab__factory, wallet.provider, 'LAB')
-  const profile = readContractMapping(GBC_CONTRACT_MAPPING, Profile__factory, wallet.provider, 'PROFILE')
-  const gbc = readContractMapping(GBC_CONTRACT_MAPPING, GBC__factory, wallet.provider, 'GBC')
+  const closet = readContractMapping(GBC_CONTRACT_MAPPING, Closet__factory, provider, 'CLOSET')
+  const lab = readContractMapping(GBC_CONTRACT_MAPPING, GBCLab__factory, provider, 'LAB')
+  const profile = readContractMapping(GBC_CONTRACT_MAPPING, Profile__factory, provider, 'PROFILE')
+  const gbc = readContractMapping(GBC_CONTRACT_MAPPING, GBC__factory, provider, 'GBC')
 
 
   const main = (address: string) => profile.readInt(map(async (c) => {

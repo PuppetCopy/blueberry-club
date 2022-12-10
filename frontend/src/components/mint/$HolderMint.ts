@@ -3,16 +3,14 @@ import { component, style, $text } from "@aelea/dom"
 import { $column, layoutSheet, $row } from "@aelea/ui-components"
 import { formatFixed } from "@ethersproject/bignumber"
 import { ContractTransaction } from "@ethersproject/contracts"
-import { IToken, LabItemSale, MintRule, } from "@gambitdao/gbc-middleware"
+import { blueberrySubgraph, IToken, LabItemSale, MintRule, } from "@gambitdao/gbc-middleware"
 import { $alert, $IntermediatePromise, $spinner } from "@gambitdao/ui-components"
 import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
-import { awaitPromises, switchLatest, empty, multicast, startWith, snapshot, map } from "@most/core"
+import { awaitPromises, switchLatest, empty, multicast, startWith, snapshot, map, now } from "@most/core"
 import { $SelectBerries } from "../$SelectBerries"
-import { queryOwnerV2 } from "../../logic/query"
 import { $ButtonPrimary } from "../form/$Button"
 import { $displayMintEvents } from "./mintUtils2"
 import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
-import { BrowserStore } from "../../logic/store"
 import { CHAIN } from '@gambitdao/gmx-middleware'
 import { connectLab } from "../../logic/contract/gbc"
 import { Holder__factory } from "@gambitdao/gbc-contracts"
@@ -33,16 +31,17 @@ export const $HolderMint = (config: MintCmp) => component((
 
   [alert, alertTether]: Behavior<string | null, string | null>,
 ) => {
-  const contract = connectLab(config.walletLink)
+  const contract = connectLab(config.walletLink.provider)
 
   const sale = readContract(Holder__factory, config.walletLink.provider, config.mintRule.contractAddress)
 
-  const owner = multicast(awaitPromises(map(async signer => {
-    if (signer === null) {
+  const owner = multicast(awaitPromises(switchLatest(map(wallet => {
+    if (wallet === null) {
       return null
     }
-    return queryOwnerV2(signer.address)
-  }, config.walletLink.wallet)))
+
+    return blueberrySubgraph.owner(now({ id: wallet.address }))
+  }, config.walletLink.wallet))))
 
   const $noBerriesOwnedMsg = $alert($text(`Connected account does not own any GBC's`))
   const chosenTokens = replayLatest(multicast(startWith([], selectTokensForWhitelist)))

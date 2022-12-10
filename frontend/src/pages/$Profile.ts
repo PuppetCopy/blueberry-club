@@ -1,165 +1,145 @@
-import { Behavior } from "@aelea/core"
-import { $text, component, style } from "@aelea/dom"
+import { Behavior, combineArray } from "@aelea/core"
+import { $node, $text, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet } from "@aelea/ui-components"
-import { IToken } from "@gambitdao/gbc-middleware"
-
-import { IWalletLink } from "@gambitdao/wallet-link"
-import { fromPromise, map, now } from "@most/core"
+import { blueberrySubgraph, saleDescriptionList } from "@gambitdao/gbc-middleware"
+import { awaitPromises, map, multicast, now, switchLatest } from "@most/core"
 import { $responsiveFlex } from "../elements/$common"
-import { queryLatestPrices, queryOwnerV2 } from "../logic/query"
-import { IAccountStakingStore } from "@gambitdao/gbc-middleware"
-import { $alert, $IntermediatePromise } from "@gambitdao/ui-components"
+import { $anchor, $IntermediatePromise, $Link } from "@gambitdao/ui-components"
 import { $accountPreview } from "../components/$AccountProfile"
-import { ContractTransaction } from "@ethersproject/contracts"
 import { $berryTileId } from "../components/$common"
-import { BrowserStore } from "../logic/store"
+import { $StakingGraph } from "../components/$StakingGraph"
+import { CHAIN, IStake, TRADE_CONTRACT_MAPPING } from "@gambitdao/gmx-middleware"
+import { Stream } from "@most/types"
+import { connectGmxEarn } from "../logic/contract"
+import { $labItem, getContractMapping } from "../logic/common"
+import { JsonRpcBatchProvider, JsonRpcProvider } from "@ethersproject/providers"
+import { pallete } from "@aelea/ui-components-theme"
+import { $ButtonSecondary } from "../components/form/$Button"
 import { connectLab } from "../logic/contract/gbc"
 
 
 export interface IAccount {
-  walletLink: IWalletLink
+  provider: Stream<JsonRpcProvider>
+  account: string
   parentRoute: Route
-  accountStakingStore: BrowserStore<"ROOT.v1.treasuryStore", IAccountStakingStore>
+  stake: Stream<IStake[]>
 }
 
-export const $Profile = ({ walletLink, parentRoute, accountStakingStore }: IAccount) => component((
-  [selectTokensForWhitelist, selectTokensForWhitelistTether]: Behavior<IToken[], IToken[]>,
-  [selectTokensToWithdraw, selectTokensToWithdrawTether]: Behavior<IToken[], IToken[]>,
-  [clickWithdraw, clickWithdrawTether]: Behavior<PointerEvent, PointerEvent>,
-
-  [stakeTxn, stakeTxnTether]: Behavior<any, Promise<ContractTransaction>>,
-  [setApprovalForAll, setApprovalForAllTether]: Behavior<any, Promise<ContractTransaction>>,
-
+export const $Profile = (config: IAccount) => component((
+  [changeRoute, changeRouteTether]: Behavior<string, string>,
 ) => {
 
+  const providerChain = awaitPromises(map(async p => (await p.getNetwork()).chainId as CHAIN, config.provider))
 
+  const arbitrumContract = switchLatest(combineArray((provider, chain) => {
 
-  // const saleWallet = connectSale(walletLink, item.contractAddress)
+    const contractMapping = getContractMapping(TRADE_CONTRACT_MAPPING, chain)
 
-  // const arbitrumContract: IGmxContractInfo = initContractChain(web3Provider, accountAddress, ARBITRUM_CONTRACT)
-  // const avalancheContract: IGmxContractInfo = initContractChain(w3pAva, accountAddress, AVALANCHE_CONTRACT)
+    if (contractMapping === null) {
+      return now(null)
+    }
 
+    return connectGmxEarn(now(provider), config.account, contractMapping).stakingRewards
+  }, config.provider, providerChain))
 
-  // const queryParams: IAccountQueryParamApi & Partial<ITimerangeParamApi> = {
-  //   from: accountStakingStore.state.startedStakingGmxTimestamp || undefined,
-  //   account: accountAddress
-  // }
-
-
-  // const arbitrumStakingRewards = replayLatest(multicast(arbitrumContract.stakingRewards))
-  // const avalancheStakingRewards = replayLatest(multicast(avalancheContract.stakingRewards))
-  // const pricefeedQuery = replayLatest(multicast(fromPromise(gmxGlpPriceHistory(queryParams))))
-
-  // const arbitrumYieldSourceMap = replayLatest(multicast(fromPromise(queryArbitrumRewards(queryParams))))
-  // const avalancheYieldSourceMap = replayLatest(multicast(fromPromise(queryAvalancheRewards({ ...queryParams, account: accountAddress }))))
-
-
-
-  // const gmxAsset: Stream<IAsset> = combine((bn, priceMap) => {
-  //   return { balance: bn.gmxInStakedGmx, balanceUsd: bn.gmxInStakedGmx * priceMap.gmx.value / BI_18_PRECISION }
-  // }, arbitrumStakingRewards, latestTokenPriceMap)
-  // const glpArbiAsset: Stream<IAsset> = combine((bn, priceMap) => ({ balance: bn.glpBalance, balanceUsd: priceMap.glpArbitrum.value * bn.glpBalance / BI_18_PRECISION }), arbitrumStakingRewards, latestTokenPriceMap)
-  // const glpAvaxAsset: Stream<IAsset> = combine((bn, priceMap) => ({ balance: bn.glpBalance, balanceUsd: priceMap.glpArbitrum.value * bn.glpBalance / BI_18_PRECISION }), avalancheStakingRewards, latestTokenPriceMap)
-
-
-  // const feeYieldClaim = combineArray((arbiStaking, avaxStaking) => [...arbiStaking.feeGlpTrackerClaims, ...arbiStaking.feeGmxTrackerClaims, ...avaxStaking.feeGlpTrackerClaims, ...avaxStaking.feeGmxTrackerClaims], arbitrumYieldSourceMap, avalancheYieldSourceMap)
-  // const newLocal = take(1, latestTokenPriceMap)
-  // const stakingClaim = combineArray((arbiStaking, avaxStaking, yieldFeeList, priceMap) => {
-  //   // amountUsd from avalanche is not reflecting the real amount because the subraph's gmx price is 0
-  //   // to fix this, we'll fetch arbitrum's price of GMX instead
-  //   const gmx = [...avaxStaking.stakedGlpTrackerClaims, ...avaxStaking.stakedGmxTrackerClaims].map(y => ({ ...y, amountUsd: y.amount * priceMap.gmx.value / BI_18_PRECISION }))
-
-  //   return [...yieldFeeList, ...gmx, ...arbiStaking.stakedGlpTrackerClaims, ...arbiStaking.stakedGmxTrackerClaims]
-  // }, arbitrumYieldSourceMap, avalancheYieldSourceMap, feeYieldClaim, newLocal)
-  // const GRAPHS_INTERVAL = Math.floor(intervalTimeMap.HR4)
-
-  // const gmxArbitrumRS = priceFeedHistoryInterval(
-  //   GRAPHS_INTERVAL,
-  //   map(feedMap => feedMap.gmx, pricefeedQuery),
-  //   map(staking => staking.stakes.filter(s => s.token === StakedTokenArbitrum.GMX || s.token === StakedTokenArbitrum.esGMX), arbitrumYieldSourceMap)
-  // )
-
-  // const glpArbitrumRS = priceFeedHistoryInterval(
-  //   GRAPHS_INTERVAL,
-  //   map(feedMap => feedMap.glpArbitrum, pricefeedQuery),
-  //   map(staking => staking.stakes.filter(s => s.token === StakedTokenArbitrum.GLP), arbitrumYieldSourceMap)
-  // )
-
-  // const glpAvalancheRS = priceFeedHistoryInterval(
-  //   GRAPHS_INTERVAL,
-  //   map(feedMap => feedMap.glpAvalanche, pricefeedQuery),
-  //   map(staking => staking.stakes.filter(s => s.token === StakedTokenAvalanche.GLP), avalancheYieldSourceMap)
-  // )
-
-
-
-
-  const urlFragments = document.location.pathname.split('/')
-  const accountAddress = urlFragments[urlFragments.length - 1].toLowerCase()
-
-  const queryOwner = fromPromise(accountAddress ? queryOwnerV2(accountAddress) : Promise.reject())
-
-  // const ownedTokens = map(owner => owner.ownedTokens, queryOwner)
-
-  // const stakedList = map(owner => owner.stakedTokenList, queryOwner)
-
-
-  // const gbcWallet = connectLab(walletLink)
-  // // const rewardDistributor = connectRewardDistributor(walletLink)
-
-  // const priceMap = fromPromise(queryLatestPrices())
-
-
-  // const isApprovedForAll = replayLatest(multicast(rewardDistributor.isApprovedForAll))
-
-  // // Promise<ContractReceipt>
-
-  // const chosenTokens = startWith([], selectTokensForWhitelist)
-
-  // const withdrawTxn = snapshot(async ({ selection, contract, account }) => {
-
-  //   if ((contract === null || !account)) {
-  //     throw new Error(`Unable to resolve contract`)
-  //   }
-
-
-  //   const idList = selection.map(s => s.id)
-  //   const tx = contract.stakeForAccount(account, account, idList)
-
-  //   return tx
-
-  // }, combineObject({ selection: selectTokensToWithdraw, contract: rewardDistributor.contract, account: walletLink.account }), clickWithdraw)
-
+  const lab = connectLab(config.provider)
+  const ownedItems = lab.accountListBalance(saleDescriptionList.map(x => x.id))
 
   return [
-    $responsiveFlex(layoutSheet.spacingBig, style({ placeContent: 'center' }))(
+    $column(layoutSheet.spacingBig)(
+      $row(style({ flex: 1, marginBottom: '-55px', zIndex: 1 }))(
+        $accountPreview({
+          address: config.account,
+          avatarSize: 150,
+          labelSize: '2em'
+        })
+      ),
 
-
-      $column(layoutSheet.spacingBig, style({ maxWidth: '550px' }))(
-        $column(
-          $accountPreview({
-            address: accountAddress,
-            avatarSize: 150,
-            labelSize: '2em'
-          }),
+      $responsiveFlex(
+        $row(style({ flex: 1 }))(
+          $StakingGraph({
+            sourceList: config.stake,
+            reward: multicast(arbitrumContract),
+            provider: config.provider,
+            // priceFeedHistoryMap: pricefeedQuery,
+            // graphInterval: intervalTimeMap.HR4,
+          })({}),
         ),
+      ),
 
-        $IntermediatePromise({
-          query: now(queryOwnerV2(accountAddress.toLowerCase())),
-          $$done: map(owner => {
-            if (owner == null) {
-              return $alert($text(style({ alignSelf: 'center' }))(`Connected account does not own any GBC's`))
-            }
 
-            return $row(layoutSheet.spacingSmall, style({ flexWrap: 'wrap' }))(...owner.ownedTokens.map(token => {
-              return $berryTileId(token, 85)
-            }))
-          }),
-        })({}),
-      )
+      $IntermediatePromise({
+        query: blueberrySubgraph.owner(now({ id: config.account })),
+        $$done: map(owner => {
+          if (owner === null) {
+            return null
+          }
 
-    )
+          return $responsiveFlex(layoutSheet.spacingBig)(
+            $column(layoutSheet.spacingBig, style({ maxWidth: '550px', placeContent: 'center' }))(
+
+
+              $row(layoutSheet.spacingSmall, style({ flexWrap: 'wrap', placeContent: 'center' }))(...owner.ownedTokens.map(token => {
+                return $berryTileId(token, 85)
+              })),
+
+
+
+              $row(
+                $text('Items'),
+
+                // switchLatest(map(items => {
+                //   return $Popover({
+                //     $$popContent: map(_ => $TransferItems(items.filter(x => x.amount > 0))({}), clickTransferItems),
+
+                //   })(
+                //     $ButtonSecondary({ $content: $text('Transfer') })({
+                //       click: clickTransferItemsTether()
+                //     })
+                //   )({})
+                // }, ownedItems))
+
+              ),
+
+
+              switchLatest(map(items => {
+                return $row(layoutSheet.spacing, style({ flexWrap: 'wrap' }))(
+                  ...items.filter(item => item.amount > 0).map(item => {
+                    return $row(style({ position: 'relative' }))(
+                      $text(style({ position: 'absolute', top: '1px', right: '4px', fontSize: '.75em', fontWeight: 'bold', color: pallete.background }))(
+                        item.amount + 'x'
+                      ),
+                      $labItem(item.id, 97)
+                    )
+                  })
+                )
+              }, ownedItems))
+
+            ),
+          )
+        })
+      })({})
+
+      // $IntermediatePromise({
+      //   query: blueberrySubgraph.owner(now({ id: config.account })),
+      //   $$done: map(owner => {
+      //     if (owner == null) {
+      //       return $alert($text(style({ alignSelf: 'center' }))(`Connected account does not own any GBC's`))
+      //     }
+
+      //     return $row(layoutSheet.spacingSmall, style({ flexWrap: 'wrap' }))(...owner.ownedTokens.map(token => {
+      //       return $berryTileId(token, 85)
+      //     }))
+      //   }),
+      // })({}),
+
+    ),
+
+    {
+      stake: map(chain => ({ chain, account: config.account }), providerChain),
+      changeRoute,
+    }
   ]
 })
 

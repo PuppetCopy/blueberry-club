@@ -55,7 +55,9 @@ export const $MainMenu = ({ walletLink, parentRoute, chainList, showAccount = tr
   )
 
   const $treasuryStatus = $row(style({ alignItems: 'center', cursor: 'pointer' }))(
-    $pageLink($bagOfCoins, map(x => formatReadableUSD(x, { maximumFractionDigits: 0 }), totalWalletHoldingsUsd)),
+    $pageLink($bagOfCoins, map(x => {
+      return formatReadableUSD(x)
+    }, totalWalletHoldingsUsd)),
     $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginTop: '3px', marginLeft: '5px' }), viewBox: '0 0 32 32' })
   )
 

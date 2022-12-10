@@ -8,8 +8,9 @@ import { Stream } from "@most/types"
 import { MouseEventParams, LineStyle, BarPrice, PriceScaleMode, Time } from "lightweight-charts"
 import { $responsiveFlex } from "../elements/$common"
 import { IAsset } from "@gambitdao/gbc-middleware"
-import { IValueInterval } from "./$StakingGraph"
+// import { IValueInterval } from "./$StakingGraph"
 import { $Chart } from "./chart/$Chart"
+import { IValueInterval } from "./$StakingGraph"
 
 
 type ITreasuryMetric = {
@@ -19,8 +20,7 @@ type ITreasuryMetric = {
   symbol: string
   asset: Stream<IAsset>
   $distribution: $Node
-  priceChart: Stream<IValueInterval[]>
-  // entry: bigint
+  priceChart: Stream<{time: number, value: number}[]>
 }
 
 
@@ -53,7 +53,7 @@ export const $AssetDetails = ({ label, $iconPath, asset, symbol, $distribution, 
           combineArray((data) => {
 
             
-            const baselinePrice = formatFixed(BigInt(data[0].price.c), 30)
+            const baselinePrice = formatFixed(BigInt(data[0].value), 30)
 
 
             return $Chart({
@@ -91,7 +91,7 @@ export const $AssetDetails = ({ label, $iconPath, asset, symbol, $distribution, 
                 })
 
 
-                const newLocal = data.map(y => ({ time: y.time as Time, value: formatFixed(y.price.c, 30) }))
+                const newLocal = data.map(y => ({ time: y.time as Time, value: y.value }))
                 //.slice(0, 305)
 
                 series.setData(newLocal)

@@ -1,25 +1,22 @@
-import { awaitPromises, combine, empty, map, multicast, switchLatest, tap } from "@most/core"
-import { CHAIN, switchFailedSources, ITokenIndex, ITokenInput, ITokenTrade, ARBITRUM_ADDRESS, AVALANCHE_ADDRESS, AddressZero, getChainName, KeeperResponse, IPositionDecrease, IPositionIncrease, IPositionClose, IPositionLiquidated, filterNull, listen, IVaultPosition, unixTimestampNow } from "@gambitdao/gmx-middleware"
+import { awaitPromises, combine, empty, map, multicast, switchLatest } from "@most/core"
+import { CHAIN, switchFailedSources, ITokenIndex, ITokenInput, ITokenTrade, AddressZero, getChainName, KeeperResponse, IPositionDecrease, IPositionIncrease, IPositionClose, IPositionLiquidated, filterNull, listen, IVaultPosition, unixTimestampNow, TRADE_CONTRACT_MAPPING } from "@gambitdao/gmx-middleware"
 import { combineArray } from "@aelea/core"
 import { ERC20__factory, PositionRouter__factory, Router__factory, VaultPriceFeed__factory, Vault__factory } from "./gmx-contracts"
 import { periodicRun } from "@gambitdao/gmx-middleware"
 import { getTokenDescription } from "../utils"
 import { Stream } from "@most/types"
-import { JsonRpcProvider } from "@ethersproject/providers"
 import { getContractAddress, readContractMapping } from "../common"
 import { IWalletLink, IWalletState } from "@gambitdao/wallet-link"
-import { globalProviderMap } from "../provider"
 import { id } from "@ethersproject/hash"
 import { Interface } from "@ethersproject/abi"
 
-export const TRADE_CONTRACT_MAPPING = {
-  [CHAIN.ARBITRUM]: ARBITRUM_ADDRESS,
-  [CHAIN.AVALANCHE]: AVALANCHE_ADDRESS
-}
+
 export interface IPositionGetter {
   key: string
   position: IVaultPosition | null
 }
+
+
 
 const gmxIOPriceMapSource = {
   [CHAIN.ARBITRUM]: multicast(periodicRun({
@@ -56,8 +53,7 @@ export async function getErc20Balance(token: ITokenTrade | typeof AddressZero, w
   return 0n
 }
 
-
-export function connectTrade<T extends JsonRpcProvider>(walletLink: IWalletLink) {
+export function connectTrade(walletLink: IWalletLink) {
   const router = readContractMapping(TRADE_CONTRACT_MAPPING, Router__factory, walletLink.provider, 'Router')
   const positionRouter = readContractMapping(TRADE_CONTRACT_MAPPING, PositionRouter__factory, walletLink.provider, 'PositionRouter')
 
@@ -112,8 +108,6 @@ export const gmxIoLatestPrice = (chain: CHAIN, token: ITokenTrade) => {
     return BigInt(val)
   }, source)
 }
-
-
 
 export function connectVault(walletLink: IWalletLink) {
   const vault = readContractMapping(TRADE_CONTRACT_MAPPING, Vault__factory, walletLink.provider, 'Vault')

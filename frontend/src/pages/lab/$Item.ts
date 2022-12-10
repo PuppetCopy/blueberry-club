@@ -145,8 +145,6 @@ export const $LabItem = (config: ILabItem) => component((
                       return $text(style({ color: pallete.foreground }))(`Sale Finished!`)
                     }
 
-                    console.log(mintRule.start)
-
                     return time < mintRule.start
                       ? $row(layoutSheet.spacing, style({ alignItems: 'baseline' }))(
                         $text(style({ color: pallete.foreground }))('Starting In '),

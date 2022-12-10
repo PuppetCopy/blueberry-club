@@ -4,11 +4,10 @@ import { $row, layoutSheet, $icon, $column, screenUtils, $TextField, $NumberTick
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import {
   ARBITRUM_ADDRESS, formatFixed, readableNumber, parseFixed, formatReadableUSD, BASIS_POINTS_DIVISOR,
-  ITrade, getTokenAmount, TokenDescription, LIMIT_LEVERAGE, bnDiv, replayState,
-  div, StateStream, getPnL, MIN_LEVERAGE, formatToBasis, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE, isTradeSettled,
-  CHAIN, unixTimestampNow, query, fromJson, ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd
+  ITrade, getTokenAmount, ITokenDescription, LIMIT_LEVERAGE, bnDiv, replayState,
+  div, StateStream, getPnL, MIN_LEVERAGE, formatToBasis, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE, CHAIN, ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd, IPricefeed, IPricefeedParamApi, TRADE_CONTRACT_MAPPING
 } from "@gambitdao/gmx-middleware"
-import { $anchor, $bear, $bull, $ButtonToggle, $infoTooltip, $tokenIconMap, $tokenLabelFromSummary, $Tooltip, getPricefeedVisibleColumns } from "@gambitdao/ui-components"
+import { $anchor, $bear, $bull, $infoTooltip, $tokenIconMap, $tokenLabelFromSummary, $Tooltip } from "@gambitdao/ui-components"
 import {
   merge, multicast, mergeArray, now, snapshot, map, switchLatest, filter,
   skipRepeats, empty, combine, fromPromise, constant, sample, startWith, skipRepeatsWith, awaitPromises, delay
@@ -17,11 +16,11 @@ import { Stream } from "@most/types"
 import { $Slider } from "../$Slider"
 import { $ButtonPrimary, $ButtonPrimaryCtx, $ButtonSecondary } from "../form/$Button"
 import { $Dropdown, $defaultSelectContainer } from "../form/$Dropdown"
-import { $bagOfCoins, $caretDown } from "../../elements/$icons"
+import { $caretDown } from "../../elements/$icons"
 import { CHAIN_ADDRESS_MAP, getTokenDescription, resolveAddress } from "../../logic/utils"
 import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 import { BrowserStore } from "../../logic/store"
-import { connectTrade, getErc20Balance, TRADE_CONTRACT_MAPPING } from "../../logic/contract/trade"
+import { connectTrade, getErc20Balance } from "../../logic/contract/trade"
 import { MouseEventParams } from "lightweight-charts"
 import { $TradePnlHistory } from "./$TradePnlHistory"
 import { ContractTransaction } from "@ethersproject/contracts"
@@ -53,9 +52,9 @@ export interface ITradeParams {
   executionFee: bigint
   fee: bigint
 
-  inputTokenDescription: TokenDescription
-  indexTokenDescription: TokenDescription
-  collateralTokenDescription: TokenDescription
+  inputTokenDescription: ITokenDescription
+  indexTokenDescription: ITokenDescription
+  collateralTokenDescription: ITokenDescription
 
   averagePrice: bigint | null
   liquidationPrice: bigint | null
@@ -87,6 +86,8 @@ interface ITradeBox {
   referralCode: string
   walletLink: IWalletLink
 
+  tradePricefeed: Stream<IPricefeed[]>
+
   chainList: CHAIN[],
   tokenIndexMap: Partial<Record<CHAIN, ITokenIndex[]>>
   tokenStableMap: Partial<Record<CHAIN, ITokenStable[]>>
@@ -104,7 +105,6 @@ export type RequestTradeQuery = {
 
 const BOX_SPACING = '20px'
 const LIMIT_LEVERAGE_NORMAL = formatToBasis(LIMIT_LEVERAGE)
-
 
 export const $TradeBox = (config: ITradeBox) => component((
   [openEnableTradingPopover, openEnableTradingPopoverTether]: Behavior<any, any>,
@@ -137,6 +137,8 @@ export const $TradeBox = (config: ITradeBox) => component((
   [crosshairMove, crosshairMoveTether]: Behavior<MouseEventParams, MouseEventParams>,
   [resetTradeMode, resetTradeModeTether]: Behavior<any, any>,
   [clickMaxBalance, clickMaxBalanceTether]: Behavior<any, any>,
+
+  [requestTradePricefeed, requestTradePricefeedTether]: Behavior<IPricefeedParamApi, IPricefeedParamApi>,
 
 ) => {
 
@@ -802,24 +804,6 @@ export const $TradeBox = (config: ITradeBox) => component((
           //   )
           // })({})),
           $$display: map(w3p => {
-            const tradePricefeed = switchLatest(combineArray((trade) => {
-              if (!trade) {
-                return now(null)
-              }
-
-              const to = unixTimestampNow()
-              const from = trade.timestamp
-
-              const intervalTime = getPricefeedVisibleColumns(160, from, to)
-              const params = { tokenAddress: '_' + trade.indexToken, interval: '_' + intervalTime, from, to }
-
-              const queryFeed = fromPromise(query.graphClientMap[w3p.chain](query.document.pricefeedDoc, params as any, {
-                // requestPolicy: 'network-only'
-              }))
-              const priceFeedQuery = map(res => res.pricefeeds.map(fromJson.pricefeedJson), queryFeed)
-
-              return map(feed => ({ feed, trade }), priceFeedQuery)
-            }, config.tradeState.trade))
 
             const routerContractAddress = getContractAddress(TRADE_CONTRACT_MAPPING, w3p.chain, 'Router')
             const positionRouterAddress = getContractAddress(TRADE_CONTRACT_MAPPING, w3p.chain, 'PositionRouter')
@@ -1112,9 +1096,9 @@ export const $TradeBox = (config: ITradeBox) => component((
               ),
 
 
-              switchLatest(map((res) => {
+              switchLatest(combineArray((trade, pricefeed) => {
 
-                if (res === null) {
+                if (trade === null) {
                   return $row(style({ flex: 1, placeContent: 'center', alignItems: 'center' }), styleInline(map(mode => ({ display: mode ? 'none' : 'flex' }), inTradeMode)))(
                     $text(style({ color: pallete.foreground }))('no trade')
                   )
@@ -1122,18 +1106,14 @@ export const $TradeBox = (config: ITradeBox) => component((
 
                 const hoverChartPnl = switchLatest(map((chartCxChange) => {
                   if (chartCxChange) {
-                    return now(chartCxChange)
-                  }
-
-                  if (isTradeSettled(res.trade)) {
-                    return now(formatFixed(res.trade.realisedPnl - res.trade.fee, 30))
+                    return now(Number(readableNumber(chartCxChange)))
                   }
 
                   return map(price => {
-                    const delta = getPnL(res.trade.isLong, res.trade.averagePrice, price, res.trade.size)
-                    const val = formatFixed(delta + res.trade.realisedPnl - res.trade.fee, 30)
+                    const delta = getPnL(trade.isLong, trade.averagePrice, price, trade.size)
+                    const val = formatFixed(delta + trade.realisedPnl - trade.fee, 30)
 
-                    return val
+                    return Number(readableNumber(val))
                   }, config.tradeState.indexTokenPrice)
 
                 }, pnlCrossHairTime))
@@ -1155,21 +1135,27 @@ export const $TradeBox = (config: ITradeBox) => component((
                     transform: 'translateX(-50%)'
                   })(
                     $NumberTicker({
-                      value$: map(O((n) => readableNumber(n), Number), motion({ ...MOTION_NO_WOBBLE, precision: 15, stiffness: 210 }, 0, hoverChartPnl)),
+                      value$: combineArray((hoverValue, vv) => {
+                        return Number(readableNumber(hoverValue))
+                      }, motion({ ...MOTION_NO_WOBBLE, precision: 15, stiffness: 210 }, 0, hoverChartPnl), tradeState),
                       incrementColor: pallete.positive,
                       decrementColor: pallete.negative
                     })
                   ),
                   $TradePnlHistory({
                     $container: $column(style({ flex: 1 })),
-                    trade: res.trade,
-                    pricefeed: res.feed,
+                    trade: trade,
+                    chain: w3p.chain,
+                    pricefeed,
                     chartConfig: {},
                     latestPrice: config.tradeState.indexTokenPrice
-                  })({ crosshairMove: crosshairMoveTether() })
+                  })({
+                    crosshairMove: crosshairMoveTether(),
+                    // requestPricefeed: requestTradePricefeedTether()
+                  })
                 )
 
-              }, tradePricefeed))
+              }, config.tradeState.trade, config.tradePricefeed))
             )
           }),
           walletLink: config.walletLink
@@ -1288,6 +1274,8 @@ export const $TradeBox = (config: ITradeBox) => component((
       ]),
       requestTrade: clickRequestTrade,
       changeNetwork,
+
+      requestTradePricefeed,
     }
   ]
 })

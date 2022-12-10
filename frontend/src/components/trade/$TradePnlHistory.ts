@@ -4,9 +4,10 @@ import { $column, observer } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import {
   unixTimestampNow, isTradeSettled, getDeltaPercentage, intervalListFillOrderMap,
-  isTradeOpen, ITrade, formatFixed, getPnL, IPricefeed, USD_PERCISION
+  isTradeOpen, ITrade, formatFixed, getPnL, IPricefeed, USD_PERCISION, IPricefeedParamApi, CHAIN
 } from "@gambitdao/gmx-middleware"
-import { multicast, switchLatest, empty, skipRepeatsWith, map, skip } from "@most/core"
+import { getIntervalBasedOnTimeframe } from "@gambitdao/ui-components"
+import { multicast, switchLatest, empty, skipRepeatsWith, map, skip, now } from "@most/core"
 import { Stream } from "@most/types"
 import { MouseEventParams, SingleValueData, Time, LineStyle, ChartOptions, DeepPartial } from "lightweight-charts"
 import { $Chart } from "../chart/$Chart"
@@ -18,6 +19,7 @@ interface ITradePnlPreview {
   chartConfig?: DeepPartial<ChartOptions>
   pixelsPerBar?: number
   pricefeed: IPricefeed[]
+  chain: CHAIN
 }
 
 export interface IPricefeedTick {
@@ -66,7 +68,10 @@ export const $TradePnlHistory = (config: ITradePnlPreview) => component((
 
 
     const data = intervalListFillOrderMap({
-      source: [...config.pricefeed.filter(tick => tick.timestamp > initialTick.time), ...config.trade.updateList],
+      source: [
+        ...config.pricefeed.filter(tick => tick.timestamp > initialTick.time),
+        ...config.trade.updateList
+      ],
       // source: [...feed.filter(tick => tick.timestamp > initialTick.time), ...trade.updateList, ...trade.increaseList, ...trade.decreaseList],
       interval,
       seed: initialTick,
@@ -108,6 +113,15 @@ export const $TradePnlHistory = (config: ITradePnlPreview) => component((
     return { data, interval }
   }, displayColumnCount))
 
+  const to = unixTimestampNow()
+  const from = config.trade.timestamp
+
+
+  const requestPricefeed: Stream<IPricefeedParamApi> = now({
+    chain: config.chain,
+    tokenAddress: config.trade.indexToken,
+    interval: getIntervalBasedOnTimeframe(160, from, to), from, to
+  })
 
   return [
 
@@ -263,7 +277,7 @@ export const $TradePnlHistory = (config: ITradePnlPreview) => component((
 
     {
       crosshairMove,
-      // hoveredPriceTick
+      // requestPricefeed
     }
   ]
 })

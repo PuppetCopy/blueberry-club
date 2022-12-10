@@ -46,7 +46,7 @@ export const $PublicMint = (config: MintCmp) => component((
 
 
   
-  const labWallet = connectLab(config.walletLink)
+  const labWallet = connectLab(config.walletLink.provider)
 
   const accountChange = merge(account, supportedNetwork)
   const selectedMintAmount = merge(customNftAmount, selectMintAmount)

@@ -1,7 +1,7 @@
 import { combineArray, fromCallback, replayLatest } from "@aelea/core"
-import { JsonRpcProvider, JsonRpcSigner, Web3Provider } from "@ethersproject/providers"
+import { BaseProvider, JsonRpcProvider, JsonRpcSigner, Web3Provider } from "@ethersproject/providers"
 import { CHAIN } from "@gambitdao/gmx-middleware"
-import { awaitPromises, constant, empty, fromPromise, map, mergeArray, multicast, now, switchLatest } from "@most/core"
+import { awaitPromises, constant, delay, empty, fromPromise, map, mergeArray, multicast, now, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
 import { eip1193ProviderEvent } from "./common"
 import { metamaskQuery, walletConnect } from "./provider"
@@ -35,7 +35,7 @@ export enum IWalletName {
 
 
 interface IWalletLinkConfig {
-  globalProviderMap: Partial<Record<CHAIN, JsonRpcProvider>>
+  globalProviderMap: Partial<Record<CHAIN, BaseProvider>>
   defaultGlobalChain: CHAIN
 }
 
@@ -50,7 +50,9 @@ export function initWalletLink(
 ): IWalletLink {
 
   const defaultProvider = map(chain => {
-    return config.globalProviderMap[chain] as JsonRpcProvider
+    const prv = config.globalProviderMap[chain] || config.globalProviderMap[config.defaultGlobalChain]!
+
+    return prv as JsonRpcProvider
   }, networkChange || now(config.defaultGlobalChain))
 
   const provider: Stream<Web3Provider | JsonRpcProvider> = replayLatest(multicast(switchLatest(mergeArray([
@@ -90,17 +92,6 @@ export function initWalletLink(
     }, fromPromise(metamaskQuery), walletName, defaultProvider)
   ]))))
 
-  // const newLocal = [walletProvider, defaultProvider] as [Stream<IEthereumProvider | null>, Stream<JsonRpcProvider>]
-  // const defaultProvider: Stream<Web3Provider | JsonRpcProvider> = replayLatest(multicast(awaitPromises(combineArray(async (fbPovider, prov) => {
-  //   const network = await prov.getNetwork()
-  //   const isConnectedChainSupported = network.chainId in config.globalProviderMap
-
-  //   if (isConnectedChainSupported) {
-  //     return prov
-  //   }
-
-  //   return fbPovider
-  // }, fallbackProvider, provider))))
 
   const wallet: Stream<IWalletState | null> = replayLatest(multicast(awaitPromises(map(async prov => {
     const network = await prov.getNetwork()

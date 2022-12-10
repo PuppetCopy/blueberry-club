@@ -5,11 +5,10 @@ import { BaseProvider } from "@ethersproject/providers"
 import { CHAIN, getAccountExplorerUrl, IClaim, IClaimSource, intervalTimeMap } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $jazzicon } from "../common/$avatar"
-import { getGatewayUrl, getIdentityFromENS, IEnsClaim, IProfile } from "@gambitdao/gbc-middleware"
+import { blueberrySubgraph, getGatewayUrl, getIdentityFromENS, IEnsClaim, IProfile } from "@gambitdao/gbc-middleware"
 import { $anchor, $ethScan, $twitter } from "@gambitdao/ui-components"
 import { $berryByToken } from "../logic/common"
-import { empty, fromPromise, map, switchLatest } from "@most/core"
-import { queryProfile } from "../logic/query"
+import { awaitPromises, empty, fromPromise, map, now, switchLatest } from "@most/core"
 
 
 export interface IAccountPreview {
@@ -104,7 +103,8 @@ export const $ProfileLinks = (address: string, claim?: IClaim) => {
 export const $accountPreview = ({
   labelSize = '16px', avatarSize = 38, claim, address, showAddress = true
 }: IAccountPreview) => {
-  const profile = fromPromise(queryProfile({ id: address.toLowerCase() }).catch(() => null))
+  const profile = awaitPromises(blueberrySubgraph.profile(now({ id: address.toLowerCase() })))
+  // const profile = fromPromise(queryProfile({ id: address.toLowerCase() }).catch(() => null))
 
   return switchLatest(map(p => {
     return p

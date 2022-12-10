@@ -2,7 +2,7 @@ import { isStream, O } from "@aelea/core"
 import { $Branch, $element, $node, $Node, $text, attr, component, style, styleBehavior, styleInline, stylePseudo } from "@aelea/dom"
 import { $column, $icon, $row, $seperator, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { bnDiv, CHAIN, formatReadableUSD, getLiquidationPrice, getTxExplorerUrl, IAbstractPositionStake, IAbstractTrade, ITrade, ITradeOpen, liquidationWeight, readableNumber, shortenTxAddress, TokenDescription } from "@gambitdao/gmx-middleware"
+import { bnDiv, CHAIN, formatReadableUSD, getLiquidationPrice, getTxExplorerUrl, IAbstractPositionStake, IAbstractTrade, ITrade, ITradeOpen, liquidationWeight, readableNumber, shortenTxAddress, ITokenDescription } from "@gambitdao/gmx-middleware"
 import { now, multicast, map, empty } from "@most/core"
 import { Stream } from "@most/types"
 import { $alertIcon, $caretDblDown, $info, $skull, $tokenIconMap } from "./$icons"
@@ -130,7 +130,7 @@ export const $labeledDivider = (label: string) => {
   )
 }
 
-export const $tokenLabel = (token: TokenDescription, $iconG: $Node, $label?: $Node) => {
+export const $tokenLabel = (token: ITokenDescription, $iconG: $Node, $label?: $Node) => {
   return $row(layoutSheet.spacing, style({ cursor: 'pointer', alignItems: 'center' }))(
     $icon({ $content: $iconG, width: '34px', viewBox: '0 0 32 32' }),
     $column(layoutSheet.flex)(
@@ -142,7 +142,7 @@ export const $tokenLabel = (token: TokenDescription, $iconG: $Node, $label?: $No
 }
 
 
-export const $tokenLabelFromSummary = (token: TokenDescription, $label?: $Node) => {
+export const $tokenLabelFromSummary = (token: ITokenDescription, $label?: $Node) => {
   const $iconG = $tokenIconMap[token.symbol]
 
   return $row(layoutSheet.spacing, style({ cursor: 'pointer', alignItems: 'center', }))(

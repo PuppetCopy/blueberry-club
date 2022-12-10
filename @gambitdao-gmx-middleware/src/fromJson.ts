@@ -2,7 +2,7 @@ import { isTradeClosed, isTradeLiquidated } from "."
 import {
   ITrade, IIdentifiableEntity, IPositionClose, IPositionDecrease,
   IPositionIncrease, IPositionLiquidated, IPositionUpdate, IAccountSummary, IAbstractPositionAdjustment,
-  IPricefeed, IPriceLatest, ITokenIndex,
+  IPricefeed, IPriceLatest, ITokenIndex, IStake,
 } from "./types"
 
 
@@ -80,7 +80,7 @@ export function positionUpdateJson(json: IPositionUpdate): IPositionUpdate {
 }
 
 
-export function toTradeJson<T extends ITrade>(json: T): T {
+export function tradeJson<T extends ITrade>(json: T): T {
   const decreaseList = json.decreaseList.map(positionDecreaseJson).sort((a, b) => a.timestamp - b.timestamp)
   const increaseList = json.increaseList.map(positionIncreaseJson).sort((a, b) => a.timestamp - b.timestamp)
   const updateList = json.updateList.map(positionUpdateJson).sort((a, b) => a.timestamp - b.timestamp)
@@ -110,8 +110,14 @@ export function toTradeJson<T extends ITrade>(json: T): T {
   }
 }
 
-
-
+export function stakeJson<T extends IStake>(obj: T): T {
+  return {
+    ...obj,
+    amount: BigInt(obj.amount),
+    amountUsd: BigInt(obj.amountUsd),
+    token: obj.token
+  }
+}
 
 export function toTradeSummary<T extends ITrade>(json: T): T {
   const size = BigInt(json.size)

@@ -1,72 +1,40 @@
 import { combineArray } from "@aelea/core"
 import { BigNumber } from "@ethersproject/bignumber"
-import { BaseProvider } from "@ethersproject/providers"
+import { JsonRpcProvider } from "@ethersproject/providers"
 import { BI_18_PRECISION } from "@gambitdao/gbc-middleware"
-import { ARBITRUM_ADDRESS, AVALANCHE_ADDRESS, BASIS_POINTS_DIVISOR } from "@gambitdao/gmx-middleware"
-import { awaitPromises, combine, fromPromise, map, now, take } from "@most/core"
+import { BASIS_POINTS_DIVISOR, getGmxTokenPrice, IGmxContractAddress, intervalTimeMap, TRADE_CONTRACT_MAPPING } from "@gambitdao/gmx-middleware"
+import { awaitPromises, combine, map } from "@most/core"
 import { Stream } from "@most/types"
 import { IAsset } from "@gambitdao/gbc-middleware"
-import { latestTokenPriceMap } from "./common"
-import { EsGMX__factory, GlpManager__factory, GMX__factory, Reader__factory, RewardReader__factory, Vault__factory } from "./contract/gmx-contracts"
+import { GlpManager__factory, GMX__factory, Reader__factory, RewardReader__factory, Vault__factory } from "./contract/gmx-contracts"
+import { readContractMapping } from "./common"
 
 
-
-
-export type ITreasuryAssetTotal = {
-  eth: IAsset
-  gmx: IAsset
-  glp: IAsset
-  totalUsd: bigint
-}
-
-export interface IAssetReward {
-  apr: bigint
-  value: bigint
-  valueUsd: bigint
-}
-
-export type IGmxContractInfo = ReturnType<typeof initContractChain>
+export type IGmxContractInfo = ReturnType<typeof connectGmxEarn>
 export type IRewardsStream = IGmxContractInfo['stakingRewards']
 
 
 
 
-export const initContractChain = (provider: BaseProvider, account: string, environmentContract: typeof ARBITRUM_ADDRESS | typeof AVALANCHE_ADDRESS) => {
-  const rewardReaderContract = RewardReader__factory.connect(environmentContract.RewardReader, provider)
-  const readerContract = Reader__factory.connect(environmentContract.Reader, provider)
-  const gmxContract = GMX__factory.connect(environmentContract.GMX, provider)
-  const esGmxContract = EsGMX__factory.connect(environmentContract.ES_GMX, provider)
-  const glpManagerContract = GlpManager__factory.connect(environmentContract.GlpManager, provider)
-  const vaultContract = Vault__factory.connect(environmentContract.Vault, provider)
+const SECONDS_PER_YEAR = BigInt(intervalTimeMap.YEAR)
+
+export const connectGmxEarn = (provider: Stream<JsonRpcProvider>, account: string, environmentContract: IGmxContractAddress) => {
+
+  const gmx = readContractMapping(TRADE_CONTRACT_MAPPING, GMX__factory, provider, 'GMX')
+  const vault = readContractMapping(TRADE_CONTRACT_MAPPING, Vault__factory, provider, 'Vault')
+  const manager = readContractMapping(TRADE_CONTRACT_MAPPING, GlpManager__factory, provider, 'GlpManager')
+  const reader = readContractMapping(TRADE_CONTRACT_MAPPING, Reader__factory, provider, 'Reader')
+  const rewardReader = readContractMapping(TRADE_CONTRACT_MAPPING, RewardReader__factory, provider, 'RewardReader')
+
+  const walletTokens = [environmentContract.GMX, environmentContract.ES_GMX, environmentContract.GLP, environmentContract.StakedGmxTracker] as const
+
+  const gmxSupply = gmx.readInt(map(c => c.totalSupply()))
+  const stakedGmxSupply = gmx.readInt(map(c => c.balanceOf(environmentContract.StakedGmxTracker)))
+  const nativeTokenPrice = vault.readInt(map(c => c.getMinPrice(environmentContract.NATIVE_TOKEN)))
+  const aum = manager.readInt(map(c => c.getAum(true)))
 
 
-
-  const walletTokens = [
-    environmentContract.GMX,
-    environmentContract.ES_GMX,
-    environmentContract.GLP,
-    environmentContract.StakedGmxTracker,
-  ] as const
-
-
-
-  const stakedGmxSupply = awaitPromises(map(async () => {
-    return (await gmxContract.balanceOf(environmentContract.StakedGmxTracker)).toBigInt()
-  }, now(null)))
-
-  const gmxSupply = awaitPromises(map(async () => {
-    return (await gmxContract.totalSupply()).toBigInt()
-  }, now(null)))
-
-  const nativeTokenPrice = awaitPromises(map(async () => {
-    return (await vaultContract.getMinPrice(environmentContract.NATIVE_TOKEN)).toBigInt()
-  }, now(null)))
-
-  const aum = awaitPromises(map(async () => {
-    return (await glpManagerContract.getAum(true)).toBigInt()
-  }, now(null)))
-
-  const accountBalances = awaitPromises(map(async () => {
+  const accountBalances = reader.run(map(async (readerContract) => {
     const balancesQuery = readerContract.getTokenBalancesWithSupplies(account, walletTokens as any)
     const balances = await balancesQuery
 
@@ -82,41 +50,23 @@ export const initContractChain = (provider: BaseProvider, account: string, envir
     }
 
     return { balanceData, supplyData }
-  }, now(null)))
+  }))
 
-  const gmxVestingInfo = awaitPromises(map(async () => {
-    const balancesQuery = readerContract.getVestingInfo(account, [environmentContract.GmxVester])
+  const gmxVestingInfo = reader.run(map(async contract => {
+    const balancesQuery = contract.getVestingInfo(account, [environmentContract.GmxVester])
     const [pairAmount, vestedAmount, escrowedBalance, claimedAmounts, claimable, maxVestableAmount, averageStakedAmount] = (await balancesQuery).map(x => x.toBigInt())
 
-    return {
-      pairAmount,
-      vestedAmount,
-      escrowedBalance,
-      claimedAmounts,
-      claimable,
-      maxVestableAmount,
-      averageStakedAmount,
-    }
+    return { pairAmount, vestedAmount, escrowedBalance, claimedAmounts, claimable, maxVestableAmount, averageStakedAmount }
+  }))
 
-  }, now(null)))
-
-  const glpVestingInfo = awaitPromises(map(async () => {
-    const balancesQuery = readerContract.getVestingInfo(account, [environmentContract.GlpVester])
+  const glpVestingInfo = reader.run(map(async contract => {
+    const balancesQuery = contract.getVestingInfo(account, [environmentContract.GlpVester])
     const [pairAmount, vestedAmount, escrowedBalance, claimedAmounts, claimable, maxVestableAmount, averageStakedAmount] = (await balancesQuery).map(x => x.toBigInt())
 
-    return {
-      pairAmount,
-      vestedAmount,
-      escrowedBalance,
-      claimedAmounts,
-      claimable,
-      maxVestableAmount,
-      averageStakedAmount,
-    }
+    return { pairAmount, vestedAmount, escrowedBalance, claimedAmounts, claimable, maxVestableAmount, averageStakedAmount }
+  }))
 
-  }, now(null)))
-
-  const accountStaking = awaitPromises(map(async () => {
+  const accountStaking = rewardReader.run(map(contract => {
     const stakingTrackers = [
       environmentContract.StakedGmxTracker,
       environmentContract.BonusGmxTracker,
@@ -125,11 +75,11 @@ export const initContractChain = (provider: BaseProvider, account: string, envir
       environmentContract.FeeGlpTracker,
     ] as const
 
-    const trackersQuery = rewardReaderContract.getStakingInfo(account, stakingTrackers as any)
+    const trackersQuery = contract.getStakingInfo(account, stakingTrackers as any)
     return parseTrackerMap(trackersQuery, ['claimable', 'tokensPerInterval', 'averageStakedAmounts', 'cumulativeRewards', 'totalSupply'] as const, stakingTrackers)
-  }, now(null)))
+  }))
 
-  const depositbalances = awaitPromises(map(async () => {
+  const depositbalances = rewardReader.run(map(contract => {
     const tokens = [
       environmentContract.GMX,
       environmentContract.ES_GMX,
@@ -138,7 +88,7 @@ export const initContractChain = (provider: BaseProvider, account: string, envir
       environmentContract.BN_GMX,
       environmentContract.GLP,
     ] as const
-    const balancesQuery = rewardReaderContract.getDepositBalances(account, tokens as any,
+    const balancesQuery = contract.getDepositBalances(account, tokens as any,
       [
         environmentContract.StakedGmxTracker,
         environmentContract.StakedGmxTracker,
@@ -150,20 +100,17 @@ export const initContractChain = (provider: BaseProvider, account: string, envir
     )
 
     return parseTrackerInfo(balancesQuery, tokens)
-  }, now(null)))
+  }))
 
 
-  const SECONDS_PER_YEAR = 31540000n
+  const gmxPrice = getGmxTokenPrice(provider, nativeTokenPrice)
 
 
-  const latestPriceMapOnce = take(1, latestTokenPriceMap)
-  const stakingRewards = combineArray(({ balanceData, supplyData }, depositbalances, accountStaking, gmxVesting, glpVesting, aum, nativeTokenPrice, stakedGmxSupply, priceMap) => {
-    const gmxPrice = priceMap.gmx.value
-
+  const stakingRewards = combineArray(({ balanceData, supplyData }, depositbalances, accountStaking, gmxVesting, glpVesting, aum, nativeTokenPrice, stakedGmxSupply, gmxPrice) => {
     const gmxSupplyUsd = supplyData[environmentContract.GMX] * gmxPrice / BI_18_PRECISION
-    const stakedGmxSupplyUsd = stakedGmxSupply * gmxPrice  / BI_18_PRECISION
+    const stakedGmxSupplyUsd = stakedGmxSupply * gmxPrice / BI_18_PRECISION
     const gmxInStakedGmx = depositbalances[environmentContract.GMX]
-    const gmxInStakedGmxUsd = gmxInStakedGmx * gmxPrice  / BI_18_PRECISION
+    const gmxInStakedGmxUsd = gmxInStakedGmx * gmxPrice / BI_18_PRECISION
 
     const stakedGmxTrackerSupply = supplyData[environmentContract.StakedGmxTracker]
 
@@ -190,9 +137,9 @@ export const initContractChain = (provider: BaseProvider, account: string, envir
     const feeGmxTrackerRewards = accountStaking[environmentContract.FeeGmxTracker].claimable
     const feeGmxTrackerRewardsUsd = feeGmxTrackerRewards * nativeTokenPrice / BI_18_PRECISION
 
-    const stakedGmxTrackerAnnualRewardsUsd = accountStaking[environmentContract.StakedGmxTracker].tokensPerInterval * SECONDS_PER_YEAR  * gmxPrice / BI_18_PRECISION
+    const stakedGmxTrackerAnnualRewardsUsd = accountStaking[environmentContract.StakedGmxTracker].tokensPerInterval * SECONDS_PER_YEAR * gmxPrice / BI_18_PRECISION
     const gmxAprForEsGmxPercentage = stakedGmxSupplyUsd ? stakedGmxTrackerAnnualRewardsUsd * BASIS_POINTS_DIVISOR / stakedGmxSupplyUsd : 0n
-    const feeGmxTrackerAnnualRewardsUsd = accountStaking[environmentContract.FeeGmxTracker].tokensPerInterval * SECONDS_PER_YEAR * nativeTokenPrice  / BI_18_PRECISION
+    const feeGmxTrackerAnnualRewardsUsd = accountStaking[environmentContract.FeeGmxTracker].tokensPerInterval * SECONDS_PER_YEAR * nativeTokenPrice / BI_18_PRECISION
     const gmxAprForEthPercentage = feeGmxTrackerAnnualRewardsUsd * BASIS_POINTS_DIVISOR / feeGmxSupplyUsd
     const gmxAprTotalPercentage = gmxAprForEthPercentage + gmxAprForEsGmxPercentage
 
@@ -289,32 +236,17 @@ export const initContractChain = (provider: BaseProvider, account: string, envir
       totalRewardsUsd,
       totalAprPercentage,
     }
-  }, accountBalances, depositbalances, accountStaking, gmxVestingInfo, glpVestingInfo, aum, nativeTokenPrice, stakedGmxSupply, latestPriceMapOnce)
+  }, accountBalances, depositbalances, accountStaking, gmxVestingInfo, glpVestingInfo, aum, nativeTokenPrice, stakedGmxSupply, gmxPrice)
 
 
-  const nativeAssetBalance = map(bn => bn.toBigInt(), fromPromise(provider.getBalance(account)))
+  const nativeAssetBalance = awaitPromises(map(async p => (await p.getBalance(account)).toBigInt(), provider))
   const nativeAsset: Stream<IAsset> = combine((amount, price) => ({ balance: price * amount / BI_18_PRECISION }), nativeAssetBalance, nativeTokenPrice)
 
 
-  return {
-    nativeAsset,
-    stakingRewards,
-    accountStaking,
-    depositbalances,
-    stakedGmxSupply,
-    gmxSupply,
-    nativeTokenPrice,
-    aum,
-    accountBalances,
-    gmxVestingInfo,
-    glpVestingInfo,
-  }
-
+  return { nativeAsset, stakingRewards, accountStaking, depositbalances, stakedGmxSupply, gmxSupply, nativeTokenPrice, aum, accountBalances, gmxVestingInfo, glpVestingInfo }
 }
 
-
-
-async function parseTrackerMap<T extends ReadonlyArray<string>, R extends ReadonlyArray<string>>(argsQuery: Promise<BigNumber[]>, keys: T, trackers: R): Promise<{[K in R[number]]: keysToObject<T>}> {
+async function parseTrackerMap<T extends ReadonlyArray<string>, R extends ReadonlyArray<string>>(argsQuery: Promise<BigNumber[]>, keys: T, trackers: R): Promise<{ [K in R[number]]: keysToObject<T> }> {
   const args = await argsQuery
   return args.reduce((seed, next, idx) => {
     const trackersLength = trackers.length

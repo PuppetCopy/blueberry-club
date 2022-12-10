@@ -3,25 +3,21 @@ import { $node, $text, attr, component, IBranch, nodeEvent, style } from "@aelea
 import { Route } from "@aelea/router"
 import { $column, $icon, $Popover, $row, $seperator, $TextField, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { LAB_CHAIN, GBC_ADDRESS, IAttributeMappings, attributeIndexToLabel, tokenIdAttributeTuple } from "@gambitdao/gbc-middleware"
+import { LAB_CHAIN, GBC_ADDRESS, IAttributeMappings, attributeIndexToLabel, tokenIdAttributeTuple, blueberrySubgraph } from "@gambitdao/gbc-middleware"
 import { GBC__factory } from "@gambitdao/gbc-contracts"
-import { isAddress, timeSince } from "@gambitdao/gmx-middleware"
+import { isAddress, readableDate, timeSince } from "@gambitdao/gmx-middleware"
 import { $anchor, $Link, $caretDblDown, $IntermediateTx } from "@gambitdao/ui-components"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { awaitPromises, empty, filter, fromPromise, map, merge, multicast, skipRepeats, snapshot, startWith, switchLatest } from "@most/core"
+import { awaitPromises, empty, filter, fromPromise, map, merge, multicast, now, skipRepeats, snapshot, startWith, switchLatest } from "@most/core"
 import { $Table2 } from "../common/$Table2"
 import { $accountPreview } from "../components/$AccountProfile"
 import { $ButtonPrimary, $ButtonSecondary } from "../components/form/$Button"
 import { $accountRef, $card, $responsiveFlex, $txnIconLink } from "../elements/$common"
 import { $opensea } from "../elements/$icons"
-import { queryTokenv2 } from "../logic/query"
 import { IToken, ITransfer } from "@gambitdao/gbc-middleware"
 import { $berryByToken } from "../logic/common"
 
-export function bnToHex(n: bigint) {
-  return '0x' + n.toString(16)
-}
 
 
 
@@ -40,10 +36,9 @@ export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
   const urlFragments = document.location.pathname.split('/')
   const berryId = urlFragments[urlFragments.length - 1]
 
-  const tokenId = bnToHex(BigInt(berryId))
-  const token = fromPromise(queryTokenv2(tokenId))
+  const token = awaitPromises(blueberrySubgraph.token(now({ id: berryId })))
 
-  const berryMetadata = tokenIdAttributeTuple[Number(tokenId) - 1]
+  const berryMetadata = tokenIdAttributeTuple[Number(berryId) - 1]
   const [background, clothes, body, expression, faceAccessory, hat] = berryMetadata
 
   return [
@@ -68,16 +63,15 @@ export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
             $row(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
               switchLatest(map(w3p => {
 
-                if (w3p === null) {
+                if (w3p === null || token.owner.id.toLowerCase() !== w3p.address.toLowerCase()) {
                   return empty()
                 }
-                const signer = w3p.getSigner()
 
 
                 return $row(
                   $Popover({
                     $$popContent: map(() => {
-                      return $TrasnferOwnership(signer._address, token, walletLink)({
+                      return $TrasnferOwnership(w3p.address, token, walletLink)({
                         // transfer: trasnferOwnershipTether()
                       })
                     }, trasnferPopup),
@@ -91,7 +85,7 @@ export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
                     )
                   )({})
                 )
-              }, walletLink.provider)),
+              }, walletLink.wallet)),
 
               $row(layoutSheet.spacingSmall)(
                 $icon({
@@ -139,7 +133,7 @@ export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
               $head: $text('Txn'),
               $body: map(x => {
                 const time = Number(BigInt(x.timestamp))
-                const dateStr = new Date(Math.floor(time * 1000)).toLocaleDateString()
+                const dateStr = readableDate(time)
                 const timeAgo = timeSince(time)
 
                 return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(

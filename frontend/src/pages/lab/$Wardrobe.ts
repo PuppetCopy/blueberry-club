@@ -7,7 +7,7 @@ import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
 import { awaitPromises, constant, empty, filter, map, merge, mergeArray, multicast, now, snapshot, startWith, switchLatest, tap } from "@most/core"
 import { $buttonAnchor, $ButtonPrimary, $ButtonSecondary } from "../../components/form/$Button"
 import { $defaultSelectContainer, $Dropdown } from "../../components/form/$Dropdown"
-import { IBerryDisplayTupleMap, getLabItemTupleIndex, saleDescriptionList, LabItemSale, IBerryLabItems, LAB_CHAIN, IToken, GBC_ADDRESS, getLatestSaleRule, tokenIdAttributeTuple } from "@gambitdao/gbc-middleware"
+import { IBerryDisplayTupleMap, getLabItemTupleIndex, saleDescriptionList, LabItemSale, IBerryLabItems, LAB_CHAIN, IToken, GBC_ADDRESS, getLatestSaleRule, tokenIdAttributeTuple, blueberrySubgraph } from "@gambitdao/gbc-middleware"
 import { $labItem, getBerryFromToken, getTokenSlots } from "../../logic/common"
 import { $berryTileId } from "../../components/$common"
 import { fadeIn } from "../../transitions/enter"
@@ -21,7 +21,6 @@ import { $iconCircular, $responsiveFlex } from "../../elements/$common"
 import { $seperator2 } from "../common"
 import { CHAIN, filterNull, unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
-import { queryOwnerV2 } from "../../logic/query"
 import { Closet, GBCLab } from "@gambitdao/gbc-contracts"
 import { BrowserStore } from "../../logic/store"
 import { connectLab } from "../../logic/contract/gbc"
@@ -72,18 +71,17 @@ export const $Wardrobe = (config: IBerryComp) => component((
   [walletChange, walletChangeTether]: Behavior<IWalletName, IWalletName>,
 ) => {
 
-  const connect = connectLab(config.walletLink)
+  const connect = connectLab(config.walletLink.provider)
   // const gbc = connectGbc(walletLink)
   // const closet = connectManager(config.walletLink)
   const account = filterNull(map(w3p => w3p ? w3p.address : null, config.walletLink.wallet))
 
-
-  const owner = multicast(awaitPromises(map(async w3p => {
+  const owner = multicast(awaitPromises(switchLatest(map(w3p => {
     if (w3p === null) {
       return null
     }
-    return queryOwnerV2(w3p.address)
-  }, config.walletLink.wallet)))
+    return blueberrySubgraph.owner(now({ id: w3p.address }))
+  }, config.walletLink.wallet))))
 
   const tokenList = map(xz => xz ? xz.ownedTokens : [], owner)
 
@@ -482,7 +480,8 @@ export const $Wardrobe = (config: IBerryComp) => component((
     ),
 
     {
-      changeRoute, setMainBerry, changeNetwork, walletChange }
+      changeRoute, setMainBerry, changeNetwork, walletChange
+    }
   ]
 })
 

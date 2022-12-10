@@ -1,6 +1,6 @@
 import { BASIS_POINTS_DIVISOR, FUNDING_RATE_PRECISION, LIQUIDATION_FEE, MARGIN_FEE_BASIS_POINTS, MAX_LEVERAGE } from "./constant"
-import { IAccountSummary, ITrade, IClaim, IClaimSource, IPositionClose, IPositionLiquidated, ITradeSettled, ITradeClosed, ITradeLiquidated, ITradeOpen, TradeStatus, TokenDescription } from "./types"
-import { formatFixed, getDenominator, groupByMapMany, isAddress } from "./utils"
+import { IAccountSummary, ITrade, IClaim, IClaimSource, ITradeSettled, ITradeClosed, ITradeLiquidated, ITradeOpen, TradeStatus } from "./types"
+import { easeInExpo, formatFixed, getDenominator, groupByMapMany, isAddress } from "./utils"
 
 
 
@@ -47,7 +47,7 @@ export function getPnL(isLong: boolean, averagePrice: bigint, priceChange: bigin
 }
 
 export function getDeltaPercentage(delta: bigint, collateral: bigint) {
-  return delta * BASIS_POINTS_DIVISOR / collateral
+  return div(delta, collateral)
 }
 
 export function getAveragePriceFromDelta(islong: boolean, size: bigint, price: bigint, pnl: bigint, sizeDelta: bigint) {
@@ -99,7 +99,6 @@ export function getLiquidationPriceFromDelta(liquidationAmount: bigint, size: bi
 
   return isLong ? averagePrice - priceDelta : averagePrice + priceDelta
 }
-
 
 
 export function getLiquidationPrice(
@@ -163,9 +162,6 @@ export function getLiquidationPrice(
 }
 
 
-
-
-
 export function isTradeSettled(trade: ITrade): trade is ITradeSettled {
   return trade.status !== TradeStatus.OPEN
 }
@@ -182,18 +178,7 @@ export function isTradeClosed(trade: ITrade): trade is ITradeClosed {
   return trade.status === TradeStatus.CLOSED
 }
 
-export function isPositionLiquidated(trade: IPositionClose | IPositionLiquidated): trade is IPositionLiquidated {
-  return 'markPrice' in trade
-}
 
-// function getFundingFee(address /* _account */, address _collateralToken, address /* _indexToken */, bool /* _isLong */, uint256 _size, uint256 _entryFundingRate) public override view returns(uint256) {
-//   if (_size == 0) { return 0; }
-
-//         uint256 fundingRate = vault.cumulativeFundingRates(_collateralToken).sub(_entryFundingRate);
-//   if (fundingRate == 0) { return 0; }
-
-//   return _size.mul(fundingRate).div(FUNDING_RATE_PRECISION);
-// }
 
 export function getFundingFee(entryFundingRate: bigint, cumulativeFundingRate: bigint, size: bigint) {
   return (size * (cumulativeFundingRate - entryFundingRate)) / FUNDING_RATE_PRECISION
@@ -241,12 +226,9 @@ export function toAccountSummary(list: ITrade[]): IAccountSummary[] {
 
 
 
-function easeInExpo(x: number) {
-  return x === 0 ? 0 : Math.pow(2, 10 * x - 10)
-}
 
 export function liquidationWeight(isLong: boolean, liquidationPriceUSD: bigint, markPriceUSD: bigint) {
-  const weight = isLong ? liquidationPriceUSD * BASIS_POINTS_DIVISOR / markPriceUSD : markPriceUSD * BASIS_POINTS_DIVISOR / liquidationPriceUSD
+  const weight = isLong ? div(liquidationPriceUSD, markPriceUSD) : div(markPriceUSD,  liquidationPriceUSD)
   const newLocal = formatFixed(weight, 4)
   const value = easeInExpo(newLocal)
   return value > 1 ? 1 : value

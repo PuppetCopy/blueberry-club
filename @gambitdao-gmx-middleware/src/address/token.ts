@@ -1,4 +1,4 @@
-import { TokenDescription } from "../types"
+import { ITokenDescription } from "../types"
 import { groupByMap } from "../utils"
 import { ARBITRUM_ADDRESS } from "./arbitrum"
 import { AVALANCHE_ADDRESS } from "./avalanche"
@@ -16,6 +16,12 @@ export const TOKEN_DESCRIPTION_LIST = [
   {
     name: "GMX",
     symbol: TOKEN_SYMBOL.GMX,
+    decimals: 18,
+    isStable: false,
+  },
+  {
+    name: "Escrow GMX",
+    symbol: TOKEN_SYMBOL.ESGMX,
     decimals: 18,
     isStable: false,
   },
@@ -110,7 +116,7 @@ export const TOKEN_DESCRIPTION_LIST = [
     isStable: true,
   },
   
-] as TokenDescription[]
+] as ITokenDescription[]
 
 
 
@@ -118,10 +124,12 @@ export const TOKEN_DESCRIPTION_MAP = groupByMap(TOKEN_DESCRIPTION_LIST, token =>
 
 
 export const CHAIN_TOKEN_ADDRESS_TO_SYMBOL = {
+  [ARBITRUM_ADDRESS.NATIVE_TOKEN]: TOKEN_SYMBOL.WETH,
+
   [ARBITRUM_ADDRESS.GLP]: TOKEN_SYMBOL.GLP,
   [ARBITRUM_ADDRESS.GMX]: TOKEN_SYMBOL.GMX,
+  [ARBITRUM_ADDRESS.ES_GMX]: TOKEN_SYMBOL.ESGMX,
 
-  [ARBITRUM_ADDRESS.NATIVE_TOKEN]: TOKEN_SYMBOL.WETH,
   [ARBITRUM_ADDRESS.LINK]: TOKEN_SYMBOL.LINK,
   [ARBITRUM_ADDRESS.UNI]: TOKEN_SYMBOL.UNI,
   [ARBITRUM_ADDRESS.WBTC]: TOKEN_SYMBOL.WBTC,
@@ -132,9 +140,13 @@ export const CHAIN_TOKEN_ADDRESS_TO_SYMBOL = {
   [ARBITRUM_ADDRESS.USDC]: TOKEN_SYMBOL.USDC,
   [ARBITRUM_ADDRESS.USDT]: TOKEN_SYMBOL.USDT,
 
+
   [AVALANCHE_ADDRESS.NATIVE_TOKEN]: TOKEN_SYMBOL.WAVAX,
+
   [AVALANCHE_ADDRESS.GMX]: TOKEN_SYMBOL.GMX,
   [AVALANCHE_ADDRESS.GLP]: TOKEN_SYMBOL.GLP,
+  [AVALANCHE_ADDRESS.ES_GMX]: TOKEN_SYMBOL.ESGMX,
+
   [AVALANCHE_ADDRESS.WBTCE]: TOKEN_SYMBOL.WBTC,
   [AVALANCHE_ADDRESS.BTCB]: TOKEN_SYMBOL.BTCB,
   [AVALANCHE_ADDRESS.WETHE]: TOKEN_SYMBOL.ETH,

@@ -2,13 +2,12 @@ import { Behavior } from "@aelea/core"
 import { $text, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, state } from "@aelea/ui-components"
-import { IToken } from "@gambitdao/gbc-middleware"
+import { blueberrySubgraph, IToken } from "@gambitdao/gbc-middleware"
 import { CHAIN, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, formatReadableUSD, getPnL, IAccountSummary, IChainParamApi, ILeaderboardRequest, intervalTimeMap, IPageParapApi, ITrade, ITradeOpen, TOKEN_SYMBOL } from "@gambitdao/gmx-middleware"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { fromPromise, map, startWith } from "@most/core"
+import { awaitPromises, fromPromise, map, now, startWith } from "@most/core"
 import { $responsiveFlex } from "../elements/$common"
-import { queryLatestPrices, queryOwnerV2 } from "../logic/query"
 import { IAccountStakingStore } from "@gambitdao/gbc-middleware"
 import { ContractTransaction } from "@ethersproject/contracts"
 import { Stream } from "@most/types"
@@ -53,15 +52,15 @@ export const $Leaderboard = ({ walletLink, openTrades, leaderboardTopList, paren
   const urlFragments = document.location.pathname.split('/')
   const accountAddress = urlFragments[urlFragments.length - 1].toLowerCase()
 
-  const queryOwner = fromPromise(accountAddress ? queryOwnerV2(accountAddress) : Promise.reject())
+  const queryOwner = awaitPromises(accountAddress ? blueberrySubgraph.owner(now({ id: accountAddress })) : fromPromise(Promise.reject()))
 
-  const ownedTokens = map(owner => {
-    if (owner === null) {
-      return null
-    }
+  // const ownedTokens = map(owner => {
+  //   if (owner === null) {
+  //     return null
+  //   }
 
-    return owner.ownedTokens
-  }, queryOwner)
+  //   return owner.ownedTokens
+  // }, queryOwner)
 
   // const stakedList = map(owner => owner.stakedTokenList, queryOwner)
 
@@ -69,7 +68,7 @@ export const $Leaderboard = ({ walletLink, openTrades, leaderboardTopList, paren
   // const gbcWallet = connectGbc(walletLink)
   // const rewardDistributor = connectRewardDistributor(walletLink)
 
-  const priceMap = fromPromise(queryLatestPrices())
+  // const priceMap = fromPromise(queryLatestPrices())
 
 
   // const isApprovedForAll = replayLatest(multicast(rewardDistributor.isApprovedForAll))

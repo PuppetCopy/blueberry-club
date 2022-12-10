@@ -1,3 +1,5 @@
+import { ARBITRUM_ADDRESS } from "./address/arbitrum"
+import { AVALANCHE_ADDRESS } from "./address/avalanche"
 
 export const AddressZero = "0x0000000000000000000000000000000000000000" as const
 
@@ -56,6 +58,11 @@ export enum CHAIN {
   ARBITRUM = 42161,
   ARBITRUM_RINKBY = 421611,
   AVALANCHE = 43114
+}
+
+export const TRADE_CONTRACT_MAPPING = {
+  [CHAIN.ARBITRUM]: ARBITRUM_ADDRESS,
+  [CHAIN.AVALANCHE]: AVALANCHE_ADDRESS
 }
 
 const BSC_RPC_PROVIDERS = [

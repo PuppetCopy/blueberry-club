@@ -1,20 +1,17 @@
-import { combineArray, O, Op, replayLatest } from "@aelea/core"
-import { CHAIN, filterNull, intervalListFillOrderMap, listen } from "@gambitdao/gmx-middleware"
-import { awaitPromises, continueWith, empty, filter, fromPromise, map, multicast, never, now, periodic, recoverWith, switchLatest, takeWhile, tap } from "@most/core"
+import { O, Op } from "@aelea/core"
+import { CHAIN, filterNull, listen } from "@gambitdao/gmx-middleware"
+import { awaitPromises, continueWith, empty, filter, map, now, recoverWith, switchLatest, takeWhile, tap } from "@most/core"
 import { Stream } from "@most/types"
 import { $berry } from "../components/$DisplayBerry"
-import { IValueInterval } from "../components/$StakingGraph"
 import {
   IBerryDisplayTupleMap, getLabItemTupleIndex, IAttributeExpression, IAttributeBackground, IAttributeMappings,
   IBerryLabItems, IToken, IAttributeHat, tokenIdAttributeTuple
 } from "@gambitdao/gbc-middleware"
-import { IPricefeed, IStakeSource, queryLatestPrices, queryTokenv2 } from "./query"
 import { $Node, $svg, attr, style } from "@aelea/dom"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
 import { Closet } from "@gambitdao/gbc-contracts"
 import { BigNumberish, BigNumber } from "@ethersproject/bignumber"
-import { bnToHex } from "../pages/$Berry"
-import { JsonRpcProvider, Web3Provider } from "@ethersproject/providers"
+import { JsonRpcProvider as BaseProvider, Web3Provider } from "@ethersproject/providers"
 import { ContractFactory, EventFilter } from "@ethersproject/contracts"
 
 export type TContractMapping<T> = {
@@ -24,15 +21,6 @@ export type TContractMapping<T> = {
 }
 
 
-
-export const latestTokenPriceMap = replayLatest(multicast(awaitPromises(map(() => queryLatestPrices(), periodic(5000)))))
-
-
-function getByAmoutFromFeed(amount: bigint, priceUsd: bigint, decimals: number) {
-  const denominator = 10n ** BigInt(decimals)
-
-  return amount * priceUsd / denominator
-}
 
 
 export function takeUntilLast<T>(fn: (t: T) => boolean, s: Stream<T>) {
@@ -58,7 +46,13 @@ export function getContractAddress<T, Z extends TContractMapping<T>>(contractMap
   return newLocal
 }
 
-export function readContractMapping<TProvider extends JsonRpcProvider, TMap, TCmap extends TContractMapping<TMap>, TContract extends typeof ContractFactory>(
+export function getContractMapping<T, Z extends TContractMapping<T>>(contractMap: Z, chain: number | keyof Z): Z[keyof Z] | null {
+  const addressMapping = contractMap[chain]
+
+  return addressMapping ? addressMapping : null
+}
+
+export function readContractMapping<TProvider extends BaseProvider, TMap, TCmap extends TContractMapping<TMap>, TContract extends typeof ContractFactory>(
   contractMap: TCmap,
   contractCtr: TContract,
   connect: Stream<TProvider>,
@@ -69,7 +63,6 @@ export function readContractMapping<TProvider extends JsonRpcProvider, TMap, TCm
   type RetContract = ReturnType<TContract['connect']>
 
   const contract = filterNull(awaitPromises(map(async (provider): Promise<RetContract | null> => {
-
     const chain = (await provider.getNetwork()).chainId as CHAIN
     const address = getContractAddress(contractMap, chain, contractName)
 
@@ -118,7 +111,7 @@ export function readContractMapping<TProvider extends JsonRpcProvider, TMap, TCm
   return { run, readInt, contract, listen: _listen }
 }
 
-export function readContract<T extends string, TContract extends typeof ContractFactory, TProvider extends JsonRpcProvider>(
+export function readContract<T extends string, TContract extends typeof ContractFactory, TProvider extends BaseProvider>(
   contractCtr: TContract,
   provider: Stream<TProvider>,
   address: T
@@ -169,59 +162,19 @@ export function readContract<T extends string, TContract extends typeof Contract
 
 
 
-export function priceFeedHistoryInterval<T extends string>(interval: number, gmxPriceHistoryQuery: Stream<IPricefeed[]>, yieldSource: Stream<IStakeSource<T>[]>): Stream<IValueInterval[]> {
-  return combineArray((feed, yieldList) => {
-    const source = [
-      ...feed,
-      ...yieldList
-    ].sort((a, b) => a.timestamp - b.timestamp)
-    const seed: IValueInterval = {
-      time: source[0].timestamp,
-      price: feed[0],
-      balance: 0n,
-      balanceUsd: 0n,
-    }
-
-    const series = intervalListFillOrderMap({
-      seed, getTime: a => a.timestamp,
-      source,
-      interval,
-      fillMap: (prev, next) => {
-        if ('feed' in next) {
-          const balanceUsd = getByAmoutFromFeed(prev.balance, next.c, 18)
-          const price = next
-
-          return { ...prev, balanceUsd, price }
-        }
-
-
-        const balance = prev.balance + next.amount
-
-        return { ...prev, balance }
-      }
-    })
-
-    const sum = yieldList.reduce((s, n) => s + n.amount, 0n)
-
-
-    return series
-  }, gmxPriceHistoryQuery, yieldSource)
-}
-
-export const $berryById = (id: number, size: string | number = 85) => {
-  const tokenQuery = queryTokenv2(bnToHex(BigInt(id)))
-
-  return switchLatest(map(token => $berryByToken(token, size), fromPromise(tokenQuery)))
-}
-
-export const $berryByToken = (token: IToken, size: string | number = 85) => {
+export const $berryByToken = (token: IToken, size: string | number = 85, tuple: Partial<IBerryDisplayTupleMap> = [...tokenIdAttributeTuple[token.id - 1]]) => {
   const display = getBerryFromItems(token.labItems.map(li => Number(li.id)))
 
-  return $berryByLabItems(token.id, display.background, display.custom, size)
+  return $berryByLabItems(token.id, display.background, display.custom, size, tuple)
 }
 
-export const $berryByLabItems = (berryId: number, backgroundId: IAttributeBackground, labItemId: IAttributeMappings, size: string | number = 85) => {
-  const tuple: Partial<IBerryDisplayTupleMap> = [...tokenIdAttributeTuple[berryId - 1]]
+export const $berryByLabItems = (
+  berryId: number,
+  backgroundId: IAttributeBackground,
+  labItemId: IAttributeMappings,
+  size: string | number = 85,
+  tuple: Partial<IBerryDisplayTupleMap> = [...tokenIdAttributeTuple[berryId - 1]]
+) => {
 
   if (labItemId) {
     const customIdx = getLabItemTupleIndex(labItemId)
