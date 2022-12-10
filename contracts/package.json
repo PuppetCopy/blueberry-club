@@ -30,6 +30,7 @@
     "@rari-capital/solmate": "^6.4.0",
     "@resvg/resvg-js": "^2.1.0",
     "@typechain/hardhat": "^6.1.4",
+    "@types/isomorphic-fetch": "^0.0.36",
     "@types/mocha": "^10.0.1",
     "@types/sharp": "^0.31.0",
     "chai": "^4.3.6",
