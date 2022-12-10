@@ -7,6 +7,7 @@ import { IAccountHistoricalDataApi, IAccountQueryParamApi, IChainParamApi, ILead
 import { cacheMap, createSubgraphClient, pagingQuery, unixTimestampNow } from "./utils"
 import { gql } from "@urql/core"
 import * as fromJson from "./fromJson"
+import * as fetch from "isomorphic-fetch"
 
 export type IAccountTradeListParamApi = IChainParamApi & IAccountQueryParamApi & { status: TradeStatus };
 
@@ -20,12 +21,12 @@ const cacheLifeMap = {
 }
 
 export const arbitrumGraph = createSubgraphClient({
-  fetch,
+  fetch: fetch as any,
   url: 'https://api.thegraph.com/subgraphs/id/QmZ1bmoWAGRaZxASd3rerw4BWUtvHu6wJLUNpa8NbzWdUv'
 })
 
 export const avalancheGraph = createSubgraphClient({
-  fetch,
+  fetch: fetch as any,
   url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-avalanche'
 })
 
