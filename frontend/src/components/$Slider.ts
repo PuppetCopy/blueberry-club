@@ -61,7 +61,7 @@ export const $Slider = ({
 
   const sliderStyle = styleInline(combineArray(({ min, max, value }, color) => {
     const gutterColor = colorAlpha(pallete.background, .35)
-    const minArea = `${colorAlpha(color, .5)} ${min * 100}%,`
+    const minArea = `${colorAlpha(color, .35)} ${min * 100}%,`
     const valArea = `${color} ${min * 100}% ${value * 100}%,`
     const freeArea = `${invertColor(pallete.message) } ${value * 100}% ${max * 100}%,`
     const maxArea = `${gutterColor} ${max * 100}%`

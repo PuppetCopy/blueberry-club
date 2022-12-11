@@ -149,19 +149,23 @@ export function connectVault(walletLink: IWalletLink) {
           ]
         }
 
-        return map((ev) => {
+        return filterNull(map((ev) => {
           const { data, topics } = ev.__event
           const abi = ["event UpdatePosition(bytes32,uint256,uint256,uint256,uint256,uint256,int256)"]
           const iface = new Interface(abi)
-          const [key, size, collateral, averagePrice, entryFundingRate, reserveAmount, realisedPnl] = iface.parseLog({
+          const [updateKey, size, collateral, averagePrice, entryFundingRate, reserveAmount, realisedPnl] = iface.parseLog({
             data,
             topics
           }).args
 
+          if (updateKey !== key) {
+            return null
+          }
 
           const pos: IPositionGetter = {
             key,
             position: {
+              ...position,
               lastIncreasedTime: BigInt(unixTimestampNow()),
               size: size.toBigInt(), collateral: collateral.toBigInt(),
               averagePrice: averagePrice.toBigInt(), entryFundingRate: entryFundingRate.toBigInt(),
@@ -169,7 +173,7 @@ export function connectVault(walletLink: IWalletLink) {
             }
           }
           return pos
-        }, listen(contract, filter))
+        }, listen(contract, filter)))
       }
 
 

@@ -134,7 +134,8 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
   const slippage = slippageStore.storeReplay(changeSlippage)
-
+  
+  const leverage = leverageStore.storeReplay(changeLeverage)
 
 
   function fallbackToSupportedToken(chain: CHAIN, token: ITokenInput | null) {
@@ -206,16 +207,15 @@ export const $Trade = (config: ITradeComponent) => component((
     return vault.getPosition(key)
   }, positionKey))
 
-  const leverage = leverageStore.storeReplay(changeLeverage, combine((trade, storedLeverage) => {
+  // const leverage = leverageStore.storeReplay(changeLeverage, combine((trade, storedLeverage) => {
 
-    if (trade.position) {
-      const newLocal = div(trade.position.size, trade.position.collateral)
-      console.log('init lev', newLocal)
-      return newLocal
-    }
+  //   if (trade.position) {
+  //     const newLocal = div(trade.position.size, trade.position.collateral)
+  //     return newLocal
+  //   }
 
-    return storedLeverage
-  }, position))
+  //   return storedLeverage
+  // }, position))
 
   const accountKeeperEvents: Stream<any> = switchLatest(map((w3p) => {
     if (w3p === null) {
@@ -234,9 +234,13 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
 
-  const adjustPosition = take(1, switchLatest(map(pos => {
-    return vault.positionUpdateEvent(pos)
-  }, position)))
+  const adjustPosition = switchLatest(map(pos => {
+    return map(update => {
+      console.log(formatReadableUSD(update.position?.size || 0n), formatReadableUSD(update.position?.collateral || 0n))
+
+      return update
+    }, vault.positionUpdateEvent(pos))
+  }, position))
   // const adjustPosition: Stream<IVaultPosition> = filterNull(combineArray((pos, posEv) => {
   //   if (pos === null) {
   //     return { ...posEv, lastIncreasedTime: BigInt(unixTimestampNow()) }
@@ -256,7 +260,7 @@ export const $Trade = (config: ITradeComponent) => component((
     }, positionKey)),
 
     mergeArray([
-      // adjustPosition,
+      adjustPosition,
       removePosition
     ])
   ])
