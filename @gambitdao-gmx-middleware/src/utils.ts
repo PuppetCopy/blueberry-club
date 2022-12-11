@@ -37,10 +37,11 @@ export function parseReadableNumber(stringNumber: string, locale?: Intl.NumberFo
   const thousandSeparator = Intl.NumberFormat('en-US', locale).format(11111).replace(/\p{Number}/gu, '')
   const decimalSeparator = Intl.NumberFormat('en-US', locale).format(1.1).replace(/\p{Number}/gu, '')
 
-  return parseFloat(stringNumber
+  const parsed = parseFloat(stringNumber
     .replace(new RegExp('\\' + thousandSeparator, 'g'), '')
     .replace(new RegExp('\\' + decimalSeparator), '.')
   )
+  return parsed
 }
 
 const readableLargeNumber = Intl.NumberFormat("en-US", { maximumFractionDigits: 0, })
@@ -180,13 +181,9 @@ export function parseFixed(input: string | number, decimals = 18) {
   const wholeValue = BigInt(whole)
   const fractionValue = BigInt(fraction)
 
-  let wei = (wholeValue * BigInt(multiplier)) + fractionValue
+  const wei = (wholeValue * BigInt(multiplier)) + fractionValue
 
-  if (negative) {
-    wei = wei - -1n
-  }
-
-  return wei
+  return negative ? -wei : wei
 }
 
 
