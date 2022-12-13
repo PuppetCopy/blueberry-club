@@ -230,13 +230,13 @@ export const $Trade = (config: ITradeComponent) => component((
 
   const leverage = leverageStore.storeReplay(mergeArray([
     changeLeverage,
-    snapshot((params, stake) => {
+    filterNull(snapshot((params, stake) => {
       if (stake) {
         return div(stake.size + params.sizeDeltaUsd, stake.collateral + params.collateralDeltaUsd)
       }
 
-      return div(params.sizeDeltaUsd, params.collateralDeltaUsd)
-    }, combineObject({ collateralDeltaUsd, sizeDeltaUsd }), position),
+      return null
+    }, combineObject({ collateralDeltaUsd, sizeDeltaUsd }), position)),
   ]))
 
 

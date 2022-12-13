@@ -16,7 +16,7 @@ const light: Theme = {
 
     positive: '#0cab00',
     negative: '#ea004c',
-    indeterminate: '#dccb07',
+    indeterminate: '#F6964C',
   }
 }
 
@@ -34,7 +34,7 @@ const dark: Theme = {
 
     positive: '#38E567',
     negative: '#FA4333',
-    indeterminate: '#dccb07',
+    indeterminate: '#F6964C',
   }
 }
 

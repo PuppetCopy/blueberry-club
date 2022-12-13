@@ -1,5 +1,5 @@
 import { Behavior, combineArray, combineObject, O, replayLatest } from "@aelea/core"
-import { component, INode, $element, attr, style, $text, nodeEvent, $node, styleBehavior, motion, MOTION_NO_WOBBLE, styleInline } from "@aelea/dom"
+import { component, INode, $element, attr, style, $text, nodeEvent, $node, styleBehavior, motion, MOTION_NO_WOBBLE, styleInline, stylePseudo } from "@aelea/dom"
 import { $row, layoutSheet, $icon, $column, screenUtils, $TextField, $NumberTicker, $Popover } from "@aelea/ui-components"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
 import {
@@ -10,7 +10,7 @@ import {
 } from "@gambitdao/gmx-middleware"
 import { $anchor, $bear, $bull, $infoTooltip, $IntermediatePromise, $tokenIconMap, $tokenLabelFromSummary, $Tooltip } from "@gambitdao/ui-components"
 import {
-  merge, multicast, mergeArray, now, snapshot, map, switchLatest, 
+  merge, multicast, mergeArray, now, snapshot, map, switchLatest,
   skipRepeats, empty, fromPromise, constant, startWith, skipRepeatsWith, awaitPromises, delay
 } from "@most/core"
 import { Stream } from "@most/types"
@@ -428,10 +428,13 @@ export const $TradeBox = (config: ITradeBox) => component((
             $Dropdown({
               // $container: $row(style({ position: 'relative', alignSelf: 'center',  })),
               $selection: switchLatest(combineArray((isIncrease) => {
-                return $row(style({
-                  alignItems: 'center', cursor: 'pointer', fontWeight: 'bold', fontSize: '.75em',
-                  border: `1px solid ${isIncrease ? pallete.middleground : pallete.indeterminate}`, padding: '6px 12px', borderRadius: '12px'
-                }))(
+                return $row(
+                  stylePseudo(':hover', { borderColor: `${pallete.primary}` }),
+                  style({
+                    alignItems: 'center', cursor: 'pointer', fontWeight: 'bold', fontSize: '.75em',
+                    border: `1px solid ${isIncrease ? pallete.middleground : pallete.indeterminate}`, padding: '6px 12px', borderRadius: '12px'
+                  })
+                )(
                   $row(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
                     // $icon({
                     //   $content: $bagOfCoins,
@@ -656,7 +659,7 @@ export const $TradeBox = (config: ITradeBox) => component((
             )(),
 
             $Dropdown({
-              $container: $row(style({ position: 'relative', alignSelf: 'center', border: `1px solid ${pallete.middleground}`, padding: '6px 12px', borderRadius: '12px' })),
+              $container: $row(stylePseudo(':hover', { borderColor: `${pallete.primary}` }), style({ position: 'relative', alignSelf: 'center', border: `1px solid ${pallete.middleground}`, padding: '6px 12px', borderRadius: '12px' })),
               $selection: $row(style({ alignItems: 'center', cursor: 'pointer', fontWeight: 'bold', fontSize: '.75em' }))(
                 switchLatest(map(isLong => {
                   return $row(layoutSheet.spacingTiny)(
@@ -1208,7 +1211,7 @@ export const $TradeBox = (config: ITradeBox) => component((
         switchFocusMode,
       ]),
       leverage: mergeArray([
-        snapshot((state, inputFactorUsd) => {
+        filterNull(snapshot((state, inputFactorUsd) => {
           const posCollateral = state.position?.collateral || 0n
           const posSize = state.position?.size || 0n
 
@@ -1219,6 +1222,11 @@ export const $TradeBox = (config: ITradeBox) => component((
           const totalCollateral = posCollateral + collateralDeltaUsd
 
           if (state.isIncrease) {
+
+            if (state.position === null) {
+              return null
+            }
+
             const multiplier = div(totalSize, totalCollateral)
             return multiplier
           }
@@ -1229,7 +1237,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
           const multiplier = div(totalSize, totalCollateral)
           return multiplier
-        }, tradeState, mergeArray([inputCollateralDeltaUsd, inputSizeDeltaUsd, delay(10, mergeArray([sizeDeltaFromMaxBalance, clickResetVal]))])),
+        }, tradeState, mergeArray([inputCollateralDeltaUsd, inputSizeDeltaUsd, delay(50, mergeArray([sizeDeltaFromMaxBalance, clickResetVal]))]))),
         // initialLeverage,
         slideLeverage
       ]),

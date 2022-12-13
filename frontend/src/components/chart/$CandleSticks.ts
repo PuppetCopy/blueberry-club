@@ -150,9 +150,9 @@ export const $CandleSticks = ({ chartConfig, series, containerOp = O() }: ICandl
               : empty(),
             ...priceLineConfigList.map(lineStreamConfig => {
               return scan((prev, params) => {
-                // if (prev && params === null) {
-                //   api.removePriceLine(prev)
-                // }
+                if (prev && params === null) {
+                  api.removePriceLine(prev)
+                }
 
                 if (params) {
                   if (prev) {
