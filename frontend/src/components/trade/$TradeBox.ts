@@ -1223,7 +1223,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
           const multiplier = div(totalSize, totalCollateral)
           return multiplier
-        }, tradeState, mergeArray([inputCollateralDeltaUsd, inputSizeDeltaUsd, delay(10, mergeArray([sizeDeltaFromMaxBalance]))])),
+        }, tradeState, mergeArray([inputCollateralDeltaUsd, inputSizeDeltaUsd, delay(10, mergeArray([sizeDeltaFromMaxBalance, clickResetVal]))])),
         // initialLeverage,
         slideLeverage
       ]),
