@@ -4,12 +4,12 @@ import { $column, observer } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import {
   unixTimestampNow, isTradeSettled, getDeltaPercentage, intervalListFillOrderMap,
-  isTradeOpen, ITrade, formatFixed, getPnL, IPricefeed, USD_PERCISION, IPricefeedParamApi, CHAIN
+  isTradeOpen, ITrade, formatFixed, getPnL, IPricefeed, USD_PERCISION, IPricefeedParamApi, CHAIN, readableNumber
 } from "@gambitdao/gmx-middleware"
 import { getIntervalBasedOnTimeframe } from "@gambitdao/ui-components"
 import { multicast, switchLatest, empty, skipRepeatsWith, map, skip, now } from "@most/core"
 import { Stream } from "@most/types"
-import { MouseEventParams, SingleValueData, Time, LineStyle, ChartOptions, DeepPartial } from "lightweight-charts"
+import { MouseEventParams, SingleValueData, Time, LineStyle, ChartOptions, DeepPartial, BarPrice } from "lightweight-charts"
 import { $Chart } from "../chart/$Chart"
 
 interface ITradePnlPreview {
@@ -67,9 +67,11 @@ export const $TradePnlHistory = (config: ITradePnlPreview) => component((
     }
 
 
+    const pricefeedFramed = config.pricefeed.filter(tick => tick.timestamp >= initialTick.time)
+
     const data = intervalListFillOrderMap({
       source: [
-        ...config.pricefeed.filter(tick => tick.timestamp > initialTick.time),
+        ...pricefeedFramed,
         ...config.trade.updateList
       ],
       // source: [...feed.filter(tick => tick.timestamp > initialTick.time), ...trade.updateList, ...trade.increaseList, ...trade.decreaseList],
@@ -113,15 +115,6 @@ export const $TradePnlHistory = (config: ITradePnlPreview) => component((
     return { data, interval }
   }, displayColumnCount))
 
-  const to = unixTimestampNow()
-  const from = config.trade.timestamp
-
-
-  const requestPricefeed: Stream<IPricefeedParamApi> = now({
-    chain: config.chain,
-    tokenAddress: config.trade.indexToken,
-    interval: getIntervalBasedOnTimeframe(160, from, to), from, to
-  })
 
   return [
 
@@ -129,7 +122,6 @@ export const $TradePnlHistory = (config: ITradePnlPreview) => component((
       switchLatest(
         combineArray(({ data, interval }) => {
 
-          const newLocal = skip(1, config.latestPrice)
           return $Chart({
             realtimeSource: isTradeOpen(config.trade)
               ? map((price): SingleValueData => {
@@ -143,12 +135,16 @@ export const $TradePnlHistory = (config: ITradePnlPreview) => component((
                   value,
                   time: nextTimeslot * interval as Time
                 }
-              }, newLocal)
+              }, config.latestPrice)
               : empty(),
             initializeSeries: map((api) => {
               const series = api.addBaselineSeries({
                 // topFillColor1: pallete.positive,
                 // topFillColor2: pallete.positive,
+                priceFormat: {
+                  type: 'custom',
+                  formatter: (priceValue: BarPrice) => readableNumber(priceValue.valueOf())
+                },
                 topLineColor: pallete.positive,
                 bottomLineColor: pallete.negative,
                 baseValue: {
@@ -187,49 +183,43 @@ export const $TradePnlHistory = (config: ITradePnlPreview) => component((
               }
 
 
-              setTimeout(() => {
-                if (data.length > 10) {
-                  if (low.pnl !== high.pnl) {
-                    // const increaseList = trade.increaseList
-                    // const increaseMarkers = increaseList
-                    //   .slice(1)
-                    //   .map((ip): SeriesMarker<Time> => {
-                    //     return {
-                    //       color: pallete.foreground,
-                    //       position: "aboveBar",
-                    //       shape: "arrowUp",
-                    //       time: unixTimeTzOffset(ip.timestamp),
-                    //       text: formatReadableUSD(ip.collateralDelta)
-                    //     }
-                    //   })
-                    // const decreaseList = isTradeSettled(trade) ? trade.decreaseList.slice(0, -1) : trade.decreaseList
-                    // const decreaseMarkers = decreaseList
-                    //   .map((ip): SeriesMarker<Time> => {
-                    //     return {
-                    //       color: pallete.foreground,
-                    //       position: 'belowBar',
-                    //       shape: "arrowDown",
-                    //       time: unixTimeTzOffset(ip.timestamp),
-                    //       text: formatReadableUSD(ip.collateralDelta)
-                    //     }
-                    //   })
+              // setTimeout(() => {
+              //   if (data.length > 10) {
+              //     if (low.pnl !== high.pnl) {
+              //       // const increaseList = trade.increaseList
+              //       // const increaseMarkers = increaseList
+              //       //   .slice(1)
+              //       //   .map((ip): SeriesMarker<Time> => {
+              //       //     return {
+              //       //       color: pallete.foreground,
+              //       //       position: "aboveBar",
+              //       //       shape: "arrowUp",
+              //       //       time: unixTimeTzOffset(ip.timestamp),
+              //       //       text: formatReadableUSD(ip.collateralDelta)
+              //       //     }
+              //       //   })
+              //       // const decreaseList = isTradeSettled(trade) ? trade.decreaseList.slice(0, -1) : trade.decreaseList
+              //       // const decreaseMarkers = decreaseList
+              //       //   .map((ip): SeriesMarker<Time> => {
+              //       //     return {
+              //       //       color: pallete.foreground,
+              //       //       position: 'belowBar',
+              //       //       shape: "arrowDown",
+              //       //       time: unixTimeTzOffset(ip.timestamp),
+              //       //       text: formatReadableUSD(ip.collateralDelta)
+              //       //     }
+              //       //   })
 
-                    // series.setMarkers([...increaseMarkers, ...decreaseMarkers].sort((a, b) => Number(a.time) - Number(b.time)))
+              //       // series.setMarkers([...increaseMarkers, ...decreaseMarkers].sort((a, b) => Number(a.time) - Number(b.time)))
 
 
-                  }
-                }
+              //     }
+              //   }
 
-                api.timeScale().fitContent()
+              //   api.timeScale().fitContent()
 
-              }, 90)
+              // }, 90)
 
-              series.applyOptions({
-                scaleMargins: {
-                  top: 0.4,
-                  bottom: 0,
-                }
-              })
 
               return series
             }),
@@ -240,12 +230,21 @@ export const $TradePnlHistory = (config: ITradePnlPreview) => component((
                 fontFamily: 'RelativePro',
                 fontSize: 10
               },
-              rightPriceScale: {
-                // mode: PriceScaleMode.Logarithmic,
-                autoScale: true,
-                visible: false,
-
+              leftPriceScale: {
+                scaleMargins: {
+                  top: 0.1,
+                  bottom: 0,
+                }
               },
+              // rightPriceScale: {
+              //   // mode: PriceScaleMode.Logarithmic,
+              //   autoScale: true,
+              //   visible: true,
+              //   scaleMargins: {
+              //     top: 0.4,
+              //     bottom: 0,
+              //   }
+              // },
               handleScale: false,
               handleScroll: false,
               timeScale: {

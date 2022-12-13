@@ -22,7 +22,6 @@ import { $seperator2 } from "../common"
 import { CHAIN, filterNull, unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 import { Closet, GBCLab } from "@gambitdao/gbc-contracts"
-import { BrowserStore } from "../../logic/store"
 import { connectLab } from "../../logic/contract/gbc"
 
 
@@ -519,8 +518,8 @@ const $ItemSlot = ({ selectedSlot, change, gbcItemId, slot, slotLabel }: ItemSlo
       height: itemSizePx, boxSizing: 'content-box', minWidth: itemSizePx, borderRadius: '12.75px', gap: '1px', overflow: 'hidden', boxShadow: '-1px 2px 7px 2px #0000002e',
       position: 'relative', backgroundColor: pallete.background, border: `2px solid`, cursor: 'pointer'
     }),
-    stylePseudo(':hover', { borderColor: pallete.middleground }),
-    style(selectedSlot === slot ? { borderColor: pallete.primary, pointerEvents: 'none' } : { borderColor: pallete.horizon })
+    stylePseudo(':hover', { borderColor: pallete.primary }),
+    style(selectedSlot === slot ? { borderColor: pallete.middleground, pointerEvents: 'none' } : { borderColor: pallete.horizon })
   )
 
   const canRemove = item && change?.isRemove !== true

@@ -178,8 +178,6 @@ export const $Trade = (config: ITradeComponent) => component((
   }, config.walletLink.wallet)
 
 
-  const requestPositionParams = [account, indexToken, shortCollateralToken, isLong] as [Stream<string | null>, Stream<ITokenIndex>, Stream<ITokenStable>, Stream<boolean>]
-
   const positionConfigChange = mergeArray([
     debounce(10, combineObject({ account, indexToken, shortCollateralToken, isLong })),
     // zipArray((account, indexToken, shortCollateralToken, isLong) => ({ account, indexToken, shortCollateralToken, isLong }), requestPositionParams)
@@ -634,7 +632,6 @@ export const $Trade = (config: ITradeComponent) => component((
             $IntermediatePromise({
               query: config.pricefeed,
               $$done: snapshot((tf, data) => {
-                console.log(tf)
 
                 const fst = data[data.length - 1]
                 const initialTick = {
@@ -748,8 +745,8 @@ export const $Trade = (config: ITradeComponent) => component((
                       entireTextOnly: true,
                       borderVisible: false,
                       scaleMargins: {
-                        top: 0.35,
-                        bottom: 0.25
+                        top: 0.15,
+                        bottom: 0.15
                       }
                     },
                     timeScale: {

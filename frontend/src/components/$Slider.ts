@@ -88,7 +88,7 @@ export const $Slider = ({
 
 
             if (hasTouchedBar) {
-              const initialOffset = now(downEvent.offsetX / rectWidth)
+              const initialOffset = now(Math.min(Math.max(downEvent.offsetX / rectWidth, min), max))
               const moveDelta = drawLatest(map(moveEvent => {
                 const deltaX = (moveEvent.clientX - downEvent.clientX) + downEvent.offsetX
 

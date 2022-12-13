@@ -1,7 +1,7 @@
 import { Behavior, combineArray, combineObject, O, replayLatest } from "@aelea/core"
 import { component, INode, $element, attr, style, $text, nodeEvent, $node, styleBehavior, motion, MOTION_NO_WOBBLE, styleInline } from "@aelea/dom"
 import { $row, layoutSheet, $icon, $column, screenUtils, $TextField, $NumberTicker, $Popover } from "@aelea/ui-components"
-import { colorAlpha, pallete } from "@aelea/ui-components-theme"
+import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
 import {
   ARBITRUM_ADDRESS, formatFixed, readableNumber, parseFixed, formatReadableUSD, BASIS_POINTS_DIVISOR,
   ITokenDescription, LIMIT_LEVERAGE, bnDiv, replayState,
@@ -331,7 +331,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
       // ),
 
-      $column(style({ borderRadius: `${BOX_SPACING}px`, backgroundColor: pallete.horizon }))(
+      $column(style({ borderRadius: `${BOX_SPACING}px`, backgroundColor: theme.name === 'dark' ? pallete.horizon : colorAlpha(pallete.horizon, .3) }))(
 
         $column(layoutSheet.spacingSmall, style({ padding: '16px', borderRadius: '20px 20px 0 0', border: `1px solid ${colorAlpha(pallete.foreground, .15)}` }),
           styleInline(now({ borderBottom: 'none' })),
@@ -572,8 +572,12 @@ export const $TradeBox = (config: ITradeBox) => component((
 
               if (state.isIncrease) {
                 if (state.focusMode === ITradeFocusMode.collateral) {
-                  const ratio = div(totalSize, state.position.collateral)
-                  return bnDiv(ratio, LIMIT_LEVERAGE)
+
+                  // return 1
+                  const ratio = div(state.position.size, state.position.collateral)
+                  const newLocal = bnDiv(ratio, LIMIT_LEVERAGE)
+                  console.log(newLocal)
+                  return newLocal
                 }
 
                 return 1
@@ -819,7 +823,7 @@ export const $TradeBox = (config: ITradeBox) => component((
         $IntermediateConnectButton({
           chainList: config.chainList,
           primaryButtonConfig: {
-            $container: $element('button')(style({ alignSelf: 'center', placeSelf: 'center' })),
+            $container: $element('button')(style({ margin: 'auto', alignSelf: 'center', placeSelf: 'center' })),
             // $content: $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
             //   $text('Connect To Trade'),
             //   $icon({ $content: $caretDown, viewBox: '0 0 32 32', width: '16px', fill: pallete.background, svgOps: style({ marginTop: '2px' }) }),
@@ -1132,15 +1136,15 @@ export const $TradeBox = (config: ITradeBox) => component((
                     }
 
                     const hoverChartPnl = switchLatest(map((chartCxChange) => {
-                      if (chartCxChange) {
-                        return now(Number(readableNumber(chartCxChange)))
+                      if (Number.isFinite(chartCxChange)) {
+                        return now(chartCxChange)
                       }
 
                       return map(price => {
                         const delta = getPnL(trade.isLong, trade.averagePrice, price, trade.size)
                         const val = formatFixed(delta + trade.realisedPnl - trade.fee, 30)
 
-                        return Number(readableNumber(val))
+                        return val
                       }, config.tradeState.indexTokenPrice)
 
                     }, pnlCrossHairTime))
@@ -1160,9 +1164,11 @@ export const $TradeBox = (config: ITradeBox) => component((
                         transform: 'translateX(-50%)'
                       })(
                         $NumberTicker({
-                          value$: combineArray((hoverValue, vv) => {
-                            return Number(readableNumber(hoverValue))
-                          }, motion({ ...MOTION_NO_WOBBLE, precision: 15, stiffness: 210 }, 0, hoverChartPnl), tradeState),
+                          value$: map(hoverValue => {
+                            const newLocal2 = readableNumber(hoverValue)
+                            const newLocal = parseReadableNumber(newLocal2)
+                            return newLocal
+                          }, motion({ ...MOTION_NO_WOBBLE, precision: 15, stiffness: 210 }, 0, hoverChartPnl)),
                           incrementColor: pallete.positive,
                           decrementColor: pallete.negative
                         })

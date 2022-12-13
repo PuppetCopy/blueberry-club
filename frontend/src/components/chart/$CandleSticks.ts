@@ -44,9 +44,6 @@ export const $CandleSticks = ({ chartConfig, series, containerOp = O() }: ICandl
     rightPriceScale: {
       visible: false,
     },
-    // handleScale: {
-      
-    // },
     grid: {
       horzLines: {
         color: '#eee',
@@ -59,13 +56,6 @@ export const $CandleSticks = ({ chartConfig, series, containerOp = O() }: ICandl
     },
     overlayPriceScales: {
       borderVisible: false,
-    },
-    leftPriceScale: {
-      visible: false,
-      scaleMargins: {
-        bottom: 0,
-        top: 0,
-      }
     },
     layout: {
       textColor: pallete.message,
@@ -183,7 +173,6 @@ export const $CandleSticks = ({ chartConfig, series, containerOp = O() }: ICandl
         }),
         combineArray(([containerDimension]) => {
           const { width, height } = containerDimension.contentRect
-          console.log(width, height)
           chartApi.resize(width, height)
 
           return empty()

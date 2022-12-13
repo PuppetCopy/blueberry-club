@@ -60,7 +60,9 @@ export const $IntermediateConnectButton = (config: IConnectWalletPopover) => com
             $content: $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
               $text('Connect Wallet'),
               $icon({ $content: $caretDown, viewBox: '0 0 32 32', width: '16px', fill: pallete.background, svgOps: style({ marginTop: '2px' }) }),
-            )
+            ),
+            ...config.primaryButtonConfig
+
           })({
             click: clickOpenPopoverTether()
           }),
