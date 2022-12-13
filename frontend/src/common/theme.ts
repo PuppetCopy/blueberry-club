@@ -11,7 +11,7 @@ const light: Theme = {
 
     background: '#FDFDFC',
     horizon: '#C0C0C0',
-    middleground: '#0637e7',
+    middleground: '#939CD6',
     foreground: '#51585f',
 
     positive: '#0cab00',

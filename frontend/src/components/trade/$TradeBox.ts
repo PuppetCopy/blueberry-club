@@ -574,7 +574,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                 if (state.focusMode === ITradeFocusMode.collateral) {
 
                   // return 1
-                  const ratio = div(state.position.size, state.position.collateral)
+                  const ratio = div(totalSize, state.position.collateral)
                   const newLocal = bnDiv(ratio, LIMIT_LEVERAGE)
                   console.log(newLocal)
                   return newLocal

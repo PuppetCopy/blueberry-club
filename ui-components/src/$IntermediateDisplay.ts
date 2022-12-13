@@ -14,15 +14,14 @@ export const $spinner = $node(style({
   minWidth: '60px',
   maxWidth: '60px',
   width: '60xp',
-  height: '35px',
-  borderRadius: '50%',
+  height: '45px',
+  borderRadius: '14px',
   backgroundImage: 'url(/assets/gbc-loop.gif)',
   backgroundPosition: 'center',
   backgroundSize: 'contain',
   backgroundRepeat: 'no-repeat',
   margin: 'auto',
   placeSelf: 'center',
-  filter: 'drop-shadow(0px 0px 16px black)',
   backgroundColor: 'black',
 }))()
 
