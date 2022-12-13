@@ -715,7 +715,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
                       ],
                       appendData: scan((prev: CandlestickData, nextPrice): CandlestickData => {
-                        const marketPrice = formatFixed(nextPrice, 30)
+                        const marketPrice = Number(readableNumber(formatFixed(nextPrice, 30)))
                         const timeNow = unixTimestampNow()
 
                         const prevTimeSlot = Math.floor(prev.time as number / tf)

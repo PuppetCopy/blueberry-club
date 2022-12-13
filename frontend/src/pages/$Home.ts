@@ -1,12 +1,12 @@
 import { Behavior, combineArray } from "@aelea/core"
 import { $Branch, $element, $node, $svg, $text, attr, component, eventElementTarget, INode, style, styleInline, stylePseudo } from "@aelea/dom"
 import { Route } from "@aelea/router"
-import { $column, $icon, $row, $TextField, layoutSheet, observer, screenUtils } from "@aelea/ui-components"
+import { $column, $icon, $row, layoutSheet, observer, screenUtils } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { CHAIN, gmxSubgraph, IAccountQueryParamApi, intervalTimeMap, ITimerangeParamApi, TRADE_CONTRACT_MAPPING } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $alert, $anchor, $gitbook, $IntermediatePromise, $Link } from "@gambitdao/ui-components"
-import { awaitPromises, delay, empty, map, multicast, never, now, snapshot, switchLatest, tap } from "@most/core"
+import { awaitPromises, empty, map, multicast, now, snapshot, switchLatest, tap } from "@most/core"
 import { $card, $teamMember } from "../elements/$common"
 
 import {
@@ -21,7 +21,7 @@ import { Stream } from "@most/types"
 import { $berry, svgParts } from "../components/$DisplayBerry"
 import { BrowserStore } from "../logic/store"
 import { $StakingGraph } from "../components/$StakingGraph"
-import { $berryByToken, getContractMapping } from "../logic/common"
+import { $berryByLabItems, $berryByToken, getBerryFromItems, getContractMapping } from "../logic/common"
 import { connectGmxEarn } from "../logic/contract"
 
 
@@ -142,6 +142,7 @@ export const $Home = (config: ITreasury) => component((
 
       $row(style({ width: '100vw', marginLeft: 'calc(-50vw + 50%)', height: screenUtils.isDesktopScreen ? '580px' : '', alignItems: 'center', placeContent: 'center' }))(
         switchLatest(map(parts => {
+          // const queryBerryDayId = blueberrySubgraph.token(now({ id: '4383' }))
           const queryBerryDayId = blueberrySubgraph.token(now({ id: dailyRandom(Date.now() / (intervalTimeMap.HR24 * 1000)) + '' }))
 
           const berrySize = screenUtils.isDesktopScreen ? 100 : 70
@@ -199,8 +200,15 @@ export const $Home = (config: ITreasury) => component((
 
           return $IntermediatePromise({
             query: combineArray((a, b) => Promise.all([a, b]), queryBerryDayId, queryBerryWallList),
-            $$done: map(([berryDayId, berryWallList]) => {
-              const [background, clothes, body, expression, faceAccessory, hat] = tokenIdAttributeTuple[berryDayId.id - 1]
+            $$done: map(([token, berryWallList]) => {
+              const [background, clothes, body, expression, faceAccessory, hat] = tokenIdAttributeTuple[token.id - 1]
+
+              const display = getBerryFromItems(token.labItems.map(li => Number(li.id)))
+
+
+              const $mainBerry = tap(({ element }) => {
+                element.querySelectorAll('.wakka').forEach(el => el.remove())
+              }, $berryByLabItems(token.id, display.background, display.custom, 340, [background, clothes, undefined, IAttributeExpression.HAPPY, ' ' as any, ' ' as any]) as $Branch)
 
               return screenUtils.isDesktopScreen
                 ? $node(style({ display: 'grid', width: '100%', gap: '20px', justifyContent: 'center', gridTemplateColumns: `repeat(auto-fit, ${berrySize}px)`, gridAutoRows: berrySize + 'px' }))(
@@ -209,21 +217,22 @@ export const $Home = (config: ITreasury) => component((
                   }),
                   $row(style({ gridRow: 'span 3 / auto', gridColumn: 'span 7 / auto', gap: '35px' }))(
                     $Link({
-                      url: `/p/berry/${berryDayId.id}`,
+                      url: `/p/berry/${token.id}`,
                       route: config.parentRoute.create({ fragment: 'fefe' }),
                       $content: $row(style({ maxWidth: 340 + 'px', borderRadius: '30px', overflow: 'hidden', width: '100%', height: 340 + 'px', transformStyle: 'preserve-3d', perspective: '100px', position: 'relative', placeContent: 'center', alignItems: 'flex-end' }))(
                         $row(style({ alignSelf: 'flex-end', zIndex: 10, color: `white!important`, fontWeight: 'bold', position: 'absolute', left: '20px', top: '16px' }))(
-                          $text(style({ fontSize: '38px', textShadow: '#0000005e 0px 0px 5px' }))(String(berryDayId.id))
+                          $text(style({ fontSize: '38px', textShadow: '#0000005e 0px 0px 5px' }))(String(token.id))
                         ),
-                        tap(({ element }) => {
-                          element.querySelectorAll('.wakka').forEach(el => el.remove())
-                        }, $berryByToken(berryDayId, 340, [background, clothes, undefined, IAttributeExpression.HAPPY, undefined, ' ' as any]) as $Branch),
+                        $mainBerry,
                         $svg('svg')(
                           attr({ xmlns: 'http://www.w3.org/2000/svg', fill: 'none', viewBox: `0 0 1500 1500` }),
                           style({ width: 340 + 'px', height: 340 + 'px', position: 'absolute', zIndex: 1, })
                         )(
                           tap(async ({ element }) => {
-                            element.innerHTML = `${parts[4][faceAccessory]}${parts[5][hat]}`
+                            element.innerHTML = `
+                            ${parts[5][hat]}
+                            ${parts[4][display.custom as IAttributeFaceAccessory || faceAccessory]}
+                          `
                           })
                         )(),
                         $row(style({ position: 'absolute', width: '95px', left: '158px', placeContent: 'space-between', top: '162px' }))(

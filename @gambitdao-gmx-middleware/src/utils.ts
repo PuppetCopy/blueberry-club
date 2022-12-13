@@ -45,8 +45,8 @@ export function parseReadableNumber(stringNumber: string, locale?: Intl.NumberFo
 }
 
 const readableLargeNumber = Intl.NumberFormat("en-US", { maximumFractionDigits: 0, })
-const readableSmallNumber = Intl.NumberFormat("en-US", { maximumFractionDigits: 3, minimumFractionDigits: 2 })
-const readableTinyNumber = Intl.NumberFormat("en-US", { maximumSignificantDigits: 3 })
+const readableSmallNumber = Intl.NumberFormat("en-US", { maximumFractionDigits: 2, minimumFractionDigits: 2 })
+const readableTinyNumber = Intl.NumberFormat("en-US", { maximumSignificantDigits: 2 })
 
 export function readableNumber(ammount: number | bigint) {
   const absAmount = typeof ammount === 'bigint' ? ammount > 0n ? ammount : -ammount : Math.abs(ammount)
@@ -81,12 +81,12 @@ export function readableDate(timestamp: number) {
   return new Date(timestamp * 1000).toLocaleDateString(undefined, options)
 }
 
-export function formatReadableUSD(ammount: bigint, options?: Intl.NumberFormatOptions) {
+export function formatReadableUSD(ammount: bigint | number, options?: Intl.NumberFormatOptions) {
   if (ammount === 0n) {
     return '$0'
   }
 
-  const amountUsd = formatFixed(ammount, USD_DECIMALS)
+  const amountUsd = typeof ammount === 'bigint' ?  formatFixed(ammount, USD_DECIMALS) : ammount
   const opts = options
     ? { ...defaultUsdNumberFormatOption, ...options }
     : Math.abs(amountUsd) > 100 ? defaultUsdNumberFormatOption : { ...defaultUsdNumberFormatOption, maximumFractionDigits: 2 }
