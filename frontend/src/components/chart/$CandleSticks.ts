@@ -2,7 +2,7 @@ import { Behavior, combineArray, fromCallback, O, Op } from "@aelea/core"
 import { $wrapNativeElement, component, INode, style } from "@aelea/dom"
 import { observer } from '@aelea/ui-components'
 import { colorAlpha, pallete } from '@aelea/ui-components-theme'
-import { empty, filter, mergeArray, multicast, scan, tap } from '@most/core'
+import { debounce, delay, empty, filter, mergeArray, multicast, scan, tap } from '@most/core'
 import { disposeWith } from '@most/disposable'
 import { Stream } from '@most/types'
 import {
@@ -44,9 +44,9 @@ export const $CandleSticks = ({ chartConfig, series, containerOp = O() }: ICandl
     rightPriceScale: {
       visible: false,
     },
-    handleScale: {
-
-    },
+    // handleScale: {
+      
+    // },
     grid: {
       horzLines: {
         color: '#eee',
@@ -138,17 +138,16 @@ export const $CandleSticks = ({ chartConfig, series, containerOp = O() }: ICandl
       containerOp,
     )(
       ignoreAll(mergeArray([
-
         ...series.map(params => {
-
           const priceLineConfigList = params.priceLines || []
-
           const api = chartApi.addCandlestickSeries(params.seriesConfig)
 
-          // api.setData(params.data)
+
+          api.setData(params.data)
+
           setTimeout(() => {
-            api.setData(params.data)
-          }, 50)
+            timeScale.resetTimeScale()
+          }, 25)
 
           return mergeArray([
             params.appendData
@@ -184,6 +183,7 @@ export const $CandleSticks = ({ chartConfig, series, containerOp = O() }: ICandl
         }),
         combineArray(([containerDimension]) => {
           const { width, height } = containerDimension.contentRect
+          console.log(width, height)
           chartApi.resize(width, height)
 
           return empty()

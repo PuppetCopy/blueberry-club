@@ -169,8 +169,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
   const inputTokenPrice = switchLatest(combineArray((chain, token) => vault.getLatestPrice(chain, resolveAddress(chain, token)), config.walletLink.network, inputToken))
-  const indexTokenPrice = tap(xxx => {
-  }, switchLatest(combineArray((chain, token) => vault.getLatestPrice(chain, resolveAddress(chain, token)), config.walletLink.network, indexToken)))
+  const indexTokenPrice = replayLatest(multicast(switchLatest(combineArray((chain, token) => vault.getLatestPrice(chain, resolveAddress(chain, token)), config.walletLink.network, indexToken))))
   const collateralTokenPrice = switchLatest(combineArray((chain, token) => vault.getLatestPrice(chain, resolveAddress(chain, token)), config.walletLink.network, shortCollateralToken))
 
   const account = map(signer => {
@@ -744,7 +743,7 @@ export const $Trade = (config: ITradeComponent) => component((
                   chartConfig: {
                     rightPriceScale: {
                       visible: true,
-                      // autoScale: true,
+                      autoScale: true,
                       entireTextOnly: true,
                       borderVisible: false,
                       scaleMargins: {
@@ -753,9 +752,11 @@ export const $Trade = (config: ITradeComponent) => component((
                       }
                     },
                     timeScale: {
-                      timeVisible: true,
+                      timeVisible: false,
                       borderVisible: true,
-                      rightOffset: 115,
+                      rightOffset: 10,
+
+                      // fixRightEdge: true,
                       shiftVisibleRangeOnNewBar: true,
                       borderColor: pallete.horizon,
                     }
