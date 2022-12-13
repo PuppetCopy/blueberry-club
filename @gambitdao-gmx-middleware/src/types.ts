@@ -100,9 +100,10 @@ export type IAbstractPositionStake = {
 export interface IVaultPosition extends IAbstractPositionStake {
   entryFundingRate: bigint
   reserveAmount: bigint
-  lastIncreasedTime: bigint
   averagePrice: bigint
+  lastIncreasedTime: bigint
 }
+
 
 export interface IPositionIncrease extends IAbstractPositionBase, IAbstractPositionAdjustment, IndexedType<'IncreasePosition'> {
   price: bigint, fee: bigint

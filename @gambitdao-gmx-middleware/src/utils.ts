@@ -45,8 +45,8 @@ export function parseReadableNumber(stringNumber: string, locale?: Intl.NumberFo
 }
 
 const readableLargeNumber = Intl.NumberFormat("en-US", { maximumFractionDigits: 0, })
-const readableSmallNumber = Intl.NumberFormat("en-US", { maximumFractionDigits: 2, minimumFractionDigits: 2 })
-const readableTinyNumber = Intl.NumberFormat("en-US", { maximumSignificantDigits: 2 })
+const readableSmallNumber = Intl.NumberFormat("en-US", { maximumFractionDigits: 3, minimumFractionDigits: 2 })
+const readableTinyNumber = Intl.NumberFormat("en-US", { maximumSignificantDigits: 3 })
 
 export function readableNumber(ammount: number | bigint) {
   const absAmount = typeof ammount === 'bigint' ? ammount > 0n ? ammount : -ammount : Math.abs(ammount)

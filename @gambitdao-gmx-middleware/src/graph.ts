@@ -50,8 +50,7 @@ export const pricefeed = O(
 
     const priceFeedQuery = await querySubgraph(queryParams, newLocal)
     return priceFeedQuery.pricefeeds.map(fromJson.pricefeedJson) as IPricefeed[]
-  }),
-  awaitPromises
+  })
 )
 
 
@@ -134,8 +133,7 @@ export const accountTradeList = O(
 `)
 
     return res.trades.map(fromJson.tradeJson) as ITrade[]
-  }),
-  awaitPromises
+  })
 )
 
 export const leaderboardTopList = O(

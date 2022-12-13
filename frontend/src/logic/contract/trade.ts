@@ -1,5 +1,5 @@
-import { awaitPromises, combine, empty, map, multicast, switchLatest } from "@most/core"
-import { CHAIN, switchFailedSources, ITokenIndex, ITokenInput, ITokenTrade, AddressZero, getChainName, KeeperResponse, IPositionDecrease, IPositionIncrease, IPositionClose, IPositionLiquidated, filterNull, listen, IVaultPosition, unixTimestampNow, TRADE_CONTRACT_MAPPING } from "@gambitdao/gmx-middleware"
+import { awaitPromises, combine, empty, map, mergeArray, multicast, snapshot, switchLatest } from "@most/core"
+import { CHAIN, switchFailedSources, ITokenIndex, ITokenInput, ITokenTrade, AddressZero, getChainName, KeeperResponse, IPositionDecrease, IPositionIncrease, IPositionClose, IPositionLiquidated, filterNull, listen, IVaultPosition, unixTimestampNow, TRADE_CONTRACT_MAPPING, IPositionUpdate, IAbstractPositionIdentifier } from "@gambitdao/gmx-middleware"
 import { combineArray } from "@aelea/core"
 import { ERC20__factory, PositionRouter__factory, Router__factory, VaultPriceFeed__factory, Vault__factory } from "./gmx-contracts"
 import { periodicRun } from "@gambitdao/gmx-middleware"
@@ -11,10 +11,7 @@ import { id } from "@ethersproject/hash"
 import { Interface } from "@ethersproject/abi"
 
 
-export interface IPositionGetter {
-  key: string
-  position: IVaultPosition | null
-}
+export type IPositionGetter = IVaultPosition & IAbstractPositionIdentifier
 
 
 
@@ -137,56 +134,11 @@ export function connectVault(walletLink: IWalletLink) {
   }, t))
   // vault.listen(contract.filters.IncreasePosition())
 
-  const positionUpdateEvent = ({ key, position }: IPositionGetter) => switchLatest(combineArray((chain, contract) => {
 
-    return switchLatest(awaitPromises(map(async c => {
-      const network = await c.provider.getNetwork()
-
-      if (network.chainId === CHAIN.ARBITRUM) {
-        const filter = {
-          address: c.address, topics: [
-            id("UpdatePosition(bytes32,uint256,uint256,uint256,uint256,uint256,int256)")
-          ]
-        }
-
-        return filterNull(map((ev) => {
-          const { data, topics } = ev.__event
-          const abi = ["event UpdatePosition(bytes32,uint256,uint256,uint256,uint256,uint256,int256)"]
-          const iface = new Interface(abi)
-          const [updateKey, size, collateral, averagePrice, entryFundingRate, reserveAmount, realisedPnl] = iface.parseLog({
-            data,
-            topics
-          }).args
-
-          if (updateKey !== key) {
-            return null
-          }
-
-          const pos: IPositionGetter = {
-            key,
-            position: {
-              ...position,
-              lastIncreasedTime: BigInt(unixTimestampNow()),
-              size: size.toBigInt(), collateral: collateral.toBigInt(),
-              averagePrice: averagePrice.toBigInt(), entryFundingRate: entryFundingRate.toBigInt(),
-              reserveAmount: reserveAmount.toBigInt(), realisedPnl: realisedPnl.toBigInt()
-            }
-          }
-          return pos
-        }, listen(contract, filter)))
-      }
-
-
-
-      return listen(contract, contract.filters.UpdatePosition())
-    }, vaultGlobal.contract)))
-  }, walletLink.network, vaultGlobal.contract))
-
-  const positionIncreaseEvent: Stream<IPositionIncrease> = filterNull(combineArray((w3p, ev: IPositionIncrease) => w3p?.address === ev.account ? ev : null, walletLink.wallet, vault.listen('IncreasePosition')))
-  const positionDecreaseEvent: Stream<IPositionDecrease> = filterNull(combineArray((w3p, ev: IPositionDecrease) => w3p?.address === ev.account ? ev : null, walletLink.wallet, vault.listen('DecreasePosition')))
-  // const positionUpdateEvent2: Stream<IPositionUpdate> = vault.listen('UpdatePosition') // filterNull(combineArray((w3p, ev: IPositionUpdate) => w3p?.address === ev.account ? ev : null, walletLink.wallet, vault.listen('UpdatePosition'))) 
-  const positionCloseEvent: Stream<IPositionClose> = filterNull(combineArray((w3p, ev: IPositionClose) => w3p?.address === ev.account ? ev : null, walletLink.wallet, vault.listen('ClosePosition')))
-  const positionLiquidateEvent: Stream<IPositionLiquidated> = filterNull(combineArray((w3p, ev: IPositionLiquidated) => w3p?.address === ev.account ? ev : null, walletLink.wallet, vault.listen('LiquidatePosition')))
+  const positionIncreaseEvent: Stream<IPositionIncrease> = vault.listen('IncreasePosition')
+  const positionDecreaseEvent: Stream<IPositionDecrease> = vault.listen('DecreasePosition')
+  const positionCloseEvent: Stream<IPositionClose> = vault.listen('ClosePosition')
+  const positionLiquidateEvent: Stream<IPositionLiquidated> = vault.listen('LiquidatePosition')
 
   const getLatestPrice = (chain: CHAIN, token: ITokenTrade, maximize = false) => {
 
@@ -209,6 +161,58 @@ export function connectVault(walletLink: IWalletLink) {
       }, pricefeed.contract))
     ])
   }
+
+  const positionUpdateEvent = (keyEvent: Stream<string>): Stream<IPositionUpdate> => switchLatest(awaitPromises(map(async (contract) => {
+    const chain = (await contract.provider.getNetwork()).chainId
+
+    if (chain === CHAIN.ARBITRUM) {
+
+      const updateEvent = filterNull(snapshot((key, ev) => {
+        const { data, topics } = ev.__event
+        const abi = ["event UpdatePosition(bytes32,uint256,uint256,uint256,uint256,uint256,int256)"]
+        const iface = new Interface(abi)
+        const [updateKey, size, collateral, averagePrice, entryFundingRate, reserveAmount, realisedPnl] = iface.parseLog({
+          data,
+          topics
+        }).args
+
+        if (updateKey !== key) {
+          return null
+        }
+
+
+        return {
+          key: key,
+          lastIncreasedTime: BigInt(unixTimestampNow()),
+          size: size.toBigInt(),
+          collateral: collateral.toBigInt(),
+          averagePrice: averagePrice.toBigInt(),
+          entryFundingRate: entryFundingRate.toBigInt(),
+          reserveAmount: reserveAmount.toBigInt(),
+          realisedPnl: realisedPnl.toBigInt(),
+          __typename: 'UpdatePosition'
+        }
+      }, keyEvent, listen(contract, {
+        address: contract.address, topics: [
+          id("UpdatePosition(bytes32,uint256,uint256,uint256,uint256,uint256,int256)")
+        ]
+      })))
+      return updateEvent
+    }
+
+    return filterNull(snapshot((key, ev) => key === ev.key ? ev : null, keyEvent, listen(contract, contract.filters.UpdatePosition())))
+  }, vaultGlobal.contract)))
+
+  const positionSettled = (keyEvent: Stream<string>): Stream<IPositionClose | IPositionLiquidated> => filterNull(snapshot((key, posSettled) => {
+    if (key !== posSettled.key) {
+      return null
+    }
+
+    const obj: IPositionClose | IPositionLiquidated = 'markPrice' in posSettled
+      ? { ...posSettled, __typename: 'LiquidatePosition' }
+      : { ...posSettled, __typename: 'ClosePosition' }
+    return obj
+  }, keyEvent, mergeArray([positionLiquidateEvent, positionCloseEvent])))
 
   // const getAvailableLiquidityUsd = (token: Stream<ITokenIndex>, isLong: Stream<boolean>) => {
 
@@ -248,19 +252,18 @@ export function connectVault(walletLink: IWalletLink) {
   }), vault.contract))
 
 
-
-  const getPosition = (key: string): Stream<IPositionGetter> => vault.run(map(async c => {
+  const getPosition = (key: string): Stream<Promise<IPositionGetter | null>> => map(async c => {
     const positionAbstract = await c.positions(key)
 
-    if (!positionAbstract || positionAbstract.lastIncreasedTime.eq(0)) {
-      return { key, position: null }
+    if (positionAbstract.lastIncreasedTime.eq(0)) {
+      return null
     }
-
 
     const [size, collateral, averagePrice, entryFundingRate, reserveAmount, realisedPnl, lastIncreasedTime] = positionAbstract
     const lastIncreasedTimeBn = lastIncreasedTime.toBigInt()
 
-    const position: IVaultPosition = {
+    return {
+      key,
       size: size.toBigInt(),
       collateral: collateral.toBigInt(),
       averagePrice: averagePrice.toBigInt(),
@@ -269,13 +272,11 @@ export function connectVault(walletLink: IWalletLink) {
       realisedPnl: realisedPnl.toBigInt(),
       lastIncreasedTime: lastIncreasedTimeBn,
     }
-
-    return { position, key }
-  }))
+  }, vault.contract)
 
   return {
     positionIncreaseEvent, positionDecreaseEvent, positionUpdateEvent, positionCloseEvent, positionLiquidateEvent,
-    tokenDescription, getLatestPrice, getTotalShort, getTotalShortCap,
+    tokenDescription, getLatestPrice, getTotalShort, getTotalShortCap, positionSettled,
     vault, getPrice, getTokenWeight, getTokenDebtUsd, getTokenCumulativeFundingRate,
     totalTokenWeight, usdgSupply, getPosition, getPoolAmount, getReservedAmount, // getAvailableLiquidityUsd
   }

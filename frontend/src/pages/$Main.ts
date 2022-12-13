@@ -4,7 +4,7 @@ import * as router from '@aelea/router'
 import { $column, designSheet, layoutSheet, screenUtils } from '@aelea/ui-components'
 import {
   gmxSubgraph, ARBITRUM_ADDRESS, AVALANCHE_ADDRESS, CHAIN,
-  ETH_ADDRESS_REGEXP, fromJson, IAccountParamApi, intervalTimeMap, IPricefeedParamApi
+  ETH_ADDRESS_REGEXP, IAccountParamApi, intervalTimeMap, IPricefeedParamApi
 } from '@gambitdao/gmx-middleware'
 import { initWalletLink, IWalletName } from "@gambitdao/wallet-link"
 import { map, merge, multicast, now } from '@most/core'
@@ -212,7 +212,7 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
             ),
             router.match(tradeRoute)(
               $Trade({
-                tradePricefeed: clientApi.tradePricefeed,
+                pricefeed: clientApi.tradePricefeed,
                 walletLink,
                 referralCode: BLUEBERRY_REFFERAL_CODE,
                 chainList: [CHAIN.ARBITRUM, CHAIN.AVALANCHE],
@@ -247,7 +247,6 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
                 // walletLink,
                 parentRoute: tradeRoute,
                 accountTradeList: clientApi.accountTradeList,
-                pricefeed: clientApi.pricefeed,
                 store
               })({
                 requestPricefeed: requestPricefeedTether(),

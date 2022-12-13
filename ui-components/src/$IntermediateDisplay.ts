@@ -20,6 +20,8 @@ export const $spinner = $node(style({
   backgroundPosition: 'center',
   backgroundSize: 'contain',
   backgroundRepeat: 'no-repeat',
+  margin: 'auto',
+  placeSelf: 'center',
   filter: 'drop-shadow(0px 0px 16px black)',
   backgroundColor: 'black',
 }))()
@@ -50,7 +52,7 @@ export interface IIntermediateState<T> {
 export const $IntermediatePromise = <T>({
   $loader = $spinner,
   query,
-  $$fail = map(res => $alert($text(res.message))),
+  $$fail = map(res => style({ placeSelf: 'center', margin: 'auto' })($alert($text(res.message)))),
   $$done,
   clean = empty()
 }: IIntermediatPromise<T>) => component(() => {

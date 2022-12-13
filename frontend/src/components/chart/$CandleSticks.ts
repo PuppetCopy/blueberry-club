@@ -20,7 +20,7 @@ export interface ISeries {
 
   seriesConfig: CandlestickSeriesPartialOptions
 
-  data: Stream<Array<SeriesDataItemTypeMap["Candlestick"]> | null>
+  data: Array<SeriesDataItemTypeMap["Candlestick"]>
 
   appendData?: Stream<SeriesDataItemTypeMap["Candlestick"]>
   priceLines?: Stream<PriceLineOptions | null>[]
@@ -140,74 +140,57 @@ export const $CandleSticks = ({ chartConfig, series, containerOp = O() }: ICandl
     )(
       ignoreAll(mergeArray([
 
-        ...series.flatMap(params => {
+        ...series.map(params => {
 
           const priceLineConfigList = params.priceLines || []
 
-          const seedSetup: { data: (CandlestickData | WhitespaceData)[] | null, api: null | ISeriesApi<"Candlestick"> } = {
-            api: null,
-            data: null
-          }
+          const api = chartApi.addCandlestickSeries(params.seriesConfig)
 
-          const seriesSetup = scan((prev, data) => {
-            if (prev.api) {
-              chartApi.removeSeries(prev.api)
-            }
 
-            if (data === null) {
-              return { data: null, api: null }
-            }
+          setTimeout(() => {
+            api.setData(params.data)
 
-            const api = chartApi.addCandlestickSeries(params.seriesConfig)
+            // timeScale.fitContent()
+          }, 50)
 
-            api.setData(data)
+          return mergeArray([
+            params.appendData
+              ? tap(next => {
+                if (next && next.time) {
+                  api.update(next)
+                }
 
-            return { api, data }
-          }, seedSetup, params.data)
+              }, params.appendData)
+              : empty(),
+            ...priceLineConfigList.map(lineStreamConfig => {
+              return scan((prev, params) => {
+                if (prev && params === null) {
+                  api.removePriceLine(prev)
+                }
 
-          return [
-            switchLatest(map(setup => {
+                if (params) {
+                  if (prev) {
+                    prev.applyOptions(params)
+                    return prev
+                  } else {
+                    return api.createPriceLine(params)
+                  }
+                }
 
-              return mergeArray([
-                params.appendData
-                  ? tap(next => {
-                    if (next && next.time) {
-                      setup.api?.update(next)
-                    }
-
-                  }, params.appendData)
-                  : empty(),
-                ...priceLineConfigList.map(lineStreamConfig => {
-                  return scan((prev, params) => {
-                    if (setup.api && prev && params === null) {
-                      setup.api.removePriceLine(prev)
-                    }
-
-                    if (setup.api && params) {
-                      if (prev) {
-                        prev.applyOptions(params)
-                        return prev
-                      } else {
-                        return setup.api.createPriceLine(params)
-                      }
-                    }
-
-                    return null
-                  }, null as IPriceLine | null, lineStreamConfig)
-                }),
-                tap(next => {
-                  setup.api?.setMarkers(next)
-                }, params.drawMarkers || empty()),
-              ])
-            }, seriesSetup)),
-          ]
+                return null
+              }, null as IPriceLine | null, lineStreamConfig)
+            }),
+            tap(next => {
+              api.setMarkers(next)
+            }, params.drawMarkers || empty()),
+          ])
         }),
         combineArray(([containerDimension]) => {
           const { width, height } = containerDimension.contentRect
           chartApi.resize(width, height)
 
           return empty()
-        }, drawWithinFrame(containerDimension)),
+        }, containerDimension),
       ]))
     ),
 
