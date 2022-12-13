@@ -1,11 +1,11 @@
 import { Behavior, combineArray } from "@aelea/core"
-import { $node, $text, component, style } from "@aelea/dom"
+import { $Node, $text, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet } from "@aelea/ui-components"
 import { blueberrySubgraph, saleDescriptionList } from "@gambitdao/gbc-middleware"
-import { awaitPromises, map, multicast, now, switchLatest } from "@most/core"
+import { awaitPromises, empty, map, multicast, now, switchLatest } from "@most/core"
 import { $responsiveFlex } from "../elements/$common"
-import { $anchor, $IntermediatePromise, $Link } from "@gambitdao/ui-components"
+import { $IntermediatePromise } from "@gambitdao/ui-components"
 import { $accountPreview } from "../components/$AccountProfile"
 import { $berryTileId } from "../components/$common"
 import { $StakingGraph } from "../components/$StakingGraph"
@@ -13,20 +13,21 @@ import { CHAIN, IStake, TRADE_CONTRACT_MAPPING } from "@gambitdao/gmx-middleware
 import { Stream } from "@most/types"
 import { connectGmxEarn } from "../logic/contract"
 import { $labItem, getContractMapping } from "../logic/common"
-import { JsonRpcBatchProvider, JsonRpcProvider } from "@ethersproject/providers"
+import { JsonRpcProvider } from "@ethersproject/providers"
 import { pallete } from "@aelea/ui-components-theme"
-import { $ButtonSecondary } from "../components/form/$Button"
 import { connectLab } from "../logic/contract/gbc"
 
 
-export interface IAccount {
+export interface IProfile {
   provider: Stream<JsonRpcProvider>
   account: string
   parentRoute: Route
   stake: Stream<IStake[]>
+
+  $actions?: $Node
 }
 
-export const $Profile = (config: IAccount) => component((
+export const $Profile = (config: IProfile) => component((
   [changeRoute, changeRouteTether]: Behavior<string, string>,
 ) => {
 
@@ -48,12 +49,15 @@ export const $Profile = (config: IAccount) => component((
 
   return [
     $column(layoutSheet.spacingBig)(
-      $row(style({ flex: 1, marginBottom: '-55px', zIndex: 1 }))(
+      $row(style({ flex: 1, alignItems: 'center', placeContent: 'space-between', marginBottom: '-55px', zIndex: 1 }))(
         $accountPreview({
           address: config.account,
           avatarSize: 150,
           labelSize: '2em'
-        })
+        }),
+
+
+        config.$actions || empty(),
       ),
 
       $responsiveFlex(

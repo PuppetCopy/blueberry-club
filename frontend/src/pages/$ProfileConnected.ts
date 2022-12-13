@@ -1,25 +1,20 @@
 import { Behavior } from "@aelea/core"
-import { $node, $text, component, style } from "@aelea/dom"
+import { $text, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet } from "@aelea/ui-components"
-import { blueberrySubgraph, saleDescriptionList } from "@gambitdao/gbc-middleware"
 
 import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
-import { map, never, now, switchLatest } from "@most/core"
+import { map, now } from "@most/core"
 import { $responsiveFlex } from "../elements/$common"
 import { IAccountStakingStore } from "@gambitdao/gbc-middleware"
-import { $anchor, $IntermediatePromise, $Link } from "@gambitdao/ui-components"
-import { $accountPreview } from "../components/$AccountProfile"
-import { $berryTileId } from "../components/$common"
 import { $ButtonPrimary, $ButtonSecondary } from "../components/form/$Button"
 import { $labItem } from "../logic/common"
-import { pallete } from "@aelea/ui-components-theme"
 import { BrowserStore } from "../logic/store"
-import { connectLab } from "../logic/contract/gbc"
 import { $IntermediateConnectButton } from "../components/$ConnectAccount"
 import { CHAIN, IAccountParamApi, IStake } from "@gambitdao/gmx-middleware"
 import { $Profile } from "./$Profile"
 import { Stream } from "@most/types"
+import { $Link, $anchor } from "@gambitdao/ui-components"
 
 
 export interface IAccount {
@@ -52,9 +47,20 @@ export const $ProfileConnected = (config: IAccount) => component((
             return $Profile({
               provider: now(w3p.provider),
               account: w3p.address,
+              $actions: $Link({
+                $content: $anchor(
+                  $ButtonSecondary({
+                    $content: $text('Customize my GBC')
+                  })({}),
+                ),
+                url: '/p/wardrobe', route: config.parentRoute
+              })({
+                click: changeRouteTether()
+              }),
               ...config,
             })({
-              stake: requestStakeTether()
+              stake: requestStakeTether(),
+              changeRoute: changeRouteTether()
             })
           })
         })({
