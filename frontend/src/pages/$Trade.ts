@@ -333,19 +333,11 @@ export const $Trade = (config: ITradeComponent) => component((
       return 0n
     }
 
-    if (params.sizeDeltaUsd === 0n) {
-      return stake.averagePrice
-    }
 
-    if (params.isIncrease) {
-      const pnl = getPnL(params.isLong, stake.averagePrice, params.indexTokenPrice, stake.size)
+    const pnl = getPnL(params.isLong, stake.averagePrice, params.indexTokenPrice, stake.size)
+    const adjustedPnlDelta = params.isIncrease && pnl < 0n ? pnl * params.sizeDeltaUsd / stake.size : pnl
 
-      const adjustedPnlDelta = pnl < 0n ? pnl * params.sizeDeltaUsd / stake.size : 0n
-
-      return getAveragePriceFromDelta(params.isLong, stake.size, stake.averagePrice, adjustedPnlDelta, params.sizeDeltaUsd)
-    }
-
-    return stake.averagePrice
+    return getAveragePriceFromDelta(params.isLong, stake.size, params.indexTokenPrice, adjustedPnlDelta, params.sizeDeltaUsd)
   }, combineObject({ position, isIncrease, indexTokenPrice, sizeDeltaUsd, isLong }))
 
   const liquidationPrice = map(params => {
@@ -715,7 +707,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
                       ],
                       appendData: scan((prev: CandlestickData, nextPrice): CandlestickData => {
-                        const marketPrice = Number(readableNumber(formatFixed(nextPrice, 30)))
+                        const marketPrice = formatFixed(nextPrice, 30)
                         const timeNow = unixTimestampNow()
 
                         const prevTimeSlot = Math.floor(prev.time as number / tf)
@@ -752,7 +744,7 @@ export const $Trade = (config: ITradeComponent) => component((
                   chartConfig: {
                     rightPriceScale: {
                       visible: true,
-                      autoScale: true,
+                      // autoScale: true,
                       entireTextOnly: true,
                       borderVisible: false,
                       scaleMargins: {
