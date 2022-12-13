@@ -110,6 +110,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
   const isTradingEnabledStore = tradingStore.craete('isTradingEnabled', false)
   const leverageStore = tradingStore.craete('leverage', LIMIT_LEVERAGE / 4n)
+  const focusModeStore = tradingStore.craete('focusMode', ITradeFocusMode.collateral)
   const isLongStore = tradingStore.craete('isLong', true)
   const inputTokenStore = tradingStore.craete('inputToken', AddressZero as ITokenInput)
   const indexTokenStore = tradingStore.craete('indexToken', AddressZero as ITokenIndex)
@@ -124,7 +125,7 @@ export const $Trade = (config: ITradeComponent) => component((
   const isLong = isLongStore.storeReplay(mergeArray([map(t => t.isLong, switchTrade), switchIsLong]))
   const isIncrease = isIncreaseStore.storeReplay(switchIsIncrease)
 
-  const focusMode = replayLatest(switchFocusMode, ITradeFocusMode.collateral)
+  const focusMode = focusModeStore.storeReplay(switchFocusMode)
   const collateralDeltaUsd = replayLatest(changeCollateralDeltaUsd, 0n)
   const sizeDeltaUsd = replayLatest(changeSizeDeltaUsd, 0n)
 
@@ -809,7 +810,8 @@ export const $Trade = (config: ITradeComponent) => component((
                 query: tradeQuery,
                 $$done: map(ev => {
                   return $Table2({
-                    cellOp: style({ padding: '15px 15px' }),
+                    headerCellOp: style({ padding: '15px 15px' }),
+                    cellOp: style({ padding: '4px 15px' }),
                     dataSource: now(ev ? [...ev.increaseList, ...ev.decreaseList] : []) as Stream<(RequestTrade | IPositionIncrease | IPositionDecrease)[]>,
                     $container: $column(style({ position: 'absolute', inset: '0' }), layoutSheet.spacing),
                     scrollConfig: {
