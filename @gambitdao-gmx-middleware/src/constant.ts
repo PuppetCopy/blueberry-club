@@ -8,7 +8,7 @@ export const USDG_DECIMALS = 18
 
 export const BASIS_POINTS_DIVISOR = 10000n
 export const DEPOSIT_FEE = 30n
-export const LIMIT_LEVERAGE = 1000000n
+export const LIMIT_LEVERAGE = 500000n
 export const MAX_LEVERAGE = 1000000n
 export const MIN_LEVERAGE = 11000n
 export const LEVERAGE_LIQUIDAITON = 1000000n

@@ -76,7 +76,6 @@ export function readContractMapping<TProvider extends BaseProvider, TMap, TCmap 
     return contract
   }, connect)))
 
-
   const run = <R>(op: Op<RetContract, Promise<R>>) => O(
     op,
     awaitPromises,
@@ -85,7 +84,6 @@ export function readContractMapping<TProvider extends BaseProvider, TMap, TCmap 
       return empty()
     })
   )(contract)
-
 
   const readInt = (op: Op<RetContract, Promise<BigNumber>>): Stream<bigint> => {
     const newLocal = O(

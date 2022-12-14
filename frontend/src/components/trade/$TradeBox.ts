@@ -8,7 +8,7 @@ import {
   div, StateStream, getPnL, MIN_LEVERAGE, formatToBasis, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE, CHAIN,
   ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd, IPricefeed, TRADE_CONTRACT_MAPPING, getTokenAmount, filterNull, ITradeOpen
 } from "@gambitdao/gmx-middleware"
-import { $anchor, $bear, $bull, $infoTooltip, $IntermediatePromise, $tokenIconMap, $tokenLabelFromSummary, $Tooltip } from "@gambitdao/ui-components"
+import { $anchor, $bear, $bull, $infoTooltip, $IntermediatePromise, $tokenIconMap, $tokenLabelFromSummary, $Tooltip, invertColor } from "@gambitdao/ui-components"
 import {
   merge, multicast, mergeArray, now, snapshot, map, switchLatest,
   skipRepeats, empty, fromPromise, constant, startWith, skipRepeatsWith, awaitPromises, delay, debounce
@@ -227,6 +227,8 @@ export const $TradeBox = (config: ITradeBox) => component((
 
     const multiplierDelta = state.isIncrease ? currentMultiplier - leverage : leverage - currentMultiplier
 
+    console.log(multiplierDelta)
+
     if (multiplierDelta < 50) {
       return 0n
     }
@@ -309,6 +311,7 @@ export const $TradeBox = (config: ITradeBox) => component((
   }, tradeState, inputCollateralDeltaUsd))
 
 
+  const MIN_LEVERAGE_NORMAL = formatToBasis(MIN_LEVERAGE) / 100
 
   return [
     $column(style({ borderRadius: `${BOX_SPACING}px`, boxShadow: `2px 2px 13px 3px #00000040`, padding: 0, margin: screenUtils.isMobileScreen ? '0 10px' : '' }))(
@@ -439,7 +442,8 @@ export const $TradeBox = (config: ITradeBox) => component((
                 const target = inputEvent.target
 
                 if (!(target instanceof HTMLInputElement)) {
-                  throw new Error('Target is not type of input')
+                  console.warn(new Error('Target is not type of input'))
+                  return 0n
                 }
 
                 if (target.value === '') {
@@ -563,8 +567,6 @@ export const $TradeBox = (config: ITradeBox) => component((
             color: map(isIncrease => isIncrease ? pallete.middleground : pallete.indeterminate, config.tradeConfig.isIncrease),
             min: map((state) => {
               if (state.isIncrease) {
-
-
                 if (state.position) {
                   if (state.focusMode === ITradeFocusMode.collateral) {
                     return bnDiv(MIN_LEVERAGE, LIMIT_LEVERAGE)
@@ -575,7 +577,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                   return bnDiv(div(state.position.size, totalCollateral), LIMIT_LEVERAGE)
                 }
 
-                return 0
+                return MIN_LEVERAGE_NORMAL 
               }
 
               if (state.focusMode === ITradeFocusMode.collateral) {
@@ -607,7 +609,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                   // return 1
                   const ratio = div(totalSize, state.position.collateral)
                   const newLocal = bnDiv(ratio, LIMIT_LEVERAGE)
-                  console.log(newLocal)
+                  // console.log(newLocal)
                   return newLocal
                 }
 
@@ -673,7 +675,9 @@ export const $TradeBox = (config: ITradeBox) => component((
                 const target = inputEvent.currentTarget
 
                 if (!(target instanceof HTMLInputElement)) {
-                  throw new Error('Target is not type of input')
+                  console.warn(new Error('Target is not type of input'))
+
+                  return 0n
                 }
 
                 if (target.value === '') {
@@ -1186,14 +1190,15 @@ export const $TradeBox = (config: ITradeBox) => component((
                       style({
                         pointerEvents: 'none',
                         textAlign: 'center',
-                        fontSize: '1.5em', alignItems: 'baseline', padding: '6px 15px', background: 'radial-gradient(rgba(0, 0, 0, 0.37) 9%, transparent 63%)',
+                        fontSize: '1.5em', alignItems: 'baseline', padding: '20px', background: `radial-gradient(${colorAlpha(invertColor(pallete.message), .7)} 9%, transparent 63%)`,
                         lineHeight: 1,
                         fontWeight: "bold",
                         zIndex: 10,
                         position: 'absolute',
                         width: '50%',
                         left: '50%',
-                        transform: 'translateX(-50%)'
+                        top: '50%',
+                        transform: 'translate3d(-50%, -70%, 0)'
                       })(
                         $NumberTicker({
                           value$: map(hoverValue => {

@@ -7,12 +7,12 @@ import {
   getLiquidationPrice, getMarginFees, STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, TAX_BASIS_POINTS,
   replayState, getDenominator, USD_PERCISION, formatReadableUSD, timeSince, getPositionKey, IPositionIncrease,
   IPositionDecrease, getPnL, filterNull, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE,
-  CHAIN, ITokenIndex, ITokenStable, ITokenInput, TradeStatus, KeeperResponse, KeeperExecuteAbstract, LIMIT_LEVERAGE, div, readableDate, TRADE_CONTRACT_MAPPING, getTokenAmount, readableNumber
+  CHAIN, ITokenIndex, ITokenStable, ITokenInput, TradeStatus, KeeperResponse, KeeperExecuteAbstractEvent, LIMIT_LEVERAGE, div, readableDate, TRADE_CONTRACT_MAPPING, getTokenAmount, readableNumber
 } from "@gambitdao/gmx-middleware"
 
 import { combine, constant, map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, never, filter, snapshot, debounce, tap } from "@most/core"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
-import { $arrowsFlip, $infoTooltip, $IntermediatePromise, $RiskLiquidator, $spinner, $txHashRef } from "@gambitdao/ui-components"
+import { $arrowsFlip, $infoTooltip, $IntermediatePromise, $RiskLiquidator, $spinner, $txHashRef, invertColor } from "@gambitdao/ui-components"
 import { BarPrice, CandlestickData, LineStyle, Time } from "lightweight-charts"
 import { Stream } from "@most/types"
 import { connectTrade, connectVault, getErc20Balance, IPositionGetter } from "../logic/contract/trade"
@@ -25,7 +25,7 @@ import { $CandleSticks } from "../components/chart/$CandleSticks"
 import { getFeeBasisPoints, resolveAddress } from "../logic/utils"
 import { BrowserStore } from "../logic/store"
 import { ContractTransaction } from "@ethersproject/contracts"
-import { getContractAddress, readContract } from "../logic/common"
+import { getContractAddress, getContractMapping, readContract, readContractMapping } from "../logic/common"
 import { ERC20__factory, PositionRouter__factory } from "../logic/contract/gmx-contracts"
 import { IWalletLink, IWalletName, IWalletState } from "@gambitdao/wallet-link"
 
@@ -182,10 +182,7 @@ export const $Trade = (config: ITradeComponent) => component((
   }, config.walletLink.wallet)
 
 
-  const positionConfigChange = mergeArray([
-    debounce(10, combineObject({ account, indexToken, shortCollateralToken, isLong })),
-    // zipArray((account, indexToken, shortCollateralToken, isLong) => ({ account, indexToken, shortCollateralToken, isLong }), requestPositionParams)
-  ])
+  const positionConfigChange = debounce(10, combineObject({ account, indexToken, shortCollateralToken, isLong }))
 
   const positionKey = skipRepeats(map(params => {
     if (params.account === null) {
@@ -197,22 +194,6 @@ export const $Trade = (config: ITradeComponent) => component((
     return getPositionKey(params.account, collateralToken, params.indexToken, params.isLong)
   }, positionConfigChange))
 
-
-
-  const accountKeeperEvents: Stream<any> = switchLatest(map((w3p) => {
-    if (w3p === null) {
-      return never()
-    }
-
-    const PositionRouter = TRADE_CONTRACT_MAPPING[w3p.chain as keyof typeof TRADE_CONTRACT_MAPPING].Vault
-    const positionRouter = readContract(PositionRouter__factory, config.walletLink.defaultProvider, PositionRouter)
-
-    const keeperExecuteIncrease = map((ev: KeeperResponse) => getKeeperPositonKey(ev, true, false), positionRouter.listen<KeeperResponse>('ExecuteIncreasePosition'))
-    const keeperDecreaseIncrease = map((ev: KeeperResponse) => getKeeperPositonKey(ev, false, false), positionRouter.listen<KeeperResponse>('ExecuteDecreasePosition'))
-
-
-    return filterNull(mergeArray([keeperExecuteIncrease, keeperDecreaseIncrease]))
-  }, config.walletLink.wallet))
 
 
 
@@ -441,7 +422,7 @@ export const $Trade = (config: ITradeComponent) => component((
       : O()
   )
 
-
+  const globalPositionRouterReader = readContractMapping(TRADE_CONTRACT_MAPPING, PositionRouter__factory, config.walletLink.defaultProvider, 'PositionRouter')
 
   return [
     $container(
@@ -565,7 +546,7 @@ export const $Trade = (config: ITradeComponent) => component((
                   },
                   {
                     $head: $text('Size'),
-                    columnOp: O(layoutSheet.spacingTiny, style({ flex: 1.3, alignItems: 'center', placeContent: 'flex-start', minWidth: '80px' })),
+                    columnOp: O(layoutSheet.spacingTiny, style({ flex: 1.3, alignItems: 'center', placeContent: 'flex-end', minWidth: '80px' })),
                     $body: map(pos => {
                       const positionMarkPrice = vault.getLatestPrice(w3p.chain, pos.indexToken)
 
@@ -630,7 +611,7 @@ export const $Trade = (config: ITradeComponent) => component((
           ),
 
 
-          $row(style({ position: 'relative', height: '400px', maxHeight: '60vh', borderBottom: `1px solid rgba(191, 187, 207, 0.15)` }))(
+          $row(style({ position: 'relative', height: '400px', backgroundColor: colorAlpha(invertColor(pallete.message), .15), maxHeight: '60vh', borderBottom: `1px solid rgba(191, 187, 207, 0.15)` }))(
 
             $IntermediatePromise({
               query: config.pricefeed,
@@ -755,7 +736,7 @@ export const $Trade = (config: ITradeComponent) => component((
                     timeScale: {
                       timeVisible: false,
                       borderVisible: true,
-                      rightOffset: 10,
+                      rightOffset: 13,
 
                       // fixRightEdge: true,
                       shiftVisibleRangeOnNewBar: true,
@@ -793,18 +774,6 @@ export const $Trade = (config: ITradeComponent) => component((
               }
 
 
-              const PositionRouter = TRADE_CONTRACT_MAPPING[w3p.chain as keyof typeof TRADE_CONTRACT_MAPPING].PositionRouter
-              const positionRouter = readContract(PositionRouter__factory, config.walletLink.defaultProvider, PositionRouter)
-
-              const keeperCancelIncrease = map((ev: KeeperResponse) => getKeeperPositonKey(ev, true, true), filterNonAccountKeeperEvents(w3p, positionRouter.listen('CancelIncreasePosition')))
-              const keeperCancelDecrease = map((ev: KeeperResponse) => getKeeperPositonKey(ev, false, true), filterNonAccountKeeperEvents(w3p, positionRouter.listen('CancelDecreasePosition')))
-
-
-              const adjustPosition = mergeArray([
-                keeperCancelIncrease,
-                keeperCancelDecrease
-              ])
-
 
               return $IntermediatePromise({
                 query: tradeQuery,
@@ -812,7 +781,10 @@ export const $Trade = (config: ITradeComponent) => component((
                   return $Table2({
                     headerCellOp: style({ padding: '15px 15px' }),
                     cellOp: style({ padding: '4px 15px' }),
-                    dataSource: now(ev ? [...ev.increaseList, ...ev.decreaseList] : []) as Stream<(RequestTrade | IPositionIncrease | IPositionDecrease)[]>,
+                    dataSource: mergeArray([
+                      now(ev ? [...ev.increaseList, ...ev.decreaseList] : []) as Stream<(RequestTrade | IPositionIncrease | IPositionDecrease)[]>,
+                      requestTradeRow
+                    ]),
                     $container: $column(style({ position: 'absolute', inset: '0' }), layoutSheet.spacing),
                     scrollConfig: {
                       $container: $column(layoutSheet.spacingSmall),
@@ -851,6 +823,21 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
 
+                          const keeperExecuteIncrease = filterNonAccountKeeperEvents(true, false, pos.state.position!, globalPositionRouterReader.listen('ExecuteIncreasePosition'))
+                          const keeperDecreaseIncrease = filterNonAccountKeeperEvents(false, false, pos.state.position!, globalPositionRouterReader.listen('ExecuteDecreasePosition'))
+
+
+                          const keeperCancelIncrease = filterNonAccountKeeperEvents(true, true, pos.state.position!, globalPositionRouterReader.listen('CancelIncreasePosition'))
+                          const keeperCancelDecrease = filterNonAccountKeeperEvents(false, true, pos.state.position!, globalPositionRouterReader.listen('CancelDecreasePosition'))
+
+
+                          const adjustPosition = mergeArray([
+                            keeperExecuteIncrease,
+                            keeperDecreaseIncrease,
+                            keeperCancelIncrease,
+                            keeperCancelDecrease
+                          ])
+
                           const isIncrease = pos.state.isIncrease
                           return $row(layoutSheet.spacingSmall)(
                             $txHashRef(pos.ctx.hash, w3p.chain,
@@ -862,8 +849,9 @@ export const $Trade = (config: ITradeComponent) => component((
                               map(req => {
 
                                 const message = $text(`${req.isRejected ? `✖ ${formatReadableUSD(req.acceptablePrice)}` : `✔ ${formatReadableUSD(req.acceptablePrice)}`}`)
+
                                 return $requestRow(
-                                  $txHashRef('res.transactionHash', w3p.chain, message),
+                                  $txHashRef(req.__event.transactionHash, w3p.chain, message),
                                   $infoTooltip('transaction was sent, keeper will execute the request, the request will either be executed or rejected'),
                                 )
                               }, adjustPosition),
@@ -880,12 +868,7 @@ export const $Trade = (config: ITradeComponent) => component((
                           const isKeeperReq = 'ctx' in req
                           const pos = isKeeperReq ? req.state : req
 
-                          const isIncrease = isKeeperReq ? req.state.isIncrease : req.__typename === 'IncreasePosition'
-                          const prefix = isIncrease ? '+' : '-'
-
-                          return $row(layoutSheet.spacing)(
-                            $text(prefix + formatReadableUSD(pos.collateralDelta)),
-                          )
+                          return $text(formatReadableUSD(pos.collateralDelta))
                         })
                       },
                       {
@@ -896,14 +879,7 @@ export const $Trade = (config: ITradeComponent) => component((
                           const isKeeperReq = 'ctx' in req
                           const pos = isKeeperReq ? req.state : req
 
-                          const isIncrease = isKeeperReq ? req.state.isIncrease : req.__typename === 'IncreasePosition'
-                          const prefix = isIncrease ? '+' : '-'
-
-                          return $row(layoutSheet.spacing)(
-                            pos.sizeDelta > 0n
-                              ? $text(prefix + formatReadableUSD(pos.sizeDelta))
-                              : $text(style({ color: pallete.foreground }))('$0'),
-                          )
+                          return $text(formatReadableUSD(pos.sizeDelta))
                         })
                       },
                     ]
@@ -941,13 +917,16 @@ export const $Trade = (config: ITradeComponent) => component((
   ]
 })
 
-function getKeeperPositonKey(ev: KeeperResponse, isIncrease: boolean, isRejected: boolean): KeeperExecuteAbstract {
-  const key = getPositionKey(ev.account, isIncrease ? ev.path[1] : ev.path[0], ev.indexToken, ev.isLong)
+
+
+const filterNonAccountKeeperEvents = (isIncrease: boolean, isRejected: boolean, pos: IPositionGetter, s: Stream<KeeperExecuteAbstractEvent>) => filterNull(map(ev => {
+  const key = getPositionKey(ev.account, isIncrease ? ev.path.slice(-1)[0] : ev.path[0], ev.indexToken, ev.isLong)
+  if (pos.key !== key) {
+    return null
+  }
 
   return { ...ev, key, isIncrease, isRejected }
-}
-
-const filterNonAccountKeeperEvents = (w3p: IWalletState, s: Stream<KeeperResponse>) => filter(ev => w3p.address.toLowerCase() === ev.account.toLowerCase(), s)
+}, s))
 
 function fallbackToSupportedToken(chain: CHAIN, token: ITokenInput | null) {
   try {

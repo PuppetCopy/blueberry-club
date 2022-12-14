@@ -84,7 +84,7 @@ export const $ProfitLossText = (pnl: Stream<bigint> | bigint, colorful = true) =
 }
 
 export function $liquidationSeparator(pos: ITrade, markPrice: Stream<bigint>) {
-  const liquidationPrice = getLiquidationPrice(pos.isLong, pos.collateral, pos.size, pos.averagePrice)
+  const liquidationPrice = getLiquidationPrice(pos.isLong, pos.size, pos.collateral, pos.averagePrice)
   const liqWeight = map(price => liquidationWeight(pos.isLong, liquidationPrice, price), markPrice)
 
   return styleInline(map((weight) => {
@@ -97,7 +97,7 @@ export function $liquidationSeparator(pos: ITrade, markPrice: Stream<bigint>) {
 export const $RiskLiquidator = (pos: ITradeOpen, markPrice: Stream<bigint>) => component(() => {
 
   return [
-    $column(layoutSheet.spacingTiny, style({ minWidth: '100px', alignItems: 'center' }))(
+    $column(layoutSheet.spacingTiny, style({ alignItems: 'flex-end' }))(
       $text(formatReadableUSD(pos.size)),
       $liquidationSeparator(pos, markPrice),
       $row(style({ fontSize: '.65em', gap: '2px', alignItems: 'center' }))(

@@ -1,3 +1,4 @@
+import { Event } from "@ethersproject/contracts"
 import { ARBITRUM_ADDRESS_INDEX, ARBITRUM_ADDRESS_STABLE } from "./address/arbitrum"
 import { AVALANCHE_ADDRESS_INDEX, AVALANCHE_ADDRESS_STABLE } from "./address/avalanche"
 import { TOKEN_SYMBOL } from "./address/symbol"
@@ -144,9 +145,11 @@ export interface KeeperResponse {
   timeGap: bigint
 }
 
-export interface KeeperExecuteAbstract extends KeeperResponse, IAbstractPositionIdentifier {
+export interface KeeperExecuteAbstractEvent extends KeeperResponse, IAbstractPositionIdentifier {
   isIncrease: boolean
   isRejected: boolean
+
+  __event: Event
 }
 
 
