@@ -101,7 +101,6 @@ export const $Dropdown = <T>({
   [select, selectTether]: Behavior<T, T>,
   [openMenu, openMenuTether]: Behavior<INode, any>,
   [targetIntersection, targetIntersectionTether]: Behavior<INode, IntersectionObserverEntry[]>,
-
 ) => {
 
 

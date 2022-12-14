@@ -1,6 +1,6 @@
 import { awaitPromises, combine, empty, map, mergeArray, multicast, snapshot, switchLatest } from "@most/core"
 import { CHAIN, switchFailedSources, ITokenIndex, ITokenInput, ITokenTrade, AddressZero, getChainName, KeeperResponse, IPositionDecrease, IPositionIncrease, IPositionClose, IPositionLiquidated, filterNull, listen, IVaultPosition, unixTimestampNow, TRADE_CONTRACT_MAPPING, IPositionUpdate, IAbstractPositionIdentifier } from "@gambitdao/gmx-middleware"
-import { combineArray } from "@aelea/core"
+import { combineArray, replayLatest } from "@aelea/core"
 import { ERC20__factory, PositionRouter__factory, Router__factory, VaultPriceFeed__factory, Vault__factory } from "./gmx-contracts"
 import { periodicRun } from "@gambitdao/gmx-middleware"
 import { getTokenDescription } from "../utils"
@@ -16,14 +16,14 @@ export type IPositionGetter = IVaultPosition & IAbstractPositionIdentifier
 
 
 const gmxIOPriceMapSource = {
-  [CHAIN.ARBITRUM]: multicast(periodicRun({
+  [CHAIN.ARBITRUM]: replayLatest(multicast(periodicRun({
     interval: 5000,
     actionOp: map(async time => getGmxIOPriceMap('https://gmx-server-mainnet.uw.r.appspot.com/prices'))
-  })),
-  [CHAIN.AVALANCHE]: multicast(periodicRun({
+  }))),
+  [CHAIN.AVALANCHE]: replayLatest(multicast(periodicRun({
     interval: 5000,
     actionOp: map(async time => getGmxIOPriceMap('https://gmx-avax-server.uc.r.appspot.com/prices'))
-  })),
+  }))),
 }
 
 
