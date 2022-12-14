@@ -162,7 +162,7 @@ export function connectVault(walletLink: IWalletLink) {
     ])
   }
 
-  const positionUpdateEvent = (keyEvent: Stream<string>): Stream<IPositionUpdate> => switchLatest(awaitPromises(map(async (contract) => {
+  const positionUpdateEvent = (keyEvent: Stream<string | null>): Stream<IPositionUpdate> => switchLatest(awaitPromises(map(async (contract) => {
     const chain = (await contract.provider.getNetwork()).chainId
 
     if (chain === CHAIN.ARBITRUM) {
@@ -203,7 +203,7 @@ export function connectVault(walletLink: IWalletLink) {
     return filterNull(snapshot((key, ev) => key === ev.key ? ev : null, keyEvent, listen(contract, contract.filters.UpdatePosition())))
   }, vaultGlobal.contract)))
 
-  const positionSettled = (keyEvent: Stream<string>): Stream<IPositionClose | IPositionLiquidated> => filterNull(snapshot((key, posSettled) => {
+  const positionSettled = (keyEvent: Stream<string | null>): Stream<IPositionClose | IPositionLiquidated> => filterNull(snapshot((key, posSettled) => {
     if (key !== posSettled.key) {
       return null
     }
@@ -252,7 +252,11 @@ export function connectVault(walletLink: IWalletLink) {
   }), vault.contract))
 
 
-  const getPosition = (key: string): Stream<Promise<IPositionGetter | null>> => map(async c => {
+  const getPosition = (key: string | null): Stream<Promise<IPositionGetter | null>> => map(async c => {
+    if (key === null) {
+      return null
+    }
+
     const positionAbstract = await c.positions(key)
 
     if (positionAbstract.lastIncreasedTime.eq(0)) {

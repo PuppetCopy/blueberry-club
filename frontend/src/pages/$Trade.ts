@@ -158,6 +158,10 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
   const walletBalance = awaitPromises(combineArray(async (token, provider, execFee) => {
+    if (provider === null) {
+      return 0n
+    }
+
     const balance = getErc20Balance(token, provider)
 
     if (token === AddressZero) {
@@ -183,7 +187,7 @@ export const $Trade = (config: ITradeComponent) => component((
     // zipArray((account, indexToken, shortCollateralToken, isLong) => ({ account, indexToken, shortCollateralToken, isLong }), requestPositionParams)
   ])
 
-  const positionKey = skipRepeats(filterNull(map(params => {
+  const positionKey = skipRepeats(map(params => {
     if (params.account === null) {
       return null
     }
@@ -191,7 +195,7 @@ export const $Trade = (config: ITradeComponent) => component((
     const collateralToken = params.isLong ? params.indexToken : params.shortCollateralToken
 
     return getPositionKey(params.account, collateralToken, params.indexToken, params.isLong)
-  }, positionConfigChange)))
+  }, positionConfigChange))
 
 
 
@@ -212,7 +216,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
 
-  const positionQuery = switchLatest(map((key) => vault.getPosition(key), positionKey))
+  const positionQuery = switchLatest(map(key => vault.getPosition(key), positionKey))
 
 
   const settlePosition = constant(null, vault.positionSettled(positionKey))
@@ -228,15 +232,15 @@ export const $Trade = (config: ITradeComponent) => component((
   ])))
 
 
-  const leverage = leverageStore.storeReplay(mergeArray([
+  const leverage = leverageStore.store(mergeArray([
     changeLeverage,
-    filterNull(snapshot((params, stake) => {
+    snapshot((params, stake) => {
       if (stake) {
         return div(stake.size + params.sizeDeltaUsd, stake.collateral + params.collateralDeltaUsd)
       }
 
-      return null
-    }, combineObject({ collateralDeltaUsd, sizeDeltaUsd }), position)),
+      return leverageStore.getState()
+    }, combineObject({ collateralDeltaUsd, sizeDeltaUsd }), position),
   ]))
 
 
@@ -266,7 +270,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
 
-  const tradeConfig = { focusMode, slippage, isLong, isIncrease, inputToken, shortCollateralToken, indexToken, leverage, collateralDeltaUsd, sizeDeltaUsd, }
+  const tradeConfig = { focusMode, slippage, isLong, isIncrease, inputToken, shortCollateralToken, indexToken, leverage, collateralDeltaUsd, sizeDeltaUsd }
   const tradeConfigReplay = replayState(tradeConfig)
 
   const collateralDelta = map(params => {
@@ -279,7 +283,7 @@ export const $Trade = (config: ITradeComponent) => component((
   }, combineObject({ indexTokenDescription, indexTokenPrice, sizeDeltaUsd }))
 
 
-  const swapFee = skipRepeats(combineArray((chain, usdgSupply, totalTokenWeight, tradeConfig, pos, inputTokenDebtUsd, inputTokenWeight, inputTokenDescription, inputTokenPrice, indexTokenDebtUsd, indexTokenWeight, indexTokenDescription, indexTokenPrice) => {
+  const swapFee = skipRepeats(combineArray((chain, usdgSupply, totalTokenWeight, tradeConfig, pos, inputTokenDebtUsd, inputTokenWeight, inputTokenDescription, indexTokenDebtUsd, indexTokenWeight, indexTokenDescription, indexTokenPrice) => {
     const swapFeeBasisPoints = inputTokenDescription.isStable && indexTokenDescription.isStable ? STABLE_SWAP_FEE_BASIS_POINTS : SWAP_FEE_BASIS_POINTS
     const taxBasisPoints = inputTokenDescription.isStable && indexTokenDescription.isStable ? STABLE_TAX_BASIS_POINTS : TAX_BASIS_POINTS
 
@@ -319,7 +323,7 @@ export const $Trade = (config: ITradeComponent) => component((
     const addedSwapFee = feeBps ? amountUsd * feeBps / BASIS_POINTS_DIVISOR : 0n
 
     return addedSwapFee
-  }, config.walletLink.network, vault.usdgSupply, vault.totalTokenWeight, tradeConfigReplay, position, inputTokenDebtUsd, inputTokenWeight, inputTokenDescription, inputTokenPrice, indexTokenDebtUsd, indexTokenWeight, indexTokenDescription, indexTokenPrice))
+  }, config.walletLink.network, vault.usdgSupply, vault.totalTokenWeight, tradeConfigReplay, position, inputTokenDebtUsd, inputTokenWeight, inputTokenDescription, indexTokenDebtUsd, indexTokenWeight, indexTokenDescription, indexTokenPrice))
 
   const marginFee = map((size) => getMarginFees(size), sizeDeltaUsd)
 
@@ -486,7 +490,6 @@ export const $Trade = (config: ITradeComponent) => component((
               liquidationPrice,
               executionFee,
               walletBalance,
-
             }
           })({
             leverage: changeLeverageTether(),
