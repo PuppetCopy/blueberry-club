@@ -6,7 +6,7 @@ import {
   ARBITRUM_ADDRESS, formatFixed, readableNumber, parseFixed, formatReadableUSD, BASIS_POINTS_DIVISOR,
   ITokenDescription, LIMIT_LEVERAGE, bnDiv, replayState,
   div, StateStream, getPnL, MIN_LEVERAGE, formatToBasis, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE, CHAIN,
-  ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd, IPricefeed, TRADE_CONTRACT_MAPPING, getTokenAmount, filterNull, ITradeOpen
+  ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd, IPricefeed, TRADE_CONTRACT_MAPPING, getTokenAmount, filterNull, ITradeOpen, MAX_LEVERAGE
 } from "@gambitdao/gmx-middleware"
 import { $anchor, $bear, $bull, $infoTooltip, $IntermediatePromise, $tokenIconMap, $tokenLabelFromSummary, $Tooltip, invertColor } from "@gambitdao/ui-components"
 import {
@@ -224,10 +224,7 @@ export const $TradeBox = (config: ITradeBox) => component((
     const deltaUsd = collateral - state.position.collateral
 
     const currentMultiplier = div(totalSize, state.position.collateral)
-
     const multiplierDelta = state.isIncrease ? currentMultiplier - leverage : leverage - currentMultiplier
-
-    console.log(multiplierDelta)
 
     if (multiplierDelta < 50) {
       return 0n
@@ -311,7 +308,7 @@ export const $TradeBox = (config: ITradeBox) => component((
   }, tradeState, inputCollateralDeltaUsd))
 
 
-  const MIN_LEVERAGE_NORMAL = formatToBasis(MIN_LEVERAGE) / 100
+  const MIN_LEVERAGE_NORMAL = formatToBasis(MIN_LEVERAGE) / formatToBasis(LIMIT_LEVERAGE)
 
   return [
     $column(style({ borderRadius: `${BOX_SPACING}px`, boxShadow: `2px 2px 13px 3px #00000040`, padding: 0, margin: screenUtils.isMobileScreen ? '0 10px' : '' }))(
@@ -375,7 +372,7 @@ export const $TradeBox = (config: ITradeBox) => component((
             $hintInput(
               now(`Collateral`),
               config.tradeConfig.isIncrease,
-              'The amount you will deposit to open a leverage position',
+              'The amount you will deposit to maintain a leverage position',
               map(pos => formatReadableUSD(pos?.collateral || 0n), config.tradeState.position),
               combineArray(params => {
                 const posCollateral = params.position?.collateral || 0n

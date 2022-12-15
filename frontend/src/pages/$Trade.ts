@@ -3,7 +3,7 @@ import { $node, $text, component, eventElementTarget, INode, nodeEvent, style, s
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 import {
-  AddressZero, formatFixed, intervalTimeMap, IPricefeed, IPricefeedParamApi, ITrade, unixTimestampNow, ITradeOpen, BASIS_POINTS_DIVISOR, getAveragePriceFromDelta,
+  AddressZero, formatFixed, intervalTimeMap, IPricefeed, IPricefeedParamApi, ITrade, unixTimestampNow, ITradeOpen, BASIS_POINTS_DIVISOR, getNextAveragePrice,
   getLiquidationPrice, getMarginFees, STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, TAX_BASIS_POINTS,
   replayState, getDenominator, USD_PERCISION, formatReadableUSD, timeSince, getPositionKey, IPositionIncrease,
   IPositionDecrease, getPnL, filterNull, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE,
@@ -166,7 +166,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
     if (token === AddressZero) {
       const totalBalance = await balance
-      return totalBalance - execFee * 4n
+      return totalBalance
     }
 
     return balance
@@ -329,11 +329,15 @@ export const $Trade = (config: ITradeComponent) => component((
       return 0n
     }
 
+    if (params.sizeDeltaUsd === 0n) {
+      return stake.averagePrice
+    }
 
     const pnl = getPnL(params.isLong, stake.averagePrice, params.indexTokenPrice, stake.size)
-    const adjustedPnlDelta = params.isIncrease && pnl < 0n ? pnl * params.sizeDeltaUsd / stake.size : pnl
+    // const adjustedPnlDelta = pnl < 0n ? params.sizeDeltaUsd * pnl / stake.size : pnl
+    // console.log(formatReadableUSD(adjustedPnlDelta))
 
-    return getAveragePriceFromDelta(params.isLong, stake.size, params.indexTokenPrice, adjustedPnlDelta, params.sizeDeltaUsd)
+    return getNextAveragePrice(params.isLong, stake.size, params.indexTokenPrice, pnl, params.sizeDeltaUsd)
   }, combineObject({ position, isIncrease, indexTokenPrice, sizeDeltaUsd, isLong }))
 
   const liquidationPrice = map(params => {
@@ -385,17 +389,13 @@ export const $Trade = (config: ITradeComponent) => component((
         throw new Error('No wallet connected')
       }
 
-      const signer = params.w3p.getSigner()
+      const signer = params.w3p.signer
 
       // const erc20 = connectErc20(inputToken, map(w3p => , config.walletProvider))
-      const c = ERC20__factory.connect(params.inputToken, params.w3p.getSigner())
+      const c = ERC20__factory.connect(params.inputToken, signer)
 
       if (params.inputToken === AddressZero) {
         return true
-      }
-
-      if (c === null || signer._address === null) {
-        return null
       }
 
       const contractAddress = getContractAddress(TRADE_CONTRACT_MAPPING, params.chain, 'Router')
@@ -404,9 +404,9 @@ export const $Trade = (config: ITradeComponent) => component((
         return null
       }
 
-      const allowedSpendAmount = (await c.allowance(signer._address, contractAddress)).toBigInt()
-      return allowedSpendAmount >= collateralDelta
-    }, collateralDeltaUsd, combineObject({ w3p: config.walletLink.provider, chain: config.walletLink.network, inputToken }))),
+      const allowedSpendAmount = (await c.allowance(params.w3p.address, contractAddress)).toBigInt()
+      return allowedSpendAmount > collateralDelta
+    }, collateralDeltaUsd, combineObject({ w3p: config.walletLink.wallet, chain: config.walletLink.network, inputToken }))),
   ])
 
 
@@ -442,21 +442,6 @@ export const $Trade = (config: ITradeComponent) => component((
       $node(layoutSheet.spacingBig, style({ flex: 1, paddingBottom: '50px', display: 'flex', flexDirection: screenUtils.isDesktopScreen ? 'column' : 'column-reverse' }))(
 
         $column(layoutSheet.spacingSmall)(
-          // $row(
-          //   $node(style({ flex: 1 }))(),
-
-          //   O(stylePseudo(':hover', { color: pallete.primary }))(
-          //     $row(
-          //       layoutSheet.spacingTiny,
-          //       changeCollateralRatioTether(nodeEvent('click'), constant(BASIS_POINTS_DIVISOR)),
-          //       style({ fontSize: '0.75em' }))(
-          //       $text(style({ color: pallete.foreground }))(`Balance`),
-          //       $text(combineArray((tokenDesc, balance) => {
-          //         return readableNumber(formatFixed(balance, tokenDesc.decimals)) + ` ${tokenDesc.symbol}`
-          //       }, inputTokenDescription, walletBalance)),
-          //     ),
-          //   ),
-          // ),
           $TradeBox({
             ...config,
 
@@ -504,6 +489,8 @@ export const $Trade = (config: ITradeComponent) => component((
             switchFocusMode: switchFocusModeTether(),
           }),
         ),
+
+        $node(),
 
         // $node($text(map(amountUsd => formatReadableUSD(amountUsd), availableLiquidityUsd))),
 
@@ -909,10 +896,7 @@ export const $Trade = (config: ITradeComponent) => component((
     ),
 
     {
-      requestPricefeed: mergeArray([
-        requestTradePricefeed,
-        requestPricefeed
-      ]),
+      requestPricefeed,
       requestAccountTradeList: map(w3p => {
         if (w3p === null || config.chainList.indexOf(w3p.chain) === -1) {
           return null

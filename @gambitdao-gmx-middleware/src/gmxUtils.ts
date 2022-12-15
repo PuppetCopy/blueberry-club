@@ -50,20 +50,30 @@ export function getDeltaPercentage(delta: bigint, collateral: bigint) {
   return div(delta, collateral)
 }
 
-export function getAveragePriceFromDelta(islong: boolean, size: bigint, price: bigint, pnl: bigint, sizeDelta: bigint) {
+export function getNextAveragePrice(islong: boolean, size: bigint, nextPrice: bigint, pnl: bigint, sizeDelta: bigint) {
   const nextSize = size + sizeDelta
-  const hasProfit = pnl > 0n
+  const divisor = islong ? nextSize + pnl : nextSize + -pnl
 
-  if (islong) {
-    const divisor = hasProfit ? nextSize + pnl : nextSize - pnl
-
-    return price * nextSize / divisor
-  }
-
-  const divisor = hasProfit ? nextSize - pnl : nextSize + pnl
-
-  return price * nextSize / divisor
+  return nextPrice * nextSize / divisor
 }
+
+// function getNextAveragePrice({ size, sizeDelta, hasProfit, delta, nextPrice, isLong }) {
+//   if (!size || !sizeDelta || !delta || !nextPrice) {
+//     return;
+//   }
+//   const nextSize = size.add(sizeDelta);
+//   let divisor;
+//   if (isLong) {
+//     divisor = hasProfit ? nextSize.add(delta) : nextSize.sub(delta);
+//   } else {
+//     divisor = hasProfit ? nextSize.sub(delta) : nextSize.add(delta);
+//   }
+//   if (!divisor || divisor.eq(0)) {
+//     return;
+//   }
+//   const nextAveragePrice = nextPrice.mul(nextSize).div(divisor);
+//   return nextAveragePrice;
+// }
 
 
 export function getTokenAmount(amountUsd: bigint, price: bigint, decimals: number) {

@@ -20,6 +20,18 @@ const derievedSymbolMapping: { [k: string]: TOKEN_SYMBOL } = {
   [TOKEN_SYMBOL.WAVAX]: TOKEN_SYMBOL.AVAX,
 }
 
+
+const gmxIOPriceMapSource = {
+  [CHAIN.ARBITRUM]: replayLatest(multicast(periodicRun({
+    interval: 5000,
+    actionOp: map(async time => getGmxIOPriceMap('https://gmx-server-mainnet.uw.r.appspot.com/prices'))
+  }))),
+  [CHAIN.AVALANCHE]: replayLatest(multicast(periodicRun({
+    interval: 5000,
+    actionOp: map(async time => getGmxIOPriceMap('https://gmx-avax-server.uc.r.appspot.com/prices'))
+  }))),
+}
+
 export function latestPriceFromExchanges(chain: CHAIN, indexToken: ITokenTrade): Stream<bigint> {
   const indexDesc = getTokenDescription(chain, indexToken)
   const symbol = indexDesc.symbol in derievedSymbolMapping ? derievedSymbolMapping[indexDesc.symbol] : indexDesc.symbol
@@ -54,19 +66,10 @@ export function latestPriceFromExchanges(chain: CHAIN, indexToken: ITokenTrade):
 
   const avgPrice = skip(1, scan((prev, next) => prev === 0 ? next : (prev + next) / 2, 0, allSources))
 
-  return map(ev => parseFixed(ev, 30), avgPrice)
-}
-
-
-const gmxIOPriceMapSource = {
-  [CHAIN.ARBITRUM]: replayLatest(multicast(periodicRun({
-    interval: 5000,
-    actionOp: map(async time => getGmxIOPriceMap('https://gmx-server-mainnet.uw.r.appspot.com/prices'))
-  }))),
-  [CHAIN.AVALANCHE]: replayLatest(multicast(periodicRun({
-    interval: 5000,
-    actionOp: map(async time => getGmxIOPriceMap('https://gmx-avax-server.uc.r.appspot.com/prices'))
-  }))),
+  return mergeArray([
+    gmxIoLatestPrice(chain, indexToken),
+    map(ev => parseFixed(ev, 30), avgPrice)
+  ])
 }
 
 

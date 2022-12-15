@@ -1,7 +1,7 @@
 import { combineArray, fromCallback, replayLatest } from "@aelea/core"
 import { BaseProvider, JsonRpcProvider, JsonRpcSigner, Web3Provider } from "@ethersproject/providers"
 import { CHAIN } from "@gambitdao/gmx-middleware"
-import { awaitPromises, constant, delay, empty, fromPromise, map, mergeArray, multicast, now, switchLatest } from "@most/core"
+import { awaitPromises, constant, delay, empty, fromPromise, map, mergeArray, multicast, now, skipRepeats, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
 import { eip1193ProviderEvent } from "./common"
 import { metamaskQuery, walletConnect } from "./provider"
@@ -112,14 +112,14 @@ export function initWalletLink(
   }, provider))))
 
 
-  const network: Stream<CHAIN> = replayLatest(multicast(awaitPromises(combineArray(async (wallet, provider) => {
+  const network: Stream<CHAIN> = replayLatest(multicast(skipRepeats(awaitPromises(combineArray(async (wallet, provider) => {
     try {
       const chainId = wallet ? wallet.chain : (await provider.getNetwork()).chainId as CHAIN
       return chainId
     } catch (err) {
       console.warn(err)
     }
-  }, wallet, provider))))
+  }, wallet, provider)))))
 
   return { network, wallet, provider, defaultProvider }
 }
