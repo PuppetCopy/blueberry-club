@@ -1,4 +1,4 @@
-import { awaitPromises, combine, empty, map, mergeArray, multicast, now, skipRepeats, snapshot, switchLatest } from "@most/core"
+import { awaitPromises, combine, empty, map, mergeArray, multicast, now, scan, skip, skipRepeats, snapshot, switchLatest } from "@most/core"
 import { CHAIN, switchFailedSources, ITokenIndex, ITokenInput, ITokenTrade, AddressZero, getChainName, KeeperResponse, IPositionDecrease, IPositionIncrease, IPositionClose, IPositionLiquidated, filterNull, listen, IVaultPosition, unixTimestampNow, TRADE_CONTRACT_MAPPING, IPositionUpdate, IAbstractPositionIdentifier, parseFixed, TOKEN_SYMBOL } from "@gambitdao/gmx-middleware"
 import { combineArray, replayLatest } from "@aelea/core"
 import { ERC20__factory, PositionRouter__factory, Router__factory, VaultPriceFeed__factory, Vault__factory } from "./gmx-contracts"
@@ -28,7 +28,7 @@ export function latestPriceFromExchanges(chain: CHAIN, indexToken: ITokenTrade):
   const bitfinex = http.fromWebsocket('wss://api-pub.bitfinex.com/ws/2', now({ event: "subscribe", channel: "ticker", symbol: `${symbol}USD` }))
   const coinbase = http.fromWebsocket('wss://ws-feed.pro.coinbase.com', now({ type: "subscribe", product_ids: [`${symbol}-USD`], channels: ["ticker"], }))
 
-  const allSources = filterNull(mergeArray([
+  const allSources: Stream<number> = filterNull(mergeArray([
     map((ev: any) => {
       if ('p' in ev) {
         return Number(ev.p)
@@ -52,11 +52,9 @@ export function latestPriceFromExchanges(chain: CHAIN, indexToken: ITokenTrade):
     }, coinbase),
   ]))
 
+  const avgPrice = skip(1, scan((prev, next) => prev === 0 ? next : (prev + next) / 2, 0, allSources))
 
-  return map(priceNum => {
-    const newLocal = parseFixed(priceNum, 30)
-    return newLocal
-  }, skipRepeats(allSources))
+  return map(ev => parseFixed(ev, 30), avgPrice)
 }
 
 
