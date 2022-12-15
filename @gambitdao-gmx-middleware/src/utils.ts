@@ -548,3 +548,15 @@ export const createSubgraphClient = (opts: ClientOptions) => {
 export function easeInExpo(x: number) {
   return x === 0 ? 0 : Math.pow(2, 10 * x - 10)
 }
+
+// export function getMedianPrice(numbers: number[]) {
+//   const sorted = [...numbers.sort((a, b) => a - b)]
+
+//   if (sorted.length % 2 === 1) {
+//     return sorted[Math.floor(sorted.length / 2)]
+//   }
+  
+//   const middleIndex = sorted.length / 2
+//   return (sorted[middleIndex - 1] + sorted[middleIndex]) / 2
+// }
+

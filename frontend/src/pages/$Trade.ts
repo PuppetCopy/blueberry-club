@@ -7,15 +7,15 @@ import {
   getLiquidationPrice, getMarginFees, STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, TAX_BASIS_POINTS,
   replayState, getDenominator, USD_PERCISION, formatReadableUSD, timeSince, getPositionKey, IPositionIncrease,
   IPositionDecrease, getPnL, filterNull, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE,
-  CHAIN, ITokenIndex, ITokenStable, ITokenInput, TradeStatus, KeeperResponse, KeeperExecuteAbstractEvent, LIMIT_LEVERAGE, div, readableDate, TRADE_CONTRACT_MAPPING, getTokenAmount, readableNumber
+  CHAIN, ITokenIndex, ITokenStable, ITokenInput, TradeStatus, KeeperExecuteAbstractEvent, LIMIT_LEVERAGE, div, readableDate, TRADE_CONTRACT_MAPPING, getTokenAmount, readableNumber
 } from "@gambitdao/gmx-middleware"
 
-import { combine, constant, map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, never, filter, snapshot, debounce, tap } from "@most/core"
+import { combine, constant, map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, snapshot, debounce } from "@most/core"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { $arrowsFlip, $infoTooltip, $IntermediatePromise, $RiskLiquidator, $spinner, $txHashRef, invertColor } from "@gambitdao/ui-components"
 import { BarPrice, CandlestickData, LineStyle, Time } from "lightweight-charts"
 import { Stream } from "@most/types"
-import { connectTrade, connectVault, getErc20Balance, IPositionGetter } from "../logic/contract/trade"
+import { connectTrade, connectVault, getErc20Balance, IPositionGetter, latestPriceFromExchanges } from "../logic/contract/trade"
 import { $TradeBox, ITradeFocusMode, ITradeState, RequestTradeQuery } from "../components/trade/$TradeBox"
 import { $ButtonToggle } from "../common/$Toggle"
 import { $Table2 } from "../common/$Table2"
@@ -25,9 +25,9 @@ import { $CandleSticks } from "../components/chart/$CandleSticks"
 import { getFeeBasisPoints, resolveAddress } from "../logic/utils"
 import { BrowserStore } from "../logic/store"
 import { ContractTransaction } from "@ethersproject/contracts"
-import { getContractAddress, getContractMapping, readContract, readContractMapping } from "../logic/common"
+import { getContractAddress, readContractMapping } from "../logic/common"
 import { ERC20__factory, PositionRouter__factory } from "../logic/contract/gmx-contracts"
-import { IWalletLink, IWalletName, IWalletState } from "@gambitdao/wallet-link"
+import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
 
 
 export interface ITradeComponent {
@@ -174,7 +174,10 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
   const inputTokenPrice = switchLatest(combineArray((chain, token) => vault.getLatestPrice(chain, resolveAddress(chain, token)), config.walletLink.network, inputToken))
-  const indexTokenPrice = switchLatest(combineArray((chain, token) => vault.getLatestPrice(chain, resolveAddress(chain, token)), config.walletLink.network, indexToken))
+  const indexTokenPrice = switchLatest(combineArray((chain, token) => {
+    // vault.getLatestPrice(chain, resolveAddress(chain, token))
+    return latestPriceFromExchanges(chain, token)
+  }, config.walletLink.network, indexToken))
   const collateralTokenPrice = switchLatest(combineArray((chain, token) => vault.getLatestPrice(chain, resolveAddress(chain, token)), config.walletLink.network, shortCollateralToken))
 
   const account = map(signer => {
@@ -231,6 +234,7 @@ export const $Trade = (config: ITradeComponent) => component((
       return null
     }
 
+    // const pos = undefined as any as null
     const pos = (await listQuery).find(t => t.key === res.key)
 
     return pos
@@ -639,10 +643,10 @@ export const $Trade = (config: ITradeComponent) => component((
                         return { open, high, low, close, time: timestamp as Time }
                       }),
                       seriesConfig: {
-                        priceFormat: {
-                          type: 'custom',
-                          formatter: (priceValue: BarPrice) => readableNumber(priceValue.valueOf())
-                        },
+                        // priceFormat: {
+                        //   type: 'custom',
+                        //   formatter: (priceValue: BarPrice) => readableNumber(priceValue.valueOf())
+                        // },
                         priceLineColor: pallete.foreground,
                         baseLineStyle: LineStyle.Dotted,
 
@@ -866,9 +870,9 @@ export const $Trade = (config: ITradeComponent) => component((
 
                         $body: map((req) => {
                           const isKeeperReq = 'ctx' in req
-                          const pos = isKeeperReq ? req.state : req
+                          const delta = isKeeperReq ? req.state.collateralDeltaUsd : req.collateralDelta
 
-                          return $text(formatReadableUSD(pos.collateralDelta))
+                          return $text(formatReadableUSD(delta))
                         })
                       },
                       {
@@ -877,9 +881,9 @@ export const $Trade = (config: ITradeComponent) => component((
 
                         $body: map((req) => {
                           const isKeeperReq = 'ctx' in req
-                          const pos = isKeeperReq ? req.state : req
+                          const delta = isKeeperReq ? req.state.sizeDeltaUsd : req.sizeDelta
 
-                          return $text(formatReadableUSD(pos.sizeDelta))
+                          return $text(formatReadableUSD(delta))
                         })
                       },
                     ]
