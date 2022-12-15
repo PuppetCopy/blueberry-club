@@ -45,12 +45,10 @@ export const $TradePnlHistory = (config: ITradePnlPreview) => component((
 
   const historicPnL = multicast(combineArray((displayColumnCount) => {
 
-    const startPrice = config.trade.increaseList[0].price
+    const startPrice = config.trade.updateList[0].averagePrice
     const endtime = isTradeSettled(config.trade) ? config.trade.settledTimestamp : unixTimestampNow()
     const timeRange = endtime - config.trade.timestamp
-    const interval = Math.floor(timeRange / displayColumnCount)
-    // const initialPnl = getPositionPnL(trade.isLong, trade.averagePrice, trade.increaseList[0].price, trade.size)
-    // const initialPnlPercentage = getDeltaPercentage(initialPnl, trade.collateral)
+    const interval = Math.floor(timeRange / displayColumnCount) || 1
 
     const initalUpdate = config.trade.updateList[0]
 
@@ -251,11 +249,13 @@ export const $TradePnlHistory = (config: ITradePnlPreview) => component((
                 // rightOffset: 110,
                 secondsVisible: false,
                 timeVisible: true,
+                shiftVisibleRangeOnNewBar: true,
                 rightOffset: 0,
                 fixLeftEdge: true,
                 fixRightEdge: true,
+                
                 // visible: false,
-                rightBarStaysOnScroll: true,
+                // rightBarStaysOnScroll: true,
               },
               ...config.chartConfig || {}
             },

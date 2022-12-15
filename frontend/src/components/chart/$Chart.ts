@@ -2,7 +2,7 @@ import { Behavior, combineArray, fromCallback, O, Op } from "@aelea/core"
 import { $wrapNativeElement, component, INode, style, drawLatest } from "@aelea/dom"
 import { observer } from '@aelea/ui-components'
 import { pallete } from '@aelea/ui-components-theme'
-import { debounce, empty, filter, map, mergeArray, multicast, now, switchLatest, take, throttle } from '@most/core'
+import { empty, filter, map, mergeArray, multicast, now, switchLatest } from '@most/core'
 import { disposeWith } from '@most/disposable'
 import { Stream } from '@most/types'
 import { ChartOptions, createChart, CrosshairMode, DeepPartial, IChartApi, ISeriesApi, LineStyle, MouseEventParams, SeriesDataItemTypeMap, SeriesMarker, SeriesType, Time, TimeRange } from 'lightweight-charts'
@@ -143,7 +143,12 @@ export const $Chart = <T extends SeriesType>({ chartConfig, realtimeSource, init
         }, init, drawLatest(containerDimension)),
 
         switchLatest(combineArray((seriesApi) => {
-          return realtimeSource ? map(data => seriesApi.update(data), realtimeSource) : empty()
+          return realtimeSource ? map(data => {
+            seriesApi.update(data)
+
+            timeScale.fitContent()
+            return 
+          }, realtimeSource) : empty()
         }, init)),
       ]))
     ),

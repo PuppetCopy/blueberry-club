@@ -1,5 +1,5 @@
 import { awaitPromises, combine, empty, map, mergeArray, multicast, now, skipRepeats, snapshot, switchLatest } from "@most/core"
-import { CHAIN, switchFailedSources, ITokenIndex, ITokenInput, ITokenTrade, AddressZero, getChainName, KeeperResponse, IPositionDecrease, IPositionIncrease, IPositionClose, IPositionLiquidated, filterNull, listen, IVaultPosition, unixTimestampNow, TRADE_CONTRACT_MAPPING, IPositionUpdate, IAbstractPositionIdentifier, parseFixed } from "@gambitdao/gmx-middleware"
+import { CHAIN, switchFailedSources, ITokenIndex, ITokenInput, ITokenTrade, AddressZero, getChainName, KeeperResponse, IPositionDecrease, IPositionIncrease, IPositionClose, IPositionLiquidated, filterNull, listen, IVaultPosition, unixTimestampNow, TRADE_CONTRACT_MAPPING, IPositionUpdate, IAbstractPositionIdentifier, parseFixed, TOKEN_SYMBOL } from "@gambitdao/gmx-middleware"
 import { combineArray, replayLatest } from "@aelea/core"
 import { ERC20__factory, PositionRouter__factory, Router__factory, VaultPriceFeed__factory, Vault__factory } from "./gmx-contracts"
 import { periodicRun } from "@gambitdao/gmx-middleware"
@@ -14,37 +14,40 @@ import { http } from "@aelea/ui-components"
 
 export type IPositionGetter = IVaultPosition & IAbstractPositionIdentifier
 
+const derievedSymbolMapping: { [k: string]: TOKEN_SYMBOL } = {
+  [TOKEN_SYMBOL.WETH]: TOKEN_SYMBOL.ETH,
+  [TOKEN_SYMBOL.WBTC]: TOKEN_SYMBOL.BTC,
+  [TOKEN_SYMBOL.WAVAX]: TOKEN_SYMBOL.AVAX,
+}
+
 export function latestPriceFromExchanges(chain: CHAIN, indexToken: ITokenTrade): Stream<bigint> {
   const indexDesc = getTokenDescription(chain, indexToken)
+  const symbol = indexDesc.symbol in derievedSymbolMapping ? derievedSymbolMapping[indexDesc.symbol] : indexDesc.symbol
 
-  const binance = http.fromWebsocket('wss://stream.binance.com:9443/ws', now({ method: "SUBSCRIBE", params: [`${indexDesc.symbol}usdt@trade`.toLowerCase()], id: 1 }))
-  const bitfinex = http.fromWebsocket('wss://api-pub.bitfinex.com/ws/2', now({
-    event: "subscribe",
-    channel: "ticker",
-    symbol: `${indexDesc.symbol}USD`
-  }))
-
-  const coinbase = http.fromWebsocket('wss://ws-feed.pro.coinbase.com', now({ type: "subscribe", product_ids: [`${indexDesc.symbol}-USD`], channels: ["ticker"], }))
+  const binance = http.fromWebsocket('wss://stream.binance.com:9443/ws', now({ method: "SUBSCRIBE", params: [`${symbol}usdt@trade`.toLowerCase()], id: 1 }))
+  const bitfinex = http.fromWebsocket('wss://api-pub.bitfinex.com/ws/2', now({ event: "subscribe", channel: "ticker", symbol: `${symbol}USD` }))
+  const coinbase = http.fromWebsocket('wss://ws-feed.pro.coinbase.com', now({ type: "subscribe", product_ids: [`${symbol}-USD`], channels: ["ticker"], }))
 
   const allSources = filterNull(mergeArray([
     map((ev: any) => {
       if ('p' in ev) {
         return Number(ev.p)
       }
+      console.warn(ev)
       return null
     }, binance),
     map((ev: any) => {
       if (Array.isArray(ev) && ev.length === 2 && Array.isArray(ev[1]) && ev[1].length === 10) {
         return ev[1][6]
       }
-
+      console.warn(ev)
       return null
     }, bitfinex),
     map((ev: any) => {
       if ('price' in ev) {
         return Number(ev.price)
       }
-
+      console.warn(ev)
       return null
     }, coinbase),
   ]))

@@ -174,10 +174,9 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
   const inputTokenPrice = switchLatest(combineArray((chain, token) => vault.getLatestPrice(chain, resolveAddress(chain, token)), config.walletLink.network, inputToken))
-  const indexTokenPrice = switchLatest(combineArray((chain, token) => {
-    // vault.getLatestPrice(chain, resolveAddress(chain, token))
-    return latestPriceFromExchanges(chain, token)
-  }, config.walletLink.network, indexToken))
+  const indexTokenPrice = multicast(switchLatest(combineArray((chain, token) => {
+    return replayLatest(multicast(latestPriceFromExchanges(chain, token)))
+  }, config.walletLink.network, indexToken)))
   const collateralTokenPrice = switchLatest(combineArray((chain, token) => vault.getLatestPrice(chain, resolveAddress(chain, token)), config.walletLink.network, shortCollateralToken))
 
   const account = map(signer => {
@@ -228,17 +227,27 @@ export const $Trade = (config: ITradeComponent) => component((
   ]))
 
 
-  const tradeQuery: Stream<Promise<ITradeOpen | null>> = replayLatest(multicast(combineArray(async (posQuery, listQuery) => {
+  const tradeQuery: Stream<Promise<ITradeOpen | null>> = replayLatest(multicast(combineArray(async (posQuery, listQuery, isLong) => {
     const res = await posQuery
     if (res === null) {
       return null
     }
 
-    // const pos = undefined as any as null
-    const pos = (await listQuery).find(t => t.key === res.key)
+    const trade = (await listQuery).find(t => t.key === res.key)
+    // const trade = undefined
 
-    return pos
-  }, mergeArray([positionQuery, settlePosition]), accountOpenTradeList)))
+    if (!trade) {
+      const timestamp = unixTimestampNow()
+      const syntheticUpdate = { ...res, timestamp, realisedPnl: 0n, markPrice: res.averagePrice, isLong, __typename: 'UpdatePosition' }
+      return {
+        ...res, updateList: [syntheticUpdate], isLong, increaseList: [], decreaseList: [],
+        fee: 0n, timestamp,
+        status: TradeStatus.OPEN
+      } as any as ITradeOpen
+    }
+
+    return trade
+  }, mergeArray([positionQuery, settlePosition]), accountOpenTradeList, isLong)))
 
 
 

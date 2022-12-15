@@ -17,6 +17,7 @@ export enum TOKEN_SYMBOL {
   MIM = "MIM",
   WBTC = "WBTC",
   BTCB = "BTCB",
+  BTC = "BTC",
   USDCE = "USDCE",
   WBTCE = "WBTCE",
   ESGMX = "ESGMX"
