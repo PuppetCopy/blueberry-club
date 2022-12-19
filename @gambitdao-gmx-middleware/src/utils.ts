@@ -1,7 +1,7 @@
 import { combineObject, O, Op, replayLatest } from "@aelea/core"
 import { AnimationFrames } from "@aelea/dom"
 import { Disposable, Scheduler, Sink, Stream } from "@most/types"
-import { at, awaitPromises, constant, continueWith, filter, merge, multicast, now, recoverWith } from "@most/core"
+import { at, awaitPromises, constant, continueWith, empty, filter, merge, multicast, now, recoverWith } from "@most/core"
 import { CHAIN, EXPLORER_URL, intervalTimeMap, NETWORK_METADATA, USD_DECIMALS } from "./constant"
 import { IPageParapApi, IPagePositionParamApi, ISortParamApi } from "./types"
 import { keccak256 } from "@ethersproject/solidity"
@@ -451,7 +451,9 @@ export const switchFailedSources = <T>(sourceList: Stream<T>[], activeSource = 0
     console.warn(err)
     const nextActive = activeSource + 1
     if (!sourceList[nextActive]) {
-      throw new Error('No sources left to recover with')
+      console.warn(new Error('No sources left to recover with'))
+
+      return empty()
     }
 
     return switchFailedSources(sourceList, nextActive)

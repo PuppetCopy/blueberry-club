@@ -16,6 +16,10 @@ export function div(a: bigint, b: bigint): bigint {
   return a * BASIS_POINTS_DIVISOR / b
 }
 
+export function abs(a: bigint): bigint {
+  return a < 0n ? -a : a
+}
+
 export function bnDiv(a: bigint, b: bigint): number {
   return formatToBasis(div(a, b))
 }
@@ -191,7 +195,12 @@ export function isTradeClosed(trade: ITrade): trade is ITradeClosed {
 
 
 export function getFundingFee(entryFundingRate: bigint, cumulativeFundingRate: bigint, size: bigint) {
-  return (size * (cumulativeFundingRate - entryFundingRate)) / FUNDING_RATE_PRECISION
+  if (size === 0n) {
+    return 0n
+  }
+
+  const fundingRate = cumulativeFundingRate - entryFundingRate
+  return size * fundingRate / FUNDING_RATE_PRECISION
 }
 
 

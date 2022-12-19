@@ -4,10 +4,9 @@ import { $column, observer } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import {
   unixTimestampNow, isTradeSettled, getDeltaPercentage, intervalListFillOrderMap,
-  isTradeOpen, ITrade, formatFixed, getPnL, IPricefeed, USD_PERCISION, IPricefeedParamApi, CHAIN, readableNumber
+  isTradeOpen, ITrade, formatFixed, getPnL, IPricefeed, CHAIN, readableNumber
 } from "@gambitdao/gmx-middleware"
-import { getIntervalBasedOnTimeframe } from "@gambitdao/ui-components"
-import { multicast, switchLatest, empty, skipRepeatsWith, map, skip, now } from "@most/core"
+import { multicast, switchLatest, empty, skipRepeatsWith, map } from "@most/core"
 import { Stream } from "@most/types"
 import { MouseEventParams, SingleValueData, Time, LineStyle, ChartOptions, DeepPartial, BarPrice } from "lightweight-charts"
 import { $Chart } from "../chart/$Chart"
@@ -230,8 +229,8 @@ export const $TradePnlHistory = (config: ITradePnlPreview) => component((
               },
               leftPriceScale: {
                 scaleMargins: {
-                  top: 0.1,
-                  bottom: 0,
+                  top: 0.15,
+                  bottom: 0.15,
                 }
               },
               // rightPriceScale: {

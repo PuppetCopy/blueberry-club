@@ -1,6 +1,6 @@
 import { O, Op } from "@aelea/core"
 import { CHAIN, filterNull, listen } from "@gambitdao/gmx-middleware"
-import { awaitPromises, continueWith, empty, filter, map, now, recoverWith, switchLatest, takeWhile, tap } from "@most/core"
+import { awaitPromises, continueWith, empty, filter, map, multicast, never, now, recoverWith, switchLatest, takeWhile, tap } from "@most/core"
 import { Stream } from "@most/types"
 import { $berry } from "../components/$DisplayBerry"
 import {
@@ -96,13 +96,13 @@ export function readContractMapping<TProvider extends BaseProvider, TMap, TCmap 
     return run(newLocal)
   }
 
-  const _listen = <T>(name: string | EventFilter) => switchLatest(map(res => {
+  const _listen = <T>(name: string | EventFilter): Stream<T> => switchLatest(map(res => {
     if (res === null) {
-      return now(null)
+      return never()
     }
 
     // @ts-ignore
-    return listen(res, name) as Stream<T>
+    return multicast(listen(res, name))
   }, contract))
 
 
@@ -151,7 +151,7 @@ export function readContract<T extends string, TContract extends typeof Contract
   const _listen = <Z>(name: string | EventFilter) => switchLatest(map(res => {
     // @ts-ignore
     const newLocal = listen(res, name) as Stream<Z>
-    return newLocal
+    return multicast(newLocal)
   }, contract))
 
 

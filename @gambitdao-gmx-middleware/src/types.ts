@@ -38,7 +38,7 @@ export interface IGmxContractAddress {
 
   GmxVester: string
   GlpVester: string
-  
+
   OrderBook: string
   OrderBookReader: string
 
@@ -131,10 +131,10 @@ export interface IPositionClose extends IAbstractPositionBase, IAbstractPosition
   reserveAmount: bigint
 }
 
-export interface KeeperResponse {
+export interface KeeperIncreaseRequest {
   account: string
   path: string[]
-  indexToken: ITokenIndex
+  indexToken: string
   amountIn: bigint
   minOut: bigint
   sizeDelta: bigint
@@ -143,12 +143,27 @@ export interface KeeperResponse {
   executionFee: bigint
   blockGap: bigint
   timeGap: bigint
+  key: string
 }
 
-export interface KeeperExecuteAbstractEvent extends KeeperResponse, IAbstractPositionIdentifier {
-  isIncrease: boolean
-  isRejected: boolean
 
+export interface KeeperDecreaseRequest {
+  account: string
+  path: string[]
+  indexToken: string
+  collateralDelta: bigint
+  sizeDelta: bigint
+  isLong: boolean
+  receiver: string
+  acceptablePrice: bigint
+  minOut: bigint
+  executionFee: bigint
+  blockGap: bigint
+  timeGap: bigint
+  key: string
+}
+
+export interface IMappedEvent {
   __event: Event
 }
 

@@ -22,7 +22,7 @@ const cacheLifeMap = {
 
 export const arbitrumGraph = createSubgraphClient({
   fetch: fetch as any,
-  url: 'https://api.thegraph.com/subgraphs/id/QmZ1bmoWAGRaZxASd3rerw4BWUtvHu6wJLUNpa8NbzWdUv'
+  url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-arbitrum'
 })
 
 export const avalancheGraph = createSubgraphClient({
