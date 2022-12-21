@@ -43,6 +43,29 @@ export const saleConfig = {
 
 export const saleDescriptionList: LabItemSale[] = [
   {
+    name: "Santa Hat",
+    description: `Jingle jingle all the way,
+Holly and mistletoe on display,
+Santa's hat is red and jolly,
+Brimming with gifts in galore and glory,
+Here's a surprise from him to thee
+May your Christmas be joy-full for all to see!
+
+Merry Christmas Berries!`,
+    id: IAttributeMappings["Christmas Hat"],
+    mintRuleList: [
+      {
+        supply: 180,
+        type: SaleType.holder,
+        cost: 0n,
+        contractAddress: "0xb4564969CF550ef05D96ac0B7db43d7D74381aE2",
+        start: toTime(2022, 11, 24, 18),
+        finish: toTime(2023, 0, 24, 18),
+        accountLimit: 1
+      }
+    ]
+  },
+  {
     name: "Birthday Hat",
     description: `Happy birthday, dear blueberry
 today, we celebrate you, that's the goal
@@ -63,7 +86,7 @@ We're glad you're here, let the celebrations never end!`,
         type: SaleType.holder,
         cost: 0n,
         contractAddress: "0x8da1Dd6967E018C9d9E31aA1C9e3fc51b95Be3C9",
-        start: toTime(2021, 11, 5, 18),
+        start: toTime(2022, 11, 5, 18),
         finish: toTime(2023, 0, 5, 18),
         accountLimit: 1
       }

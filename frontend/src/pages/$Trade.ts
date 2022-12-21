@@ -113,7 +113,7 @@ export const $Trade = (config: ITradeComponent) => component((
   const isLongStore = tradingStore.craete('isLong', true)
   const inputTokenStore = tradingStore.craete('inputToken', AddressZero as ITokenInput)
   const indexTokenStore = tradingStore.craete('indexToken', AddressZero as ITokenIndex)
-  const shortCollateralTokenStore = tradingStore.craete('collateralToken', AddressZero as ITokenStable)
+  const collateralTokenStore = tradingStore.craete('collateralToken', AddressZero as ITokenStable)
   const isIncreaseStore = tradingStore.craete('isIncrease', true)
   const slippageStore = tradingStore.craete('slippage', '0.2')
   // const collateralRatioStore = tradingStore.craete('collateralRatio', 0)
@@ -148,28 +148,25 @@ export const $Trade = (config: ITradeComponent) => component((
     }, config.walletLink.network)
   )
 
-  const collateralToken: Stream<ITokenInput> = shortCollateralTokenStore.storeReplay(
-    mergeArray([map(t => t.isLong ? t.indexToken : t.collateralToken, switchTrade), changeCollateralToken]),
+  
+  const collateralTokenReplay: Stream<ITokenInput> = collateralTokenStore.storeReplay(
+    changeCollateralToken,
     combine((chain, token) => {
       return fallbackToSupportedToken(chain, token)
     }, config.walletLink.network)
   )
 
+  const collateralToken: Stream<ITokenInput> = combineArray(params => params.isLong ? params.indexToken : params.collateralTokenReplay, combineObject({ isLong, indexToken, collateralTokenReplay }))
 
-  const walletBalance = awaitPromises(combineArray(async (token, provider, execFee) => {
+
+  const walletBalance = awaitPromises(combineArray(async (token, provider) => {
     if (provider === null) {
       return 0n
     }
 
     const balance = getErc20Balance(token, provider)
-
-    if (token === AddressZero) {
-      const totalBalance = await balance
-      return totalBalance
-    }
-
     return balance
-  }, inputToken, config.walletLink.wallet, executionFee))
+  }, inputToken, config.walletLink.wallet))
 
 
   const inputTokenPrice = switchLatest(combineArray((chain, token) => vault.getLatestPrice(chain, resolveAddress(chain, token)), config.walletLink.network, inputToken))

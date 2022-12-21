@@ -8,7 +8,7 @@ import {
   div, StateStream, getPnL, MIN_LEVERAGE, formatToBasis, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE, CHAIN,
   ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd, IPricefeed, TRADE_CONTRACT_MAPPING, getTokenAmount, filterNull, ITradeOpen
 } from "@gambitdao/gmx-middleware"
-import { $anchor, $bear, $bull, $infoTooltip, $IntermediatePromise, $tokenIconMap, $tokenLabelFromSummary, $Tooltip, invertColor } from "@gambitdao/ui-components"
+import { $anchor, $bear, $bull, $hintInput, $infoTooltip, $IntermediatePromise, $tokenIconMap, $tokenLabelFromSummary, invertColor } from "@gambitdao/ui-components"
 import {
   merge, multicast, mergeArray, now, snapshot, map, switchLatest,
   skipRepeats, empty, fromPromise, constant, startWith, skipRepeatsWith, awaitPromises, debounce
@@ -172,7 +172,7 @@ export const $TradeBox = (config: ITradeBox) => component((
         return `Not enough liquidity. current capcity ${formatReadableUSD(availLiqUsd)}`
       }
 
-      if (state.collateralDelta > (state.walletBalance + state.executionFee)) {
+      if (state.collateralDelta > state.walletBalance) {
         return `Not enough ${state.inputTokenDescription.symbol} in connected account`
       }
 
@@ -197,7 +197,9 @@ export const $TradeBox = (config: ITradeBox) => component((
   const clickMaxCollateralUsd = snapshot(state => {
 
     if (state.isIncrease) {
-      return getTokenUsd(state.walletBalance, state.inputTokenPrice, state.inputTokenDescription.decimals)
+      const balance = state.inputToken === AddressZero ? state.walletBalance - state.executionFee * 10n : state.walletBalance
+
+      return getTokenUsd(balance, state.inputTokenPrice, state.inputTokenDescription.decimals)
     }
 
     if (state.position.averagePrice === 0n) {
@@ -383,12 +385,9 @@ export const $TradeBox = (config: ITradeBox) => component((
           }, config.tradeConfig.focusMode, config.tradeConfig.isIncrease))
         )(
           $row(
-            $hintInput(
-              now(`Collateral`),
-              config.tradeConfig.isIncrease,
-              'The amount you will deposit to maintain a leverage position',
-              map(pos => formatReadableUSD(pos?.collateral || 0n), config.tradeState.position),
-              combineArray(params => {
+            $hintInput({
+              label: now(`Collateral`),
+              change: combineArray(params => {
                 const posCollateral = params.position.collateral || 0n
                 const totalCollateral = posCollateral + params.collateralDeltaUsd
 
@@ -408,8 +407,11 @@ export const $TradeBox = (config: ITradeBox) => component((
                 const netCollateral = totalCollateral + adjustedPnlDelta
 
                 return formatReadableUSD(netCollateral)
-              }, tradeState)
-            ),
+              }, tradeState),
+              isIncrease: config.tradeConfig.isIncrease,
+              tooltip: 'The amount you will deposit to maintain a leverage position',
+              val: map(pos => formatReadableUSD(pos?.collateral || 0n), config.tradeState.position),
+            }),
             $node(style({ flex: 1 }))(),
             $row(
               layoutSheet.spacingTiny,
@@ -783,18 +785,17 @@ export const $TradeBox = (config: ITradeBox) => component((
           ),
 
           $row(layoutSheet.spacingSmall, style({ placeContent: 'space-between', padding: '0' }))(
-            $hintInput(
-              now(`Size`),
-              config.tradeConfig.isIncrease,
-              'Amount amplified relative to collateral, higher Size to Collateral means higher risk of being liquidated',
-              map(pos => formatReadableUSD(pos ? pos.size : 0n), config.tradeState.position),
-
-              map((params) => {
+            $hintInput({
+              label: now(`Size`),
+              change: map((params) => {
                 const totalSize = params.sizeDeltaUsd + (params.position.size || 0n)
 
                 return formatReadableUSD(totalSize)
-              }, tradeState)
-            ),
+              }, tradeState),
+              isIncrease: config.tradeConfig.isIncrease,
+              tooltip: 'Amount amplified relative to collateral, higher Size to Collateral means higher risk of being liquidated',
+              val: map(pos => formatReadableUSD(pos ? pos.size : 0n), config.tradeState.position)
+            }),
             $node(style({ flex: 1 }))(),
             switchLatest(combineArray((chain, isLong, indexToken) => {
               if (isLong) {
@@ -815,7 +816,7 @@ export const $TradeBox = (config: ITradeBox) => component((
               return $row(layoutSheet.spacing)(
                 $row(layoutSheet.spacingTiny, style({ fontSize: '.75em', alignItems: 'center' }))(
                   $text(style({ color: pallete.foreground }))('Indexed In'),
-                  $infoTooltip(map(token => `${getTokenDescription(chain, token).symbol} will be borrowed to maintain a Short Position. you can switch with other USD tokens to receive it later`, config.tradeConfig.collateralToken)),
+                  $infoTooltip($text(map(token => `${getTokenDescription(chain, token).symbol} will be borrowed to maintain a Short Position. you can switch with other USD tokens to receive it later`, config.tradeConfig.collateralToken))),
                 ),
                 $Dropdown<ARBITRUM_ADDRESS_STABLE | AVALANCHE_ADDRESS_STABLE>({
                   $container: $row(style({ position: 'relative', alignSelf: 'center' })),
@@ -895,10 +896,10 @@ export const $TradeBox = (config: ITradeBox) => component((
               $column(layoutSheet.spacing, style({ padding: '0 16px', placeContent: 'space-between' }), styleInline(map(mode => ({ display: mode ? 'flex' : 'none' }), inTradeMode)))(
                 $row(layoutSheet.spacingBig, style({ placeContent: 'space-between' }))(
                   $column(layoutSheet.spacingTiny, style({ flex: 1 }))(
-                    $row(layoutSheet.spacingTiny, style({ fontSize: '0.75em', placeContent: 'space-between' }))(
-                      $Tooltip({
-                        $anchor: $text(style({ color: pallete.foreground }))('Fees'),
-                        $content: switchLatest(map(params => {
+                    $row(style({ fontSize: '0.75em', placeContent: 'space-between' }))(
+                      $row(layoutSheet.spacingTiny)(
+                        $text(style({ color: pallete.foreground }))('Fees'),
+                        $infoTooltip(switchLatest(map(params => {
                           const depositTokenNorm = resolveAddress(w3p.chain, params.inputToken)
                           const outputToken = params.isLong ? params.indexToken : params.collateralToken
 
@@ -912,14 +913,14 @@ export const $TradeBox = (config: ITradeBox) => component((
                               $text(formatReadableUSD(params.marginFee))
                             )
                           )
-                        }, tradeState))
-                      })({}),
-                      $text(style({ color: pallete.indeterminate }))(map(params => formatReadableUSD(params.fee), tradeState))
+                        }, tradeState))),
+                      ),
+                      $text(style({ color: pallete.indeterminate }))(map(params => formatReadableUSD(params.fee), tradeState)),
                     ),
                     $row(style({ fontSize: '0.75em', placeContent: 'space-between' }))(
                       $row(layoutSheet.spacingTiny)(
                         $text(style({ color: pallete.foreground }))('Borrow Fee'),
-                        $infoTooltip('BLUEBERRY Referral applied for 10% discount'),
+                        // $infoTooltip('BLUEBERRY Referral applied for 10% discount'),
                       ),
                       $row(
                         $text(style({ color: pallete.indeterminate }))(map(params => readableNumber(formatToBasis(params.collateralFundingInfo.rate)), tradeState)),
@@ -1339,17 +1340,6 @@ const formatLeverageNumber = new Intl.NumberFormat("en-US", {
 
 const $field = $element('input')(attr({ placeholder: '0.0' }), style({ width: '100%', lineHeight: '48px', fontFamily: '-apple-system,BlinkMacSystemFont,Trebuchet MS,Roboto,Ubuntu,sans-serif', minWidth: '0', transition: 'background 500ms ease-in', flex: 1, fontSize: '1.5em', background: 'transparent', border: 'none', outline: 'none', color: pallete.message }))
 
-const $hintInput = (label: Stream<string>, isIncrease: Stream<boolean>, tooltip: string | Stream<string>, val: Stream<string>, change: Stream<string>) => $row(layoutSheet.spacing, style({ placeContent: 'space-between', fontSize: '0.75em' }))(
-  $row(layoutSheet.spacingTiny)(
-    $text(style({ color: pallete.foreground }))(val),
-    $text(styleBehavior(map(isIncrease => isIncrease ? { color: pallete.positive } : { color: pallete.indeterminate }, isIncrease)))('→'),
-    $text(style({}))(change),
-  ),
-  $row(layoutSheet.spacingTiny)(
-    $text(style({ color: pallete.foreground }))(label),
-    $infoTooltip(tooltip),
-  ),
-)
 
 
 function getRebateDiscountUsd(amountUsd: bigint) {
