@@ -15,14 +15,14 @@ import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { $arrowsFlip, $infoTooltip, $IntermediatePromise, $RiskLiquidator, $spinner, $txHashRef, invertColor } from "@gambitdao/ui-components"
 import { CandlestickData, LineStyle, Time } from "lightweight-charts"
 import { Stream } from "@most/types"
-import { connectTrade, connectVault, getErc20Balance, IPositionGetter, latestPriceFromExchanges } from "../logic/contract/trade"
+import { connectTradeReader, getErc20Balance, IPositionGetter, latestPriceFromExchanges, mapKeeperEvent } from "../logic/contract/trade"
 import { $TradeBox, ITradeFocusMode, ITradeState, RequestTradeQuery } from "../components/trade/$TradeBox"
 import { $ButtonToggle } from "../common/$Toggle"
 import { $Table2 } from "../common/$Table2"
 import { $Entry, $livePnl } from "./$Leaderboard"
 import { $iconCircular } from "../elements/$common"
 import { $CandleSticks } from "../components/chart/$CandleSticks"
-import { getFeeBasisPoints, resolveAddress } from "../logic/utils"
+import { getFeeBasisPoints, getTokenDescription, resolveAddress } from "../logic/utils"
 import { BrowserStore } from "../logic/store"
 import { ContractTransaction } from "@ethersproject/contracts"
 import { getContractAddress, readContractMapping } from "../logic/common"
@@ -93,11 +93,10 @@ export const $Trade = (config: ITradeComponent) => component((
 
 ) => {
 
-  const vault = connectVault(config.walletLink)
-  const positionRouter = connectTrade(config.walletLink)
+  const tradeReader = connectTradeReader(config.walletLink.provider)
+  const globalTradeReader = connectTradeReader(config.walletLink.defaultProvider)
 
-  const executionFee = multicast(positionRouter.executionFee)
-
+  const executionFee = multicast(tradeReader.executionFee)
 
   const openTradeList = map(async list => {
     return (await list).filter((t): t is ITradeOpen => t.status === TradeStatus.OPEN)
@@ -169,11 +168,11 @@ export const $Trade = (config: ITradeComponent) => component((
   }, inputToken, config.walletLink.wallet))
 
 
-  const inputTokenPrice = switchLatest(combineArray((chain, token) => vault.getLatestPrice(chain, resolveAddress(chain, token)), config.walletLink.network, inputToken))
+  const inputTokenPrice = switchLatest(combineArray((chain, token) => tradeReader.getLatestPrice(chain, resolveAddress(chain, token)), config.walletLink.network, inputToken))
   const indexTokenPrice = multicast(switchLatest(combineArray((chain, token) => {
     return replayLatest(multicast(latestPriceFromExchanges(chain, token)))
   }, config.walletLink.network, indexToken)))
-  const collateralTokenPrice = switchLatest(combineArray((chain, token) => vault.getLatestPrice(chain, resolveAddress(chain, token)), config.walletLink.network, collateralToken))
+  const collateralTokenPrice = switchLatest(combineArray((chain, token) => tradeReader.getLatestPrice(chain, resolveAddress(chain, token)), config.walletLink.network, collateralToken))
 
   const account = map(signer => {
     return signer ? signer.address : null
@@ -188,20 +187,25 @@ export const $Trade = (config: ITradeComponent) => component((
     return getPositionKey(params.account || AddressZero, collateralToken, params.indexToken, params.isLong)
   }, positionConfigChange))
 
-  const globalPositionRouterReader = readContractMapping(TRADE_CONTRACT_MAPPING, PositionRouter__factory, config.walletLink.defaultProvider, 'PositionRouter')
 
 
-  const keeperExecuteIncrease = positionRouter.executeIncreasePosition // mapKeeperEvent(globalPositionRouterReader.listen<KeeperIncreaseRequest>('ExecuteIncreasePosition'))
-  const keeperDecreaseIncrease = positionRouter.executeDecreasePosition // mapKeeperEvent(globalPositionRouterReader.listen<KeeperDecreaseRequest>('ExecuteDecreasePosition'))
+  const keeperExecuteIncrease = globalTradeReader.executeIncreasePosition
+  const keeperDecreaseIncrease = globalTradeReader.executeDecreasePosition
+
+  const keeperCancelIncrease = globalTradeReader.cancelIncreasePosition
+  const keeperCancelDecrease = globalTradeReader.executeDecreasePosition
 
 
-  const keeperCancelIncrease = positionRouter.cancelIncreasePosition // mapKeeperEvent(globalPositionRouterReader.listen<KeeperIncreaseRequest>('CancelIncreasePosition'))
-  const keeperCancelDecrease = positionRouter.executeDecreasePosition // mapKeeperEvent(globalPositionRouterReader.listen<KeeperDecreaseRequest>('CancelDecreasePosition'))
+  // const keeperExecuteIncrease = positionRouter.executeIncreasePosition // mapKeeperEvent(globalPositionRouterReader.listen<KeeperIncreaseRequest>('ExecuteIncreasePosition'))
+  // const keeperDecreaseIncrease = positionRouter.executeDecreasePosition // mapKeeperEvent(globalPositionRouterReader.listen<KeeperDecreaseRequest>('ExecuteDecreasePosition'))
+
+  // const keeperCancelIncrease = positionRouter.cancelIncreasePosition // mapKeeperEvent(globalPositionRouterReader.listen<KeeperIncreaseRequest>('CancelIncreasePosition'))
+  // const keeperCancelDecrease = positionRouter.executeDecreasePosition // mapKeeperEvent(globalPositionRouterReader.listen<KeeperDecreaseRequest>('CancelDecreasePosition'))
 
 
 
 
-  const positionQuery = switchLatest(map(key => vault.getPosition(key), positionKey))
+  const positionQuery = switchLatest(map(key => tradeReader.getPosition(key), positionKey))
 
 
   const settlePosition = filterNull(snapshot(
@@ -222,13 +226,15 @@ export const $Trade = (config: ITradeComponent) => component((
       }
     },
     awaitPromises(positionQuery),
-    mergeArray([vault.positionCloseEvent, vault.positionLiquidateEvent])
+    mergeArray([globalTradeReader.positionCloseEvent, globalTradeReader.positionLiquidateEvent])
   ))
 
   const positionChange = mergeArray([
     settlePosition,
     filterNull(snapshot(
       (pos, update): IPositionGetter | null => {
+        console.log(update)
+
         if (pos.key !== update.key) {
           return null
         }
@@ -236,7 +242,7 @@ export const $Trade = (config: ITradeComponent) => component((
         return { ...pos, ...update }
       },
       awaitPromises(positionQuery),
-      vault.positionUpdateEvent
+      globalTradeReader.positionUpdateEvent
     )),
   ])
 
@@ -258,37 +264,41 @@ export const $Trade = (config: ITradeComponent) => component((
   ]))
 
 
-  const tradeQuery: Stream<Promise<ITradeOpen | null>> = replayLatest(multicast(combineArray(async (posQuery, listQuery, isLong) => {
-    const res = await posQuery
-    if (res.averagePrice === 0n) {
-      return null
-    }
+  const tradeQuery: Stream<Promise<ITradeOpen | null>> = mergeArray([
+    combineArray(async (posQuery, listQuery) => {
+      const res = await posQuery
+      if (res.averagePrice === 0n) {
+        return null
+      }
 
-    const trade = (await listQuery).find(t => t.key === res.key)
+      const trade = (await listQuery).find(t => t.key === res.key) || null
 
-    if (!trade) {
-      const timestamp = unixTimestampNow()
-      const syntheticUpdate = { ...res, timestamp, realisedPnl: 0n, markPrice: res.averagePrice, isLong, __typename: 'UpdatePosition' }
-      return {
-        ...res, updateList: [syntheticUpdate], isLong, increaseList: [], decreaseList: [],
-        fee: 0n, timestamp,
-        status: TradeStatus.OPEN
-      } as any as ITradeOpen
-    }
+      // if (!trade) {
+      //   const timestamp = unixTimestampNow()
+      //   const syntheticUpdate = { ...res, timestamp, realisedPnl: 0n, markPrice: res.averagePrice, isLong, __typename: 'UpdatePosition' }
+      //   return {
+      //     ...res,
+      //     isLong, timestamp,
+      //     updateList: [syntheticUpdate],
+      //     increaseList: [], decreaseList: [],
+      //     fee: 0n,
+      //     status: TradeStatus.OPEN
+      //   } as any as ITradeOpen
+      // }
 
-    return trade
-  }, mergeArray([positionQuery, settlePosition]), openTradeList, isLong)))
+      return trade
+    }, positionQuery, openTradeList)
+  ])
 
-  const inputTokenWeight = vault.getTokenWeight(inputToken)
-  const inputTokenDebtUsd = vault.getTokenDebtUsd(inputToken)
+  const inputTokenWeight = tradeReader.getTokenWeight(inputToken)
+  const inputTokenDebtUsd = tradeReader.getTokenDebtUsd(inputToken)
 
+  const inputTokenDescription = combineArray((chain, address) => getTokenDescription(chain, address), config.walletLink.network, inputToken)
+  const indexTokenDescription = combineArray((chain, address) => getTokenDescription(chain, address), config.walletLink.network, indexToken)
+  const collateralTokenDescription = combineArray((chain, address) => getTokenDescription(chain, address), config.walletLink.network, collateralToken)
 
-  const inputTokenDescription = vault.tokenDescription(inputToken)
-  const indexTokenDescription = vault.tokenDescription(indexToken)
-  const collateralTokenDescription = vault.tokenDescription(collateralToken)
-
-  const indexTokenInfo = vault.getTokenInfo(indexToken)
-  const collateralFundingInfo = vault.getFundingInfo(collateralToken, collateralTokenDescription)
+  const indexTokenInfo = tradeReader.getTokenInfo(indexToken)
+  const collateralFundingInfo = tradeReader.getFundingInfo(collateralToken, collateralTokenDescription)
 
 
   const tradeConfig = { focusMode, slippage, isLong, isIncrease, inputToken, collateralToken, indexToken, leverage, collateralDeltaUsd, sizeDeltaUsd }
@@ -387,7 +397,7 @@ export const $Trade = (config: ITradeComponent) => component((
     return addedSwapFee
   }, combineObject({
     indexToken, inputToken, isIncrease, sizeDeltaUsd, isLong, collateralDeltaUsd, averagePrice,
-    chain: config.walletLink.network, indexTokenInfo: indexTokenInfo, usdgSupply: vault.usdgSupply, totalTokenWeight: vault.totalTokenWeight,
+    chain: config.walletLink.network, indexTokenInfo: indexTokenInfo, usdgSupply: tradeReader.usdgSupply, totalTokenWeight: tradeReader.totalTokenWeight,
     position, inputTokenDescription, inputTokenWeight, inputTokenDebtUsd, indexTokenDescription, indexTokenPrice
   })))
 
@@ -397,13 +407,13 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
 
-  const requestPricefeed = combineArray((chain, tokenAddress, interval): IPricefeedParamApi => {
+  const requestPricefeed = debounce(10, combineArray((chain, tokenAddress, interval): IPricefeedParamApi => {
     const range = interval * 1000
     const to = unixTimestampNow()
     const from = to - range
 
     return { chain, interval, tokenAddress, from, to }
-  }, config.walletLink.network, indexToken, timeframe)
+  }, config.walletLink.network, indexToken, timeframe))
 
   // const selectedPricefeed = mergeArray([config.pricefeed, constant(null, requestPricefeed)])
 
@@ -583,7 +593,7 @@ export const $Trade = (config: ITradeComponent) => component((
                     $head: $text('PnL'),
                     columnOp: style({ flex: 2, placeContent: 'flex-end', maxWidth: '160px' }),
                     $body: map((pos) => {
-                      const positionMarkPrice = vault.getLatestPrice(w3p.chain, pos.indexToken)
+                      const positionMarkPrice = tradeReader.getLatestPrice(w3p.chain, pos.indexToken)
                       return $livePnl(pos, positionMarkPrice)
                     })
                   },
@@ -591,7 +601,7 @@ export const $Trade = (config: ITradeComponent) => component((
                     $head: $text('Size'),
                     columnOp: O(layoutSheet.spacingTiny, style({ flex: 1.3, alignItems: 'center', placeContent: 'flex-end', minWidth: '80px' })),
                     $body: map(pos => {
-                      const positionMarkPrice = vault.getLatestPrice(w3p.chain, pos.indexToken)
+                      const positionMarkPrice = tradeReader.getLatestPrice(w3p.chain, pos.indexToken)
 
                       return $row(
                         $RiskLiquidator(pos, positionMarkPrice)({})
@@ -988,7 +998,5 @@ const $container = $node(
   })
 )
 
-function mapKeeperEvent(arg0: Stream<KeeperIncreaseRequest>) {
-  throw new Error("Function not implemented.")
-}
+
 

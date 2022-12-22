@@ -21,7 +21,7 @@ import { $caretDown } from "../../elements/$icons"
 import { CHAIN_ADDRESS_MAP, getTokenDescription, resolveAddress } from "../../logic/utils"
 import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 import { BrowserStore } from "../../logic/store"
-import { connectTrade, connectVault, getErc20Balance, IFundingInfo, IPositionGetter, ITokenInfo } from "../../logic/contract/trade"
+import { connectTradeReader, getErc20Balance, IFundingInfo, IPositionGetter, ITokenInfo } from "../../logic/contract/trade"
 import { MouseEventParams } from "lightweight-charts"
 import { $TradePnlHistory } from "./$TradePnlHistory"
 import { ContractTransaction } from "@ethersproject/contracts"
@@ -151,9 +151,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
 ) => {
 
-  const vault = connectVault(config.walletLink)
-  const trade = connectTrade(config.walletLink)
-  const position = connectTrade(config.walletLink)
+  const tradeReader = connectTradeReader(config.walletLink.provider)
 
   const tradeState: Stream<ITradeState> = replayState({ ...config.tradeState, ...config.tradeConfig })
 
@@ -992,7 +990,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                                     click: clickEnablePluginTether(
                                       snapshot((c) => {
                                         return c.approvePlugin(positionRouterAddress)
-                                      }, trade.router.contract),
+                                      }, tradeReader.router.contract),
                                       multicast
                                     )
                                   })
@@ -1155,11 +1153,11 @@ export const $TradeBox = (config: ITradeBox) => component((
 
 
                               return { ctxQuery, state, acceptablePrice }
-                            }, combineObject({ trade: position.positionRouter.contract, state: tradeState })),
+                            }, combineObject({ trade: tradeReader.positionRouter.contract, state: tradeState })),
                             multicast
                           )
                         })
-                      }, trade.isPluginEnabled(w3p.address), config.tradeState.isTradingEnabled, config.tradeState.isIndexTokenApproved, config.tradeConfig.indexToken, config.tradeState.indexTokenDescription)),
+                      }, tradeReader.isPluginEnabled(w3p.address), config.tradeState.isTradingEnabled, config.tradeState.isIndexTokenApproved, config.tradeConfig.indexToken, config.tradeState.indexTokenDescription)),
 
                     ),
                   ),

@@ -1,6 +1,6 @@
 
 import { awaitPromises, combine, empty, map, mergeArray, multicast, now, scan, skip, snapshot, switchLatest } from "@most/core"
-import { CHAIN, switchFailedSources, ITokenIndex, ITokenInput, ITokenTrade, AddressZero, getChainName, IPositionDecrease, IPositionIncrease, IPositionClose, IPositionLiquidated, filterNull, listen, IVaultPosition, unixTimestampNow, TRADE_CONTRACT_MAPPING, IPositionUpdate, IAbstractPositionIdentifier, parseFixed, TOKEN_SYMBOL, KeeperDecreaseRequest, KeeperIncreaseRequest, getPositionKey, IMappedEvent, getDenominator, getTokenUsd, ITokenDescription } from "@gambitdao/gmx-middleware"
+import { CHAIN, switchFailedSources, ITokenIndex, ITokenInput, ITokenTrade, AddressZero, getChainName, IPositionDecrease, IPositionIncrease, IPositionClose, IPositionLiquidated, filterNull, listen, IVaultPosition, unixTimestampNow, TRADE_CONTRACT_MAPPING, IPositionUpdate, IAbstractPositionIdentifier, parseFixed, TOKEN_SYMBOL, KeeperDecreaseRequest, KeeperIncreaseRequest, getPositionKey, IMappedEvent, getDenominator, getTokenUsd, ITokenDescription, safeDiv } from "@gambitdao/gmx-middleware"
 import { combineArray, combineObject, replayLatest } from "@aelea/core"
 import { ERC20__factory, PositionRouter__factory, Reader__factory, Router__factory, VaultPriceFeed__factory, Vault__factory } from "./gmx-contracts"
 import { periodicRun } from "@gambitdao/gmx-middleware"
@@ -12,6 +12,7 @@ import { id } from "@ethersproject/hash"
 import { Interface } from "@ethersproject/abi"
 import { http } from "@aelea/ui-components"
 import { Contract } from "@ethersproject/contracts"
+import { BaseProvider } from "@ethersproject/providers"
 
 
 export type IPositionGetter = IVaultPosition & IAbstractPositionIdentifier
@@ -121,9 +122,14 @@ export async function getErc20Balance(token: ITokenTrade | typeof AddressZero, w
   return 0n
 }
 
-export function connectTrade(walletLink: IWalletLink) {
-  const router = readContractMapping(TRADE_CONTRACT_MAPPING, Router__factory, walletLink.provider, 'Router')
-  const positionRouter = readContractMapping(TRADE_CONTRACT_MAPPING, PositionRouter__factory, walletLink.provider, 'PositionRouter')
+
+
+export function connectTradeReader(provider: Stream<BaseProvider>) {
+  const vault = readContractMapping(TRADE_CONTRACT_MAPPING, Vault__factory, provider, 'Vault')
+  const positionRouter = readContractMapping(TRADE_CONTRACT_MAPPING, PositionRouter__factory, provider, 'PositionRouter')
+  const usdg = readContractMapping(TRADE_CONTRACT_MAPPING, ERC20__factory, provider, 'USDG')
+  const pricefeed = readContractMapping(TRADE_CONTRACT_MAPPING, VaultPriceFeed__factory, provider, 'VaultPriceFeed')
+  const router = readContractMapping(TRADE_CONTRACT_MAPPING, Router__factory, provider, 'Router')
 
 
   const executeIncreasePosition = mapKeeperEvent(positionRouter.listen('ExecuteIncreasePosition'))
@@ -139,57 +145,8 @@ export function connectTrade(walletLink: IWalletLink) {
     return c.approvedPlugins(address, getContractAddress(TRADE_CONTRACT_MAPPING, (await c.provider.getNetwork()).chainId, 'PositionRouter'))
   }))
 
-  return {
-    isPluginEnabled,
-    positionRouter,
-    router,
-    executionFee,
-    executeIncreasePosition,
-    cancelIncreasePosition,
-    executeDecreasePosition,
-    cancelDecreasePosition,
-  }
-}
-
-async function getGmxIOPriceMap(url: string): Promise<{ [key in ITokenIndex]: bigint }> {
-  const res = await fetch(url)
-  const json = await res.json()
-
-  // @ts-ignore
-  return Object.keys(json).reduce((seed, key) => {
-    // @ts-ignore
-    seed[key.toLowerCase()] = json[key]
-    return seed
-  }, {})
-}
-
-export const gmxIoLatestPrice = (chain: CHAIN, token: ITokenTrade) => {
-  const source = gmxIOPriceMapSource[chain as keyof typeof gmxIOPriceMapSource]
-
-  if (!source) {
-    throw new Error(`no price mapping exists for chain ${getChainName(chain)} ${chain}`)
-  }
-
-  return map(pmap => {
-    const val = pmap[token as keyof typeof pmap]
-
-    return BigInt(val)
-  }, source)
-}
-
-export function connectVault(walletLink: IWalletLink) {
-  const vault = readContractMapping(TRADE_CONTRACT_MAPPING, Vault__factory, walletLink.provider, 'Vault')
-  const positionRouter = readContractMapping(TRADE_CONTRACT_MAPPING, PositionRouter__factory, walletLink.provider, 'PositionRouter')
-  const reader = readContractMapping(TRADE_CONTRACT_MAPPING, Reader__factory, walletLink.defaultProvider, 'Reader')
-  const usdg = readContractMapping(TRADE_CONTRACT_MAPPING, ERC20__factory, walletLink.provider, 'USDG')
-  const pricefeed = readContractMapping(TRADE_CONTRACT_MAPPING, VaultPriceFeed__factory, walletLink.provider, 'VaultPriceFeed')
-
-  // const usdg = map(w3p => ERC20__factory.connect(ARBITRUM_ADDRESS.USDG, w3p), provider)
-
   const usdgSupply = usdg.readInt(map(c => c.totalSupply()))
   const totalTokenWeight = vault.readInt(map(c => c.totalTokenWeights()))
-
-  const getTokenDescription = (token: Stream<ITokenInput>) => combineArray((chain, address) => getTokenDescriptionFn(chain, address), walletLink.network, token)
 
   const getFundingInfo = (token: Stream<ITokenIndex>, tokenDescription: Stream<ITokenDescription>) => awaitPromises(combineArray(async (vaultContract, address, desc): Promise<IFundingInfo> => {
 
@@ -203,7 +160,7 @@ export function connectVault(walletLink: IWalletLink) {
         : vaultContract.fundingRateFactor().then(x => x.toBigInt())
     ])
 
-    const rate = fundingRateFactor * reserved / poolAmount
+    const rate = safeDiv(fundingRateFactor * reserved, poolAmount)
 
     return { cumulative, rate, nextRate }
   }, vault.contract, token, tokenDescription))
@@ -348,18 +305,53 @@ export function connectVault(walletLink: IWalletLink) {
   }, vault.contract)
 
   return {
+    isPluginEnabled,
+    positionRouter,
+    router,
+    executionFee,
+    executeIncreasePosition,
+    cancelIncreasePosition,
+    executeDecreasePosition,
+    cancelDecreasePosition,
     getTokenWeight, getTokenDebtUsd, getFundingInfo,
     positionIncreaseEvent, positionDecreaseEvent, positionUpdateEvent, positionCloseEvent, positionLiquidateEvent,
-    tokenDescription: getTokenDescription, getLatestPrice, positionSettled, vault, getPrice,
+    getLatestPrice, positionSettled, vault, getPrice,
     totalTokenWeight, usdgSupply, getPosition, getTokenInfo
   }
 }
 
-const mapKeeperEvent = <T extends KeeperIncreaseRequest | KeeperDecreaseRequest>(keeperEvent: Stream<T>): Stream<T & IMappedEvent> => map(ev => {
-  const isIncrease = 'amountIn' in ev
-  const key = getPositionKey(ev.account, isIncrease ? ev.path.slice(-1)[0] : ev.path[0], ev.indexToken, ev.isLong)
+export function mapKeeperEvent<T extends KeeperIncreaseRequest | KeeperDecreaseRequest>(keeperEvent: Stream<T>): Stream<T & IMappedEvent>{
+  return map(ev => {
+    const isIncrease = 'amountIn' in ev
+    const key = getPositionKey(ev.account, isIncrease ? ev.path.slice(-1)[0] : ev.path[0], ev.indexToken, ev.isLong)
 
-  return { ...ev, key }
-}, keeperEvent)
+    return { ...ev, key }
+  }, keeperEvent)
+}
 
+async function getGmxIOPriceMap(url: string): Promise<{ [key in ITokenIndex]: bigint }> {
+  const res = await fetch(url)
+  const json = await res.json()
+
+  // @ts-ignore
+  return Object.keys(json).reduce((seed, key) => {
+    // @ts-ignore
+    seed[key.toLowerCase()] = json[key]
+    return seed
+  }, {})
+}
+
+export const gmxIoLatestPrice = (chain: CHAIN, token: ITokenTrade) => {
+  const source = gmxIOPriceMapSource[chain as keyof typeof gmxIOPriceMapSource]
+
+  if (!source) {
+    throw new Error(`no price mapping exists for chain ${getChainName(chain)} ${chain}`)
+  }
+
+  return map(pmap => {
+    const val = pmap[token as keyof typeof pmap]
+
+    return BigInt(val)
+  }, source)
+}
 

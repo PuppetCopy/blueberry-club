@@ -8,12 +8,16 @@ export function getPositionCumulativeFundingFee(size: bigint, fundingRate: bigin
   return size * fundingRate / FUNDING_RATE_PRECISION
 }
 
-export function div(a: bigint, b: bigint): bigint {
+export function safeDiv(a: bigint, b: bigint): bigint {
   if (b === 0n) {
     return 0n
   }
 
-  return a * BASIS_POINTS_DIVISOR / b
+  return a / b
+}
+
+export function div(a: bigint, b: bigint): bigint {
+  return safeDiv(a * BASIS_POINTS_DIVISOR, b)
 }
 
 export function abs(a: bigint): bigint {

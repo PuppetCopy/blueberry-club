@@ -1,6 +1,6 @@
 import { combineArray, fromCallback, replayLatest } from "@aelea/core"
 import { BaseProvider, JsonRpcProvider, JsonRpcSigner, Web3Provider } from "@ethersproject/providers"
-import { CHAIN } from "@gambitdao/gmx-middleware"
+import { CHAIN, filterNull } from "@gambitdao/gmx-middleware"
 import { awaitPromises, constant, continueWith, delay, empty, fromPromise, map, mergeArray, multicast, now, skipRepeats, switchLatest, tap } from "@most/core"
 import { Stream } from "@most/types"
 import { eip1193ProviderEvent } from "./common"
@@ -18,8 +18,8 @@ export interface IWalletState {
 
 export interface IWalletLink {
   network: Stream<CHAIN>
-  provider: Stream<Web3Provider | JsonRpcProvider>
-  defaultProvider: Stream<JsonRpcProvider>
+  provider: Stream<Web3Provider | BaseProvider>
+  defaultProvider: Stream<BaseProvider>
 
   wallet: Stream<IWalletState | null>
 }
@@ -47,47 +47,46 @@ export function initWalletLink(
   walletName: Stream<IWalletName>,
   networkChange?: Stream<CHAIN>,
 ): IWalletLink {
+  const fallbackProvider = config.globalProviderMap[config.defaultGlobalChain]
 
-  const defaultProvider = map(chain => {
-    const prv = config.globalProviderMap[chain] || config.globalProviderMap[config.defaultGlobalChain]!
+  if (!fallbackProvider) {
+    throw new Error('no Default Provider configured')
+  }
+
+  const defaultProvider = map(chain => {  
+    const prv = config.globalProviderMap[chain] || fallbackProvider
 
     return prv as JsonRpcProvider
   }, networkChange || now(config.defaultGlobalChain))
 
-  const provider: Stream<Web3Provider | JsonRpcProvider> = replayLatest(multicast(switchLatest(awaitPromises(combineArray(async (metamask, name, fbPovider) => {
+  const provider: Stream<Web3Provider | JsonRpcProvider> = replayLatest(multicast(switchLatest(awaitPromises(combineArray(async (metamask, name) => {
     const isWC = name === IWalletName.walletConnect
     const wp = name === IWalletName.none
       ? null : isWC
         ? walletConnect : metamask
 
-    const prov: Web3Provider | JsonRpcProvider = wp ? new Web3Provider(wp) : fbPovider
-
-
-    // const network = await prov.getNetwork()
-    // const isConnectedChainSupported = network.chainId in config.globalProviderMap
-
-    // if (isConnectedChainSupported) {
-    //   return prov
-    // }
-
-    //   return fbPovider
+    const prov: Web3Provider | BaseProvider = wp ? new Web3Provider(wp) : fallbackProvider
 
     if (prov instanceof Web3Provider && wp) {
       const [address]: string[] = await wp.request({ method: 'eth_accounts' }) as any
 
       if (!address) {
-        return now(fbPovider)
+        return now(fallbackProvider)
       }
 
       //   // WalletConnet doesn't emit standart disconnect
-      const disconnect = constant(fbPovider, isWC
+      const disconnect = constant(fallbackProvider, isWC
         ? fromCallback(cb => walletConnect.on('disconnect', cb))
         : eip1193ProviderEvent(wp, 'disconnect'))
 
-      const walletNetworkChange = map(() => new Web3Provider(wp), eip1193ProviderEvent(wp, 'chainChanged'))
+      const walletNetworkChange = filterNull(map(chain => {
+        self.location.reload()
+        return null
+      }, eip1193ProviderEvent(wp, 'chainChanged')))
+
       const accountChange = map(([account]) => {
         if (!account) {
-          return fbPovider
+          return fallbackProvider
         }
 
         return prov
@@ -97,7 +96,7 @@ export function initWalletLink(
     }
 
     return now(prov)
-  }, fromPromise(metamaskQuery), walletName, defaultProvider)))))
+  }, fromPromise(metamaskQuery), walletName)))))
 
   // const wallet: Stream<IWalletState | null> = replayLatest(multicast(switchLatest(map(prov => {
   //   return continueWith(() => {
@@ -124,23 +123,19 @@ export function initWalletLink(
   //   }, now(null))
   // }, provider))))
 
-  const wallet: Stream<IWalletState | null> = awaitPromises(map(async prov => {
+  const wallet: Stream<IWalletState | null> = replayLatest(multicast(awaitPromises(map(async prov => {
     const network = await prov.getNetwork()
 
     if (prov instanceof Web3Provider) {
-      try {
-        const _signer = prov.getSigner()
-        const address = await _signer.getAddress()
-        const chain = network.chainId as CHAIN
+      const _signer = prov.getSigner()
+      const address = await _signer.getAddress()
+      const chain = network.chainId as CHAIN
 
-        return { signer: _signer, address, provider: prov, chain, }
-      } catch (err) {
-        console.warn(err)
-      }
+      return { signer: _signer, address, provider: prov, chain, }
     }
 
     return null
-  }, provider))
+  }, provider))))
 
 
   const network: Stream<CHAIN> = skipRepeats(awaitPromises(combineArray(async (wallet, provider) => {
