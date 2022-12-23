@@ -15,7 +15,7 @@ import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { $arrowsFlip, $infoTooltip, $IntermediatePromise, $RiskLiquidator, $spinner, $txHashRef, invertColor } from "@gambitdao/ui-components"
 import { CandlestickData, LineStyle, Time } from "lightweight-charts"
 import { Stream } from "@most/types"
-import { connectTradeReader, getErc20Balance, IPositionGetter, latestPriceFromExchanges, mapKeeperEvent } from "../logic/contract/trade"
+import { connectTradeReader, getErc20Balance, IPositionGetter, latestPriceFromExchanges } from "../logic/contract/trade"
 import { $TradeBox, ITradeFocusMode, ITradeState, RequestTradeQuery } from "../components/trade/$TradeBox"
 import { $ButtonToggle } from "../common/$Toggle"
 import { $Table2 } from "../common/$Table2"
@@ -25,8 +25,8 @@ import { $CandleSticks } from "../components/chart/$CandleSticks"
 import { getFeeBasisPoints, getTokenDescription, resolveAddress } from "../logic/utils"
 import { BrowserStore } from "../logic/store"
 import { ContractTransaction } from "@ethersproject/contracts"
-import { getContractAddress, readContractMapping } from "../logic/common"
-import { ERC20__factory, PositionRouter__factory } from "../logic/contract/gmx-contracts"
+import { getContractAddress } from "../logic/common"
+import { ERC20__factory } from "../logic/contract/gmx-contracts"
 import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
 
 
@@ -98,9 +98,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
   const executionFee = multicast(tradeReader.executionFee)
 
-  const openTradeList = map(async list => {
-    return (await list).filter((t): t is ITradeOpen => t.status === TradeStatus.OPEN)
-  }, config.accountTradeList)
+  const openTradeList = map(async list => (await list).filter((t): t is ITradeOpen => t.status === TradeStatus.OPEN), config.accountTradeList)
 
   const tradingStore = config.store.craete('trade', 'tradeBox')
 
@@ -169,9 +167,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
   const inputTokenPrice = switchLatest(combineArray((chain, token) => tradeReader.getLatestPrice(chain, resolveAddress(chain, token)), config.walletLink.network, inputToken))
-  const indexTokenPrice = multicast(switchLatest(combineArray((chain, token) => {
-    return replayLatest(multicast(latestPriceFromExchanges(chain, token)))
-  }, config.walletLink.network, indexToken)))
+  const indexTokenPrice = replayLatest(multicast(switchLatest(combineArray((chain, token) => latestPriceFromExchanges(chain, token), config.walletLink.network, indexToken))))
   const collateralTokenPrice = switchLatest(combineArray((chain, token) => tradeReader.getLatestPrice(chain, resolveAddress(chain, token)), config.walletLink.network, collateralToken))
 
   const account = map(signer => {
@@ -229,7 +225,7 @@ export const $Trade = (config: ITradeComponent) => component((
     mergeArray([globalTradeReader.positionCloseEvent, globalTradeReader.positionLiquidateEvent])
   ))
 
-  const positionChange = mergeArray([
+  const positionChange = multicast(mergeArray([
     settlePosition,
     filterNull(snapshot(
       (pos, update): IPositionGetter | null => {
@@ -244,7 +240,7 @@ export const $Trade = (config: ITradeComponent) => component((
       awaitPromises(positionQuery),
       globalTradeReader.positionUpdateEvent
     )),
-  ])
+  ]))
 
   const position: Stream<IPositionGetter> = replayLatest(multicast(mergeArray([
     awaitPromises(positionQuery),
@@ -496,12 +492,14 @@ export const $Trade = (config: ITradeComponent) => component((
             ...config,
 
             trade: tradeQuery,
+            positionChange,
             pricefeed: config.pricefeed,
 
             tradeConfig,
             tradeState: {
               key: positionKey,
               position,
+
               indexTokenInfo,
               collateralFundingInfo,
               isTradingEnabled,

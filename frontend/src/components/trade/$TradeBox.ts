@@ -105,6 +105,7 @@ interface ITradeBox {
 
   pricefeed: Stream<Promise<IPricefeed[]>>
   trade: Stream<Promise<ITradeOpen | null>>
+  positionChange: Stream<IPositionGetter>
 }
 
 export type RequestTradeQuery = {
@@ -145,7 +146,7 @@ export const $TradeBox = (config: ITradeBox) => component((
   [clickRequestTrade, clickRequestTradeTether]: Behavior<PointerEvent, RequestTradeQuery>,
 
   [crosshairMove, crosshairMoveTether]: Behavior<MouseEventParams, MouseEventParams>,
-  [resetTradeMode, resetTradeModeTether]: Behavior<any, any>,
+  [clickResetTradeMode, clickResetTradeModeTether]: Behavior<any, any>,
   [clickMax, clickMaxTether]: Behavior<any, any>,
 
 
@@ -282,7 +283,8 @@ export const $TradeBox = (config: ITradeBox) => component((
     return null
   }, pnlCrossHairTimeChange)
 
-  const clickResetVal = constant(0n, resetTradeMode)
+  const resetTrade = constant(0n, mergeArray([config.positionChange, clickResetTradeMode]))
+  // const resetTrade = constant(0n, clickResetTradeMode)
 
   const inTradeMode = replayLatest(multicast(combineArray((sizeDeltaUsd, collateralDeltaUsd) => {
     if (sizeDeltaUsd === 0n && collateralDeltaUsd === 0n) {
@@ -442,7 +444,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                       }
 
                       return null
-                    }, tradeState, mergeArray([clickResetVal, leverageCollateralFocus, clickMaxCollateralUsd, autoFillCollateralOnSizeInput])))
+                    }, tradeState, mergeArray([resetTrade, leverageCollateralFocus, clickMaxCollateralUsd, autoFillCollateralOnSizeInput])))
                   )
                 ),
                 switchLatest
@@ -674,7 +676,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                       }
 
                       return null
-                    }, tradeState, mergeArray([clickResetVal, leverageSizeFocus, clickMaxBalanceSizeDelta, inputCollateralDeltaUsd, autoFillSizeOnCollateralInput])))
+                    }, tradeState, mergeArray([resetTrade, leverageSizeFocus, clickMaxBalanceSizeDelta, inputCollateralDeltaUsd, autoFillSizeOnCollateralInput])))
                   )
                 ),
                 switchLatest
@@ -965,7 +967,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
                       style({ padding: '8px', fontSize: '.75em', alignSelf: 'center' })(
                         $ButtonSecondary({ $content: $text('Reset') })({
-                          click: resetTradeModeTether()
+                          click: clickResetTradeModeTether()
                         })
                       ),
 
@@ -1274,21 +1276,21 @@ export const $TradeBox = (config: ITradeBox) => component((
 
           const multiplier = div(totalSize, totalCollateral)
           return multiplier
-        }, tradeState, debounce(50, mergeArray([autoFillCollateralOnSizeInput, autoFillSizeOnCollateralInput, clickMaxBalanceSizeDelta, clickResetVal])))),
+        }, tradeState, debounce(50, mergeArray([autoFillCollateralOnSizeInput, autoFillSizeOnCollateralInput, clickMaxBalanceSizeDelta, resetTrade])))),
         // initialLeverage,
         slideLeverage
       ]),
       switchIsIncrease,
       changeCollateralToken,
       changeCollateralDeltaUsd: mergeArray([
-        clickResetVal,
+        resetTrade,
         leverageCollateralFocus,
         inputCollateralDeltaUsd,
         clickMaxCollateralUsd,
         autoFillCollateralOnSizeInput,
       ]),
       changeSizeDeltaUsd: mergeArray([
-        clickResetVal,
+        resetTrade,
         inputSizeDeltaUsd,
         leverageSizeFocus,
         clickMaxBalanceSizeDelta,
