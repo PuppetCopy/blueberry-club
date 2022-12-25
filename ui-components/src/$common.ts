@@ -163,15 +163,15 @@ export const $hintInput = (config: {
   change: Stream<string>
 }) => $row(layoutSheet.spacing, style({ placeContent: 'space-between', fontSize: '0.75em' }))(
   $row(layoutSheet.spacingTiny)(
+    $text(style({ color: pallete.foreground }))(config.label),
+    $infoTooltip(config.tooltip),
+  ),
+  $row(layoutSheet.spacingTiny)(
     $text(style({ color: pallete.foreground }))(config.val),
     $text(styleBehavior(map(isIncrease => {
       return isIncrease ? { color: pallete.positive } : { color: pallete.indeterminate }
     }, config.isIncrease)))('→'),
     $text(style({}))(config.change),
-  ),
-  $row(layoutSheet.spacingTiny)(
-    $text(style({ color: pallete.foreground }))(config.label),
-    $infoTooltip(config.tooltip),
   ),
 )
 

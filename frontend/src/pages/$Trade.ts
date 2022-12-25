@@ -1,5 +1,5 @@
 import { Behavior, combineArray, combineObject, O, replayLatest } from "@aelea/core"
-import { $node, $text, component, eventElementTarget, INode, nodeEvent, style, styleBehavior, styleInline } from "@aelea/dom"
+import { $node, $text, component, eventElementTarget, INode, style, styleInline } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 import {
@@ -7,12 +7,12 @@ import {
   getLiquidationPrice, getMarginFees, STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, TAX_BASIS_POINTS,
   getDenominator, USD_PERCISION, formatReadableUSD, timeSince, getPositionKey, IPositionIncrease,
   IPositionDecrease, getPnL, filterNull, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE,
-  CHAIN, ITokenIndex, ITokenStable, ITokenInput, TradeStatus, LIMIT_LEVERAGE, div, readableDate, TRADE_CONTRACT_MAPPING, getTokenAmount, KeeperIncreaseRequest, KeeperDecreaseRequest, abs
+  CHAIN, ITokenIndex, ITokenStable, ITokenInput, TradeStatus, LIMIT_LEVERAGE, div, readableDate, TRADE_CONTRACT_MAPPING, getTokenAmount, KeeperIncreaseRequest, KeeperDecreaseRequest, abs, getFundingFee
 } from "@gambitdao/gmx-middleware"
 
-import { combine, constant, map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, snapshot, debounce } from "@most/core"
+import { combine, map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, snapshot, debounce, zip } from "@most/core"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
-import { $arrowsFlip, $infoTooltip, $IntermediatePromise, $RiskLiquidator, $spinner, $txHashRef, invertColor } from "@gambitdao/ui-components"
+import { $infoTooltip, $IntermediatePromise, $RiskLiquidator, $spinner, $txHashRef, invertColor } from "@gambitdao/ui-components"
 import { CandlestickData, LineStyle, Time } from "lightweight-charts"
 import { Stream } from "@most/types"
 import { connectTradeReader, getErc20Balance, IPositionGetter, latestPriceFromExchanges } from "../logic/contract/trade"
@@ -20,7 +20,6 @@ import { $TradeBox, ITradeFocusMode, ITradeState, RequestTradeQuery } from "../c
 import { $ButtonToggle } from "../common/$Toggle"
 import { $Table2 } from "../common/$Table2"
 import { $Entry, $livePnl } from "./$Leaderboard"
-import { $iconCircular } from "../elements/$common"
 import { $CandleSticks } from "../components/chart/$CandleSticks"
 import { getFeeBasisPoints, getTokenDescription, resolveAddress } from "../logic/utils"
 import { BrowserStore } from "../logic/store"
@@ -129,8 +128,6 @@ export const $Trade = (config: ITradeComponent) => component((
   const slippage = slippageStore.storeReplay(changeSlippage)
 
 
-
-
   const inputToken: Stream<ITokenInput> = inputTokenStore.storeReplay(
     changeInputToken,
     combine((chain, token) => {
@@ -201,7 +198,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
 
-  const positionQuery = switchLatest(map(key => tradeReader.getPosition(key), positionKey))
+  const positionQuery = multicast(replayLatest(switchLatest(map(key => tradeReader.getPosition(key), positionKey))))
 
 
   const settlePosition = filterNull(snapshot(
@@ -248,18 +245,6 @@ export const $Trade = (config: ITradeComponent) => component((
   ])))
 
 
-  const leverage = leverageStore.store(mergeArray([
-    changeLeverage,
-    snapshot((params, stake) => {
-      if (stake.averagePrice > 0n) {
-        return div(stake.size + params.sizeDeltaUsd, stake.collateral + params.collateralDeltaUsd)
-      }
-
-      return leverageStore.getState()
-    }, combineObject({ collateralDeltaUsd, sizeDeltaUsd }), position),
-  ]))
-
-
   const tradeQuery: Stream<Promise<ITradeOpen | null>> = mergeArray([
     combineArray(async (posQuery, listQuery) => {
       const res = await posQuery
@@ -294,7 +279,74 @@ export const $Trade = (config: ITradeComponent) => component((
   const collateralTokenDescription = combineArray((chain, address) => getTokenDescription(chain, address), config.walletLink.network, collateralToken)
 
   const indexTokenInfo = tradeReader.getTokenInfo(indexToken)
-  const collateralFundingInfo = tradeReader.getFundingInfo(collateralToken, collateralTokenDescription)
+  const collateralTokenFundingInfo = tradeReader.getTokenFundingInfo(collateralToken, collateralTokenDescription)
+
+
+  const swapFee = skipRepeats(map((params) => {
+    const inputAndIndexStable = params.inputTokenDescription.isStable && params.indexTokenDescription.isStable
+    const swapFeeBasisPoints = inputAndIndexStable ? STABLE_SWAP_FEE_BASIS_POINTS : SWAP_FEE_BASIS_POINTS
+    const taxBasisPoints = inputAndIndexStable ? STABLE_TAX_BASIS_POINTS : TAX_BASIS_POINTS
+
+    if (params.collateralDeltaUsd === 0n || resolveAddress(params.chain, params.inputToken) === params.indexToken) {
+      return 0n
+    }
+
+    const adjustedPnlDelta = params.isIncrease
+      ? 0n
+      : getPnL(params.isLong, params.position.averagePrice, params.indexTokenPrice, params.position.size) * abs(params.sizeDeltaUsd) / params.position.size
+
+    const amountUsd = abs(params.collateralDeltaUsd) + adjustedPnlDelta
+
+    const usdgAmount = amountUsd * getDenominator(params.inputTokenDescription.decimals) / USD_PERCISION
+
+    const feeBps0 = getFeeBasisPoints(
+      params.inputTokenDebtUsd,
+      params.inputTokenWeight,
+      usdgAmount,
+      swapFeeBasisPoints,
+      taxBasisPoints,
+      true,
+      params.usdgSupply,
+      params.totalTokenWeight
+    )
+    const feeBps1 = getFeeBasisPoints(
+      params.indexTokenInfo.usdgAmounts,
+      params.indexTokenInfo.weight,
+      usdgAmount,
+      swapFeeBasisPoints,
+      taxBasisPoints,
+      false,
+      params.usdgSupply,
+      params.totalTokenWeight
+    )
+
+    const feeBps = feeBps0 > feeBps1 ? feeBps0 : feeBps1
+    const addedSwapFee = feeBps ? amountUsd * feeBps / BASIS_POINTS_DIVISOR : 0n
+
+    return addedSwapFee
+  }, combineObject({
+    indexToken, inputToken, isIncrease, sizeDeltaUsd, isLong, collateralDeltaUsd,
+    chain: config.walletLink.network, indexTokenInfo: indexTokenInfo, usdgSupply: tradeReader.usdgSupply, totalTokenWeight: tradeReader.totalTokenWeight,
+    position, inputTokenDescription, inputTokenWeight, inputTokenDebtUsd, indexTokenDescription, indexTokenPrice
+  })))
+
+  const marginFee = map((size) => getMarginFees(abs(size)), sizeDeltaUsd)
+  const fundingFee = map(params => {
+    console.log(params)
+    return getFundingFee(params.position.entryFundingRate, params.collateralTokenFundingInfo.cumulative, params.position.size)
+  }, combineObject({ collateralTokenFundingInfo, position }))
+
+
+  const leverage = leverageStore.store(mergeArray([
+    changeLeverage,
+    zip((params, stake) => {
+      if (stake.averagePrice > 0n) {
+        return div(stake.size + params.sizeDeltaUsd, stake.collateral + params.collateralDeltaUsd - params.fundingFee)
+      }
+
+      return leverageStore.getState()
+    }, combineObject({ collateralDeltaUsd, sizeDeltaUsd, fundingFee }), position),
+  ]))
 
 
   const tradeConfig = { focusMode, slippage, isLong, isIncrease, inputToken, collateralToken, indexToken, leverage, collateralDeltaUsd, sizeDeltaUsd }
@@ -331,76 +383,12 @@ export const $Trade = (config: ITradeComponent) => component((
       return 0n
     }
 
-    // if (params.sizeDeltaUsd === 0n) {
-    //   return 0n
-    // }
-
-    // if (stake === null) {
-    //   return getLiquidationPrice(params.isLong, 0n, 0n, params.indexTokenPrice, 0n, 0n, 0n, params.sizeDeltaUsd, params.collateralDeltaUsd)
-    // }
-
-    const positionSize = stake.size || 0n
-    const positionCollateral = stake.collateral || 0n
-
-    const averagePrice = stake.averagePrice || params.indexTokenPrice
     const pnl = stake ? getPnL(params.isLong, stake.averagePrice, params.indexTokenPrice, stake.size) : 0n
 
-    const price = getLiquidationPrice(params.isLong, positionSize, positionCollateral, averagePrice, 0n, 0n, pnl, params.sizeDeltaUsd, params.collateralDeltaUsd)
+    // const price = getLiquidationPrice(params.isLong, stake.size, stake.collateral, stake.averagePrice, 0n, 0n, pnl, params.sizeDeltaUsd, params.collateralDeltaUsd)
+    const price = getLiquidationPrice(params.isLong, stake.size, stake.collateral, stake.averagePrice, stake.entryFundingRate, params.collateralFundingInfo.cumulative, pnl, params.sizeDeltaUsd, params.collateralDeltaUsd)
     return price
-  }, combineObject({ position, isIncrease, collateralDeltaUsd, sizeDeltaUsd, averagePrice, indexTokenPrice, indexTokenDescription, isLong }))
-
-
-  const swapFee = skipRepeats(map((params) => {
-    const swapFeeBasisPoints = params.inputTokenDescription.isStable && params.indexTokenDescription.isStable ? STABLE_SWAP_FEE_BASIS_POINTS : SWAP_FEE_BASIS_POINTS
-    const taxBasisPoints = params.inputTokenDescription.isStable && params.indexTokenDescription.isStable ? STABLE_TAX_BASIS_POINTS : TAX_BASIS_POINTS
-
-    if (resolveAddress(params.chain, params.inputToken) === params.indexToken) {
-      return 0n
-    }
-
-    const adjustedPnlDelta = params.position.averagePrice > 0n && !params.isIncrease && params.position.size > 0n
-      ? getPnL(params.isLong, params.position.averagePrice, params.indexTokenPrice, params.position.size) * -params.sizeDeltaUsd / params.position.size
-      : 0n
-
-    const amountUsd = abs(params.collateralDeltaUsd) + adjustedPnlDelta
-
-    const usdgAmount = amountUsd * getDenominator(params.inputTokenDescription.decimals) / USD_PERCISION
-
-    const feeBps0 = getFeeBasisPoints(
-      params.inputTokenDebtUsd,
-      params.inputTokenWeight,
-      usdgAmount,
-      swapFeeBasisPoints,
-      taxBasisPoints,
-      true,
-      params.usdgSupply,
-      params.totalTokenWeight
-    )
-    const feeBps1 = getFeeBasisPoints(
-      params.indexTokenInfo.usdgAmounts,
-      params.indexTokenInfo.weight,
-      usdgAmount,
-      swapFeeBasisPoints,
-      taxBasisPoints,
-      false,
-      params.usdgSupply,
-      params.totalTokenWeight
-    )
-
-    const feeBps = feeBps0 > feeBps1 ? feeBps0 : feeBps1
-    const addedSwapFee = feeBps ? amountUsd * feeBps / BASIS_POINTS_DIVISOR : 0n
-
-    return addedSwapFee
-  }, combineObject({
-    indexToken, inputToken, isIncrease, sizeDeltaUsd, isLong, collateralDeltaUsd, averagePrice,
-    chain: config.walletLink.network, indexTokenInfo: indexTokenInfo, usdgSupply: tradeReader.usdgSupply, totalTokenWeight: tradeReader.totalTokenWeight,
-    position, inputTokenDescription, inputTokenWeight, inputTokenDebtUsd, indexTokenDescription, indexTokenPrice
-  })))
-
-  const marginFee = map((size) => getMarginFees(abs(size)), sizeDeltaUsd)
-
-  const fee = combine((swap, margin) => swap + margin, swapFee, marginFee)
-
+  }, combineObject({ position, isIncrease, collateralDeltaUsd, collateralFundingInfo: collateralTokenFundingInfo, sizeDeltaUsd, averagePrice, indexTokenPrice, indexTokenDescription, isLong }))
 
 
   const requestPricefeed = debounce(10, combineArray((chain, tokenAddress, interval): IPricefeedParamApi => {
@@ -501,7 +489,7 @@ export const $Trade = (config: ITradeComponent) => component((
               position,
 
               indexTokenInfo,
-              collateralFundingInfo,
+              collateralFundingInfo: collateralTokenFundingInfo,
               isTradingEnabled,
               isIndexTokenApproved,
               sizeDelta,
@@ -511,9 +499,9 @@ export const $Trade = (config: ITradeComponent) => component((
               indexTokenPrice,
               collateralTokenPrice,
               collateralTokenDescription,
-              fee,
               indexTokenDescription,
               inputTokenDescription,
+              fundingFee,
               marginFee,
               swapFee,
               averagePrice,
@@ -606,30 +594,30 @@ export const $Trade = (config: ITradeComponent) => component((
                       )
                     })
                   },
-                  {
-                    $head: $text('Switch'),
-                    columnOp: style({ flex: 2, placeContent: 'center', maxWidth: '80px' }),
-                    $body: map((trade) => {
+                  // {
+                  //   $head: $text('Switch'),
+                  //   columnOp: style({ flex: 2, placeContent: 'center', maxWidth: '80px' }),
+                  //   $body: map((trade) => {
 
-                      const clickSwitchBehavior = switchTradeTether(
-                        nodeEvent('click'),
-                        constant(trade),
-                      )
+                  //     const clickSwitchBehavior = switchTradeTether(
+                  //       nodeEvent('click'),
+                  //       constant(trade),
+                  //     )
 
-                      const switchActiveStyle = styleBehavior(map(vpos => {
-                        const isPosMatched = vpos?.key === trade.key
+                  //     const switchActiveStyle = styleBehavior(map(vpos => {
+                  //       const isPosMatched = vpos?.key === trade.key
 
-                        return isPosMatched ? { pointerEvents: 'none', opacity: '0.3' } : {}
-                      }, position))
+                  //       return isPosMatched ? { pointerEvents: 'none', opacity: '0.3' } : {}
+                  //     }, position))
 
 
-                      return $row(switchActiveStyle)(
-                        clickSwitchBehavior(
-                          style({ height: '28px', width: '28px' }, $iconCircular($arrowsFlip, pallete.horizon))
-                        )
-                      )
-                    })
-                  },
+                  //     return $row(switchActiveStyle)(
+                  //       clickSwitchBehavior(
+                  //         style({ height: '28px', width: '28px' }, $iconCircular($arrowsFlip, pallete.horizon))
+                  //       )
+                  //     )
+                  //   })
+                  // },
                 ],
               })({})
             })
@@ -663,7 +651,7 @@ export const $Trade = (config: ITradeComponent) => component((
           ),
 
 
-          $row(style({ position: 'relative', height: '400px', backgroundColor: colorAlpha(invertColor(pallete.message), .15), maxHeight: '60vh', borderBottom: `1px solid rgba(191, 187, 207, 0.15)` }))(
+          $row(style({ position: 'relative', flex: 1, backgroundColor: colorAlpha(invertColor(pallete.message), .15), maxHeight: '60vh', borderBottom: `1px solid rgba(191, 187, 207, 0.15)` }))(
 
             $IntermediatePromise({
               query: config.pricefeed,
@@ -696,7 +684,7 @@ export const $Trade = (config: ITradeComponent) => component((
                         //   formatter: (priceValue: BarPrice) => readableNumber(priceValue.valueOf())
                         // },
                         priceLineColor: pallete.foreground,
-                        baseLineStyle: LineStyle.Dotted,
+                        baseLineStyle: LineStyle.SparseDotted,
 
                         upColor: pallete.middleground,
                         borderUpColor: pallete.middleground,

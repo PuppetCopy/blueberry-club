@@ -144,7 +144,7 @@ export function getLiquidationPrice(
     : collateral + collateralDelta
 
 
-  const fundingFee = (size * cumulativeFundingRate - entryFundingRate) / FUNDING_RATE_PRECISION
+  const fundingFee = getFundingFee(entryFundingRate, cumulativeFundingRate, size)
   const positionFee = getMarginFees(size) + LIQUIDATION_FEE + fundingFee
 
 

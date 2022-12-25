@@ -17,18 +17,10 @@ import { Stream } from "@most/types"
 
 export const $WalletLogoMap = {
   [IWalletName.metamask]: $element('img')(attr({ src: '/assets/metamask-fox.svg' }), style({ width: '24px' }))(),
-  [IWalletName.walletConnect]: $icon({
-    viewBox: '0 0 32 32',
-    width: '18px',
-    fill: 'white',
-    $content: $walletConnectLogo,
-  }),
-  [IWalletName.none]: $icon({
-    viewBox: '0 0 32 32',
-    width: '18px',
-    fill: 'white',
-    $content: $bagOfCoinsCircle,
-  }),
+  [IWalletName.walletConnect]: $row(style({ margin: '1px', backgroundColor: '#3B99FC', padding: '2px', borderRadius: '6px' }))(
+    $icon({ viewBox: '0 0 32 32', width: '18px', fill: 'white', $content: $walletConnectLogo })
+  ),
+  [IWalletName.none]: $icon({ viewBox: '0 0 32 32', width: '18px', fill: 'white', $content: $bagOfCoinsCircle, }),
 }
 
 
@@ -211,10 +203,7 @@ export const $ConnectDropdown = ($trigger: $Node, clickOpenPopover: Stream<any>)
           }, fromPromise(metamaskQuery))),
           $ButtonSecondary({
             $content: $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
-              $row(style({ margin: '1px', backgroundColor: '#3B99FC', padding: '2px', borderRadius: '6px' }))(
-                $WalletLogoMap[IWalletName.walletConnect]
-
-              ),
+              $WalletLogoMap[IWalletName.walletConnect],
               $text('Wallet-Connect'),
             )
           })({

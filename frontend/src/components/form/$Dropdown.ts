@@ -27,12 +27,12 @@ export interface ISelect<T> {
   list: T[]
   value: Stream<T>;
 
-  $container: NodeComposeFn<$Node>
+  $container?: NodeComposeFn<$Node>
   $$option: Op<T, $Node>
 }
 
 
-export const $Select = <T>({ list, $$option, $container }: ISelect<T>) => component((
+export const $Select = <T>({ list, $$option, $container = $defaultSelectContainer }: ISelect<T>) => component((
   [select, selectTether]: Behavior<IBranch, T>
 ) => {
 
@@ -149,8 +149,9 @@ export const $Dropdown = <T>({
         return dropBehavior(
           $Select({
             ...value,
-            $container: value.$container(style({
+            $container: (value.$container || $defaultSelectContainer)(style({
               zIndex: 60,
+              left: 0,
               position: 'absolute',
               display: 'none'
             })),
@@ -343,7 +344,7 @@ export const $DropMultiSelect = <T>({
             return empty()
           }
 
-          const $floatingContainer = selectDrop.$container(
+          const $floatingContainer = (selectDrop.$container || $defaultSelectContainer)(
             style({
               padding: '8px', zIndex: 50, left: 0,
               position: 'absolute'

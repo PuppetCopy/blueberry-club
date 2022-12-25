@@ -164,18 +164,18 @@ const $TrasnferOwnership = (address: string, token: IToken, walletLink: IWalletL
 ) => {
 
   const contract = replayLatest(multicast(skipRepeats(awaitPromises(map(async w3p => {
-    if (w3p === null || w3p?.network?.chainId !== LAB_CHAIN) {
+    if (w3p === null || w3p.chain !== LAB_CHAIN) {
       return null
     }
 
-    const contract = GBC__factory.connect(GBC_ADDRESS.GBC, w3p.getSigner())
+    const contract = GBC__factory.connect(GBC_ADDRESS.GBC, w3p.provider.getSigner())
 
     if (await contract.deployed()) {
       return contract
     }
 
     return null
-  }, walletLink.provider)))))
+  }, walletLink.wallet)))))
 
   const value = startWith('', clipboardInput)
   const transferTo = merge(value, inputValueChange)

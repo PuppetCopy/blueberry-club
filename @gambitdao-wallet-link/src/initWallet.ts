@@ -131,7 +131,8 @@ export function initWalletLink(
       const address = await _signer.getAddress()
       const chain = network.chainId as CHAIN
 
-      return { signer: _signer, address, provider: prov, chain, }
+      const state: IWalletState = { signer: _signer, address, provider: prov, chain, walletName: prov.provider === walletConnect ? IWalletName.walletConnect : IWalletName.metamask }
+      return state
     }
 
     return null

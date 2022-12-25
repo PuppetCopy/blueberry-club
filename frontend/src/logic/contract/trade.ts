@@ -148,7 +148,7 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
   const usdgSupply = usdg.readInt(map(c => c.totalSupply()))
   const totalTokenWeight = vault.readInt(map(c => c.totalTokenWeights()))
 
-  const getFundingInfo = (token: Stream<ITokenIndex>, tokenDescription: Stream<ITokenDescription>) => awaitPromises(combineArray(async (vaultContract, address, desc): Promise<IFundingInfo> => {
+  const getTokenFundingInfo = (token: Stream<ITokenIndex>, tokenDescription: Stream<ITokenDescription>) => awaitPromises(combineArray(async (vaultContract, address, desc): Promise<IFundingInfo> => {
 
     const [cumulative, nextRate, reserved, poolAmount, fundingRateFactor] = await Promise.all([
       vaultContract.cumulativeFundingRates(address).then(x => x.toBigInt()),
@@ -313,7 +313,7 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
     cancelIncreasePosition,
     executeDecreasePosition,
     cancelDecreasePosition,
-    getTokenWeight, getTokenDebtUsd, getFundingInfo,
+    getTokenWeight, getTokenDebtUsd, getTokenFundingInfo: getTokenFundingInfo,
     positionIncreaseEvent, positionDecreaseEvent, positionUpdateEvent, positionCloseEvent, positionLiquidateEvent,
     getLatestPrice, positionSettled, vault, getPrice,
     totalTokenWeight, usdgSupply, getPosition, getTokenInfo

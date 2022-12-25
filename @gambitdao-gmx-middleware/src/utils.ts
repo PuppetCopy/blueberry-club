@@ -44,14 +44,14 @@ export function parseReadableNumber(stringNumber: string, locale?: Intl.NumberFo
   return parsed
 }
 
-const readableLargeNumber = Intl.NumberFormat("en-US", { maximumFractionDigits: 0, })
+const readableLargeNumber = Intl.NumberFormat("en-US", { maximumFractionDigits: 0 })
 const readableSmallNumber = Intl.NumberFormat("en-US", { maximumFractionDigits: 2, minimumFractionDigits: 2 })
-const readableTinyNumber = Intl.NumberFormat("en-US", { maximumSignificantDigits: 2 })
+const readableTinyNumber = Intl.NumberFormat("en-US", { maximumSignificantDigits: 2, minimumSignificantDigits: 2 })
 
 export function readableNumber(ammount: number | bigint) {
   const absAmount = typeof ammount === 'bigint' ? ammount > 0n ? ammount : -ammount : Math.abs(ammount)
   
-  if (absAmount > 100) {
+  if (absAmount > 1000) {
     return readableLargeNumber.format(ammount)
   }
 
@@ -69,11 +69,7 @@ export const trimTrailingNumber = (n: string) => {
   return match ? match[0] : ''
 }
 
-const defaultUsdNumberFormatOption: Intl.NumberFormatOptions = {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0
-}
+
 
 const options: Intl.DateTimeFormatOptions = { year: '2-digit', month: 'short', day: '2-digit' }
 
@@ -81,17 +77,14 @@ export function readableDate(timestamp: number) {
   return new Date(timestamp * 1000).toLocaleDateString(undefined, options)
 }
 
-export function formatReadableUSD(ammount: bigint | number, options?: Intl.NumberFormatOptions) {
+export function formatReadableUSD(ammount: bigint | number) {
   if (ammount === 0n) {
     return '$0'
   }
 
   const amountUsd = typeof ammount === 'bigint' ?  formatFixed(ammount, USD_DECIMALS) : ammount
-  const opts = options
-    ? { ...defaultUsdNumberFormatOption, ...options }
-    : Math.abs(amountUsd) > 100 ? defaultUsdNumberFormatOption : { ...defaultUsdNumberFormatOption, maximumFractionDigits: 2 }
 
-  return new Intl.NumberFormat("en-US", opts).format(amountUsd)
+  return '$' + readableNumber(amountUsd)
 }
 
 export function shortenTxAddress(address: string) {
