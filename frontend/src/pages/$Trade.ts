@@ -1,5 +1,5 @@
 import { Behavior, combineArray, combineObject, O, replayLatest } from "@aelea/core"
-import { $node, $text, component, eventElementTarget, INode, style, styleInline } from "@aelea/dom"
+import { $node, $text, component, eventElementTarget, INode, nodeEvent, style, styleBehavior, styleInline } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 import {
@@ -10,9 +10,9 @@ import {
   CHAIN, ITokenIndex, ITokenStable, ITokenInput, TradeStatus, LIMIT_LEVERAGE, div, readableDate, TRADE_CONTRACT_MAPPING, getTokenAmount, KeeperIncreaseRequest, KeeperDecreaseRequest, abs, getFundingFee
 } from "@gambitdao/gmx-middleware"
 
-import { combine, map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, snapshot, debounce, zip } from "@most/core"
+import { combine, map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, snapshot, debounce, zip, constant } from "@most/core"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
-import { $infoTooltip, $IntermediatePromise, $RiskLiquidator, $spinner, $txHashRef, invertColor } from "@gambitdao/ui-components"
+import { $arrowsFlip, $infoTooltip, $IntermediatePromise, $RiskLiquidator, $spinner, $txHashRef, invertColor } from "@gambitdao/ui-components"
 import { CandlestickData, LineStyle, Time } from "lightweight-charts"
 import { Stream } from "@most/types"
 import { connectTradeReader, getErc20Balance, IPositionGetter, latestPriceFromExchanges } from "../logic/contract/trade"
@@ -27,6 +27,7 @@ import { ContractTransaction } from "@ethersproject/contracts"
 import { getContractAddress } from "../logic/common"
 import { ERC20__factory } from "../logic/contract/gmx-contracts"
 import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
+import { $iconCircular } from "../elements/$common"
 
 
 export interface ITradeComponent {
@@ -594,30 +595,30 @@ export const $Trade = (config: ITradeComponent) => component((
                       )
                     })
                   },
-                  // {
-                  //   $head: $text('Switch'),
-                  //   columnOp: style({ flex: 2, placeContent: 'center', maxWidth: '80px' }),
-                  //   $body: map((trade) => {
+                  {
+                    $head: $text('Switch'),
+                    columnOp: style({ flex: 2, placeContent: 'center', maxWidth: '80px' }),
+                    $body: map((trade) => {
 
-                  //     const clickSwitchBehavior = switchTradeTether(
-                  //       nodeEvent('click'),
-                  //       constant(trade),
-                  //     )
+                      const clickSwitchBehavior = switchTradeTether(
+                        nodeEvent('click'),
+                        constant(trade),
+                      )
 
-                  //     const switchActiveStyle = styleBehavior(map(vpos => {
-                  //       const isPosMatched = vpos?.key === trade.key
+                      const switchActiveStyle = styleBehavior(map(vpos => {
+                        const isPosMatched = vpos?.key === trade.key
 
-                  //       return isPosMatched ? { pointerEvents: 'none', opacity: '0.3' } : {}
-                  //     }, position))
+                        return isPosMatched ? { pointerEvents: 'none', opacity: '0.3' } : {}
+                      }, position))
 
 
-                  //     return $row(switchActiveStyle)(
-                  //       clickSwitchBehavior(
-                  //         style({ height: '28px', width: '28px' }, $iconCircular($arrowsFlip, pallete.horizon))
-                  //       )
-                  //     )
-                  //   })
-                  // },
+                      return $row(switchActiveStyle)(
+                        clickSwitchBehavior(
+                          style({ height: '28px', width: '28px' }, $iconCircular($arrowsFlip, pallete.horizon))
+                        )
+                      )
+                    })
+                  },
                 ],
               })({})
             })

@@ -84,6 +84,7 @@ export const $defaultSelectContainer = $column(
   style({
     minWidth: '80px', overflow: 'hidden',
     border: `1px solid ${pallete.horizon}`,
+    left: 0,
     borderRadius: '20px',
     backgroundColor: pallete.background,
     boxShadow: `rgb(0 0 0 / 21%) 1px 1px 14px`
@@ -151,7 +152,6 @@ export const $Dropdown = <T>({
             ...value,
             $container: (value.$container || $defaultSelectContainer)(style({
               zIndex: 60,
-              left: 0,
               position: 'absolute',
               display: 'none'
             })),
