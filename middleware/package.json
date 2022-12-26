@@ -29,7 +29,7 @@
         "@most/scheduler": "1.3.0",
         "@most/types": "1.1.0",
         "@types/isomorphic-fetch": "^0.0.36",
-        "@urql/core": "^3.0.5",
+        "@urql/core": "^3.1.1",
         "eip1193-provider": "1.0.1",
         "ethers": "^5.7.2",
         "graphql": "^16.6.0"

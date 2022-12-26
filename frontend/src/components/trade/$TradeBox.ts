@@ -236,14 +236,14 @@ export const $TradeBox = (config: ITradeBox) => component((
     const totalSize = state.sizeDeltaUsd + state.position.size
     const collateral = div(totalSize, leverage)
 
-    const currentMultiplier = div(totalSize, state.position.collateral)
+    const currentMultiplier = div(totalSize, state.position.collateral - state.fundingFee)
     const multiplierDelta = state.isIncrease ? currentMultiplier - leverage : leverage - currentMultiplier
 
     if (multiplierDelta < 50) {
       return 0n
     }
 
-    const deltaUsd = collateral - state.position.collateral
+    const deltaUsd = collateral - state.position.collateral + state.fundingFee
 
     return deltaUsd
   }, tradeState, slideCollateralLeverage))
@@ -1133,7 +1133,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                                   path,
                                   state.indexToken,
                                   // flip values. Contract code is using `uint` integers
-                                  -state.collateralDelta,
+                                  -state.collateralDeltaUsd,
                                   -state.sizeDeltaUsd,
 
                                   state.isLong,

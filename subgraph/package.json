@@ -10,6 +10,6 @@
     "deploy:testnet": "yarn run build-pre-deploy && graph deploy --product hosted-service nissoh/blueberry-club-rinkeby subgraph.testnet.yaml"
   },
   "dependencies": {
-    "@graphprotocol/graph-ts": "0.29.0"
+    "@graphprotocol/graph-ts": "0.29.1"
   }
 }

@@ -1134,7 +1134,7 @@ __metadata:
     "@typechain/ethers-v5": ^10.1.1
     "@types/isomorphic-fetch": ^0.0.36
     "@types/node": 18.11.11
-    "@urql/core": ^3.0.5
+    "@urql/core": ^3.1.1
     eip1193-provider: 1.0.1
     ethers: ^5.7.2
     graphql: ^16.6.0
@@ -1225,21 +1225,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphprotocol/graph-ts@npm:0.29.0":
-  version: 0.29.0
-  resolution: "@graphprotocol/graph-ts@npm:0.29.0"
+"@graphprotocol/graph-ts@npm:0.29.1":
+  version: 0.29.1
+  resolution: "@graphprotocol/graph-ts@npm:0.29.1"
   dependencies:
     assemblyscript: 0.19.10
-  checksum: a7728dba1743acfd86ced09b4ef4d7a920ef3216af59a6b220dd8991753dec091f59b67316f8966c9b12190ffbb674a501b5b971693884558b57422deb3ec905
-  languageName: node
-  linkType: hard
-
-"@graphql-typed-document-node/core@npm:^3.1.1":
-  version: 3.1.1
-  resolution: "@graphql-typed-document-node/core@npm:3.1.1"
-  peerDependencies:
-    graphql: ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
-  checksum: 87ff4cee308f1075f4472b80f9f9409667979940f8f701e87f0aa35ce5cf104d94b41258ea8192d05a0893475cd0f086a3929a07663b4fe8d0e805a277f07ed5
+  checksum: 9ec6f62d28625495b69d813d5ea836f6ab020b0dbd0c56b09277a994626068a660ec91dd21c697213e6531bcf070a3898d72006f6d9270f346a08a4deb1ca4cb
   languageName: node
   linkType: hard
 
@@ -3387,15 +3378,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@urql/core@npm:^3.0.5":
-  version: 3.0.5
-  resolution: "@urql/core@npm:3.0.5"
+"@urql/core@npm:^3.1.1":
+  version: 3.1.1
+  resolution: "@urql/core@npm:3.1.1"
   dependencies:
-    "@graphql-typed-document-node/core": ^3.1.1
-    wonka: ^6.0.0
+    wonka: ^6.1.2
   peerDependencies:
     graphql: ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
-  checksum: e98f2dfb7535f3c5631a3f6d16ad877ba1a66f179f96345a5877301d864e5bffd6fa5dc541ed1ac2531b30d0efea6d85235a70de8ee82d5a2626c3b9a171c7ad
+  checksum: 8fa40d9d1e387ec50571f78df59beae7d0eb9f7f4297255ad1c1201e7fe45d8f8fc4d9ed23586b2ae25531e1c200dee7486d42ac120d8d258d420f22a947a612
   languageName: node
   linkType: hard
 
@@ -5666,7 +5656,7 @@ __metadata:
     "@types/isomorphic-fetch": ^0.0.36
     "@types/node": 18.11.11
     "@types/ws": ^8.5.3
-    "@urql/core": ^3.0.5
+    "@urql/core": ^3.1.1
     compression: ^1.7.4
     concurrently: ^7.6.0
     cors: ^2.8.5
@@ -9705,7 +9695,7 @@ __metadata:
     "@types/node": ^18.11.11
     "@types/webpack": ^5.28.0
     "@types/webpack-dev-server": ^4.7.2
-    "@urql/core": ^3.0.5
+    "@urql/core": ^3.1.1
     "@walletconnect/auth-client": 1.0.1
     "@walletconnect/client": ^1.8.0
     "@walletconnect/encoding": ^1.0.2
@@ -17021,7 +17011,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "subgraph@workspace:subgraph"
   dependencies:
-    "@graphprotocol/graph-ts": 0.29.0
+    "@graphprotocol/graph-ts": 0.29.1
   languageName: unknown
   linkType: soft
 
@@ -19110,10 +19100,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"wonka@npm:^6.0.0":
-  version: 6.1.0
-  resolution: "wonka@npm:6.1.0"
-  checksum: 662793c7429affc12c4ee9f8b8b642fd44a9f69886bd782ee3df241ac6b1ada66d366e4669bbea43f52f6167e4697dd6f4aa40b8e71dbfe9046d91203ae59731
+"wonka@npm:^6.1.2":
+  version: 6.1.2
+  resolution: "wonka@npm:6.1.2"
+  checksum: 474dcffd3861faaf5df8f4ef1ea1e614eb0cf36f54003974ebd4ab43b8fd6aad26317ef75e55488e7a61d64922531ae3ca2890dac90922d46715e0dd795682ce
   languageName: node
   linkType: hard
 

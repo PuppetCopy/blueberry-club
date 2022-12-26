@@ -40,7 +40,7 @@
         "@most/prelude": "1.8.0",
         "@most/scheduler": "1.3.0",
         "@most/types": "1.1.0",
-        "@urql/core": "^3.0.5",
+        "@urql/core": "^3.1.1",
         "@walletconnect/auth-client": "1.0.1",
         "@walletconnect/client": "^1.8.0",
         "@walletconnect/encoding": "^1.0.2",

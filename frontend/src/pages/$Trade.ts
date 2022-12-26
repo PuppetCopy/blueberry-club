@@ -6,11 +6,11 @@ import {
   AddressZero, formatFixed, intervalTimeMap, IPricefeed, IPricefeedParamApi, ITrade, unixTimestampNow, ITradeOpen, BASIS_POINTS_DIVISOR, getNextAveragePrice,
   getLiquidationPrice, getMarginFees, STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, TAX_BASIS_POINTS,
   getDenominator, USD_PERCISION, formatReadableUSD, timeSince, getPositionKey, IPositionIncrease,
-  IPositionDecrease, getPnL, filterNull, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE,
-  CHAIN, ITokenIndex, ITokenStable, ITokenInput, TradeStatus, LIMIT_LEVERAGE, div, readableDate, TRADE_CONTRACT_MAPPING, getTokenAmount, KeeperIncreaseRequest, KeeperDecreaseRequest, abs, getFundingFee
+  IPositionDecrease, getPnL, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE,
+  CHAIN, ITokenIndex, ITokenStable, ITokenInput, TradeStatus, LIMIT_LEVERAGE, div, readableDate, TRADE_CONTRACT_MAPPING, getTokenAmount, KeeperIncreaseRequest, KeeperDecreaseRequest, abs, getFundingFee, filterNull
 } from "@gambitdao/gmx-middleware"
 
-import { combine, map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, snapshot, debounce, zip, constant } from "@most/core"
+import { combine, map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, snapshot, debounce, zip, constant, join } from "@most/core"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { $arrowsFlip, $infoTooltip, $IntermediatePromise, $RiskLiquidator, $spinner, $txHashRef, invertColor } from "@gambitdao/ui-components"
 import { CandlestickData, LineStyle, Time } from "lightweight-charts"
@@ -188,6 +188,13 @@ export const $Trade = (config: ITradeComponent) => component((
 
   const keeperCancelIncrease = globalTradeReader.cancelIncreasePosition
   const keeperCancelDecrease = globalTradeReader.executeDecreasePosition
+
+  const adjustPosition = mergeArray([
+    keeperExecuteIncrease,
+    keeperDecreaseIncrease,
+    keeperCancelIncrease,
+    keeperCancelDecrease,
+  ])
 
 
   // const keeperExecuteIncrease = positionRouter.executeIncreasePosition // mapKeeperEvent(globalPositionRouterReader.listen<KeeperIncreaseRequest>('ExecuteIncreasePosition'))
@@ -475,6 +482,13 @@ export const $Trade = (config: ITradeComponent) => component((
   return [
     $container(
       $node(layoutSheet.spacingBig, style({ flex: 1, paddingBottom: '50px', display: 'flex', flexDirection: screenUtils.isDesktopScreen ? 'column' : 'column-reverse' }))(
+
+        filterNull(
+          map(ev => {
+            console.log(ev)
+            return null
+          }, adjustPosition)
+        ) as Stream<any>,
 
         $column(layoutSheet.spacingSmall)(
           $TradeBox({

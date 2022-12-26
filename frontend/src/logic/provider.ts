@@ -1,4 +1,4 @@
-import { WebSocketProvider, JsonRpcProvider, FallbackProvider } from "@ethersproject/providers"
+import { WebSocketProvider, JsonRpcProvider } from "@ethersproject/providers"
 import { CHAIN } from "@gambitdao/gmx-middleware"
 
 export const arbGlobalProvider = new WebSocketProvider('wss://arb-mainnet.g.alchemy.com/v2/Rf-9XHJG_C6xvhApXKg1tNCZmAOBaA5A')

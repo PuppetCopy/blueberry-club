@@ -1,18 +1,18 @@
 
 import { awaitPromises, combine, empty, map, mergeArray, multicast, now, scan, skip, snapshot, switchLatest } from "@most/core"
-import { CHAIN, switchFailedSources, ITokenIndex, ITokenInput, ITokenTrade, AddressZero, getChainName, IPositionDecrease, IPositionIncrease, IPositionClose, IPositionLiquidated, filterNull, listen, IVaultPosition, unixTimestampNow, TRADE_CONTRACT_MAPPING, IPositionUpdate, IAbstractPositionIdentifier, parseFixed, TOKEN_SYMBOL, KeeperDecreaseRequest, KeeperIncreaseRequest, getPositionKey, IMappedEvent, getDenominator, getTokenUsd, ITokenDescription, safeDiv } from "@gambitdao/gmx-middleware"
-import { combineArray, combineObject, replayLatest } from "@aelea/core"
-import { ERC20__factory, PositionRouter__factory, Reader__factory, Router__factory, VaultPriceFeed__factory, Vault__factory } from "./gmx-contracts"
+import { CHAIN, switchFailedSources, ITokenIndex, ITokenInput, ITokenTrade, AddressZero, getChainName, IPositionDecrease, IPositionIncrease, IPositionClose, IPositionLiquidated, filterNull, listen, IVaultPosition, unixTimestampNow, TRADE_CONTRACT_MAPPING, IPositionUpdate, IAbstractPositionIdentifier, parseFixed, TOKEN_SYMBOL, KeeperDecreaseRequest, KeeperIncreaseRequest, getPositionKey, IMappedEvent, ITokenDescription, safeDiv } from "@gambitdao/gmx-middleware"
+import { combineArray, replayLatest } from "@aelea/core"
+import { ERC20__factory, PositionRouter__factory, Router__factory, VaultPriceFeed__factory, Vault__factory } from "./gmx-contracts"
 import { periodicRun } from "@gambitdao/gmx-middleware"
-import { getTokenDescription as getTokenDescriptionFn, resolveAddress } from "../utils"
+import { getTokenDescription as getTokenDescriptionFn } from "../utils"
 import { Stream } from "@most/types"
 import { getContractAddress, readContractMapping } from "../common"
-import { IWalletLink, IWalletState } from "@gambitdao/wallet-link"
+import { IWalletState } from "@gambitdao/wallet-link"
 import { id } from "@ethersproject/hash"
 import { Interface } from "@ethersproject/abi"
 import { http } from "@aelea/ui-components"
-import { Contract } from "@ethersproject/contracts"
 import { BaseProvider } from "@ethersproject/providers"
+import { Contract } from "ethers"
 
 
 export type IPositionGetter = IVaultPosition & IAbstractPositionIdentifier
