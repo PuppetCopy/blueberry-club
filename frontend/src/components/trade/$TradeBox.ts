@@ -8,7 +8,7 @@ import {
   div, StateStream, getPnL, MIN_LEVERAGE, formatToBasis, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE, CHAIN,
   ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd, IPricefeed, TRADE_CONTRACT_MAPPING, getTokenAmount, filterNull, ITradeOpen
 } from "@gambitdao/gmx-middleware"
-import { $anchor, $bear, $bull, $hintInput, $infoTooltip, $IntermediatePromise, $tokenIconMap, $tokenLabelFromSummary, invertColor } from "@gambitdao/ui-components"
+import { $anchor, $bear, $bull, $ButtonToggle, $hintInput, $infoTooltip, $IntermediatePromise, $tokenIconMap, $tokenLabelFromSummary, invertColor } from "@gambitdao/ui-components"
 import {
   merge, multicast, mergeArray, now, snapshot, map, switchLatest,
   skipRepeats, empty, fromPromise, constant, startWith, skipRepeatsWith, awaitPromises, debounce
@@ -436,7 +436,7 @@ export const $TradeBox = (config: ITradeBox) => component((
               val: combineArray((pos, fundingFee) => formatReadableUSD(pos.collateral - fundingFee), config.tradeState.position, config.tradeState.fundingFee),
             }),
           ),
-          $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+          $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
 
 
             $Dropdown({
@@ -634,8 +634,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
                   // return 1
                   const ratio = div(totalSize, state.position.collateral - state.fundingFee)
-                  const newLocal = bnDiv(ratio, LIMIT_LEVERAGE)
-                  return Math.min(1, newLocal)
+                  return Math.min(1, bnDiv(ratio, LIMIT_LEVERAGE))
                 }
 
                 return 1
@@ -644,7 +643,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                   const totalCollateral = state.position.collateral - state.fundingFee + state.collateralDeltaUsd
                   const ratio = div(state.position.size, totalCollateral)
 
-                  return bnDiv(ratio, LIMIT_LEVERAGE)
+                  return Math.min(1, bnDiv(ratio, LIMIT_LEVERAGE))
                 }
               }
 
@@ -673,7 +672,7 @@ export const $TradeBox = (config: ITradeBox) => component((
             return focus === ITradeFocusMode.size ? { borderColor: isIncrease ? `${pallete.middleground}` : `${pallete.indeterminate}` } : { borderColor: '' }
           }, config.tradeConfig.focusMode, config.tradeConfig.isIncrease))
         )(
-          $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+          $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
 
 
             $Dropdown({
@@ -1335,7 +1334,7 @@ const formatLeverageNumber = new Intl.NumberFormat("en-US", {
 
 
 
-const $field = $element('input')(attr({ placeholder: '0.0' }), style({ width: '100%', textAlign: 'right', lineHeight: '48px', fontFamily: '-apple-system,BlinkMacSystemFont,Trebuchet MS,Roboto,Ubuntu,sans-serif', minWidth: '0', transition: 'background 500ms ease-in', flex: 1, fontSize: '1.5em', background: 'transparent', border: 'none', outline: 'none', color: pallete.message }))
+const $field = $element('input')(attr({ placeholder: '0.0' }), style({ width: '100%', textAlign: 'right', lineHeight: '34px', margin: '14px 0', fontFamily: '-apple-system,BlinkMacSystemFont,Trebuchet MS,Roboto,Ubuntu,sans-serif', minWidth: '0', transition: 'background 500ms ease-in', flex: 1, fontSize: '1.5em', background: 'transparent', border: 'none', outline: 'none', color: pallete.message }))
 
 
 

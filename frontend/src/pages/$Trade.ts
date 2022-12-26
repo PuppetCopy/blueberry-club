@@ -143,7 +143,7 @@ export const $Trade = (config: ITradeComponent) => component((
     }, config.walletLink.network)
   )
 
-  
+
   const collateralTokenReplay: Stream<ITokenInput> = collateralTokenStore.storeReplay(
     changeCollateralToken,
     combine((chain, token) => {
@@ -183,28 +183,24 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
 
-  const keeperExecuteIncrease = globalTradeReader.executeIncreasePosition
-  const keeperDecreaseIncrease = globalTradeReader.executeDecreasePosition
+  // const keeperExecuteIncrease = globalTradeReader.executeIncreasePosition
+  // const keeperDecreaseIncrease = globalTradeReader.executeDecreasePosition
+  // const keeperCancelIncrease = globalTradeReader.cancelIncreasePosition
+  // const keeperCancelDecrease = globalTradeReader.executeDecreasePosition
 
-  const keeperCancelIncrease = globalTradeReader.cancelIncreasePosition
-  const keeperCancelDecrease = globalTradeReader.executeDecreasePosition
 
-  const adjustPosition = mergeArray([
+  const keeperExecuteIncrease = tradeReader.executeIncreasePosition // mapKeeperEvent(globalPositionRouterReader.listen<KeeperIncreaseRequest>('ExecuteIncreasePosition'))
+  const keeperDecreaseIncrease = tradeReader.executeDecreasePosition // mapKeeperEvent(globalPositionRouterReader.listen<KeeperDecreaseRequest>('ExecuteDecreasePosition'))
+  const keeperCancelIncrease = tradeReader.cancelIncreasePosition // mapKeeperEvent(globalPositionRouterReader.listen<KeeperIncreaseRequest>('CancelIncreasePosition'))
+  const keeperCancelDecrease = tradeReader.executeDecreasePosition // mapKeeperEvent(globalPositionRouterReader.listen<KeeperDecreaseRequest>('CancelDecreasePosition'))
+
+
+  const adjustPosition = multicast(mergeArray([
     keeperExecuteIncrease,
     keeperDecreaseIncrease,
     keeperCancelIncrease,
     keeperCancelDecrease,
-  ])
-
-
-  // const keeperExecuteIncrease = positionRouter.executeIncreasePosition // mapKeeperEvent(globalPositionRouterReader.listen<KeeperIncreaseRequest>('ExecuteIncreasePosition'))
-  // const keeperDecreaseIncrease = positionRouter.executeDecreasePosition // mapKeeperEvent(globalPositionRouterReader.listen<KeeperDecreaseRequest>('ExecuteDecreasePosition'))
-
-  // const keeperCancelIncrease = positionRouter.cancelIncreasePosition // mapKeeperEvent(globalPositionRouterReader.listen<KeeperIncreaseRequest>('CancelIncreasePosition'))
-  // const keeperCancelDecrease = positionRouter.executeDecreasePosition // mapKeeperEvent(globalPositionRouterReader.listen<KeeperDecreaseRequest>('CancelDecreasePosition'))
-
-
-
+  ]))
 
   const positionQuery = multicast(replayLatest(switchLatest(map(key => tradeReader.getPosition(key), positionKey))))
 
@@ -227,7 +223,7 @@ export const $Trade = (config: ITradeComponent) => component((
       }
     },
     awaitPromises(positionQuery),
-    mergeArray([globalTradeReader.positionCloseEvent, globalTradeReader.positionLiquidateEvent])
+    mergeArray([tradeReader.positionCloseEvent, tradeReader.positionLiquidateEvent])
   ))
 
   const positionChange = multicast(mergeArray([
@@ -243,7 +239,7 @@ export const $Trade = (config: ITradeComponent) => component((
         return { ...pos, ...update }
       },
       awaitPromises(positionQuery),
-      globalTradeReader.positionUpdateEvent
+      tradeReader.positionUpdateEvent
     )),
   ]))
 
@@ -774,8 +770,8 @@ export const $Trade = (config: ITradeComponent) => component((
                     }
                   ],
                   containerOp: style({
-                    inset: 0,
-                    position: 'absolute',
+                    minHeight: '400px'
+                    // flex: 1
                   }),
                   chartConfig: {
                     rightPriceScale: {
@@ -838,7 +834,7 @@ export const $Trade = (config: ITradeComponent) => component((
                       now(ev ? [...ev.increaseList, ...ev.decreaseList] : []) as Stream<(RequestTrade | IPositionIncrease | IPositionDecrease)[]>,
                       requestTradeRow
                     ]),
-                    $container: $column(style({ position: 'absolute', inset: '0' }), layoutSheet.spacing),
+                    $container: $column(layoutSheet.spacing, screenUtils.isDesktopScreen ? style({ flex: '1 1 0', minHeight: '100px' }) : style({})),
                     scrollConfig: {
                       $container: $column(layoutSheet.spacingSmall),
                       insertAscending: true
@@ -877,12 +873,12 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
 
-                          const adjustPosition = mergeArray([
-                            keeperExecuteIncrease,
-                            keeperDecreaseIncrease,
-                            keeperCancelIncrease,
-                            keeperCancelDecrease,
-                          ])
+                          // const adjustPosition = mergeArray([
+                          //   keeperExecuteIncrease,
+                          //   keeperDecreaseIncrease,
+                          //   keeperCancelIncrease,
+                          //   keeperCancelDecrease,
+                          // ])
 
                           const isIncrease = pos.state.isIncrease
                           return $row(layoutSheet.spacingSmall)(
