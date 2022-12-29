@@ -1,7 +1,8 @@
 import {
-  AddressZero, ARBITRUM_ADDRESS, CHAIN, TOKEN_DESCRIPTION_MAP, TOKEN_SYMBOL, AVALANCHE_ADDRESS, getDenominator,
+  AddressZero, ARBITRUM_ADDRESS, TOKEN_DESCRIPTION_MAP, TOKEN_SYMBOL, AVALANCHE_ADDRESS, getDenominator,
   ITokenDescription, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, ITokenInput, ITokenTrade
 } from "@gambitdao/gmx-middleware"
+import { CHAIN } from "@gambitdao/wallet-link"
 
 
 

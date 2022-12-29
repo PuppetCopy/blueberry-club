@@ -11,6 +11,8 @@
     "declarationDir": ".dist/types",
   },
   "references": [
-    
+    {
+      "path": "../@gambitdao-wallet-link"
+    }
   ]
 }

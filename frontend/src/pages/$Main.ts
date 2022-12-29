@@ -3,10 +3,10 @@ import { $element, $node, $text, component, eventElementTarget, style } from "@a
 import * as router from '@aelea/router'
 import { $column, designSheet, layoutSheet, screenUtils } from '@aelea/ui-components'
 import {
-  gmxSubgraph, ARBITRUM_ADDRESS, AVALANCHE_ADDRESS, CHAIN,
+  gmxSubgraph, ARBITRUM_ADDRESS, AVALANCHE_ADDRESS,
   ETH_ADDRESS_REGEXP, IAccountParamApi, intervalTimeMap, IPricefeedParamApi
 } from '@gambitdao/gmx-middleware'
-import { initWalletLink, IWalletName } from "@gambitdao/wallet-link"
+import { CHAIN, initWalletLink, IWalletName } from "@gambitdao/wallet-link"
 import { map, merge, multicast, now } from '@most/core'
 import { $MainMenu } from '../components/$MainMenu'
 import { helloBackend } from '../logic/websocket'

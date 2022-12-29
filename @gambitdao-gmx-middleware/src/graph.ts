@@ -1,13 +1,14 @@
 import { O } from "@aelea/core"
 import { awaitPromises, map } from "@most/core"
-import { CHAIN, intervalTimeMap } from "./constant"
+import { intervalTimeMap } from "./constant"
 import { tradeJson } from "./fromJson"
 import { toAccountSummary } from "./gmxUtils"
-import { IAccountHistoricalDataApi, IAccountQueryParamApi, IChainParamApi, ILeaderboardRequest, IPricefeed, IPricefeedParamApi, IPriceLatest, IRequestTradeQueryparam, IStake, ITrade, TradeStatus } from "./types"
+import { IAccountQueryParamApi, IChainParamApi, ILeaderboardRequest, IPricefeed, IPricefeedParamApi, IPriceLatest, IRequestTradeQueryparam, IStake, ITrade, TradeStatus } from "./types"
 import { cacheMap, createSubgraphClient, pagingQuery, unixTimestampNow } from "./utils"
 import { gql } from "@urql/core"
 import * as fromJson from "./fromJson"
 import * as fetch from "isomorphic-fetch"
+import { CHAIN } from "@gambitdao/wallet-link"
 
 export type IAccountTradeListParamApi = IChainParamApi & IAccountQueryParamApi & { status: TradeStatus };
 

@@ -1,6 +1,6 @@
 import { BASIS_POINTS_DIVISOR, FUNDING_RATE_PRECISION, LIQUIDATION_FEE, MARGIN_FEE_BASIS_POINTS, MAX_LEVERAGE } from "./constant"
 import { IAccountSummary, ITrade, IClaim, IClaimSource, ITradeSettled, ITradeClosed, ITradeLiquidated, ITradeOpen, TradeStatus } from "./types"
-import { easeInExpo, formatFixed, getDenominator, groupByMapMany, isAddress } from "./utils"
+import { easeInExpo, formatFixed, formatReadableUSD, getDenominator, groupByMapMany, isAddress } from "./utils"
 
 
 export function safeDiv(a: bigint, b: bigint): bigint {
@@ -35,18 +35,13 @@ export function getPriceDeltaPercentage(positionPrice: bigint, price: bigint) {
   return priceDelta / positionPrice
 }
 
-export function getDelta(n: bigint, nChange: bigint, size: bigint) {
-  const priceDelta = n > nChange ? n - nChange : nChange - n
-
-  return size * priceDelta / n
+export function getPriceDelta(isLong: boolean, entryPrice: bigint, priceChange: bigint) {
+  return isLong ? priceChange - entryPrice : entryPrice - priceChange
 }
 
-export function getPnL(isLong: boolean, averagePrice: bigint, priceChange: bigint, size: bigint) {
-  const priceDelta = averagePrice > priceChange ? averagePrice - priceChange : priceChange - averagePrice
-  const hasProfit = isLong ? priceChange > averagePrice : averagePrice > priceChange
-  const delta = size * priceDelta / averagePrice
-
-  return hasProfit ? delta : -delta
+export function getPnL(isLong: boolean, entryPrice: bigint, priceChange: bigint, size: bigint) {
+  const priceDelta = getPriceDelta(isLong, entryPrice, priceChange)
+  return size * priceDelta / entryPrice
 }
 
 export function getDeltaPercentage(delta: bigint, collateral: bigint) {
@@ -59,24 +54,6 @@ export function getNextAveragePrice(islong: boolean, size: bigint, nextPrice: bi
 
   return nextPrice * nextSize / divisor
 }
-
-// function getNextAveragePrice({ size, sizeDelta, hasProfit, delta, nextPrice, isLong }) {
-//   if (!size || !sizeDelta || !delta || !nextPrice) {
-//     return;
-//   }
-//   const nextSize = size.add(sizeDelta);
-//   let divisor;
-//   if (isLong) {
-//     divisor = hasProfit ? nextSize.add(delta) : nextSize.sub(delta);
-//   } else {
-//     divisor = hasProfit ? nextSize.sub(delta) : nextSize.add(delta);
-//   }
-//   if (!divisor || divisor.eq(0)) {
-//     return;
-//   }
-//   const nextAveragePrice = nextPrice.mul(nextSize).div(divisor);
-//   return nextAveragePrice;
-// }
 
 
 export function getTokenAmount(amountUsd: bigint, price: bigint, decimals: number) {
@@ -92,7 +69,7 @@ export function getMarginFees(size: bigint) {
   return size * MARGIN_FEE_BASIS_POINTS / BASIS_POINTS_DIVISOR
 }
 
-export function getLiquidationPrice2(collateral: bigint, size: bigint, averagePrice: bigint, isLong: boolean) {
+export function getLiquidationPrice(isLong: boolean, collateral: bigint, size: bigint, averagePrice: bigint) {
   const liquidationAmount = div(size, MAX_LEVERAGE)
   const liquidationDelta = collateral - liquidationAmount
   const priceDelta = liquidationDelta * averagePrice / size
@@ -100,11 +77,11 @@ export function getLiquidationPrice2(collateral: bigint, size: bigint, averagePr
   return isLong ? averagePrice - priceDelta : averagePrice + priceDelta
 }
 
-export function getLiquidationPriceFromDelta(liquidationAmount: bigint, size: bigint, collateral: bigint, averagePrice: bigint, isLong: boolean) {
+export function getLiquidationPriceFromDelta(isLong: boolean, size: bigint, collateral: bigint, averagePrice: bigint, liquidationAmount: bigint) {
   if (liquidationAmount > collateral) {
     const liquidationDelta = liquidationAmount - collateral
-    const priceDelta = liquidationDelta * averagePrice / size
-    return isLong ? averagePrice + priceDelta : averagePrice - priceDelta
+    const priceDeltaToLiquidate = liquidationDelta * averagePrice / size
+    return isLong ? averagePrice + priceDeltaToLiquidate : averagePrice - priceDeltaToLiquidate
   }
 
   const liquidationDelta = collateral - liquidationAmount
@@ -114,29 +91,28 @@ export function getLiquidationPriceFromDelta(liquidationAmount: bigint, size: bi
 }
 
 
-export function getLiquidationPrice(
+export function getNextLiquidationPrice(
   isLong: boolean,
   size: bigint,
-  collateral: bigint,
-  averagePrice: bigint,
+  collateralUsd: bigint,
+  averagePriceUsd: bigint,
 
   entryFundingRate = 0n,
   cumulativeFundingRate = 0n,
   pnl = 0n,
 
-  sizeDelta = 0n,
-  collateralDelta = 0n,
+  sizeDeltaUsd = 0n,
+  collateralDeltaUsd = 0n,
 ) {
 
-  const nextSize = size + sizeDelta
+  const nextSize = size + sizeDeltaUsd
 
   if (nextSize === 0n) {
     return 0n
   }
 
-  const nextCollateral = pnl < 0n
-    ? collateral + collateralDelta + -(sizeDelta * pnl / size) // reduce payed loss in case of loss
-    : collateral + collateralDelta
+  const adjustedLossAmount = pnl < 0n ? sizeDeltaUsd * pnl / size : 0n
+  const nextCollateral = collateralUsd + collateralDeltaUsd - adjustedLossAmount // deduct loss off collateral
 
 
   const fundingFee = getFundingFee(entryFundingRate, cumulativeFundingRate, size)
@@ -144,19 +120,19 @@ export function getLiquidationPrice(
 
 
   const liquidationPriceForFees = getLiquidationPriceFromDelta(
-    positionFee,
+    isLong,
     nextSize,
     nextCollateral,
-    averagePrice,
-    isLong,
+    averagePriceUsd,
+    positionFee,
   )
 
   const liquidationPriceForMaxLeverage = getLiquidationPriceFromDelta(
-    div(nextSize, MAX_LEVERAGE),
+    isLong,
     nextSize,
     nextCollateral,
-    averagePrice,
-    isLong,
+    averagePriceUsd,
+    div(nextSize, MAX_LEVERAGE)
   )
 
 

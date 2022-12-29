@@ -1,10 +1,10 @@
 import { fromCallback } from "@aelea/core"
 import type { BaseProvider, EventType, ExternalProvider } from "@ethersproject/providers"
-import { CHAIN, NETWORK_METADATA } from "@gambitdao/gmx-middleware"
 import { empty, map, switchLatest, zipArray } from "@most/core"
 import { disposeWith } from "@most/disposable"
 import { Stream } from "@most/types"
 import type { EIP1193Provider, ProviderAccounts, ProviderChainId, ProviderInfo, ProviderMessage, ProviderRpcError } from "eip1193-provider"
+import { CHAIN, NETWORK_METADATA } from "./constant"
 
 function resolveError(error: any) {
  

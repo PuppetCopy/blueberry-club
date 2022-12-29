@@ -4,13 +4,13 @@ import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 import {
   AddressZero, formatFixed, intervalTimeMap, IPricefeed, IPricefeedParamApi, ITrade, unixTimestampNow, ITradeOpen, BASIS_POINTS_DIVISOR, getNextAveragePrice,
-  getLiquidationPrice, getMarginFees, STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, TAX_BASIS_POINTS,
+  getNextLiquidationPrice, getMarginFees, STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, TAX_BASIS_POINTS,
   getDenominator, USD_PERCISION, formatReadableUSD, timeSince, getPositionKey, IPositionIncrease,
   IPositionDecrease, getPnL, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE,
-  CHAIN, ITokenIndex, ITokenStable, ITokenInput, TradeStatus, LIMIT_LEVERAGE, div, readableDate, TRADE_CONTRACT_MAPPING, getTokenAmount, KeeperIncreaseRequest, KeeperDecreaseRequest, abs, getFundingFee, filterNull, getTokenUsd
+  ITokenIndex, ITokenStable, ITokenInput, TradeStatus, LIMIT_LEVERAGE, div, readableDate, TRADE_CONTRACT_MAPPING, getTokenAmount, KeeperIncreaseRequest, KeeperDecreaseRequest, abs, getFundingFee, filterNull, getTokenUsd, getLiquidationPrice
 } from "@gambitdao/gmx-middleware"
 
-import { combine, map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, snapshot, debounce, zip } from "@most/core"
+import { combine, map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, snapshot, debounce, zip, recoverWith } from "@most/core"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { $infoTooltip, $IntermediatePromise, $ProfitLossText, $RiskLiquidator, $spinner, $txHashRef, invertColor } from "@gambitdao/ui-components"
 import { CandlestickData, LineStyle, Time } from "lightweight-charts"
@@ -26,7 +26,7 @@ import { BrowserStore } from "../logic/store"
 import { ContractTransaction } from "@ethersproject/contracts"
 import { getContractAddress } from "../logic/common"
 import { ERC20__factory } from "../logic/contract/gmx-contracts"
-import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
+import { CHAIN, IWalletLink, IWalletName } from "@gambitdao/wallet-link"
 
 
 export interface ITradeComponent {
@@ -127,7 +127,6 @@ export const $Trade = (config: ITradeComponent) => component((
 
   const slippage = slippageStore.storeReplay(changeSlippage)
 
-
   const inputToken: Stream<ITokenInput> = inputTokenStore.storeReplay(
     changeInputToken,
     combine((chain, token) => {
@@ -141,7 +140,6 @@ export const $Trade = (config: ITradeComponent) => component((
       return fallbackToSupportedToken(chain, token)
     }, config.walletLink.network)
   )
-
 
   const collateralTokenReplay: Stream<ITokenInput> = collateralTokenStore.storeReplay(
     changeCollateralToken,
@@ -296,7 +294,7 @@ export const $Trade = (config: ITradeComponent) => component((
     const swapFeeBasisPoints = inputAndIndexStable ? STABLE_SWAP_FEE_BASIS_POINTS : SWAP_FEE_BASIS_POINTS
     const taxBasisPoints = inputAndIndexStable ? STABLE_TAX_BASIS_POINTS : TAX_BASIS_POINTS
 
-    if (params.collateralDeltaUsd === 0n || resolveAddress(params.chain, params.inputToken) === params.indexToken) {
+    if (params.collateralDeltaUsd === 0n || resolveAddress(params.chain, params.inputToken) === params.collateralToken) {
       return 0n
     }
 
@@ -334,15 +332,15 @@ export const $Trade = (config: ITradeComponent) => component((
 
     return addedSwapFee
   }, combineObject({
-    indexToken, inputToken, isIncrease, sizeDeltaUsd, isLong, collateralDeltaUsd,
+    collateralToken, inputToken, isIncrease, sizeDeltaUsd, isLong, collateralDeltaUsd,
     chain: config.walletLink.network, indexTokenInfo: indexTokenInfo, usdgSupply: tradeReader.usdgSupply, totalTokenWeight: tradeReader.totalTokenWeight,
     position, inputTokenDescription, inputTokenWeight, inputTokenDebtUsd, indexTokenDescription, indexTokenPrice
   })))
 
   const marginFee = map((size) => getMarginFees(abs(size)), sizeDeltaUsd)
-  const fundingFee = replayLatest(multicast(map(params => {
+  const fundingFee = map(params => {
     return getFundingFee(params.position.entryFundingRate, params.collateralTokenFundingInfo.cumulative, params.position.size)
-  }, combineObject({ collateralTokenFundingInfo, position }))))
+  }, combineObject({ collateralTokenFundingInfo, position }))
 
 
   const leverage = leverageStore.store(mergeArray([
@@ -387,24 +385,27 @@ export const $Trade = (config: ITradeComponent) => component((
   const liquidationPrice = map(params => {
     const stake = params.position
     if (params.position.averagePrice === 0n) {
-      return 0n
+      if (params.sizeDeltaUsd === 0n) {
+        return 0n
+      }
+      return getLiquidationPrice(params.isLong, params.collateralDeltaUsd, params.sizeDeltaUsd, params.indexTokenPrice)
     }
 
-    const pnl = stake ? getPnL(params.isLong, stake.averagePrice, params.indexTokenPrice, stake.size) : 0n
+    const pnl = getPnL(params.isLong, stake.averagePrice, params.indexTokenPrice, stake.size)
+    const entryPrice = stake.averagePrice
+    const price = getNextLiquidationPrice(params.isLong, stake.size, stake.collateral, entryPrice, stake.entryFundingRate, params.collateralTokenFundingInfo.cumulative, pnl, params.sizeDeltaUsd, params.collateralDeltaUsd)
 
-    // const price = getLiquidationPrice(params.isLong, stake.size, stake.collateral, stake.averagePrice, 0n, 0n, pnl, params.sizeDeltaUsd, params.collateralDeltaUsd)
-    const price = getLiquidationPrice(params.isLong, stake.size, stake.collateral, stake.averagePrice, stake.entryFundingRate, params.collateralFundingInfo.cumulative, pnl, params.sizeDeltaUsd, params.collateralDeltaUsd)
     return price
-  }, combineObject({ position, isIncrease, collateralDeltaUsd, collateralFundingInfo: collateralTokenFundingInfo, sizeDeltaUsd, averagePrice, indexTokenPrice, indexTokenDescription, isLong }))
+  }, combineObject({ position, isIncrease, collateralDeltaUsd, collateralTokenFundingInfo, sizeDeltaUsd, averagePrice, indexTokenPrice, indexTokenDescription, isLong }))
 
 
-  const requestPricefeed = debounce(10, combineArray((chain, tokenAddress, interval): IPricefeedParamApi => {
+  const requestPricefeed = combineArray((chain, tokenAddress, interval): IPricefeedParamApi => {
     const range = interval * 1000
     const to = unixTimestampNow()
     const from = to - range
 
     return { chain, interval, tokenAddress, from, to }
-  }, config.walletLink.network, indexToken, timeframe))
+  }, config.walletLink.network, indexToken, timeframe)
 
   // const selectedPricefeed = mergeArray([config.pricefeed, constant(null, requestPricefeed)])
 
@@ -434,7 +435,7 @@ export const $Trade = (config: ITradeComponent) => component((
         return true
       }
 
-      const contractAddress = getContractAddress(TRADE_CONTRACT_MAPPING, params.chain, 'Router')
+      const contractAddress = getContractAddress(TRADE_CONTRACT_MAPPING, params.w3p.chain, 'Router')
 
       if (contractAddress === null) {
         return false
@@ -448,7 +449,7 @@ export const $Trade = (config: ITradeComponent) => component((
         return false
       }
 
-    }, collateralDeltaUsd, combineObject({ w3p: config.walletLink.wallet, chain: config.walletLink.network, inputToken }))),
+    }, collateralDeltaUsd, combineObject({ w3p: config.walletLink.wallet, inputToken }))),
   ])
 
 
@@ -751,7 +752,6 @@ export const $Trade = (config: ITradeComponent) => component((
                 }
 
                 return $CandleSticks({
-
                   series: [
                     {
                       data: data.map(({ o, h, l, c, timestamp }) => {
@@ -1041,16 +1041,6 @@ export const $Trade = (config: ITradeComponent) => component((
     }
   ]
 })
-
-
-
-const filterNonAccountKeeperEvents = <T extends KeeperIncreaseRequest | KeeperDecreaseRequest>(posKey: string | null, keeperEvent: Stream<T>) => filterNull(map(ev => {
-  if (posKey !== ev.key) {
-    return null
-  }
-
-  return ev
-}, keeperEvent))
 
 
 

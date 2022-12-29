@@ -3,13 +3,12 @@ import { $element, attr, component, nodeEvent, style } from "@aelea/dom"
 import { $row, screenUtils } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { empty, map, switchLatest } from "@most/core"
-import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
+import { CHAIN, IWalletLink, IWalletName } from "@gambitdao/wallet-link"
 import { $Link } from "@gambitdao/ui-components"
 import { $seperator2 } from "../pages/common"
 import { $disconnectedWalletDisplay, $accountPreview } from "./$AccountProfile"
 import { $ConnectDropdown, $switchNetworkDropdown } from "./$ConnectAccount"
 import { Route } from "@aelea/router"
-import { CHAIN } from "@gambitdao/gmx-middleware"
 
 
 

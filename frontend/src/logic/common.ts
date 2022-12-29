@@ -1,5 +1,5 @@
 import { O, Op } from "@aelea/core"
-import { CHAIN, filterNull, listen } from "@gambitdao/gmx-middleware"
+import { filterNull, listen } from "@gambitdao/gmx-middleware"
 import { awaitPromises, continueWith, empty, filter, map, multicast, never, now, recoverWith, switchLatest, takeWhile, tap } from "@most/core"
 import { Stream } from "@most/types"
 import { $berry } from "../components/$DisplayBerry"
@@ -13,6 +13,7 @@ import { Closet } from "@gambitdao/gbc-contracts"
 import { BigNumberish, BigNumber } from "@ethersproject/bignumber"
 import { JsonRpcProvider as BaseProvider, Web3Provider } from "@ethersproject/providers"
 import { ContractFactory, EventFilter } from "@ethersproject/contracts"
+import { CHAIN } from "@gambitdao/wallet-link"
 
 export type TContractMapping<T> = {
   [P in CHAIN]?: {

@@ -1,12 +1,12 @@
-import { Behavior, combineArray, combineObject } from "@aelea/core"
+import { Behavior, combineArray } from "@aelea/core"
 import { $Branch, $element, $node, $svg, $text, attr, component, eventElementTarget, INode, style, styleInline, stylePseudo } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, observer, screenUtils } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { CHAIN, gmxSubgraph, IAccountQueryParamApi, intervalTimeMap, ITimerangeParamApi, TRADE_CONTRACT_MAPPING, zipState } from "@gambitdao/gmx-middleware"
-import { IWalletLink } from "@gambitdao/wallet-link"
+import { IAccountQueryParamApi, intervalTimeMap, ITimerangeParamApi } from "@gambitdao/gmx-middleware"
+import { CHAIN, IWalletLink } from "@gambitdao/wallet-link"
 import { $alert, $anchor, $gitbook, $IntermediatePromise, $Link } from "@gambitdao/ui-components"
-import { awaitPromises, empty, map, multicast, now, snapshot, switchLatest, tap } from "@most/core"
+import { awaitPromises, map, multicast, now, snapshot, switchLatest, tap } from "@most/core"
 import { $card, $teamMember } from "../elements/$common"
 
 import {
@@ -20,9 +20,7 @@ import { $opensea } from "../elements/$icons"
 import { Stream } from "@most/types"
 import { $berry, svgParts } from "../components/$DisplayBerry"
 import { BrowserStore } from "../logic/store"
-import { $StakingGraph } from "../components/$StakingGraph"
-import { $berryByLabItems, $berryByToken, getBerryFromItems, getContractMapping } from "../logic/common"
-import { connectGmxEarn } from "../logic/contract"
+import { $berryByLabItems, $berryByToken, getBerryFromItems } from "../logic/common"
 
 
 export interface ITreasury {
@@ -284,8 +282,6 @@ export const $Home = (config: ITreasury) => component((
           })({})
         }, svgParts))
       ),
-
-
 
 
       $column(style({ alignItems: 'center', gap: '26px' }))(

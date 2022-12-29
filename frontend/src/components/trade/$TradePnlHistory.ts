@@ -4,8 +4,9 @@ import { $column, observer } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import {
   unixTimestampNow, isTradeSettled, getDeltaPercentage, intervalListFillOrderMap,
-  isTradeOpen, ITrade, formatFixed, getPnL, IPricefeed, CHAIN, readableNumber
+  isTradeOpen, ITrade, formatFixed, getPnL, IPricefeed, readableNumber
 } from "@gambitdao/gmx-middleware"
+import { CHAIN } from "@gambitdao/wallet-link"
 import { multicast, switchLatest, empty, skipRepeatsWith, map } from "@most/core"
 import { Stream } from "@most/types"
 import { MouseEventParams, SingleValueData, Time, LineStyle, ChartOptions, DeepPartial, BarPrice } from "lightweight-charts"

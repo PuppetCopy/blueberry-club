@@ -1,7 +1,7 @@
-import { NETWORK_METADATA } from "@gambitdao/gmx-middleware"
 import detectEthereumProvider from "@metamask/detect-provider"
 import WalletConnectProvider from "@walletconnect/ethereum-provider"
 import { IEthereumProvider } from "eip1193-provider"
+import { NETWORK_METADATA } from "./constant"
 
 export const walletConnect = new WalletConnectProvider({
   rpc: Object.entries(NETWORK_METADATA).reduce((seed, [chainId, net]) => ({ ...seed, [chainId]: net.rpcUrls[0] }), {}),

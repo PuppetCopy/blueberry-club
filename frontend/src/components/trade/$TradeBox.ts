@@ -5,7 +5,7 @@ import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
 import {
   ARBITRUM_ADDRESS, formatFixed, readableNumber, parseFixed, formatReadableUSD, BASIS_POINTS_DIVISOR,
   ITokenDescription, LIMIT_LEVERAGE, bnDiv, replayState,
-  div, StateStream, getPnL, MIN_LEVERAGE, formatToBasis, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE, CHAIN,
+  div, StateStream, getPnL, MIN_LEVERAGE, formatToBasis, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE,
   ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd, IPricefeed, TRADE_CONTRACT_MAPPING, getTokenAmount, filterNull, ITradeOpen, zipState
 } from "@gambitdao/gmx-middleware"
 import { $anchor, $bear, $bull, $hintInput, $infoTooltip, $IntermediatePromise, $tokenIconMap, $tokenLabelFromSummary, invertColor } from "@gambitdao/ui-components"
@@ -28,7 +28,7 @@ import { ContractTransaction } from "@ethersproject/contracts"
 import { MaxUint256 } from "@ethersproject/constants"
 import { getContractAddress } from "../../logic/common"
 import { ERC20__factory } from "../../logic/contract/gmx-contracts"
-import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
+import { CHAIN, IWalletLink, IWalletName } from "@gambitdao/wallet-link"
 
 export enum ITradeFocusMode {
   collateral,
@@ -330,7 +330,7 @@ export const $TradeBox = (config: ITradeBox) => component((
     }
 
     return val * state.leverage / BASIS_POINTS_DIVISOR
-  }, tradeState, mergeArray([inputTokenChange, inputCollateralDeltaUsd])))
+  }, tradeState, mergeArray([inputCollateralDeltaUsd])))
 
 
   const LIMIT_LEVERAGE_NORMAL = formatToBasis(LIMIT_LEVERAGE)
@@ -912,11 +912,15 @@ export const $TradeBox = (config: ITradeBox) => component((
                             $row(layoutSheet.spacingTiny)(
                               $text(style({ color: pallete.foreground }))('Margin'),
                               $text(formatReadableUSD(params.marginFee))
+                            ),
+                            $row(layoutSheet.spacingTiny)(
+                              $text(style({ color: pallete.foreground }))('Deduct Borrow fee'),
+                              $text(formatReadableUSD(params.fundingFee))
                             )
                           )
                         }, tradeState))),
                       ),
-                      $text(style({ color: pallete.indeterminate }))(map(params => formatReadableUSD(params.marginFee + params.swapFee), tradeState)),
+                      $text(style({ color: pallete.indeterminate }))(map(params => formatReadableUSD(params.marginFee + params.swapFee + params.fundingFee), tradeState)),
                     ),
                     $row(style({ fontSize: '0.75em', placeContent: 'space-between' }))(
                       $row(layoutSheet.spacingTiny)(
@@ -1339,7 +1343,7 @@ const formatLeverageNumber = new Intl.NumberFormat("en-US", {
 
 
 
-const $field = $element('input')(attr({ placeholder: '0.0' }), style({ width: '100%', textAlign: 'right', lineHeight: '34px', margin: '14px 0', fontFamily: '-apple-system,BlinkMacSystemFont,Trebuchet MS,Roboto,Ubuntu,sans-serif', minWidth: '0', transition: 'background 500ms ease-in', flex: 1, fontSize: '1.5em', background: 'transparent', border: 'none', outline: 'none', color: pallete.message }))
+const $field = $element('input')(attr({ placeholder: '0.0', type: 'text' }), style({ width: '100%', textAlign: 'right', lineHeight: '34px', margin: '14px 0', fontFamily: '-apple-system,BlinkMacSystemFont,Trebuchet MS,Roboto,Ubuntu,sans-serif', minWidth: '0', transition: 'background 500ms ease-in', flex: 1, fontSize: '1.5em', background: 'transparent', border: 'none', outline: 'none', color: pallete.message }))
 
 
 

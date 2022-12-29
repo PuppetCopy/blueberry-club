@@ -1,11 +1,12 @@
 import { isStream, O } from "@aelea/core"
-import { $Branch, $element, $node, $Node, $text, attr, component, style, styleBehavior, styleInline, stylePseudo } from "@aelea/dom"
+import { $Branch, $element, $Node, $text, attr, component, style, styleBehavior, styleInline, stylePseudo } from "@aelea/dom"
 import { $column, $icon, $row, $seperator, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { bnDiv, CHAIN, formatReadableUSD, getLiquidationPrice, getTxExplorerUrl, IAbstractPositionStake, IAbstractTrade, ITrade, ITradeOpen, liquidationWeight, readableNumber, shortenTxAddress, ITokenDescription } from "@gambitdao/gmx-middleware"
+import { bnDiv, formatReadableUSD, getNextLiquidationPrice, getTxExplorerUrl, IAbstractPositionStake, IAbstractTrade, ITrade, ITradeOpen, liquidationWeight, readableNumber, shortenTxAddress, ITokenDescription } from "@gambitdao/gmx-middleware"
+import { CHAIN } from "@gambitdao/wallet-link"
 import { now, multicast, map, empty } from "@most/core"
 import { Stream } from "@most/types"
-import { $alertIcon, $caretDblDown, $info, $skull, $tokenIconMap } from "./$icons"
+import { $alertIcon, $caretDblDown, $info, $tokenIconMap } from "./$icons"
 import { $Tooltip } from "./$Tooltip"
 
 
@@ -85,7 +86,7 @@ export const $ProfitLossText = (pnl: Stream<bigint> | bigint, colorful = true) =
 }
 
 export function $liquidationSeparator(pos: ITrade, markPrice: Stream<bigint>) {
-  const liquidationPrice = getLiquidationPrice(pos.isLong, pos.size, pos.collateral, pos.averagePrice)
+  const liquidationPrice = getNextLiquidationPrice(pos.isLong, pos.size, pos.collateral, pos.averagePrice)
   const liqWeight = map(price => liquidationWeight(pos.isLong, liquidationPrice, price), markPrice)
 
   return styleInline(map((weight) => {

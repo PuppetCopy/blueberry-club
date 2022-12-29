@@ -1,5 +1,5 @@
 import { WebSocketProvider, JsonRpcProvider } from "@ethersproject/providers"
-import { CHAIN } from "@gambitdao/gmx-middleware"
+import { CHAIN } from "@gambitdao/wallet-link"
 
 export const arbGlobalProvider = new WebSocketProvider(document.location.hostname === 'localhost'
   ? 'wss://arb-mainnet.g.alchemy.com/v2/RBsflxWv6IhITsLxAWcQlhCqSuxV7Low'

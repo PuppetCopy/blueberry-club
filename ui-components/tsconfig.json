@@ -16,6 +16,9 @@
   "references": [
     {
       "path": "../@gambitdao-wallet-link"
+    },
+    {
+      "path": "../@gambitdao-gmx-middleware"
     }
   ]
 }

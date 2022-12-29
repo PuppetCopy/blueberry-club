@@ -6,7 +6,7 @@ import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
 import { parseError } from "@gambitdao/wallet-link"
 import { chain, constant, empty, fromPromise, map, merge, mergeArray, multicast, now, recoverWith, startWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
-import { CHAIN } from '@gambitdao/gmx-middleware'
+import { CHAIN } from '@gambitdao/wallet-link'
 import { $alert, $alertTooltip, $txHashRef, } from "./$common"
 
 
@@ -65,7 +65,7 @@ export const $IntermediatePromise = <T>({
 
   return [
     switchLatest(mergeArray([
-      chain(state => {
+      switchLatest(map(state => {
 
         if (state.status === IIntermediateStatus.LOADING) {
           return now($loader)
@@ -76,7 +76,7 @@ export const $IntermediatePromise = <T>({
         }
 
         return $$done(now(state.data))
-      }, state),
+      }, state)),
       constant(empty(), clean)
     ])),
 

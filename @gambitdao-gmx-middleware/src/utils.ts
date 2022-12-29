@@ -2,10 +2,11 @@ import { combineObject, O, Op, replayLatest } from "@aelea/core"
 import { AnimationFrames } from "@aelea/dom"
 import { Disposable, Scheduler, Sink, Stream } from "@most/types"
 import { at, awaitPromises, constant, continueWith, empty, filter, merge, multicast, now, recoverWith, zipArray } from "@most/core"
-import { CHAIN, EXPLORER_URL, intervalTimeMap, NETWORK_METADATA, USD_DECIMALS } from "./constant"
+import { intervalTimeMap, USD_DECIMALS } from "./constant"
 import { IPageParapApi, IPagePositionParamApi, ISortParamApi } from "./types"
 import { keccak256 } from "@ethersproject/solidity"
 import { ClientOptions, createClient, OperationContext, TypedDocumentNode } from "@urql/core"
+import { CHAIN, EXPLORER_URL, NETWORK_METADATA } from "@gambitdao/wallet-link"
 
 
 

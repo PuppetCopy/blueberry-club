@@ -9,13 +9,14 @@ import { $IntermediatePromise } from "@gambitdao/ui-components"
 import { $accountPreview } from "../components/$AccountProfile"
 import { $berryTileId } from "../components/$common"
 import { $StakingGraph } from "../components/$StakingGraph"
-import { CHAIN, IStake, TRADE_CONTRACT_MAPPING } from "@gambitdao/gmx-middleware"
+import { IStake, TRADE_CONTRACT_MAPPING } from "@gambitdao/gmx-middleware"
 import { Stream } from "@most/types"
 import { connectGmxEarn } from "../logic/contract"
 import { $labItem, getContractMapping } from "../logic/common"
 import { JsonRpcProvider } from "@ethersproject/providers"
 import { pallete } from "@aelea/ui-components-theme"
 import { connectLab } from "../logic/contract/gbc"
+import { CHAIN } from "@gambitdao/wallet-link"
 
 
 export interface IProfile {

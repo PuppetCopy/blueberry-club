@@ -2,7 +2,11 @@ import { Behavior, replayLatest, combineArray } from "@aelea/core"
 import { $text, component, motion, MOTION_NO_WOBBLE, style } from "@aelea/dom"
 import { $column, $NumberTicker, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { intervalTimeMap, readableNumber, formatFixed, ITimerangeParamApi, unixTimestampNow, intervalListFillOrderMap, IPricefeed, IStake, getTokenUsd, ITokenDescription, div, getDenominator, formatReadableUSD, BASIS_POINTS_DIVISOR, readableDate, ITokenInput, ARBITRUM_ADDRESS, CHAIN } from "@gambitdao/gmx-middleware"
+import { CHAIN } from "@gambitdao/wallet-link"
+import {
+  intervalTimeMap, readableNumber, formatFixed, ITimerangeParamApi, unixTimestampNow, intervalListFillOrderMap,
+  IStake, getTokenUsd, ITokenDescription, div, getDenominator, formatReadableUSD, BASIS_POINTS_DIVISOR, readableDate, ARBITRUM_ADDRESS
+} from "@gambitdao/gmx-middleware"
 import { awaitPromises, empty, map, multicast, now, skipRepeats, skipRepeatsWith, startWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
 import { LastPriceAnimationMode, LineStyle, Time, BarPrice, CrosshairMode, PriceScaleMode, MouseEventParams, SeriesMarker } from "lightweight-charts"

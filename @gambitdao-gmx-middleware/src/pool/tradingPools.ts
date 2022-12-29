@@ -3,7 +3,6 @@ import { Token, } from '@uniswap/sdk-core'
 import * as uniV3 from './uniV3.abi'
 import * as uniV2 from './uniV2.abi'
 import { ARBITRUM_ADDRESS } from '../address/arbitrum'
-import { CHAIN } from '../constant'
 import { getDenominator, parseFixed } from '../utils'
 import { JsonRpcProvider } from '@ethersproject/providers'
 import { getTokenUsd } from '../gmxUtils'
@@ -13,6 +12,7 @@ import { Contract } from '@ethersproject/contracts'
 import { Stream } from '@most/types'
 import { awaitPromises } from '@most/core'
 import { combineArray } from '@aelea/core'
+import { CHAIN } from '@gambitdao/wallet-link'
 
 
 export async function getGmxArbiPrice(provider: JsonRpcProvider, ethPrice: bigint) {

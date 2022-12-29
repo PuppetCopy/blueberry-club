@@ -3,9 +3,9 @@ import { $Branch, $element, $Node, $text, attr, component, nodeEvent, style } fr
 import { $RouterAnchor, Route } from '@aelea/router'
 import { $column, $icon, $Popover, $row, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { pallete, theme } from "@aelea/ui-components-theme"
-import { CHAIN, formatReadableUSD } from "@gambitdao/gmx-middleware"
-import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
-import { constant, empty, map, mergeArray, multicast, now, switchLatest, tap } from '@most/core'
+import { formatReadableUSD } from "@gambitdao/gmx-middleware"
+import { CHAIN, IWalletLink, IWalletName } from "@gambitdao/wallet-link"
+import { constant, empty, map, now, switchLatest } from '@most/core'
 import { $bagOfCoins, $caretDown, $stackedCoins } from "../elements/$icons"
 import { $ButtonSecondary } from "./form/$Button"
 import { totalWalletHoldingsUsd } from "../logic/gbcTreasury"
@@ -16,7 +16,6 @@ import { $Picker } from "../components/$ThemePicker"
 import { dark, light } from "../common/theme"
 import { Stream } from "@most/types"
 import { $WalletDisplay } from "./$WalletDisplay"
-import { disposeBoth } from "@most/disposable"
 
 
 

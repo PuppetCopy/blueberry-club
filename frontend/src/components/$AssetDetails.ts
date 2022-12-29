@@ -2,7 +2,7 @@ import { Behavior, combineArray } from "@aelea/core"
 import { $Branch, $Node, component, style, $text, $element, attr } from "@aelea/dom"
 import { $row, layoutSheet, $icon, $column } from "@aelea/ui-components"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
-import { formatReadableUSD, formatFixed, CHAIN, readableNumber } from "@gambitdao/gmx-middleware"
+import { formatReadableUSD, formatFixed, readableNumber } from "@gambitdao/gmx-middleware"
 import { switchLatest, skipRepeatsWith, multicast, map } from "@most/core"
 import { Stream } from "@most/types"
 import { MouseEventParams, LineStyle, BarPrice, PriceScaleMode, Time } from "lightweight-charts"
@@ -11,6 +11,7 @@ import { IAsset } from "@gambitdao/gbc-middleware"
 // import { IValueInterval } from "./$StakingGraph"
 import { $Chart } from "./chart/$Chart"
 import { IValueInterval } from "./$StakingGraph"
+import { CHAIN } from "@gambitdao/wallet-link"
 
 
 type ITreasuryMetric = {
