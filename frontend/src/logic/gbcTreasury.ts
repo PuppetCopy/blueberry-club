@@ -33,7 +33,7 @@ const globalMapPrice = replayLatest(multicast(awaitPromises(combineArray(async (
   const avax = (await queryAvaxPrice).toBigInt()
 
   return { gmx, eth, avax }
-}, arbPricefeed.contract, avaxPricefeed.contract))))
+}, arbPricefeed, avaxPricefeed))))
 
 
 export const arbitrumContract: IGmxContractInfo = connectGmxEarn(now(arbGlobalProvider), GBC_ADDRESS.TREASURY_ARBITRUM, ARBITRUM_ADDRESS)

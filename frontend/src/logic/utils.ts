@@ -43,7 +43,14 @@ export function getTokenDescription(chain: CHAIN | null, token: ITokenInput): IT
 
   if (token === AddressZero) {
     // @ts-ignore
-    return TOKEN_DESCRIPTION_MAP[CHAIN_NATIVE_TO_SYMBOL[chain]]
+    const nativeSymbol = CHAIN_NATIVE_TO_SYMBOL[chain]
+
+    if (!nativeSymbol) {
+      return TOKEN_DESCRIPTION_MAP[CHAIN_NATIVE_TO_SYMBOL[CHAIN.ARBITRUM]]
+    }
+
+    // @ts-ignore
+    return TOKEN_DESCRIPTION_MAP[nativeSymbol]
   }
 
   throw new Error(`unable to identity token ${token}`)

@@ -1,10 +1,10 @@
 
 import { awaitPromises, combine, empty, map, mergeArray, multicast, now, scan, skip, snapshot, switchLatest } from "@most/core"
-import { CHAIN, switchFailedSources, ITokenIndex, ITokenInput, ITokenTrade, AddressZero, getChainName, IPositionDecrease, IPositionIncrease, IPositionClose, IPositionLiquidated, filterNull, listen, IVaultPosition, unixTimestampNow, TRADE_CONTRACT_MAPPING, IPositionUpdate, IAbstractPositionIdentifier, parseFixed, TOKEN_SYMBOL, KeeperDecreaseRequest, KeeperIncreaseRequest, getPositionKey, IMappedEvent, ITokenDescription, safeDiv } from "@gambitdao/gmx-middleware"
+import { CHAIN, switchFailedSources, ITokenIndex, ITokenInput, ITokenTrade, AddressZero, getChainName, IPositionDecrease, IPositionIncrease, IPositionClose, IPositionLiquidated, filterNull, listen, IVaultPosition, unixTimestampNow, TRADE_CONTRACT_MAPPING, IPositionUpdate, IAbstractPositionIdentifier, parseFixed, TOKEN_SYMBOL, KeeperDecreaseRequest, KeeperIncreaseRequest, getPositionKey, IMappedEvent, ITokenDescription, safeDiv, formatReadableUSD } from "@gambitdao/gmx-middleware"
 import { combineArray, replayLatest } from "@aelea/core"
 import { ERC20__factory, PositionRouter__factory, Router__factory, VaultPriceFeed__factory, Vault__factory } from "./gmx-contracts"
 import { periodicRun } from "@gambitdao/gmx-middleware"
-import { getTokenDescription as getTokenDescriptionFn } from "../utils"
+import { getTokenDescription as getTokenDescriptionFn, resolveAddress } from "../utils"
 import { Stream } from "@most/types"
 import { getContractAddress, readContractMapping } from "../common"
 import { IWalletState } from "@gambitdao/wallet-link"
@@ -198,10 +198,10 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
   const positionCloseEvent: Stream<IPositionClose> = vault.listen('ClosePosition')
   const positionLiquidateEvent: Stream<IPositionLiquidated> = vault.listen('LiquidatePosition')
 
-  const getLatestPrice = (chain: CHAIN, token: ITokenTrade, maximize = false) => {
-
+  const getLatestPrice = (chain: CHAIN, token: ITokenTrade) => {
+    const resovledA = resolveAddress(chain, token)
     return switchFailedSources([
-      gmxIoLatestPrice(chain, token),
+      gmxIoLatestPrice(chain, resovledA),
       switchLatest(combineArray((c) => {
         if (c === null) {
           return empty()
@@ -211,9 +211,8 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
           recoverError: false,
           interval: 5000,
           actionOp: map(async () => {
-            const newLocal = await c.getPrimaryPrice(token, maximize)
-
-            return newLocal.toBigInt()
+            const price = (await c.getPrimaryPrice(resovledA, true)).toBigInt()
+            return price
           })
         })
       }, pricefeed.contract))
@@ -313,7 +312,7 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
     cancelIncreasePosition,
     executeDecreasePosition,
     cancelDecreasePosition,
-    getTokenWeight, getTokenDebtUsd, getTokenFundingInfo: getTokenFundingInfo,
+    getTokenWeight, getTokenDebtUsd, getTokenFundingInfo,
     positionIncreaseEvent, positionDecreaseEvent, positionUpdateEvent, positionCloseEvent, positionLiquidateEvent,
     getLatestPrice, positionSettled, vault, getPrice,
     totalTokenWeight, usdgSupply, getPosition, getTokenInfo

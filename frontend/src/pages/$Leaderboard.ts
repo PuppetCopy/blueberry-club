@@ -220,15 +220,7 @@ export const $Leaderboard = ({ walletLink, openTrades, leaderboardTopList, paren
 })
 
 
-export const $livePnl = (trade: ITrade, pos: Stream<bigint>) => $row(
-  $ProfitLossText(
-    map(price => {
-      const delta = getPnL(trade.isLong, trade.averagePrice, price, trade.size)
 
-      return trade.realisedPnl + delta - trade.fee
-    }, pos)
-  )
-)
 
 export const $Entry = (chain: CHAIN, pos: ITrade) =>
   $row(

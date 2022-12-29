@@ -1,7 +1,7 @@
 import { combineObject, O, Op, replayLatest } from "@aelea/core"
 import { AnimationFrames } from "@aelea/dom"
 import { Disposable, Scheduler, Sink, Stream } from "@most/types"
-import { at, awaitPromises, constant, continueWith, empty, filter, merge, multicast, now, recoverWith } from "@most/core"
+import { at, awaitPromises, constant, continueWith, empty, filter, merge, multicast, now, recoverWith, zipArray } from "@most/core"
 import { CHAIN, EXPLORER_URL, intervalTimeMap, NETWORK_METADATA, USD_DECIMALS } from "./constant"
 import { IPageParapApi, IPagePositionParamApi, ISortParamApi } from "./types"
 import { keccak256 } from "@ethersproject/solidity"
@@ -397,6 +397,23 @@ export type StateStream<T> = {
 export function replayState<A>(state: StateStream<A>): Stream<A> {
   return replayLatest(multicast(combineObject(state)))
 }
+
+export function zipState<A, K extends keyof A = keyof A>(state: StateStream<A>): Stream<A> {
+  const entries = Object.entries(state) as [keyof A, Stream<A[K]>][]
+  const streams = entries.map(([_, stream]) => stream)
+
+  const zipped = zipArray((...arrgs: A[K][]) => {
+    return arrgs.reduce((seed, val, idx) => {
+      const key = entries[idx][0]
+      seed[key] = val
+
+      return seed
+    }, {} as A)
+  }, streams)
+
+  return zipped
+}
+
 
 export function getPositionKey(account: string, collateralToken: string, indexToken: string, isLong: boolean) {
   return keccak256(

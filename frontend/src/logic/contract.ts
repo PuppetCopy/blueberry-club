@@ -3,11 +3,11 @@ import { BigNumber } from "@ethersproject/bignumber"
 import { JsonRpcProvider } from "@ethersproject/providers"
 import { BI_18_PRECISION } from "@gambitdao/gbc-middleware"
 import { BASIS_POINTS_DIVISOR, getGmxTokenPrice, IGmxContractAddress, intervalTimeMap, TRADE_CONTRACT_MAPPING } from "@gambitdao/gmx-middleware"
-import { awaitPromises, combine, map } from "@most/core"
+import { awaitPromises, combine, map, now } from "@most/core"
 import { Stream } from "@most/types"
 import { IAsset } from "@gambitdao/gbc-middleware"
 import { GlpManager__factory, GMX__factory, Reader__factory, RewardReader__factory, Vault__factory } from "./contract/gmx-contracts"
-import { readContractMapping } from "./common"
+import { getContractMapping, readContract, readContractMapping } from "./common"
 
 
 export type IGmxContractInfo = ReturnType<typeof connectGmxEarn>
@@ -26,15 +26,15 @@ export const connectGmxEarn = (provider: Stream<JsonRpcProvider>, account: strin
   const reader = readContractMapping(TRADE_CONTRACT_MAPPING, Reader__factory, provider, 'Reader')
   const rewardReader = readContractMapping(TRADE_CONTRACT_MAPPING, RewardReader__factory, provider, 'RewardReader')
 
-  const walletTokens = [environmentContract.GMX, environmentContract.ES_GMX, environmentContract.GLP, environmentContract.StakedGmxTracker] as const
 
   const gmxSupply = gmx.readInt(map(c => c.totalSupply()))
   const stakedGmxSupply = gmx.readInt(map(c => c.balanceOf(environmentContract.StakedGmxTracker)))
   const nativeTokenPrice = vault.readInt(map(c => c.getMinPrice(environmentContract.NATIVE_TOKEN)))
   const aum = manager.readInt(map(c => c.getAum(true)))
 
-
   const accountBalances = reader.run(map(async (readerContract) => {
+    const walletTokens = [environmentContract.GMX, environmentContract.ES_GMX, environmentContract.GLP, environmentContract.StakedGmxTracker] as const
+
     const balancesQuery = readerContract.getTokenBalancesWithSupplies(account, walletTokens as any)
     const balances = await balancesQuery
 
@@ -52,7 +52,7 @@ export const connectGmxEarn = (provider: Stream<JsonRpcProvider>, account: strin
     return { balanceData, supplyData }
   }))
 
-  const gmxVestingInfo = reader.run(map(async contract => {
+  const gmxVestingInfo = reader.run(map(async (contract) => {
     const balancesQuery = contract.getVestingInfo(account, [environmentContract.GmxVester])
     const [pairAmount, vestedAmount, escrowedBalance, claimedAmounts, claimable, maxVestableAmount, averageStakedAmount] = (await balancesQuery).map(x => x.toBigInt())
 

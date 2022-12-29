@@ -6,12 +6,12 @@ import {
   ARBITRUM_ADDRESS, formatFixed, readableNumber, parseFixed, formatReadableUSD, BASIS_POINTS_DIVISOR,
   ITokenDescription, LIMIT_LEVERAGE, bnDiv, replayState,
   div, StateStream, getPnL, MIN_LEVERAGE, formatToBasis, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE, CHAIN,
-  ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd, IPricefeed, TRADE_CONTRACT_MAPPING, getTokenAmount, filterNull, ITradeOpen
+  ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd, IPricefeed, TRADE_CONTRACT_MAPPING, getTokenAmount, filterNull, ITradeOpen, zipState
 } from "@gambitdao/gmx-middleware"
-import { $anchor, $bear, $bull, $ButtonToggle, $hintInput, $infoTooltip, $IntermediatePromise, $tokenIconMap, $tokenLabelFromSummary, invertColor } from "@gambitdao/ui-components"
+import { $anchor, $bear, $bull, $hintInput, $infoTooltip, $IntermediatePromise, $tokenIconMap, $tokenLabelFromSummary, invertColor } from "@gambitdao/ui-components"
 import {
   merge, multicast, mergeArray, now, snapshot, map, switchLatest,
-  skipRepeats, empty, fromPromise, constant, startWith, skipRepeatsWith, awaitPromises, debounce
+  skipRepeats, empty, fromPromise, constant, startWith, skipRepeatsWith, awaitPromises, debounce, zip
 } from "@most/core"
 import { Stream } from "@most/types"
 import { $Slider } from "../$Slider"
@@ -47,6 +47,7 @@ export interface ITradeParams {
   // availableLiquidityUsd: bigint
   indexTokenPrice: bigint
   walletBalance: bigint
+  walletBalanceUsd: bigint
 
   executionFee: bigint
   swapFee: bigint
@@ -64,7 +65,7 @@ export interface ITradeParams {
   liquidationPrice: bigint | null
 
   indexTokenInfo: ITokenInfo
-  collateralFundingInfo: IFundingInfo
+  collateralTokenFundingInfo: IFundingInfo
 }
 
 export interface ITradeConfig {
@@ -245,6 +246,10 @@ export const $TradeBox = (config: ITradeBox) => component((
 
     const deltaUsd = collateral - state.position.collateral + state.fundingFee
 
+    if (state.isIncrease) {
+      return deltaUsd > state.walletBalanceUsd ? state.walletBalanceUsd : deltaUsd
+    }
+
     return deltaUsd
   }, tradeState, slideCollateralLeverage))
 
@@ -309,6 +314,10 @@ export const $TradeBox = (config: ITradeBox) => component((
     return div(val, state.leverage)
   }, tradeState, inputSizeDeltaUsd))
 
+  const inputTokenChange = snapshot((collateralDelta, params) => {
+    return getTokenUsd(collateralDelta, params.price, params.inputDesc.decimals)
+  }, config.tradeState.collateralDelta, zipState({ inputDesc: config.tradeState.inputTokenDescription, price: config.tradeState.inputTokenPrice }))
+
   const autoFillSizeOnCollateralInput = filterNull(snapshot((state, val) => {
     if (!state.isIncrease) {
       return null
@@ -321,7 +330,7 @@ export const $TradeBox = (config: ITradeBox) => component((
     }
 
     return val * state.leverage / BASIS_POINTS_DIVISOR
-  }, tradeState, inputCollateralDeltaUsd))
+  }, tradeState, mergeArray([inputTokenChange, inputCollateralDeltaUsd])))
 
 
   const LIMIT_LEVERAGE_NORMAL = formatToBasis(LIMIT_LEVERAGE)
@@ -393,8 +402,8 @@ export const $TradeBox = (config: ITradeBox) => component((
             )(
               $text(style({ color: pallete.foreground }))(`Wallet`),
               $text(style({ cursor: 'pointer' }))(
-                combineArray((tokenDesc, balance) => {
-                  return readableNumber(formatFixed(balance, tokenDesc.decimals)) + ` ${tokenDesc.symbol}`
+                zip((tokenDesc, balance) => {
+                  return readableNumber(formatFixed(balance, tokenDesc.decimals)) + (screenUtils.isDesktopScreen ? ` ${tokenDesc.symbol}` : '')
                 }, config.tradeState.inputTokenDescription, config.tradeState.walletBalance)
               ),
             ),
@@ -422,17 +431,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                 return formatReadableUSD(netCollateral)
               }, tradeState),
               isIncrease: config.tradeConfig.isIncrease,
-              tooltip: $column(layoutSheet.spacingTiny)(
-                $text('The amount you will deposit to maintain a leverage position'),
-                $row(layoutSheet.spacingTiny)(
-                  $text(style({ color: pallete.foreground }))('Initial Collateral'),
-                  $text(map(pos => formatReadableUSD(pos.collateral), config.tradeState.position))
-                ),
-                $row(layoutSheet.spacingTiny)(
-                  $text(style({ color: pallete.foreground }))('Payed Borrow Fee'),
-                  $text(style({ color: pallete.indeterminate }))(map(pos => formatReadableUSD(pos), config.tradeState.fundingFee))
-                ),
-              ),
+              tooltip: 'The amount you will deposit to maintain a leverage position',
               val: combineArray((pos, fundingFee) => formatReadableUSD(pos.collateral - fundingFee), config.tradeState.position, config.tradeState.fundingFee),
             }),
           ),
@@ -509,12 +508,16 @@ export const $TradeBox = (config: ITradeBox) => component((
                   value: config.tradeConfig.inputToken,
                   $container: $defaultSelectContainer(style({ minWidth: '300px', left: 0 })),
                   $$option: map((option) => {
-                    const balanceAmount = fromPromise(getErc20Balance(option, w3p))
+                    const balanceAmount = multicast(fromPromise(getErc20Balance(option, w3p)))
+                    const price = tradeReader.getLatestPrice(chain, option)
                     const tokenDesc = getTokenDescription(chain, option)
 
                     return $row(style({ placeContent: 'space-between', flex: 1 }))(
                       $tokenLabelFromSummary(tokenDesc),
-                      $text(map(bn => readableNumber(formatFixed(bn, tokenDesc.decimals)), balanceAmount))
+                      $column(style({ alignItems: 'flex-end' }))(
+                        $text(map(bn => readableNumber(formatFixed(bn, tokenDesc.decimals)), balanceAmount)),
+                        $text(style({ color: pallete.foreground, fontSize: '0.75em' }))(combineArray((bn, price) => formatReadableUSD(getTokenUsd(bn, price, tokenDesc.decimals)), balanceAmount, price)),
+                      )
                     )
                   }),
                   list: [
@@ -595,11 +598,13 @@ export const $TradeBox = (config: ITradeBox) => component((
             min: map((state) => {
               if (state.isIncrease) {
                 if (state.position.averagePrice > 0n) {
-                  if (state.focusMode === ITradeFocusMode.collateral) {
-                    return bnDiv(MIN_LEVERAGE, LIMIT_LEVERAGE)
-                  }
 
+                  if (state.focusMode === ITradeFocusMode.collateral) {
+                    const ratio = div(state.position.size + state.sizeDeltaUsd, state.walletBalanceUsd + state.position.collateral - state.fundingFee)
+                    return bnDiv(ratio, LIMIT_LEVERAGE)
+                  }
                   const totalCollateral = state.collateralDeltaUsd + state.position.collateral - state.fundingFee
+
                   return Math.max(MIN_LEVERAGE_NORMAL, bnDiv(div(state.position.size, totalCollateral), LIMIT_LEVERAGE))
                 }
 
@@ -892,9 +897,9 @@ export const $TradeBox = (config: ITradeBox) => component((
               $column(layoutSheet.spacing, style({ padding: '0 16px', placeContent: 'space-between' }), styleInline(map(mode => ({ display: mode ? 'flex' : 'none' }), inTradeMode)))(
                 $row(layoutSheet.spacingBig, style({ placeContent: 'space-between' }))(
                   $column(layoutSheet.spacingTiny, style({ flex: 1 }))(
-                    $row(style({ fontSize: '0.75em', placeContent: 'space-between' }))(
+                    $row(style({ placeContent: 'space-between' }))(
                       $row(layoutSheet.spacingTiny)(
-                        $text(style({ color: pallete.foreground }))('Fees'),
+                        $text(style({ fontSize: '0.75em', color: pallete.foreground }))('Fees'),
                         $infoTooltip(switchLatest(map(params => {
                           const depositTokenNorm = resolveAddress(w3p.chain, params.inputToken)
                           const outputToken = params.isLong ? params.indexToken : params.collateralToken
@@ -919,13 +924,13 @@ export const $TradeBox = (config: ITradeBox) => component((
                         // $infoTooltip('BLUEBERRY Referral applied for 10% discount'),
                       ),
                       $row(
-                        $text(style({ color: pallete.indeterminate }))(map(params => readableNumber(formatToBasis(params.collateralFundingInfo.rate)), tradeState)),
+                        $text(style({ color: pallete.indeterminate }))(map(params => readableNumber(formatToBasis(params.collateralTokenFundingInfo.rate)), tradeState)),
                         $text(style({ color: pallete.foreground, whiteSpace: 'pre' }))(` / 1hr`),
                       )
                     ),
-                    $row(style({ fontSize: '0.75em', placeContent: 'space-between' }))(
+                    $row(style({ placeContent: 'space-between' }))(
                       $row(layoutSheet.spacingTiny)(
-                        $text(style({ color: pallete.foreground }))('Discount'),
+                        $text(style({ fontSize: '0.75em', color: pallete.foreground }))('Discount'),
                         $infoTooltip('BLUEBERRY Referral applied for 10% discount'),
                       ),
                       $text(style({ color: pallete.positive }))(map(params => getRebateDiscountUsd(params.marginFee), tradeState))
@@ -1283,7 +1288,7 @@ export const $TradeBox = (config: ITradeBox) => component((
         leverageCollateralFocus,
         inputCollateralDeltaUsd,
         clickMaxCollateralUsd,
-        autoFillCollateralOnSizeInput,
+        autoFillCollateralOnSizeInput
       ]),
       changeSizeDeltaUsd: mergeArray([
         resetTrade,

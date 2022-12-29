@@ -3,11 +3,6 @@ import { IAccountSummary, ITrade, IClaim, IClaimSource, ITradeSettled, ITradeClo
 import { easeInExpo, formatFixed, getDenominator, groupByMapMany, isAddress } from "./utils"
 
 
-
-export function getPositionCumulativeFundingFee(size: bigint, fundingRate: bigint) {
-  return size * fundingRate / FUNDING_RATE_PRECISION
-}
-
 export function safeDiv(a: bigint, b: bigint): bigint {
   if (b === 0n) {
     return 0n
@@ -195,8 +190,6 @@ export function isTradeLiquidated(trade: ITrade): trade is ITradeLiquidated {
 export function isTradeClosed(trade: ITrade): trade is ITradeClosed {
   return trade.status === TradeStatus.CLOSED
 }
-
-
 
 export function getFundingFee(entryFundingRate: bigint, cumulativeFundingRate: bigint, size: bigint) {
   if (size === 0n) {

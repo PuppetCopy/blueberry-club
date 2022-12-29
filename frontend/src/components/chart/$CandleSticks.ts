@@ -123,7 +123,7 @@ export const $CandleSticks = ({ chartConfig, series, containerOp = O() }: ICandl
 
   return [
     $wrapNativeElement(containerEl)(
-      style({ position: 'relative', minHeight: '30px', flex: 1 }),
+      style({ position: 'relative', minHeight: '30px', flex: 1, width: '100%' }),
       sampleContainerDimension(observer.resize()),
       containerOp,
     )(

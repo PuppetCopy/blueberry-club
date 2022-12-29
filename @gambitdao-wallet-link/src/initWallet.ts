@@ -1,9 +1,9 @@
 import { combineArray, fromCallback, replayLatest } from "@aelea/core"
-import { BaseProvider, JsonRpcProvider, JsonRpcSigner, Web3Provider } from "@ethersproject/providers"
+import { BaseProvider, JsonRpcSigner, Web3Provider } from "@ethersproject/providers"
 import { CHAIN, filterNull } from "@gambitdao/gmx-middleware"
-import { awaitPromises, constant, continueWith, delay, empty, fromPromise, map, mergeArray, multicast, now, skipRepeats, switchLatest, tap } from "@most/core"
+import { awaitPromises, constant, fromPromise, map, mergeArray, multicast, now, skipRepeats, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
-import { eip1193ProviderEvent } from "./common"
+import { eip1193ProviderEventFn } from "./common"
 import { metamaskQuery, walletConnect } from "./provider"
 
 
@@ -18,7 +18,7 @@ export interface IWalletState {
 
 export interface IWalletLink {
   network: Stream<CHAIN>
-  provider: Stream<Web3Provider | BaseProvider>
+  provider: Stream<Web3Provider>
   defaultProvider: Stream<BaseProvider>
 
   wallet: Stream<IWalletState | null>
@@ -45,7 +45,7 @@ interface IWalletLinkConfig {
 export function initWalletLink(
   config: IWalletLinkConfig,
   walletName: Stream<IWalletName>,
-  networkChange?: Stream<CHAIN>,
+  networkChange: Stream<CHAIN> = now(config.defaultGlobalChain),
 ): IWalletLink {
   const fallbackProvider = config.globalProviderMap[config.defaultGlobalChain]
 
@@ -53,100 +53,69 @@ export function initWalletLink(
     throw new Error('no Default Provider configured')
   }
 
-  const defaultProvider = map(chain => {  
-    const prv = config.globalProviderMap[chain] || fallbackProvider
 
-    return prv as JsonRpcProvider
-  }, networkChange || now(config.defaultGlobalChain))
 
-  const provider: Stream<Web3Provider | JsonRpcProvider> = replayLatest(multicast(switchLatest(awaitPromises(combineArray(async (metamask, name) => {
-    const isWC = name === IWalletName.walletConnect
-    const wp = name === IWalletName.none
-      ? null : isWC
-        ? walletConnect : metamask
+  const wallet: Stream<IWalletState | null> = replayLatest(multicast(switchLatest(awaitPromises(combineArray(async (metamask, name) => {
+    if (name === IWalletName.none) {
+      return now(null)
+    }
 
-    const prov: Web3Provider | BaseProvider = wp ? new Web3Provider(wp) : fallbackProvider
+    const isWc = name === IWalletName.walletConnect
+    const wp = isWc ? walletConnect : metamask!
+    const [address]: string[] = await wp?.request({ method: 'eth_accounts' }) as any
+    const chainId = await wp.request({ method: 'eth_chainId' })
 
-    if (prov instanceof Web3Provider && wp) {
-      const [address]: string[] = await wp.request({ method: 'eth_accounts' }) as any
+    if (!address) {
+      return now(null)
+    }
 
-      if (!address) {
-        return now(fallbackProvider)
+    const prov: Web3Provider = new Web3Provider(wp)
+
+    const state: IWalletState = {
+      walletName: name,
+      address,
+      provider: prov,
+      chain: Number(chainId),
+      signer: prov.getSigner(),
+    }
+
+    //   // WalletConnet doesn't emit standart disconnect
+    const disconnect = constant(null, isWc
+      ? fromCallback(cb => walletConnect.on('disconnect', cb))
+      : eip1193ProviderEventFn(wp, 'disconnect')
+    )
+
+    const walletNetworkChange = filterNull(map(chain => {
+      self.location.reload()
+      return null
+    }, eip1193ProviderEventFn(wp, 'chainChanged')))
+
+    const accountChange = map(([account]) => {
+      if (!account) {
+        return null
       }
 
-      //   // WalletConnet doesn't emit standart disconnect
-      const disconnect = constant(fallbackProvider, isWC
-        ? fromCallback(cb => walletConnect.on('disconnect', cb))
-        : eip1193ProviderEvent(wp, 'disconnect'))
+      return { ...state, address: account }
+    }, eip1193ProviderEventFn(wp, 'accountsChanged'))
 
-      const walletNetworkChange = filterNull(map(chain => {
-        self.location.reload()
-        return null
-      }, eip1193ProviderEvent(wp, 'chainChanged')))
-
-      const accountChange = map(([account]) => {
-        if (!account) {
-          return fallbackProvider
-        }
-
-        return prov
-      }, eip1193ProviderEvent(wp, 'accountsChanged'))
-
-      return mergeArray([now(prov), walletNetworkChange, disconnect, accountChange])
-    }
-
-    return now(prov)
+    return mergeArray([now(state), walletNetworkChange, disconnect, accountChange])
   }, fromPromise(metamaskQuery), walletName)))))
 
-  // const wallet: Stream<IWalletState | null> = replayLatest(multicast(switchLatest(map(prov => {
-  //   return continueWith(() => {
+  const defaultProvider = map((chain) => {
+    return config.globalProviderMap[chain] || fallbackProvider
+  }, networkChange)
 
-  //     if (prov instanceof Web3Provider) {
-  //       try {
-  //         const network = await prov.getNetwork()
-  //         const [address] = await prov.provider.request!({ method: 'eth_accounts' }) as string[]
-
-  //         if (!address) {
-  //           return null
-  //         }
-
-  //         const _signer = prov.getSigner()
-  //         const chain = network.chainId as CHAIN
-
-  //         return { signer: _signer, address, provider: prov, chain, }
-  //       } catch (err) {
-  //         console.warn(err)
-  //         return null
-  //       }
-  //     }
-
-  //   }, now(null))
-  // }, provider))))
-
-  const wallet: Stream<IWalletState | null> = replayLatest(multicast(awaitPromises(map(async prov => {
-    const network = await prov.getNetwork()
-
-    if (prov instanceof Web3Provider) {
-      const _signer = prov.getSigner()
-      const address = await _signer.getAddress()
-      const chain = network.chainId as CHAIN
-
-      const state: IWalletState = { signer: _signer, address, provider: prov, chain, walletName: prov.provider === walletConnect ? IWalletName.walletConnect : IWalletName.metamask }
-      return state
+  const provider = combineArray((w3p, chain) => {
+    if (w3p === null || !config.globalProviderMap[chain]) {
+      return config.globalProviderMap[chain] || fallbackProvider
     }
 
-    return null
-  }, provider))))
+    return w3p.provider
+  }, wallet, networkChange)
 
-
-  const network: Stream<CHAIN> = skipRepeats(awaitPromises(combineArray(async (wallet, provider) => {
-    try {
-      const chainId = wallet ? wallet.chain : (await provider.getNetwork()).chainId as CHAIN
-      return chainId
-    } catch (err) {
-      console.warn(err)
-    }
-  }, wallet, provider)))
+  const network: Stream<CHAIN> = combineArray((w3p, chain) => {
+    return w3p ? w3p.chain : chain
+  }, wallet, networkChange)
 
   return { network, wallet, provider, defaultProvider }
 }

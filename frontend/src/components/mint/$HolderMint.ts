@@ -68,7 +68,7 @@ export const $HolderMint = (config: MintCmp) => component((
     }
 
     return eligibleTokensForMint
-  }, owner, sale.contract)
+  }, owner, sale)
 
 
 
@@ -139,7 +139,7 @@ export const $HolderMint = (config: MintCmp) => component((
                       const contractAction = state.contract.mint(idList, { value: cost })
 
                       return contractAction
-                    }, combineObject({ chosenTokens, contract: sale.contract })),
+                    }, combineObject({ chosenTokens, contract: sale })),
                   )
                 }),
 
@@ -157,7 +157,7 @@ export const $HolderMint = (config: MintCmp) => component((
       ),
 
 
-      $displayMintEvents(sale.contract, clickMintWhitelist)
+      $displayMintEvents(sale, clickMintWhitelist)
     ),
 
 

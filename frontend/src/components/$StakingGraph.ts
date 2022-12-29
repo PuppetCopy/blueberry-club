@@ -31,7 +31,7 @@ export interface IStakingFeedDescription {
 export interface ITreasuryChart extends Partial<ITimerangeParamApi> {
   provider: Stream<JsonRpcProvider>
   sourceList: Stream<IStake[]>
-  reward: IRewardsStream
+  stakingInfo: IRewardsStream
 }
 
 
@@ -144,10 +144,10 @@ export const $StakingGraph = (config: ITreasuryChart) => component((
 
 
     return {
-      filledForecast, stakingInfo, sourceList, chain, from, to,
+      filledForecast, sourceList, chain, from, to,
       filledGap: filledGap.map(x => ({ time: x.time, value: x.value, change: x.change }))
     }
-  }, chain, config.reward, config.sourceList)))
+  }, chain, config.stakingInfo, config.sourceList)))
 
 
   const hasSeriesFn = (cross: MouseEventParams): boolean => {
@@ -208,29 +208,29 @@ export const $StakingGraph = (config: ITreasuryChart) => component((
                     ),
                   ),
                 )
-              }, config.reward))
+              }, config.stakingInfo))
               : empty()
           ),
-          switchLatest(map((arbiStaking) => {
+          switchLatest(map((stakingInfo) => {
 
             return $column(layoutSheet.spacingTiny)(
               $text(style({ color: pallete.foreground, fontSize: '.65em', textAlign: 'center' }))('Pending Rewards'),
               $row(layoutSheet.spacing)(
                 $row(layoutSheet.spacing, style({ pointerEvents: 'all' }))(
                   $row(layoutSheet.spacingTiny, style({ alignItems: 'baseline' }))(
-                    $text(style({ fontWeight: 'bold', fontSize: '1em', color: pallete.positive }))(`+${readableNumber(formatFixed(arbiStaking.totalEsGmxRewards, 18))}`),
+                    $text(style({ fontWeight: 'bold', fontSize: '1em', color: pallete.positive }))(`+${readableNumber(formatFixed(stakingInfo.totalEsGmxRewards, 18))}`),
                     $text(style({ fontSize: '.75em', color: pallete.foreground, fontWeight: 'bold' }))(`esGMX`),
                   ),
                 ),
                 $row(layoutSheet.spacing, style({ pointerEvents: 'all' }))(
                   $row(layoutSheet.spacingTiny, style({ alignItems: 'baseline' }))(
-                    $text(style({ fontWeight: 'bold', fontSize: '1em', color: pallete.positive }))(`+${readableNumber(formatFixed(arbiStaking.totalFeeRewards, 18))}`),
+                    $text(style({ fontWeight: 'bold', fontSize: '1em', color: pallete.positive }))(`+${readableNumber(formatFixed(stakingInfo.totalFeeRewards, 18))}`),
                     $text(style({ fontSize: '.75em', color: pallete.foreground, fontWeight: 'bold' }))(`ETH`),
                   ),
                 ),
               ),
             )
-          }, config.reward))
+          }, config.stakingInfo))
         )
       ),
       switchLatest(

@@ -1,9 +1,9 @@
-import { Behavior, combineArray } from "@aelea/core"
+import { Behavior, combineArray, combineObject } from "@aelea/core"
 import { $Branch, $element, $node, $svg, $text, attr, component, eventElementTarget, INode, style, styleInline, stylePseudo } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, observer, screenUtils } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { CHAIN, gmxSubgraph, IAccountQueryParamApi, intervalTimeMap, ITimerangeParamApi, TRADE_CONTRACT_MAPPING } from "@gambitdao/gmx-middleware"
+import { CHAIN, gmxSubgraph, IAccountQueryParamApi, intervalTimeMap, ITimerangeParamApi, TRADE_CONTRACT_MAPPING, zipState } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $alert, $anchor, $gitbook, $IntermediatePromise, $Link } from "@gambitdao/ui-components"
 import { awaitPromises, empty, map, multicast, now, snapshot, switchLatest, tap } from "@most/core"
@@ -135,6 +135,8 @@ export const $Home = (config: ITreasury) => component((
   ]
 
 
+  const account = map(c => c === CHAIN.AVALANCHE ? GBC_ADDRESS.TREASURY_AVALANCHE : GBC_ADDRESS.TREASURY_ARBITRUM, config.walletLink.network)
+  const chain = config.walletLink.network
 
   return [
     $column(style(screenUtils.isDesktopScreen ? { gap: '125px' } : { gap: '90px' }))(
@@ -295,31 +297,22 @@ export const $Home = (config: ITreasury) => component((
         ),
 
         style({ alignSelf: 'center' })(
-          $alert($text(`Treasury graph is out of sync due to changes within subgraph, we're working to fix this`))
+          $alert($text(`Treasury graph is out of sync due to changes within our subgraph, we're working to fix this`))
         ),
 
         $node(),
 
 
-        switchLatest(combineArray((provider, chain) => {
-          const contractMapping = getContractMapping(TRADE_CONTRACT_MAPPING, chain)
+        // $StakingGraph({
+        //   sourceList: gmxSubgraph.stake(zipState({ chain, account })),
+        //   stakingInfo: switchLatest(map(provider => {
+        //     const contractMapping = getContractMapping(TRADE_CONTRACT_MAPPING, chain)
+        //     const account = chain === CHAIN.AVALANCHE ? GBC_ADDRESS.TREASURY_AVALANCHE : GBC_ADDRESS.TREASURY_ARBITRUM
 
-          if (contractMapping === null) {
-            return empty()
-          }
-
-          const account = chain === CHAIN.AVALANCHE ? GBC_ADDRESS.TREASURY_AVALANCHE : GBC_ADDRESS.TREASURY_ARBITRUM
-
-
-          return $StakingGraph({
-            sourceList: gmxSubgraph.stake(now({ chain, account })),
-            reward: multicast(switchLatest(map(provider => {
-              return connectGmxEarn(now(provider), account, contractMapping).stakingRewards
-            }, now(provider)))),
-            provider: config.walletLink.defaultProvider,
-          })({})
-
-        }, config.walletLink.defaultProvider, config.walletLink.network)),
+        //     return connectGmxEarn(now(provider), account, contractMapping).stakingRewards
+        //   }, config.walletLink.defaultProvider)),
+        //   provider: config.walletLink.defaultProvider,
+        // })({}),
 
         $Link({
           $content: $anchor(

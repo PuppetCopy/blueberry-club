@@ -43,6 +43,7 @@ export const $alertTooltip = ($content: $Branch) => {
 
 export const $infoTooltip = (text: string | $Node) => {
   return $Tooltip({
+    $container: $column(style({ fontSize: '0.75em' })),
     $content: isStream(text) ? text : $text(text),
     $anchor: $icon({ $content: $info, viewBox: '0 0 32 32', fill: pallete.foreground, width: '18px', svgOps: style({ minWidth: '18px' }) }),
   })({})
@@ -69,7 +70,7 @@ export const $ProfitLossText = (pnl: Stream<bigint> | bigint, colorful = true) =
   const pnls = isStream(pnl) ? pnl : now(pnl)
 
   const display = multicast(map((n: bigint) => {
-    return (n > 0n ? '+' : '') + formatReadableUSD(n)
+    return formatReadableUSD(n)
   }, pnls))
 
   const colorStyle = colorful

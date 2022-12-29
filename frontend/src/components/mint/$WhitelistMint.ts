@@ -145,7 +145,7 @@ export const $WhitelistMint = (config: MintCmp) => component((
 
                       return contractAction
 
-                    }, combineObject({ selectedMintAmount, contract: sale.contract })),
+                    }, combineObject({ selectedMintAmount, contract: sale })),
                   )
                 }),
 
@@ -162,7 +162,7 @@ export const $WhitelistMint = (config: MintCmp) => component((
       ),
 
 
-      $displayMintEvents(sale.contract, clickMintPublic)
+      $displayMintEvents(sale, clickMintPublic)
     ),
 
 

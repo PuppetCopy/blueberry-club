@@ -1,7 +1,7 @@
 import { fromCallback } from "@aelea/core"
 import type { BaseProvider, EventType, ExternalProvider } from "@ethersproject/providers"
 import { CHAIN, NETWORK_METADATA } from "@gambitdao/gmx-middleware"
-import { empty, map, switchLatest } from "@most/core"
+import { empty, map, switchLatest, zipArray } from "@most/core"
 import { disposeWith } from "@most/disposable"
 import { Stream } from "@most/types"
 import type { EIP1193Provider, ProviderAccounts, ProviderChainId, ProviderInfo, ProviderMessage, ProviderRpcError } from "eip1193-provider"
@@ -65,7 +65,7 @@ export interface ProviderEventListener {
 }
 
 
-export const eip1193ProviderEvent = (provider: EIP1193Provider, eventName: string) => fromCallback<any, any>(
+export const eip1193ProviderEventFn = (provider: EIP1193Provider, eventName: string) => fromCallback<any, any>(
   (cb) => {
     provider.on(eventName as any, cb)
     return disposeWith(() => provider.removeListener(eventName, cb), null)
@@ -73,6 +73,16 @@ export const eip1193ProviderEvent = (provider: EIP1193Provider, eventName: strin
   a => {
     return a
   }
+)
+
+export const eip1193ProviderEvent = (provider: Stream<EIP1193Provider | null>, eventName: string) => switchLatest(
+  map(provider => {
+    if (provider === null) {
+      return empty()
+    }
+
+    return eip1193ProviderEventFn(provider, eventName)
+  }, provider)
 )
 
 export const providerEvent = <A>(ps: Stream<BaseProvider | null>) => (eventType: EventType) => switchLatest(
@@ -130,4 +140,27 @@ export async function attemptToSwitchNetwork(metamask: ExternalProvider, chain: 
 
     throw parseError(parseError(error))
   }
+}
+
+
+export type StateStream<T> = {
+  [P in keyof T]: Stream<T[P]>
+}
+
+
+
+export function zipState<A, K extends keyof A = keyof A>(state: StateStream<A>): Stream<A> {
+  const entries = Object.entries(state) as [keyof A, Stream<A[K]>][]
+  const streams = entries.map(([_, stream]) => stream)
+
+  const zipped = zipArray((...arrgs: A[K][]) => {
+    return arrgs.reduce((seed, val, idx) => {
+      const key = entries[idx][0]
+      seed[key] = val
+
+      return seed
+    }, {} as A)
+  }, streams)
+
+  return zipped
 }

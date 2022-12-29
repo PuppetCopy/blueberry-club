@@ -64,7 +64,7 @@ export const $Profile = (config: IProfile) => component((
         $row(style({ flex: 1 }))(
           $StakingGraph({
             sourceList: config.stake,
-            reward: multicast(arbitrumContract),
+            stakingInfo: multicast(arbitrumContract),
             provider: config.provider,
             // priceFeedHistoryMap: pricefeedQuery,
             // graphInterval: intervalTimeMap.HR4,

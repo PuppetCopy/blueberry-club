@@ -125,37 +125,8 @@ export function readContract<T extends string, TContract extends typeof Contract
     return contract
   }, provider))
 
-  const run = <R>(op: Op<RetContract, Promise<R>>) => O(
-    filter(w3p => {
-      return w3p !== null
-    }),
-    op,
-    awaitPromises,
-    recoverWith(err => {
-      console.warn(err)
-      return empty()
-    })
-  )(contract)
 
-  const readInt = (op: Op<RetContract, Promise<BigNumber>>): Stream<bigint> => {
-    const newLocal = O(
-      op,
-      map(async (n) => {
-        return (await n).toBigInt()
-      })
-    )
-
-    return run(newLocal)
-  }
-
-  const _listen = <Z>(name: string | EventFilter) => switchLatest(map(res => {
-    // @ts-ignore
-    const newLocal = listen(res, name) as Stream<Z>
-    return multicast(newLocal)
-  }, contract))
-
-
-  return { run, readInt, contract, listen: _listen }
+  return contract
 }
 
 
