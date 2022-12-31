@@ -1,60 +1,36 @@
 import {
   AddressZero, ARBITRUM_ADDRESS, TOKEN_DESCRIPTION_MAP, TOKEN_SYMBOL, AVALANCHE_ADDRESS, getDenominator,
-  ITokenDescription, CHAIN_TOKEN_ADDRESS_TO_SYMBOL, ITokenInput, ITokenTrade
+  ITokenDescription, TOKEN_ADDRESS_TO_SYMBOL, ITokenInput, ITokenTrade, CHAIN_ADDRESS_MAP, CHAIN_NATIVE_TO_SYMBOL
 } from "@gambitdao/gmx-middleware"
 import { CHAIN } from "@gambitdao/wallet-link"
+import { getMappedValue } from "./common"
 
 
 
-export const CHAIN_NATIVE_TO_SYMBOL = {
-  [CHAIN.AVALANCHE]: TOKEN_SYMBOL.AVAX,
-  [CHAIN.ARBITRUM]: TOKEN_SYMBOL.ETH,
-} as const
-
-export const CHAIN_ADDRESS_MAP = {
-  [CHAIN.AVALANCHE]: AVALANCHE_ADDRESS,
-  [CHAIN.ARBITRUM]: ARBITRUM_ADDRESS,
-}
 
 
 
-export function resolveAddress(chain: CHAIN, indexToken: ITokenInput | null): ITokenTrade {
-  // @ts-ignore
-  const contractAddressMap = CHAIN_ADDRESS_MAP[chain]
+export function resolveAddress(chain: CHAIN, indexToken: ITokenInput): ITokenTrade {
+  if (indexToken === AddressZero) {
+    return getMappedValue(CHAIN_ADDRESS_MAP, chain, CHAIN.ARBITRUM).NATIVE_TOKEN
+  }
 
-  if (!contractAddressMap) {
+  const contractAddressMap = getMappedValue(TOKEN_ADDRESS_TO_SYMBOL, indexToken, indexToken)
+
+  if (contractAddressMap === null) {
     throw new Error(`Token ${indexToken} does not exist`)
   }
 
-  if (indexToken === null || indexToken === AddressZero) {
-    return contractAddressMap.NATIVE_TOKEN
-  }
-  return Object.values(contractAddressMap).indexOf(indexToken) > -1 ? indexToken : contractAddressMap.NATIVE_TOKEN
+  return indexToken
 }
 
-export function getTokenDescription(chain: CHAIN | null, token: ITokenInput): ITokenDescription {
-  if (token in CHAIN_TOKEN_ADDRESS_TO_SYMBOL) {
-    // @ts-ignore
-    const symbol = CHAIN_TOKEN_ADDRESS_TO_SYMBOL[token]
-    // @ts-ignore
-    const desc = TOKEN_DESCRIPTION_MAP[symbol]
+export function getNativeTokenDescription(chain: CHAIN): ITokenDescription {
+  const symbol = getMappedValue(CHAIN_NATIVE_TO_SYMBOL, chain, CHAIN.ARBITRUM)
+  return TOKEN_DESCRIPTION_MAP[symbol]
+}
 
-    return desc
-  }
-
-  if (token === AddressZero) {
-    // @ts-ignore
-    const nativeSymbol = CHAIN_NATIVE_TO_SYMBOL[chain]
-
-    if (!nativeSymbol) {
-      return TOKEN_DESCRIPTION_MAP[CHAIN_NATIVE_TO_SYMBOL[CHAIN.ARBITRUM]]
-    }
-
-    // @ts-ignore
-    return TOKEN_DESCRIPTION_MAP[nativeSymbol]
-  }
-
-  throw new Error(`unable to identity token ${token}`)
+export function getTokenDescription(token: ITokenTrade): ITokenDescription {
+  return TOKEN_DESCRIPTION_MAP[getMappedValue(TOKEN_ADDRESS_TO_SYMBOL, token, token)]
 }
 
 export function getTargetUsdgAmount(weight: bigint, usdgSupply: bigint, totalTokenWeights: bigint) {

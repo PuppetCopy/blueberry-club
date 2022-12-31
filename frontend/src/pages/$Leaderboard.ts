@@ -3,7 +3,7 @@ import { $text, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, state } from "@aelea/ui-components"
 import { blueberrySubgraph, IToken } from "@gambitdao/gbc-middleware"
-import { CHAIN_TOKEN_ADDRESS_TO_SYMBOL, formatReadableUSD, getPnL, IAccountSummary, IChainParamApi, ILeaderboardRequest, intervalTimeMap, IPageParapApi, ITrade, ITradeOpen, TOKEN_SYMBOL } from "@gambitdao/gmx-middleware"
+import { TOKEN_ADDRESS_TO_SYMBOL, formatReadableUSD, getPnL, IAccountSummary, IChainParamApi, ILeaderboardRequest, intervalTimeMap, IPageParapApi, ITrade, ITradeOpen, TOKEN_SYMBOL } from "@gambitdao/gmx-middleware"
 
 import { CHAIN, IWalletLink } from "@gambitdao/wallet-link"
 import { awaitPromises, fromPromise, map, now, startWith } from "@most/core"
@@ -236,7 +236,7 @@ export function $entryDisplay(chain: CHAIN, pos: ITrade) {
   return $row(style({ position: 'relative', flexDirection: 'row', alignSelf: 'center' }))(
     style({ marginRight: '-5px' })(
       // @ts-ignore
-      $TokenIcon(CHAIN_TOKEN_ADDRESS_TO_SYMBOL[newLocal])
+      $TokenIcon(TOKEN_ADDRESS_TO_SYMBOL[newLocal])
     ),
     style({ borderRadius: '50%', padding: '3px', backgroundColor: pallete.background, })(
       $icon({

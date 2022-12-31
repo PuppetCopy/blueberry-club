@@ -10,5 +10,5 @@ export const walletConnect = new WalletConnectProvider({
 })
 
 
-export const metamaskQuery = detectEthereumProvider({ mustBeMetaMask: false, silent: true }) as Promise<IEthereumProvider & { selectedAddress: string } | null>
+export const metamaskQuery = detectEthereumProvider({ mustBeMetaMask: false, silent: true }) as Promise<IEthereumProvider | null>
 

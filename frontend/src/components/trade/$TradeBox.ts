@@ -11,14 +11,14 @@ import {
 import { $anchor, $bear, $bull, $hintInput, $infoTooltip, $IntermediatePromise, $tokenIconMap, $tokenLabelFromSummary, invertColor } from "@gambitdao/ui-components"
 import {
   merge, multicast, mergeArray, now, snapshot, map, switchLatest,
-  skipRepeats, empty, fromPromise, constant, startWith, skipRepeatsWith, awaitPromises, debounce, zip
+  skipRepeats, empty, fromPromise, constant, startWith, skipRepeatsWith, awaitPromises, debounce, zip, combine
 } from "@most/core"
 import { Stream } from "@most/types"
 import { $Slider } from "../$Slider"
 import { $ButtonPrimary, $ButtonPrimaryCtx, $ButtonSecondary } from "../form/$Button"
 import { $Dropdown, $defaultSelectContainer } from "../form/$Dropdown"
 import { $caretDown } from "../../elements/$icons"
-import { CHAIN_ADDRESS_MAP, getTokenDescription, resolveAddress } from "../../logic/utils"
+import { getNativeTokenDescription, getTokenDescription, resolveAddress } from "../../logic/utils"
 import { $IntermediateConnectButton, $WalletLogoMap } from "../../components/$ConnectAccount"
 import { BrowserStore } from "../../logic/store"
 import { connectTradeReader, getErc20Balance, IFundingInfo, IPositionGetter, ITokenInfo } from "../../logic/contract/trade"
@@ -27,7 +27,7 @@ import { $TradePnlHistory } from "./$TradePnlHistory"
 import { ContractTransaction } from "@ethersproject/contracts"
 import { MaxUint256 } from "@ethersproject/constants"
 import { getContractAddress } from "../../logic/common"
-import { ERC20__factory } from "../../logic/contract/gmx-contracts"
+import { ERC20__factory } from "../../logic/gmx-contracts"
 import { CHAIN, IWalletLink, IWalletName } from "@gambitdao/wallet-link"
 
 export enum ITradeFocusMode {
@@ -489,8 +489,8 @@ export const $TradeBox = (config: ITradeBox) => component((
             //   })
             // })({ select: switchisIncreaseTether() }),
 
-            switchLatest(map((w3p) => {
-              const chain = w3p ? w3p.chain : CHAIN.ARBITRUM
+            switchLatest(map((provider) => {
+              const chain: CHAIN = provider ? provider.network.chainId : CHAIN.ARBITRUM
 
               return $Dropdown<ITokenInput>({
                 $container: $row(style({ position: 'relative', alignSelf: 'center' })),
@@ -507,10 +507,11 @@ export const $TradeBox = (config: ITradeBox) => component((
                 value: {
                   value: config.tradeConfig.inputToken,
                   $container: $defaultSelectContainer(style({ minWidth: '300px', left: 0 })),
-                  $$option: map((option) => {
-                    const balanceAmount = multicast(fromPromise(getErc20Balance(option, w3p)))
-                    const price = tradeReader.getLatestPrice(chain, option)
-                    const tokenDesc = getTokenDescription(chain, option)
+                  $$option: map(option => {
+                    const token = resolveAddress(chain, option)
+                    const balanceAmount = fromPromise(getErc20Balance(option, provider))
+                    const price = tradeReader.getPrimaryPrice(token)
+                    const tokenDesc = option === AddressZero ? getNativeTokenDescription(chain) : getTokenDescription(option)
 
                     return $row(style({ placeContent: 'space-between', flex: 1 }))(
                       $tokenLabelFromSummary(tokenDesc),
@@ -529,7 +530,7 @@ export const $TradeBox = (config: ITradeBox) => component((
               })({
                 select: changeInputTokenTether()
               })
-            }, config.walletLink.wallet)),
+            }, config.walletLink.provider)),
 
             $field(
               O(
@@ -715,7 +716,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                 $container: $row(style({ position: 'relative', alignSelf: 'center' })),
                 $selection: $row(style({ alignItems: 'center', cursor: 'pointer' }))(
                   switchLatest(map(option => {
-                    const tokenDesc = getTokenDescription(chain, option)
+                    const tokenDesc = getTokenDescription(option)
 
                     return $icon({ $content: $tokenIconMap[tokenDesc.symbol], width: '34px', viewBox: '0 0 32 32' })
                   }, config.tradeConfig.indexToken)),
@@ -725,11 +726,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                   value: config.tradeConfig.indexToken,
                   $container: $defaultSelectContainer(style({ minWidth: '300px', right: 0 })),
                   $$option: snapshot((isLong, option) => {
-
-                    // @ts-ignore
-                    const token = CHAIN_ADDRESS_MAP[chain] === option ? AddressZero : option
-
-                    const tokenDesc = getTokenDescription(chain, token)
+                    const tokenDesc = getTokenDescription(option)
                     // const availableLiquidityUsd = vault.getAvailableLiquidityUsd(chain, option, isLong)
 
                     return $row(style({ placeContent: 'space-between', flex: 1 }))(
@@ -787,9 +784,9 @@ export const $TradeBox = (config: ITradeBox) => component((
           ),
 
           $row(layoutSheet.spacingSmall, style({ placeContent: 'space-between' }))(
-            switchLatest(combineArray((chain, isLong, indexToken) => {
+            switchLatest(combineArray((isLong, indexToken) => {
               if (isLong) {
-                const tokenDesc = getTokenDescription(chain, indexToken)
+                const tokenDesc = getTokenDescription(indexToken)
 
                 return $row(layoutSheet.spacing, style({ fontSize: '.75em', alignItems: 'center' }))(
                   $row(layoutSheet.spacingTiny)(
@@ -806,13 +803,13 @@ export const $TradeBox = (config: ITradeBox) => component((
               return $row(layoutSheet.spacing)(
                 $row(layoutSheet.spacingTiny, style({ fontSize: '.75em', alignItems: 'center' }))(
                   $text(style({ color: pallete.foreground }))('Indexed In'),
-                  $infoTooltip($text(map(token => `${getTokenDescription(chain, token).symbol} will be borrowed to maintain a Short Position. you can switch with other USD tokens to receive it later`, config.tradeConfig.collateralToken))),
+                  $infoTooltip($text(map(token => `${getTokenDescription(token).symbol} will be borrowed to maintain a Short Position. you can switch with other USD tokens to receive it later`, config.tradeConfig.collateralToken))),
                 ),
                 $Dropdown<ARBITRUM_ADDRESS_STABLE | AVALANCHE_ADDRESS_STABLE>({
                   $container: $row(style({ position: 'relative', alignSelf: 'center' })),
                   $selection: $row(style({ alignItems: 'center', cursor: 'pointer' }))(
                     switchLatest(combineArray((collateralToken) => {
-                      const tokenDesc = getTokenDescription(chain, collateralToken)
+                      const tokenDesc = getTokenDescription(collateralToken)
 
                       return $row(layoutSheet.spacingTiny, style({ fontSize: '.75em', alignItems: 'center' }))(
                         $icon({ $content: $tokenIconMap[tokenDesc.symbol], width: '14px', viewBox: '0 0 32 32' }),
@@ -825,7 +822,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                     value: config.tradeConfig.collateralToken,
                     $container: $defaultSelectContainer(style({ minWidth: '300px', right: 0 })),
                     $$option: map(option => {
-                      const tokenDesc = getTokenDescription(chain, option)
+                      const tokenDesc = getTokenDescription(option)
 
                       return $tokenLabelFromSummary(tokenDesc)
                     }),
@@ -840,7 +837,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                   select: changeCollateralTokenTether()
                 })
               )
-            }, config.walletLink.network, config.tradeConfig.isLong, config.tradeConfig.indexToken)),
+            }, config.tradeConfig.isLong, config.tradeConfig.indexToken)),
 
             $hintInput({
               label: now(`Size`),
@@ -890,10 +887,7 @@ export const $TradeBox = (config: ITradeBox) => component((
             const routerContractAddress = getContractAddress(TRADE_CONTRACT_MAPPING, w3p.chain, 'Router')
             const positionRouterAddress = getContractAddress(TRADE_CONTRACT_MAPPING, w3p.chain, 'PositionRouter')
 
-
-
             return $column(style({ flex: 1, placeContent: 'center' }))(
-
               $column(layoutSheet.spacing, style({ padding: '0 16px', placeContent: 'space-between' }), styleInline(map(mode => ({ display: mode ? 'flex' : 'none' }), inTradeMode)))(
                 $row(layoutSheet.spacingBig, style({ placeContent: 'space-between' }))(
                   $column(layoutSheet.spacingTiny, style({ flex: 1 }))(
@@ -995,9 +989,9 @@ export const $TradeBox = (config: ITradeBox) => component((
                                     $content: $text(!isPluginEnabled ? 'Enable Leverage(GMX) & Agree' : 'Agree')
                                   })({
                                     click: clickEnablePluginTether(
-                                      snapshot((c) => {
-                                        return c.approvePlugin(positionRouterAddress)
-                                      }, tradeReader.router.contract),
+                                      snapshot((router) => {
+                                        return router.approvePlugin(positionRouterAddress)
+                                      }, tradeReader.routerReader.contract),
                                       multicast
                                     )
                                   })
@@ -1060,7 +1054,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                             return false
                           }, validationError, tradeState),
                           $content: $text(map(params => {
-                            const outputToken = getTokenDescription(w3p.chain, params.indexToken)
+                            // const outputToken = getTokenDescription(params.indexToken)
 
                             let modLabel: string
 
@@ -1084,12 +1078,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                           alert: validationError
                         })({
                           click: clickRequestTradeTether(
-                            snapshot(({ state, trade }) => {
-                              const signer = trade.signer
-
-                              if (signer === null) {
-                                throw new Error('Signer does not exists')
-                              }
+                            snapshot(({ state, positionRouter }) => {
 
                               const inputAddress = resolveAddress(w3p.chain, state.inputToken)
                               const outputToken = state.isLong ? state.indexToken : state.collateralToken
@@ -1112,7 +1101,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
                               const ctxQuery = state.isIncrease
                                 ? (isNative
-                                  ? trade.createIncreasePositionETH(
+                                  ? positionRouter.createIncreasePositionETH(
                                     path,
                                     state.indexToken,
                                     0,
@@ -1124,7 +1113,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                                     AddressZero,
                                     { value: state.collateralDelta + state.executionFee }
                                   )
-                                  : trade.createIncreasePosition(
+                                  : positionRouter.createIncreasePosition(
                                     path,
                                     state.indexToken,
                                     state.collateralDelta,
@@ -1137,7 +1126,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                                     AddressZero,
                                     { value: state.executionFee }
                                   ))
-                                : trade.createDecreasePosition(
+                                : positionRouter.createDecreasePosition(
                                   path,
                                   state.indexToken,
                                   // flip values. Contract code is using `uint` integers
@@ -1160,11 +1149,11 @@ export const $TradeBox = (config: ITradeBox) => component((
 
 
                               return { ctxQuery, state, acceptablePrice }
-                            }, combineObject({ trade: tradeReader.positionRouter.contract, state: tradeState })),
+                            }, combineObject({ state: tradeState, positionRouter: tradeReader.positionRouterReader.contract })),
                             multicast
                           )
                         })
-                      }, tradeReader.isPluginEnabled(w3p.address), config.tradeState.isTradingEnabled, config.tradeState.isIndexTokenApproved, config.tradeConfig.indexToken, config.tradeState.indexTokenDescription)),
+                      }, tradeReader.getIsPluginEnabled(w3p.address), config.tradeState.isTradingEnabled, config.tradeState.isIndexTokenApproved, config.tradeConfig.indexToken, config.tradeState.indexTokenDescription)),
 
                     ),
                   ),

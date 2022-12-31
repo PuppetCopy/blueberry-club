@@ -11,6 +11,7 @@ import { $Dropdown, $defaultSelectContainer } from "./form/$Dropdown"
 import { $Popover } from "./$Popover"
 import { IButton } from "./form/$buttonCore"
 import { Stream } from "@most/types"
+import { filterNull } from "@gambitdao/gmx-middleware"
 
 
 
@@ -147,11 +148,15 @@ export const $switchNetworkDropdown = (walletLink: IWalletLink, chainList: CHAIN
                     console.warn(error)
                     return Promise.reject('unable to switch network')
                   })
+
+                  document.location.reload()
                 }
 
-                return option
+                return null
+                // return option
               }, walletLink.wallet),
-              awaitPromises
+              awaitPromises,
+              filterNull
             ),
             style({ alignItems: 'center', width: '100%' })
           )(
@@ -159,10 +164,10 @@ export const $switchNetworkDropdown = (walletLink: IWalletLink, chainList: CHAIN
             $text(chainName)
           )
         }),
-        $container: $defaultSelectContainer(style({ left: 'auto', right: 0, })),
+        $container: $defaultSelectContainer(style({ left: 0, right: 'auto', })),
         list: chainList,
       },
-      $container: $column(style({ placeContent: 'center', position: 'relative' })),
+      $container: $column(style({ margin: 'auto', position: 'relative' })),
       $selection: $trigger,
     })({}),
 

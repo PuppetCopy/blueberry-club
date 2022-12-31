@@ -1,4 +1,4 @@
-export * from './contract'
+
 export * from './types'
 export * from './utils'
 export * from './address/arbitrum'
@@ -14,4 +14,5 @@ export * from './pool/tradingPools'
 
 export * as fromJson from './fromJson'
 export * as gmxSubgraph from './graph'
+// export * as gmxContract from '../../frontend/src/logic/gmx-contracts'
 

@@ -4,7 +4,7 @@ import { ARBITRUM_ADDRESS, AVALANCHE_ADDRESS, getTokenUsd, getGmxArbiPrice, TOKE
 import { awaitPromises, fromPromise, map, multicast, now } from "@most/core"
 import { readContract } from "./common"
 import { IGmxContractInfo, connectGmxEarn } from "./contract"
-import { IERC20__factory, VaultPriceFeed__factory } from "./contract/gmx-contracts"
+import { IERC20__factory, VaultPriceFeed__factory } from "./gmx-contracts"
 import { arbGlobalProvider, avaGlobalProvider } from "./provider"
 
 

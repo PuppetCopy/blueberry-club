@@ -1,4 +1,4 @@
-import { Behavior } from "@aelea/core"
+import { Behavior, combineObject } from "@aelea/core"
 import { $element, $node, $text, component, eventElementTarget, style } from "@aelea/dom"
 import * as router from '@aelea/router'
 import { $column, designSheet, layoutSheet, screenUtils } from '@aelea/ui-components'
@@ -7,7 +7,7 @@ import {
   ETH_ADDRESS_REGEXP, IAccountParamApi, intervalTimeMap, IPricefeedParamApi
 } from '@gambitdao/gmx-middleware'
 import { CHAIN, initWalletLink, IWalletName } from "@gambitdao/wallet-link"
-import { map, merge, multicast, now } from '@most/core'
+import { map, merge, multicast, now, switchLatest } from '@most/core'
 import { $MainMenu } from '../components/$MainMenu'
 import { helloBackend } from '../logic/websocket'
 import { BLUEBERRY_REFFERAL_CODE, IAccountStakingStore, ITreasuryStore } from "@gambitdao/gbc-middleware"
@@ -25,6 +25,7 @@ import { $ProfileConnected } from "./$ProfileConnected"
 import { $Trade } from "./$Trade"
 import { createLocalStorageChain } from "../logic/store"
 import { globalProviderMap } from "../logic/provider"
+import { getDefaultProvider, Web3Provider } from "@ethersproject/providers"
 
 
 const popStateEvent = eventElementTarget('popstate', window)
@@ -244,7 +245,6 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
                     // AVALANCHE_ADDRESS.MIM,
                   ]
                 },
-                // walletLink,
                 parentRoute: tradeRoute,
                 accountTradeList: clientApi.accountTradeList,
                 store

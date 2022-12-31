@@ -1,3 +1,4 @@
+import { CHAIN } from "@gambitdao/wallet-link"
 import { ITokenDescription } from "../types"
 import { groupByMap } from "../utils"
 import { ARBITRUM_ADDRESS } from "./arbitrum"
@@ -122,7 +123,17 @@ export const TOKEN_DESCRIPTION_LIST = [
 export const TOKEN_DESCRIPTION_MAP = groupByMap(TOKEN_DESCRIPTION_LIST, token => token.symbol)
 
 
-export const CHAIN_TOKEN_ADDRESS_TO_SYMBOL = {
+export const CHAIN_NATIVE_TO_SYMBOL = {
+  [CHAIN.AVALANCHE]: TOKEN_SYMBOL.AVAX,
+  [CHAIN.ARBITRUM]: TOKEN_SYMBOL.ETH,
+} as const
+
+export const CHAIN_ADDRESS_MAP = {
+  [CHAIN.AVALANCHE]: AVALANCHE_ADDRESS,
+  [CHAIN.ARBITRUM]: ARBITRUM_ADDRESS,
+}
+
+export const TOKEN_ADDRESS_TO_SYMBOL = {
   [ARBITRUM_ADDRESS.NATIVE_TOKEN]: TOKEN_SYMBOL.WETH,
 
   [ARBITRUM_ADDRESS.GLP]: TOKEN_SYMBOL.GLP,

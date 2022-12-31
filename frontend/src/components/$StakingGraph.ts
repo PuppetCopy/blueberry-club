@@ -5,7 +5,7 @@ import { pallete } from "@aelea/ui-components-theme"
 import { CHAIN } from "@gambitdao/wallet-link"
 import {
   intervalTimeMap, readableNumber, formatFixed, ITimerangeParamApi, unixTimestampNow, intervalListFillOrderMap,
-  IStake, getTokenUsd, ITokenDescription, div, getDenominator, formatReadableUSD, BASIS_POINTS_DIVISOR, readableDate, ARBITRUM_ADDRESS
+  IStake, getTokenUsd, ITokenDescription, div, getDenominator, formatReadableUSD, BASIS_POINTS_DIVISOR, readableDate, ARBITRUM_ADDRESS, CHAIN_ADDRESS_MAP
 } from "@gambitdao/gmx-middleware"
 import { awaitPromises, empty, map, multicast, now, skipRepeats, skipRepeatsWith, startWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
@@ -14,7 +14,7 @@ import { $card, $responsiveFlex } from "../elements/$common"
 import { IRewardsStream } from "../logic/contract"
 import { IAsset } from "@gambitdao/gbc-middleware"
 import { $Chart } from "./chart/$Chart"
-import { CHAIN_ADDRESS_MAP, getTokenDescription } from "../logic/utils"
+import { getTokenDescription } from "../logic/utils"
 import { JsonRpcProvider } from "@ethersproject/providers"
 import { getIntervalBasedOnTimeframe } from "@gambitdao/ui-components"
 import { getContractAddress } from "../logic/common"
@@ -86,7 +86,7 @@ export const $StakingGraph = (config: ITreasuryChart) => component((
         }
 
 
-        const desc = getTokenDescription(chain, next.token.slice(1) as any)
+        const desc = getTokenDescription(next.token.slice(1) as any)
         const amountRatio = div(next.amount, getDenominator(desc.decimals)) / BASIS_POINTS_DIVISOR
         const tokenPrice = div(next.amountUsd, amountRatio) / BASIS_POINTS_DIVISOR
 
@@ -302,7 +302,7 @@ export const $StakingGraph = (config: ITreasuryChart) => component((
                     const token: ARBITRUM_ADDRESS = next.token.slice(1) as any
 
                     if (token.toLowerCase() === getContractAddress(CHAIN_ADDRESS_MAP, chain, 'ES_GMX')) {
-                      const desc = getTokenDescription(chain, token as any)
+                      const desc = getTokenDescription(token as any)
                       const amountRatio = div(next.amount, getDenominator(desc.decimals)) / BASIS_POINTS_DIVISOR
                       const tokenPrice = div(next.amountUsd, amountRatio) / BASIS_POINTS_DIVISOR
 

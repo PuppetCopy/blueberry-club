@@ -5,7 +5,6 @@ import "hardhat-gas-reporter"
 import "@typechain/hardhat"
 
 import dotenv from "dotenv"
-import { CHAIN, NETWORK_METADATA } from "@gambitdao/gmx-middleware"
 dotenv.config({ path: "../.env" })
 
 
@@ -15,18 +14,13 @@ const accounts = key ? [key] : []
 const config: HardhatUserConfig = {
   networks: {
     arbitrumTestnet: {
-      chainId: CHAIN.ARBITRUM_RINKBY,
-      url: NETWORK_METADATA[CHAIN.ARBITRUM_RINKBY].rpcUrls[0],
-      accounts,
-    },
-    ropsten: {
-      chainId: CHAIN.ETH_ROPSTEN,
-      url: NETWORK_METADATA[CHAIN.ETH_ROPSTEN].rpcUrls[0],
+      chainId: 421611,
+      url: 'https://rinkeby.arbitrum.io/rpc',
       accounts,
     },
     arbitrum: {
-      chainId: CHAIN.ARBITRUM,
-      url: NETWORK_METADATA[CHAIN.ARBITRUM].rpcUrls[0],
+      chainId: 42161,
+      url: 'https://arb1.arbitrum.io/rpc',
       accounts,
     },
   },

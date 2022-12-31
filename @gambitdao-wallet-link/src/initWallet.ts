@@ -18,7 +18,7 @@ export interface IWalletState {
 
 export interface IWalletLink {
   network: Stream<CHAIN>
-  provider: Stream<Web3Provider>
+  provider: Stream<Web3Provider | BaseProvider>
   defaultProvider: Stream<BaseProvider>
 
   wallet: Stream<IWalletState | null>
@@ -78,30 +78,30 @@ export function initWalletLink(
       signer: prov.getSigner(),
     }
 
-    //   // WalletConnet doesn't emit standart disconnect
+    // WalletConnet doesn't emit standart disconnect
     const disconnect = isWc
       ? fromCallback(cb => walletConnect.on('disconnect', cb))
       : eip1193ProviderEventFn(wp, 'disconnect')
 
-    const walletNetworkChange = map(chain => {
-      return { ...state, provider: new Web3Provider(wp, Number(chain)) }
+    const walletNetworkChange = map(id => {
+      const chainId = Number(id)
+      const w3p = new Web3Provider(wp, chain)
+      return { ...state, provider: w3p, chain: chainId }
     }, eip1193ProviderEventFn(wp, 'chainChanged'))
 
-    const nullWallet = constant(null, mergeArray([disconnect]))
+    const nullWallet = constant(null, disconnect)
 
-    const accountChange = map(([account]) => {
-      if (!account) {
-        return null
-      }
+    // const accountChange = map(([account]) => {
+    //   if (!account) {
+    //     return null
+    //   }
 
-      return { ...state, address: account }
-    }, eip1193ProviderEventFn(wp, 'accountsChanged'))
+    //   return { ...state, address: account }
+    // }, eip1193ProviderEventFn(wp, 'accountsChanged'))
 
-    return mergeArray([now(state), walletNetworkChange, nullWallet, accountChange])
+    return mergeArray([now(state), walletNetworkChange, nullWallet])
   }, fromPromise(metamaskQuery), walletName)))
 
-
-  // const wallet: Stream<IWalletState | null> = walletChange
   const wallet: Stream<IWalletState | null> = replayLatest(multicast(walletChange))
 
   const defaultProvider = awaitPromises(map(async (chain) => {
@@ -111,20 +111,18 @@ export function initWalletLink(
   }, networkChange))
 
   const provider = snapshot((chain, w3p) => {
-    if (w3p === null || !config.globalProviderMap[chain]) {
-      return config.globalProviderMap[chain] || fallbackProvider
+    if (w3p) {
+      return w3p.provider
     }
 
-    return w3p.provider
+    return config.globalProviderMap[chain] || fallbackProvider
   }, networkChange, wallet)
 
   const network: Stream<CHAIN> = snapshot((chain, w3p) => {
     return w3p ? w3p.chain : chain
   }, networkChange, wallet)
 
-  return {
-    network, wallet, provider, defaultProvider
-  }
+  return { network, wallet, provider, defaultProvider }
 }
 
 

@@ -1,7 +1,7 @@
 import { combineObject, O, Op, replayLatest } from "@aelea/core"
 import { AnimationFrames } from "@aelea/dom"
 import { Disposable, Scheduler, Sink, Stream } from "@most/types"
-import { at, awaitPromises, constant, continueWith, empty, filter, merge, multicast, now, recoverWith, zipArray } from "@most/core"
+import { at, awaitPromises, constant, continueWith, empty, filter, map, merge, multicast, now, recoverWith, switchLatest, zipArray } from "@most/core"
 import { intervalTimeMap, USD_DECIMALS } from "./constant"
 import { IPageParapApi, IPagePositionParamApi, ISortParamApi } from "./types"
 import { keccak256 } from "@ethersproject/solidity"
@@ -413,6 +413,10 @@ export function zipState<A, K extends keyof A = keyof A>(state: StateStream<A>):
   }, streams)
 
   return zipped
+}
+
+export function switchMap<T, R>(cb: (t: T) => Stream<R>): Op<T, R> {
+  return O(map(cb), switchLatest)
 }
 
 

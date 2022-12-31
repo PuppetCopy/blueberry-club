@@ -1,6 +1,6 @@
 import { O, Op } from "@aelea/core"
-import { filterNull, listen } from "@gambitdao/gmx-middleware"
-import { awaitPromises, continueWith, empty, filter, map, multicast, never, now, recoverWith, switchLatest, takeWhile, tap } from "@most/core"
+import { filterNull, switchMap } from "@gambitdao/gmx-middleware"
+import { awaitPromises, continueWith, empty, map, multicast, never, now, recoverWith, switchLatest, takeWhile, tap } from "@most/core"
 import { Stream } from "@most/types"
 import { $berry } from "../components/$DisplayBerry"
 import {
@@ -11,9 +11,11 @@ import { $Node, $svg, attr, style } from "@aelea/dom"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
 import { Closet } from "@gambitdao/gbc-contracts"
 import { BigNumberish, BigNumber } from "@ethersproject/bignumber"
-import { JsonRpcProvider as BaseProvider, Web3Provider } from "@ethersproject/providers"
-import { ContractFactory, EventFilter } from "@ethersproject/contracts"
+import { BaseProvider, Web3Provider } from "@ethersproject/providers"
+import { BaseContract, ContractFactory, Event } from "@ethersproject/contracts"
 import { CHAIN } from "@gambitdao/wallet-link"
+import { GetEventFilterType, listen } from "./contract/listen"
+import { curry2 } from "@most/prelude"
 
 export type TContractMapping<T> = {
   [P in CHAIN]?: {
@@ -47,10 +49,10 @@ export function getContractAddress<T, Z extends TContractMapping<T>>(contractMap
   return newLocal
 }
 
-export function getContractMapping<T, Z extends TContractMapping<T>>(contractMap: Z, chain: number | keyof Z): Z[keyof Z] | null {
-  const addressMapping = contractMap[chain]
-
-  return addressMapping ? addressMapping : null
+export function getMappedValue<T extends Object>(contractMap: T, prop: any, fallbackProp: keyof T): T[keyof T] {
+  return prop in contractMap
+    ? contractMap[prop as keyof T]
+    : contractMap[fallbackProp]
 }
 
 export function readContractMapping<TProvider extends BaseProvider, TMap, TCmap extends TContractMapping<TMap>, TContract extends typeof ContractFactory>(
@@ -77,14 +79,19 @@ export function readContractMapping<TProvider extends BaseProvider, TMap, TCmap 
     return contract
   }, connect)))
 
-  const run = <R>(op: Op<RetContract, Promise<R>>) => O(
-    op,
-    awaitPromises,
-    recoverWith(err => {
-      console.warn(err)
-      return empty()
-    })
-  )(contract)
+  const run = <R>(op: Op<RetContract, Promise<R>>) => {
+    const switchOp = switchLatest(map(c => {
+      const internalOp = awaitPromises(op(now(c)))
+      const recoverOpError = recoverWith(err => {
+        console.warn(err)
+        return empty()
+      }, internalOp)
+
+      return recoverOpError
+    }, contract))
+
+    return switchOp
+  }
 
   const readInt = (op: Op<RetContract, Promise<BigNumber>>): Stream<bigint> => {
     const newLocal = O(
@@ -97,7 +104,8 @@ export function readContractMapping<TProvider extends BaseProvider, TMap, TCmap 
     return run(newLocal)
   }
 
-  const _listen = <T>(name: string | EventFilter): Stream<T> => switchLatest(map(res => {
+  // @ts-ignore
+  const _listen = <T extends RetContract, Name extends keyof T['filters'], ET extends GetEventFilterType<T, Name>>(name: Name extends string ? Name : never): Stream<ET & { __event: Event }> => switchLatest(map(res => {
     if (res === null) {
       return never()
     }
@@ -108,6 +116,70 @@ export function readContractMapping<TProvider extends BaseProvider, TMap, TCmap 
 
 
   return { run, readInt, contract, listen: _listen }
+}
+
+
+export function readMap<T, R>(cb: (t: T) => Stream<Promise<R>>): Op<T, R> {
+  return O(switchMap(cb), awaitPromises)
+}
+
+export function readMapInt<T>(cb: (t: T) => Stream<Promise<BigNumber>>): Op<T, bigint> {
+  return O(readMap(cb), map(bn => bn.toBigInt()))
+}
+
+export function readInt(oop: Stream<Promise<BigNumber>>): Stream<bigint> {
+  return awaitPromises(map(async bn => (await bn).toBigInt(), oop))
+}
+
+
+interface ISwitchOpCurry2 {
+  <T, R>(s: Stream<T>, oop: Op<T, Promise<R>>): Stream<R>
+  <T, R>(s: Stream<T>): (oop: Op<T, Promise<R>>) => Stream<R>
+}
+
+export const switchOp: ISwitchOpCurry2 = curry2(function <T, R>(s: Stream<T>, oop: Op<T, Promise<R>>): Stream<R> {
+  return awaitPromises(switchLatest(map(c => oop(now(c)), s)))
+})
+
+
+
+
+export function readContractMapping2<TProvider extends BaseProvider, TMap, TCmap extends TContractMapping<TMap>, TContract extends typeof ContractFactory>(
+  provider: Stream<TProvider>,
+  contractCtr: TContract,
+  contractMap: TCmap,
+  contractName: keyof TMap
+  // @ts-ignore
+) {
+
+  const contract = awaitPromises(map(async (provider) => {
+    const chain = (await provider.getNetwork()).chainId as CHAIN
+    const address = getContractAddress(contractMap, chain, contractName)
+
+    if (address === null) {
+      return null
+    }
+
+    // @ts-ignore
+    const contract = contractCtr.connect(address, provider instanceof Web3Provider ? provider.getSigner() : provider)
+
+    return contract
+  }, provider))
+
+  // @ts-ignore
+  type reType = ReturnType<TContract['connect']>
+
+  // const address = getContractAddress(contractMap, provider.network.chainId, contractName)
+
+  // if (address === null) {
+  //   throw new Error('no contract matched')
+  // }
+
+  // // @ts-ignore
+  // const contract = contractCtr.connect(address, provider instanceof Web3Provider ? provider.getSigner() : provider)
+
+
+  return switchOp(contract)
 }
 
 export function readContract<T extends string, TContract extends typeof ContractFactory, TProvider extends BaseProvider>(

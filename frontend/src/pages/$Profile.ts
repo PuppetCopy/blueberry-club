@@ -12,7 +12,7 @@ import { $StakingGraph } from "../components/$StakingGraph"
 import { IStake, TRADE_CONTRACT_MAPPING } from "@gambitdao/gmx-middleware"
 import { Stream } from "@most/types"
 import { connectGmxEarn } from "../logic/contract"
-import { $labItem, getContractMapping } from "../logic/common"
+import { $labItem, getMappedValue } from "../logic/common"
 import { JsonRpcProvider } from "@ethersproject/providers"
 import { pallete } from "@aelea/ui-components-theme"
 import { connectLab } from "../logic/contract/gbc"
@@ -36,7 +36,7 @@ export const $Profile = (config: IProfile) => component((
 
   const arbitrumContract = switchLatest(combineArray((provider, chain) => {
 
-    const contractMapping = getContractMapping(TRADE_CONTRACT_MAPPING, chain)
+    const contractMapping = getMappedValue(TRADE_CONTRACT_MAPPING, chain, CHAIN.ARBITRUM)
 
     if (contractMapping === null) {
       return now(null)
