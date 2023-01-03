@@ -7,7 +7,7 @@ import {
   getNextLiquidationPrice, getMarginFees, STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, TAX_BASIS_POINTS,
   getDenominator, USD_PERCISION, formatReadableUSD, timeSince, getPositionKey, IPositionIncrease,
   IPositionDecrease, getPnL, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE, getFundingFee, filterNull, getTokenUsd, getLiquidationPrice,
-  ITokenIndex, ITokenStable, ITokenInput, TradeStatus, LIMIT_LEVERAGE, div, readableDate, TRADE_CONTRACT_MAPPING, getTokenAmount, abs, IAccountParamApi, TOKEN_ADDRESS_TO_SYMBOL, CHAIN_ADDRESS_MAP,
+  ITokenIndex, ITokenStable, ITokenInput, TradeStatus, LIMIT_LEVERAGE, div, readableDate, TRADE_CONTRACT_MAPPING, getTokenAmount, abs, IAccountParamApi, CHAIN_ADDRESS_MAP,
 } from "@gambitdao/gmx-middleware"
 
 import { map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, snapshot, debounce, zip, combine, tap, constant } from "@most/core"
@@ -134,6 +134,7 @@ export const $Trade = (config: ITradeComponent) => component((
   const slippage = slippageStore.storeReplay(changeSlippage)
 
 
+
   const inputToken: Stream<ITokenInput> = inputTokenStore.storeReplay(changeInputToken)
   const indexToken: Stream<ITokenIndex> = indexTokenStore.storeReplay(
     mergeArray([map(t => t.indexToken, switchTrade), changeIndexToken]),
@@ -187,16 +188,16 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
 
-  // const keeperExecuteIncrease = globalTradeReader.executeIncreasePosition
-  // const keeperDecreaseIncrease = globalTradeReader.executeDecreasePosition
-  // const keeperCancelIncrease = globalTradeReader.cancelIncreasePosition
-  // const keeperCancelDecrease = globalTradeReader.executeDecreasePosition
+  const keeperExecuteIncrease = globalTradeReader.executeIncreasePosition
+  const keeperDecreaseIncrease = globalTradeReader.executeDecreasePosition
+  const keeperCancelIncrease = globalTradeReader.cancelIncreasePosition
+  const keeperCancelDecrease = globalTradeReader.executeDecreasePosition
 
 
-  const keeperExecuteIncrease = tradeReader.executeIncreasePosition // mapKeeperEvent(globalPositionRouterReader.listen<KeeperIncreaseRequest>('ExecuteIncreasePosition'))
-  const keeperDecreaseIncrease = tradeReader.executeDecreasePosition // mapKeeperEvent(globalPositionRouterReader.listen<KeeperDecreaseRequest>('ExecuteDecreasePosition'))
-  const keeperCancelIncrease = tradeReader.cancelIncreasePosition // mapKeeperEvent(globalPositionRouterReader.listen<KeeperIncreaseRequest>('CancelIncreasePosition'))
-  const keeperCancelDecrease = tradeReader.executeDecreasePosition // mapKeeperEvent(globalPositionRouterReader.listen<KeeperDecreaseRequest>('CancelDecreasePosition'))
+  // const keeperExecuteIncrease = tradeReader.executeIncreasePosition // mapKeeperEvent(globalPositionRouterReader.listen<KeeperIncreaseRequest>('ExecuteIncreasePosition'))
+  // const keeperDecreaseIncrease = tradeReader.executeDecreasePosition // mapKeeperEvent(globalPositionRouterReader.listen<KeeperDecreaseRequest>('ExecuteDecreasePosition'))
+  // const keeperCancelIncrease = tradeReader.cancelIncreasePosition // mapKeeperEvent(globalPositionRouterReader.listen<KeeperIncreaseRequest>('CancelIncreasePosition'))
+  // const keeperCancelDecrease = tradeReader.executeDecreasePosition // mapKeeperEvent(globalPositionRouterReader.listen<KeeperDecreaseRequest>('CancelDecreasePosition'))
 
 
   const adjustPosition = multicast(mergeArray([
@@ -244,7 +245,8 @@ export const $Trade = (config: ITradeComponent) => component((
       }
     },
     awaitPromises(positionQuery),
-    mergeArray([tradeReader.positionCloseEvent, tradeReader.positionLiquidateEvent])
+    mergeArray([globalTradeReader.positionCloseEvent, globalTradeReader.positionLiquidateEvent])
+    // mergeArray([tradeReader.positionCloseEvent, tradeReader.positionLiquidateEvent])
   ))
 
   const updatePostion = filterNull(snapshot(
@@ -256,7 +258,8 @@ export const $Trade = (config: ITradeComponent) => component((
       return { ...pos, ...update }
     },
     awaitPromises(positionQuery),
-    tradeReader.positionUpdateEvent
+    globalTradeReader.positionUpdateEvent
+    // tradeReader.positionUpdateEvent
   ))
 
   const positionChange = multicast(mergeArray([
@@ -318,13 +321,13 @@ export const $Trade = (config: ITradeComponent) => component((
     const swapFeeBasisPoints = inputAndIndexStable ? STABLE_SWAP_FEE_BASIS_POINTS : SWAP_FEE_BASIS_POINTS
     const taxBasisPoints = inputAndIndexStable ? STABLE_TAX_BASIS_POINTS : TAX_BASIS_POINTS
 
-    if (params.collateralDeltaUsd === 0n || params.inputToken === params.collateralToken) {
+    if (!params.isIncrease || params.collateralDeltaUsd === 0n || params.inputToken === params.collateralToken) {
       return 0n
     }
 
-    const adjustedPnlDelta = params.isIncrease
-      ? 0n
-      : getPnL(params.isLong, params.position.averagePrice, params.indexTokenPrice, params.position.size) * abs(params.sizeDeltaUsd) / params.position.size
+    const adjustedPnlDelta = params.position.size > 0n && params.sizeDeltaUsd > 0n
+      ? getPnL(params.isLong, params.position.averagePrice, params.indexTokenPrice, params.position.size) * abs(params.sizeDeltaUsd) / params.position.size
+      : 0n
 
     const amountUsd = abs(params.collateralDeltaUsd) + adjustedPnlDelta
 
@@ -365,7 +368,6 @@ export const $Trade = (config: ITradeComponent) => component((
   const fundingFee = map(params => {
     return getFundingFee(params.position.entryFundingRate, params.collateralTokenFundingInfo.cumulative, params.position.size)
   }, combineObject({ collateralTokenFundingInfo, position }))
-
 
   const leverage = leverageStore.store(mergeArray([
     changeLeverage,
@@ -536,8 +538,9 @@ export const $Trade = (config: ITradeComponent) => component((
             tradeConfig,
             tradeState: {
               key: positionKey,
-              position,
+              nativeTokenPrice: tradeReader.nativeTokenPrice,
 
+              position,
               indexTokenInfo,
               collateralTokenFundingInfo,
               isTradingEnabled,
@@ -551,7 +554,7 @@ export const $Trade = (config: ITradeComponent) => component((
               collateralTokenDescription,
               indexTokenDescription,
               inputTokenDescription,
-              fundingFee,
+              fundingFee: fundingFee,
               marginFee,
               swapFee,
               averagePrice,
@@ -631,9 +634,8 @@ export const $Trade = (config: ITradeComponent) => component((
                       const pnl = map(params => {
                         const entryRate = pos.updateList[pos.updateList.length - 1].entryFundingRate
                         const delta = getPnL(pos.isLong, pos.averagePrice, params.positionMarkPrice, pos.size)
-                        const cumFee = getFundingFee(entryRate, params.cumulativeFee, pos.size)
 
-                        return pos.realisedPnl + delta - cumFee - pos.fee
+                        return pos.realisedPnl + delta - pos.fee
                       }, combineObject({ positionMarkPrice, cumulativeFee }))
 
 
@@ -641,7 +643,7 @@ export const $Trade = (config: ITradeComponent) => component((
                         $infoTooltip(
                           $column(layoutSheet.spacingTiny)(
                             $row(layoutSheet.spacingTiny)(
-                              $text(style({}))('Total Cumulative'),
+                              $text(style({}))('Net PnL(after fees)'),
                               // $text(style({ color: pallete.negative }))(map(fee => formatReadableUSD(pos.collateral + fee), fundingFee))
                             ),
                             $column(
@@ -655,13 +657,12 @@ export const $Trade = (config: ITradeComponent) => component((
                                 }, cumulativeFee))
                               ),
                               $row(layoutSheet.spacingTiny)(
-                                $text(style({ color: pallete.foreground }))('Margin Fee'),
-                                $text(style({ color: pallete.indeterminate }))(formatReadableUSD(pos.fee))
-                              ),
-                              $row(layoutSheet.spacingTiny)(
-                                $text(style({ color: pallete.foreground }))('Borrow Fee'),
+                                $text(style({ color: pallete.foreground }))('Paid Borrow Fee'),
                                 $text(style({ color: pallete.indeterminate }))(map(cumFee => {
-                                  const entryFundingRate = pos.updateList[0].entryFundingRate
+                                  const fstUpdate = pos.updateList[0]
+                                  const lastUpdate = pos.updateList[pos.updateList.length - 1]
+                                  
+                                  const entryFundingRate = fstUpdate.entryFundingRate
 
                                   const fee = getFundingFee(entryFundingRate, cumFee, pos.size)
                                   return formatReadableUSD(fee)
@@ -678,10 +679,10 @@ export const $Trade = (config: ITradeComponent) => component((
                       )
                     })
                   },
-                  {
+                  ...screenUtils.isDesktopScreen ? [{
                     $head: $text('Collateral'),
                     columnOp: O(layoutSheet.spacingTiny, style({ flex: .7, placeContent: 'flex-end' })),
-                    $body: map(pos => {
+                    $body: map((pos: ITradeOpen) => {
                       const cumFee = tradeReader.getTokenCumulativeFunding(now(pos.collateralToken))
 
                       return $row(
@@ -692,7 +693,7 @@ export const $Trade = (config: ITradeComponent) => component((
                         }, cumFee))
                       )
                     })
-                  },
+                  }] : [],
                   {
                     $head: $text('Size'),
                     columnOp: O(layoutSheet.spacingTiny, style({ flex: 1, placeContent: 'flex-end' })),
@@ -706,7 +707,7 @@ export const $Trade = (config: ITradeComponent) => component((
                   },
                   {
                     $head: $text('Switch'),
-                    columnOp: style({ flex: 2, placeContent: 'center', maxWidth: '80px' }),
+                    columnOp: style({ flex: 2, placeContent: 'center', maxWidth: '60px' }),
                     $body: map((trade) => {
 
                       const clickSwitchBehavior = switchTradeTether(
@@ -763,7 +764,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
           $row(
             style({ position: 'relative', backgroundColor: colorAlpha(invertColor(pallete.message), .15), borderBottom: `1px solid rgba(191, 187, 207, 0.15)` }),
-            screenUtils.isDesktopScreen ? style({ flex: 1, maxHeight: '50vh' }) : style({ margin: '0 -15px', height: '50vh' })
+            screenUtils.isDesktopScreen ? style({ flex: 3, maxHeight: '50vh' }) : style({ margin: '0 -15px', height: '50vh' })
           )(
 
             $IntermediatePromise({
@@ -907,7 +908,7 @@ export const $Trade = (config: ITradeComponent) => component((
             // }, selectedPricefeed)),
           ),
 
-          $column(style({ minHeight: '200px', position: 'relative' }))(
+          $column(style({ minHeight: '200px', flex: 1, position: 'relative' }))(
             switchLatest(map((w3p) => {
 
               const nullchain = w3p === null
@@ -924,12 +925,12 @@ export const $Trade = (config: ITradeComponent) => component((
 
               return $IntermediatePromise({
                 query: tradeQuery,
-                $$done: map(ev => {
+                $$done: map(tradeEvent => {
                   return $Table2({
                     headerCellOp: style({ padding: screenUtils.isDesktopScreen ? '15px 15px' : '6px 4px' }),
                     cellOp: style({ padding: screenUtils.isDesktopScreen ? '4px 15px' : '6px 4px' }),
                     dataSource: mergeArray([
-                      now(ev ? [...ev.increaseList, ...ev.decreaseList] : []) as Stream<(RequestTrade | IPositionIncrease | IPositionDecrease)[]>,
+                      now(tradeEvent ? [...tradeEvent.increaseList, ...tradeEvent.decreaseList] : []) as Stream<(RequestTrade | IPositionIncrease | IPositionDecrease)[]>,
                       requestTradeRow
                     ]),
                     $container: $column(layoutSheet.spacing, screenUtils.isDesktopScreen ? style({ flex: '1 1 0', minHeight: '100px' }) : style({})),
@@ -1005,14 +1006,22 @@ export const $Trade = (config: ITradeComponent) => component((
                       ...screenUtils.isDesktopScreen
                         ? [
                           {
-                            $head: $text('Fees paid'),
+                            $head: $text('PnL Realised'),
                             columnOp: O(style({ flex: .4, placeContent: 'flex-end', textAlign: 'right', alignItems: 'center' })),
 
                             $body: map((req: RequestTrade | IPositionIncrease | IPositionDecrease) => {
-                              const isKeeperReq = 'ctx' in req
-                              const val = isKeeperReq ? getMarginFees(req.state.collateralDeltaUsd) : req.fee
+                              if ('ctx' in req) {
+                                const fee = getMarginFees(req.state.sizeDeltaUsd)
 
-                              return $text(formatReadableUSD(val))
+                                return $text(formatReadableUSD(fee))
+                              }
+
+                              const update = tradeEvent!.updateList.find(ev => req.timestamp > ev.timestamp)
+                              update?.realisedPnl
+                              
+                              // const adjustmentPnl = div(req.sizeDelta * pnl, params.position.size) / BASIS_POINTS_DIVISOR
+
+                              return $text(formatReadableUSD(req.fee))
                             })
                           }
                         ] : [],

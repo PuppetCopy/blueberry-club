@@ -1,7 +1,7 @@
 import { combineArray, replayLatest } from "@aelea/core"
 import { GBC_ADDRESS, BI_18_PRECISION, } from "@gambitdao/gbc-middleware"
 import { ARBITRUM_ADDRESS, AVALANCHE_ADDRESS, getTokenUsd, getGmxArbiPrice, TOKEN_DESCRIPTION_MAP } from "@gambitdao/gmx-middleware"
-import { awaitPromises, fromPromise, map, multicast, now } from "@most/core"
+import { awaitPromises, map, multicast } from "@most/core"
 import { readContract } from "./common"
 import { IGmxContractInfo, connectGmxEarn } from "./contract"
 import { IERC20__factory, VaultPriceFeed__factory } from "./gmx-contracts"
@@ -9,35 +9,34 @@ import { arbGlobalProvider, avaGlobalProvider } from "./provider"
 
 
 
-export const vaultArbitrumEthBalance = awaitPromises(map(async p => (await p.getBalance(GBC_ADDRESS.TREASURY_ARBITRUM)).toBigInt(), now(arbGlobalProvider)))
-export const arbWethContract = awaitPromises(map(async () => {
-  return (await IERC20__factory.connect(ARBITRUM_ADDRESS.NATIVE_TOKEN, arbGlobalProvider).balanceOf(GBC_ADDRESS.TREASURY_ARBITRUM)).toBigInt()
-}, now(null)))
+export const vaultArbitrumEthBalance = awaitPromises(map(async p => (await p.getBalance(GBC_ADDRESS.TREASURY_ARBITRUM)).toBigInt(), arbGlobalProvider))
+export const arbWethContract = awaitPromises(map(async (provider) => {
+  return (await IERC20__factory.connect(ARBITRUM_ADDRESS.NATIVE_TOKEN, provider).balanceOf(GBC_ADDRESS.TREASURY_ARBITRUM)).toBigInt()
+}, arbGlobalProvider))
 
-export const avalancheWethContract = awaitPromises(map(async () => {
-  return (await IERC20__factory.connect(AVALANCHE_ADDRESS.WETHE, avaGlobalProvider).balanceOf(GBC_ADDRESS.TREASURY_AVALANCHE)).toBigInt()
-}, now(null)))
-export const vaultAvalancheAvaxBalance = map(x => x.toBigInt(), fromPromise(avaGlobalProvider.getBalance(GBC_ADDRESS.TREASURY_AVALANCHE)))
+export const avalancheWethContract = awaitPromises(map(async provider => {
+  return (await IERC20__factory.connect(AVALANCHE_ADDRESS.WETHE, provider).balanceOf(GBC_ADDRESS.TREASURY_AVALANCHE)).toBigInt()
+}, avaGlobalProvider))
+export const vaultAvalancheAvaxBalance = awaitPromises(map(async provider => (await provider.getBalance(GBC_ADDRESS.TREASURY_AVALANCHE)).toBigInt(), avaGlobalProvider))
 
-const arbPricefeed = readContract(VaultPriceFeed__factory, now(arbGlobalProvider), ARBITRUM_ADDRESS.VaultPriceFeed)
-const avaxPricefeed = readContract(VaultPriceFeed__factory, now(avaGlobalProvider), AVALANCHE_ADDRESS.VaultPriceFeed)
+const arbPricefeed = readContract(VaultPriceFeed__factory, arbGlobalProvider, ARBITRUM_ADDRESS.VaultPriceFeed)
+const avaxPricefeed = readContract(VaultPriceFeed__factory, avaGlobalProvider, AVALANCHE_ADDRESS.VaultPriceFeed)
 
 
 
-const globalMapPrice = replayLatest(multicast(awaitPromises(combineArray(async (arb, ava) => {
+const globalMapPrice = replayLatest(multicast(awaitPromises(combineArray(async (provider, arb, ava) => {
   const queryEthPrice = arb.getPrimaryPrice(ARBITRUM_ADDRESS.NATIVE_TOKEN, false)
   const queryAvaxPrice = ava.getPrimaryPrice(AVALANCHE_ADDRESS.NATIVE_TOKEN, false)
   const eth = (await queryEthPrice).toBigInt()
-  
-  const gmx = await getGmxArbiPrice(arbGlobalProvider, eth)
+  const gmx = await getGmxArbiPrice(provider, eth)
   const avax = (await queryAvaxPrice).toBigInt()
 
   return { gmx, eth, avax }
-}, arbPricefeed, avaxPricefeed))))
+}, arbGlobalProvider, arbPricefeed, avaxPricefeed))))
 
 
-export const arbitrumContract: IGmxContractInfo = connectGmxEarn(now(arbGlobalProvider), GBC_ADDRESS.TREASURY_ARBITRUM, ARBITRUM_ADDRESS)
-export const avalancheContract: IGmxContractInfo = connectGmxEarn(now(avaGlobalProvider), GBC_ADDRESS.TREASURY_AVALANCHE, AVALANCHE_ADDRESS)
+export const arbitrumContract: IGmxContractInfo = connectGmxEarn(arbGlobalProvider, GBC_ADDRESS.TREASURY_ARBITRUM, ARBITRUM_ADDRESS)
+export const avalancheContract: IGmxContractInfo = connectGmxEarn(avaGlobalProvider, GBC_ADDRESS.TREASURY_AVALANCHE, AVALANCHE_ADDRESS)
 
 
 export const totalWalletHoldingsUsd = combineArray((wethArbi, vaultArbitrumEthBalance, vaultAvalancheEthBalance, vaultAvaxBalance, avalancheStakingRewards, latestPrice) => {

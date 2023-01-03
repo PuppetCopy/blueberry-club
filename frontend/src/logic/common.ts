@@ -65,9 +65,14 @@ export function readContractMapping<TProvider extends BaseProvider, TMap, TCmap 
   // @ts-ignore
   type RetContract = ReturnType<TContract['connect']>
 
-  const contract = filterNull(awaitPromises(map(async (provider): Promise<RetContract | null> => {
-    const chain = (await provider.getNetwork()).chainId as CHAIN
-    const address = getContractAddress(contractMap, chain, contractName)
+  const contract = filterNull(map((provider): RetContract | null => {
+    const chainId = provider.network.chainId as CHAIN
+
+    if (!chainId) {
+      throw new Error('could not read assigned network from provider')
+    }
+
+    const address = getContractAddress(contractMap, chainId, contractName)
 
     if (address === null) {
       return null
@@ -77,7 +82,7 @@ export function readContractMapping<TProvider extends BaseProvider, TMap, TCmap 
     const contract = contractCtr.connect(address, provider instanceof Web3Provider ? provider.getSigner() : provider)
 
     return contract
-  }, connect)))
+  }, connect))
 
   const run = <R>(op: Op<RetContract, Promise<R>>) => {
     const switchOp = switchLatest(map(c => {

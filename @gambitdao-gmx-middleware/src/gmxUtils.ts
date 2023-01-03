@@ -40,6 +40,10 @@ export function getPriceDelta(isLong: boolean, entryPrice: bigint, priceChange: 
 }
 
 export function getPnL(isLong: boolean, entryPrice: bigint, priceChange: bigint, size: bigint) {
+  if (size === 0n) {
+    return 0n
+  }
+
   const priceDelta = getPriceDelta(isLong, entryPrice, priceChange)
   return size * priceDelta / entryPrice
 }

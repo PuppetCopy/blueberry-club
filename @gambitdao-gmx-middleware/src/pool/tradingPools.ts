@@ -4,7 +4,7 @@ import * as uniV3 from './uniV3.abi'
 import * as uniV2 from './uniV2.abi'
 import { ARBITRUM_ADDRESS } from '../address/arbitrum'
 import { getDenominator, parseFixed } from '../utils'
-import { JsonRpcProvider } from '@ethersproject/providers'
+import { BaseProvider, JsonRpcProvider } from '@ethersproject/providers'
 import { getTokenUsd } from '../gmxUtils'
 import { TOKEN_DESCRIPTION_MAP } from '../address/token'
 import { AVALANCHE_ADDRESS } from '../address/avalanche'
@@ -15,7 +15,7 @@ import { combineArray } from '@aelea/core'
 import { CHAIN } from '@gambitdao/wallet-link'
 
 
-export async function getGmxArbiPrice(provider: JsonRpcProvider, ethPrice: bigint) {
+export async function getGmxArbiPrice(provider: BaseProvider, ethPrice: bigint) {
   const poolContract = new Contract(ARBITRUM_ADDRESS.UniswapGmxEthPool, uniV3.default.abi, provider)
 
   const tokenA = new Token(CHAIN.ARBITRUM, ARBITRUM_ADDRESS.NATIVE_TOKEN, TOKEN_DESCRIPTION_MAP.ETH.decimals)

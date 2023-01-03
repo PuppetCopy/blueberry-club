@@ -1,6 +1,6 @@
 import { combineArray, fromCallback, replayLatest } from "@aelea/core"
 import { BaseProvider, JsonRpcSigner, Web3Provider } from "@ethersproject/providers"
-import { awaitPromises, constant, fromPromise, map, mergeArray, multicast, now, snapshot, switchLatest, tap } from "@most/core"
+import { awaitPromises, constant, fromPromise, map, mergeArray, multicast, now, snapshot, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
 import { eip1193ProviderEventFn } from "./common"
 import { CHAIN } from "./constant"
@@ -34,7 +34,7 @@ export enum IWalletName {
 
 
 interface IWalletLinkConfig {
-  globalProviderMap: Partial<Record<CHAIN, BaseProvider>>
+  globalProviderMap: Partial<Record<CHAIN, Stream<BaseProvider>>>
   defaultGlobalChain: CHAIN
 }
 
@@ -54,14 +54,14 @@ export function initWalletLink(
   }
 
 
-  const walletChange = switchLatest(awaitPromises(combineArray(async (metamask, name) => {
+  const wallet = replayLatest(multicast(switchLatest(awaitPromises(combineArray(async (metamask, name) => {
     if (name === IWalletName.none) {
       return now(null)
     }
 
     const isWc = name === IWalletName.walletConnect
     const wp = isWc ? walletConnect : metamask!
-    const [address]: string[] = await wp?.request({ method: 'eth_accounts' }) as any
+    const [address]: string[] = await wp.request({ method: 'eth_accounts' }) as any
     const chain = Number(await wp.request({ method: 'eth_chainId' }))
 
     if (!address) {
@@ -83,40 +83,37 @@ export function initWalletLink(
       ? fromCallback(cb => walletConnect.on('disconnect', cb))
       : eip1193ProviderEventFn(wp, 'disconnect')
 
-    const walletNetworkChange = map(id => {
+    const walletNetworkChange = awaitPromises(map(async id => {
       const chainId = Number(id)
-      const w3p = new Web3Provider(wp, chain)
+      const w3p = new Web3Provider(wp, chainId)
       return { ...state, provider: w3p, chain: chainId }
-    }, eip1193ProviderEventFn(wp, 'chainChanged'))
+    }, eip1193ProviderEventFn(wp, 'chainChanged')))
 
     const nullWallet = constant(null, disconnect)
 
-    // const accountChange = map(([account]) => {
-    //   if (!account) {
-    //     return null
-    //   }
+    const accountChange = map(([account]) => {
+      if (!account) {
+        return null
+      }
 
-    //   return { ...state, address: account }
-    // }, eip1193ProviderEventFn(wp, 'accountsChanged'))
+      return { ...state, address: account }
+    }, eip1193ProviderEventFn(wp, 'accountsChanged'))
 
-    return mergeArray([now(state), walletNetworkChange, nullWallet])
-  }, fromPromise(metamaskQuery), walletName)))
+    return mergeArray([now(state), walletNetworkChange, accountChange, nullWallet])
+  }, fromPromise(metamaskQuery), walletName)))))
 
-  const wallet: Stream<IWalletState | null> = replayLatest(multicast(walletChange))
 
-  const defaultProvider = awaitPromises(map(async (chain) => {
-    const dp = config.globalProviderMap[chain] || fallbackProvider
-    await dp.getNetwork()
-    return dp
+  const defaultProvider = switchLatest(map((chain) => {
+    return config.globalProviderMap[chain] || fallbackProvider
   }, networkChange))
 
-  const provider = snapshot((chain, w3p) => {
+  const provider = switchLatest(snapshot((chain, w3p) => {
     if (w3p) {
-      return w3p.provider
+      return now(w3p.provider)
     }
 
     return config.globalProviderMap[chain] || fallbackProvider
-  }, networkChange, wallet)
+  }, networkChange, wallet))
 
   const network: Stream<CHAIN> = snapshot((chain, w3p) => {
     return w3p ? w3p.chain : chain

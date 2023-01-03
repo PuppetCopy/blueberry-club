@@ -163,12 +163,12 @@ export const $hintInput = (config: {
   tooltip: string | $Node,
   val: Stream<string>,
   change: Stream<string>
-}) => $row(layoutSheet.spacing, style({ placeContent: 'space-between', fontSize: '0.75em' }))(
+}) => $row(layoutSheet.spacing, style({ placeContent: 'space-between' }))(
   $row(layoutSheet.spacingTiny)(
-    $text(style({ color: pallete.foreground }))(config.label),
+    $text(style({ fontSize: '0.75em', color: pallete.foreground }))(config.label),
     $infoTooltip(config.tooltip),
   ),
-  $row(layoutSheet.spacingTiny)(
+  $row(layoutSheet.spacingTiny, style({ fontSize: '0.75em' }))(
     $text(style({ color: pallete.foreground }))(config.val),
     $text(styleBehavior(map(isIncrease => {
       return isIncrease ? { color: pallete.positive } : { color: pallete.indeterminate }

@@ -202,6 +202,16 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
     }
   }, ti))
 
+  const nativeTokenPrice = pricefeedReader.readInt(map(async contract => {
+    const chain = (await contract.provider.getNetwork()).chainId
+    const nativeAddress = getContractAddress(TRADE_CONTRACT_MAPPING, chain, 'NATIVE_TOKEN')
+
+    if (nativeAddress === null) {
+      throw new Error(`couldn't get native token contract address`)
+    }
+
+    return contract.getPrimaryPrice(nativeAddress, false)
+  }))
 
   const getTokenWeight = (token: Stream<ITokenInput>) => vaultReader.readInt(combine((token, vault) => vault.tokenWeights(token), token))
   const getTokenDebtUsd = (token: Stream<ITokenInput>) => vaultReader.readInt(combine((token, vault) => vault.usdgAmounts(token), token))
@@ -303,7 +313,7 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
 
 
   return {
-    getIsPluginEnabled, routerReader, executionFee, getTokenFundingInfo, getPrimaryPrice,
+    getIsPluginEnabled, routerReader, executionFee, getTokenFundingInfo, getPrimaryPrice, nativeTokenPrice,
     executeIncreasePosition, getTokenWeight, getTokenDebtUsd, positionRouterReader,
     cancelIncreasePosition, executeDecreasePosition, cancelDecreasePosition, getTokenCumulativeFunding,
     positionIncreaseEvent, positionDecreaseEvent, positionUpdateEvent, positionCloseEvent, positionLiquidateEvent,

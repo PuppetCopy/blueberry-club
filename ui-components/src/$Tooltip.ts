@@ -1,8 +1,8 @@
 import { Behavior } from "@aelea/core"
 import { $Node, component, eventElementTarget, INode, NodeComposeFn, nodeEvent, style, styleInline } from '@aelea/dom'
-import { $row, observer } from "@aelea/ui-components"
+import { $row, observer, screenUtils } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { constant, switchLatest, empty, map, skipRepeats, startWith, never } from "@most/core"
+import { constant, switchLatest, empty, map, skipRepeats, startWith, never, skip, tap } from "@most/core"
 import { invertColor } from "./common"
 
 
@@ -23,12 +23,12 @@ export const $Tooltip = ({ $anchor, $content, $container = $row }: TooltipConfig
 ) => {
 
 
-
+  const isTouchDevice = 'ontouchstart' in window
 
   return [
     $container(
       hoverTether(
-        nodeEvent('pointerenter'),
+        nodeEvent(isTouchDevice ? 'pointerenter' :'pointerenter'),
         map(enterEvent => {
 
           const target = enterEvent.currentTarget
@@ -36,7 +36,9 @@ export const $Tooltip = ({ $anchor, $content, $container = $row }: TooltipConfig
             throw new Error('invalid Target element')
           }
 
-          const pointerLeave = eventElementTarget('pointerleave', target)
+          const pointerLeave = isTouchDevice
+            ? skip(1, eventElementTarget('pointerdown', window)) 
+            : eventElementTarget('pointerleave', target)
           return startWith(true, constant(false, pointerLeave))
           // return startWith(true, never())
         }),
