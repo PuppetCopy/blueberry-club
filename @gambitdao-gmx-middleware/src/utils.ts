@@ -7,6 +7,7 @@ import { IPageParapApi, IPagePositionParamApi, ISortParamApi } from "./types"
 import { keccak256 } from "@ethersproject/solidity"
 import { ClientOptions, createClient, OperationContext, TypedDocumentNode } from "@urql/core"
 import { CHAIN, EXPLORER_URL, NETWORK_METADATA } from "@gambitdao/wallet-link"
+import { curry2 } from "@most/prelude"
 
 
 
@@ -415,9 +416,18 @@ export function zipState<A, K extends keyof A = keyof A>(state: StateStream<A>):
   return zipped
 }
 
-export function switchMap<T, R>(cb: (t: T) => Stream<R>): Op<T, R> {
-  return O(map(cb), switchLatest)
+interface ISwitchMapCurry2 {
+  <T, R>(cb: (t: T) => Stream<R>, s: Stream<T>): Stream<R>
+  <T, R>(cb: (t: T) => Stream<R>): (s: Stream<T>) => Stream<R>
 }
+
+
+function switchMapFn <T, R>(cb: (t: T) => Stream<R>, s: Stream<T>) {
+  return switchLatest(map(cb, s))
+}
+
+export const switchMap: ISwitchMapCurry2 = curry2(switchMapFn)
+
 
 
 export function getPositionKey(account: string, collateralToken: string, indexToken: string, isLong: boolean) {

@@ -49,7 +49,7 @@ export function getContractAddress<T, Z extends TContractMapping<T>>(contractMap
   return newLocal
 }
 
-export function getMappedValue<T extends Object>(contractMap: T, prop: any, fallbackProp: keyof T): T[keyof T] {
+export function getSafeMappedValue<T extends Object>(contractMap: T, prop: any, fallbackProp: keyof T): T[keyof T] {
   return prop in contractMap
     ? contractMap[prop as keyof T]
     : contractMap[fallbackProp]
@@ -123,18 +123,6 @@ export function readContractMapping<TProvider extends BaseProvider, TMap, TCmap 
   return { run, readInt, contract, listen: _listen }
 }
 
-
-export function readMap<T, R>(cb: (t: T) => Stream<Promise<R>>): Op<T, R> {
-  return O(switchMap(cb), awaitPromises)
-}
-
-export function readMapInt<T>(cb: (t: T) => Stream<Promise<BigNumber>>): Op<T, bigint> {
-  return O(readMap(cb), map(bn => bn.toBigInt()))
-}
-
-export function readInt(oop: Stream<Promise<BigNumber>>): Stream<bigint> {
-  return awaitPromises(map(async bn => (await bn).toBigInt(), oop))
-}
 
 
 interface ISwitchOpCurry2 {

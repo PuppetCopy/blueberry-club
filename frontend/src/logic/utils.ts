@@ -3,7 +3,7 @@ import {
   ITokenDescription, TOKEN_ADDRESS_TO_SYMBOL, ITokenInput, ITokenTrade, CHAIN_ADDRESS_MAP, CHAIN_NATIVE_TO_SYMBOL
 } from "@gambitdao/gmx-middleware"
 import { CHAIN } from "@gambitdao/wallet-link"
-import { getMappedValue } from "./common"
+import { getSafeMappedValue } from "./common"
 
 
 
@@ -12,10 +12,10 @@ import { getMappedValue } from "./common"
 
 export function resolveAddress(chain: CHAIN, indexToken: ITokenInput): ITokenTrade {
   if (indexToken === AddressZero) {
-    return getMappedValue(CHAIN_ADDRESS_MAP, chain, CHAIN.ARBITRUM).NATIVE_TOKEN
+    return getSafeMappedValue(CHAIN_ADDRESS_MAP, chain, CHAIN.ARBITRUM).NATIVE_TOKEN
   }
 
-  const contractAddressMap = getMappedValue(TOKEN_ADDRESS_TO_SYMBOL, indexToken, indexToken)
+  const contractAddressMap = getSafeMappedValue(TOKEN_ADDRESS_TO_SYMBOL, indexToken, indexToken)
 
   if (contractAddressMap === null) {
     throw new Error(`Token ${indexToken} does not exist`)
@@ -25,12 +25,12 @@ export function resolveAddress(chain: CHAIN, indexToken: ITokenInput): ITokenTra
 }
 
 export function getNativeTokenDescription(chain: CHAIN): ITokenDescription {
-  const symbol = getMappedValue(CHAIN_NATIVE_TO_SYMBOL, chain, CHAIN.ARBITRUM)
+  const symbol = getSafeMappedValue(CHAIN_NATIVE_TO_SYMBOL, chain, CHAIN.ARBITRUM)
   return TOKEN_DESCRIPTION_MAP[symbol]
 }
 
 export function getTokenDescription(token: ITokenTrade): ITokenDescription {
-  return TOKEN_DESCRIPTION_MAP[getMappedValue(TOKEN_ADDRESS_TO_SYMBOL, token, token)]
+  return TOKEN_DESCRIPTION_MAP[getSafeMappedValue(TOKEN_ADDRESS_TO_SYMBOL, token, token)]
 }
 
 export function getTargetUsdgAmount(weight: bigint, usdgSupply: bigint, totalTokenWeights: bigint) {

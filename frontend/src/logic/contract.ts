@@ -7,7 +7,7 @@ import { awaitPromises, combine, map, now } from "@most/core"
 import { Stream } from "@most/types"
 import { IAsset } from "@gambitdao/gbc-middleware"
 import { GlpManager__factory, GMX__factory, Reader__factory, RewardReader__factory, Vault__factory } from "./gmx-contracts"
-import { getMappedValue, readContract, readContractMapping } from "./common"
+import { getSafeMappedValue, readContract, readContractMapping } from "./common"
 
 
 export type IGmxContractInfo = ReturnType<typeof connectGmxEarn>

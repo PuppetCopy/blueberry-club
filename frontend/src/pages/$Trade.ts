@@ -7,7 +7,7 @@ import {
   getNextLiquidationPrice, getMarginFees, STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, TAX_BASIS_POINTS,
   getDenominator, USD_PERCISION, formatReadableUSD, timeSince, getPositionKey, IPositionIncrease,
   IPositionDecrease, getPnL, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE, getFundingFee, filterNull, getTokenUsd, getLiquidationPrice,
-  ITokenIndex, ITokenStable, ITokenInput, TradeStatus, LIMIT_LEVERAGE, div, readableDate, TRADE_CONTRACT_MAPPING, getTokenAmount, abs, IAccountParamApi, CHAIN_ADDRESS_MAP,
+  ITokenIndex, ITokenStable, ITokenInput, TradeStatus, LIMIT_LEVERAGE, div, readableDate, TRADE_CONTRACT_MAPPING, getTokenAmount, abs, IAccountParamApi, CHAIN_ADDRESS_MAP, switchMap,
 } from "@gambitdao/gmx-middleware"
 
 import { map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, snapshot, debounce, zip, combine, tap, constant } from "@most/core"
@@ -24,7 +24,7 @@ import { $CandleSticks } from "../components/chart/$CandleSticks"
 import { getFeeBasisPoints, getNativeTokenDescription, getTokenDescription, resolveAddress } from "../logic/utils"
 import { BrowserStore } from "../logic/store"
 import { ContractTransaction } from "@ethersproject/contracts"
-import { getContractAddress, getMappedValue } from "../logic/common"
+import { getContractAddress, getSafeMappedValue, switchOp } from "../logic/common"
 import { CHAIN, IWalletLink, IWalletName } from "@gambitdao/wallet-link"
 import { Web3Provider } from "@ethersproject/providers"
 import { ERC20__factory } from "@gambitdao/gbc-contracts"
@@ -81,10 +81,11 @@ export const $Trade = (config: ITradeComponent) => component((
   [switchFocusMode, switchFocusModeTether]: Behavior<ITradeFocusMode, ITradeFocusMode>,
   [switchIsLong, switchIsLongTether]: Behavior<boolean, boolean>,
   [switchIsIncrease, switchIsIncreaseTether]: Behavior<boolean, boolean>,
-  [changeCollateralDeltaUsd, changeCollateralDeltaUsdTether]: Behavior<bigint, bigint>,
+
+  [changeCollateralDelta, changeCollateralDeltaTether]: Behavior<bigint, bigint>,
+  [changeSizeDelta, changeSizeDeltaTether]: Behavior<bigint, bigint>,
 
   // [requestAccountTradeList, requestAccountTradeListTether]: Behavior<IAccountTradeListParamApi, IAccountTradeListParamApi>,
-  [changeSizeDeltaUsd, changeSizeDeltaUsdTether]: Behavior<bigint, bigint>,
   [changeLeverage, changeLeverageTether]: Behavior<bigint, bigint>,
   [changeSlippage, changeSlippageTether]: Behavior<string, string>,
 
@@ -127,21 +128,34 @@ export const $Trade = (config: ITradeComponent) => component((
   const isIncrease = isIncreaseStore.storeReplay(switchIsIncrease)
 
   const focusMode = focusModeStore.storeReplay(switchFocusMode)
-  const collateralDeltaUsd = replayLatest(changeCollateralDeltaUsd, 0n)
-  const sizeDeltaUsd = replayLatest(changeSizeDeltaUsd, 0n)
+  const collateralDelta = replayLatest(changeCollateralDelta, 0n)
+  const sizeDelta = replayLatest(changeSizeDelta, 0n)
 
 
   const slippage = slippageStore.storeReplay(changeSlippage)
 
 
 
-  const inputToken: Stream<ITokenInput> = inputTokenStore.storeReplay(changeInputToken)
+  const inputToken: Stream<ITokenInput> = inputTokenStore.storeReplay(
+    changeInputToken,
+    combine((chain, token) => {
+      if (token === AddressZero) {
+        return token
+      }
+
+      const allTokens = [...config.tokenIndexMap[chain] || [], ...config.tokenStableMap[chain] || []]
+      const matchedToken = allTokens?.find(t => t === token)
+
+      return matchedToken || getSafeMappedValue(CHAIN_ADDRESS_MAP, chain, CHAIN.ARBITRUM).NATIVE_TOKEN
+    }, config.walletLink.network)
+  )
+
   const indexToken: Stream<ITokenIndex> = indexTokenStore.storeReplay(
     mergeArray([map(t => t.indexToken, switchTrade), changeIndexToken]),
     combine((chain, token) => {
       const matchedToken = config.tokenIndexMap[chain]?.find(t => t === token)
 
-      return matchedToken || getMappedValue(CHAIN_ADDRESS_MAP, chain, CHAIN.ARBITRUM).NATIVE_TOKEN
+      return matchedToken || getSafeMappedValue(CHAIN_ADDRESS_MAP, chain, CHAIN.ARBITRUM).NATIVE_TOKEN
     }, config.walletLink.network)
   )
 
@@ -150,7 +164,7 @@ export const $Trade = (config: ITradeComponent) => component((
     combine((chain, token) => {
       const matchedToken = config.tokenStableMap[chain]?.find(t => t === token)
 
-      return matchedToken || getMappedValue(CHAIN_ADDRESS_MAP, chain, CHAIN.ARBITRUM).USDC
+      return matchedToken || getSafeMappedValue(CHAIN_ADDRESS_MAP, chain, CHAIN.ARBITRUM).USDC
     }, config.walletLink.network)
   )
 
@@ -159,13 +173,13 @@ export const $Trade = (config: ITradeComponent) => component((
   }, combineObject({ isLong, indexToken, collateralTokenReplay }))))
 
 
-  const walletBalance = replayLatest(multicast(awaitPromises(combineArray(async (provider, token) => {
+  const walletBalance = replayLatest(multicast(switchOp(config.walletLink.provider, combine((token, provider) => {
     if (provider instanceof Web3Provider) {
       return getErc20Balance(token, provider)
     }
 
     return 0n
-  }, config.walletLink.provider, inputToken))))
+  }, inputToken))))
 
 
   const inputTokenPrice = tradeReader.getLatestPrice(inputToken)
@@ -307,13 +321,20 @@ export const $Trade = (config: ITradeComponent) => component((
   const collateralTokenDescription = map((address) => getTokenDescription(address), collateralToken)
 
 
-  const walletBalanceUsd = awaitPromises(combineArray(async (balance, price, tokenDesc) => {
-    // console.log(price)
-    return getTokenUsd(balance, price, tokenDesc.decimals)
-  }, walletBalance, inputTokenPrice, inputTokenDescription))
+  const walletBalanceUsd = combineArray((balance, price, tokenDesc) => getTokenUsd(balance, price, tokenDesc.decimals), walletBalance, inputTokenPrice, inputTokenDescription)
 
   const indexTokenInfo = tradeReader.getTokenInfo(indexToken)
-  const collateralTokenFundingInfo = tradeReader.getTokenFundingInfo(combineObject({ token: collateralToken, description: collateralTokenDescription }))
+  const collateralTokenFundingInfo = tradeReader.getTokenFundingInfo(collateralToken)
+
+
+
+  const collateralDeltaUsd = map(params => {
+    return getTokenUsd(params.collateralDelta, params.inputTokenPrice, params.inputTokenDescription.decimals)
+  }, combineObject({ inputTokenPrice, inputTokenDescription, collateralDelta }))
+
+  const sizeDeltaUsd = map(params => {
+    return getTokenUsd(params.sizeDelta, params.indexTokenPrice, params.indexTokenDescription.decimals)
+  }, combineObject({ indexTokenDescription, indexTokenPrice, sizeDelta }))
 
 
   const swapFee = replayLatest(multicast(skipRepeats(map((params) => {
@@ -321,7 +342,8 @@ export const $Trade = (config: ITradeComponent) => component((
     const swapFeeBasisPoints = inputAndIndexStable ? STABLE_SWAP_FEE_BASIS_POINTS : SWAP_FEE_BASIS_POINTS
     const taxBasisPoints = inputAndIndexStable ? STABLE_TAX_BASIS_POINTS : TAX_BASIS_POINTS
 
-    if (!params.isIncrease || params.collateralDeltaUsd === 0n || params.inputToken === params.collateralToken) {
+    const rsolvedInputAddress = resolveAddress(params.chain, params.inputToken)
+    if (!params.isIncrease || params.collateralDeltaUsd === 0n || rsolvedInputAddress === params.collateralToken) {
       return 0n
     }
 
@@ -359,12 +381,12 @@ export const $Trade = (config: ITradeComponent) => component((
 
     return addedSwapFee
   }, combineObject({
-    collateralToken, inputToken, isIncrease, sizeDeltaUsd, isLong, collateralDeltaUsd,
+    collateralToken, inputToken, isIncrease, sizeDeltaUsd, isLong, collateralDeltaUsd, chain: config.walletLink.network,
     indexTokenInfo: indexTokenInfo, usdgSupply: tradeReader.usdgSupply, totalTokenWeight: tradeReader.totalTokenWeight,
     position, inputTokenDescription, inputTokenWeight, inputTokenDebtUsd, indexTokenDescription, indexTokenPrice
   })))))
 
-  const marginFee = map((size) => getMarginFees(abs(size)), sizeDeltaUsd)
+  const marginFee = map(size => getMarginFees(abs(size)), sizeDeltaUsd)
   const fundingFee = map(params => {
     return getFundingFee(params.position.entryFundingRate, params.collateralTokenFundingInfo.cumulative, params.position.size)
   }, combineObject({ collateralTokenFundingInfo, position }))
@@ -381,15 +403,9 @@ export const $Trade = (config: ITradeComponent) => component((
   ]))
 
 
-  const tradeConfig = { focusMode, slippage, isLong, isIncrease, inputToken, collateralToken, indexToken, leverage, collateralDeltaUsd, sizeDeltaUsd }
 
-  const collateralDelta = map(params => {
-    return getTokenAmount(params.collateralDeltaUsd, params.inputTokenPrice, params.inputTokenDescription.decimals)
-  }, combineObject({ inputTokenPrice, inputTokenDescription, collateralDeltaUsd }))
 
-  const sizeDelta = map(params => {
-    return getTokenAmount(params.sizeDeltaUsd, params.indexTokenPrice, params.indexTokenDescription.decimals)
-  }, combineObject({ indexTokenDescription, indexTokenPrice, sizeDeltaUsd }))
+  const tradeConfig = { focusMode, slippage, isLong, isIncrease, inputToken, collateralToken, indexToken, leverage, collateralDelta, sizeDelta }
 
 
   const averagePrice = map(params => {
@@ -474,7 +490,7 @@ export const $Trade = (config: ITradeComponent) => component((
         return false
       }
 
-    }, collateralDeltaUsd, combineObject({ wallet: config.walletLink.wallet, inputToken }))),
+    }, collateralDelta, combineObject({ wallet: config.walletLink.wallet, inputToken }))),
   ])
 
 
@@ -515,10 +531,11 @@ export const $Trade = (config: ITradeComponent) => component((
   }, config.walletLink.wallet)
 
 
+  const availableIndexLiquidityUsd = tradeReader.getAvailableLiquidityUsd(indexToken, collateralToken)
 
   return [
     $container(
-      $node(layoutSheet.spacingBig, style({ flex: 1, paddingBottom: '50px', display: 'flex', flexDirection: screenUtils.isDesktopScreen ? 'column' : 'column-reverse' }))(
+      $node(layoutSheet.spacingBig, style({ flex: 1, paddingBottom: screenUtils.isDesktopScreen ? '50px' : '8px', display: 'flex', flexDirection: screenUtils.isDesktopScreen ? 'column' : 'column-reverse' }))(
 
         filterNull(
           map(ev => {
@@ -544,9 +561,10 @@ export const $Trade = (config: ITradeComponent) => component((
               indexTokenInfo,
               collateralTokenFundingInfo,
               isTradingEnabled,
+              availableIndexLiquidityUsd,
               isIndexTokenApproved,
-              sizeDelta,
-              collateralDelta,
+              collateralDeltaUsd,
+              sizeDeltaUsd,
 
               inputTokenPrice,
               indexTokenPrice,
@@ -554,7 +572,7 @@ export const $Trade = (config: ITradeComponent) => component((
               collateralTokenDescription,
               indexTokenDescription,
               inputTokenDescription,
-              fundingFee: fundingFee,
+              fundingFee,
               marginFee,
               swapFee,
               averagePrice,
@@ -566,8 +584,8 @@ export const $Trade = (config: ITradeComponent) => component((
           })({
             leverage: changeLeverageTether(),
             switchIsIncrease: switchIsIncreaseTether(),
-            changeCollateralDeltaUsd: changeCollateralDeltaUsdTether(),
-            changeSizeDeltaUsd: changeSizeDeltaUsdTether(),
+            changeCollateralDelta: changeCollateralDeltaTether(),
+            changeSizeDelta: changeSizeDeltaTether(),
             changeInputToken: changeInputTokenTether(),
             changeCollateralToken: changeCollateralTokenTether(),
             changeIndexToken: changeIndexTokenTether(),
@@ -585,7 +603,6 @@ export const $Trade = (config: ITradeComponent) => component((
 
         $node(),
 
-        // $node($text(map(amountUsd => formatReadableUSD(amountUsd), availableLiquidityUsd))),
 
         switchLatest(combineArray((w3p) => {
 
@@ -617,7 +634,7 @@ export const $Trade = (config: ITradeComponent) => component((
                 dataSource: now(res),
                 columns: [
                   {
-                    $head: $text('Entry'),
+                    $head: $text('Avg Entry'),
                     columnOp: O(style({ maxWidth: '50px', flexDirection: 'column' }), layoutSheet.spacingTiny),
                     $body: map((pos) => {
 
@@ -661,7 +678,7 @@ export const $Trade = (config: ITradeComponent) => component((
                                 $text(style({ color: pallete.indeterminate }))(map(cumFee => {
                                   const fstUpdate = pos.updateList[0]
                                   const lastUpdate = pos.updateList[pos.updateList.length - 1]
-                                  
+
                                   const entryFundingRate = fstUpdate.entryFundingRate
 
                                   const fee = getFundingFee(entryFundingRate, cumFee, pos.size)
@@ -871,7 +888,7 @@ export const $Trade = (config: ITradeComponent) => component((
                       }, initialTick, indexTokenPrice),
                     }
                   ],
-                  containerOp: screenUtils.isDesktopScreen ? style({ position: 'absolute', inset: 0 }): style({}),
+                  containerOp: screenUtils.isDesktopScreen ? style({ position: 'absolute', inset: 0 }) : style({}),
                   chartConfig: {
                     rightPriceScale: {
                       visible: true,
@@ -1018,7 +1035,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
                               const update = tradeEvent!.updateList.find(ev => req.timestamp > ev.timestamp)
                               update?.realisedPnl
-                              
+
                               // const adjustmentPnl = div(req.sizeDelta * pnl, params.position.size) / BASIS_POINTS_DIVISOR
 
                               return $text(formatReadableUSD(req.fee))

@@ -1,6 +1,6 @@
 import { combineArray, fromCallback, replayLatest } from "@aelea/core"
 import { BaseProvider, JsonRpcSigner, Web3Provider } from "@ethersproject/providers"
-import { awaitPromises, constant, fromPromise, map, mergeArray, multicast, now, snapshot, switchLatest } from "@most/core"
+import { awaitPromises, constant, fromPromise, map, mergeArray, multicast, now, snapshot, switchLatest, tap } from "@most/core"
 import { Stream } from "@most/types"
 import { eip1193ProviderEventFn } from "./common"
 import { CHAIN } from "./constant"
@@ -34,7 +34,7 @@ export enum IWalletName {
 
 
 interface IWalletLinkConfig {
-  globalProviderMap: Partial<Record<CHAIN, Stream<BaseProvider>>>
+  globalProviderMap: Partial<Record<CHAIN, BaseProvider>>
   defaultGlobalChain: CHAIN
 }
 
@@ -54,7 +54,7 @@ export function initWalletLink(
   }
 
 
-  const wallet = replayLatest(multicast(switchLatest(awaitPromises(combineArray(async (metamask, name) => {
+  const wallet: Stream<IWalletState | null> = replayLatest(multicast(switchLatest(awaitPromises(combineArray(async (metamask, name) => {
     if (name === IWalletName.none) {
       return now(null)
     }
@@ -104,20 +104,24 @@ export function initWalletLink(
 
 
   const defaultProvider = switchLatest(map((chain) => {
-    return config.globalProviderMap[chain] || fallbackProvider
+    const p = config.globalProviderMap[chain] || fallbackProvider
+    const networkEvent = fromPromise(p.getNetwork())
+
+    return constant(p, networkEvent)
   }, networkChange))
 
-  const provider = switchLatest(snapshot((chain, w3p) => {
+  const provider = replayLatest(multicast(snapshot((chain, w3p) => {
     if (w3p) {
-      return now(w3p.provider)
+      return w3p.provider
     }
 
     return config.globalProviderMap[chain] || fallbackProvider
-  }, networkChange, wallet))
+  }, networkChange, wallet)))
 
-  const network: Stream<CHAIN> = snapshot((chain, w3p) => {
-    return w3p ? w3p.chain : chain
-  }, networkChange, wallet)
+  const network: Stream<CHAIN> = replayLatest(multicast(switchLatest(map(p => {
+    const networkEvent = fromPromise(p.getNetwork())
+    return map(nw => nw.chainId, networkEvent)
+  }, provider))))
 
   return { network, wallet, provider, defaultProvider }
 }

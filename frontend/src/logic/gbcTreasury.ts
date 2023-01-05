@@ -5,22 +5,22 @@ import { awaitPromises, map, multicast } from "@most/core"
 import { readContract } from "./common"
 import { IGmxContractInfo, connectGmxEarn } from "./contract"
 import { IERC20__factory, VaultPriceFeed__factory } from "./gmx-contracts"
-import { arbGlobalProvider, avaGlobalProvider } from "./provider"
+import { arbGlobalProviderEvent, avaGlobalProviderEvent } from "./provider"
 
 
 
-export const vaultArbitrumEthBalance = awaitPromises(map(async p => (await p.getBalance(GBC_ADDRESS.TREASURY_ARBITRUM)).toBigInt(), arbGlobalProvider))
+export const vaultArbitrumEthBalance = awaitPromises(map(async p => (await p.getBalance(GBC_ADDRESS.TREASURY_ARBITRUM)).toBigInt(), arbGlobalProviderEvent))
 export const arbWethContract = awaitPromises(map(async (provider) => {
   return (await IERC20__factory.connect(ARBITRUM_ADDRESS.NATIVE_TOKEN, provider).balanceOf(GBC_ADDRESS.TREASURY_ARBITRUM)).toBigInt()
-}, arbGlobalProvider))
+}, arbGlobalProviderEvent))
 
 export const avalancheWethContract = awaitPromises(map(async provider => {
   return (await IERC20__factory.connect(AVALANCHE_ADDRESS.WETHE, provider).balanceOf(GBC_ADDRESS.TREASURY_AVALANCHE)).toBigInt()
-}, avaGlobalProvider))
-export const vaultAvalancheAvaxBalance = awaitPromises(map(async provider => (await provider.getBalance(GBC_ADDRESS.TREASURY_AVALANCHE)).toBigInt(), avaGlobalProvider))
+}, avaGlobalProviderEvent))
+export const vaultAvalancheAvaxBalance = awaitPromises(map(async provider => (await provider.getBalance(GBC_ADDRESS.TREASURY_AVALANCHE)).toBigInt(), avaGlobalProviderEvent))
 
-const arbPricefeed = readContract(VaultPriceFeed__factory, arbGlobalProvider, ARBITRUM_ADDRESS.VaultPriceFeed)
-const avaxPricefeed = readContract(VaultPriceFeed__factory, avaGlobalProvider, AVALANCHE_ADDRESS.VaultPriceFeed)
+const arbPricefeed = readContract(VaultPriceFeed__factory, arbGlobalProviderEvent, ARBITRUM_ADDRESS.VaultPriceFeed)
+const avaxPricefeed = readContract(VaultPriceFeed__factory, avaGlobalProviderEvent, AVALANCHE_ADDRESS.VaultPriceFeed)
 
 
 
@@ -32,11 +32,11 @@ const globalMapPrice = replayLatest(multicast(awaitPromises(combineArray(async (
   const avax = (await queryAvaxPrice).toBigInt()
 
   return { gmx, eth, avax }
-}, arbGlobalProvider, arbPricefeed, avaxPricefeed))))
+}, arbGlobalProviderEvent, arbPricefeed, avaxPricefeed))))
 
 
-export const arbitrumContract: IGmxContractInfo = connectGmxEarn(arbGlobalProvider, GBC_ADDRESS.TREASURY_ARBITRUM, ARBITRUM_ADDRESS)
-export const avalancheContract: IGmxContractInfo = connectGmxEarn(avaGlobalProvider, GBC_ADDRESS.TREASURY_AVALANCHE, AVALANCHE_ADDRESS)
+export const arbitrumContract: IGmxContractInfo = connectGmxEarn(arbGlobalProviderEvent, GBC_ADDRESS.TREASURY_ARBITRUM, ARBITRUM_ADDRESS)
+export const avalancheContract: IGmxContractInfo = connectGmxEarn(avaGlobalProviderEvent, GBC_ADDRESS.TREASURY_AVALANCHE, AVALANCHE_ADDRESS)
 
 
 export const totalWalletHoldingsUsd = combineArray((wethArbi, vaultArbitrumEthBalance, vaultAvalancheEthBalance, vaultAvaxBalance, avalancheStakingRewards, latestPrice) => {

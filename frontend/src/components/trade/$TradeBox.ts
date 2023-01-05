@@ -1,17 +1,17 @@
 import { Behavior, combineArray, combineObject, O, replayLatest } from "@aelea/core"
 import { component, INode, $element, attr, style, $text, nodeEvent, $node, styleBehavior, motion, MOTION_NO_WOBBLE, styleInline, stylePseudo } from "@aelea/dom"
-import { $row, layoutSheet, $icon, $column, screenUtils, $TextField, $NumberTicker, $Popover } from "@aelea/ui-components"
+import { $row, layoutSheet, $icon, $column, screenUtils, $NumberTicker, $Popover } from "@aelea/ui-components"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
 import {
   ARBITRUM_ADDRESS, formatFixed, readableNumber, parseFixed, formatReadableUSD, BASIS_POINTS_DIVISOR,
   ITokenDescription, LIMIT_LEVERAGE, bnDiv, replayState,
   div, StateStream, getPnL, MIN_LEVERAGE, formatToBasis, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE,
-  ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd, IPricefeed, TRADE_CONTRACT_MAPPING, getTokenAmount, filterNull, ITradeOpen, zipState, TOKEN_DESCRIPTION_MAP, CHAIN_NATIVE_TO_SYMBOL, TOKEN_SYMBOL, MARGIN_FEE_BASIS_POINTS
+  ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd, IPricefeed, TRADE_CONTRACT_MAPPING, getTokenAmount, filterNull, ITradeOpen, zipState, MARGIN_FEE_BASIS_POINTS, DEDUCT_FOR_GAS, abs
 } from "@gambitdao/gmx-middleware"
 import { $anchor, $bear, $bull, $hintInput, $infoTooltip, $IntermediatePromise, $tokenIconMap, $tokenLabelFromSummary, invertColor } from "@gambitdao/ui-components"
 import {
   merge, multicast, mergeArray, now, snapshot, map, switchLatest,
-  skipRepeats, empty, fromPromise, constant, startWith, skipRepeatsWith, awaitPromises, debounce, zip
+  skipRepeats, empty, fromPromise, constant, startWith, skipRepeatsWith, awaitPromises, zip, sample
 } from "@most/core"
 import { Stream } from "@most/types"
 import { $Slider } from "../$Slider"
@@ -26,7 +26,7 @@ import { MouseEventParams } from "lightweight-charts"
 import { $TradePnlHistory } from "./$TradePnlHistory"
 import { ContractTransaction } from "@ethersproject/contracts"
 import { MaxUint256 } from "@ethersproject/constants"
-import { getContractAddress, getMappedValue } from "../../logic/common"
+import { getContractAddress } from "../../logic/common"
 import { ERC20__factory } from "../../logic/gmx-contracts"
 import { CHAIN, IWalletLink, IWalletName } from "@gambitdao/wallet-link"
 
@@ -44,7 +44,7 @@ export interface ITradeParams {
 
   inputTokenPrice: bigint
   collateralTokenPrice: bigint
-  // availableLiquidityUsd: bigint
+  availableIndexLiquidityUsd: bigint
   indexTokenPrice: bigint
   walletBalance: bigint
   walletBalanceUsd: bigint
@@ -54,8 +54,9 @@ export interface ITradeParams {
   marginFee: bigint
   fundingFee: bigint
 
-  collateralDelta: bigint
-  sizeDelta: bigint
+  sizeDeltaUsd: bigint
+  collateralDeltaUsd: bigint
+
   nativeTokenPrice: bigint
 
   inputTokenDescription: ITokenDescription
@@ -81,9 +82,8 @@ export interface ITradeConfig {
 
   leverage: bigint
 
-  sizeDeltaUsd: bigint
-  collateralDeltaUsd: bigint
-
+  collateralDelta: bigint
+  sizeDelta: bigint
 
   slippage: string
 }
@@ -130,8 +130,8 @@ export const $TradeBox = (config: ITradeBox) => component((
 
   [switchFocusMode, switchFocusModeTether]: Behavior<any, ITradeFocusMode>,
 
-  [inputCollateralDeltaUsd, inputCollateralDeltaUsdTether]: Behavior<INode, bigint>,
-  [inputSizeDeltaUsd, inputSizeDeltaUsdTether]: Behavior<INode, bigint>,
+  [inputCollateralDelta, inputCollateralDeltaTether]: Behavior<INode, bigint>,
+  [inputSizeDelta, inputSizeDeltaTether]: Behavior<INode, bigint>,
 
   [changeInputToken, changeInputTokenTether]: Behavior<ITokenInput, ITokenInput>,
   [changeIndexToken, changeIndexTokenTether]: Behavior<ITokenIndex, ITokenIndex>,
@@ -166,10 +166,9 @@ export const $TradeBox = (config: ITradeBox) => component((
 
     if (state.isIncrease) {
       const requiredReserve = state.sizeDeltaUsd - state.collateralDeltaUsd
-      const availLiqUsd = state.isLong ? state.indexTokenInfo.availableLongLiquidityUsd : state.indexTokenInfo.availableShortLiquidityUsd
 
-      if (requiredReserve > availLiqUsd) {
-        return `Not enough liquidity. current capcity ${formatReadableUSD(availLiqUsd)}`
+      if (requiredReserve > state.availableIndexLiquidityUsd) {
+        return `Not enough liquidity. current capcity ${formatReadableUSD(state.availableIndexLiquidityUsd)}`
       }
 
       if (state.collateralDelta > state.walletBalance) {
@@ -194,9 +193,27 @@ export const $TradeBox = (config: ITradeBox) => component((
   }, tradeState)
 
 
-  const clickMaxCollateralUsd = snapshot(state => {
+  const pnlCrossHairTimeChange = replayLatest(multicast(startWith(null, skipRepeatsWith(((xsx, xsy) => xsx.time === xsy.time), crosshairMove))))
+
+  const pnlCrossHairTime = map((cross: MouseEventParams) => {
+    if (cross) {
+      return cross.seriesPrices.values().next().value
+    }
+
+    return null
+  }, pnlCrossHairTimeChange)
+
+  const resetTrade = constant(0n, mergeArray([config.positionChange, clickResetTradeMode]))
+
+
+  const clickMaxCollateral = snapshot(state => {
     if (state.isIncrease) {
-      return state.walletBalanceUsd
+
+      if (state.inputToken === AddressZero) {
+        return state.walletBalance - DEDUCT_FOR_GAS
+      }
+
+      return state.walletBalance
     }
 
     if (state.position.averagePrice === 0n) {
@@ -214,86 +231,61 @@ export const $TradeBox = (config: ITradeBox) => component((
       return 0n
     }
 
+    const sizeUsd = maxCollateral * state.leverage / BASIS_POINTS_DIVISOR
+    return sizeUsd
 
-    const leverageCapped = state.leverage > LIMIT_LEVERAGE ? LIMIT_LEVERAGE : state.leverage
-    const collateral = state.position.collateral
-    const totalCollateralUsd = maxCollateral + collateral
-    const sizeUsd = totalCollateralUsd * leverageCapped / BASIS_POINTS_DIVISOR
+    // const leverageCapped = state.leverage > LIMIT_LEVERAGE ? LIMIT_LEVERAGE : state.leverage
+    // const collateral = state.position.collateral
+    // const totalCollateralUsd = maxCollateral + collateral
+    // const sizeUsd = totalCollateralUsd * leverageCapped / BASIS_POINTS_DIVISOR
 
-    const newLocal = sizeUsd - state.position.size
-    return newLocal
-  }, tradeState, clickMaxCollateralUsd)
+    // const newLocal = sizeUsd - state.position.size
+    // return newLocal
+  }, tradeState, clickMaxCollateral)
 
-  const slideCollateralLeverage = switchLatest(map((focus) => focus === ITradeFocusMode.size ? slideLeverage : empty(), config.tradeConfig.focusMode))
-
-  const leverageCollateralFocus = skipRepeats(snapshot((state, leverage) => {
-    const size = state.sizeDeltaUsd + state.position.size
-    const collateral = div(size, leverage)
-    const collateralWfees = collateral + state.swapFee + state.marginFee
-
-    if (state.position.averagePrice === 0n) {
-      return collateralWfees
+  const effectCollateralLeverage = switchLatest(map((focus) => {
+    if (focus === ITradeFocusMode.collateral) {
+      return empty()
     }
 
-    const currentMultiplier = div(size, state.position.collateral - state.fundingFee)
-    const multiplierDelta = state.isIncrease ? currentMultiplier - leverage : leverage - currentMultiplier
+    const effects = mergeArray([slideLeverage, config.tradeState.inputTokenPrice])
+    return sample(config.tradeConfig.sizeDelta, effects)
+  }, config.tradeConfig.focusMode))
 
-    if (multiplierDelta < 50) {
-      return 0n
-    }
+  const autoFillCollateral = mergeArray([
+    clickMaxCollateral,
+    resetTrade,
+    skipRepeats(snapshot((state, sizeDelta) => {
+      const sizeDeltaUsd = getTokenUsd(sizeDelta, state.indexTokenPrice, state.indexTokenDescription.decimals)
 
-    const deltaUsd = collateralWfees - state.position.collateral
-
-    if (state.isIncrease) {
-      return deltaUsd > state.walletBalanceUsd ? state.walletBalanceUsd : deltaUsd
-    }
-
-    return deltaUsd
-  }, tradeState, slideCollateralLeverage))
+      const size = sizeDeltaUsd + state.position.size
+      const collateral = div(size, state.leverage)
+      const positionCollateral = state.position.collateral - state.fundingFee
+      const collateralDelta = collateral - positionCollateral
 
 
-  const slideSizeLeverage = switchLatest(map((focus) => focus === ITradeFocusMode.collateral ? slideLeverage : empty(), config.tradeConfig.focusMode))
+      if (state.position.size > 0n) {
+        const currentMultiplier = div(size, positionCollateral)
+        const nextMultiplier = div(size, positionCollateral + collateralDelta)
 
-  const leverageSizeFocus = skipRepeats(snapshot((state, leverage) => {
-    const collateralMinusFees = state.collateralDeltaUsd - state.swapFee
+        const multiplierDelta = state.isIncrease ? currentMultiplier - nextMultiplier : nextMultiplier - currentMultiplier
 
-    if (state.position.averagePrice === 0n) {
-      const leverageSizeUsd = collateralMinusFees * leverage / BASIS_POINTS_DIVISOR
+        if (multiplierDelta < 100n) {
+          return 0n
+        }
+      }
 
-      return leverageSizeUsd
-    }
+      const totalCollateral = collateralDelta + state.swapFee + state.marginFee
 
-    const toNumerator = state.collateralDeltaUsd * leverage * BASIS_POINTS_DIVISOR
-    const toDenominator = MARGIN_FEE_BASIS_POINTS * leverage + BASIS_POINTS_DIVISOR * BASIS_POINTS_DIVISOR
 
-    const positionCollateral = state.position.collateral - state.fundingFee
-    const toSizeUsd = toNumerator / toDenominator
-    const tokenAmount = getTokenAmount(toSizeUsd, state.inputTokenPrice, state.inputTokenDescription.decimals)
+      const fillAmount = getTokenAmount(totalCollateral, state.inputTokenPrice, state.inputTokenDescription.decimals)
 
-    console.log(tokenAmount)
+      return fillAmount
+    }, tradeState, effectCollateralLeverage))
+  ])
 
-    const currentMultiplier = div(state.position.size, positionCollateral)
-    const multiplierDelta = state.isIncrease ? leverage - currentMultiplier : currentMultiplier - leverage
-    const adjustedDeltaUsd = toSizeUsd - state.position.size
 
-    if (multiplierDelta < 50) {
-      return 0n
-    }
 
-    return adjustedDeltaUsd
-  }, tradeState, slideSizeLeverage))
-
-  const pnlCrossHairTimeChange = replayLatest(multicast(startWith(null, skipRepeatsWith(((xsx, xsy) => xsx.time === xsy.time), crosshairMove))))
-
-  const pnlCrossHairTime = map((cross: MouseEventParams) => {
-    if (cross) {
-      return cross.seriesPrices.values().next().value
-    }
-
-    return null
-  }, pnlCrossHairTimeChange)
-
-  const resetTrade = constant(0n, mergeArray([config.positionChange, clickResetTradeMode]))
   // const resetTrade = constant(0n, clickResetTradeMode)
 
   const inTradeMode = replayLatest(multicast(combineArray((sizeDeltaUsd, collateralDeltaUsd) => {
@@ -302,47 +294,82 @@ export const $TradeBox = (config: ITradeBox) => component((
     }
 
     return true
-  }, config.tradeConfig.sizeDeltaUsd, config.tradeConfig.collateralDeltaUsd)))
-
-  const autoFillCollateralOnSizeInput = filterNull(snapshot((state, sizeDeltaUsd) => {
-    if (!state.isIncrease) {
-      return null
-    }
-
-    const size = sizeDeltaUsd + state.position.size
-    const collateral = div(size, state.leverage)
-    const collateralWfees = collateral + state.swapFee + state.marginFee
-
-    if (state.position.averagePrice > 0n) {
-      return collateralWfees - state.position.collateral
-    }
-
-    return collateralWfees
-  }, tradeState, inputSizeDeltaUsd))
+  }, config.tradeConfig.sizeDelta, config.tradeConfig.collateralDelta)))
 
   const inputTokenChange = snapshot((collateralDelta, params) => {
     return getTokenUsd(collateralDelta, params.price, params.inputDesc.decimals)
-  }, config.tradeState.collateralDelta, zipState({ inputDesc: config.tradeState.inputTokenDescription, price: config.tradeState.inputTokenPrice }))
+  }, config.tradeConfig.collateralDelta, zipState({ inputDesc: config.tradeState.inputTokenDescription, price: config.tradeState.inputTokenPrice }))
 
-  const autoFillSizeOnCollateralInput = filterNull(snapshot((state, collateralDeltaUsd) => {
-    if (!state.isIncrease) {
-      return null
+
+
+  const effectSizeLeverage = switchLatest(map((focus) => {
+    if (focus === ITradeFocusMode.size) {
+      return empty()
     }
 
-    // const collateral = collateralDelta + state.position.collateral
-    const collateralMinusFees = collateralDeltaUsd - state.swapFee - state.marginFee
-    const size = collateralMinusFees * state.leverage / BASIS_POINTS_DIVISOR
+    const effects = mergeArray([slideLeverage, config.tradeState.indexTokenPrice])
+    return sample(config.tradeConfig.collateralDelta, effects)
+  }, config.tradeConfig.focusMode))
 
-    if (state.position.averagePrice > 0n) {
-      return size - state.position.size
-    }
 
-    return size
-  }, tradeState, mergeArray([inputCollateralDeltaUsd])))
+
+  const autoFillSize = mergeArray([
+    resetTrade,
+    filterNull(snapshot((state, collateralDelta) => {
+      // if (collateralDelta === 0n) {
+      //   return 0n
+      // }
+
+
+
+      const collateralDeltaUsd = getTokenUsd(collateralDelta, state.inputTokenPrice, state.inputTokenDescription.decimals)
+      const positionCollateral = state.position.collateral - state.fundingFee
+
+      const totalCollateral = collateralDeltaUsd + positionCollateral - state.swapFee
+      const delta = (totalCollateral * state.leverage / BASIS_POINTS_DIVISOR - state.position.size) * BASIS_POINTS_DIVISOR
+
+
+      // if (!state.isIncrease) {
+      //   const deltaAmountUsd = div(state.position.size, state.leverage)
+      //   const fillAmount = getTokenAmount(deltaAmountUsd, state.inputTokenPrice, state.inputTokenDescription.decimals)
+
+      //   console.log(fillAmount)
+      //   return fillAmount
+      // }
+
+
+      if (state.position.size > 0n) {
+        const minMultiplier = div(state.position.size, totalCollateral)
+        const multiplierDelta = state.isIncrease ? state.leverage - minMultiplier : minMultiplier - state.leverage
+
+        if (multiplierDelta < 50) {
+          return 0n
+        }
+      }
+
+
+      const toNumerator = delta * BASIS_POINTS_DIVISOR
+      const toDenominator = MARGIN_FEE_BASIS_POINTS * state.leverage + BASIS_POINTS_DIVISOR * BASIS_POINTS_DIVISOR
+
+      const sizeDeltaAfterFees = toNumerator / toDenominator
+
+      // return sizeDeltaAfterFees
+
+      const fillAmount = getTokenAmount(sizeDeltaAfterFees, state.indexTokenPrice, state.indexTokenDescription.decimals)
+
+
+      // return adjustedDeltaUsd
+
+      return fillAmount
+
+    }, tradeState, mergeArray([inputCollateralDelta, effectSizeLeverage])))
+  ])
 
 
   const LIMIT_LEVERAGE_NORMAL = formatToBasis(LIMIT_LEVERAGE)
   const MIN_LEVERAGE_NORMAL = formatToBasis(MIN_LEVERAGE) / LIMIT_LEVERAGE_NORMAL
+
+
 
   return [
     $column(style({ borderRadius: `${BOX_SPACING}px`, boxShadow: `2px 2px 13px 3px #00000040`, padding: 0, margin: screenUtils.isMobileScreen ? '0 10px' : '' }))(
@@ -429,8 +456,8 @@ export const $TradeBox = (config: ITradeBox) => component((
                 }
 
                 const pnl = getPnL(state.isLong, state.position.averagePrice, state.indexTokenPrice, state.position.size)
-                const adjustedPnlDelta = pnl < 0n
-                  ? -div(state.sizeDeltaUsd * pnl, state.position.size) / BASIS_POINTS_DIVISOR
+                const adjustedPnlDelta = !state.isIncrease
+                  ? -div(abs(state.sizeDeltaUsd) * pnl, state.position.size) / BASIS_POINTS_DIVISOR
                   : 0n
 
                 const netCollateral = totalCollateral + adjustedPnlDelta
@@ -513,7 +540,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                 ),
                 value: {
                   value: config.tradeConfig.inputToken,
-                  $container: $defaultSelectContainer(style({ minWidth: '300px', left: 0 })),
+                  $container: $defaultSelectContainer(style({ minWidth: '350px', left: 0 })),
                   $$option: map(option => {
                     const token = resolveAddress(chain, option)
                     const balanceAmount = fromPromise(getErc20Balance(option, provider))
@@ -544,25 +571,24 @@ export const $TradeBox = (config: ITradeBox) => component((
                 map(node =>
                   merge(
                     now(node),
-                    filterNull(snapshot((params, val) => {
+                    filterNull(snapshot((desc, val) => {
                       if (val === 0n) {
                         node.element.value = ''
                       } else {
-                        const amount = getTokenAmount(val, params.inputTokenPrice, params.inputTokenDescription.decimals)
-                        const formatted = formatFixed(amount, params.inputTokenDescription.decimals)
+                        const formatted = formatFixed(val, desc.decimals)
 
                         node.element.value = readableNumber(formatted)
                       }
 
                       return null
-                    }, tradeState, mergeArray([resetTrade, leverageCollateralFocus, clickMaxCollateralUsd, autoFillCollateralOnSizeInput])))
+                    }, config.tradeState.inputTokenDescription, autoFillCollateral))
                   )
                 ),
                 switchLatest
               ),
               // styleInline(map(focus => focus === ITradeFocusMode.collateral ? { color: pallete.message } : { color: pallete.foreground }, config.tradeConfig.focusMode)),
               switchFocusModeTether(nodeEvent('focus'), constant(ITradeFocusMode.collateral)),
-              inputCollateralDeltaUsdTether(nodeEvent('input'), src => snapshot((params, inputEvent) => {
+              inputCollateralDeltaTether(nodeEvent('input'), src => snapshot((desc, inputEvent) => {
                 const target = inputEvent.target
 
                 if (!(target instanceof HTMLInputElement)) {
@@ -575,10 +601,9 @@ export const $TradeBox = (config: ITradeBox) => component((
                 }
 
                 const val = parseReadableNumber(target.value)
-                const parsedInput = parseFixed(val, params.inputTokenDescription.decimals)
-                const tokenUsd = getTokenUsd(parsedInput, params.inputTokenPrice, params.inputTokenDescription.decimals)
-                return tokenUsd
-              }, tradeState, src)),
+                const parsedInput = parseFixed(val, desc.decimals)
+                return parsedInput
+              }, config.tradeState.inputTokenDescription, src)),
             )(),
           ),
         ),
@@ -647,7 +672,8 @@ export const $TradeBox = (config: ITradeBox) => component((
 
                   // return 1
                   const ratio = div(totalSize, state.position.collateral - state.fundingFee)
-                  return Math.min(1, bnDiv(ratio, LIMIT_LEVERAGE))
+                  const newLocal = bnDiv(ratio, LIMIT_LEVERAGE)
+                  return Math.min(1, newLocal)
                 }
 
                 return 1
@@ -731,14 +757,19 @@ export const $TradeBox = (config: ITradeBox) => component((
                 ),
                 value: {
                   value: config.tradeConfig.indexToken,
-                  $container: $defaultSelectContainer(style({ minWidth: '300px', right: 0 })),
+                  $container: $defaultSelectContainer(style({ minWidth: '350px', right: 0 })),
                   $$option: snapshot((isLong, option) => {
                     const tokenDesc = getTokenDescription(option)
-                    // const availableLiquidityUsd = vault.getAvailableLiquidityUsd(chain, option, isLong)
+                    const liquidity = tradeReader.getAvailableLiquidityUsd(now(option), config.tradeConfig.collateralToken)
+                    const fundingRate = tradeReader.getTokenFundingRate(now(option))
 
                     return $row(style({ placeContent: 'space-between', flex: 1 }))(
                       $tokenLabelFromSummary(tokenDesc),
-                      // $text(map(amountUsd => formatReadableUSD(amountUsd), availableLiquidityUsd))
+
+                      $column(style({ alignItems: 'flex-end' }))(
+                        $text(map(rate => readableNumber(formatToBasis(rate)), fundingRate)),
+                        $text(style({ fontSize: '.75em', color: pallete.foreground }))(map(amountUsd => formatReadableUSD(amountUsd), liquidity))
+                      )
                     )
                   }, config.tradeConfig.isLong),
                   list: config.tokenIndexMap[chain] || [],
@@ -753,23 +784,22 @@ export const $TradeBox = (config: ITradeBox) => component((
                 map(node =>
                   merge(
                     now(node),
-                    filterNull(snapshot((params, value) => {
+                    filterNull(snapshot((desc, value) => {
                       if (value === 0n) {
                         node.element.value = ''
                       } else {
-                        const amount = getTokenAmount(value, params.indexTokenPrice, params.indexTokenDescription.decimals)
-                        node.element.value = readableNumber(formatFixed(amount, params.indexTokenDescription.decimals))
+                        node.element.value = readableNumber(formatFixed(value, desc.decimals))
                       }
 
                       return null
-                    }, tradeState, mergeArray([resetTrade, leverageSizeFocus, clickMaxBalanceSizeDelta, autoFillSizeOnCollateralInput])))
+                    }, config.tradeState.indexTokenDescription, autoFillSize))
                   )
                 ),
                 switchLatest
               ),
               // styleInline(map(focus => focus === ITradeFocusMode.size ? { color: pallete.message } : { color: pallete.foreground }, config.tradeConfig.focusMode)),
               switchFocusModeTether(nodeEvent('focus'), constant(ITradeFocusMode.size)),
-              inputSizeDeltaUsdTether(nodeEvent('input'), src => snapshot((state, inputEvent) => {
+              inputSizeDeltaTether(nodeEvent('input'), src => snapshot((desc, inputEvent) => {
                 const target = inputEvent.currentTarget
 
                 if (!(target instanceof HTMLInputElement)) {
@@ -782,11 +812,10 @@ export const $TradeBox = (config: ITradeBox) => component((
                   return 0n
                 }
 
-                const decimals = state.indexTokenDescription.decimals
-                const parsedInput = parseFixed(parseReadableNumber(target.value), decimals)
+                const parsedInput = parseFixed(parseReadableNumber(target.value), desc.decimals)
 
-                return getTokenUsd(parsedInput, state.indexTokenPrice, decimals)
-              }, tradeState, src))
+                return parsedInput
+              }, config.tradeState.indexTokenDescription, src))
             )(),
           ),
 
@@ -830,8 +859,17 @@ export const $TradeBox = (config: ITradeBox) => component((
                     $container: $defaultSelectContainer(style({ minWidth: '300px', right: 0 })),
                     $$option: map(option => {
                       const tokenDesc = getTokenDescription(option)
+                      const liquidity = tradeReader.getAvailableLiquidityUsd(config.tradeConfig.indexToken, now(option))
+                      const fundingRate = tradeReader.getTokenFundingRate(now(option))
 
-                      return $tokenLabelFromSummary(tokenDesc)
+                      return $row(style({ placeContent: 'space-between', flex: 1 }))(
+                        $tokenLabelFromSummary(tokenDesc),
+
+                        $column(style({ alignItems: 'flex-end' }))(
+                          $text(map(rate => readableNumber(formatToBasis(rate)), fundingRate)),
+                          $text(style({ fontSize: '.75em', color: pallete.foreground }))(map(amountUsd => formatReadableUSD(amountUsd), liquidity))
+                        )
+                      )
                     }),
                     list: [
                       ARBITRUM_ADDRESS.USDC,
@@ -862,7 +900,7 @@ export const $TradeBox = (config: ITradeBox) => component((
       ),
 
       $column(style({
-        height: `140px`,
+        height: `100px`,
         marginTop: `-${BOX_SPACING - 5}px`,
         paddingTop: `${BOX_SPACING - 5}px`,
         // backgroundColor: pallete.horizon,
@@ -895,14 +933,38 @@ export const $TradeBox = (config: ITradeBox) => component((
 
             return $column(style({ flex: 1, placeContent: 'center' }))(
               $column(layoutSheet.spacing, style({ padding: '0 16px', placeContent: 'space-between' }), styleInline(map(mode => ({ display: mode ? 'flex' : 'none' }), inTradeMode)))(
-                $row(layoutSheet.spacingBig, style({ placeContent: 'space-between' }))(
+                $row(layoutSheet.spacingBig, style({ placeContent: 'space-between', alignItems: 'center' }))(
                   $column(layoutSheet.spacingTiny, style({ flex: 1 }))(
+                    // $TextField({
+                    //   label: 'Slippage %',
+                    //   labelStyle: { flex: 1 },
+                    //   value: config.tradeConfig.slippage,
+                    //   inputOp: style({ width: '60px', maxWidth: '60px', textAlign: 'right', fontWeight: 'normal' }),
+                    //   validation: map(n => {
+                    //     const val = Number(n)
+                    //     const valid = val >= 0
+                    //     if (!valid) {
+                    //       return 'Invalid Basis point'
+                    //     }
+
+                    //     if (val > 5) {
+                    //       return 'Slippage should be less than 5%'
+                    //     }
+
+                    //     return null
+                    //   }),
+                    // })({
+                    //   change: changeSlippageTether()
+                    // }),
+
                     $row(style({ placeContent: 'space-between' }))(
                       $row(layoutSheet.spacingTiny)(
                         $text(style({ fontSize: '0.75em', color: pallete.foreground }))('Fees'),
                         $infoTooltip(switchLatest(map(params => {
                           const depositTokenNorm = resolveAddress(w3p.chain, params.inputToken)
                           const outputToken = params.isLong ? params.indexToken : params.collateralToken
+                          const totalSizeUsd = params.position.size + params.sizeDeltaUsd
+                          const nextSize = totalSizeUsd * params.collateralTokenFundingInfo.rate / BASIS_POINTS_DIVISOR / 100n
 
                           return $column(layoutSheet.spacingTiny)(
                             $text('Collateral deducted upon your deposit including Borrow fee at the start of every hour. the rate changes based on utilization, it is calculated as (assets borrowed) / (total assets in pool) * 0.01%'),
@@ -918,12 +980,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                               $row(layoutSheet.spacingTiny)(
                                 $text(style({ color: pallete.foreground }))('Current Borrow Rate'),
                                 $row(layoutSheet.spacingTiny)(
-                                  $text(style({ color: pallete.indeterminate }))(map((params) => {
-                                    const totalSizeUsd = params.position.size + params.sizeDeltaUsd
-                                    const nextSize = totalSizeUsd * params.collateralTokenFundingInfo.rate / BASIS_POINTS_DIVISOR / 100n
-
-                                    return formatReadableUSD(nextSize) + ' '
-                                  }, tradeState)),
+                                  $text(style({ color: pallete.indeterminate }))(formatReadableUSD(nextSize) + ' '),
                                   $text(` / 1hr`)
                                 )
                               )
@@ -931,47 +988,22 @@ export const $TradeBox = (config: ITradeBox) => component((
                           )
                         }, tradeState))),
                       ),
-                      $text(style({ color: pallete.indeterminate }))(map(params => formatReadableUSD(params.marginFee + params.swapFee), tradeState)),
+                      $text(style({ fontSize: '0.75em', color: pallete.indeterminate }))(map(params => formatReadableUSD(params.marginFee + params.swapFee), tradeState)),
                     ),
                     $row(style({ placeContent: 'space-between' }))(
                       $row(layoutSheet.spacingTiny)(
                         $text(style({ fontSize: '0.75em', color: pallete.foreground }))('Payback'),
-                        $infoTooltip($column(
+                        $infoTooltip($column(layoutSheet.spacingTiny)(
                           $text('BLUEBERRY Payback(Referral) code is used to provide a 10% payback'),
                           $text('Payback accumulates every time you trade and is distributed once every week back to your account in ETH or AVAX.'),
                         )),
                       ),
-                      $text(style({ color: pallete.positive }))(map(params => getRebateDiscountUsd(params.marginFee), tradeState))
+                      $text(style({ color: pallete.positive, fontSize: '0.75em' }))(map(params => getRebateDiscountUsd(params.marginFee), tradeState))
                     ),
 
-                    $TextField({
-                      label: 'Slippage %',
-                      labelStyle: { flex: 1 },
-                      value: config.tradeConfig.slippage,
-                      inputOp: style({ width: '60px', maxWidth: '60px', textAlign: 'right', fontWeight: 'normal' }),
-                      validation: map(n => {
-                        const val = Number(n)
-                        const valid = val >= 0
-                        if (!valid) {
-                          return 'Invalid Basis point'
-                        }
-
-                        if (val > 5) {
-                          return 'Slippage should be less than 5%'
-                        }
-
-                        return null
-                      }),
-                    })({
-                      change: changeSlippageTether()
-                    }),
                   ),
 
                   $column(layoutSheet.spacingSmall, style({ flex: 1, alignItems: 'flex-end' }))(
-                    $row(layoutSheet.spacingTiny, style({ fontSize: '0.75em', flex: 1, placeContent: 'space-between' }))(
-                      $text(style({ color: pallete.foreground }))(`Available Liquidity`),
-                      $text(map(state => formatReadableUSD(state.isLong ? state.indexTokenInfo.availableLongLiquidityUsd : state.indexTokenInfo.availableShortLiquidityUsd), tradeState)),
-                    ),
                     $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
 
                       style({ padding: '8px', fontSize: '.75em', alignSelf: 'center' })(
@@ -1224,7 +1256,11 @@ export const $TradeBox = (config: ITradeBox) => component((
                         trade: trade,
                         chain: w3p.chain,
                         pricefeed,
-                        chartConfig: {},
+                        chartConfig: {
+                          timeScale: {
+                            visible: false
+                          }
+                        },
                         latestPrice: config.tradeState.indexTokenPrice
                       })({
                         crosshairMove: crosshairMoveTether(),
@@ -1280,25 +1316,29 @@ export const $TradeBox = (config: ITradeBox) => component((
 
           const multiplier = div(totalSize, totalCollateral)
           return multiplier
-        }, tradeState, debounce(50, mergeArray([autoFillCollateralOnSizeInput, autoFillSizeOnCollateralInput, clickMaxBalanceSizeDelta, resetTrade])))),
+        }, tradeState, mergeArray([]))),
+        filterNull(snapshot(state => {
+          if (state.position.size === 0n) {
+            return null
+          }
+
+          return div(state.position.size, state.position.collateral - state.fundingFee)
+        }, tradeState, resetTrade)),
+        // }, tradeState, mergeArray([autoFillSize]))),
         // initialLeverage,
         slideLeverage
       ]),
       switchIsIncrease,
       changeCollateralToken,
-      changeCollateralDeltaUsd: mergeArray([
-        resetTrade,
-        leverageCollateralFocus,
-        inputCollateralDeltaUsd,
-        clickMaxCollateralUsd,
-        autoFillCollateralOnSizeInput
+      changeCollateralDelta: mergeArray([
+        // leverageCollateralFocus,
+        inputCollateralDelta,
+        // clickMaxCollateral,
+        autoFillCollateral
       ]),
-      changeSizeDeltaUsd: mergeArray([
-        resetTrade,
-        inputSizeDeltaUsd,
-        leverageSizeFocus,
-        clickMaxBalanceSizeDelta,
-        autoFillSizeOnCollateralInput
+      changeSizeDelta: mergeArray([
+        autoFillSize,
+        inputSizeDelta,
       ]),
       // changeCollateralRatio: mergeArray([
       //   slideCollateralRatio,

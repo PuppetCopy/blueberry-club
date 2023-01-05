@@ -219,9 +219,9 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
                 tokenIndexMap: {
                   [CHAIN.ARBITRUM]: [
                     ARBITRUM_ADDRESS.NATIVE_TOKEN,
+                    ARBITRUM_ADDRESS.WBTC,
                     ARBITRUM_ADDRESS.LINK,
                     ARBITRUM_ADDRESS.UNI,
-                    ARBITRUM_ADDRESS.WBTC,
                   ],
                   [CHAIN.AVALANCHE]: [
                     AVALANCHE_ADDRESS.NATIVE_TOKEN,

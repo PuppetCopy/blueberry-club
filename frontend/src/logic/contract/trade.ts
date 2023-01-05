@@ -1,15 +1,15 @@
 
-import { combine, empty, map, mergeArray, multicast, now, scan, skip, snapshot, switchLatest } from "@most/core"
+import { awaitPromises, combine, empty, map, mergeArray, multicast, now, scan, skip, snapshot, switchLatest } from "@most/core"
 import {
   switchFailedSources, ITokenIndex, ITokenInput, ITokenTrade, AddressZero, getChainName, filterNull, IVaultPosition, unixTimestampNow, TRADE_CONTRACT_MAPPING,
-  IAbstractPositionKey, parseFixed, TOKEN_SYMBOL, getPositionKey, KeeperIncreaseRequest, KeeperDecreaseRequest, ITokenDescription, safeDiv, TOKEN_ADDRESS_TO_SYMBOL
+  IAbstractPositionKey, parseFixed, TOKEN_SYMBOL, getPositionKey, KeeperIncreaseRequest, KeeperDecreaseRequest, ITokenDescription, safeDiv, TOKEN_ADDRESS_TO_SYMBOL, TOKEN_DESCRIPTION_LIST, TOKEN_DESCRIPTION_MAP
 } from "@gambitdao/gmx-middleware"
-import { replayLatest } from "@aelea/core"
+import { combineObject, replayLatest } from "@aelea/core"
 import { ERC20__factory, PositionRouter__factory, Router__factory, VaultPriceFeed__factory, Vault__factory } from "../gmx-contracts"
 import { periodicRun } from "@gambitdao/gmx-middleware"
-import { resolveAddress } from "../utils"
+import { getTokenDescription, resolveAddress } from "../utils"
 import { Stream } from "@most/types"
-import { getContractAddress, getMappedValue, readContractMapping, switchOp } from "../common"
+import { getContractAddress, getSafeMappedValue, readContractMapping, switchOp } from "../common"
 import { CHAIN, zipState } from "@gambitdao/wallet-link"
 import { id } from "@ethersproject/hash"
 import { Interface } from "@ethersproject/abi"
@@ -63,7 +63,7 @@ const gmxIOPriceMapSource = {
 }
 
 export function latestPriceFromExchanges(indexToken: ITokenTrade): Stream<bigint> {
-  const existingToken = getMappedValue(TOKEN_ADDRESS_TO_SYMBOL, indexToken, indexToken)
+  const existingToken = getSafeMappedValue(TOKEN_ADDRESS_TO_SYMBOL, indexToken, indexToken)
   const symbol = derievedSymbolMapping[existingToken] || existingToken
 
   if (symbol === null) {
@@ -106,7 +106,6 @@ export function latestPriceFromExchanges(indexToken: ITokenTrade): Stream<bigint
 
 
 export async function getErc20Balance(token: ITokenTrade | typeof AddressZero, w3p: Web3Provider | BaseProvider) {
-
   if (!(w3p instanceof Web3Provider)) {
     return 0n
   }
@@ -116,8 +115,9 @@ export async function getErc20Balance(token: ITokenTrade | typeof AddressZero, w
   if (token === AddressZero) {
     return (await signer.getBalance()).toBigInt()
   }
-  const chainId = w3p.network?.chainId
 
+
+  const chainId = (await w3p.getNetwork()).chainId
 
   // @ts-ignore
   const contractMapping = TRADE_CONTRACT_MAPPING[chainId]
@@ -163,13 +163,19 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
     return vault.cumulativeFundingRates(address)
   }, ts))
 
-  const getTokenFundingInfo = (params: Stream<{ token: ITokenIndex, description: ITokenDescription }>) => vaultReader.run(combine(async (params, vault) => {
+  // const getTokenCumulativeFunding = (ts: Stream<ITokenIndex>) => vaultReader.readInt(combine((address, vault) => {
+  //   return vault.cumulativeFundingRates(address)
+  // }, ts))
+
+  const getTokenFundingInfo = (token: Stream<ITokenIndex>) => vaultReader.run(combine(async (address, vault) => {
+    const tokenDescription = getTokenDescription(address)
+
     const [cumulative, nextRate, reserved, poolAmount, fundingRateFactor] = await Promise.all([
-      vault.cumulativeFundingRates(params.token).then(x => x.toBigInt()),
-      vault.getNextFundingRate(params.token).then(x => x.toBigInt()),
-      vault.reservedAmounts(params.token).then(x => x.toBigInt()),
-      vault.poolAmounts(params.token).then(x => x.toBigInt()),
-      params.description.isStable
+      vault.cumulativeFundingRates(address).then(x => x.toBigInt()),
+      vault.getNextFundingRate(address).then(x => x.toBigInt()),
+      vault.reservedAmounts(address).then(x => x.toBigInt()),
+      vault.poolAmounts(address).then(x => x.toBigInt()),
+      tokenDescription.isStable
         ? vault.stableFundingRateFactor().then(x => x.toBigInt())
         : vault.fundingRateFactor().then(x => x.toBigInt())
     ])
@@ -177,30 +183,55 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
     const rate = safeDiv(fundingRateFactor * reserved, poolAmount)
 
     return { cumulative, rate, nextRate }
-  }, params))
+  }, token))
 
-  const getTokenInfo = (ti: Stream<ITokenIndex>) => switchOp(zipState({ vault: vaultReader.contract, positionRouter: positionRouterReader.contract }), combine(async (token, params) => {
-    const [weight, usdgAmounts, bufferAmounts, poolAmounts, reservedAmounts, guaranteedUsd, globalShortSizes, maxGlobalShortSizes, maxGlobalLongSizes,] = await Promise.all([
+  const getTokenFundingRate = (token: Stream<ITokenTrade>) => vaultReader.run(combine(async (address, vault) => {
+    const tokenDescription = getTokenDescription(address)
+
+    const [reserved, poolAmount, fundingRateFactor] = await Promise.all([
+      vault.reservedAmounts(address).then(x => x.toBigInt()),
+      vault.poolAmounts(address).then(x => x.toBigInt()),
+      tokenDescription.isStable
+        ? vault.stableFundingRateFactor().then(x => x.toBigInt())
+        : vault.fundingRateFactor().then(x => x.toBigInt())
+    ])
+
+    return safeDiv(fundingRateFactor * reserved, poolAmount)
+  }, token))
+
+  const getAvailableLiquidityUsd = (indexToken: Stream<ITokenIndex>, collateralToken: Stream<ITokenTrade>) => {
+    const state = combineObject({ collateralToken, indexToken, vault: vaultReader.contract, positionRouter: positionRouterReader.contract })
+
+    return awaitPromises(map(async (params) => {
+      const collateralTokenDescription = getTokenDescription(params.collateralToken)
+      const isStable = collateralTokenDescription.isStable
+
+      const [vaultSize, globalMaxSize] = await Promise.all([
+        isStable
+          ? params.vault.globalShortSizes(params.indexToken).then(x => x.toBigInt())
+          : params.vault.guaranteedUsd(params.indexToken).then(x => x.toBigInt()),
+        isStable
+          ? params.positionRouter.maxGlobalShortSizes(params.indexToken).then(x => x.toBigInt())
+          : params.positionRouter.maxGlobalLongSizes(params.indexToken).then(x => x.toBigInt())
+      ])
+
+      return globalMaxSize - vaultSize
+    }, state))
+  }
+
+
+  const getTokenInfo = (tokenEvent: Stream<ITokenIndex>) => switchOp(zipState({ vault: vaultReader.contract, positionRouter: positionRouterReader.contract }), combine(async (token, params) => {
+    const [weight, usdgAmounts, bufferAmounts, poolAmounts, reservedAmounts] = await Promise.all([
       params.vault.tokenWeights(token).then(x => x.toBigInt()),
       params.vault.usdgAmounts(token).then(x => x.toBigInt()),
       params.vault.bufferAmounts(token).then(x => x.toBigInt()),
       params.vault.poolAmounts(token).then(x => x.toBigInt()),
       params.vault.reservedAmounts(token).then(x => x.toBigInt()),
-      params.vault.guaranteedUsd(token).then(x => x.toBigInt()),
-      params.vault.globalShortSizes(token).then(x => x.toBigInt()),
-      params.positionRouter.maxGlobalShortSizes(token).then(x => x.toBigInt()),
-      params.positionRouter.maxGlobalLongSizes(token).then(x => x.toBigInt()),
     ])
 
-    const availableLongLiquidityUsd = maxGlobalLongSizes - guaranteedUsd
-    const availableShortLiquidityUsd = maxGlobalShortSizes - globalShortSizes
+    return { weight, bufferAmounts, usdgAmounts, poolAmounts, reservedAmounts }
+  }, tokenEvent))
 
-
-    return {
-      availableLongLiquidityUsd, availableShortLiquidityUsd, weight, bufferAmounts,
-      usdgAmounts, poolAmounts, reservedAmounts, guaranteedUsd, globalShortSizes, maxGlobalShortSizes, maxGlobalLongSizes
-    }
-  }, ti))
 
   const nativeTokenPrice = pricefeedReader.readInt(map(async contract => {
     const chain = (await contract.provider.getNetwork()).chainId
@@ -215,7 +246,15 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
 
   const getTokenWeight = (token: Stream<ITokenInput>) => vaultReader.readInt(combine((token, vault) => vault.tokenWeights(token), token))
   const getTokenDebtUsd = (token: Stream<ITokenInput>) => vaultReader.readInt(combine((token, vault) => vault.usdgAmounts(token), token))
-  const getPrimaryPrice = (token: ITokenInput, maximize = false) => pricefeedReader.readInt(map((pricefeed) => pricefeed.getPrimaryPrice(token, maximize)))
+  const getPrimaryPrice = (token: ITokenInput, maximize = false) => pricefeedReader.readInt(map(async (pricefeed) => {
+
+    try {
+      return await pricefeed.getPrimaryPrice(token, maximize)
+    } catch (err) {
+      throw new Error(`Pricefeed token ${token} does not exists`)
+    }
+
+  }))
 
 
   const positionIncreaseEvent = vaultReader.listen('IncreasePosition')
@@ -233,8 +272,12 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
         recoverError: false,
         interval: 5000,
         actionOp: map(async () => {
-          const price = (await pricefeed.getPrimaryPrice(resovledA, true)).toBigInt()
-          return price
+          try {
+            const price = (await pricefeed.getPrimaryPrice(resovledA, true)).toBigInt()
+            return price
+          } catch (err) {
+            throw new Error(`Pricefeed token ${token} does not exists within ${pricefeed.address} pricefeed`)
+          }
         })
       })
     ])
@@ -314,10 +357,10 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
 
   return {
     getIsPluginEnabled, routerReader, executionFee, getTokenFundingInfo, getPrimaryPrice, nativeTokenPrice,
-    executeIncreasePosition, getTokenWeight, getTokenDebtUsd, positionRouterReader,
+    executeIncreasePosition, getTokenWeight, getTokenDebtUsd, positionRouterReader, getTokenFundingRate,
     cancelIncreasePosition, executeDecreasePosition, cancelDecreasePosition, getTokenCumulativeFunding,
     positionIncreaseEvent, positionDecreaseEvent, positionUpdateEvent, positionCloseEvent, positionLiquidateEvent,
-    getLatestPrice, positionSettled, vaultReader, getPrice, totalTokenWeight, usdgSupply, getTokenInfo
+    getLatestPrice, positionSettled, vaultReader, getPrice, totalTokenWeight, usdgSupply, getTokenInfo, getAvailableLiquidityUsd
   }
 }
 
