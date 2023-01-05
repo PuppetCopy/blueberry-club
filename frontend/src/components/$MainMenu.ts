@@ -4,8 +4,8 @@ import { $RouterAnchor, Route } from '@aelea/router'
 import { $column, $icon, $Popover, $row, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { pallete, theme } from "@aelea/ui-components-theme"
 import { formatReadableUSD } from "@gambitdao/gmx-middleware"
-import { CHAIN, IWalletLink, IWalletName } from "@gambitdao/wallet-link"
-import { constant, empty, map, now, switchLatest } from '@most/core'
+import { CHAIN, IWalletLink, IWalletName, walletConnect } from "@gambitdao/wallet-link"
+import { awaitPromises, constant, empty, map, now, switchLatest, tap } from '@most/core'
 import { $bagOfCoins, $caretDown, $stackedCoins } from "../elements/$icons"
 import { $ButtonSecondary } from "./form/$Button"
 import { totalWalletHoldingsUsd } from "../logic/gbcTreasury"
@@ -144,7 +144,18 @@ export const $MainMenu = ({ walletLink, parentRoute, chainList, showAccount = tr
                 $content: $text('Disconnect Wallet')
               })({
                 click: walletChangeTether(
-                  constant(IWalletName.none)
+                  tap(async xx => {
+                    const wp = w3p.provider.provider
+
+                    // Check if connection is already established
+                    if (wp === walletConnect) {
+                      // create new session
+                      await walletConnect.disconnect()
+                    }
+
+                  }),
+                  awaitPromises,
+                  constant(IWalletName.none),
                 )
               })
             }, walletLink.wallet)),

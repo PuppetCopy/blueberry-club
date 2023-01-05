@@ -1,4 +1,4 @@
-import { combineArray, fromCallback, replayLatest } from "@aelea/core"
+import { combineArray, combineObject, fromCallback, replayLatest } from "@aelea/core"
 import { BaseProvider, JsonRpcSigner, Web3Provider } from "@ethersproject/providers"
 import { awaitPromises, constant, fromPromise, map, mergeArray, multicast, now, snapshot, switchLatest, tap } from "@most/core"
 import { Stream } from "@most/types"
@@ -110,13 +110,13 @@ export function initWalletLink(
     return constant(p, networkEvent)
   }, networkChange))
 
-  const provider = replayLatest(multicast(snapshot((chain, w3p) => {
+  const provider = replayLatest(multicast(combineArray((fbProvider, w3p) => {
     if (w3p) {
       return w3p.provider
     }
 
-    return config.globalProviderMap[chain] || fallbackProvider
-  }, networkChange, wallet)))
+    return fbProvider
+  }, defaultProvider, wallet)))
 
   const network: Stream<CHAIN> = replayLatest(multicast(switchLatest(map(p => {
     const networkEvent = fromPromise(p.getNetwork())

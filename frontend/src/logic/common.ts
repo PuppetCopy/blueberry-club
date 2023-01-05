@@ -66,11 +66,11 @@ export function readContractMapping<TProvider extends BaseProvider, TMap, TCmap 
   type RetContract = ReturnType<TContract['connect']>
 
   const contract = filterNull(map((provider): RetContract | null => {
-    const chainId = provider.network.chainId as CHAIN
-
-    if (!chainId) {
-      throw new Error('could not read assigned network from provider')
+    if (!provider || !provider.network?.chainId) {
+      return null
     }
+
+    const chainId = provider.network.chainId as CHAIN
 
     const address = getContractAddress(contractMap, chainId, contractName)
 
