@@ -173,13 +173,13 @@ export const $Trade = (config: ITradeComponent) => component((
   }, combineObject({ isLong, indexToken, collateralTokenReplay }))))
 
 
-  const walletBalance = replayLatest(multicast(switchOp(config.walletLink.provider, combine((token, provider) => {
+  const walletBalance = replayLatest(multicast(awaitPromises(combine(async (token, provider) => {
     if (provider instanceof Web3Provider) {
       return getErc20Balance(token, provider)
     }
 
     return 0n
-  }, inputToken))))
+  }, inputToken, config.walletLink.provider))))
 
 
   const inputTokenPrice = tradeReader.getLatestPrice(inputToken)

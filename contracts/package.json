@@ -52,7 +52,7 @@
   "dependencies": {
     "@gambitdao/gbc-middleware": "workspace:*",
     "@gambitdao/gmx-middleware": "workspace:*",
-    "@openzeppelin/contracts": "^4.8.0",
+    "@openzeppelin/contracts": "^4.7.3",
     "@types/isomorphic-fetch": "^0.0.36",
     "bn.js": "^5.2.1",
     "gmx-contracts": "workspace:*"

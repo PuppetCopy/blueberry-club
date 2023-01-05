@@ -103,12 +103,12 @@ export function initWalletLink(
   }, fromPromise(metamaskQuery), walletName)))))
 
 
-  const defaultProvider = switchLatest(map((chain) => {
+  const defaultProvider = replayLatest(multicast(switchLatest(map((chain) => {
     const p = config.globalProviderMap[chain] || fallbackProvider
     const networkEvent = fromPromise(p.getNetwork())
 
     return constant(p, networkEvent)
-  }, networkChange))
+  }, networkChange))))
 
   const provider = replayLatest(multicast(combineArray((fbProvider, w3p) => {
     if (w3p) {
