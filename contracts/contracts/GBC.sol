@@ -174,13 +174,13 @@ contract GBC is Context, Ownable, ERC721Enumerable {
         return blacklist[_address];
     }
 
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 tokenId
-    ) internal virtual override(ERC721Enumerable) {
-        super._beforeTokenTransfer(from, to, tokenId);
-    }
+    // function _beforeTokenTransfer(
+    //     address from,
+    //     address to,
+    //     uint256 tokenId
+    // ) internal virtual override(ERC721Enumerable) {
+    //     super._beforeTokenTransfer(from, to, tokenId);
+    // }
 
     /**
      * @dev See {IERC165-supportsInterface}.
