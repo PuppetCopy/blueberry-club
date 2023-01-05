@@ -1,4 +1,4 @@
-import { Behavior, combineArray, combineObject, O, replayLatest } from "@aelea/core"
+import { Behavior, combineArray, combineObject, nullSink, O, replayLatest } from "@aelea/core"
 import { component, INode, $element, attr, style, $text, nodeEvent, $node, styleBehavior, motion, MOTION_NO_WOBBLE, styleInline, stylePseudo } from "@aelea/dom"
 import { $row, layoutSheet, $icon, $column, screenUtils, $NumberTicker, $Popover } from "@aelea/ui-components"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
@@ -7,12 +7,12 @@ import {
   ITokenDescription, LIMIT_LEVERAGE, bnDiv, replayState,
   div, StateStream, getPnL, MIN_LEVERAGE, formatToBasis, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE,
   ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd, IPricefeed,
-  TRADE_CONTRACT_MAPPING, getTokenAmount, filterNull, ITradeOpen, zipState, MARGIN_FEE_BASIS_POINTS, DEDUCT_FOR_GAS, abs
+  TRADE_CONTRACT_MAPPING, filterNull, ITradeOpen, zipState, MARGIN_FEE_BASIS_POINTS, abs
 } from "@gambitdao/gmx-middleware"
 import { $anchor, $bear, $bull, $hintInput, $infoTooltip, $IntermediatePromise, $tokenIconMap, $tokenLabelFromSummary, invertColor } from "@gambitdao/ui-components"
 import {
   merge, multicast, mergeArray, now, snapshot, map, switchLatest,
-  skipRepeats, empty, fromPromise, constant, startWith, skipRepeatsWith, awaitPromises, zip, sample
+  skipRepeats, empty, fromPromise, constant, startWith, skipRepeatsWith, awaitPromises, zip, sample, tap
 } from "@most/core"
 import { Stream } from "@most/types"
 import { $Slider } from "../$Slider"
@@ -30,6 +30,7 @@ import { MaxUint256 } from "@ethersproject/constants"
 import { getContractAddress } from "../../logic/common"
 import { ERC20__factory } from "../../logic/gmx-contracts"
 import { CHAIN, IWalletLink, IWalletName } from "@gambitdao/wallet-link"
+import { newDefaultScheduler } from "@most/scheduler"
 
 export enum ITradeFocusMode {
   collateral,
@@ -55,8 +56,8 @@ export interface ITradeParams {
   marginFee: bigint
   fundingFee: bigint
 
-  sizeDeltaUsd: bigint
-  collateralDeltaUsd: bigint
+  collateralDelta: bigint
+  sizeDelta: bigint
 
   nativeTokenPrice: bigint
 
@@ -83,8 +84,10 @@ export interface ITradeConfig {
 
   leverage: bigint
 
-  collateralDelta: bigint
-  sizeDelta: bigint
+  sizeDeltaUsd: bigint
+  collateralDeltaUsd: bigint
+
+
 
   slippage: string
 }
@@ -131,8 +134,8 @@ export const $TradeBox = (config: ITradeBox) => component((
 
   [switchFocusMode, switchFocusModeTether]: Behavior<any, ITradeFocusMode>,
 
-  [inputCollateralDelta, inputCollateralDeltaTether]: Behavior<INode, bigint>,
-  [inputSizeDelta, inputSizeDeltaTether]: Behavior<INode, bigint>,
+  [inputCollateralDeltaUsd, inputCollateralDeltaTetherUsd]: Behavior<INode, bigint>,
+  [inputSizeDeltaUsd, inputSizeDeltaTetherUsd]: Behavior<INode, bigint>,
 
   [changeInputToken, changeInputTokenTether]: Behavior<ITokenInput, ITokenInput>,
   [changeIndexToken, changeIndexTokenTether]: Behavior<ITokenIndex, ITokenIndex>,
@@ -157,6 +160,8 @@ export const $TradeBox = (config: ITradeBox) => component((
   const tradeReader = connectTradeReader(config.walletLink.provider)
 
   const tradeState: Stream<ITradeState> = replayState({ ...config.tradeState, ...config.tradeConfig })
+
+
 
 
   const validationError = map((state) => {
@@ -209,12 +214,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
   const clickMaxCollateral = snapshot(state => {
     if (state.isIncrease) {
-
-      if (state.inputToken === AddressZero) {
-        return state.walletBalance - DEDUCT_FOR_GAS
-      }
-
-      return state.walletBalance
+      return state.walletBalanceUsd
     }
 
     if (state.position.averagePrice === 0n) {
@@ -222,27 +222,11 @@ export const $TradeBox = (config: ITradeBox) => component((
     }
 
     const collateral = div(state.position.size, LIMIT_LEVERAGE)
-    const deltaUsd = collateral - state.position.collateral
+    const deltaUsd = collateral - state.position.collateral - state.position.entryFundingRate
 
     return deltaUsd
   }, tradeState, clickMax)
 
-  const clickMaxBalanceSizeDelta = snapshot((state, maxCollateral) => {
-    if (state.isIncrease === false) {
-      return 0n
-    }
-
-    const sizeUsd = maxCollateral * state.leverage / BASIS_POINTS_DIVISOR
-    return sizeUsd
-
-    // const leverageCapped = state.leverage > LIMIT_LEVERAGE ? LIMIT_LEVERAGE : state.leverage
-    // const collateral = state.position.collateral
-    // const totalCollateralUsd = maxCollateral + collateral
-    // const sizeUsd = totalCollateralUsd * leverageCapped / BASIS_POINTS_DIVISOR
-
-    // const newLocal = sizeUsd - state.position.size
-    // return newLocal
-  }, tradeState, clickMaxCollateral)
 
   const effectCollateralLeverage = switchLatest(map((focus) => {
     if (focus === ITradeFocusMode.collateral) {
@@ -250,14 +234,13 @@ export const $TradeBox = (config: ITradeBox) => component((
     }
 
     const effects = mergeArray([slideLeverage, config.tradeState.inputTokenPrice])
-    return sample(config.tradeConfig.sizeDelta, effects)
+    return sample(config.tradeConfig.sizeDeltaUsd, effects)
   }, config.tradeConfig.focusMode))
 
-  const autoFillCollateral = mergeArray([
+  const autoFillCollateralUsd = mergeArray([
     clickMaxCollateral,
     resetTrade,
-    skipRepeats(snapshot((state, sizeDelta) => {
-      const sizeDeltaUsd = getTokenUsd(sizeDelta, state.indexTokenPrice, state.indexTokenDescription.decimals)
+    skipRepeats(snapshot((state, sizeDeltaUsd) => {
 
       const size = sizeDeltaUsd + state.position.size
       const collateral = div(size, state.leverage)
@@ -278,13 +261,20 @@ export const $TradeBox = (config: ITradeBox) => component((
 
       const totalCollateral = collateralDelta + state.swapFee + state.marginFee
 
+      return totalCollateral
 
-      const fillAmount = getTokenAmount(totalCollateral, state.inputTokenPrice, state.inputTokenDescription.decimals)
 
-      return fillAmount
+      // const fillAmount = getTokenAmount(totalCollateral, state.inputTokenPrice, state.inputTokenDescription.decimals)
+
+      // return fillAmount
     }, tradeState, effectCollateralLeverage))
   ])
 
+  // const autoFillCollateral = map(params => getTokenAmount(params.autoFillCollateralUsd, params.inputTokenPrice, params.inputTokenDescription.decimals), combineObject({
+  //   autoFillCollateralUsd,
+  //   inputTokenDescription: config.tradeState.inputTokenDescription,
+  //   inputTokenPrice: config.tradeState.inputTokenPrice,
+  // }))
 
 
   // const resetTrade = constant(0n, clickResetTradeMode)
@@ -295,11 +285,11 @@ export const $TradeBox = (config: ITradeBox) => component((
     }
 
     return true
-  }, config.tradeConfig.sizeDelta, config.tradeConfig.collateralDelta)))
+  }, config.tradeConfig.sizeDeltaUsd, config.tradeConfig.collateralDeltaUsd)))
 
-  const inputTokenChange = snapshot((collateralDelta, params) => {
-    return getTokenUsd(collateralDelta, params.price, params.inputDesc.decimals)
-  }, config.tradeConfig.collateralDelta, zipState({ inputDesc: config.tradeState.inputTokenDescription, price: config.tradeState.inputTokenPrice }))
+  const inputTokenChange = snapshot((collateralDeltaUsd, params) => {
+    return collateralDeltaUsd
+  }, config.tradeConfig.collateralDeltaUsd, zipState({ inputDesc: config.tradeState.inputTokenDescription, price: config.tradeState.inputTokenPrice }))
 
 
 
@@ -309,16 +299,14 @@ export const $TradeBox = (config: ITradeBox) => component((
     }
 
     const effects = mergeArray([slideLeverage, config.tradeState.indexTokenPrice])
-    return sample(config.tradeConfig.collateralDelta, effects)
+    return sample(config.tradeConfig.collateralDeltaUsd, effects)
   }, config.tradeConfig.focusMode))
 
 
 
   const autoFillSizeUsd = mergeArray([
     resetTrade,
-    filterNull(snapshot((state, collateralDelta) => {
-
-      const collateralDeltaUsd = getTokenUsd(collateralDelta, state.inputTokenPrice, state.inputTokenDescription.decimals)
+    filterNull(snapshot((state, collateralDeltaUsd) => {
       const positionCollateral = state.position.collateral - state.fundingFee
 
       const totalCollateral = collateralDeltaUsd + positionCollateral - state.swapFee
@@ -336,7 +324,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
 
       if (!state.isIncrease && state.leverage <= MIN_LEVERAGE) {
-        return state.position.size
+        return -state.position.size
       }
 
 
@@ -344,14 +332,9 @@ export const $TradeBox = (config: ITradeBox) => component((
       const toDenominator = MARGIN_FEE_BASIS_POINTS * state.leverage + BASIS_POINTS_DIVISOR * BASIS_POINTS_DIVISOR
 
       return toNumerator / toDenominator
-    }, tradeState, mergeArray([inputCollateralDelta, effectSizeLeverage])))
+    }, tradeState, mergeArray([inputCollateralDeltaUsd, effectSizeLeverage])))
   ])
 
-  const autoFillSize = map(params => getTokenAmount(params.autoFillSizeUsd, params.indexTokenPrice, params.indexTokenDescription.decimals), combineObject({
-    autoFillSizeUsd,
-    indexTokenDescription: config.tradeState.indexTokenDescription,
-    indexTokenPrice: config.tradeState.indexTokenPrice,
-  }))
 
 
   const LIMIT_LEVERAGE_NORMAL = formatToBasis(LIMIT_LEVERAGE)
@@ -559,24 +542,28 @@ export const $TradeBox = (config: ITradeBox) => component((
                 map(node =>
                   merge(
                     now(node),
-                    filterNull(snapshot((desc, val) => {
+                    filterNull(snapshot((state, val) => {
+                      if (state.focusMode === ITradeFocusMode.collateral) {
+                        return null
+                      }
+
                       if (val === 0n) {
                         node.element.value = ''
                       } else {
-                        const formatted = formatFixed(val, desc.decimals)
+                        const formatted = formatFixed(val, state.inputTokenDescription.decimals)
 
                         node.element.value = readableNumber(formatted)
                       }
 
                       return null
-                    }, config.tradeState.inputTokenDescription, autoFillCollateral))
+                    }, tradeState, config.tradeState.collateralDelta))
                   )
                 ),
                 switchLatest
               ),
               // styleInline(map(focus => focus === ITradeFocusMode.collateral ? { color: pallete.message } : { color: pallete.foreground }, config.tradeConfig.focusMode)),
               switchFocusModeTether(nodeEvent('focus'), constant(ITradeFocusMode.collateral)),
-              inputCollateralDeltaTether(nodeEvent('input'), src => snapshot((desc, inputEvent) => {
+              inputCollateralDeltaTetherUsd(nodeEvent('input'), src => snapshot((state, inputEvent) => {
                 const target = inputEvent.target
 
                 if (!(target instanceof HTMLInputElement)) {
@@ -589,9 +576,9 @@ export const $TradeBox = (config: ITradeBox) => component((
                 }
 
                 const val = parseReadableNumber(target.value)
-                const parsedInput = parseFixed(val, desc.decimals)
-                return parsedInput
-              }, config.tradeState.inputTokenDescription, src)),
+                const parsedInput = parseFixed(val, state.inputTokenDescription.decimals)
+                return getTokenUsd(parsedInput, state.inputTokenPrice, state.inputTokenDescription.decimals)
+              }, tradeState, src)),
             )(),
           ),
         ),
@@ -772,22 +759,26 @@ export const $TradeBox = (config: ITradeBox) => component((
                 map(node =>
                   merge(
                     now(node),
-                    filterNull(snapshot((desc, value) => {
+                    filterNull(snapshot((state, value) => {
+                      if (state.focusMode === ITradeFocusMode.size) {
+                        return null
+                      }
+
                       if (value === 0n) {
                         node.element.value = ''
                       } else {
-                        node.element.value = readableNumber(formatFixed(value, desc.decimals))
+                        node.element.value = readableNumber(formatFixed(value, state.indexTokenDescription.decimals))
                       }
 
                       return null
-                    }, config.tradeState.indexTokenDescription, autoFillSize))
+                    }, tradeState, config.tradeState.sizeDelta))
                   )
                 ),
                 switchLatest
               ),
               // styleInline(map(focus => focus === ITradeFocusMode.size ? { color: pallete.message } : { color: pallete.foreground }, config.tradeConfig.focusMode)),
               switchFocusModeTether(nodeEvent('focus'), constant(ITradeFocusMode.size)),
-              inputSizeDeltaTether(nodeEvent('input'), src => snapshot((desc, inputEvent) => {
+              inputSizeDeltaTetherUsd(nodeEvent('input'), src => snapshot((state, inputEvent) => {
                 const target = inputEvent.currentTarget
 
                 if (!(target instanceof HTMLInputElement)) {
@@ -800,10 +791,10 @@ export const $TradeBox = (config: ITradeBox) => component((
                   return 0n
                 }
 
-                const parsedInput = parseFixed(parseReadableNumber(target.value), desc.decimals)
+                const parsedInput = parseFixed(parseReadableNumber(target.value), state.indexTokenDescription.decimals)
 
-                return parsedInput
-              }, config.tradeState.indexTokenDescription, src))
+                return getTokenUsd(parsedInput, state.indexTokenPrice, state.indexTokenDescription.decimals)
+              }, tradeState, src))
             )(),
           ),
 
@@ -1318,15 +1309,13 @@ export const $TradeBox = (config: ITradeBox) => component((
       ]),
       switchIsIncrease,
       changeCollateralToken,
-      changeCollateralDelta: mergeArray([
-        // leverageCollateralFocus,
-        inputCollateralDelta,
-        // clickMaxCollateral,
-        autoFillCollateral
+      changeCollateralDeltaUsd: mergeArray([
+        inputCollateralDeltaUsd,
+        autoFillCollateralUsd
       ]),
-      changeSizeDelta: mergeArray([
-        autoFillSize,
-        inputSizeDelta,
+      changeSizeDeltaUsd: mergeArray([
+        autoFillSizeUsd,
+        inputSizeDeltaUsd,
       ]),
       // changeCollateralRatio: mergeArray([
       //   slideCollateralRatio,

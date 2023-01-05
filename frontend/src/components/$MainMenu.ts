@@ -134,6 +134,12 @@ export const $MainMenu = ({ walletLink, parentRoute, chainList, showAccount = tr
               ),
             ),
 
+            $ButtonSecondary({
+              $content: $Picker([light, dark])({})
+            })({
+             
+            }),
+
 
             switchLatest(map(w3p => {
               if (w3p === null) {
@@ -144,7 +150,7 @@ export const $MainMenu = ({ walletLink, parentRoute, chainList, showAccount = tr
                 $content: $text('Disconnect Wallet')
               })({
                 click: walletChangeTether(
-                  tap(async xx => {
+                  map(async xx => {
                     const wp = w3p.provider.provider
 
                     // Check if connection is already established
@@ -152,7 +158,6 @@ export const $MainMenu = ({ walletLink, parentRoute, chainList, showAccount = tr
                       // create new session
                       await walletConnect.disconnect()
                     }
-
                   }),
                   awaitPromises,
                   constant(IWalletName.none),
@@ -160,7 +165,6 @@ export const $MainMenu = ({ walletLink, parentRoute, chainList, showAccount = tr
               })
             }, walletLink.wallet)),
 
-            $Picker([light, dark])({}),
           )
         }, clickPopoverClaim),
       })(
