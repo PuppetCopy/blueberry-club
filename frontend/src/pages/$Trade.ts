@@ -160,7 +160,7 @@ export const $Trade = (config: ITradeComponent) => component((
   )
 
   const collateralTokenReplay: Stream<ITokenStable> = collateralTokenStore.storeReplay(
-    changeCollateralToken,
+    mergeArray([map(t => t.collateralToken, switchTrade), changeCollateralToken]),
     combine((chain, token) => {
       const matchedToken = config.tokenStableMap[chain]?.find(t => t === token)
 

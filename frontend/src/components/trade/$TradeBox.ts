@@ -6,7 +6,8 @@ import {
   ARBITRUM_ADDRESS, formatFixed, readableNumber, parseFixed, formatReadableUSD, BASIS_POINTS_DIVISOR,
   ITokenDescription, LIMIT_LEVERAGE, bnDiv, replayState,
   div, StateStream, getPnL, MIN_LEVERAGE, formatToBasis, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE,
-  ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd, IPricefeed, TRADE_CONTRACT_MAPPING, getTokenAmount, filterNull, ITradeOpen, zipState, MARGIN_FEE_BASIS_POINTS, DEDUCT_FOR_GAS, abs
+  ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd, IPricefeed,
+  TRADE_CONTRACT_MAPPING, getTokenAmount, filterNull, ITradeOpen, zipState, MARGIN_FEE_BASIS_POINTS, DEDUCT_FOR_GAS, abs
 } from "@gambitdao/gmx-middleware"
 import { $anchor, $bear, $bull, $hintInput, $infoTooltip, $IntermediatePromise, $tokenIconMap, $tokenLabelFromSummary, invertColor } from "@gambitdao/ui-components"
 import {
@@ -313,29 +314,15 @@ export const $TradeBox = (config: ITradeBox) => component((
 
 
 
-  const autoFillSize = mergeArray([
+  const autoFillSizeUsd = mergeArray([
     resetTrade,
     filterNull(snapshot((state, collateralDelta) => {
-      // if (collateralDelta === 0n) {
-      //   return 0n
-      // }
-
-
 
       const collateralDeltaUsd = getTokenUsd(collateralDelta, state.inputTokenPrice, state.inputTokenDescription.decimals)
       const positionCollateral = state.position.collateral - state.fundingFee
 
       const totalCollateral = collateralDeltaUsd + positionCollateral - state.swapFee
       const delta = (totalCollateral * state.leverage / BASIS_POINTS_DIVISOR - state.position.size) * BASIS_POINTS_DIVISOR
-
-
-      // if (!state.isIncrease) {
-      //   const deltaAmountUsd = div(state.position.size, state.leverage)
-      //   const fillAmount = getTokenAmount(deltaAmountUsd, state.inputTokenPrice, state.inputTokenDescription.decimals)
-
-      //   console.log(fillAmount)
-      //   return fillAmount
-      // }
 
 
       if (state.position.size > 0n) {
@@ -348,22 +335,23 @@ export const $TradeBox = (config: ITradeBox) => component((
       }
 
 
+      if (!state.isIncrease && state.leverage <= MIN_LEVERAGE) {
+        return state.position.size
+      }
+
+
       const toNumerator = delta * BASIS_POINTS_DIVISOR
       const toDenominator = MARGIN_FEE_BASIS_POINTS * state.leverage + BASIS_POINTS_DIVISOR * BASIS_POINTS_DIVISOR
 
-      const sizeDeltaAfterFees = toNumerator / toDenominator
-
-      // return sizeDeltaAfterFees
-
-      const fillAmount = getTokenAmount(sizeDeltaAfterFees, state.indexTokenPrice, state.indexTokenDescription.decimals)
-
-
-      // return adjustedDeltaUsd
-
-      return fillAmount
-
+      return toNumerator / toDenominator
     }, tradeState, mergeArray([inputCollateralDelta, effectSizeLeverage])))
   ])
+
+  const autoFillSize = map(params => getTokenAmount(params.autoFillSizeUsd, params.indexTokenPrice, params.indexTokenDescription.decimals), combineObject({
+    autoFillSizeUsd,
+    indexTokenDescription: config.tradeState.indexTokenDescription,
+    indexTokenPrice: config.tradeState.indexTokenPrice,
+  }))
 
 
   const LIMIT_LEVERAGE_NORMAL = formatToBasis(LIMIT_LEVERAGE)
