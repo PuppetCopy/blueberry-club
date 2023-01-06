@@ -3,7 +3,7 @@ import { $element, $Node, $text, attr, component, eventElementTarget, IBranch, I
 import { $column, $icon, $row, Input, layoutSheet, observer } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { $xCross } from "@gambitdao/ui-components"
-import { combine, constant, delay, empty, filter, map, merge, mergeArray, multicast, never, now, scan, skip, skipRepeats, snapshot, startWith, switchLatest, take, tap } from "@most/core"
+import { combine, constant, delay, empty, filter, map, merge, mergeArray, multicast, never, now, scan, skip, skipRepeats, snapshot, startWith, switchLatest, take, tap, zip } from "@most/core"
 import { append, remove } from "@most/prelude"
 import { Stream } from "@most/types"
 import { $caretDown } from "../../elements/$icons"
@@ -103,7 +103,7 @@ export function $Dropdown<T>({
 
           const dropBehavior = O(
             styleInline(
-              combine(function ([targetRect], [contentRect]) {
+              zip(function ([targetRect], [contentRect]) {
                 const { bottom, right, left } = targetRect.intersectionRect
                 const { width } = contentRect.boundingClientRect
 

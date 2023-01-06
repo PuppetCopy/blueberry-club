@@ -90,7 +90,7 @@ export const $LabHome = ({ walletLink, parentRoute }: IBerry) => component((
             $Link({
               $content: $anchor(
                 $ButtonSecondary({
-                  $content: $text('Customize my GBC')
+                  $content: $text('Lab Wardrobe')
                 })({}),
               ),
               url: '/p/wardrobe', route: parentRoute

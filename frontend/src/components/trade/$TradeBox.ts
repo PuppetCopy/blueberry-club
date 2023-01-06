@@ -1,6 +1,6 @@
 import { Behavior, combineArray, combineObject, O, replayLatest } from "@aelea/core"
 import { component, INode, $element, attr, style, $text, nodeEvent, $node, styleBehavior, motion, MOTION_NO_WOBBLE, styleInline, stylePseudo } from "@aelea/dom"
-import { $row, layoutSheet, $icon, $column, screenUtils, $NumberTicker, $Popover } from "@aelea/ui-components"
+import { $row, layoutSheet, $icon, $column, screenUtils, $NumberTicker } from "@aelea/ui-components"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
 import {
   ARBITRUM_ADDRESS, formatFixed, readableNumber, parseFixed, formatReadableUSD, BASIS_POINTS_DIVISOR,
@@ -30,6 +30,7 @@ import { MaxUint256 } from "@ethersproject/constants"
 import { getContractAddress } from "../../logic/common"
 import { ERC20__factory } from "../../logic/gmx-contracts"
 import { CHAIN, IWalletLink, IWalletName } from "@gambitdao/wallet-link"
+import { $Popover } from "../$Popover"
 
 export enum ITradeFocusMode {
   collateral,
@@ -811,10 +812,10 @@ export const $TradeBox = (config: ITradeBox) => component((
                 )
               }
 
-              return $row(layoutSheet.spacing)(
+              return $row(layoutSheet.spacingSmall)(
                 $infoTooltipLabel(
                   $text(map(token => `${getTokenDescription(token).symbol} will be borrowed to maintain a Short Position. you can switch with other USD tokens to receive it later`, config.tradeConfig.collateralToken)),
-                  'Indexed In',
+                  screenUtils.isDesktopScreen ? 'Indexed In' : undefined,
                 ),
                 $Dropdown<ARBITRUM_ADDRESS_STABLE | AVALANCHE_ADDRESS_STABLE>({
                   $container: $row(style({ position: 'relative', alignSelf: 'center' })),
@@ -992,7 +993,18 @@ export const $TradeBox = (config: ITradeBox) => component((
                     switchLatest(combineArray((isPluginEnabled, isEnabled, isInputTokenApproved, indexToken, indexTokenDesc) => {
                       if (!isPluginEnabled || !isEnabled) {
                         return $Popover({
-                          $$popContent: map(() => {
+                          $target: $row(
+                            $ButtonSecondary({
+                              $content: $text('Enable Trading'),
+                              disabled: mergeArray([
+                                dismissEnableTradingOverlay,
+                                openEnableTradingPopover
+                              ])
+                            })({
+                              click: openEnableTradingPopoverTether()
+                            })
+                          ),
+                          $popContent: map(() => {
 
                             return $column(layoutSheet.spacing, style({ maxWidth: '400px' }))(
                               $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(`By using GBC Trading, I agree to the following Disclaimer`),
@@ -1023,19 +1035,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                                 })
                             )
                           }, openEnableTradingPopover),
-                        })(
-                          $row(
-                            $ButtonSecondary({
-                              $content: $text('Enable Trading'),
-                              disabled: mergeArray([
-                                dismissEnableTradingOverlay,
-                                openEnableTradingPopover
-                              ])
-                            })({
-                              click: openEnableTradingPopoverTether()
-                            })
-                          )
-                        )({
+                        })({
                           overlayClick: dismissEnableTradingOverlayTether(constant(false))
                         })
                       }

@@ -786,7 +786,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
           $row(
             style({ position: 'relative', backgroundColor: colorAlpha(invertColor(pallete.message), .15), borderBottom: `1px solid rgba(191, 187, 207, 0.15)` }),
-            screenUtils.isDesktopScreen ? style({ flex: 3, maxHeight: '50vh' }) : style({ margin: '0 -15px', height: '50vh' })
+            screenUtils.isDesktopScreen ? style({ flex: 3, maxHeight: '50vh' }) : style({ margin: '0 -15px', height: screenUtils.isDesktopScreen ? '50vh' : '40vh' })
           )(
 
             $IntermediatePromise({

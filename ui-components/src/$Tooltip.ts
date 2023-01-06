@@ -2,7 +2,7 @@ import { Behavior } from "@aelea/core"
 import { $Node, component, eventElementTarget, INode, NodeComposeFn, nodeEvent, style, styleInline } from '@aelea/dom'
 import { $row, observer, screenUtils } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { constant, switchLatest, empty, map, skipRepeats, startWith, never, skip, tap } from "@most/core"
+import { constant, switchLatest, empty, map, skipRepeats, startWith, never, skip, tap, zip } from "@most/core"
 import { invertColor } from "./common"
 
 
@@ -20,6 +20,7 @@ export interface TooltipConfig {
 export const $Tooltip = ({ $anchor, $content, $container = $row }: TooltipConfig) => component((
   [hover, hoverTether]: Behavior<INode, boolean>,
   [targetIntersection, targetIntersectionTether]: Behavior<INode, IntersectionObserverEntry[]>,
+  [contentIntersection, contentIntersectionTether]: Behavior<INode, IntersectionObserverEntry[]>,
 ) => {
 
 
@@ -30,6 +31,12 @@ export const $Tooltip = ({ $anchor, $content, $container = $row }: TooltipConfig
       hoverTether(
         nodeEvent(isTouchDevice ? 'pointerenter' :'pointerenter'),
         map(enterEvent => {
+
+          // prevent selection highlighting
+          if (isTouchDevice) {
+            enterEvent.preventDefault()
+          }
+          
 
           const target = enterEvent.currentTarget
           if (!(target instanceof HTMLElement)) {
@@ -56,10 +63,13 @@ export const $Tooltip = ({ $anchor, $content, $container = $row }: TooltipConfig
         }
 
         return $row(
+          contentIntersectionTether(
+            observer.intersection()
+          ),
           style({
             zIndex: 5160,
             position: 'absolute',
-            display: 'none',
+            visibility: 'hidden',
             background: pallete.background,
             border: pallete.middleground,
             boxShadow: '1px 1px 5px #0000007a',
@@ -71,23 +81,24 @@ export const $Tooltip = ({ $anchor, $content, $container = $row }: TooltipConfig
             // fontSize: '.75em',
           }),
           styleInline(
-            map(([rect]) => {
-              const { bottom, top, left, right, width } = rect.intersectionRect
+            zip(([contentRect], [rect]) => {
+              const { bottom, top, left, right } = rect.intersectionRect
+              const { width } = contentRect.boundingClientRect
 
               const bottomSpcace = window.innerHeight - bottom
               const goDown = bottomSpcace > bottom
+              const rootWidth = contentRect.rootBounds?.width || 0
 
-   
 
-              const leftOffset = right + width > window.innerWidth ? window.innerWidth - width - 20 : width / 2
+              const leftOffset = right + width > window.innerWidth ? window.innerWidth - width - 20 : 0
 
               return {
                 top: (goDown ? bottom + 5 : top - 5) + 'px',
-                left: right - leftOffset + 'px',
-                display: 'flex',
+                left: width / 2 + leftOffset + 'px',
+                visibility: 'visible',
                 transform: `translate(-50%, ${goDown ? 0 : -100}%)`,
               }
-            }, targetIntersection)
+            }, contentIntersection, targetIntersection)
           ),
         )(
           $content
