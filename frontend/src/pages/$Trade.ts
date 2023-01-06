@@ -1,7 +1,7 @@
 import { Behavior, combineArray, combineObject, nullSink, O, replayLatest } from "@aelea/core"
 import { $node, $text, component, eventElementTarget, INode, nodeEvent, style, styleBehavior, styleInline } from "@aelea/dom"
 import { Route } from "@aelea/router"
-import { $column, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
+import { $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 import {
   AddressZero, formatFixed, intervalTimeMap, IPricefeed, IPricefeedParamApi, ITrade, unixTimestampNow, ITradeOpen, BASIS_POINTS_DIVISOR, getNextAveragePrice,
   getNextLiquidationPrice, getMarginFees, STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, TAX_BASIS_POINTS,
@@ -30,6 +30,9 @@ import { Web3Provider } from "@ethersproject/providers"
 import { ERC20__factory } from "@gambitdao/gbc-contracts"
 import { $iconCircular } from "../elements/$common"
 import { newDefaultScheduler } from "@most/scheduler"
+import { $Dropdown } from "../components/form/$Dropdown"
+import { $ButtonSecondary } from "../components/form/$Button"
+import { $caretDown } from "../elements/$icons"
 
 
 export interface ITradeComponent {
@@ -763,23 +766,60 @@ export const $Trade = (config: ITradeComponent) => component((
       $column(style({ flex: 1 }))(
         $chartContainer(
           $row(layoutSheet.spacing, style({ fontSize: '0.85em', zIndex: 5, position: 'absolute', padding: '8px', placeContent: 'center', alignItems: 'center' }))(
-            $ButtonToggle({
-              selected: timeframe,
-              options: [
-                intervalTimeMap.MIN5,
-                intervalTimeMap.MIN15,
-                intervalTimeMap.MIN60,
-                intervalTimeMap.HR4,
-                intervalTimeMap.HR24,
-                intervalTimeMap.DAY7,
-              ],
-              $$option: map(option => {
-                // @ts-ignore
-                const newLocal: string = timeFrameLablMap[option]
+            screenUtils.isDesktopScreen
+              ? $ButtonToggle({
+                selected: timeframe,
+                options: [
+                  intervalTimeMap.MIN5,
+                  intervalTimeMap.MIN15,
+                  intervalTimeMap.MIN60,
+                  intervalTimeMap.HR4,
+                  intervalTimeMap.HR24,
+                  intervalTimeMap.DAY7,
+                ],
+                $$option: map(option => {
+                  // @ts-ignore
+                  const newLocal: string = timeFrameLablMap[option]
 
-                return $text(newLocal)
-              })
-            })({ select: selectTimeFrameTether() }),
+                  return $text(newLocal)
+                })
+              })({ select: selectTimeFrameTether() })
+              : $Dropdown({
+                // $container: $row(style({ position: 'relative', alignSelf: 'center',  })),
+                $selection: switchLatest(map((option) => {
+                  // @ts-ignore
+                  const newLocal: string = timeFrameLablMap[option]
+
+                  return style({ padding: '8px', fontSize: '.75em', alignSelf: 'center' })(
+                    $ButtonSecondary({
+                      $content: $row(
+                        $text(newLocal),
+                        $icon({ $content: $caretDown, width: '14px', viewBox: '0 0 32 32' })
+                      )
+                    })({})
+                  )
+                }, timeframe)),
+                value: {
+                  value: timeframe,
+                  // $container: $defaultSelectContainer(style({ minWidth: '100px', right: 0 })),
+                  $$option: map((option) => {
+                    // @ts-ignore
+                    const label: string = timeFrameLablMap[option]
+
+                    return $text(style({ fontSize: '0.85em' }))(label)
+                  }),
+                  list: [
+                    intervalTimeMap.MIN5,
+                    intervalTimeMap.MIN15,
+                    intervalTimeMap.MIN60,
+                    intervalTimeMap.HR4,
+                    intervalTimeMap.HR24,
+                    intervalTimeMap.DAY7,
+                  ],
+                }
+              })({
+                select: selectTimeFrameTether()
+              }),
 
           ),
 

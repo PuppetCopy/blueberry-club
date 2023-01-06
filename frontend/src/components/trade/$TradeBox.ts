@@ -344,53 +344,6 @@ export const $TradeBox = (config: ITradeBox) => component((
 
   return [
     $column(style({ borderRadius: `${BOX_SPACING}px`, boxShadow: `2px 2px 13px 3px #00000040`, padding: 0 }))(
-      // $row(
-      //   // styleInline(map(isIncrease => isIncrease ? { borderColor: 'none' } : {}, config.tradeConfig.isIncrease)),
-      //   style({
-      //     height: `80px`,
-      //     padding: '0 16px',
-      //     marginBottom: `-${BOX_SPACING}`,
-      //     paddingBottom: `${BOX_SPACING}`,
-      //     placeContent: 'space-between',
-      //     alignItems: 'center',
-      //     // backgroundColor: pallete.horizon,
-      //     border: `1px solid ${colorAlpha(pallete.foreground, .15)}`,
-      //     // borderTop: 'none',
-      //     borderRadius: `${BOX_SPACING} ${BOX_SPACING} 0px 0px`,
-      //   })
-      // )(
-
-      //   $ButtonToggle({
-      //     $container: $row(layoutSheet.spacingSmall),
-      //     selected: config.tradeConfig.isLong,
-      //     options: [
-      //       true,
-      //       false,
-      //     ],
-      //     $$option: map(isLong => {
-      //       return $row(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
-      //         $icon({ $content: isLong ? $bull : $bear, width: '18px', viewBox: '0 0 32 32' }),
-      //         $text(isLong ? 'Long' : 'Short'),
-      //       )
-      //     })
-      //   })({ select: switchIsLongTether() }),
-
-      //   $ButtonToggle({
-      //     $container: $row(layoutSheet.spacingSmall),
-      //     selected: config.tradeConfig.isIncrease,
-      //     options: [
-      //       true,
-      //       false,
-      //     ],
-      //     $$option: map(option => {
-      //       return $text(style({}))(option ? 'Deposit' : 'Withdraw')
-      //     })
-      //   })({ select: switchisIncreaseTether() }),
-
-
-
-
-      // ),
 
       $column(style({ borderRadius: `${BOX_SPACING}px`, backgroundColor: theme.name === 'dark' ? pallete.horizon : colorAlpha(pallete.horizon, .3) }))(
         $column(layoutSheet.spacingSmall, style({ padding: '16px', borderRadius: '20px 20px 0 0', border: `1px solid ${colorAlpha(pallete.foreground, .15)}` }),
