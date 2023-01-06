@@ -83,11 +83,12 @@ export const $Popover = ({ $popContent, offset = 30, padding = 76, dismiss = emp
 
         return {
           top, left,
+          visibility: 'visible',
           transform: `translate(-50%, ${goDown ? '0': '-100%'})`
         }
       }, targetIntersection)
     ),
-    style({ zIndex: 100000, position: 'absolute' }),
+    style({ zIndex: 100000, position: 'absolute', visibility: 'hidden' }),
   )
 
   const dismissOverlay = until(merge(overlayClick, dismiss))
@@ -118,10 +119,10 @@ export const $Popover = ({ $popContent, offset = 30, padding = 76, dismiss = emp
   )
 
   return [
-    mergeArray([
+    $container(
       targetOp($target),
       $popover,
-    ]),
+    ),
 
     { overlayClick }
   ]

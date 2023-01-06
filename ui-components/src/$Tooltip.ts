@@ -76,7 +76,10 @@ export const $Tooltip = ({ $anchor, $content, $container = $row }: TooltipConfig
 
               const bottomSpcace = window.innerHeight - bottom
               const goDown = bottomSpcace > bottom
-              const leftOffset = width / 2
+
+   
+
+              const leftOffset = right + width > window.innerWidth ? window.innerWidth - width - 20 : width / 2
 
               return {
                 top: (goDown ? bottom + 5 : top - 5) + 'px',

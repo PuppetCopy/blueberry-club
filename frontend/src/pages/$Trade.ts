@@ -607,8 +607,7 @@ export const $Trade = (config: ITradeComponent) => component((
           }),
         ),
 
-        $node(),
-
+        screenUtils.isDesktopScreen ? $node() : empty(),
 
         switchLatest(combineArray((w3p) => {
 

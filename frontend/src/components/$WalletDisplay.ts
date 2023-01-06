@@ -31,8 +31,6 @@ export const $WalletDisplay = (config: IWalletDisplay) => component((
 
       switchLatest(map(w3p => {
         if (w3p === null) {
-
-          // return empty()
           return $ConnectDropdown(
             profileLinkClickTether(nodeEvent('click'))(style({ cursor: 'pointer' }, $disconnectedWalletDisplay())),
             profileLinkClick

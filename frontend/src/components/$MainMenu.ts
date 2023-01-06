@@ -1,7 +1,7 @@
 import { Behavior, combineArray, O } from "@aelea/core"
 import { $Branch, $element, $Node, $text, attr, component, nodeEvent, style } from "@aelea/dom"
 import { $RouterAnchor, Route } from '@aelea/router'
-import { $column, $icon, $Popover, $row, layoutSheet, screenUtils } from '@aelea/ui-components'
+import { $column, $icon, $row, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { pallete, theme } from "@aelea/ui-components-theme"
 import { formatReadableUSD } from "@gambitdao/gmx-middleware"
 import { CHAIN, IWalletLink, IWalletName, walletConnect } from "@gambitdao/wallet-link"
@@ -16,6 +16,7 @@ import { $Picker } from "../components/$ThemePicker"
 import { dark, light } from "../common/theme"
 import { Stream } from "@most/types"
 import { $WalletDisplay } from "./$WalletDisplay"
+import { $Popover } from "./$Popover"
 
 
 
@@ -96,7 +97,6 @@ export const $MainMenu = ({ walletLink, parentRoute, chainList, showAccount = tr
             $selection: $treasuryStatus,
             value: {
               value: now(null),
-              $container: $defaultSelectContainer(style({ minWidth: '300px' })),
               $$option: map(option => option),
               list: $treasuryLinks,
             }
@@ -105,8 +105,37 @@ export const $MainMenu = ({ walletLink, parentRoute, chainList, showAccount = tr
       ),
 
       $Popover({
-        // dismiss: profileLinkClick,
-        $$popContent: combineArray((_) => {
+        $target: $row(screenUtils.isDesktopScreen ? layoutSheet.spacingBig : layoutSheet.spacing, style({ fontSize: '.9em', flex: 1, alignItems: 'center', placeContent: 'center' }))(
+          ...screenUtils.isDesktopScreen ? $menuItemList : [],
+
+          $row(style({ border: `2px solid ${pallete.horizon}`, borderRadius: '30px' }))(
+            $icon({
+              svgOps: O(
+                clickPopoverClaimTether(nodeEvent('click')),
+                style({
+                  padding: '6px',
+                  cursor: 'pointer',
+                  alignSelf: 'center',
+                  transform: 'rotate(90deg)',
+                })
+              ),
+              width: '32px',
+              $content: $moreDots,
+              viewBox: '0 0 32 32'
+            }),
+          ),
+
+          $WalletDisplay({
+            chainList,
+            walletLink,
+            parentRoute
+          })({
+            walletChange: walletChangeTether(),
+            routeChange: routeChangeTether(),
+            changeNetwork: changeNetworkTether(),
+          })
+        ),
+        $popContent: map((_) => {
           return $column(layoutSheet.spacingBig)(
             ...screenUtils.isMobileScreen
               ? [
@@ -167,39 +196,7 @@ export const $MainMenu = ({ walletLink, parentRoute, chainList, showAccount = tr
 
           )
         }, clickPopoverClaim),
-      })(
-        $row(screenUtils.isDesktopScreen ? layoutSheet.spacingBig : layoutSheet.spacing, style({ fontSize: '.9em', flex: 1, alignItems: 'center', placeContent: 'center' }))(
-          ...screenUtils.isDesktopScreen ? $menuItemList : [],
-
-          $row(style({ border: `2px solid ${pallete.horizon}`, borderRadius: '30px' }))(
-            $icon({
-              svgOps: O(
-                clickPopoverClaimTether(nodeEvent('click')),
-                style({
-                  padding: '6px',
-                  cursor: 'pointer',
-                  alignSelf: 'center',
-                  transform: 'rotate(90deg)',
-                })
-              ),
-              width: '32px',
-              $content: $moreDots,
-              viewBox: '0 0 32 32'
-            }),
-          ),
-
-          $WalletDisplay({
-            chainList,
-            walletLink,
-            parentRoute
-          })({
-            walletChange: walletChangeTether(),
-            routeChange: routeChangeTether(),
-            changeNetwork: changeNetworkTether(),
-          })
-        ),
-
-      )({
+      })({
         // overlayClick: clickPopoverClaimTether()
       }),
 

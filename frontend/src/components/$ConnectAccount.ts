@@ -164,7 +164,6 @@ export const $switchNetworkDropdown = (walletLink: IWalletLink, chainList: CHAIN
             $text(chainName)
           )
         }),
-        $container: $defaultSelectContainer(style({ left: 0, right: 'auto', })),
         list: chainList,
       },
       $container: $column(style({ margin: 'auto', position: 'relative' })),
