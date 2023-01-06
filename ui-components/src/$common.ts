@@ -42,6 +42,17 @@ export const $alertTooltip = ($content: $Branch) => {
   })({})
 }
 
+export const $infoTooltipLabel = (text: string | $Node, label?: string | $Node) => {
+  return $row(layoutSheet.spacingTiny)(
+    label
+      ? isStream(label)
+        ? label
+        : $text(style({ color: pallete.foreground, fontSize: '.75em' }))(label)
+      : empty(),
+    $infoTooltip(text),
+  )
+}
+
 export const $infoTooltip = (text: string | $Node) => {
   return $Tooltip({
     $container: $column(style({ fontSize: '0.75em' })),
@@ -157,17 +168,14 @@ export const $tokenLabelFromSummary = (token: ITokenDescription, $label?: $Node)
   )
 }
 
-export const $hintInput = (config: {
-  label: Stream<string>,
+export const $hintNumChange = (config: {
+  label?: string | $Node,
   isIncrease: Stream<boolean>,
   tooltip: string | $Node,
   val: Stream<string>,
   change: Stream<string>
-}) => $row(layoutSheet.spacing, style({ placeContent: 'space-between' }))(
-  $row(layoutSheet.spacingTiny)(
-    $text(style({ fontSize: '0.75em', color: pallete.foreground }))(config.label),
-    $infoTooltip(config.tooltip),
-  ),
+}) => $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+  $infoTooltipLabel(config.tooltip, config.label),
   $row(layoutSheet.spacingTiny, style({ fontSize: '0.75em' }))(
     $text(style({ color: pallete.foreground }))(config.val),
     $text(styleBehavior(map(isIncrease => {

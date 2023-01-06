@@ -1,4 +1,4 @@
-import { Behavior, combineArray, combineObject, nullSink, O, replayLatest } from "@aelea/core"
+import { Behavior, combineArray, combineObject, O, replayLatest } from "@aelea/core"
 import { component, INode, $element, attr, style, $text, nodeEvent, $node, styleBehavior, motion, MOTION_NO_WOBBLE, styleInline, stylePseudo } from "@aelea/dom"
 import { $row, layoutSheet, $icon, $column, screenUtils, $NumberTicker, $Popover } from "@aelea/ui-components"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
@@ -9,10 +9,10 @@ import {
   ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd, IPricefeed,
   TRADE_CONTRACT_MAPPING, filterNull, ITradeOpen, zipState, MARGIN_FEE_BASIS_POINTS, abs
 } from "@gambitdao/gmx-middleware"
-import { $anchor, $bear, $bull, $hintInput, $infoTooltip, $IntermediatePromise, $tokenIconMap, $tokenLabelFromSummary, invertColor } from "@gambitdao/ui-components"
+import { $anchor, $bear, $bull, $hintNumChange, $infoTooltipLabel, $IntermediatePromise, $tokenIconMap, $tokenLabelFromSummary, invertColor } from "@gambitdao/ui-components"
 import {
   merge, multicast, mergeArray, now, snapshot, map, switchLatest,
-  skipRepeats, empty, fromPromise, constant, startWith, skipRepeatsWith, awaitPromises, zip, sample, tap
+  skipRepeats, empty, fromPromise, constant, startWith, skipRepeatsWith, awaitPromises, zip, sample
 } from "@most/core"
 import { Stream } from "@most/types"
 import { $Slider } from "../$Slider"
@@ -30,7 +30,6 @@ import { MaxUint256 } from "@ethersproject/constants"
 import { getContractAddress } from "../../logic/common"
 import { ERC20__factory } from "../../logic/gmx-contracts"
 import { CHAIN, IWalletLink, IWalletName } from "@gambitdao/wallet-link"
-import { newDefaultScheduler } from "@most/scheduler"
 
 export enum ITradeFocusMode {
   collateral,
@@ -343,7 +342,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
 
   return [
-    $column(style({ borderRadius: `${BOX_SPACING}px`, boxShadow: `2px 2px 13px 3px #00000040`, padding: 0, margin: screenUtils.isMobileScreen ? '0 10px' : '' }))(
+    $column(style({ borderRadius: `${BOX_SPACING}px`, boxShadow: `2px 2px 13px 3px #00000040`, padding: 0 }))(
       // $row(
       //   // styleInline(map(isIncrease => isIncrease ? { borderColor: 'none' } : {}, config.tradeConfig.isIncrease)),
       //   style({
@@ -412,8 +411,8 @@ export const $TradeBox = (config: ITradeBox) => component((
                 }, config.tradeState.inputTokenDescription, config.tradeState.walletBalance)
               ),
             ),
-            $hintInput({
-              label: now(`Collateral`),
+            $hintNumChange({
+              label: screenUtils.isDesktopScreen ? `Collateral` : undefined,
               change: combineArray(state => {
                 const posCollateral = state.position.collateral - state.fundingFee
                 const totalCollateral = posCollateral + state.collateralDeltaUsd - state.swapFee - state.marginFee
@@ -561,7 +560,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                 ),
                 switchLatest
               ),
-              // styleInline(map(focus => focus === ITradeFocusMode.collateral ? { color: pallete.message } : { color: pallete.foreground }, config.tradeConfig.focusMode)),
+              styleInline(map(focus => focus === ITradeFocusMode.collateral ? { color: pallete.message } : { color: pallete.foreground }, config.tradeConfig.focusMode)),
               switchFocusModeTether(nodeEvent('focus'), constant(ITradeFocusMode.collateral)),
               inputCollateralDeltaTetherUsd(nodeEvent('input'), src => snapshot((state, inputEvent) => {
                 const target = inputEvent.target
@@ -776,7 +775,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                 ),
                 switchLatest
               ),
-              // styleInline(map(focus => focus === ITradeFocusMode.size ? { color: pallete.message } : { color: pallete.foreground }, config.tradeConfig.focusMode)),
+              styleInline(map(focus => focus === ITradeFocusMode.size ? { color: pallete.message } : { color: pallete.foreground }, config.tradeConfig.focusMode)),
               switchFocusModeTether(nodeEvent('focus'), constant(ITradeFocusMode.size)),
               inputSizeDeltaTetherUsd(nodeEvent('input'), src => snapshot((state, inputEvent) => {
                 const target = inputEvent.currentTarget
@@ -803,22 +802,22 @@ export const $TradeBox = (config: ITradeBox) => component((
               if (isLong) {
                 const tokenDesc = getTokenDescription(indexToken)
 
-                return $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
-                  $row(layoutSheet.spacingTiny)(
-                    $text(style({ color: pallete.foreground, fontSize: '.75em' }))('Indexed In'),
-                    $infoTooltip(`${tokenDesc.symbol} will be deposited & borrowed to maintain a Long Position`),
-                  ),
+                return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
                   $row(layoutSheet.spacingTiny, style({ alignItems: 'center', fontSize: '.75em' }))(
                     $icon({ $content: $tokenIconMap[tokenDesc.symbol], width: '14px', viewBox: '0 0 32 32' }),
                     $text(tokenDesc.symbol)
-                  )
+                  ),
+                  $infoTooltipLabel(
+                    `${tokenDesc.symbol} will be deposited & borrowed to maintain a Long Position`,
+                    screenUtils.isDesktopScreen ? 'Indexed In' : undefined
+                  ),
                 )
               }
 
               return $row(layoutSheet.spacing)(
-                $row(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
-                  $text(style({ color: pallete.foreground, fontSize: '.75em' }))('Indexed In'),
-                  $infoTooltip($text(map(token => `${getTokenDescription(token).symbol} will be borrowed to maintain a Short Position. you can switch with other USD tokens to receive it later`, config.tradeConfig.collateralToken))),
+                $infoTooltipLabel(
+                  $text(map(token => `${getTokenDescription(token).symbol} will be borrowed to maintain a Short Position. you can switch with other USD tokens to receive it later`, config.tradeConfig.collateralToken)),
+                  'Indexed In',
                 ),
                 $Dropdown<ARBITRUM_ADDRESS_STABLE | AVALANCHE_ADDRESS_STABLE>({
                   $container: $row(style({ position: 'relative', alignSelf: 'center' })),
@@ -863,8 +862,8 @@ export const $TradeBox = (config: ITradeBox) => component((
               )
             }, config.tradeConfig.isLong, config.tradeConfig.indexToken)),
 
-            $hintInput({
-              label: now(`Size`),
+            $hintNumChange({
+              label: screenUtils.isDesktopScreen ? `Size` : undefined,
               change: map((params) => {
                 const totalSize = params.sizeDeltaUsd + (params.position.size)
 
@@ -911,274 +910,272 @@ export const $TradeBox = (config: ITradeBox) => component((
             const positionRouterAddress = getContractAddress(TRADE_CONTRACT_MAPPING, w3p.chain, 'PositionRouter')
 
             return $column(style({ flex: 1, placeContent: 'center' }))(
-              $column(layoutSheet.spacing, style({ padding: '0 16px', placeContent: 'space-between' }), styleInline(map(mode => ({ display: mode ? 'flex' : 'none' }), inTradeMode)))(
-                $row(layoutSheet.spacingBig, style({ placeContent: 'space-between', alignItems: 'center' }))(
-                  $column(layoutSheet.spacingTiny, style({ flex: 1 }))(
-                    // $TextField({
-                    //   label: 'Slippage %',
-                    //   labelStyle: { flex: 1 },
-                    //   value: config.tradeConfig.slippage,
-                    //   inputOp: style({ width: '60px', maxWidth: '60px', textAlign: 'right', fontWeight: 'normal' }),
-                    //   validation: map(n => {
-                    //     const val = Number(n)
-                    //     const valid = val >= 0
-                    //     if (!valid) {
-                    //       return 'Invalid Basis point'
-                    //     }
+              $row(layoutSheet.spacing, style({ padding: '0 16px', placeContent: 'space-between', alignItems: 'center' }), styleInline(map(mode => ({ display: mode ? 'flex' : 'none' }), inTradeMode)))(
+                $column(layoutSheet.spacingTiny, style({ flex: 1 }))(
+                  // $TextField({
+                  //   label: 'Slippage %',
+                  //   labelStyle: { flex: 1 },
+                  //   value: config.tradeConfig.slippage,
+                  //   inputOp: style({ width: '60px', maxWidth: '60px', textAlign: 'right', fontWeight: 'normal' }),
+                  //   validation: map(n => {
+                  //     const val = Number(n)
+                  //     const valid = val >= 0
+                  //     if (!valid) {
+                  //       return 'Invalid Basis point'
+                  //     }
 
-                    //     if (val > 5) {
-                    //       return 'Slippage should be less than 5%'
-                    //     }
+                  //     if (val > 5) {
+                  //       return 'Slippage should be less than 5%'
+                  //     }
 
-                    //     return null
-                    //   }),
-                    // })({
-                    //   change: changeSlippageTether()
-                    // }),
+                  //     return null
+                  //   }),
+                  // })({
+                  //   change: changeSlippageTether()
+                  // }),
 
-                    $row(style({ placeContent: 'space-between' }))(
-                      $row(layoutSheet.spacingTiny)(
-                        $text(style({ fontSize: '0.75em', color: pallete.foreground }))('Fees'),
-                        $infoTooltip(switchLatest(map(params => {
-                          const depositTokenNorm = resolveAddress(w3p.chain, params.inputToken)
-                          const outputToken = params.isLong ? params.indexToken : params.collateralToken
-                          const totalSizeUsd = params.position.size + params.sizeDeltaUsd
-                          const nextSize = totalSizeUsd * params.collateralTokenFundingInfo.rate / BASIS_POINTS_DIVISOR / 100n
+                  $row(style({ placeContent: 'space-between' }))(
+                    $infoTooltipLabel(
+                      switchLatest(map(params => {
+                        const depositTokenNorm = resolveAddress(w3p.chain, params.inputToken)
+                        const outputToken = params.isLong ? params.indexToken : params.collateralToken
+                        const totalSizeUsd = params.position.size + params.sizeDeltaUsd
+                        const nextSize = totalSizeUsd * params.collateralTokenFundingInfo.rate / BASIS_POINTS_DIVISOR / 100n
 
-                          return $column(layoutSheet.spacingTiny)(
-                            $text('Collateral deducted upon your deposit including Borrow fee at the start of every hour. the rate changes based on utilization, it is calculated as (assets borrowed) / (total assets in pool) * 0.01%'),
-                            $column(
-                              depositTokenNorm !== outputToken ? $row(layoutSheet.spacingTiny)(
-                                $text(style({ color: pallete.foreground }))('Swap'),
-                                $text(style({ color: pallete.indeterminate }))(formatReadableUSD(params.swapFee))
-                              ) : empty(),
+                        return $column(layoutSheet.spacingTiny)(
+                          $text('Collateral deducted upon your deposit including Borrow fee at the start of every hour. the rate changes based on utilization, it is calculated as (assets borrowed) / (total assets in pool) * 0.01%'),
+                          $column(
+                            depositTokenNorm !== outputToken ? $row(layoutSheet.spacingTiny)(
+                              $text(style({ color: pallete.foreground }))('Swap'),
+                              $text(style({ color: pallete.indeterminate }))(formatReadableUSD(params.swapFee))
+                            ) : empty(),
+                            $row(layoutSheet.spacingTiny)(
+                              $text(style({ color: pallete.foreground }))('Margin'),
+                              $text(style({ color: pallete.indeterminate }))(formatReadableUSD(params.marginFee))
+                            ),
+                            $row(layoutSheet.spacingTiny)(
+                              $text(style({ color: pallete.foreground }))('Current Borrow Rate'),
                               $row(layoutSheet.spacingTiny)(
-                                $text(style({ color: pallete.foreground }))('Margin'),
-                                $text(style({ color: pallete.indeterminate }))(formatReadableUSD(params.marginFee))
-                              ),
-                              $row(layoutSheet.spacingTiny)(
-                                $text(style({ color: pallete.foreground }))('Current Borrow Rate'),
-                                $row(layoutSheet.spacingTiny)(
-                                  $text(style({ color: pallete.indeterminate }))(formatReadableUSD(nextSize) + ' '),
-                                  $text(` / 1hr`)
-                                )
+                                $text(style({ color: pallete.indeterminate }))(formatReadableUSD(nextSize) + ' '),
+                                $text(` / 1hr`)
                               )
                             )
                           )
-                        }, tradeState))),
-                      ),
-                      $text(style({ fontSize: '0.75em', color: pallete.indeterminate }))(map(params => formatReadableUSD(params.marginFee + params.swapFee), tradeState)),
+                        )
+                      }, tradeState)),
+                      'Fees'
                     ),
-                    $row(style({ placeContent: 'space-between' }))(
-                      $row(layoutSheet.spacingTiny)(
-                        $text(style({ fontSize: '0.75em', color: pallete.foreground }))('Payback'),
-                        $infoTooltip($column(layoutSheet.spacingTiny)(
-                          $text('BLUEBERRY Payback(Referral) code is used to provide a 10% payback'),
-                          $text('Payback accumulates every time you trade and is distributed once every week back to your account in ETH or AVAX.'),
-                        )),
+                    $text(style({ fontSize: '0.75em', color: pallete.indeterminate }))(map(params => formatReadableUSD(params.marginFee + params.swapFee), tradeState)),
+                  ),
+                  $row(style({ placeContent: 'space-between' }))(
+                    $infoTooltipLabel(
+                      $column(layoutSheet.spacingTiny)(
+                        $text('BLUEBERRY Payback(Referral) code is used to provide a 10% payback'),
+                        $text('Payback accumulates every time you trade and is distributed once every week back to your account in ETH or AVAX.'),
                       ),
-                      $text(style({ color: pallete.positive, fontSize: '0.75em' }))(map(params => getRebateDiscountUsd(params.marginFee), tradeState))
+                      'Payback'
                     ),
-
+                    $text(style({ color: pallete.positive, fontSize: '0.75em' }))(map(params => getRebateDiscountUsd(params.marginFee), tradeState))
                   ),
 
-                  $column(layoutSheet.spacingSmall, style({ flex: 1, alignItems: 'flex-end' }))(
-                    $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+                ),
 
-                      style({ padding: '8px', fontSize: '.75em', alignSelf: 'center' })(
-                        $ButtonSecondary({ $content: $text('Reset') })({
-                          click: clickResetTradeModeTether()
-                        })
-                      ),
+                $column(layoutSheet.spacingSmall, style({ flex: 1, alignItems: 'flex-end' }))(
+                  $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
 
-                      switchLatest(combineArray((isPluginEnabled, isEnabled, isInputTokenApproved, indexToken, indexTokenDesc) => {
-                        if (!isPluginEnabled || !isEnabled) {
-                          return $Popover({
-                            $$popContent: map(() => {
+                    style({ padding: '8px', fontSize: '.75em', alignSelf: 'center' })(
+                      $ButtonSecondary({ $content: $text('Reset') })({
+                        click: clickResetTradeModeTether()
+                      })
+                    ),
 
-                              return $column(layoutSheet.spacing, style({ maxWidth: '400px' }))(
-                                $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(`By using GBC Trading, I agree to the following Disclaimer`),
-                                $text(style({ whiteSpace: 'pre-wrap', fontSize: '.75em' }))(`By accessing, I agree that ${document.location.href} is an interface (hereinafter the "Interface") to interact with external GMX smart contracts, and does not have access to my funds.`),
-                                $node(
-                                  $text(style({ whiteSpace: 'pre-wrap', fontSize: '.75em' }))(`By clicking Agree you accept the `),
-                                  $anchor(attr({ href: '/p/trading-terms-and-conditions' }))($text('Terms & Conditions'))
-                                ),
+                    switchLatest(combineArray((isPluginEnabled, isEnabled, isInputTokenApproved, indexToken, indexTokenDesc) => {
+                      if (!isPluginEnabled || !isEnabled) {
+                        return $Popover({
+                          $$popContent: map(() => {
 
-                                !isPluginEnabled
-                                  ? $ButtonPrimaryCtx({
-                                    ctx: clickEnablePlugin,
-                                    $content: $text(!isPluginEnabled ? 'Enable Leverage(GMX) & Agree' : 'Agree')
-                                  })({
-                                    click: clickEnablePluginTether(
-                                      snapshot((router) => {
-                                        return router.approvePlugin(positionRouterAddress)
-                                      }, tradeReader.routerReader.contract),
-                                      multicast
-                                    )
-                                  })
-                                  : $ButtonPrimary({
-                                    $content: $text('Agree')
-                                  })({
-                                    click: enableTradingTether(
-                                      constant(true)
-                                    )
-                                  })
-                              )
-                            }, openEnableTradingPopover),
-                          })(
-                            $row(
-                              $ButtonSecondary({
-                                $content: $text('Enable Trading'),
-                                disabled: mergeArray([
-                                  dismissEnableTradingOverlay,
-                                  openEnableTradingPopover
-                                ])
-                              })({
-                                click: openEnableTradingPopoverTether()
-                              })
-                            )
-                          )({
-                            overlayClick: dismissEnableTradingOverlayTether(constant(false))
-                          })
-                        }
+                            return $column(layoutSheet.spacing, style({ maxWidth: '400px' }))(
+                              $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(`By using GBC Trading, I agree to the following Disclaimer`),
+                              $text(style({ whiteSpace: 'pre-wrap', fontSize: '.75em' }))(`By accessing, I agree that ${document.location.href} is an interface (hereinafter the "Interface") to interact with external GMX smart contracts, and does not have access to my funds.`),
+                              $node(
+                                $text(style({ whiteSpace: 'pre-wrap', fontSize: '.75em' }))(`By clicking Agree you accept the `),
+                                $anchor(attr({ href: '/p/trading-terms-and-conditions' }))($text('Terms & Conditions'))
+                              ),
 
-                        if (!isInputTokenApproved) {
-
-                          return $ButtonPrimary({
-                            $content: $text(`Approve ${indexTokenDesc.symbol}`)
-                          })({
-                            click: approveInputTokenTether(
-                              map(async (c) => {
-                                const erc20 = ERC20__factory.connect(indexToken, w3p.signer)
-
-                                if (c === null) {
-                                  return false
-                                }
-
-                                await (await erc20.approve(routerContractAddress, MaxUint256)).wait()
-
-                                return true
-                              }),
-                              awaitPromises
-                            )
-                          })
-                        }
-
-                        return $ButtonPrimaryCtx({
-                          ctx: map(req => req.ctxQuery, clickRequestTrade),
-                          disabled: combineArray((error, params) => {
-
-                            if (error) {
-                              return true
-                            }
-
-                            return false
-                          }, validationError, tradeState),
-                          $content: $text(map(params => {
-                            // const outputToken = getTokenDescription(params.indexToken)
-
-                            let modLabel: string
-
-                            if (params.position.averagePrice > 0n) {
-                              if (params.isIncrease) {
-                                modLabel = 'Increase'
-                              } else {
-                                modLabel = (params.sizeDeltaUsd + params.position.size === 0n) ? 'Close' : 'Reduce'
-                              }
-                            } else {
-                              modLabel = 'Open'
-                            }
-
-                            return modLabel
-                            // if (screenUtils.isMobileScreen) {
-                            //   return modLabel
-                            // }
-
-                            // return `${modLabel} ${params.isLong ? 'Long' : 'Short'} ${outputToken.symbol}`
-                          }, tradeState)),
-                          alert: validationError
-                        })({
-                          click: clickRequestTradeTether(
-                            snapshot(({ state, positionRouter }) => {
-
-                              const inputAddress = resolveAddress(w3p.chain, state.inputToken)
-                              const outputToken = state.isLong ? state.indexToken : state.collateralToken
-
-                              const path = state.isIncrease
-                                ? inputAddress === outputToken ? [state.indexToken] : [inputAddress, outputToken]
-                                : inputAddress === outputToken ? [state.indexToken] : [outputToken, inputAddress]
-
-                              const slippageN = BigInt(Number(state.slippage) * 100)
-                              const allowedSlippage = state.isLong ? state.isIncrease ? slippageN : -slippageN : state.isIncrease ? -slippageN : slippageN
-
-                              const refPrice = state.isLong ? state.indexTokenPrice : state.indexTokenPrice
-                              const priceBasisPoints = BASIS_POINTS_DIVISOR + allowedSlippage // state.isLong ? BASIS_POINTS_DIVISOR + allowedSlippage : BASIS_POINTS_DIVISOR - allowedSlippage
-
-                              const acceptablePrice = refPrice * priceBasisPoints / BASIS_POINTS_DIVISOR
-
-
-
-                              const isNative = state.inputToken === AddressZero
-
-                              const ctxQuery = state.isIncrease
-                                ? (isNative
-                                  ? positionRouter.createIncreasePositionETH(
-                                    path,
-                                    state.indexToken,
-                                    0,
-                                    state.sizeDeltaUsd,
-                                    state.isLong,
-                                    acceptablePrice,
-                                    state.executionFee,
-                                    config.referralCode,
-                                    AddressZero,
-                                    { value: state.collateralDelta + state.executionFee }
+                              !isPluginEnabled
+                                ? $ButtonPrimaryCtx({
+                                  ctx: clickEnablePlugin,
+                                  $content: $text(!isPluginEnabled ? 'Enable Leverage(GMX) & Agree' : 'Agree')
+                                })({
+                                  click: clickEnablePluginTether(
+                                    snapshot((router) => {
+                                      return router.approvePlugin(positionRouterAddress)
+                                    }, tradeReader.routerReader.contract),
+                                    multicast
                                   )
-                                  : positionRouter.createIncreasePosition(
-                                    path,
-                                    state.indexToken,
-                                    state.collateralDelta,
-                                    0,
-                                    state.sizeDeltaUsd,
-                                    state.isLong,
-                                    acceptablePrice,
-                                    state.executionFee,
-                                    config.referralCode,
-                                    AddressZero,
-                                    { value: state.executionFee }
-                                  ))
-                                : positionRouter.createDecreasePosition(
+                                })
+                                : $ButtonPrimary({
+                                  $content: $text('Agree')
+                                })({
+                                  click: enableTradingTether(
+                                    constant(true)
+                                  )
+                                })
+                            )
+                          }, openEnableTradingPopover),
+                        })(
+                          $row(
+                            $ButtonSecondary({
+                              $content: $text('Enable Trading'),
+                              disabled: mergeArray([
+                                dismissEnableTradingOverlay,
+                                openEnableTradingPopover
+                              ])
+                            })({
+                              click: openEnableTradingPopoverTether()
+                            })
+                          )
+                        )({
+                          overlayClick: dismissEnableTradingOverlayTether(constant(false))
+                        })
+                      }
+
+                      if (!isInputTokenApproved) {
+
+                        return $ButtonPrimary({
+                          $content: $text(`Approve ${indexTokenDesc.symbol}`)
+                        })({
+                          click: approveInputTokenTether(
+                            map(async (c) => {
+                              const erc20 = ERC20__factory.connect(indexToken, w3p.signer)
+
+                              if (c === null) {
+                                return false
+                              }
+
+                              await (await erc20.approve(routerContractAddress, MaxUint256)).wait()
+
+                              return true
+                            }),
+                            awaitPromises
+                          )
+                        })
+                      }
+
+                      return $ButtonPrimaryCtx({
+                        ctx: map(req => req.ctxQuery, clickRequestTrade),
+                        disabled: combineArray((error, params) => {
+
+                          if (error) {
+                            return true
+                          }
+
+                          return false
+                        }, validationError, tradeState),
+                        $content: $text(map(params => {
+                          // const outputToken = getTokenDescription(params.indexToken)
+
+                          let modLabel: string
+
+                          if (params.position.averagePrice > 0n) {
+                            if (params.isIncrease) {
+                              modLabel = 'Increase'
+                            } else {
+                              modLabel = (params.sizeDeltaUsd + params.position.size === 0n) ? 'Close' : 'Reduce'
+                            }
+                          } else {
+                            modLabel = 'Open'
+                          }
+
+                          return modLabel
+                          // if (screenUtils.isMobileScreen) {
+                          //   return modLabel
+                          // }
+
+                          // return `${modLabel} ${params.isLong ? 'Long' : 'Short'} ${outputToken.symbol}`
+                        }, tradeState)),
+                        alert: validationError
+                      })({
+                        click: clickRequestTradeTether(
+                          snapshot(({ state, positionRouter }) => {
+
+                            const inputAddress = resolveAddress(w3p.chain, state.inputToken)
+                            const outputToken = state.isLong ? state.indexToken : state.collateralToken
+
+                            const path = state.isIncrease
+                              ? inputAddress === outputToken ? [state.indexToken] : [inputAddress, outputToken]
+                              : inputAddress === outputToken ? [state.indexToken] : [outputToken, inputAddress]
+
+                            const slippageN = BigInt(Number(state.slippage) * 100)
+                            const allowedSlippage = state.isLong ? state.isIncrease ? slippageN : -slippageN : state.isIncrease ? -slippageN : slippageN
+
+                            const refPrice = state.isLong ? state.indexTokenPrice : state.indexTokenPrice
+                            const priceBasisPoints = BASIS_POINTS_DIVISOR + allowedSlippage // state.isLong ? BASIS_POINTS_DIVISOR + allowedSlippage : BASIS_POINTS_DIVISOR - allowedSlippage
+
+                            const acceptablePrice = refPrice * priceBasisPoints / BASIS_POINTS_DIVISOR
+
+
+
+                            const isNative = state.inputToken === AddressZero
+
+                            const ctxQuery = state.isIncrease
+                              ? (isNative
+                                ? positionRouter.createIncreasePositionETH(
                                   path,
                                   state.indexToken,
-                                  // flip values. Contract code is using `uint` integers
-                                  -state.collateralDeltaUsd,
-                                  -state.sizeDeltaUsd,
-
-                                  state.isLong,
-                                  w3p.address,
-                                  acceptablePrice,
                                   0,
+                                  state.sizeDeltaUsd,
+                                  state.isLong,
+                                  acceptablePrice,
                                   state.executionFee,
-                                  isNative,
+                                  config.referralCode,
+                                  AddressZero,
+                                  { value: state.collateralDelta + state.executionFee }
+                                )
+                                : positionRouter.createIncreasePosition(
+                                  path,
+                                  state.indexToken,
+                                  state.collateralDelta,
+                                  0,
+                                  state.sizeDeltaUsd,
+                                  state.isLong,
+                                  acceptablePrice,
+                                  state.executionFee,
+                                  config.referralCode,
                                   AddressZero,
                                   { value: state.executionFee }
-                                )
+                                ))
+                              : positionRouter.createDecreasePosition(
+                                path,
+                                state.indexToken,
+                                // flip values. Contract code is using `uint` integers
+                                -state.collateralDeltaUsd,
+                                -state.sizeDeltaUsd,
 
-                              ctxQuery.catch(err => {
-                                console.error(err)
-                              })
+                                state.isLong,
+                                w3p.address,
+                                acceptablePrice,
+                                0,
+                                state.executionFee,
+                                isNative,
+                                AddressZero,
+                                { value: state.executionFee }
+                              )
+
+                            ctxQuery.catch(err => {
+                              console.error(err)
+                            })
 
 
-                              return { ctxQuery, state, acceptablePrice }
-                            }, combineObject({ state: tradeState, positionRouter: tradeReader.positionRouterReader.contract })),
-                            multicast
-                          )
-                        })
-                      }, tradeReader.getIsPluginEnabled(w3p.address), config.tradeState.isTradingEnabled, config.tradeState.isIndexTokenApproved, config.tradeConfig.indexToken, config.tradeState.indexTokenDescription)),
+                            return { ctxQuery, state, acceptablePrice }
+                          }, combineObject({ state: tradeState, positionRouter: tradeReader.positionRouterReader.contract })),
+                          multicast
+                        )
+                      })
+                    }, tradeReader.getIsPluginEnabled(w3p.address), config.tradeState.isTradingEnabled, config.tradeState.isIndexTokenApproved, config.tradeConfig.indexToken, config.tradeState.indexTokenDescription)),
 
-                    ),
                   ),
-                )
+                ),
               ),
 
               styleInline(map(mode => ({ display: mode ? 'none' : 'flex' }), inTradeMode))(
