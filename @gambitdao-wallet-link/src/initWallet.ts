@@ -1,6 +1,6 @@
 import { combineArray, combineObject, fromCallback, replayLatest } from "@aelea/core"
 import { BaseProvider, JsonRpcSigner, Web3Provider } from "@ethersproject/providers"
-import { awaitPromises, constant, fromPromise, map, mergeArray, multicast, now, snapshot, switchLatest, tap } from "@most/core"
+import { awaitPromises, constant, delay, fromPromise, map, mergeArray, multicast, now, snapshot, switchLatest, tap } from "@most/core"
 import { Stream } from "@most/types"
 import { eip1193ProviderEventFn } from "./common"
 import { CHAIN } from "./constant"
@@ -105,7 +105,11 @@ export function initWalletLink(
 
   const defaultProvider = replayLatest(multicast(switchLatest(map((chain) => {
     const p = config.globalProviderMap[chain] || fallbackProvider
-    const networkEvent = fromPromise(p.getNetwork())
+
+    const newLocal = p.getBlockNumber()
+
+
+    const networkEvent = delay(1000, fromPromise(newLocal))
 
     return constant(p, networkEvent)
   }, networkChange))))
@@ -119,7 +123,10 @@ export function initWalletLink(
   }, defaultProvider, wallet)))
 
   const network: Stream<CHAIN> = replayLatest(multicast(switchLatest(map(p => {
-    const networkEvent = fromPromise(p.getNetwork())
+    const newLocal = p.getNetwork()
+
+
+    const networkEvent = fromPromise(newLocal)
     return map(nw => nw.chainId, networkEvent)
   }, provider))))
 

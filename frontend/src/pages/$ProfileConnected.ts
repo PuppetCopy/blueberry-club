@@ -45,7 +45,8 @@ export const $ProfileConnected = (config: IAccount) => component((
           $$display: map(w3p => {
  
             return $Profile({
-              provider: now(w3p.provider),
+              ...config,
+              walletLink: config.walletLink,
               account: w3p.address,
               $actions: $Link({
                 $content: $anchor(
@@ -57,7 +58,6 @@ export const $ProfileConnected = (config: IAccount) => component((
               })({
                 click: changeRouteTether()
               }),
-              ...config,
             })({
               stake: requestStakeTether(),
               changeRoute: changeRouteTether()

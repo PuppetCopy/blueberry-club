@@ -2,20 +2,23 @@ import { Behavior, replayLatest, combineArray } from "@aelea/core"
 import { $text, component, motion, MOTION_NO_WOBBLE, style } from "@aelea/dom"
 import { $column, $NumberTicker, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { CHAIN } from "@gambitdao/wallet-link"
+import { IWalletLink } from "@gambitdao/wallet-link"
 import {
   intervalTimeMap, readableNumber, formatFixed, ITimerangeParamApi, unixTimestampNow, intervalListFillOrderMap,
-  IStake, getTokenUsd, ITokenDescription, div, getDenominator, formatReadableUSD, BASIS_POINTS_DIVISOR, readableDate, ARBITRUM_ADDRESS, CHAIN_ADDRESS_MAP
+  IStake, getTokenUsd, ITokenDescription, div, getDenominator, formatReadableUSD,
+  BASIS_POINTS_DIVISOR, readableDate, ARBITRUM_ADDRESS, CHAIN_ADDRESS_MAP
 } from "@gambitdao/gmx-middleware"
-import { awaitPromises, empty, map, multicast, now, skipRepeats, skipRepeatsWith, startWith, switchLatest } from "@most/core"
+import { empty, map, multicast, now, skipRepeats, skipRepeatsWith, startWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
-import { LastPriceAnimationMode, LineStyle, Time, BarPrice, CrosshairMode, PriceScaleMode, MouseEventParams, SeriesMarker } from "lightweight-charts"
+import {
+  LastPriceAnimationMode, LineStyle, Time, BarPrice, CrosshairMode,
+  PriceScaleMode, MouseEventParams, SeriesMarker
+} from "lightweight-charts"
 import { $card, $responsiveFlex } from "../elements/$common"
 import { IRewardsStream } from "../logic/contract"
 import { IAsset } from "@gambitdao/gbc-middleware"
 import { $Chart } from "./chart/$Chart"
 import { getTokenDescription } from "../logic/utils"
-import { JsonRpcProvider } from "@ethersproject/providers"
 import { getIntervalBasedOnTimeframe } from "@gambitdao/ui-components"
 import { getContractAddress } from "../logic/common"
 
@@ -33,7 +36,7 @@ export interface IStakingFeedDescription {
 
 
 export interface ITreasuryChart extends Partial<ITimerangeParamApi> {
-  provider: Stream<JsonRpcProvider>
+  walletLink: IWalletLink
   sourceList: Stream<IStake[]>
   stakingInfo: IRewardsStream
 }
@@ -44,8 +47,6 @@ export const $StakingGraph = (config: ITreasuryChart) => component((
   [pnlCrosshairMove, pnlCrosshairMoveTether]: Behavior<MouseEventParams, MouseEventParams>,
 ) => {
 
-
-  const chain = awaitPromises(map(async p => (await p.getNetwork()).chainId as CHAIN, config.provider))
 
   const historicPortfolio = replayLatest(multicast(combineArray((chain, stakingInfo, sourceList) => {
     const source: IStake[] = sourceList.sort((a, b) => a.timestamp - b.timestamp)
@@ -151,7 +152,7 @@ export const $StakingGraph = (config: ITreasuryChart) => component((
       filledForecast, sourceList, chain, from, to,
       filledGap: filledGap.map(x => ({ time: x.time, value: x.value, change: x.change }))
     }
-  }, chain, config.stakingInfo, config.sourceList)))
+  }, config.walletLink.network, config.stakingInfo, config.sourceList)))
 
 
   const hasSeriesFn = (cross: MouseEventParams): boolean => {

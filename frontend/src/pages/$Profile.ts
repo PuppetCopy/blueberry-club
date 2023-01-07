@@ -16,14 +16,14 @@ import { $labItem, getSafeMappedValue } from "../logic/common"
 import { JsonRpcProvider } from "@ethersproject/providers"
 import { pallete } from "@aelea/ui-components-theme"
 import { connectLab } from "../logic/contract/gbc"
-import { CHAIN } from "@gambitdao/wallet-link"
+import { CHAIN, IWalletLink } from "@gambitdao/wallet-link"
 
 
 export interface IProfile {
-  provider: Stream<JsonRpcProvider>
   account: string
   parentRoute: Route
   stake: Stream<IStake[]>
+  walletLink: IWalletLink
 
   $actions?: $Node
 }
@@ -32,7 +32,6 @@ export const $Profile = (config: IProfile) => component((
   [changeRoute, changeRouteTether]: Behavior<string, string>,
 ) => {
 
-  const providerChain = awaitPromises(map(async p => (await p.getNetwork()).chainId as CHAIN, config.provider))
 
   const arbitrumContract = switchLatest(combineArray((provider, chain) => {
 
@@ -43,9 +42,9 @@ export const $Profile = (config: IProfile) => component((
     }
 
     return connectGmxEarn(now(provider), config.account, contractMapping).stakingRewards
-  }, config.provider, providerChain))
+  }, config.walletLink.provider, config.walletLink.network))
 
-  const lab = connectLab(config.provider)
+  const lab = connectLab(config.walletLink.provider)
   const ownedItems = lab.accountListBalance(saleDescriptionList.map(x => x.id))
 
   return [
@@ -66,7 +65,7 @@ export const $Profile = (config: IProfile) => component((
           $StakingGraph({
             sourceList: config.stake,
             stakingInfo: multicast(arbitrumContract),
-            provider: config.provider,
+            walletLink: config.walletLink,
             // priceFeedHistoryMap: pricefeedQuery,
             // graphInterval: intervalTimeMap.HR4,
           })({}),
@@ -142,7 +141,7 @@ export const $Profile = (config: IProfile) => component((
     ),
 
     {
-      stake: map(chain => ({ chain, account: config.account }), providerChain),
+      stake: map(chain => ({ chain, account: config.account }), config.walletLink.network),
       changeRoute,
     }
   ]

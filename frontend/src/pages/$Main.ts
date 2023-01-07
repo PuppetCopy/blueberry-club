@@ -186,7 +186,7 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
 
                   return $Profile({
                     account: account,
-                    provider: walletLink.defaultProvider,
+                    walletLink: walletLink,
                     parentRoute: pagesRoute,
                     stake: clientApi.stake
                   })({

@@ -307,11 +307,9 @@ export const $Home = (config: ITreasury) => component((
             const contractMapping = getSafeMappedValue(TRADE_CONTRACT_MAPPING, chain, CHAIN.ARBITRUM)
             const account = chain === CHAIN.AVALANCHE ? GBC_ADDRESS.TREASURY_AVALANCHE : GBC_ADDRESS.TREASURY_ARBITRUM
 
-            debugger
-
-            return connectGmxEarn(now(provider), account, contractMapping).stakingRewards
-          }, config.walletLink.defaultProvider, config.walletLink.network)),
-          provider: config.walletLink.defaultProvider,
+            return connectGmxEarn(config.walletLink.provider, account, contractMapping).stakingRewards
+          }, config.walletLink.provider, config.walletLink.network)),
+          walletLink: config.walletLink,
         })({}),
 
         $Link({
