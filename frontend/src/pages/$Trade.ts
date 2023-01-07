@@ -1,4 +1,4 @@
-import { Behavior, combineArray, combineObject, nullSink, O, replayLatest } from "@aelea/core"
+import { Behavior, combineArray, combineObject, O, replayLatest } from "@aelea/core"
 import { $node, $text, component, eventElementTarget, INode, nodeEvent, style, styleBehavior, styleInline } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
@@ -7,10 +7,10 @@ import {
   getNextLiquidationPrice, getMarginFees, STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, TAX_BASIS_POINTS,
   getDenominator, USD_PERCISION, formatReadableUSD, timeSince, getPositionKey, IPositionIncrease,
   IPositionDecrease, getPnL, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE, getFundingFee, filterNull, getTokenUsd, getLiquidationPrice,
-  ITokenIndex, ITokenStable, ITokenInput, TradeStatus, LIMIT_LEVERAGE, div, readableDate, TRADE_CONTRACT_MAPPING, getTokenAmount, abs, IAccountParamApi, CHAIN_ADDRESS_MAP, DEDUCT_FOR_GAS, replayState,
+  ITokenIndex, ITokenStable, ITokenInput, TradeStatus, LIMIT_LEVERAGE, div, readableDate, TRADE_CONTRACT_MAPPING, getTokenAmount, abs, IAccountParamApi, CHAIN_ADDRESS_MAP, DEDUCT_FOR_GAS,
 } from "@gambitdao/gmx-middleware"
 
-import { map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, snapshot, zip, combine, tap, constant, delay } from "@most/core"
+import { map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, snapshot, zip, combine, tap, constant } from "@most/core"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { $arrowsFlip, $infoTooltip, $IntermediatePromise, $ProfitLossText, $RiskLiquidator, $spinner, $txHashRef, invertColor } from "@gambitdao/ui-components"
 import { CandlestickData, LineStyle, Time } from "lightweight-charts"
@@ -29,7 +29,6 @@ import { CHAIN, IWalletLink, IWalletName } from "@gambitdao/wallet-link"
 import { Web3Provider } from "@ethersproject/providers"
 import { ERC20__factory } from "@gambitdao/gbc-contracts"
 import { $iconCircular } from "../elements/$common"
-import { newDefaultScheduler } from "@most/scheduler"
 import { $Dropdown } from "../components/form/$Dropdown"
 import { $ButtonSecondary } from "../components/form/$Button"
 import { $caretDown } from "../elements/$icons"
@@ -272,9 +271,9 @@ export const $Trade = (config: ITradeComponent) => component((
 
   const updatePostion = filterNull(snapshot(
     (pos, update) => {
-      if (pos.key !== update.key) {
-        return null
-      }
+      // if (pos.key !== update.key) {
+      //   return null
+      // }
 
       return { ...pos, ...update }
     },
@@ -858,6 +857,7 @@ export const $Trade = (config: ITradeComponent) => component((
                         //   type: 'custom',
                         //   formatter: (priceValue: BarPrice) => readableNumber(priceValue.valueOf())
                         // },
+                        
                         priceLineColor: pallete.foreground,
                         baseLineStyle: LineStyle.SparseDotted,
 
@@ -879,6 +879,7 @@ export const $Trade = (config: ITradeComponent) => component((
                             price: formatFixed(val, 30),
                             color: pallete.middleground,
                             lineVisible: true,
+                            crosshairMarkerRadius: 5,
                             lineWidth: 1,
                             axisLabelVisible: true,
                             title: `Entry`,
@@ -894,6 +895,8 @@ export const $Trade = (config: ITradeComponent) => component((
                             price: formatFixed(val, 30),
                             color: pallete.indeterminate,
                             lineVisible: true,
+                            crosshairMarkerRadius: 5,
+
                             lineWidth: 1,
                             axisLabelVisible: true,
                             title: `Liquidation`,

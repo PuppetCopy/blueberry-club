@@ -79,7 +79,7 @@ export const $ButtonPrimaryCtx = (config: IButtonPrimaryCtx) => component((
         return $row(style({ width: '0px' }))(
           $Tooltip({
             $content: $text(style({ fontSize: '.75em', }))(error),
-            $container: $column(style({ zIndex: 5, marginLeft: '-15px', backgroundColor: '#000', borderRadius: '50%', })),
+            $container: $column(style({ zIndex: 5, marginLeft: '-15px', position: 'relative', backgroundColor: '#000', borderRadius: '50%', })),
             $anchor: $icon({
               $content: $alertIcon, viewBox: '0 0 24 24', width: '28px',
               svgOps: style({ fill: pallete.negative, padding: '3px', filter: 'drop-shadow(black 0px 0px 10px) drop-shadow(black 0px 0px 10px) drop-shadow(black 0px 0px 1px)' })
