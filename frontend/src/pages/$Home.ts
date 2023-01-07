@@ -3,10 +3,10 @@ import { $Branch, $element, $node, $svg, $text, attr, component, eventElementTar
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, observer, screenUtils } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { IAccountQueryParamApi, intervalTimeMap, ITimerangeParamApi } from "@gambitdao/gmx-middleware"
-import { CHAIN, IWalletLink } from "@gambitdao/wallet-link"
+import { gmxSubgraph, IAccountQueryParamApi, intervalTimeMap, ITimerangeParamApi, TRADE_CONTRACT_MAPPING } from "@gambitdao/gmx-middleware"
+import { CHAIN, IWalletLink, zipState } from "@gambitdao/wallet-link"
 import { $alert, $anchor, $gitbook, $IntermediatePromise, $Link } from "@gambitdao/ui-components"
-import { awaitPromises, map, multicast, now, snapshot, switchLatest, tap } from "@most/core"
+import { awaitPromises, map, multicast, now, snapshot, switchLatest, tap, zip } from "@most/core"
 import { $card, $teamMember } from "../elements/$common"
 
 import {
@@ -20,7 +20,9 @@ import { $opensea } from "../elements/$icons"
 import { Stream } from "@most/types"
 import { $berry, svgParts } from "../components/$DisplayBerry"
 import { BrowserStore } from "../logic/store"
-import { $berryByLabItems, $berryByToken, getBerryFromItems } from "../logic/common"
+import { $berryByLabItems, $berryByToken, getBerryFromItems, getContractAddress, getSafeMappedValue } from "../logic/common"
+import { $StakingGraph } from "../components/$StakingGraph"
+import { connectGmxEarn } from "../logic/contract"
 
 
 export interface ITreasury {
@@ -299,16 +301,18 @@ export const $Home = (config: ITreasury) => component((
         $node(),
 
 
-        // $StakingGraph({
-        //   sourceList: gmxSubgraph.stake(zipState({ chain, account })),
-        //   stakingInfo: switchLatest(map(provider => {
-        //     const contractMapping = getContractMapping(TRADE_CONTRACT_MAPPING, chain)
-        //     const account = chain === CHAIN.AVALANCHE ? GBC_ADDRESS.TREASURY_AVALANCHE : GBC_ADDRESS.TREASURY_ARBITRUM
+        $StakingGraph({
+          sourceList: gmxSubgraph.stake(zipState({ chain, account })),
+          stakingInfo: switchLatest(zip((provider, chain) => {
+            const contractMapping = getSafeMappedValue(TRADE_CONTRACT_MAPPING, chain, CHAIN.ARBITRUM)
+            const account = chain === CHAIN.AVALANCHE ? GBC_ADDRESS.TREASURY_AVALANCHE : GBC_ADDRESS.TREASURY_ARBITRUM
 
-        //     return connectGmxEarn(now(provider), account, contractMapping).stakingRewards
-        //   }, config.walletLink.defaultProvider)),
-        //   provider: config.walletLink.defaultProvider,
-        // })({}),
+            debugger
+
+            return connectGmxEarn(now(provider), account, contractMapping).stakingRewards
+          }, config.walletLink.defaultProvider, config.walletLink.network)),
+          provider: config.walletLink.defaultProvider,
+        })({}),
 
         $Link({
           $content: $anchor(
