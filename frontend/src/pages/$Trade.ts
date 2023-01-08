@@ -271,9 +271,9 @@ export const $Trade = (config: ITradeComponent) => component((
 
   const updatePostion = filterNull(snapshot(
     (pos, update) => {
-      // if (pos.key !== update.key) {
-      //   return null
-      // }
+      if (pos.key !== update.key) {
+        return null
+      }
 
       return { ...pos, ...update }
     },
@@ -302,18 +302,18 @@ export const $Trade = (config: ITradeComponent) => component((
 
       const trade = (await listQuery).find(t => t.key === res.key) || null
 
-      // if (!trade) {
-      //   const timestamp = unixTimestampNow()
-      //   const syntheticUpdate = { ...res, timestamp, realisedPnl: 0n, markPrice: res.averagePrice, isLong, __typename: 'UpdatePosition' }
-      //   return {
-      //     ...res,
-      //     isLong, timestamp,
-      //     updateList: [syntheticUpdate],
-      //     increaseList: [], decreaseList: [],
-      //     fee: 0n,
-      //     status: TradeStatus.OPEN
-      //   } as any as ITradeOpen
-      // }
+      if (!trade) {
+        const timestamp = unixTimestampNow()
+        const syntheticUpdate = { ...res, timestamp, realisedPnl: 0n, markPrice: res.averagePrice, isLong, __typename: 'UpdatePosition' }
+        return {
+          ...res,
+          isLong, timestamp,
+          updateList: [syntheticUpdate],
+          increaseList: [], decreaseList: [],
+          fee: 0n,
+          status: TradeStatus.OPEN
+        } as any as ITradeOpen
+      }
 
       return trade
     }, positionQuery, openTradeList)
