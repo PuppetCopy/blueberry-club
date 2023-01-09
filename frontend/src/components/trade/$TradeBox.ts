@@ -40,7 +40,6 @@ export enum ITradeFocusMode {
 
 export interface ITradeParams {
   position: IPositionGetter
-  key: string | null
   isTradingEnabled: boolean
   isIndexTokenApproved: boolean
 
@@ -290,12 +289,11 @@ export const $TradeBox = (config: ITradeBox) => component((
 
       const totalCollateral = collateralDelta + state.swapFee + state.marginFee
 
+      if (state.isIncrease && totalCollateral > state.walletBalanceUsd) {
+        return state.walletBalanceUsd
+      }
+
       return totalCollateral
-
-
-      // const fillAmount = getTokenAmount(totalCollateral, state.inputTokenPrice, state.inputTokenDescription.decimals)
-
-      // return fillAmount
     }, tradeState, mergeArray([inputSizeDeltaUsd, effectCollateral])))
   ])
 
@@ -312,7 +310,7 @@ export const $TradeBox = (config: ITradeBox) => component((
         const minMultiplier = div(state.position.size, totalCollateral)
         const multiplierDelta = state.isIncrease ? state.leverage - minMultiplier : minMultiplier - state.leverage
 
-        if (multiplierDelta < 50) {
+        if (multiplierDelta < 100n) {
           return 0n
         }
       }
@@ -326,7 +324,8 @@ export const $TradeBox = (config: ITradeBox) => component((
       const toNumerator = delta * BASIS_POINTS_DIVISOR
       const toDenominator = MARGIN_FEE_BASIS_POINTS * state.leverage + BASIS_POINTS_DIVISOR * BASIS_POINTS_DIVISOR
 
-      return toNumerator / toDenominator
+      const deltaAfterFees = toNumerator / toDenominator
+      return deltaAfterFees
     }, tradeState, mergeArray([inputCollateralDeltaUsd, effectSize, clickMaxCollateralUsd])))
   ])
 
@@ -353,6 +352,22 @@ export const $TradeBox = (config: ITradeBox) => component((
           }, config.tradeConfig.focusMode, config.tradeConfig.isIncrease))
         )(
           $row(layoutSheet.spacingSmall, style({ placeContent: 'space-between' }))(
+            // $row(
+            //   layoutSheet.spacingTiny,
+            //   clickMaxTether(nodeEvent('click'))
+            // )(
+            //   style({ flexDirection: 'row-reverse' })($hintNumChange({
+            //     label: `Wallet`,
+            //     change: map(state => {
+            //       const change = state.walletBalance + -state.collateralDelta
+            //       return readableNumber(formatFixed(change, state.inputTokenDescription.decimals)) + (screenUtils.isDesktopScreen ? ` ${state.inputTokenDescription.symbol}` : '')
+            //     }, tradeState),
+            //     isIncrease: map(isIncrease => !isIncrease, config.tradeConfig.isIncrease),
+            //     val: zip((tokenDesc, balance) => {
+            //       return readableNumber(formatFixed(balance, tokenDesc.decimals)) + (screenUtils.isDesktopScreen ? ` ${tokenDesc.symbol}` : '')
+            //     }, config.tradeState.inputTokenDescription, config.tradeState.walletBalance)
+            //   })),
+            // ),
             $row(
               layoutSheet.spacingTiny,
               clickMaxTether(nodeEvent('click')),
@@ -475,7 +490,9 @@ export const $TradeBox = (config: ITradeBox) => component((
                       $tokenLabelFromSummary(tokenDesc),
                       $column(style({ alignItems: 'flex-end' }))(
                         $text(map(bn => readableNumber(formatFixed(bn, tokenDesc.decimals)), balanceAmount)),
-                        $text(style({ color: pallete.foreground, fontSize: '0.75em' }))(combineArray((bn, price) => formatReadableUSD(getTokenUsd(bn, price, tokenDesc.decimals)), balanceAmount, price)),
+                        $text(style({ color: pallete.foreground, fontSize: '0.75em' }))(combineArray((bn, price) => {
+                          return formatReadableUSD(getTokenUsd(bn, price, tokenDesc.decimals))
+                        }, balanceAmount, price)),
                       )
                     )
                   }),
@@ -890,15 +907,17 @@ export const $TradeBox = (config: ITradeBox) => component((
 
                   $row(style({ placeContent: 'space-between' }))(
                     $infoTooltipLabel(
-                      switchLatest(map(params => {
-                        const depositTokenNorm = resolveAddress(w3p.chain, params.inputToken)
-                        const outputToken = params.isLong ? params.indexToken : params.collateralToken
-                        const totalSizeUsd = params.position.size + params.sizeDeltaUsd
-                        const nextSize = totalSizeUsd * params.collateralTokenFundingInfo.rate / BASIS_POINTS_DIVISOR / 100n
 
-                        return $column(layoutSheet.spacingTiny)(
-                          $text('Collateral deducted upon your deposit including Borrow fee at the start of every hour. the rate changes based on utilization, it is calculated as (assets borrowed) / (total assets in pool) * 0.01%'),
-                          $column(
+                      $column(layoutSheet.spacingSmall)(
+                        $text('Collateral deducted upon your deposit including Borrow fee at the start of every hour. the rate changes based on utilization, it is calculated as (assets borrowed) / (total assets in pool) * 0.01%'),
+
+                        switchLatest(map(params => {
+                          const depositTokenNorm = resolveAddress(w3p.chain, params.inputToken)
+                          const outputToken = params.isLong ? params.indexToken : params.collateralToken
+                          const totalSizeUsd = params.position.size + params.sizeDeltaUsd
+                          const nextSize = totalSizeUsd * params.collateralTokenFundingInfo.rate / BASIS_POINTS_DIVISOR / 100n
+
+                          return $column(
                             depositTokenNorm !== outputToken ? $row(layoutSheet.spacingTiny)(
                               $text(style({ color: pallete.foreground }))('Swap'),
                               $text(style({ color: pallete.indeterminate }))(formatReadableUSD(params.swapFee))
@@ -908,15 +927,16 @@ export const $TradeBox = (config: ITradeBox) => component((
                               $text(style({ color: pallete.indeterminate }))(formatReadableUSD(params.marginFee))
                             ),
                             $row(layoutSheet.spacingTiny)(
-                              $text(style({ color: pallete.foreground }))('Current Borrow Rate'),
+                              $text(style({ color: pallete.foreground }))('Borrow Rate'),
                               $row(layoutSheet.spacingTiny)(
                                 $text(style({ color: pallete.indeterminate }))(formatReadableUSD(nextSize) + ' '),
                                 $text(` / 1hr`)
                               )
                             )
                           )
-                        )
-                      }, tradeState)),
+                        }, tradeState))
+
+                      ),
                       'Fees'
                     ),
                     $text(style({ fontSize: '0.75em', color: pallete.indeterminate }))(map(params => formatReadableUSD(params.marginFee + params.swapFee), tradeState)),
@@ -943,7 +963,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                       })
                     ),
 
-                    switchLatest(combineArray((isPluginEnabled, isEnabled, isInputTokenApproved, indexToken, indexTokenDesc) => {
+                    switchLatest(combineArray((isPluginEnabled, isEnabled, isInputTokenApproved, inputToken, inputTokenDesc) => {
                       if (!isPluginEnabled || !isEnabled) {
                         return $Popover({
                           $target: $row(
@@ -996,11 +1016,11 @@ export const $TradeBox = (config: ITradeBox) => component((
                       if (!isInputTokenApproved) {
 
                         return $ButtonPrimary({
-                          $content: $text(`Approve ${indexTokenDesc.symbol}`)
+                          $content: $text(`Approve ${inputTokenDesc.symbol}`)
                         })({
                           click: approveInputTokenTether(
                             map(async (c) => {
-                              const erc20 = ERC20__factory.connect(indexToken, w3p.signer)
+                              const erc20 = ERC20__factory.connect(inputToken, w3p.signer)
 
                               if (c === null) {
                                 return false
@@ -1125,7 +1145,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                           multicast
                         )
                       })
-                    }, tradeReader.getIsPluginEnabled(w3p.address), config.tradeState.isTradingEnabled, config.tradeState.isIndexTokenApproved, config.tradeConfig.indexToken, config.tradeState.indexTokenDescription)),
+                    }, tradeReader.getIsPluginEnabled(w3p.address), config.tradeState.isTradingEnabled, config.tradeState.isIndexTokenApproved, config.tradeConfig.inputToken, config.tradeState.inputTokenDescription)),
 
                   ),
                 ),

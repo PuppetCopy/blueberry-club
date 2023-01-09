@@ -1,6 +1,6 @@
 import { Behavior } from "@aelea/core"
 import { $Node, component, eventElementTarget, INode, NodeComposeFn, nodeEvent, style, styleInline } from '@aelea/dom'
-import { $row, observer } from "@aelea/ui-components"
+import { $column, $row, observer } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { constant, switchLatest, empty, map, skipRepeats, startWith, skip, zip } from "@most/core"
 import { invertColor } from "./common"
@@ -12,14 +12,33 @@ export interface TooltipConfig {
   $anchor: $Node
   $content: $Node
   $container?: NodeComposeFn<$Node>,
+  $dropContainer?: NodeComposeFn<$Node>,
 
   offset?: number
 }
 
 
+const $defaultDropContainer = $column(style({
+  background: pallete.primary,
+  border: pallete.middleground,
+  boxShadow: 'rgb(0 0 0 / 44%) 0px 4px 20px 3px',
+  padding: '8px',
+  minWidth: '230px',
+  borderRadius: '8px',
+  fontWeight: 'normal',
+  color: invertColor(pallete.primary, true),
+}))
 
 
-export const $Tooltip = ({ $anchor, $content, offset = 5, $container = $row(style({ position: 'relative' })) }: TooltipConfig) => component((
+const $defaultTooltipAnchorContainer = $row(style({ position: 'relative', fontSize: '0.75em' }))
+
+export const $Tooltip = ({
+  $anchor,
+  $content,
+  offset = 5,
+  $container = $defaultTooltipAnchorContainer,
+  $dropContainer = $defaultDropContainer
+}: TooltipConfig) => component((
   [hover, hoverTether]: Behavior<INode, boolean>,
   [targetIntersection, targetIntersectionTether]: Behavior<INode, IntersectionObserverEntry[]>,
   [contentIntersection, contentIntersectionTether]: Behavior<INode, IntersectionObserverEntry[]>,
@@ -45,6 +64,7 @@ export const $Tooltip = ({ $anchor, $content, offset = 5, $container = $row(styl
             throw new Error('invalid Target element')
           }
 
+
           const pointerLeave = isTouchDevice
             ? skip(1, eventElementTarget('pointerdown', window))
             : eventElementTarget('pointerleave', target)
@@ -58,7 +78,9 @@ export const $Tooltip = ({ $anchor, $content, offset = 5, $container = $row(styl
         observer.intersection(),
       )
     )(
-      $anchor,
+      style({ cursor: 'help' })(
+        $anchor
+      ),
       switchLatest(map(show => {
         if (!show) {
           return empty()
@@ -72,15 +94,7 @@ export const $Tooltip = ({ $anchor, $content, offset = 5, $container = $row(styl
             zIndex: 5160,
             position: 'absolute',
             visibility: 'hidden',
-            background: pallete.primary,
-            border: pallete.middleground,
-            boxShadow: 'rgb(0 0 0 / 44%) 0px 4px 20px 3px',
             padding: '8px',
-            minWidth: '230px',
-            borderRadius: '8px',
-            fontWeight: 'normal',
-            color: invertColor(pallete.primary, true),
-            // fontSize: '.75em',
           }),
           styleInline(
             zip(([contentRect], [targetRect]) => {
@@ -104,7 +118,7 @@ export const $Tooltip = ({ $anchor, $content, offset = 5, $container = $row(styl
               const leftPx = boundingOffset < 0 ? isLeft ? Math.abs(boundingOffset) : boundingOffset : targetSlice
 
               return {
-                [goDown ? 'top' : 'bottom']: `calc(100% + ${offset}px)`,
+                [goDown ? 'top' : 'bottom']: `calc(100% + ${0}px)`,
                 left: leftPx + 'px',
                 visibility: 'visible',
                 transform: `translate(-50%, 0)`,
@@ -112,7 +126,9 @@ export const $Tooltip = ({ $anchor, $content, offset = 5, $container = $row(styl
             }, contentIntersection, targetIntersection)
           ),
         )(
-          $content
+          $dropContainer(
+            $content
+          )
         )
       }, hover))
     ),

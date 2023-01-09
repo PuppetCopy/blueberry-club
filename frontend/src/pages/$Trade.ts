@@ -191,9 +191,9 @@ export const $Trade = (config: ITradeComponent) => component((
   }, inputToken, config.walletLink.provider))))
 
 
-  const inputTokenPrice = tradeReader.getLatestPrice(inputToken)
-  const indexTokenPrice = multicast(switchLatest(map(token => latestPriceFromExchanges(token), indexToken)))
-  const collateralTokenPrice = tradeReader.getLatestPrice(collateralToken)
+  const inputTokenPrice = skipRepeats(tradeReader.getLatestPrice(inputToken))
+  const indexTokenPrice = skipRepeats(multicast(switchLatest(map(token => latestPriceFromExchanges(token), indexToken))))
+  const collateralTokenPrice = skipRepeats(tradeReader.getLatestPrice(collateralToken))
 
 
   const account = map(signer => {
@@ -201,10 +201,21 @@ export const $Trade = (config: ITradeComponent) => component((
   }, config.walletLink.wallet)
 
 
-  const positionKey = skipRepeats(map(params => {
-    const ct = params.isLong ? params.indexToken : params.collateralToken
+  let latestKey = ''
+  const positionKey = filterNull(map(params => {
+    const collateralToken = params.isLong ? params.indexToken : params.collateralToken
+    const address = params.account || AddressZero
+    const key = getPositionKey(address, collateralToken, params.indexToken, params.isLong)
+    
 
-    return getPositionKey(params.account || AddressZero, ct, params.indexToken, params.isLong)
+    if (latestKey === key) {
+      return null
+    }
+
+    latestKey = key
+
+
+    return { ...params, key, account: address, isLong: params.isLong, collateralToken }
   }, combineObject({ account, indexToken, collateralToken, isLong })))
 
 
@@ -228,12 +239,13 @@ export const $Trade = (config: ITradeComponent) => component((
   ]))
 
   const positionQuery = replayLatest(multicast(switchLatest(map(vault => {
-    return map(async key => {
-      const positionAbstract = await vault.positions(key)
+    return map(async pos => {
+      const positionAbstract = await vault.positions(pos.key)
       const [size, collateral, averagePrice, entryFundingRate, reserveAmount, realisedPnl, lastIncreasedTime] = positionAbstract
       const lastIncreasedTimeBn = lastIncreasedTime.toBigInt()
       return {
-        key,
+        key: pos.key,
+        isLong: pos.isLong,
         size: size.toBigInt(),
         collateral: collateral.toBigInt(),
         averagePrice: averagePrice.toBigInt(),
@@ -301,13 +313,14 @@ export const $Trade = (config: ITradeComponent) => component((
       }
 
       const trade = (await listQuery).find(t => t.key === res.key) || null
+      // const trade = null
 
       if (!trade) {
         const timestamp = unixTimestampNow()
-        const syntheticUpdate = { ...res, timestamp, realisedPnl: 0n, markPrice: res.averagePrice, isLong, __typename: 'UpdatePosition' }
+        const syntheticUpdate = { ...res, timestamp, realisedPnl: 0n, markPrice: res.averagePrice, isLong: res.isLong, __typename: 'UpdatePosition' }
         return {
           ...res,
-          isLong, timestamp,
+          timestamp,
           updateList: [syntheticUpdate],
           increaseList: [], decreaseList: [],
           fee: 0n,
@@ -349,7 +362,7 @@ export const $Trade = (config: ITradeComponent) => component((
     const taxBasisPoints = inputAndIndexStable ? STABLE_TAX_BASIS_POINTS : TAX_BASIS_POINTS
 
     const rsolvedInputAddress = resolveAddress(params.chain, params.inputToken)
-    if (!params.isIncrease || params.collateralDeltaUsd === 0n || rsolvedInputAddress === params.collateralToken) {
+    if (params.collateralDeltaUsd === 0n || rsolvedInputAddress === params.collateralToken) {
       return 0n
     }
 
@@ -562,7 +575,6 @@ export const $Trade = (config: ITradeComponent) => component((
 
             tradeConfig,
             tradeState: {
-              key: positionKey,
               nativeTokenPrice: tradeReader.nativeTokenPrice,
 
               position,
@@ -857,7 +869,7 @@ export const $Trade = (config: ITradeComponent) => component((
                         //   type: 'custom',
                         //   formatter: (priceValue: BarPrice) => readableNumber(priceValue.valueOf())
                         // },
-                        
+
                         priceLineColor: pallete.foreground,
                         baseLineStyle: LineStyle.SparseDotted,
 

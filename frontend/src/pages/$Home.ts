@@ -295,7 +295,7 @@ export const $Home = (config: ITreasury) => component((
         ),
 
         style({ alignSelf: 'center' })(
-          $alert($text(`Treasury graph is out of sync due to changes within our subgraph, we're working to fix this`))
+          $alert($text(`Treasury graph is out of sync due to new upcomming changes, stay tuned for a whole new overhaul`))
         ),
 
         $node(),

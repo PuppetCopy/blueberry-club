@@ -55,7 +55,6 @@ export const $infoTooltipLabel = (text: string | $Node, label?: string | $Node) 
 
 export const $infoTooltip = (text: string | $Node) => {
   return $Tooltip({
-    $container: $column(style({ fontSize: '0.75em', position: 'relative' })),
     $content: isStream(text) ? text : $text(text),
     $anchor: $icon({ $content: $info, viewBox: '0 0 32 32', fill: pallete.foreground, width: '18px', svgOps: style({ minWidth: '18px' }) }),
   })({})
@@ -169,13 +168,16 @@ export const $tokenLabelFromSummary = (token: ITokenDescription, $label?: $Node)
 }
 
 export const $hintNumChange = (config: {
-  label?: string | $Node,
+  label?: string,
   isIncrease: Stream<boolean>,
-  tooltip: string | $Node,
+  tooltip?: string | $Node,
   val: Stream<string>,
   change: Stream<string>
 }) => $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
-  $infoTooltipLabel(config.tooltip, config.label),
+  config.tooltip
+    ? $infoTooltipLabel(config.tooltip, config.label)
+    : config.label
+      ? $text(style({ color: pallete.foreground, fontSize: '0.75em' }))(config.label) : empty(),
   $row(layoutSheet.spacingTiny, style({ fontSize: '0.75em' }))(
     $text(style({ color: pallete.foreground }))(config.val),
     $text(styleBehavior(map(isIncrease => {

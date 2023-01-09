@@ -90,7 +90,7 @@ export const $LabHome = ({ walletLink, parentRoute }: IBerry) => component((
             $Link({
               $content: $anchor(
                 $ButtonSecondary({
-                  $content: $text('Lab Wardrobe')
+                  $content: $text('Wardrobe')
                 })({}),
               ),
               url: '/p/wardrobe', route: parentRoute
@@ -100,7 +100,7 @@ export const $LabHome = ({ walletLink, parentRoute }: IBerry) => component((
             $Link({
               $content: $anchor(
                 $ButtonPrimary({
-                  $content: $text('View Store')
+                  $content: $text('Store')
                 })({}),
               ),
               url: '/p/lab-store', route: parentRoute

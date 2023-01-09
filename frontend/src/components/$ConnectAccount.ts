@@ -1,5 +1,5 @@
 import { Behavior, Op } from "@aelea/core"
-import { $element, $Node, $text, attr, component, nodeEvent, style } from "@aelea/dom"
+import { $element, $node, $Node, $text, attr, component, nodeEvent, style } from "@aelea/dom"
 import { $column, $icon, $row, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { awaitPromises, constant, empty, fromPromise, map, now, snapshot, switchLatest } from "@most/core"
@@ -184,6 +184,7 @@ export const $ConnectDropdown = ($trigger: $Node, clickOpenPopover: Stream<any>)
   return [
     $Popover({
       $target: $trigger,
+      $container: $node(style({ margin: 'auto' })),
       $popContent: map(() => {
         return $column(layoutSheet.spacing)(
           switchLatest(map(metamask => {
