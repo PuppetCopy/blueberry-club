@@ -216,6 +216,14 @@ export interface IAccountSummary extends IAbstractPositionStake {
   claim: IClaim | null,
 }
 
+export interface IAccountLadderSummary extends IAccountSummary {
+  roi: bigint
+  maxCollateral: bigint
+  openPnl: bigint
+  pnl: bigint
+  cumulativeLeverage: bigint
+}
+
 export interface IPriceTimeline {
   id: string
   value: bigint
@@ -295,6 +303,10 @@ export interface IPageParapApi<T> extends IPagePositionParamApi {
 
 export interface ILeaderboardRequest extends IPagePositionParamApi, IChainParamApi, ISortParamApi<keyof IAccountSummary> {
   timeInterval: intervalTimeMap.HR24 | intervalTimeMap.DAY7 | intervalTimeMap.MONTH
+}
+export interface ICompetitionLadderRequest extends IChainParamApi, IPagePositionParamApi, ITimerangeParamApi {
+  referralCode: string
+  maxCollateral: bigint
 }
 
 

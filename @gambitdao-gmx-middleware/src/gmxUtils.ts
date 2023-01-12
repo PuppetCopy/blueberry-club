@@ -1,5 +1,5 @@
 import { BASIS_POINTS_DIVISOR, FUNDING_RATE_PRECISION, LIQUIDATION_FEE, MARGIN_FEE_BASIS_POINTS, MAX_LEVERAGE } from "./constant"
-import { IAccountSummary, ITrade, IClaim, IClaimSource, ITradeSettled, ITradeClosed, ITradeLiquidated, ITradeOpen, TradeStatus } from "./types"
+import { IAccountSummary, ITrade, IClaim, IClaimSource, ITradeSettled, ITradeClosed, ITradeLiquidated, ITradeOpen, TradeStatus, IPricefeed, IAccountLadderSummary, IPositionLiquidated } from "./types"
 import { easeInExpo, formatFixed, formatReadableUSD, getDenominator, groupByMapMany, isAddress } from "./utils"
 
 
@@ -218,6 +218,114 @@ export function toAccountSummary(list: ITrade[]): IAccountSummary[] {
 
     return seed
   }, [] as IAccountSummary[])
+}
+
+export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: string]: IPricefeed }, minMaxCollateral: bigint, endDate: number): IAccountLadderSummary[] {
+  const tradeListMap = groupByMapMany(list, a => a.account)
+  const tradeListEntries = Object.entries(tradeListMap)
+
+  return tradeListEntries.reduce((seed, [account, tradeList]) => {
+
+    const seedAccountSummary: IAccountLadderSummary = {
+      claim: null,
+      account,
+      cumulativeLeverage: 0n,
+
+      collateral: 0n,
+      size: 0n,
+
+      fee: 0n,
+      realisedPnl: 0n,
+
+      roi: 0n,
+      openPnl: 0n,
+      pnl: 0n,
+
+      maxCollateral: 0n,
+
+      winCount: 0,
+      lossCount: 0,
+    }
+
+    const sortedTradeList = tradeList.sort((a, b) => a.timestamp - b.timestamp)
+
+    const initSeed = {
+      maxUsedCollateral: 0n,
+      positions: {}
+    } as { maxUsedCollateral: bigint, positions: { [k: string]: bigint } }
+
+
+    const adjustmentsDuringTimerange = sortedTradeList
+      .flatMap(next => [...next.updateList, ...isTradeClosed(next) ? [next.closedPosition] : isTradeLiquidated(next) ? [next.liquidatedPosition as IPositionLiquidated & { key: string }] : []])
+      // .filter(n => n.timestamp <= endDate)
+      .sort((a, b) => a.timestamp - b.timestamp)
+
+
+
+    const { maxUsedCollateral } = adjustmentsDuringTimerange.reduce((seed, next) => {
+      const prevCollateral = seed.positions[next.key] || 0n
+
+      seed.positions[next.key] = next.__typename === 'UpdatePosition' ? next.collateral > prevCollateral ? next.collateral : prevCollateral : 0n
+
+      const nextUsedCollateral = Object.values(seed.positions).reduce((s, n) => s + n, 0n)
+
+      if (nextUsedCollateral > seed.maxUsedCollateral) {
+        seed.maxUsedCollateral = nextUsedCollateral
+      }
+
+      return seed
+    }, initSeed)
+
+
+
+    const summary = sortedTradeList.reduce((seed, next): IAccountLadderSummary => {
+      const filteredUpdates = [...next.updateList, ...isTradeClosed(next) ? [next.closedPosition] : isTradeLiquidated(next) ? [next.liquidatedPosition as IPositionLiquidated & { key: string }] : []].filter(update => update.timestamp <= endDate)
+      const tradeMaxCollateral = filteredUpdates.reduce((s, n) => n.collateral > s ? n.collateral : s, 0n)
+      const collateral = seed.maxCollateral + tradeMaxCollateral
+      const lastUpdate = filteredUpdates[filteredUpdates.length - 1]
+
+      const indexTokenMarkPrice = BigInt(priceMap['_' + next.indexToken].c)
+      const openDelta = lastUpdate.__typename === 'UpdatePosition' ? getPnL(next.isLong, lastUpdate.averagePrice, indexTokenMarkPrice, lastUpdate.size) : 0n
+
+      const fee = seed.fee + next.fee
+      const openPnl = seed.openPnl + openDelta
+      const realisedPnl = seed.realisedPnl + lastUpdate.realisedPnl
+      const pnl = openPnl + realisedPnl
+
+      const usedMinProfit = maxUsedCollateral - pnl > 0n ? pnl : 0n
+      const maxCollateral = usedMinProfit > maxUsedCollateral ? usedMinProfit : maxUsedCollateral
+
+      const roi = div(pnl, (maxCollateral > minMaxCollateral ? maxCollateral : minMaxCollateral))
+
+      const currentPnl = lastUpdate.realisedPnl + openDelta
+      const winCount = seed.winCount + (currentPnl > 0n ? 1 : 0)
+      const lossCount = seed.lossCount + (currentPnl < 0n ? 1 : 0)
+
+
+      const cumulativeLeverage = seed.cumulativeLeverage + div(lastUpdate.size, maxCollateral)
+
+      console.log(cumulativeLeverage)
+
+
+      return {
+        collateral, account, realisedPnl, openPnl, pnl, roi, maxCollateral,
+
+        lossCount,
+        winCount,
+
+        cumulativeLeverage,
+
+        claim: null,
+        fee,
+
+        size: seed.size + next.size,
+      }
+    }, seedAccountSummary)
+
+    seed.push(summary)
+
+    return seed
+  }, [] as IAccountLadderSummary[])
 }
 
 

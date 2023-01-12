@@ -8,7 +8,7 @@ import { $VirtualScroll, IScrollPagableReponse, QuantumScroll, ScrollRequest, Sc
 
 
 
-export type TablePageResponse<T> = T[] | Omit<IScrollPagableReponse, '$items'> & { data: T[] }
+export type TablePageResponse<T> = T[] | Omit<IScrollPagableReponse, '$items'> & { page: T[] }
 
 export interface TableOption<T, FilterState> {
   $container?: NodeComposeFn<$Node>
@@ -138,7 +138,7 @@ export const $Table2 = <T, FilterState = never>({
     return $VirtualScroll({
       ...scrollConfig,
       dataSource: map((res): ScrollResponse => {
-        const $items = (Array.isArray(res) ? res : res.data).map(rowData => $rowContainer(
+        const $items = (Array.isArray(res) ? res : res.page).map(rowData => $rowContainer(
           ...columns.map(col => O(cellBodyOp, col.columnOp || O())(
             switchLatest(col.$body(now(rowData)))
           ))

@@ -219,7 +219,6 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
     }, state))
   }
 
-
   const getTokenInfo = (tokenEvent: Stream<ITokenIndex>) => switchOp(zipState({ vault: vaultReader.contract, positionRouter: positionRouterReader.contract }), combine(async (token, params) => {
     const [weight, usdgAmounts, bufferAmounts, poolAmounts, reservedAmounts] = await Promise.all([
       params.vault.tokenWeights(token).then(x => x.toBigInt()),
@@ -231,7 +230,6 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
 
     return { weight, bufferAmounts, usdgAmounts, poolAmounts, reservedAmounts }
   }, tokenEvent))
-
 
   const nativeTokenPrice = pricefeedReader.readInt(map(async contract => {
     const chain = (await contract.provider.getNetwork()).chainId

@@ -1,16 +1,27 @@
-import { $Branch, $node, $text, attr, style } from "@aelea/dom"
+import { $Branch, $text, attr, style } from "@aelea/dom"
 import { $ButtonIcon, $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
 import { getAccountExplorerUrl, getTxExplorerUrl, shortenAddress } from "@gambitdao/gmx-middleware"
 import { $trash } from "./$icons"
 import { IToken, LAB_CHAIN } from "@gambitdao/gbc-middleware"
-import { $anchor, $calendar, $caretDblDown, $discord, $ethScan } from "@gambitdao/ui-components"
+import { $anchor, $calendar, $caretDblDown, $ethScan } from "@gambitdao/ui-components"
 import { $berryByToken } from "../logic/common"
-import { hexValue } from "@ethersproject/bytes"
 
 export const $TrashBtn = $ButtonIcon($trash)
 
-export const $card = $column(layoutSheet.spacing, style({ backgroundColor: theme.name === 'dark' ? pallete.horizon : colorAlpha(pallete.horizon, .3), padding: '22px', borderRadius: '20px', flex: 1 }))
+export const $card = $column(layoutSheet.spacing,
+
+  style({ borderRadius: '20px', padding: '20px' }),
+  theme.name === 'dark'
+    ? style({
+      backgroundColor: pallete.horizon,
+      boxShadow: 'rgb(0 0 0 / 25%) 0px 0px 1px, rgb(0 0 0 / 15%) 0px 15px 20px, rgb(0 0 0 / 8%) 0px 1px 12px',
+    })
+    : style({
+      boxShadow: 'rgb(0 0 0 / 25%) 0px 0px 1px, rgb(59 60 74 / 15%) 0px 15px 20px, rgb(0 0 0 / 8%) 0px 1px 12px',
+      backgroundColor: pallete.horizon, padding: '22px', borderRadius: '20px', flex: 1
+    })
+)
 
 export const $seperator = $text(style({ color: pallete.foreground, pointerEvents: 'none' }))('|')
 export const $responsiveFlex = screenUtils.isDesktopScreen ? $row : $column

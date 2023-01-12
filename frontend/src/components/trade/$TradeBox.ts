@@ -9,7 +9,7 @@ import {
   ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd, IPricefeed,
   TRADE_CONTRACT_MAPPING, filterNull, ITradeOpen, zipState, MARGIN_FEE_BASIS_POINTS, abs, DEDUCT_FOR_GAS, getTokenAmount
 } from "@gambitdao/gmx-middleware"
-import { $anchor, $bear, $bull, $hintNumChange, $infoTooltipLabel, $IntermediatePromise, $tokenIconMap, $tokenLabelFromSummary, invertColor } from "@gambitdao/ui-components"
+import { $anchor, $bear, $bull, $hintNumChange, $infoTooltipLabel, $IntermediatePromise, $moreDots, $tokenIconMap, $tokenLabelFromSummary, $xCross, invertColor } from "@gambitdao/ui-components"
 import {
   merge, multicast, mergeArray, now, snapshot, map, switchLatest,
   skipRepeats, empty, fromPromise, constant, startWith, skipRepeatsWith, awaitPromises, zip, sample
@@ -31,6 +31,7 @@ import { getContractAddress } from "../../logic/common"
 import { ERC20__factory } from "../../logic/gmx-contracts"
 import { CHAIN, IWalletLink, IWalletName } from "@gambitdao/wallet-link"
 import { $Popover } from "../$Popover"
+import { $card } from "../../elements/$common"
 
 export enum ITradeFocusMode {
   collateral,
@@ -41,7 +42,7 @@ export enum ITradeFocusMode {
 export interface ITradeParams {
   position: IPositionGetter
   isTradingEnabled: boolean
-  isIndexTokenApproved: boolean
+  isInputTokenApproved: boolean
 
   inputTokenPrice: bigint
   collateralTokenPrice: bigint
@@ -154,6 +155,7 @@ export const $TradeBox = (config: ITradeBox) => component((
   [crosshairMove, crosshairMoveTether]: Behavior<MouseEventParams, MouseEventParams>,
   [clickResetTradeMode, clickResetTradeModeTether]: Behavior<any, any>,
   [clickMax, clickMaxTether]: Behavior<any, any>,
+  [clickOpenTradeConfig, clickOpenTradeConfigTether]: Behavior<any, any>,
 
 
 ) => {
@@ -342,7 +344,84 @@ export const $TradeBox = (config: ITradeBox) => component((
 
 
   return [
-    $column(style({ borderRadius: `${BOX_SPACING}px`, boxShadow: `2px 2px 13px 3px #00000040`, padding: 0 }))(
+    $card(style({ borderRadius: `${BOX_SPACING}px`, padding: 0, gap: 0, background: 'rgb(0 0 0 / 15%)' }))(
+      // $row(
+      //   // styleInline(map(isIncrease => isIncrease ? { borderColor: 'none' } : {}, config.tradeConfig.isIncrease)),
+      //   style({
+
+      //     //       margin-bottom: -15px;
+      //     // border-radius: 20px 20px 0 0;
+      //     // padding-bottom: 15px;
+
+      //     height: `75px`,
+      //     padding: '0 16px 15px',
+      //     marginBottom: `-${BOX_SPACING}px`,
+      //     paddingBottom: `${BOX_SPACING}px`,
+      //     placeContent: 'space-between',
+      //     alignItems: 'center',
+      //     // backgroundColor: pallete.horizon,
+      //     border: `1px solid ${colorAlpha(pallete.foreground, .15)}`,
+      //     // borderTop: 'none',
+      //     borderRadius: `${BOX_SPACING}px ${BOX_SPACING}px 0px 0px`,
+      //   })
+      // )(
+      //   $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+      //     style({ padding: '2px', fontSize: '.75em' })(
+      //       $ButtonSecondary({
+      //         $content: $icon({ $content: $xCross, width: '24px', svgOps: style({ padding: '4px' }), viewBox: '0 0 32 32' })
+      //       })({
+      //         click: clickResetTradeModeTether()
+      //       })
+      //     ),
+      //     $text(style({ fontWeight: 'bold' }))(map(state => {
+      //       if (state.position.averagePrice > 0n) {
+      //         return state.isIncrease ? 'Increase' : 'Decrease'
+      //       }
+
+      //       return 'Open'
+      //     }, tradeState)),
+      //   ),
+
+      //   $Popover({
+      //     $target: $row(clickOpenTradeConfigTether(nodeEvent('click')), style({ fontSize: '.75em', padding: '6px 12px', border: `2px solid ${pallete.horizon}`, borderRadius: '30px' }))(
+      //       $text('Advanced'),
+      //       $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginRight: '-5px' }), viewBox: '0 0 32 32' }),
+      //     ),
+      //     $popContent: map((_) => {
+      //       return $text('fff')
+      //     }, clickOpenTradeConfig),
+      //   })({
+      //     // overlayClick: clickPopoverClaimTether()
+      //   })
+
+      //   // $ButtonToggle({
+      //   //   $container: $row(layoutSheet.spacingSmall),
+      //   //   selected: config.tradeConfig.isLong,
+      //   //   options: [
+      //   //     true,
+      //   //     false,
+      //   //   ],
+      //   //   $$option: map(isLong => {
+      //   //     return $row(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
+      //   //       $icon({ $content: isLong ? $bull : $bear, width: '18px', viewBox: '0 0 32 32' }),
+      //   //       $text(isLong ? 'Long' : 'Short'),
+      //   //     )
+      //   //   })
+      //   // })({ select: switchIsLongTether() }),
+
+      //   // $ButtonToggle({
+      //   //   $container: $row(layoutSheet.spacingSmall),
+      //   //   selected: config.tradeConfig.isIncrease,
+      //   //   options: [
+      //   //     true,
+      //   //     false,
+      //   //   ],
+      //   //   $$option: map(option => {
+      //   //     return $text(style({}))(option ? 'Deposit' : 'Withdraw')
+      //   //   })
+      //   // })({ select: switchisIncreaseTether() }),
+
+      // ),
 
       $column(style({ borderRadius: `${BOX_SPACING}px`, backgroundColor: theme.name === 'dark' ? pallete.horizon : colorAlpha(pallete.horizon, .3) }))(
         $column(layoutSheet.spacingSmall, style({ padding: '16px', borderRadius: '20px 20px 0 0', border: `1px solid ${colorAlpha(pallete.foreground, .15)}` }),
@@ -404,7 +483,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                 return formatReadableUSD(netCollateral)
               }, tradeState),
               isIncrease: config.tradeConfig.isIncrease,
-              tooltip: 'The amount you will deposit to maintain a leverage position',
+              tooltip: 'The amount deposited to maintain a leverage position',
               val: combineArray((pos, fundingFee) => formatReadableUSD(pos.collateral - fundingFee), config.tradeState.position, config.tradeState.fundingFee),
             }),
           ),
@@ -513,7 +592,6 @@ export const $TradeBox = (config: ITradeBox) => component((
                   merge(
                     now(node),
                     filterNull(snapshot((state, val) => {
-
                       if (val === 0n) {
                         node.element.value = ''
                       } else {
@@ -727,10 +805,6 @@ export const $TradeBox = (config: ITradeBox) => component((
                   merge(
                     now(node),
                     filterNull(snapshot((state, value) => {
-                      if (state.focusMode === ITradeFocusMode.size) {
-                        return null
-                      }
-
                       if (value === 0n) {
                         node.element.value = ''
                       } else {
@@ -838,7 +912,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                 return formatReadableUSD(totalSize)
               }, tradeState),
               isIncrease: config.tradeConfig.isIncrease,
-              tooltip: $column(
+              tooltip: $column(layoutSheet.spacingSmall)(
                 $text('Size amplified by deposited Collateral and Leverage chosen'),
                 $text('higher leverage increases liquidation price'),
               ),
@@ -852,6 +926,7 @@ export const $TradeBox = (config: ITradeBox) => component((
         height: `100px`,
         marginTop: `-${BOX_SPACING - 5}px`,
         paddingTop: `${BOX_SPACING - 5}px`,
+        placeContent: 'center',
         // backgroundColor: pallete.horizon,
         border: `1px solid ${colorAlpha(pallete.foreground, .15)}`,
         borderTop: 'none',
@@ -880,9 +955,9 @@ export const $TradeBox = (config: ITradeBox) => component((
             const routerContractAddress = getContractAddress(TRADE_CONTRACT_MAPPING, w3p.chain, 'Router')
             const positionRouterAddress = getContractAddress(TRADE_CONTRACT_MAPPING, w3p.chain, 'PositionRouter')
 
-            return $column(style({ flex: 1, placeContent: 'center' }))(
+            return $column(
               $row(layoutSheet.spacing, style({ padding: '0 16px', placeContent: 'space-between', alignItems: 'center' }), styleInline(map(mode => ({ display: mode ? 'flex' : 'none' }), inTradeMode)))(
-                $column(layoutSheet.spacingTiny, style({ flex: 1 }))(
+                $column(layoutSheet.spacingTiny)(
                   // $TextField({
                   //   label: 'Slippage %',
                   //   labelStyle: { flex: 1 },
@@ -941,101 +1016,134 @@ export const $TradeBox = (config: ITradeBox) => component((
                     ),
                     $text(style({ fontSize: '0.75em', color: pallete.indeterminate }))(map(params => formatReadableUSD(params.marginFee + params.swapFee), tradeState)),
                   ),
-                  $row(style({ placeContent: 'space-between' }))(
-                    $infoTooltipLabel(
-                      $column(layoutSheet.spacingTiny)(
-                        $text('BLUEBERRY Payback(Referral) code is used to provide a 10% payback'),
-                        $text('Payback accumulates every time you trade and is distributed once every week back to your account in ETH or AVAX.'),
+                  switchLatest(map(isIncrease => {
+
+                    if (isIncrease) {
+                      return $row(layoutSheet.spacing)(
+                        $infoTooltipLabel(
+                          $column(layoutSheet.spacingTiny)(
+                            $text('BLUEBERRY Payback(Referral) code is used to provide a 10% payback'),
+                            $text('Payback accumulates every time you trade and is distributed once every week back to your account in ETH or AVAX.'),
+                            $row(layoutSheet.spacingTiny)(
+                              $text(style({ color: pallete.foreground }))('Open + Close Payback'),
+                              $text(style({ color: pallete.positive }))(map(params => getRebateDiscountUsd(params.marginFee * 2n), tradeState))
+                            )
+                          ),
+                          'Payback'
+                        ),
+                        $text(style({ color: pallete.positive, fontSize: '0.75em' }))(map(params => getRebateDiscountUsd(params.marginFee * 2n), tradeState))
+                      )
+                    }
+
+                    return $row(layoutSheet.spacing)(
+                      $infoTooltipLabel(
+                        $column(layoutSheet.spacingTiny)(
+                          $text('BLUEBERRY Payback(Referral) code is used to provide a 10% payback'),
+                          $text('Payback accumulates every time you trade and is distributed once every week back to your account in ETH or AVAX.'),
+                        ),
+                        'Receive'
                       ),
-                      'Payback'
-                    ),
-                    $text(style({ color: pallete.positive, fontSize: '0.75em' }))(map(params => getRebateDiscountUsd(params.marginFee), tradeState))
-                  ),
+                      $text(style({ color: pallete.positive, fontSize: '0.75em' }))(map(params => {
+                        const delta = getPnL(params.isLong, params.position.averagePrice, params.indexTokenPrice, -params.sizeDeltaUsd)
+                        const adjustedSizeDelta = -params.sizeDeltaUsd * delta / params.position.size
+                        const fees = params.swapFee + params.marginFee
+
+                        const collateralDelta = -params.sizeDeltaUsd === params.position.size
+                          ? params.position.collateral - params.fundingFee
+                          : -params.collateralDeltaUsd
+
+                        const total = collateralDelta + adjustedSizeDelta - fees
+                        const totalAfterFees = total > 0n ? total : 0n
+                        const tokenAmount = getTokenAmount(total, params.inputTokenPrice, params.inputTokenDescription.decimals)
+
+                        return `${readableNumber(formatFixed(tokenAmount, params.inputTokenDescription.decimals))} ${params.inputTokenDescription.symbol} (${formatReadableUSD(total)})`
+                      }, tradeState))
+                    )
+                  }, config.tradeConfig.isIncrease))
+
 
                 ),
 
                 $column(layoutSheet.spacingSmall, style({ flex: 1, alignItems: 'flex-end' }))(
-                  $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+                  switchLatest(combineArray((isPluginEnabled, isEnabled, isInputTokenApproved, inputToken, inputTokenDesc) => {
+                    if (!isPluginEnabled || !isEnabled) {
+                      return $Popover({
+                        $target: $row(
+                          $ButtonSecondary({
+                            $content: $text('Enable GMX'),
+                            disabled: mergeArray([
+                              dismissEnableTradingOverlay,
+                              openEnableTradingPopover
+                            ])
+                          })({
+                            click: openEnableTradingPopoverTether()
+                          })
+                        ),
+                        $popContent: map(() => {
 
-                    style({ padding: '8px', fontSize: '.75em', alignSelf: 'center' })(
-                      $ButtonSecondary({ $content: $text('Reset') })({
-                        click: clickResetTradeModeTether()
-                      })
-                    ),
+                          return $column(layoutSheet.spacing, style({ maxWidth: '400px' }))(
+                            $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(`By using GBC Trading, I agree to the following Disclaimer`),
+                            $text(style({ whiteSpace: 'pre-wrap', fontSize: '.75em' }))(`By accessing, I agree that ${document.location.href} is an interface (hereinafter the "Interface") to interact with external GMX smart contracts, and does not have access to my funds.`),
+                            $node(
+                              $text(style({ whiteSpace: 'pre-wrap', fontSize: '.75em' }))(`By clicking Agree you accept the `),
+                              $anchor(attr({ href: '/p/trading-terms-and-conditions' }))($text('Terms & Conditions'))
+                            ),
 
-                    switchLatest(combineArray((isPluginEnabled, isEnabled, isInputTokenApproved, inputToken, inputTokenDesc) => {
-                      if (!isPluginEnabled || !isEnabled) {
-                        return $Popover({
-                          $target: $row(
-                            $ButtonSecondary({
-                              $content: $text('Enable Trading'),
-                              disabled: mergeArray([
-                                dismissEnableTradingOverlay,
-                                openEnableTradingPopover
-                              ])
-                            })({
-                              click: openEnableTradingPopoverTether()
-                            })
-                          ),
-                          $popContent: map(() => {
-
-                            return $column(layoutSheet.spacing, style({ maxWidth: '400px' }))(
-                              $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(`By using GBC Trading, I agree to the following Disclaimer`),
-                              $text(style({ whiteSpace: 'pre-wrap', fontSize: '.75em' }))(`By accessing, I agree that ${document.location.href} is an interface (hereinafter the "Interface") to interact with external GMX smart contracts, and does not have access to my funds.`),
-                              $node(
-                                $text(style({ whiteSpace: 'pre-wrap', fontSize: '.75em' }))(`By clicking Agree you accept the `),
-                                $anchor(attr({ href: '/p/trading-terms-and-conditions' }))($text('Terms & Conditions'))
-                              ),
-
-                              !isPluginEnabled
-                                ? $ButtonPrimaryCtx({
-                                  ctx: clickEnablePlugin,
-                                  $content: $text(!isPluginEnabled ? 'Enable Leverage(GMX) & Agree' : 'Agree')
-                                })({
-                                  click: clickEnablePluginTether(
-                                    snapshot((router) => {
-                                      return router.approvePlugin(positionRouterAddress)
-                                    }, tradeReader.routerReader.contract),
-                                    multicast
-                                  )
-                                })
-                                : $ButtonPrimary({
-                                  $content: $text('Agree')
-                                })({
-                                  click: enableTradingTether(
-                                    constant(true)
-                                  )
-                                })
-                            )
-                          }, openEnableTradingPopover),
-                        })({
-                          overlayClick: dismissEnableTradingOverlayTether(constant(false))
-                        })
-                      }
-
-                      if (!isInputTokenApproved) {
-
-                        return $ButtonPrimary({
-                          $content: $text(`Approve ${inputTokenDesc.symbol}`)
-                        })({
-                          click: approveInputTokenTether(
-                            map(async (c) => {
-                              const erc20 = ERC20__factory.connect(inputToken, w3p.signer)
-
-                              if (c === null) {
-                                return false
-                              }
-
-                              await (await erc20.approve(routerContractAddress, MaxUint256)).wait()
-
-                              return true
-                            }),
-                            awaitPromises
+                            !isPluginEnabled
+                              ? $ButtonPrimaryCtx({
+                                ctx: clickEnablePlugin,
+                                $content: $text(!isPluginEnabled ? 'Enable GMX & Agree' : 'Agree')
+                              })({
+                                click: clickEnablePluginTether(
+                                  snapshot((router) => {
+                                    return router.approvePlugin(positionRouterAddress)
+                                  }, tradeReader.routerReader.contract),
+                                  multicast
+                                )
+                              })
+                              : $ButtonPrimary({
+                                $content: $text('Agree')
+                              })({
+                                click: enableTradingTether(
+                                  constant(true)
+                                )
+                              })
                           )
-                        })
-                      }
+                        }, openEnableTradingPopover),
+                      })({
+                        overlayClick: dismissEnableTradingOverlayTether(constant(false))
+                      })
+                    }
 
-                      return $ButtonPrimaryCtx({
+                    if (!isInputTokenApproved) {
+
+                      return $ButtonPrimary({
+                        $content: $text(`Approve ${inputTokenDesc.symbol}`)
+                      })({
+                        click: approveInputTokenTether(
+                          map(async (c) => {
+                            const erc20 = ERC20__factory.connect(inputToken, w3p.signer)
+
+                            if (c === null) {
+                              return false
+                            }
+
+                            await (await erc20.approve(routerContractAddress, MaxUint256)).wait()
+
+                            return true
+                          }),
+                          awaitPromises
+                        )
+                      })
+                    }
+
+                    return $row(layoutSheet.spacingSmall)(
+                      style({ padding: '8px', fontSize: '.75em', alignSelf: 'center' })(
+                        $ButtonSecondary({ $content: $text('Reset') })({
+                          click: clickResetTradeModeTether()
+                        })
+                      ),
+                      $ButtonPrimaryCtx({
                         ctx: map(req => req.ctxQuery, clickRequestTrade),
                         disabled: combineArray((error, params) => {
 
@@ -1145,9 +1253,8 @@ export const $TradeBox = (config: ITradeBox) => component((
                           multicast
                         )
                       })
-                    }, tradeReader.getIsPluginEnabled(w3p.address), config.tradeState.isTradingEnabled, config.tradeState.isIndexTokenApproved, config.tradeConfig.inputToken, config.tradeState.inputTokenDescription)),
-
-                  ),
+                    )
+                  }, tradeReader.getIsPluginEnabled(w3p.address), config.tradeState.isTradingEnabled, config.tradeState.isInputTokenApproved, config.tradeConfig.inputToken, config.tradeState.inputTokenDescription))
                 ),
               ),
 

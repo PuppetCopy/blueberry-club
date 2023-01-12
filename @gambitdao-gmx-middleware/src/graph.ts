@@ -2,9 +2,9 @@ import { O } from "@aelea/core"
 import { awaitPromises, map } from "@most/core"
 import { intervalTimeMap } from "./constant"
 import { tradeJson } from "./fromJson"
-import { toAccountSummary } from "./gmxUtils"
-import { IAccountQueryParamApi, IChainParamApi, ILeaderboardRequest, IPricefeed, IPricefeedParamApi, IPriceLatest, IRequestTradeQueryparam, IStake, ITrade, TradeStatus } from "./types"
-import { cacheMap, createSubgraphClient, pagingQuery, unixTimestampNow } from "./utils"
+import { toAccountCompetitionSummary, toAccountSummary } from "./gmxUtils"
+import { IAccountQueryParamApi, IChainParamApi, ICompetitionLadderRequest, ILeaderboardRequest, IPagePositionParamApi, IPricefeed, IPricefeedParamApi, IPriceLatest, IRequestTradeQueryparam, IStake, ITimerangeParamApi, ITrade, TradeStatus } from "./types"
+import { cacheMap, createSubgraphClient, groupByMap, pagingQuery, unixTimestampNow } from "./utils"
 import { gql } from "@urql/core"
 import * as fromJson from "./fromJson"
 import * as fetch from "isomorphic-fetch"
@@ -26,6 +26,11 @@ export const arbitrumGraph = createSubgraphClient({
   url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-arbitrum'
 })
 
+export const arbitrumGraphDev = createSubgraphClient({
+  fetch: fetch as any,
+  url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-arbitrum-dev'
+})
+
 export const avalancheGraph = createSubgraphClient({
   fetch: fetch as any,
   url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-avalanche'
@@ -37,6 +42,8 @@ export const subgraphChainMap: { [p in CHAIN]: typeof arbitrumGraph } = {
   [CHAIN.AVALANCHE]: avalancheGraph,
 } as any
 
+
+export const globalCache = cacheMap({})
 
 
 export const pricefeed = O(
@@ -145,7 +152,16 @@ export const leaderboardTopList = O(
     const to = await createCache(cacheKey, cacheLife, async () => unixTimestampNow())
     const from = to - queryParams.timeInterval
 
-    const cacheQuery = fetchTrades(queryParams.chain, 0, from, to).then(list => {
+    const cacheQuery = fetchTrades({ from, to, ...queryParams }, async (params) => {
+      const res = await querySubgraph(params, `
+{
+  trades(first: 1000, skip: ${params.offset}, where: {timestamp_gte: ${from}, timestamp_lte: ${to}}) {
+    ${tradeFields}
+  }
+}
+`)
+      return res.trades as ITrade[]
+    }).then(list => {
       const formattedList = list.map(tradeJson)
 
       const summary = toAccountSummary(formattedList)
@@ -159,37 +175,112 @@ export const leaderboardTopList = O(
 )
 
 
+export const competitionCumulativeRoi = O(
+  map((queryParams: ICompetitionLadderRequest) => {
 
+    const dateNow = unixTimestampNow()
+    const isLive = queryParams.to > dateNow
+    const cacheDuration = isLive ? intervalTimeMap.MIN5 : intervalTimeMap.YEAR
 
-async function fetchTrades(chain: CHAIN, offset: number, from: number, to: number): Promise<ITrade[]> {
-  const deltaTime = to - from
+    const query = globalCache('competitionCumulativeRoi' + queryParams.from + queryParams.chain, cacheDuration, async () => {
 
-  // splits the queries because the-graph's result limit of 5k items
-  if (deltaTime >= intervalTimeMap.DAY7) {
-    const splitDelta = deltaTime / 2
-    const query0 = fetchTrades(chain, 0, from, to - splitDelta).then(list => list.map(tradeJson))
-    const query1 = fetchTrades(chain, 0, from + splitDelta, to).then(list => list.map(tradeJson))
+      const to = Math.min(dateNow, queryParams.to)
+      const timeSlot = Math.floor(to / intervalTimeMap.MIN5)
+      const timestamp = timeSlot * intervalTimeMap.MIN5 - intervalTimeMap.MIN5
 
-    return (await Promise.all([query0, query1])).flatMap(res => res)
-  }
+      const from = queryParams.from
 
-  const listQuery = await (querySubgraph({ chain }, `
-{
-  trades(first: 1000, skip: 0, where: {timestamp_gte: ${from}, timestamp_lte: ${to}}) {
-    ${tradeFields}
+      const competitionAccountListQuery = fetchHistoricTrades({ ...queryParams, from, to, offset: 0, pageSize: 1000 }, async (params) => {
+        const res = await arbitrumGraphDev(gql(`
+
+query {
+  trades(first: 1000, skip: ${params.offset}, where: { timestamp_gte: ${params.from}, timestamp_lte: ${params.to}}) {
+      ${tradeFields}
   }
 }
-`))
-  const list = listQuery.list
+`), {})
+
+        return res.trades as ITrade[]
+      })
+
+
+      const priceMapQuery = querySubgraph(queryParams, `
+      {
+        pricefeeds(where: { timestamp: ${timestamp.toString()} }) {
+          id
+          timestamp
+          tokenAddress
+          c
+          interval
+        }
+      }
+    `).then(res => {
+        const list = groupByMap(res.pricefeeds, (item: IPricefeed) => item.tokenAddress)
+        return list
+      })
+
+      const historicTradeList = await competitionAccountListQuery
+      const priceMap = await priceMapQuery
+      const tradeList: ITrade[] = historicTradeList.map(fromJson.tradeJson)
+
+      // .filter(x => x.account === '0xd92f6d0c7c463bd2ec59519aeb59766ca4e56589')
+
+      const formattedList = toAccountCompetitionSummary(tradeList, priceMap, queryParams.maxCollateral, to)
+      // .sort((a, b) => {
+      //   // const aN = claimMap[a.account] ? a.roi : a.roi
+      //   // const bN = claimMap[b.account] ? b.roi : b.roi
+      //   const aN = claimMap[a.account] ? a.roi : a.roi - 100000000n
+      //   const bN = claimMap[b.account] ? b.roi : b.roi - 100000000n
+
+      //   return Number(bN - aN)
+      // })
+
+      return formattedList
+    })
+
+    return pagingQuery(queryParams, query)
+  }),
+  awaitPromises
+)
+
+
+
+
+export const fetchTrades = async <T extends IPagePositionParamApi & IChainParamApi, R>(params: T, getList: (res: T) => Promise<R[]>): Promise<R[]> => {
+  const list = await getList(params)
+
+  const nextOffset = params.offset + 1000
+
+  if (nextOffset > 5000) {
+    console.warn(`query has exceeded 5000 offset at timefram ${intervalTimeMap.DAY7}`)
+    return list
+  }
 
   if (list.length === 1000) {
-    const newPage = await fetchTrades(chain, offset + 1000, from, to)
+    const newPage = await fetchTrades({ ...params, offset: nextOffset }, getList)
 
     return [...list, ...newPage]
   }
 
   return list
 }
+
+export const fetchHistoricTrades = async <T extends IPagePositionParamApi & IChainParamApi & ITimerangeParamApi, R>(params: T, getList: (res: T) => Promise<R[]>): Promise<R[]> => {
+  const deltaTime = params.to - params.from
+
+  // splits the queries because the-graph's result limit of 5k items
+  if (deltaTime >= intervalTimeMap.DAY7) {
+    const splitDelta = Math.floor(deltaTime / 2)
+    const query0 = fetchTrades({ ...params, to: params.to - splitDelta, offset: 0 }, getList)
+    const query1 = fetchTrades({ ...params, from: params.to - splitDelta, offset: 0 }, getList)
+
+    return (await Promise.all([query0, query1])).flatMap(res => res)
+  }
+
+
+  return fetchTrades(params, getList)
+}
+
 
 
 async function querySubgraph<T extends IChainParamApi>(params: T, document: string): Promise<any> {

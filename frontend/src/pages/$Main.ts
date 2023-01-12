@@ -4,7 +4,7 @@ import * as router from '@aelea/router'
 import { $column, designSheet, layoutSheet, screenUtils } from '@aelea/ui-components'
 import {
   gmxSubgraph, ARBITRUM_ADDRESS, AVALANCHE_ADDRESS,
-  ETH_ADDRESS_REGEXP, IAccountParamApi, intervalTimeMap, IPricefeedParamApi
+  ETH_ADDRESS_REGEXP, IAccountParamApi, intervalTimeMap, IPricefeedParamApi, ICompetitionLadderRequest
 } from '@gambitdao/gmx-middleware'
 import { CHAIN, initWalletLink, IWalletName } from "@gambitdao/wallet-link"
 import { map, merge, multicast, now } from '@most/core'
@@ -25,6 +25,7 @@ import { $ProfileConnected } from "./$ProfileConnected"
 import { $Trade } from "./$Trade"
 import { createLocalStorageChain } from "../logic/store"
 import { globalProviderMap } from "../logic/provider"
+import { $Leaderboard } from "./$Leaderboard"
 
 
 const popStateEvent = eventElementTarget('popstate', window)
@@ -44,6 +45,7 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
   [requestAccountTradeList, requestAccountTradeListTether]: Behavior<IAccountParamApi, IAccountParamApi>,
   [requestPricefeed, requestPricefeedTether]: Behavior<IPricefeedParamApi, IPricefeedParamApi>,
   [requestStake, requestStakeTether]: Behavior<IAccountParamApi, IAccountParamApi>,
+  [requestCompetitionLadder, requestCompetitionLadderTether]: Behavior<ICompetitionLadderRequest, ICompetitionLadderRequest>,
   // [requestTrade, requestTradeTether]: Behavior<IRequestTradeQueryparam, IRequestTradeQueryparam>,
 
   [walletChange, walletChangeTether]: Behavior<IWalletName, IWalletName>,
@@ -96,6 +98,7 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
     tradePricefeed: gmxSubgraph.pricefeed(requestPricefeed),
     accountTradeList: gmxSubgraph.accountTradeList(requestAccountTradeList),
     latestPriceMap: gmxSubgraph.latestPriceMap(requestAccountTradeList),
+    competitionCumulativeRoi: gmxSubgraph.competitionCumulativeRoi(requestCompetitionLadder),
   }
 
 
@@ -208,6 +211,19 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
                 changeNetwork: changeNetworkTether(),
                 walletChange: walletChangeTether(),
                 requestStake: requestStakeTether()
+              }))
+            ),
+            router.match(leaderboardRoute)(
+              fadeIn($Leaderboard({
+                walletLink,
+                competitionCumulativeRoi: clientApi.competitionCumulativeRoi,
+                parentRoute: pagesRoute,
+              })({
+                // changeRoute: linkClickTether(),
+                requestCompetitionLadder: requestCompetitionLadderTether()
+                // changeNetwork: changeNetworkTether(),
+                // walletChange: walletChangeTether(),
+                // requestStake: requestStakeTether()
               }))
             ),
             router.match(tradeRoute)(

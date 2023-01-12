@@ -3,7 +3,6 @@ import { $Node, component, eventElementTarget, INode, NodeComposeFn, nodeEvent, 
 import { $column, $row, observer } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { constant, switchLatest, empty, map, skipRepeats, startWith, skip, zip } from "@most/core"
-import { invertColor } from "./common"
 
 
 
@@ -19,14 +18,13 @@ export interface TooltipConfig {
 
 
 const $defaultDropContainer = $column(style({
-  background: pallete.primary,
+  background: pallete.background,
   border: pallete.middleground,
   boxShadow: 'rgb(0 0 0 / 44%) 0px 4px 20px 3px',
   padding: '8px',
   minWidth: '230px',
   borderRadius: '8px',
   fontWeight: 'normal',
-  color: invertColor(pallete.primary, true),
 }))
 
 
