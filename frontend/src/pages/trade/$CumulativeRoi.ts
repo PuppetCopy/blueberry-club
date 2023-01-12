@@ -1,7 +1,7 @@
 import { Behavior, replayLatest } from '@aelea/core'
 import { $text, component, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
-import { $card, $column, $row, $seperator, layoutSheet, screenUtils } from '@aelea/ui-components'
+import { $column, $row, $seperator, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { pallete } from '@aelea/ui-components-theme'
 import { combine, empty, map, multicast, now, snapshot, switchLatest, take } from '@most/core'
 import { Stream } from '@most/types'
@@ -11,6 +11,7 @@ import { $alertTooltip, $avaxIcon, countdown } from './$rules'
 import { CHAIN, IWalletLink } from '@gambitdao/wallet-link'
 import { $accountPreview } from '../../components/$AccountProfile'
 import { BLUEBERRY_REFFERAL_CODE } from '@gambitdao/gbc-middleware'
+import { $card } from '../../elements/$common'
 
 
 const prizeLadder: string[] = ['2200', '1100', '550', ...Array(15).fill('110')]
@@ -31,8 +32,8 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
   [requestCompetitionLadder, requestCompetitionLadderTether]: Behavior<number, ICompetitionLadderRequest>,
 ) => {
   const date = new Date()
-  const start = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 16) / 1000
-  const end = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate() + 1, 16) / 1000
+  const start = Date.UTC(date.getFullYear(), date.getMonth(), 1, 16) / 1000
+  const end = Date.UTC(date.getFullYear(), date.getMonth(), 28, 16) / 1000
 
   const ended = unixTimestampNow() >= end
 
@@ -51,16 +52,16 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
       // ),
 
 
-      switchLatest(combine((w3p, chain) => {
+      // switchLatest(combine((w3p, chain) => {
 
-        if (!w3p || !chain) {
-          return empty()
-        }
+      //   if (!w3p || !chain) {
+      //     return empty()
+      //   }
 
-        return $row(style({ backgroundColor: pallete.background, borderLeft: 0, borderRadius: '30px', alignSelf: 'center', marginBottom: '30px', padding: '20px' }))(
-          $accountPreview({ address: w3p.address }),
-        )
-      }, config.walletLink.wallet, config.walletLink.network)),
+      //   return $row(style({ backgroundColor: pallete.background, borderLeft: 0, borderRadius: '30px', alignSelf: 'center', marginBottom: '30px', padding: '20px' }))(
+      //     $accountPreview({ address: w3p.address }),
+      //   )
+      // }, config.walletLink.wallet, config.walletLink.network)),
 
 
       $row(style({ padding: screenUtils.isMobileScreen ? '0 12px' : '' }))(
