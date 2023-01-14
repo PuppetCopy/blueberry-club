@@ -20,6 +20,7 @@ export const $Leaderboard = (config: ILeaderboard) => component((
   [routeChange, routeChangeTether]: Behavior<string, string>,
   [highTableRequestIndex, highTableRequestIndexTether]: Behavior<number, number>,
   [requestCompetitionLadder, requestCompetitionLadderTether]: Behavior<ICompetitionLadderRequest, ICompetitionLadderRequest>,
+  [requestProfilePickList, requestProfilePickListTether]: Behavior<string[], string[]>,
 ) => {
 
 
@@ -35,13 +36,14 @@ export const $Leaderboard = (config: ILeaderboard) => component((
         ...config
       })({
         requestCompetitionLadder: requestCompetitionLadderTether(),
+        // requestProfilePickList: requestProfilePickListTether()
         // routeChange
       })
 
     ),
 
     {
-      requestCompetitionLadder,
+      requestCompetitionLadder, requestProfilePickList,
     }
   ]
 })

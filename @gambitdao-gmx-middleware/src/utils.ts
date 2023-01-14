@@ -302,12 +302,11 @@ export function intervalListFillOrderMap<T, R, RTime extends R & TimelineTime = 
 
 
 
-export async function pagingQuery<T, ReqParams extends IPagePositionParamApi & (ISortParamApi<keyof T> | {})>(
+export function pagingQuery<T, ReqParams extends IPagePositionParamApi & (ISortParamApi<keyof T> | {})>(
   queryParams: ReqParams,
-  query: Promise<T[]>,
+  res: T[],
   customComperator?: (a: T, b: T) => number
-): Promise<IPageParapApi<T>> {
-  const res = await query
+): IPageParapApi<T> {
   let list = res
   if ('sortBy' in queryParams) {
     const sortBy = queryParams.sortBy

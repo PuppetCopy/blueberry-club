@@ -301,10 +301,7 @@ export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: stri
       const winCount = seed.winCount + (currentPnl > 0n ? 1 : 0)
       const lossCount = seed.lossCount + (currentPnl < 0n ? 1 : 0)
 
-
       const cumulativeLeverage = seed.cumulativeLeverage + div(lastUpdate.size, maxCollateral)
-
-      console.log(cumulativeLeverage)
 
 
       return {

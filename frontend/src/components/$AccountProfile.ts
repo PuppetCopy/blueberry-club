@@ -15,7 +15,6 @@ export interface IAccountPreview {
   address: string
   labelSize?: string
   avatarSize?: number
-  claim?: IClaim
   showAddress?: boolean
 }
 
@@ -32,41 +31,7 @@ export interface IAccountClaim extends IAccountPreview {
 }
 
 
-const $photoContainer = $element('img')(style({ display: 'block', backgroundColor: pallete.background, position: 'relative', backgroundSize: 'cover', borderRadius: '50%', overflow: 'hidden' }))
-
-export const $AccountPhoto = (address: string, claim?: IClaim, size = 42) => {
-  const claimType = claim?.sourceType
-  const sizePx = size + 'px'
-
-  const $wrapper = $node(style({ width: sizePx, height: sizePx, minWidth: sizePx, minHeight: sizePx, borderRadius: '50%' }))
-
-  if (claimType) {
-    const isTwitter = claimType === IClaimSource.TWITTER
-
-    if (isTwitter) {
-      return $photoContainer(
-        style({ width: sizePx, height: sizePx, minWidth: sizePx }),
-        attr({ src: `https://unavatar.vercel.app/twitter/${claim.name}` })
-      )()
-    } else {
-      const data: IEnsClaim = claim.data ? JSON.parse(claim.data) : {}
-      const imageUrl = data.imageUrl
-
-      if (imageUrl) {
-        return $photoContainer(attr({ src: getGatewayUrl(imageUrl) }), style({ minWidth: sizePx, width: sizePx, minHeight: sizePx, height: sizePx }))()
-      }
-    }
-  }
-
-  return $jazzicon(address, sizePx)
-}
-
-
-
-export const $AccountLabel = (address: string, claim?: IClaim, fontSize = '1em') => {
-  if (claim) {
-    return $text(style({ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', fontSize }))(claim.name)
-  }
+export const $AccountLabel = (address: string, fontSize = '1em') => {
 
   return $column(style({ fontSize }))(
     $text(style({ fontSize: '.75em' }))(address.slice(0, 6)),
@@ -100,35 +65,41 @@ export const $ProfileLinks = (address: string, claim?: IClaim) => {
 
 
 
-export const $accountPreview = ({
-  labelSize = '16px', avatarSize = 38, claim, address, showAddress = true
-}: IAccountPreview) => {
+export const $discoverIdentityDisplay = (config: IAccountPreview) => {
+  const { labelSize = '16px', avatarSize = 38, address, showAddress = true } = config
+
   const profile = awaitPromises(blueberrySubgraph.profile(now({ id: address.toLowerCase() })))
   // const profile = fromPromise(queryProfile({ id: address.toLowerCase() }).catch(() => null))
 
   return switchLatest(map(p => {
     return p
       ? $profilePreview({ labelSize, avatarSize, profile: p, showAddress })
-      : $row(layoutSheet.spacingSmall, style({ alignItems: 'center', flexDirection: 'row-reverse', pointerEvents: 'none', textDecoration: 'none' }))(
-        showAddress ? $AccountLabel(address, claim, labelSize) : empty(),
-        $AccountPhoto(address, claim, avatarSize),
-      )
+      : $accountPreview(config)
   }, profile))
+}
+
+export const $accountPreview = ({
+  labelSize = '16px', avatarSize = 38, address, showAddress = true
+}: IAccountPreview) => {
+  return $row(layoutSheet.spacingSmall, style({ alignItems: 'center', flexDirection: 'row-reverse', pointerEvents: 'none', textDecoration: 'none' }))(
+    showAddress ? $AccountLabel(address, labelSize) : empty(),
+    $jazzicon(address, avatarSize),
+  )
 }
 
 
 export const $profilePreview = ({
-  labelSize = '16px', avatarSize = 38, claim, profile, showAddress = true
+  labelSize = '16px', avatarSize = 38, profile, showAddress = true
 }: IProfilePreview) => {
 
   return $row(layoutSheet.row, layoutSheet.spacingSmall, style({ alignItems: 'center', pointerEvents: 'none', textDecoration: 'none' }))(
     profile.token
       ? style({ borderRadius: '50%' }, $berryByToken(profile.token, avatarSize))
-      : $AccountPhoto(profile.id, claim, avatarSize),
+      : $jazzicon(profile.id, avatarSize),
     showAddress
       ? profile.name
         ? $text(style({ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', fontSize: labelSize }))(profile.name)
-        : $AccountLabel(profile.id, claim, labelSize)
+        : $AccountLabel(profile.id, labelSize)
       : empty()
   )
 }

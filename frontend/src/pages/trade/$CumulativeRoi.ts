@@ -3,14 +3,14 @@ import { $text, component, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
 import { $column, $row, $seperator, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { pallete } from '@aelea/ui-components-theme'
-import { combine, empty, map, multicast, now, snapshot, switchLatest, take } from '@most/core'
+import { combine, empty, map, multicast, snapshot, take } from '@most/core'
 import { Stream } from '@most/types'
-import { IPageParapApi, formatReadableUSD, formatFixed, unixTimestampNow, IAccountLadderSummary, ICompetitionLadderRequest } from '@gambitdao/gmx-middleware'
-import { $Table2 } from "../../common/$Table2"
-import { $alertTooltip, $avaxIcon, countdown } from './$rules'
+import { IPageParapApi, formatReadableUSD, formatFixed, unixTimestampNow, ICompetitionLadderRequest, groupByMap, zipState } from '@gambitdao/gmx-middleware'
+import { $defaultHeaderCell, $defaultRowContainer, $Table2 } from "../../common/$Table2"
+import { $alertTooltip, countdown } from './$rules'
 import { CHAIN, IWalletLink } from '@gambitdao/wallet-link'
-import { $accountPreview } from '../../components/$AccountProfile'
-import { BLUEBERRY_REFFERAL_CODE } from '@gambitdao/gbc-middleware'
+import { $accountPreview, $profilePreview } from '../../components/$AccountProfile'
+import { BLUEBERRY_REFFERAL_CODE, IProfile, IProfileTradingSummary } from '@gambitdao/gbc-middleware'
 import { $card } from '../../elements/$common'
 
 
@@ -20,7 +20,8 @@ const prizeLadder: string[] = ['2200', '1100', '550', ...Array(15).fill('110')]
 export interface ICompetitonTopCumulative {
   walletLink: IWalletLink
   parentRoute: Route
-  competitionCumulativeRoi: Stream<IPageParapApi<IAccountLadderSummary>>
+  competitionCumulativeRoi: Stream<IPageParapApi<IProfileTradingSummary>>
+  profilePickList: Stream<IProfile[]>
 }
 
 
@@ -32,7 +33,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
   [requestCompetitionLadder, requestCompetitionLadderTether]: Behavior<number, ICompetitionLadderRequest>,
 ) => {
   const date = new Date()
-  const start = Date.UTC(date.getFullYear(), date.getMonth(), 1, 16) / 1000
+  const start = 0
   const end = Date.UTC(date.getFullYear(), date.getMonth(), 28, 16) / 1000
 
   const ended = unixTimestampNow() >= end
@@ -42,8 +43,12 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
     return res
   }, multicast(config.competitionCumulativeRoi)))
 
+  // const requestProfilePickList = map(list => list.page.map(x => x.account), tableList)
+  // const profilePickList = map(list => {
+  //   return groupByMap(list, p => p.id)
+  // }, config.profilePickList)
 
-  const newLocal = take(1, tableList)
+
   return [
     $column(
 
@@ -91,53 +96,45 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
 
 
       $Table2({
-        $container: $card(layoutSheet.spacingBig, style(screenUtils.isDesktopScreen ? { padding: "28px 40px" } : {})),
+        $container: $card(style({ padding: "0", gap: 0 })),
+        // rowOp: style({ backgroundColor: 'red' }),
+        $headerCell: $defaultHeaderCell(style({})),
         dataSource: tableList,
+        // $rowContainer: 
+        $bodyRowContainer: $defaultRowContainer(style({ background: pallete.background, margin: '0 1px', borderBottom: `1px solid ${pallete.horizon}` })),
         columns: [
 
           {
             $head: $text('Account'),
             columnOp: style({ minWidth: '120px', flex: 1.2, alignItems: 'center' }),
-            $body: snapshot((datasource, pos: IAccountLadderSummary) => {
+            $$body: map((pos: IProfileTradingSummary) => {
 
-              return $row(layoutSheet.spacingSmall)(
-
-                $row(layoutSheet.spacingSmall)(
-                  switchLatest(map((claimMap: any) => {
-                    const claim = claimMap[pos.account]
-
-                    if (!claim) {
-                      return $row(
-                        $alertTooltip($text(style({ whiteSpace: 'pre-wrap', fontSize: '.75em' }))(`Unclaimed profile remains below until claimed`)),
-                        // style({ zoom: '0.7' })(
-                        //   $alert($text('Unclaimed'))
-                        // )
-                      )
-                    }
-
-                    const rank = datasource.offset + datasource.page.indexOf(pos) + 1
+              if (!pos.profile) {
+                return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+                  $alertTooltip($text(`Unclaimed profile remains below until claimed`)),
+                  $accountPreview({ address: pos.account })
+                  // style({ zoom: '0.7' })(
+                  //   $alert($text('Unclaimed'))
+                  // )
+                )
+              }
 
 
-                    return $row(style({ alignItems: 'baseline', zIndex: 5, textAlign: 'center', placeContent: 'center' }))(
-                      $text(style({ fontSize: '.65em' }))(`${rank}`),
-                    )
-
-                  }, now({})))
-
+              return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+                $row(style({ alignItems: 'baseline', zIndex: 5, textAlign: 'center', placeContent: 'center' }))(
+                  $text(style({ fontSize: '.65em' }))(`${pos.rank}`),
                 ),
                 $row(layoutSheet.spacing, style({ minWidth: '0', alignItems: 'center' }))(
-                  $accountPreview({ address: pos.account })
+                  $profilePreview({ profile: pos.profile })
                 ),
-
-
               )
-            }, tableList)
+            })
           },
           ...(screenUtils.isDesktopScreen ? [
             {
               $head: $text('Win/Loss'),
               columnOp: style({ maxWidth: '88px', alignItems: 'center', placeContent: 'center' }),
-              $body: map((pos: IAccountLadderSummary) => {
+              $$body: map((pos: IProfileTradingSummary) => {
                 return $row(
                   $text(`${pos.winCount}/${pos.lossCount}`)
                 )
@@ -152,7 +149,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
               $text(style({ fontSize: '.65em' }))('Max Collateral'),
             ),
             columnOp: style({ placeContent: 'center', minWidth: '125px' }),
-            $body: map((pos: IAccountLadderSummary) => {
+            $$body: map((pos: IProfileTradingSummary) => {
               const val = formatReadableUSD(pos.pnl)
               const isNeg = pos.pnl < 0n
 
@@ -172,13 +169,13 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
               $text(style({ fontSize: '.65em' }))('ROI %'),
             ),
             columnOp: style({ flex: 1, alignItems: 'flex-end', placeContent: 'flex-end' }),
-            $body: snapshot((list, pos) => {
+            $$body: snapshot((list, pos) => {
               const prize = prizeLadder[list.offset + list.page.indexOf(pos)]
 
               return $column(
                 prize
                   ? $row(
-                    $avaxIcon,
+                    // $avaxIcon,
                     $text(style({ fontSize: '1.8em', color: pallete.positive }))(prize),
                   ) : empty(),
 
@@ -208,6 +205,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
 
     {
       requestCompetitionLadder,
+      // requestProfilePickList,
       routeChange
     }
   ]

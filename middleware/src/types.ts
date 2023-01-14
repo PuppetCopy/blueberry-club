@@ -1,3 +1,4 @@
+import { IAccountLadderSummary } from "@gambitdao/gmx-middleware"
 
 export type IPrice = {
   priceUsd: bigint
@@ -121,15 +122,10 @@ export interface IYieldInterval extends IAsset {
 
 
 
-
-
-
-
-
-
-
-
-
+export interface IProfileTradingSummary extends IAccountLadderSummary {
+  profile: IProfile | null
+  rank: number
+}
 
 
 

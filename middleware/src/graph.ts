@@ -1,9 +1,9 @@
 import { O } from "@aelea/core"
 import { hexValue } from "@ethersproject/bytes"
-import { createSubgraphClient, IIdentifiableEntity, IPagePositionParamApi } from "@gambitdao/gmx-middleware"
-import { awaitPromises, map } from "@most/core"
+import { createSubgraphClient, gmxSubgraph, groupByMap, ICompetitionLadderRequest, IIdentifiableEntity, IPagePositionParamApi, pagingQuery } from "@gambitdao/gmx-middleware"
+import { awaitPromises, combine, map, now, switchLatest } from "@most/core"
 import { gql } from "@urql/core"
-import { ILabItem, ILabItemOwnership, IOwner, IProfile, IToken } from "./types"
+import { ILabItem, ILabItemOwnership, IOwner, IProfile, IProfileTradingSummary, IToken } from "./types"
 
 
 
@@ -185,7 +185,7 @@ export const tokenListSpecific = O(
     const newLocal = `
 {
   ${tokenList.map(id => `
-token${id}: token(id: "${hexValue(id) }") {
+token${id}: token(id: "${hexValue(id)}") {
   id
   labItems {
     id
@@ -200,6 +200,35 @@ token${id}: token(id: "${hexValue(id) }") {
     return rawList.map(token => tokenJson(token))
   })
 )
+
+export const profilePickList = O(
+  map(async (idList: string[]) => {
+
+    const doc = `
+{
+  ${idList.map(id => `
+profile${id}: profile(id: "${id}") {
+    id
+    timestamp
+    name
+    token {
+      id
+      labItems {
+        id
+      }
+    }
+}
+  `).join('')}
+}
+`
+    const res = await querySubgraph(doc)
+    const rawList: IProfile[] = Object.values(res)
+
+    return rawList.map(token => profileJson(token))
+  }),
+  awaitPromises
+)
+
 
 export const profile = O(
   map(async (queryParams: IIdentifiableEntity) => {
@@ -222,6 +251,39 @@ export const profile = O(
     return res.profile ? profileJson(res.profile) : null
   })
 )
+
+export const competitionRoiAccountList = O(
+  map((queryParams: ICompetitionLadderRequest) => {
+
+    const accountSummaryList = gmxSubgraph.competitionCumulativeRoi(now(queryParams))
+
+    return switchLatest(map(list => {
+      const profileList = profilePickList(now(list.map(x => x.account)))
+
+      const competitionSummaryProfileList = map(pl => {
+        const profileMap = groupByMap(pl, p => p.id)
+        const sortedCompetitionList: IProfileTradingSummary[] = list
+          .map(summary => ({
+            ...summary,
+            profile: profileMap[summary.account] || null,
+            rank: queryParams.offset + list.indexOf(summary) + 1
+          }), pl)
+          .sort((a, b) => {
+            const aN = a.profile ? a.roi : a.roi - 100000000n
+            const bN = b.profile ? b.roi : b.roi - 100000000n
+            return Number(bN - aN)
+          })
+        return pagingQuery(queryParams, sortedCompetitionList)
+      }, profileList)
+
+      return competitionSummaryProfileList
+    }, accountSummaryList))
+
+  }),
+  switchLatest
+)
+
+
 
 
 function profileJson(obj: IProfile): IProfile {

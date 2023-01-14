@@ -11,7 +11,7 @@ import { $anchor, $Link, $caretDblDown, $IntermediateTx } from "@gambitdao/ui-co
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { awaitPromises, empty, filter, fromPromise, map, merge, multicast, now, skipRepeats, snapshot, startWith, switchLatest } from "@most/core"
 import { $Table2 } from "../common/$Table2"
-import { $accountPreview } from "../components/$AccountProfile"
+import { $discoverIdentityDisplay } from "../components/$AccountProfile"
 import { $ButtonPrimary, $ButtonSecondary } from "../components/form/$Button"
 import { $accountRef, $card, $responsiveFlex, $txnIconLink } from "../elements/$common"
 import { $opensea } from "../elements/$icons"
@@ -55,7 +55,7 @@ export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
               $text(style({ color: pallete.foreground }))(`Owned by `),
               $Link({
                 route: parentRoute.create({ fragment: 'df2f23f' }),
-                $content: $accountPreview({ address: token.owner.id, avatarSize: 40, labelSize: '1em' }),
+                $content: $discoverIdentityDisplay({ address: token.owner.id, avatarSize: 40, labelSize: '1em' }),
                 url: `/p/profile/${token.owner.id}`,
               })({ click: changeRouteTether() }),
             ),
@@ -119,19 +119,19 @@ export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
           dataSource: map(md => {
             return md.transfers
           }, token),
-          cellOp: style({ alignItems: 'center' }),
+          // cellOp: style({ alignItems: 'center' }),
           columns: [
             {
               $head: $text('From'),
-              $body: map(x => $accountRef(x.from.id))
+              $$body: map(x => $accountRef(x.from.id))
             },
             {
               $head: $text('To'),
-              $body: map(x => $accountRef(x.to.id))
+              $$body: map(x => $accountRef(x.to.id))
             },
             {
               $head: $text('Txn'),
-              $body: map(x => {
+              $$body: map(x => {
                 const time = Number(BigInt(x.timestamp))
                 const dateStr = readableDate(time)
                 const timeAgo = timeSince(time)
@@ -229,7 +229,7 @@ const $TrasnferOwnership = (address: string, token: IToken, walletLink: IWalletL
           fill: pallete.foreground,
           viewBox: '0 0 32 32'
         }),
-        switchLatest(map(ta => $accountPreview({ address: ta }), transferTo))
+        switchLatest(map(ta => $discoverIdentityDisplay({ address: ta }), transferTo))
       ),
       $IntermediateTx({
         chain: LAB_CHAIN,

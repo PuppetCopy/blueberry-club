@@ -12,7 +12,7 @@ import {
 
 import { map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, snapshot, zip, combine, tap, constant } from "@most/core"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
-import { $arrowsFlip, $infoTooltip, $IntermediatePromise, $moreDots, $ProfitLossText, $RiskLiquidator, $spinner, $txHashRef, invertColor } from "@gambitdao/ui-components"
+import { $arrowsFlip, $infoTooltip, $IntermediatePromise, $ProfitLossText, $RiskLiquidator, $spinner, $txHashRef, invertColor } from "@gambitdao/ui-components"
 import { CandlestickData, LineStyle, Time } from "lightweight-charts"
 import { Stream } from "@most/types"
 import { connectTradeReader, getErc20Balance, IPositionGetter, latestPriceFromExchanges } from "../logic/contract/trade"
@@ -32,7 +32,6 @@ import { $iconCircular } from "../elements/$common"
 import { $Dropdown } from "../components/form/$Dropdown"
 import { $ButtonSecondary } from "../components/form/$Button"
 import { $caretDown } from "../elements/$icons"
-import { $Popover } from "../components/$Popover"
 
 
 export interface ITradeComponent {
@@ -655,13 +654,12 @@ export const $Trade = (config: ITradeComponent) => component((
                 scrollConfig: {
                   $container: $column(layoutSheet.spacingBig)
                 },
-                bodyCellOp: style({ alignItems: 'center' }),
                 dataSource: now(res),
                 columns: [
                   {
                     $head: $text('Entry'),
                     columnOp: O(style({ maxWidth: '50px', flexDirection: 'column' }), layoutSheet.spacingTiny),
-                    $body: map((pos) => {
+                    $$body: map((pos) => {
 
                       return $Entry(w3p.chain, pos)
                     })
@@ -669,7 +667,7 @@ export const $Trade = (config: ITradeComponent) => component((
                   {
                     $head: $text('PnL'),
                     columnOp: O(layoutSheet.spacingTiny, style({ flex: 1, placeContent: 'flex-end' })),
-                    $body: map((pos) => {
+                    $$body: map((pos) => {
                       const positionMarkPrice = tradeReader.getLatestPrice(now(pos.indexToken))
                       const cumulativeFee = tradeReader.getTokenCumulativeFunding(now(pos.collateralToken))
 
@@ -724,7 +722,7 @@ export const $Trade = (config: ITradeComponent) => component((
                   ...screenUtils.isDesktopScreen ? [{
                     $head: $text('Collateral'),
                     columnOp: O(layoutSheet.spacingTiny, style({ flex: .7, placeContent: 'flex-end' })),
-                    $body: map((pos: ITradeOpen) => {
+                    $$body: map((pos: ITradeOpen) => {
                       const cumFee = tradeReader.getTokenCumulativeFunding(now(pos.collateralToken))
 
                       return $row(
@@ -739,7 +737,7 @@ export const $Trade = (config: ITradeComponent) => component((
                   {
                     $head: $text('Size'),
                     columnOp: O(layoutSheet.spacingTiny, style({ flex: 1, placeContent: 'flex-end' })),
-                    $body: map(pos => {
+                    $$body: map(pos => {
                       const positionMarkPrice = tradeReader.getLatestPrice(now(pos.indexToken))
 
                       return $row(
@@ -750,7 +748,7 @@ export const $Trade = (config: ITradeComponent) => component((
                   {
                     $head: $text('Switch'),
                     columnOp: style({ flex: 2, placeContent: 'center', maxWidth: '60px' }),
-                    $body: map((trade) => {
+                    $$body: map((trade) => {
 
                       const clickSwitchBehavior = switchTradeTether(
                         nodeEvent('click'),
@@ -1024,10 +1022,10 @@ export const $Trade = (config: ITradeComponent) => component((
                   if (!trade) {
                     return $text('No Trade')
                   }
-
+ 
                   return $Table2({
-                    headerCellOp: style({ padding: screenUtils.isDesktopScreen ? '15px 15px' : '6px 4px' }),
-                    cellOp: style({ padding: screenUtils.isDesktopScreen ? '4px 15px' : '6px 4px' }),
+                    // headerCellOp: style({ padding: screenUtils.isDesktopScreen ? '15px 15px' : '6px 4px' }),
+                    // cellOp: style({ padding: screenUtils.isDesktopScreen ? '4px 15px' : '6px 4px' }),
                     dataSource: mergeArray([
                       now(trade ? [...trade.increaseList, ...trade.decreaseList] : []) as Stream<(RequestTrade | IPositionIncrease | IPositionDecrease)[]>,
                       requestTradeRow
@@ -1042,7 +1040,7 @@ export const $Trade = (config: ITradeComponent) => component((
                         $head: $text('Time'),
                         columnOp: O(style({ maxWidth: '100px' })),
 
-                        $body: map((req) => {
+                        $$body: map((req) => {
                           const isKeeperReq = 'ctx' in req
 
                           const timestamp = isKeeperReq ? unixTimestampNow() : req.timestamp
@@ -1057,7 +1055,7 @@ export const $Trade = (config: ITradeComponent) => component((
                         $head: $text('Action'),
                         columnOp: O(style({ flex: 1.2 })),
 
-                        $body: map((pos) => {
+                        $$body: map((pos) => {
                           const $requestRow = $row(style({ alignItems: 'center' }))
 
                           if ('key' in pos) {
@@ -1099,7 +1097,7 @@ export const $Trade = (config: ITradeComponent) => component((
                             $head: $text('PnL Realised'),
                             columnOp: O(style({ flex: .4, placeContent: 'flex-end', textAlign: 'right', alignItems: 'center' })),
 
-                            $body: map((req: RequestTrade | IPositionIncrease | IPositionDecrease) => {
+                            $$body: map((req: RequestTrade | IPositionIncrease | IPositionDecrease) => {
                               if ('ctx' in req) {
                                 const fee = getMarginFees(req.state.sizeDeltaUsd)
 
@@ -1119,7 +1117,7 @@ export const $Trade = (config: ITradeComponent) => component((
                         $head: $text('Collateral change'),
                         columnOp: O(style({ flex: .7, placeContent: 'flex-end', textAlign: 'right', alignItems: 'center' })),
 
-                        $body: map((req) => {
+                        $$body: map((req) => {
                           const isKeeperReq = 'ctx' in req
                           const delta = isKeeperReq ? req.state.collateralDeltaUsd : req.collateralDelta
 
@@ -1129,7 +1127,7 @@ export const $Trade = (config: ITradeComponent) => component((
                       {
                         $head: $text('Size change'),
                         columnOp: O(style({ flex: .7, placeContent: 'flex-end', textAlign: 'right', alignItems: 'center' })),
-                        $body: map((req) => {
+                        $$body: map((req) => {
                           const isKeeperReq = 'ctx' in req
                           const delta = isKeeperReq ? req.state.sizeDeltaUsd : req.sizeDelta
 

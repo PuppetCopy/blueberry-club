@@ -1,6 +1,6 @@
 import { Behavior, O, Op } from "@aelea/core"
 import { $Node, $svg, attr, component, INode, NodeComposeFn, nodeEvent, style, stylePseudo } from '@aelea/dom'
-import { $column, $icon, $row, layoutSheet } from "@aelea/ui-components"
+import { $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { chain, constant, map, merge, never, now, scan, startWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
@@ -18,12 +18,12 @@ export interface TableOption<T, FilterState> {
   dataSource: Stream<TablePageResponse<T>>
   scrollConfig?: Omit<QuantumScroll, 'dataSource'>
 
-  bodyContainerOp?: Op<INode, INode>
+  $rowContainer?: NodeComposeFn<$Node>
+  $headerRowContainer?: NodeComposeFn<$Node>
+  $bodyRowContainer?: NodeComposeFn<$Node>
 
-  rowOp?: Op<INode, INode>
-  cellOp?: Op<INode, INode>
-  headerCellOp?: Op<INode, INode>
-  bodyCellOp?: Op<INode, INode>
+  $bodyCell?: NodeComposeFn<$Node>
+  $headerCell?: NodeComposeFn<$Node>
 
   sortChange?: Stream<ISortBy<T>>
   filterChange?: Stream<FilterState>
@@ -32,9 +32,8 @@ export interface TableOption<T, FilterState> {
 
 export interface TableColumn<T> {
   $head: $Node
-  $body: Op<T, $Node>
+  $$body: Op<T, $Node>
   sortBy?: keyof T,
-
 
   columnOp?: Op<INode, INode>
 }
@@ -52,11 +51,25 @@ export interface ISortBy<T> {
 
 export const $caretDown = $svg('path')(attr({ d: 'M4.616.296c.71.32 1.326.844 2.038 1.163L13.48 4.52a6.105 6.105 0 005.005 0l6.825-3.061c.71-.32 1.328-.84 2.038-1.162l.125-.053A3.308 3.308 0 0128.715 0a3.19 3.19 0 012.296.976c.66.652.989 1.427.989 2.333 0 .906-.33 1.681-.986 2.333L18.498 18.344a3.467 3.467 0 01-1.14.765c-.444.188-.891.291-1.345.314a3.456 3.456 0 01-1.31-.177 2.263 2.263 0 01-1.038-.695L.95 5.64A3.22 3.22 0 010 3.309C0 2.403.317 1.628.95.98c.317-.324.68-.568 1.088-.732a3.308 3.308 0 011.24-.244 3.19 3.19 0 011.338.293z' }))()
 
+export const $defaultCell = $row(
+  layoutSheet.spacingSmall,
+  style({ padding: '3px 6px', alignItems: 'center', overflowWrap: 'break-word' }),
+)
+export const $defaultBodyCell = $defaultCell
+
+export const $defaultHeaderCell = $defaultCell(
+  style({ fontSize: '15px', alignItems: 'center', padding: '12px 6px', color: pallete.foreground, })
+)
+export const $defaultRowContainer = $row(layoutSheet.spacingSmall, style({ padding: `0 ${screenUtils.isDesktopScreen ? '12px' : '6px'}` }))
 
 export const $Table2 = <T, FilterState = never>({
-  dataSource, columns, scrollConfig, cellOp,
-  headerCellOp, bodyCellOp,
+  dataSource, columns, scrollConfig,
+  $bodyCell = $defaultBodyCell,
+  $headerCell = $defaultHeaderCell,
   $container = $column,
+  $rowContainer = $defaultRowContainer,
+  $headerRowContainer = $rowContainer,
+  $bodyRowContainer = $rowContainer,
   sortChange = never(),
   filterChange = never(),
   $sortArrowDown = $caretDown
@@ -66,28 +79,7 @@ export const $Table2 = <T, FilterState = never>({
 ) => {
 
 
-  const cellStyle = O(
-    style({ padding: '3px 6px', overflowWrap: 'break-word' }),
-    layoutSheet.flex,
-  )
-
-  const $cellHeader = $row(
-    cellStyle,
-    layoutSheet.spacingSmall,
-    style({ fontSize: '15px', alignItems: 'center', color: pallete.foreground, }),
-    cellOp || O(),
-    headerCellOp || O()
-  )
-
-  const cellBodyOp = O(
-    cellStyle,
-    cellOp || O(),
-    bodyCellOp || O()
-  )
-
-  const $rowContainer = $row(layoutSheet.spacingSmall)
-
-  const $rowHeaderContainer = $rowContainer(
+  const $rowHeaderContainer = $headerRowContainer(
     style({ overflow: 'hidden scroll', flexShrink: 0 }), stylePseudo('::-webkit-scrollbar', { backgroundColor: 'transparent', width: '6px' })
   )
 
@@ -96,7 +88,7 @@ export const $Table2 = <T, FilterState = never>({
       const direction = seed.name === change ?
         seed.direction === 'asc' ? 'desc' : 'asc'
         : 'desc'
-      
+
       return { direction, name: change }
     }, state, sortByChange)
 
@@ -112,7 +104,7 @@ export const $Table2 = <T, FilterState = never>({
           constant(col.sortBy)
         )
 
-        return $cellHeader(behavior)(col.columnOp || O())(
+        return $headerCell(col.columnOp || O(), behavior)(
           style({ cursor: 'pointer' }, col.$head),
           switchLatest(map(s => {
 
@@ -123,8 +115,8 @@ export const $Table2 = <T, FilterState = never>({
           }, sortBy))
         )
       }
-            
-      const $headCell = $cellHeader(col.columnOp || O())(
+
+      const $headCell = $headerCell(col.columnOp || O())(
         col.$head
       )
 
@@ -138,10 +130,13 @@ export const $Table2 = <T, FilterState = never>({
     return $VirtualScroll({
       ...scrollConfig,
       dataSource: map((res): ScrollResponse => {
-        const $items = (Array.isArray(res) ? res : res.page).map(rowData => $rowContainer(
-          ...columns.map(col => O(cellBodyOp, col.columnOp || O())(
-            switchLatest(col.$body(now(rowData)))
-          ))
+        const $items = (Array.isArray(res) ? res : res.page).map(rowData => $bodyRowContainer(
+          ...columns.map(col => {
+
+            return $bodyCell(col.columnOp || O())(
+              switchLatest(col.$$body(now(rowData)))
+            )
+          })
         ))
 
         if (Array.isArray(res)) {

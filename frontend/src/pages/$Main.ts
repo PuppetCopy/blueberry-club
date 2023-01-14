@@ -10,7 +10,7 @@ import { CHAIN, initWalletLink, IWalletName } from "@gambitdao/wallet-link"
 import { map, merge, multicast, now } from '@most/core'
 import { $MainMenu } from '../components/$MainMenu'
 import { helloBackend } from '../logic/websocket'
-import { BLUEBERRY_REFFERAL_CODE, IAccountStakingStore, ITreasuryStore } from "@gambitdao/gbc-middleware"
+import { blueberrySubgraph, BLUEBERRY_REFFERAL_CODE, IAccountStakingStore, ITreasuryStore } from "@gambitdao/gbc-middleware"
 import { $BerryPage } from "./$Berry"
 import { $Profile } from "./$Profile"
 
@@ -45,8 +45,9 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
   [requestAccountTradeList, requestAccountTradeListTether]: Behavior<IAccountParamApi, IAccountParamApi>,
   [requestPricefeed, requestPricefeedTether]: Behavior<IPricefeedParamApi, IPricefeedParamApi>,
   [requestStake, requestStakeTether]: Behavior<IAccountParamApi, IAccountParamApi>,
+
   [requestCompetitionLadder, requestCompetitionLadderTether]: Behavior<ICompetitionLadderRequest, ICompetitionLadderRequest>,
-  // [requestTrade, requestTradeTether]: Behavior<IRequestTradeQueryparam, IRequestTradeQueryparam>,
+  [requestProfilePickList, requestProfilePickListTether]: Behavior<string[], string[]>,
 
   [walletChange, walletChangeTether]: Behavior<IWalletName, IWalletName>,
   [changeNetwork, changeNetworkTether]: Behavior<CHAIN, CHAIN>,
@@ -98,7 +99,9 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
     tradePricefeed: gmxSubgraph.pricefeed(requestPricefeed),
     accountTradeList: gmxSubgraph.accountTradeList(requestAccountTradeList),
     latestPriceMap: gmxSubgraph.latestPriceMap(requestAccountTradeList),
-    competitionCumulativeRoi: gmxSubgraph.competitionCumulativeRoi(requestCompetitionLadder),
+
+    competitionCumulativeRoi: blueberrySubgraph.competitionRoiAccountList(requestCompetitionLadder),
+    profilePickList: blueberrySubgraph.profilePickList(requestProfilePickList),
   }
 
 
@@ -218,9 +221,11 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
                 walletLink,
                 competitionCumulativeRoi: clientApi.competitionCumulativeRoi,
                 parentRoute: pagesRoute,
+                profilePickList: clientApi.profilePickList
               })({
                 // changeRoute: linkClickTether(),
-                requestCompetitionLadder: requestCompetitionLadderTether()
+                requestCompetitionLadder: requestCompetitionLadderTether(),
+                requestProfilePickList: requestProfilePickListTether(),
                 // changeNetwork: changeNetworkTether(),
                 // walletChange: walletChangeTether(),
                 // requestStake: requestStakeTether()

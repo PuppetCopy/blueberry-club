@@ -6,7 +6,7 @@ import { blueberrySubgraph, saleDescriptionList } from "@gambitdao/gbc-middlewar
 import { awaitPromises, empty, map, multicast, now, switchLatest } from "@most/core"
 import { $responsiveFlex } from "../elements/$common"
 import { $IntermediatePromise } from "@gambitdao/ui-components"
-import { $accountPreview } from "../components/$AccountProfile"
+import { $discoverIdentityDisplay } from "../components/$AccountProfile"
 import { $berryTileId } from "../components/$common"
 import { $StakingGraph } from "../components/$StakingGraph"
 import { IStake, TRADE_CONTRACT_MAPPING } from "@gambitdao/gmx-middleware"
@@ -50,7 +50,7 @@ export const $Profile = (config: IProfile) => component((
   return [
     $column(layoutSheet.spacingBig)(
       $row(style({ flex: 1, alignItems: 'center', placeContent: 'space-between', marginBottom: '-55px', zIndex: 1 }))(
-        $accountPreview({
+        $discoverIdentityDisplay({
           address: config.account,
           avatarSize: 150,
           labelSize: '2em'

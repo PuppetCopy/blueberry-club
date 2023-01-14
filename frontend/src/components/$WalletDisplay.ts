@@ -6,7 +6,7 @@ import { empty, map, switchLatest } from "@most/core"
 import { CHAIN, IWalletLink, IWalletName } from "@gambitdao/wallet-link"
 import { $Link } from "@gambitdao/ui-components"
 import { $seperator2 } from "../pages/common"
-import { $disconnectedWalletDisplay, $accountPreview } from "./$AccountProfile"
+import { $disconnectedWalletDisplay, $discoverIdentityDisplay } from "./$AccountProfile"
 import { $ConnectDropdown, $switchNetworkDropdown } from "./$ConnectAccount"
 import { Route } from "@aelea/router"
 
@@ -41,7 +41,7 @@ export const $WalletDisplay = (config: IWalletDisplay) => component((
 
         return $Link({
           route: config.parentRoute.create({ fragment: 'df2f23f' }),
-          $content: $accountPreview({ address: w3p.address, showAddress: screenUtils.isDesktopScreen }),
+          $content: $discoverIdentityDisplay({ address: w3p.address, showAddress: screenUtils.isDesktopScreen }),
           anchorOp: style({ minWidth: 0, overflow: 'hidden' }),
           url: `/p/wallet`,
         })({ click: routeChangeTether() })

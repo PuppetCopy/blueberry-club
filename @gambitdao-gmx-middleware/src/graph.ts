@@ -169,42 +169,36 @@ export const leaderboardTopList = O(
       return summary
     })
 
-    return pagingQuery(queryParams, cacheQuery)
+    return pagingQuery(queryParams, await cacheQuery)
   }),
   awaitPromises
 )
 
 
 export const competitionCumulativeRoi = O(
-  map((queryParams: ICompetitionLadderRequest) => {
-
+  map(async (queryParams: ICompetitionLadderRequest) => {
     const dateNow = unixTimestampNow()
-    const isLive = queryParams.to > dateNow
-    const cacheDuration = isLive ? intervalTimeMap.MIN5 : intervalTimeMap.YEAR
+    const to = Math.min(dateNow, queryParams.to)
+    const timeSlot = Math.floor(to / intervalTimeMap.MIN5)
+    const timestamp = timeSlot * intervalTimeMap.MIN5 - intervalTimeMap.MIN5
 
-    const query = globalCache('competitionCumulativeRoi' + queryParams.from + queryParams.chain, cacheDuration, async () => {
+    const from = queryParams.from
 
-      const to = Math.min(dateNow, queryParams.to)
-      const timeSlot = Math.floor(to / intervalTimeMap.MIN5)
-      const timestamp = timeSlot * intervalTimeMap.MIN5 - intervalTimeMap.MIN5
-
-      const from = queryParams.from
-
-      const competitionAccountListQuery = fetchHistoricTrades({ ...queryParams, from, to, offset: 0, pageSize: 1000 }, async (params) => {
-        const res = await arbitrumGraphDev(gql(`
+    const competitionAccountListQuery = fetchHistoricTrades({ ...queryParams, from, to, offset: 0, pageSize: 1000 }, async (params) => {
+      const res = await arbitrumGraphDev(gql(`
 
 query {
-  trades(first: 1000, skip: ${params.offset}, where: { timestamp_gte: ${params.from}, timestamp_lte: ${params.to}}) {
+  trades(first: 1000, skip: ${params.offset}, where: { entryReferralCode: "${queryParams.referralCode}", timestamp_gte: ${params.from}, timestamp_lte: ${params.to}}) {
       ${tradeFields}
   }
 }
 `), {})
 
-        return res.trades as ITrade[]
-      })
+      return res.trades as ITrade[]
+    })
 
 
-      const priceMapQuery = querySubgraph(queryParams, `
+    const priceMapQuery = querySubgraph(queryParams, `
       {
         pricefeeds(where: { timestamp: ${timestamp.toString()} }) {
           id
@@ -215,30 +209,38 @@ query {
         }
       }
     `).then(res => {
-        const list = groupByMap(res.pricefeeds, (item: IPricefeed) => item.tokenAddress)
-        return list
-      })
-
-      const historicTradeList = await competitionAccountListQuery
-      const priceMap = await priceMapQuery
-      const tradeList: ITrade[] = historicTradeList.map(fromJson.tradeJson)
-
-      // .filter(x => x.account === '0xd92f6d0c7c463bd2ec59519aeb59766ca4e56589')
-
-      const formattedList = toAccountCompetitionSummary(tradeList, priceMap, queryParams.maxCollateral, to)
-      // .sort((a, b) => {
-      //   // const aN = claimMap[a.account] ? a.roi : a.roi
-      //   // const bN = claimMap[b.account] ? b.roi : b.roi
-      //   const aN = claimMap[a.account] ? a.roi : a.roi - 100000000n
-      //   const bN = claimMap[b.account] ? b.roi : b.roi - 100000000n
-
-      //   return Number(bN - aN)
-      // })
-
-      return formattedList
+      const list = groupByMap(res.pricefeeds, (item: IPricefeed) => item.tokenAddress)
+      return list
     })
 
-    return pagingQuery(queryParams, query)
+    const historicTradeList = await competitionAccountListQuery
+    const priceMap = await priceMapQuery
+    const tradeList: ITrade[] = historicTradeList.map(fromJson.tradeJson)
+
+    // .filter(x => x.account === '0xd92f6d0c7c463bd2ec59519aeb59766ca4e56589')
+
+    return toAccountCompetitionSummary(tradeList, priceMap, queryParams.maxCollateral, to)
+  }),
+  awaitPromises
+)
+
+export const competitionAccountList = O(
+  map((queryParams: ICompetitionLadderRequest) => {
+
+    const competitionAccountListQuery = fetchHistoricTrades({ ...queryParams, offset: 0 }, async (params) => {
+      const res = await arbitrumGraphDev(gql(`
+query {
+  trades(first: 1000, skip: ${params.offset}, where: { entryReferralCode: "${queryParams.referralCode}", timestamp_gte: ${params.from}, timestamp_lte: ${params.to}}) {
+      ${tradeFields}
+  }
+}
+`), {})
+
+      return res.trades as ITrade[]
+    })
+
+
+    return competitionAccountListQuery
   }),
   awaitPromises
 )

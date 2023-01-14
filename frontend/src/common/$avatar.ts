@@ -4,21 +4,22 @@ import { map } from "@most/core"
 import jazzicon from 'jazzicon'
 
 
-export function $jazzicon(address: string, size = '24px') {
+export function $jazzicon(address: string, size = 24) {
+  const sizePx = size + 'px'
 
   const cnt = parseInt(address.slice(2, 10), 16)
-  const el = jazzicon(parseInt(size), cnt)
+  const el = jazzicon(parseInt(sizePx), cnt)
 
   return $wrapNativeElement(el)(map(node => {
     const el: HTMLElement = node.element
     const svg = el.querySelector('svg')
     if (svg) {
-      svg.setAttribute('width', size)
-      svg.setAttribute('height', size)
+      svg.setAttribute('width', sizePx)
+      svg.setAttribute('height', sizePx)
 
       el.style.borderRadius = '50%'
     }
     return node
-  }), style({ width: size, minWidth: size, height: size, display: 'flex', position: 'relative' }))()
+  }), style({ width: sizePx, minWidth: sizePx, height: sizePx, display: 'flex', position: 'relative' }))()
 }
 
