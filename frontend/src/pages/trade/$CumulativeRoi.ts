@@ -1,20 +1,19 @@
-import { Behavior, O, replayLatest } from '@aelea/core'
+import { Behavior, replayLatest } from '@aelea/core'
 import { $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
 import { $column, $row, $seperator, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { colorAlpha, pallete } from '@aelea/ui-components-theme'
-import { combine, empty, map, multicast, snapshot, switchLatest, take } from '@most/core'
+import { empty, map, multicast, snapshot, switchLatest, take } from '@most/core'
 import { Stream } from '@most/types'
-import { IPageParapApi, formatReadableUSD, formatFixed, unixTimestampNow, ICompetitionLadderRequest, groupByMap, zipState, getChainName } from '@gambitdao/gmx-middleware'
+import { IPageParapApi, formatReadableUSD, formatFixed, unixTimestampNow, ICompetitionLadderRequest, getChainName } from '@gambitdao/gmx-middleware'
 import { $defaultHeaderCell, $defaultRowContainer, $Table2 } from "../../common/$Table2"
 import { $alertTooltip, countdown } from './$rules'
 import { CHAIN, IWalletLink } from '@gambitdao/wallet-link'
 import { $AccountLabel, $accountPreview, $profilePreview } from '../../components/$AccountProfile'
 import { BLUEBERRY_REFFERAL_CODE, IProfile, IProfileTradingSummary, TOURNAMENT_START_END, TOURNAMENT_START_PERIOD } from '@gambitdao/gbc-middleware'
 import { $card } from '../../elements/$common'
-import { $anchor, $AnchorLink, $Link } from '@gambitdao/ui-components'
+import { $anchor, $Link } from '@gambitdao/ui-components'
 import { $berryByToken } from '../../logic/common'
-import { config } from 'webpack'
 
 
 const prizeLadder: string[] = ['2200', '1100', '550', ...Array(15).fill('110')]
@@ -32,7 +31,6 @@ export interface ICompetitonTopCumulative {
 
 export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
   [routeChange, routeChangeTether]: Behavior<string, string>,
-  [highTableRequestIndex, highTableRequestIndexTether]: Behavior<number, number>,
   [requestCompetitionLadder, requestCompetitionLadderTether]: Behavior<number, ICompetitionLadderRequest>,
 ) => {
   const start = TOURNAMENT_START_PERIOD
@@ -53,7 +51,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
     const profile = summary.profile!
 
     return $column(layoutSheet.spacing, style({ alignItems: 'center', textDecoration: 'none' }))(
-      style({ borderRadius: '50%', border: `2px solid ${borderColor}`, boxShadow: `${colorAlpha(borderColor, .15)} 0px 0px 20px 11px` }, $berryByToken(profile.token!, 140)),
+      style({ borderRadius: '50%', border: `2px solid ${borderColor}`, boxShadow: `${colorAlpha(borderColor, .15)} 0px 0px 20px 11px` }, $berryByToken(profile.token!, 110)),
       $column(layoutSheet.spacingTiny, style({ alignItems: 'center', textDecoration: 'none' }))(
         $text(style({ fontSize: '.75em' }))(`${formatFixed(summary.roi, 2)}%`),
         $column(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
@@ -81,7 +79,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
         $text(style({ fontWeight: 'bold', fontSize: '3em' }))(countdown(start)),
       )
       : $column(layoutSheet.spacingSmall)(
-        $column(layoutSheet.spacing, style({ flexDirection: screenUtils.isDesktopScreen ? 'row' : 'column', fontSize: '1.15em', alignItems: 'center', placeContent: 'center' }))(
+        $column(screenUtils.isDesktopScreen ? layoutSheet.spacingBig : layoutSheet.spacing, style({ flexDirection: screenUtils.isDesktopScreen ? 'row' : 'column', fontSize: '1.15em', alignItems: 'center', placeContent: 'center' }))(
           ended
             ? $text(style({ color: ended ? '' : pallete.indeterminate }))(
               `Competition has ended!`
@@ -89,7 +87,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
             : $row(layoutSheet.spacing)(
               $column(style({ textAlign: 'right' }))(
                 $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
-                  $text(style({ fontSize: '3.2em', fontWeight: 'bold', color: pallete.primary, textShadow: `1px 1px 50px ${pallete.primary}, 1px 1px 50px ${colorAlpha(pallete.primary, .55)} ` }))('#GambitROI'),
+                  $text(style({ fontSize: '2.2em', fontWeight: 'bold', color: pallete.primary, textShadow: `1px 1px 50px ${colorAlpha(pallete.primary, .45)}, 1px 1px 50px ${colorAlpha(pallete.primary, .25)} ` }))('#GambitROI'),
                 ),
                 // $text(style({ color: pallete.foreground }))('Competition'),
                 // $text(style({ fontSize: '1.5em', color: ended ? '' : pallete.indeterminate }))('LIVE!')
@@ -97,10 +95,10 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
             ),
           $column(
             $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
-              $text(style({ fontSize: '1.5em', color: ended ? '' : pallete.indeterminate }))('LIVE!'),
+              $text(style({ fontSize: '1.25em', color: ended ? '' : pallete.indeterminate }))('LIVE!'),
               $text(style({ color: pallete.foreground }))('Ending in')
             ),
-            $text(style({ fontSize: '1.5em' }))(countdown(end))
+            $text(style({ fontSize: '1.25em' }))(countdown(end))
           )
         ),
 
@@ -121,9 +119,9 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
       // ),
 
       $column(layoutSheet.spacing, style({ alignItems: 'center', placeContent: 'center', marginBottom: '20px', }))(
-        
+
         $column(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
-          
+
           $node(),
 
           $details(TOURNAMENT_START_PERIOD, TOURNAMENT_START_END),
@@ -131,49 +129,49 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
       ),
 
 
-      switchLatest(map(res => {
-        const list = res.page
-        const profile = list[0].profile!
-        return $row(layoutSheet.spacing, style({ alignItems: 'flex-end', placeContent: 'center', position: 'relative' }))(
-          $profileHighlight(list[1]),
-          style({
-            margin: '0 -26px',
-            zIndex: 10,
-            zoom: 1.3
-          })($profileHighlight(list[0], pallete.positive)),
-          $profileHighlight(list[2]),
-          // $column(layoutSheet.spacing, style({ alignItems: 'center', zIndex: 10, margin: '0 -35px', textDecoration: 'none' }))(
-          //   style({ border: `2px solid ${pallete.positive}`, boxShadow: `${colorAlpha(pallete.positive, .15)} 0px 0px 20px 11px` }, $AccountPhoto(list[0].account, claimMap[list[0].account], '215px')),
-          //   $column(layoutSheet.spacingTiny, style({ alignItems: 'center', textDecoration: 'none' }))(
-          //     $text(style({ fontSize: '.75em' }))(`${formatFixed(list[0].roi, 2)}%`),
-          //     $column(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
-          //       $Link({
-          //         route: config.parentRoute.create({ fragment: '2121212' }),
-          //         $content: $AccountLabel(list[0].account, claimMap[list[0].account], style({ color: pallete.primary, fontSize: '1em' })),
-          //         anchorOp: style({ minWidth: 0, zIndex: 222 }),
-          //         url: `/${getChainName(config.chain)}/account/${list[0].account}`,
-          //       })({ click: routeChangeTether() }),
-          //       $defaultProfileSocialLink(list[0].account, config.chain, claimMap[list[0].account])
-          //     )
-          //   )
-          // ),
-          // $column(layoutSheet.spacing, style({ alignItems: 'center', textDecoration: 'none' }))(
-          //   style({ border: `2px solid ${pallete.positive}`, boxShadow: `${colorAlpha(pallete.positive, .15)} 0px 0px 20px 11px` }, $AccountPhoto(list[2].account, claimMap[list[2].account], '140px')),
-          //   $column(layoutSheet.spacingTiny, style({ alignItems: 'center', textDecoration: 'none' }))(
-          //     $text(style({ fontSize: '.75em' }))(`${formatFixed(list[2].roi, 2)}%`),
-          //     $column(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
-          //       $Link({
-          //         route: config.parentRoute.create({ fragment: '2121212' }),
-          //         $content: $AccountLabel(list[2].account, claimMap[list[2].account], style({ color: pallete.primary, fontSize: '1em' })),
-          //         anchorOp: style({ minWidth: 0, zIndex: 222 }),
-          //         url: `/${getChainName(config.chain)}/account/${list[2].account}`,
-          //       })({ click: routeChangeTether() }),
-          //       $defaultProfileSocialLink(list[2].account, config.chain, claimMap[list[2].account])
-          //     )
-          //   )
-          // )
-        )
-      }, newLocal)),
+      // switchLatest(map(res => {
+      //   const list = res.page
+      //   const profile = list[0].profile!
+      //   return $row(layoutSheet.spacing, style({ alignItems: 'flex-end', placeContent: 'center', position: 'relative' }))(
+      //     $profileHighlight(list[1]),
+      //     style({
+      //       margin: '0 -26px',
+      //       zIndex: 10,
+      //       zoom: 1.3
+      //     })($profileHighlight(list[0], pallete.positive)),
+      //     $profileHighlight(list[2]),
+      //     // $column(layoutSheet.spacing, style({ alignItems: 'center', zIndex: 10, margin: '0 -35px', textDecoration: 'none' }))(
+      //     //   style({ border: `2px solid ${pallete.positive}`, boxShadow: `${colorAlpha(pallete.positive, .15)} 0px 0px 20px 11px` }, $AccountPhoto(list[0].account, claimMap[list[0].account], '215px')),
+      //     //   $column(layoutSheet.spacingTiny, style({ alignItems: 'center', textDecoration: 'none' }))(
+      //     //     $text(style({ fontSize: '.75em' }))(`${formatFixed(list[0].roi, 2)}%`),
+      //     //     $column(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+      //     //       $Link({
+      //     //         route: config.parentRoute.create({ fragment: '2121212' }),
+      //     //         $content: $AccountLabel(list[0].account, claimMap[list[0].account], style({ color: pallete.primary, fontSize: '1em' })),
+      //     //         anchorOp: style({ minWidth: 0, zIndex: 222 }),
+      //     //         url: `/${getChainName(config.chain)}/account/${list[0].account}`,
+      //     //       })({ click: routeChangeTether() }),
+      //     //       $defaultProfileSocialLink(list[0].account, config.chain, claimMap[list[0].account])
+      //     //     )
+      //     //   )
+      //     // ),
+      //     // $column(layoutSheet.spacing, style({ alignItems: 'center', textDecoration: 'none' }))(
+      //     //   style({ border: `2px solid ${pallete.positive}`, boxShadow: `${colorAlpha(pallete.positive, .15)} 0px 0px 20px 11px` }, $AccountPhoto(list[2].account, claimMap[list[2].account], '140px')),
+      //     //   $column(layoutSheet.spacingTiny, style({ alignItems: 'center', textDecoration: 'none' }))(
+      //     //     $text(style({ fontSize: '.75em' }))(`${formatFixed(list[2].roi, 2)}%`),
+      //     //     $column(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+      //     //       $Link({
+      //     //         route: config.parentRoute.create({ fragment: '2121212' }),
+      //     //         $content: $AccountLabel(list[2].account, claimMap[list[2].account], style({ color: pallete.primary, fontSize: '1em' })),
+      //     //         anchorOp: style({ minWidth: 0, zIndex: 222 }),
+      //     //         url: `/${getChainName(config.chain)}/account/${list[2].account}`,
+      //     //       })({ click: routeChangeTether() }),
+      //     //       $defaultProfileSocialLink(list[2].account, config.chain, claimMap[list[2].account])
+      //     //     )
+      //     //   )
+      //     // )
+      //   )
+      // }, newLocal)),
 
 
       $column(
@@ -241,7 +239,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
                 columnOp: style({ maxWidth: '88px', alignItems: 'center', placeContent: 'center' }),
                 $$body: map((pos: IProfileTradingSummary) => {
                   return $row(
-                    $text(`${pos.winCount}/${pos.lossCount}`)
+                    $text(`${pos.winCount} / ${pos.lossCount}`)
                   )
                 })
               },
@@ -260,11 +258,11 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
 
 
                 return $column(layoutSheet.spacingTiny, style({ textAlign: 'center' }))(
-                  $text(style({}))(
-                    `${isNeg ? '' : '+'}${val}`
+                  $text(style({ fontSize: '.75em', color: isNeg ? pallete.negative : pallete.positive }))(
+                    val
                   ),
                   $seperator,
-                  $text(formatReadableUSD(BigInt(pos.maxCollateral)))
+                  $text(style({  }))(formatReadableUSD(BigInt(pos.maxCollateral)))
                 )
               })
             },
@@ -277,11 +275,11 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
               $$body: snapshot((list, pos) => {
                 const prize = prizeLadder[list.offset + list.page.indexOf(pos)]
 
-                return $column(
+                return $column(style({ alignItems: 'flex-end' }))(
                   prize
                     ? $row(
                       // $avaxIcon,
-                      $text(style({ fontSize: '1.8em', color: pallete.positive }))(prize),
+                      $text(style({ fontSize: '1.25em', color: pallete.positive }))(prize),
                     ) : empty(),
 
                   $text(`${formatFixed(pos.roi, 2)}%`)

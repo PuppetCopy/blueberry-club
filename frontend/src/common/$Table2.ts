@@ -53,14 +53,16 @@ export const $caretDown = $svg('path')(attr({ d: 'M4.616.296c.71.32 1.326.844 2.
 
 export const $defaultCell = $row(
   layoutSheet.spacingSmall,
-  style({ padding: '3px 6px', alignItems: 'center', overflowWrap: 'break-word' }),
+  style({ padding: '6px 0', flex: 1, alignItems: 'center', overflowWrap: 'break-word' }),
 )
 export const $defaultBodyCell = $defaultCell
 
 export const $defaultHeaderCell = $defaultCell(
-  style({ fontSize: '15px', alignItems: 'center', padding: '12px 6px', color: pallete.foreground, })
+  style({ fontSize: '15px', alignItems: 'center', padding: '12px 0', color: pallete.foreground, })
 )
-export const $defaultRowContainer = $row(layoutSheet.spacingSmall, style({ padding: `0 ${screenUtils.isDesktopScreen ? '12px' : '6px'}` }))
+export const $defaultRowContainer = screenUtils.isDesktopScreen
+  ? $row(layoutSheet.spacing, style({ padding: `2px 16px` }))
+  : $row(layoutSheet.spacingSmall, style({ padding: `2px 6px` }))
 
 export const $Table2 = <T, FilterState = never>({
   dataSource, columns, scrollConfig,
@@ -80,7 +82,8 @@ export const $Table2 = <T, FilterState = never>({
 
 
   const $rowHeaderContainer = $headerRowContainer(
-    style({ overflow: 'hidden scroll', flexShrink: 0 }), stylePseudo('::-webkit-scrollbar', { backgroundColor: 'transparent', width: '6px' })
+    style({ flexShrink: 0 }),
+    stylePseudo('::-webkit-scrollbar', { backgroundColor: 'transparent', width: '6px' })
   )
 
   const sortBy = chain((state) => {
