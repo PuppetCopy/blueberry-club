@@ -1,15 +1,15 @@
-import { Behavior } from "@aelea/core"
-import { $text, component, style } from "@aelea/dom"
+import { Behavior, O } from "@aelea/core"
+import { $node, $text, attr, component, style } from "@aelea/dom"
 import { $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
-import { IToken } from "@gambitdao/gbc-middleware"
-import { TOKEN_ADDRESS_TO_SYMBOL, formatReadableUSD, ITrade, TOKEN_SYMBOL, ICompetitionLadderRequest } from "@gambitdao/gmx-middleware"
+import { TOKEN_ADDRESS_TO_SYMBOL, formatReadableUSD, ITrade, TOKEN_SYMBOL, ICompetitionLadderRequest, countdown, unixTimestampNow, formatFixed, getChainName } from "@gambitdao/gmx-middleware"
 
 import { CHAIN } from "@gambitdao/wallet-link"
-import { $responsiveFlex } from "../elements/$common"
-import { $bear, $bull, $tokenIconMap } from "@gambitdao/ui-components"
-import { pallete } from "@aelea/ui-components-theme"
+import { $anchor, $AnchorLink, $bear, $bull, $Link, $tokenIconMap } from "@gambitdao/ui-components"
+import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { resolveAddress } from "../logic/utils"
 import { $CompetitionRoi, ICompetitonTopCumulative } from "./trade/$CumulativeRoi"
+import { TOURNAMENT_START_END, TOURNAMENT_START_PERIOD } from "@gambitdao/gbc-middleware"
+import { $AccountLabel } from "../components/$AccountProfile"
 
 
 export interface ILeaderboard extends ICompetitonTopCumulative {
@@ -24,8 +24,15 @@ export const $Leaderboard = (config: ILeaderboard) => component((
 ) => {
 
 
+
   return [
     $column(
+      style({
+        fontSize: '1.1rem',
+        fontFeatureSettings: '"tnum" on,"lnum" on',
+        fontFamily: `-apple-system,BlinkMacSystemFont,Trebuchet MS,Roboto,Ubuntu,sans-serif`,
+      })
+    )(
       style({ gap: '46px', display: 'flex' }),
       screenUtils.isDesktopScreen
         ? style({ width: '780px', alignSelf: 'center' })

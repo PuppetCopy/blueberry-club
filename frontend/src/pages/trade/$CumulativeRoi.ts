@@ -1,17 +1,20 @@
-import { Behavior, replayLatest } from '@aelea/core'
-import { $text, component, style } from "@aelea/dom"
+import { Behavior, O, replayLatest } from '@aelea/core'
+import { $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
 import { $column, $row, $seperator, layoutSheet, screenUtils } from '@aelea/ui-components'
-import { pallete } from '@aelea/ui-components-theme'
-import { combine, empty, map, multicast, snapshot, take } from '@most/core'
+import { colorAlpha, pallete } from '@aelea/ui-components-theme'
+import { combine, empty, map, multicast, snapshot, switchLatest, take } from '@most/core'
 import { Stream } from '@most/types'
-import { IPageParapApi, formatReadableUSD, formatFixed, unixTimestampNow, ICompetitionLadderRequest, groupByMap, zipState } from '@gambitdao/gmx-middleware'
+import { IPageParapApi, formatReadableUSD, formatFixed, unixTimestampNow, ICompetitionLadderRequest, groupByMap, zipState, getChainName } from '@gambitdao/gmx-middleware'
 import { $defaultHeaderCell, $defaultRowContainer, $Table2 } from "../../common/$Table2"
 import { $alertTooltip, countdown } from './$rules'
 import { CHAIN, IWalletLink } from '@gambitdao/wallet-link'
-import { $accountPreview, $profilePreview } from '../../components/$AccountProfile'
-import { BLUEBERRY_REFFERAL_CODE, IProfile, IProfileTradingSummary } from '@gambitdao/gbc-middleware'
+import { $AccountLabel, $accountPreview, $profilePreview } from '../../components/$AccountProfile'
+import { BLUEBERRY_REFFERAL_CODE, IProfile, IProfileTradingSummary, TOURNAMENT_START_END, TOURNAMENT_START_PERIOD } from '@gambitdao/gbc-middleware'
 import { $card } from '../../elements/$common'
+import { $anchor, $AnchorLink, $Link } from '@gambitdao/ui-components'
+import { $berryByToken } from '../../logic/common'
+import { config } from 'webpack'
 
 
 const prizeLadder: string[] = ['2200', '1100', '550', ...Array(15).fill('110')]
@@ -32,174 +35,277 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
   [highTableRequestIndex, highTableRequestIndexTether]: Behavior<number, number>,
   [requestCompetitionLadder, requestCompetitionLadderTether]: Behavior<number, ICompetitionLadderRequest>,
 ) => {
-  const date = new Date()
-  const start = 0
-  const end = Date.UTC(date.getFullYear(), date.getMonth(), 28, 16) / 1000
-
-  const ended = unixTimestampNow() >= end
-
+  const start = TOURNAMENT_START_PERIOD
+  const end = TOURNAMENT_START_END
 
   const tableList = replayLatest(map(res => {
     return res
   }, multicast(config.competitionCumulativeRoi)))
 
+  const newLocal = take(1, tableList)
   // const requestProfilePickList = map(list => list.page.map(x => x.account), tableList)
   // const profilePickList = map(list => {
   //   return groupByMap(list, p => p.id)
   // }, config.profilePickList)
 
 
+  function $profileHighlight(summary: IProfileTradingSummary, borderColor = pallete.primary) {
+    const profile = summary.profile!
+
+    return $column(layoutSheet.spacing, style({ alignItems: 'center', textDecoration: 'none' }))(
+      style({ borderRadius: '50%', border: `2px solid ${borderColor}`, boxShadow: `${colorAlpha(borderColor, .15)} 0px 0px 20px 11px` }, $berryByToken(profile.token!, 140)),
+      $column(layoutSheet.spacingTiny, style({ alignItems: 'center', textDecoration: 'none' }))(
+        $text(style({ fontSize: '.75em' }))(`${formatFixed(summary.roi, 2)}%`),
+        $column(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+          $Link({
+            route: config.parentRoute.create({ fragment: '2121212' }),
+            $content: style({ color: pallete.primary, fontSize: '1em' })(
+              $AccountLabel(profile.id)
+            ),
+            anchorOp: style({ minWidth: 0, zIndex: 222 }),
+            url: `/${getChainName(CHAIN.ARBITRUM)}/account/${profile.id}`,
+          })({ click: routeChangeTether() }),
+          // $defaultProfileSocialLink(list[1].account, config.chain, claimMap[list[1].account])
+        )
+      )
+    )
+  }
+
+  const $details = (start: number, end: number) => {
+    const now = unixTimestampNow()
+    const ended = end < now
+
+    return start > now
+      ? $column(style({ alignItems: 'center' }))(
+        $text(`Starting in`),
+        $text(style({ fontWeight: 'bold', fontSize: '3em' }))(countdown(start)),
+      )
+      : $column(layoutSheet.spacingSmall)(
+        $column(layoutSheet.spacing, style({ flexDirection: screenUtils.isDesktopScreen ? 'row' : 'column', fontSize: '1.15em', alignItems: 'center', placeContent: 'center' }))(
+          ended
+            ? $text(style({ color: ended ? '' : pallete.indeterminate }))(
+              `Competition has ended!`
+            )
+            : $row(layoutSheet.spacing)(
+              $column(style({ textAlign: 'right' }))(
+                $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
+                  $text(style({ fontSize: '3.2em', fontWeight: 'bold', color: pallete.primary, textShadow: `1px 1px 50px ${pallete.primary}, 1px 1px 50px ${colorAlpha(pallete.primary, .55)} ` }))('#GambitROI'),
+                ),
+                // $text(style({ color: pallete.foreground }))('Competition'),
+                // $text(style({ fontSize: '1.5em', color: ended ? '' : pallete.indeterminate }))('LIVE!')
+              ),
+            ),
+          $column(
+            $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
+              $text(style({ fontSize: '1.5em', color: ended ? '' : pallete.indeterminate }))('LIVE!'),
+              $text(style({ color: pallete.foreground }))('Ending in')
+            ),
+            $text(style({ fontSize: '1.5em' }))(countdown(end))
+          )
+        ),
+
+        $anchor(style({ fontSize: '.65em', placeSelf: 'center' }), attr({ href: 'https://medium.com/@gmx.io/' }))(
+          $text('$50,000 GBC #GAMBIT ROI Trading Contest')
+        )
+      )
+
+  }
+
+
+
   return [
-    $column(
+    $column(layoutSheet.spacingBig)(
 
       // style({ alignSelf: 'center', maxWidth: '500px', marginBottom: '18px' })(
       //   $alert($text(`Results are being checked to ensure all data is accounted for. expected to finalize by Nov 25 12:00 UTC`)),
       // ),
 
+      $column(layoutSheet.spacing, style({ alignItems: 'center', placeContent: 'center', marginBottom: '20px', }))(
+        
+        $column(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
+          
+          $node(),
 
-      // switchLatest(combine((w3p, chain) => {
-
-      //   if (!w3p || !chain) {
-      //     return empty()
-      //   }
-
-      //   return $row(style({ backgroundColor: pallete.background, borderLeft: 0, borderRadius: '30px', alignSelf: 'center', marginBottom: '30px', padding: '20px' }))(
-      //     $accountPreview({ address: w3p.address }),
-      //   )
-      // }, config.walletLink.wallet, config.walletLink.network)),
-
-
-      $row(style({ padding: screenUtils.isMobileScreen ? '0 12px' : '' }))(
-        $column(layoutSheet.spacingSmall, style({ marginBottom: '26px', flex: 1 }))(
-          $row(layoutSheet.spacingSmall, style({ alignItems: 'flex-end' }))(
-            $text(style({}))(`Highest ROI (%)`),
-
-            ...ended ? [] : [
-              $text(style({ color: pallete.foreground, fontSize: '.75em' }))('Ending in'),
-              $text(style({ fontSize: '.75em' }))(countdown(end)),
-            ]
-
-          ),
-          $text(style({ fontSize: '.75em' }))(`ROI (%) is defined as: Profits / Max Collateral (min $1000) * 100`),
-        ),
-
-        $row(
-          $text(style({
-            color: pallete.positive,
-            fontSize: '1.75em',
-            textShadow: `${pallete.positive} 1px 1px 20px, ${pallete.positive} 0px 0px 20px`
-          }))('~$75,000')
+          $details(TOURNAMENT_START_PERIOD, TOURNAMENT_START_END),
         )
       ),
 
 
+      switchLatest(map(res => {
+        const list = res.page
+        const profile = list[0].profile!
+        return $row(layoutSheet.spacing, style({ alignItems: 'flex-end', placeContent: 'center', position: 'relative' }))(
+          $profileHighlight(list[1]),
+          style({
+            margin: '0 -26px',
+            zIndex: 10,
+            zoom: 1.3
+          })($profileHighlight(list[0], pallete.positive)),
+          $profileHighlight(list[2]),
+          // $column(layoutSheet.spacing, style({ alignItems: 'center', zIndex: 10, margin: '0 -35px', textDecoration: 'none' }))(
+          //   style({ border: `2px solid ${pallete.positive}`, boxShadow: `${colorAlpha(pallete.positive, .15)} 0px 0px 20px 11px` }, $AccountPhoto(list[0].account, claimMap[list[0].account], '215px')),
+          //   $column(layoutSheet.spacingTiny, style({ alignItems: 'center', textDecoration: 'none' }))(
+          //     $text(style({ fontSize: '.75em' }))(`${formatFixed(list[0].roi, 2)}%`),
+          //     $column(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+          //       $Link({
+          //         route: config.parentRoute.create({ fragment: '2121212' }),
+          //         $content: $AccountLabel(list[0].account, claimMap[list[0].account], style({ color: pallete.primary, fontSize: '1em' })),
+          //         anchorOp: style({ minWidth: 0, zIndex: 222 }),
+          //         url: `/${getChainName(config.chain)}/account/${list[0].account}`,
+          //       })({ click: routeChangeTether() }),
+          //       $defaultProfileSocialLink(list[0].account, config.chain, claimMap[list[0].account])
+          //     )
+          //   )
+          // ),
+          // $column(layoutSheet.spacing, style({ alignItems: 'center', textDecoration: 'none' }))(
+          //   style({ border: `2px solid ${pallete.positive}`, boxShadow: `${colorAlpha(pallete.positive, .15)} 0px 0px 20px 11px` }, $AccountPhoto(list[2].account, claimMap[list[2].account], '140px')),
+          //   $column(layoutSheet.spacingTiny, style({ alignItems: 'center', textDecoration: 'none' }))(
+          //     $text(style({ fontSize: '.75em' }))(`${formatFixed(list[2].roi, 2)}%`),
+          //     $column(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+          //       $Link({
+          //         route: config.parentRoute.create({ fragment: '2121212' }),
+          //         $content: $AccountLabel(list[2].account, claimMap[list[2].account], style({ color: pallete.primary, fontSize: '1em' })),
+          //         anchorOp: style({ minWidth: 0, zIndex: 222 }),
+          //         url: `/${getChainName(config.chain)}/account/${list[2].account}`,
+          //       })({ click: routeChangeTether() }),
+          //       $defaultProfileSocialLink(list[2].account, config.chain, claimMap[list[2].account])
+          //     )
+          //   )
+          // )
+        )
+      }, newLocal)),
 
 
-      $Table2({
-        $container: $card(style({ padding: "0", gap: 0 })),
-        // rowOp: style({ backgroundColor: 'red' }),
-        $headerCell: $defaultHeaderCell(style({})),
-        dataSource: tableList,
-        // $rowContainer: 
-        $bodyRowContainer: $defaultRowContainer(style({ background: pallete.background, margin: '0 1px', borderBottom: `1px solid ${pallete.horizon}` })),
-        columns: [
+      $column(
+        $row(style({ padding: screenUtils.isMobileScreen ? '0 12px' : '' }))(
+          $column(layoutSheet.spacingSmall, style({ marginBottom: '26px', flex: 1 }))(
+            $row(layoutSheet.spacingSmall, style({ alignItems: 'flex-end' }))(
+              $text(style({}))(`Highest ROI (%)`),
 
-          {
-            $head: $text('Account'),
-            columnOp: style({ minWidth: '120px', flex: 1.2, alignItems: 'center' }),
-            $$body: map((pos: IProfileTradingSummary) => {
+              // ...ended ? [] : [
+              //   $text(style({ color: pallete.foreground, fontSize: '.75em' }))('Ending in'),
+              //   $text(style({ fontSize: '.75em' }))(countdown(end)),
+              // ]
 
-              if (!pos.profile) {
-                return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
-                  $alertTooltip($text(`Unclaimed profile remains below until claimed`)),
-                  $accountPreview({ address: pos.account })
-                  // style({ zoom: '0.7' })(
-                  //   $alert($text('Unclaimed'))
-                  // )
-                )
-              }
+            ),
+            $text(style({ fontSize: '.75em' }))(`ROI (%) is defined as: Profits / Max Collateral (min $1000) * 100`),
+          ),
 
+          $row(
+            $text(style({
+              color: pallete.positive,
+              fontSize: '1.75em',
+              textShadow: `${pallete.positive} 1px 1px 20px, ${pallete.positive} 0px 0px 20px`
+            }))('~$50,000')
+          )
+        ),
 
-              return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
-                $row(style({ alignItems: 'baseline', zIndex: 5, textAlign: 'center', placeContent: 'center' }))(
-                  $text(style({ fontSize: '.65em' }))(`${pos.rank}`),
-                ),
-                $row(layoutSheet.spacing, style({ minWidth: '0', alignItems: 'center' }))(
-                  $profilePreview({ profile: pos.profile })
-                ),
-              )
-            })
-          },
-          ...(screenUtils.isDesktopScreen ? [
+        $Table2({
+          $container: $card(style({ padding: "0", gap: 0 })),
+          // rowOp: style({ backgroundColor: 'red' }),
+          $headerCell: $defaultHeaderCell(style({})),
+          dataSource: tableList,
+          // $rowContainer: 
+          $bodyRowContainer: $defaultRowContainer(style({ background: pallete.background, margin: '0 1px', borderBottom: `1px solid ${pallete.horizon}` })),
+          columns: [
+
             {
-              $head: $text('Win/Loss'),
-              columnOp: style({ maxWidth: '88px', alignItems: 'center', placeContent: 'center' }),
+              $head: $text('Account'),
+              columnOp: style({ minWidth: '120px', flex: 1.2, alignItems: 'center' }),
               $$body: map((pos: IProfileTradingSummary) => {
-                return $row(
-                  $text(`${pos.winCount}/${pos.lossCount}`)
+
+                if (!pos.profile) {
+                  return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+                    $alertTooltip($text(`Unclaimed profile remains below until claimed`)),
+                    $accountPreview({ address: pos.account })
+                    // style({ zoom: '0.7' })(
+                    //   $alert($text('Unclaimed'))
+                    // )
+                  )
+                }
+
+
+                return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+                  $row(style({ alignItems: 'baseline', zIndex: 5, textAlign: 'center', placeContent: 'center' }))(
+                    $text(style({ fontSize: '.65em' }))(`${pos.rank}`),
+                  ),
+                  $row(layoutSheet.spacing, style({ minWidth: '0', alignItems: 'center' }))(
+                    $profilePreview({ profile: pos.profile })
+                  ),
                 )
               })
             },
+            ...(screenUtils.isDesktopScreen ? [
+              {
+                $head: $text('Win/Loss'),
+                columnOp: style({ maxWidth: '88px', alignItems: 'center', placeContent: 'center' }),
+                $$body: map((pos: IProfileTradingSummary) => {
+                  return $row(
+                    $text(`${pos.winCount}/${pos.lossCount}`)
+                  )
+                })
+              },
 
-          ] : []),
+            ] : []),
 
-          {
-            $head: $column(style({ textAlign: 'center' }))(
-              $text('Profits $'),
-              $text(style({ fontSize: '.65em' }))('Max Collateral'),
-            ),
-            columnOp: style({ placeContent: 'center', minWidth: '125px' }),
-            $$body: map((pos: IProfileTradingSummary) => {
-              const val = formatReadableUSD(pos.pnl)
-              const isNeg = pos.pnl < 0n
+            {
+              $head: $column(style({ textAlign: 'center' }))(
+                $text('Profits $'),
+                $text(style({ fontSize: '.65em' }))('Max Collateral'),
+              ),
+              columnOp: style({ placeContent: 'center', minWidth: '125px' }),
+              $$body: map((pos: IProfileTradingSummary) => {
+                const val = formatReadableUSD(pos.pnl)
+                const isNeg = pos.pnl < 0n
 
 
-              return $column(layoutSheet.spacingTiny, style({ textAlign: 'center' }))(
-                $text(style({}))(
-                  `${isNeg ? '' : '+'}${val}`
-                ),
-                $seperator,
-                $text(formatReadableUSD(BigInt(pos.maxCollateral)))
-              )
-            })
-          },
-          {
-            $head: $column(style({ placeContent: 'flex-end', alignItems: 'flex-end' }))(
-              $text('Prize'),
-              $text(style({ fontSize: '.65em' }))('ROI %'),
-            ),
-            columnOp: style({ flex: 1, alignItems: 'flex-end', placeContent: 'flex-end' }),
-            $$body: snapshot((list, pos) => {
-              const prize = prizeLadder[list.offset + list.page.indexOf(pos)]
+                return $column(layoutSheet.spacingTiny, style({ textAlign: 'center' }))(
+                  $text(style({}))(
+                    `${isNeg ? '' : '+'}${val}`
+                  ),
+                  $seperator,
+                  $text(formatReadableUSD(BigInt(pos.maxCollateral)))
+                )
+              })
+            },
+            {
+              $head: $column(style({ placeContent: 'flex-end', alignItems: 'flex-end' }))(
+                $text('Prize'),
+                $text(style({ fontSize: '.65em' }))('ROI %'),
+              ),
+              columnOp: style({ flex: 1, alignItems: 'flex-end', placeContent: 'flex-end' }),
+              $$body: snapshot((list, pos) => {
+                const prize = prizeLadder[list.offset + list.page.indexOf(pos)]
 
-              return $column(
-                prize
-                  ? $row(
-                    // $avaxIcon,
-                    $text(style({ fontSize: '1.8em', color: pallete.positive }))(prize),
-                  ) : empty(),
+                return $column(
+                  prize
+                    ? $row(
+                      // $avaxIcon,
+                      $text(style({ fontSize: '1.8em', color: pallete.positive }))(prize),
+                    ) : empty(),
 
-                $text(`${formatFixed(pos.roi, 2)}%`)
-              )
-            }, tableList)
-          }
-        ],
-      })({
-        scrollIndex: requestCompetitionLadderTether(
-          map(pageIndex => {
-            const newLocal: ICompetitionLadderRequest = {
-              chain: CHAIN.ARBITRUM,
-              referralCode: BLUEBERRY_REFFERAL_CODE,
-              maxCollateral: 1000000000000000000000000000000000n,
-              from: start,
-              to: end,
-              offset: pageIndex * 20,
-              pageSize: 20,
+                  $text(`${formatFixed(pos.roi, 2)}%`)
+                )
+              }, tableList)
             }
-            return newLocal
-          })
-        )
-      }),
+          ],
+        })({
+          scrollIndex: requestCompetitionLadderTether(
+            map(pageIndex => {
+              const newLocal: ICompetitionLadderRequest = {
+                chain: CHAIN.ARBITRUM,
+                referralCode: BLUEBERRY_REFFERAL_CODE,
+                maxCollateral: 1000000000000000000000000000000000n,
+                from: start,
+                to: end,
+                offset: pageIndex * 20,
+                pageSize: 20,
+              }
+              return newLocal
+            })
+          )
+        }),
+      )
 
     ),
 
@@ -210,5 +316,6 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
     }
   ]
 })
+
 
 

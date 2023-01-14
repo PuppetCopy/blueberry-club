@@ -3,6 +3,7 @@ import { CHAIN } from "@gambitdao/wallet-link"
 import { parseEther } from "ethers/lib/utils"
 import { IAttributeMappings, LabItemSale, SaleType } from "./types"
 
+const date = new Date()
 
 export const LAB_CHAIN = CHAIN.ARBITRUM
 
@@ -13,8 +14,8 @@ export const GLOBAL_W3P_AVALANCHE = 'https://api.avax.network/ext/bc/C/rpc'
 
 export const BLUEBERRY_REFFERAL_CODE = '0x424c554542455252590000000000000000000000000000000000000000000000'
 
-export const MINT_WHITELIST_START = Date.UTC(2021, 11, 5, 22, 0, 0)
-export const MINT_PUBLIC_START = Date.UTC(2021, 11, 7, 22, 0, 0)
+export const TOURNAMENT_START_PERIOD = Date.UTC(date.getFullYear(), date.getMonth(), 1, 16) / 1000
+export const TOURNAMENT_START_END = TOURNAMENT_START_PERIOD + intervalTimeMap.HR24 * 28
 
 
 export const GBC_DESCRIPTION = {

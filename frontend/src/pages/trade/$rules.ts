@@ -32,59 +32,6 @@ export const countdown = (targetDate: number) => {
   return map(now => countdownFn(targetDate, now), everySec)
 }
 
-export function $CompeititonInfo(from: number, to: number, parentRoute: Route, routeChangeTether: () => Op<string, string>) {
-
-
-  const details = (start: number, end: number) => {
-    const now = unixTimestampNow()
-    const ended = end < now
-
-    return start > now
-      ? $column(style({ alignItems: 'center' }))(
-        $text(`Starting in`),
-        $text(style({ fontWeight: 'bold', fontSize: '3em' }))(countdown(start)),
-      )
-      : $column(
-        $node(layoutSheet.spacing, style({ display: 'flex', flexDirection: screenUtils.isDesktopScreen ? 'row' : 'column', fontSize: '1.15em', alignItems: 'center', placeContent: 'center' }))(
-          ended
-            ? $text(style({ color: ended ? '' : pallete.indeterminate }))(
-              `Competition has ended!`
-            )
-            : $text(style({ color: ended ? '' : pallete.indeterminate }))('Competition is LIVE!'),
-          $row(layoutSheet.spacingSmall)(
-            $AnchorLink({
-              anchorOp: O(style({ position: 'relative' })),
-              $content: $text('Top Profit'),
-              url: `/avalanche/top-profit`,
-              route: parentRoute.create({ fragment: 'top-profit' })
-            })({ click: routeChangeTether() }),
-            $row(style({ color: pallete.foreground }))($text('|')),
-            $AnchorLink({
-              anchorOp: style({ position: 'relative' }),
-              $content: $text('Top ROI'),
-              url: `/avalanche/top-roi`,
-              route: parentRoute.create({ fragment: 'top-roi' })
-            })({ click: routeChangeTether() }),
-          )
-        )
-      )
-
-  }
-
-  return $column(layoutSheet.spacing, style({ alignItems: 'center', placeContent: 'center', marginBottom: '20px', }))(
-    $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
-      $text(style({ fontSize: '3.2em', fontWeight: 'bold', color: pallete.primary, textShadow: `1px 1px 50px ${pallete.primary}, 1px 1px 50px ${colorAlpha(pallete.primary, .55)} ` }))('#GMXRush'),
-    ),
-    $column(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
-      $anchor(style({ fontSize: '.65em' }), attr({ href: 'https://medium.com/@gmx.io/launching-this-friday-the-year-end-gmxrush-avalanche-trading-contest-with-a-150-000-prize-pool-639c30e8b9db' }))(
-        $text('medium.com - $150,000 #GMXRUSH Avalanche Trading Contest #2')
-      ),
-      $node(),
-
-      details(from, to),
-    )
-  )
-}
 
 export const $competitionPrize = (prize: bigint | undefined, realisedPnl: bigint) => {
   const val = formatReadableUSD(realisedPnl)
