@@ -2,7 +2,7 @@
 import { awaitPromises, combine, empty, map, mergeArray, multicast, now, scan, skip, snapshot, switchLatest } from "@most/core"
 import {
   switchFailedSources, ITokenIndex, ITokenInput, ITokenTrade, AddressZero, getChainName, filterNull, IVaultPosition, unixTimestampNow, TRADE_CONTRACT_MAPPING,
-  IAbstractPositionKey, parseFixed, TOKEN_SYMBOL, getPositionKey, KeeperIncreaseRequest, KeeperDecreaseRequest, ITokenDescription, safeDiv, TOKEN_ADDRESS_TO_SYMBOL, TOKEN_DESCRIPTION_LIST, TOKEN_DESCRIPTION_MAP, div
+  IAbstractPositionKey, parseFixed, TOKEN_SYMBOL, getPositionKey, KeeperIncreaseRequest, KeeperDecreaseRequest, ITokenDescription, safeDiv, TOKEN_ADDRESS_TO_SYMBOL, TOKEN_DESCRIPTION_LIST, TOKEN_DESCRIPTION_MAP, div, IAbstractPositionIdentity
 } from "@gambitdao/gmx-middleware"
 import { combineObject, replayLatest } from "@aelea/core"
 import { ERC20__factory, PositionRouter__factory, Router__factory, VaultPriceFeed__factory, Vault__factory } from "../gmx-contracts"
@@ -19,7 +19,7 @@ import { Contract } from "ethers"
 import { listen } from "./listen"
 
 
-export type IPositionGetter = IVaultPosition & IAbstractPositionKey
+export type IPositionGetter = IVaultPosition & IAbstractPositionKey & IAbstractPositionIdentity
 
 export interface IFundingInfo {
   cumulative: bigint

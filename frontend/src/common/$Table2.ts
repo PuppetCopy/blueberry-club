@@ -62,7 +62,7 @@ export const $defaultHeaderCell = $defaultCell(
 )
 export const $defaultRowContainer = screenUtils.isDesktopScreen
   ? $row(layoutSheet.spacing, style({ padding: `2px 16px` }))
-  : $row(layoutSheet.spacingSmall, style({ padding: `2px 6px` }))
+  : $row(layoutSheet.spacingSmall, style({ padding: `2px 10px` }))
 
 export const $Table2 = <T, FilterState = never>({
   dataSource, columns, scrollConfig,

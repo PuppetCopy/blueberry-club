@@ -1261,10 +1261,11 @@ export const $TradeBox = (config: ITradeBox) => component((
               styleInline(map(mode => ({ display: mode ? 'none' : 'flex' }), inTradeMode))(
                 $IntermediatePromise({
                   query: combineArray((a, b) => Promise.all([a, b]), config.pricefeed, config.trade),
-                  $$done: map(([pricefeed, trade]) => {
+                  $$done: snapshot((pos, [pricefeed, trade]) => {
                     if (trade === null) {
+                      const tokenDesc = getTokenDescription(pos.indexToken)
                       return $row(style({ flex: 1, placeContent: 'center', alignItems: 'center' }), styleInline(map(mode => ({ display: mode ? 'none' : 'flex' }), inTradeMode)))(
-                        $text(style({ color: pallete.foreground }))('no trade')
+                        $text(style({ color: pallete.foreground }))(`no ${tokenDesc.symbol} positon in contract`)
                       )
                     }
 
@@ -1323,7 +1324,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                         // requestPricefeed: requestTradePricefeedTether()
                       })
                     )
-                  })
+                  }, config.tradeState.position)
                 })({})
               ),
             )

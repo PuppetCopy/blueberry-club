@@ -259,20 +259,19 @@ export const competitionRoiAccountList = O(
 
     return switchLatest(map(list => {
       const profileList = profilePickList(now(list.map(x => x.account)))
-
       const competitionSummaryProfileList = map(pl => {
         const profileMap = groupByMap(pl, p => p.id)
         const sortedCompetitionList: IProfileTradingSummary[] = list
+          .sort((a, b) => {
+            const aN = profileMap[a.account] ? a.roi : a.roi - 100000000n
+            const bN = profileMap[b.account] ? b.roi : b.roi - 100000000n
+            return Number(bN - aN)
+          })
           .map(summary => ({
             ...summary,
             profile: profileMap[summary.account] || null,
             rank: queryParams.offset + list.indexOf(summary) + 1
           }), pl)
-          .sort((a, b) => {
-            const aN = a.profile ? a.roi : a.roi - 100000000n
-            const bN = b.profile ? b.roi : b.roi - 100000000n
-            return Number(bN - aN)
-          })
         return pagingQuery(queryParams, sortedCompetitionList)
       }, profileList)
 

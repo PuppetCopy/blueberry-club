@@ -207,7 +207,7 @@ export const $Trade = (config: ITradeComponent) => component((
     const collateralToken = params.isLong ? params.indexToken : params.collateralToken
     const address = params.account || AddressZero
     const key = getPositionKey(address, collateralToken, params.indexToken, params.isLong)
-    
+
 
     if (latestKey === key) {
       return null
@@ -239,14 +239,13 @@ export const $Trade = (config: ITradeComponent) => component((
     keeperCancelDecrease,
   ]))
 
-  const positionChange = replayLatest(multicast(tradeReader.vaultReader.run(combine(async (pos, vault) => {
+  const positionChange: Stream<IPositionGetter> = replayLatest(multicast(tradeReader.vaultReader.run(combine(async (pos, vault) => {
     const positionAbstract = await vault.positions(pos.key)
     const [size, collateral, averagePrice, entryFundingRate, reserveAmount, realisedPnl, lastIncreasedTime] = positionAbstract
     const lastIncreasedTimeBn = lastIncreasedTime.toBigInt()
 
     return {
-      key: pos.key,
-      isLong: pos.isLong,
+      ...pos,
       size: size.toBigInt(),
       collateral: collateral.toBigInt(),
       averagePrice: averagePrice.toBigInt(),
@@ -283,7 +282,7 @@ export const $Trade = (config: ITradeComponent) => component((
         }
 
         return {
-          key: pos.key,
+          ...pos,
           size: 0n,
           collateral: 0n,
           averagePrice: 0n,
@@ -297,33 +296,6 @@ export const $Trade = (config: ITradeComponent) => component((
       mergeArray([globalTradeReader.positionCloseEvent, globalTradeReader.positionLiquidateEvent])
       // mergeArray([tradeReader.positionCloseEvent, tradeReader.positionLiquidateEvent])
     ))
-  ])
-
-
-  const tradeListQuery: Stream<Promise<ITradeOpen[]>> = mergeArray([
-    combineArray(async (pos, listQuery) => {
-
-      const tradeList = await listQuery
-      const trade = tradeList.find(t => t.key === pos.key) || null
-      // const trade = null
-
-      if (trade === null) {
-        const timestamp = unixTimestampNow()
-        const syntheticUpdate = { ...pos, timestamp, realisedPnl: 0n, markPrice: pos.averagePrice, isLong: pos.isLong, __typename: 'UpdatePosition' }
-        const newTrade = {
-          ...pos,
-          timestamp,
-          updateList: [syntheticUpdate],
-          increaseList: [], decreaseList: [],
-          fee: 0n,
-          status: TradeStatus.OPEN
-        } as any as ITradeOpen
-
-        return [newTrade, ...tradeList]
-      }
-
-      return listQuery
-    }, positionChange, openTradeList)
   ])
 
   const inputTokenWeight = tradeReader.getTokenWeight(inputToken)
@@ -548,6 +520,38 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
 
+  const tradeListQuery: Stream<Promise<ITradeOpen[]>> = mergeArray([
+    combineArray(async (pos, listQuery) => {
+
+      const tradeList = await listQuery
+
+      if (tradeList.length === 0) {
+        return []
+      }
+
+      const trade = tradeList.find(t => t.key === pos.key) || null
+      // const trade = null
+
+      if (pos.averagePrice > 0n && trade === null) {
+        const timestamp = unixTimestampNow()
+        const syntheticUpdate = { ...pos, timestamp, realisedPnl: 0n, markPrice: pos.averagePrice, isLong: pos.isLong, __typename: 'UpdatePosition' }
+        const newTrade = {
+          ...pos,
+          timestamp,
+          updateList: [syntheticUpdate],
+          increaseList: [], decreaseList: [],
+          fee: 0n,
+          status: TradeStatus.OPEN
+        } as any as ITradeOpen
+
+        return [newTrade, ...tradeList]
+      }
+
+      return listQuery
+    }, positionChange, openTradeList)
+  ])
+
+
   return [
     $container(
       $node(layoutSheet.spacingBig, style({ flex: 1, paddingBottom: screenUtils.isDesktopScreen ? '50px' : '8px', display: 'flex', flexDirection: screenUtils.isDesktopScreen ? 'column' : 'column-reverse' }))(
@@ -566,9 +570,6 @@ export const $Trade = (config: ITradeComponent) => component((
             trade: snapshot(async (list, pos) => {
               const trade = (await list).find(t => t.key === pos.key) || null
 
-              if (trade === null) {
-                throw new Error('no trade matched')
-              }
 
               return trade
             }, tradeListQuery, position),
@@ -679,7 +680,7 @@ export const $Trade = (config: ITradeComponent) => component((
                       }, combineObject({ positionMarkPrice, cumulativeFee }))
 
 
-                      return $row(
+                      return $row(layoutSheet.spacingTiny)(
                         $infoTooltip(
                           $column(layoutSheet.spacingTiny)(
                             $row(layoutSheet.spacingTiny)(
@@ -1008,7 +1009,9 @@ export const $Trade = (config: ITradeComponent) => component((
                 query: tradeListQuery,
                 $$done: snapshot((position, tradeList) => {
 
-                  if (tradeList.length === 0) {
+                  const trade = tradeList.find(t => t.key === position.key)
+
+                  if (!trade) {
                     return $column(layoutSheet.spacingSmall, style({ flex: 1, alignItems: 'center', placeContent: 'center' }))(
                       $text(style({ fontSize: '1.5em' }))('Trade History'),
                       $text(style({ color: pallete.foreground, fontSize: '.75em' }))(
@@ -1017,12 +1020,7 @@ export const $Trade = (config: ITradeComponent) => component((
                     )
                   }
 
-                  const trade = tradeList.find(t => t.key === position.key)
 
-                  if (!trade) {
-                    return $text('No Trade')
-                  }
- 
                   return $Table2({
                     // headerCellOp: style({ padding: screenUtils.isDesktopScreen ? '15px 15px' : '6px 4px' }),
                     // cellOp: style({ padding: screenUtils.isDesktopScreen ? '4px 15px' : '6px 4px' }),
@@ -1053,7 +1051,7 @@ export const $Trade = (config: ITradeComponent) => component((
                       },
                       {
                         $head: $text('Action'),
-                        columnOp: O(style({ flex: 1.2 })),
+                        columnOp: O(style({ flex: 1 })),
 
                         $$body: map((pos) => {
                           const $requestRow = $row(style({ alignItems: 'center' }))
@@ -1095,7 +1093,7 @@ export const $Trade = (config: ITradeComponent) => component((
                         ? [
                           {
                             $head: $text('PnL Realised'),
-                            columnOp: O(style({ flex: .4, placeContent: 'flex-end', textAlign: 'right', alignItems: 'center' })),
+                            columnOp: O(style({ flex: .5, placeContent: 'flex-end', textAlign: 'right', alignItems: 'center' })),
 
                             $$body: map((req: RequestTrade | IPositionIncrease | IPositionDecrease) => {
                               if ('ctx' in req) {
