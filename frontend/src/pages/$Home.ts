@@ -3,7 +3,7 @@ import { $Branch, $element, $node, $svg, $text, attr, component, eventElementTar
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, observer, screenUtils } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { gmxSubgraph, IAccountQueryParamApi, intervalTimeMap, ITimerangeParamApi, TRADE_CONTRACT_MAPPING } from "@gambitdao/gmx-middleware"
+import { gmxSubgraph, intervalTimeMap, TRADE_CONTRACT_MAPPING } from "@gambitdao/gmx-middleware"
 import { CHAIN, IWalletLink, zipState } from "@gambitdao/wallet-link"
 import { $alert, $anchor, $gitbook, $IntermediatePromise, $Link } from "@gambitdao/ui-components"
 import { awaitPromises, map, multicast, now, snapshot, switchLatest, tap, zip } from "@most/core"
@@ -20,7 +20,7 @@ import { $opensea } from "../elements/$icons"
 import { Stream } from "@most/types"
 import { $berry, svgParts } from "../components/$DisplayBerry"
 import { BrowserStore } from "../logic/store"
-import { $berryByLabItems, $berryByToken, getBerryFromItems, getContractAddress, getSafeMappedValue } from "../logic/common"
+import { $berryByLabItems, $berryByToken, getBerryFromItems, getSafeMappedValue } from "../logic/common"
 import { $StakingGraph } from "../components/$StakingGraph"
 import { connectGmxEarn } from "../logic/contract"
 
@@ -82,10 +82,10 @@ export const $Home = (config: ITreasury) => component((
     }, eyeContainerPerspective, windowMouseMove)
   )
 
-  const queryParams: IAccountQueryParamApi & Partial<ITimerangeParamApi> = {
-    from: config.treasuryStore.getState().startedStakingGmxTimestamp || undefined,
-    account: GBC_ADDRESS.TREASURY_ARBITRUM
-  }
+  // const queryParams: IRequestAccountApi & Partial<IRequestTimerangeApi> = {
+  //   from: config.treasuryStore.getState().startedStakingGmxTimestamp || undefined,
+  //   account: GBC_ADDRESS.TREASURY_ARBITRUM
+  // }
 
   function dailyRandom(n: number, iterations = 100) {
     for (let i = 0; i < iterations; i++) {

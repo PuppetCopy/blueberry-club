@@ -1,13 +1,17 @@
-import { WebSocketProvider, JsonRpcProvider } from "@ethersproject/providers"
+import { WebSocketProvider, JsonRpcProvider, FallbackProvider } from "@ethersproject/providers"
 import { awaitProviderNetwork, CHAIN } from "@gambitdao/wallet-link"
 import { now } from "@most/core"
 
 
 
-export const arbGlobalProvider = new WebSocketProvider(document.location.hostname === 'localhost'
+const defaultwssProvider = new WebSocketProvider(document.location.hostname === 'localhost'
   ? 'wss://arb-mainnet.g.alchemy.com/v2/RBsflxWv6IhITsLxAWcQlhCqSuxV7Low'
   : 'wss://arb-mainnet.g.alchemy.com/v2/Rf-9XHJG_C6xvhApXKg1tNCZmAOBaA5A'
 )
+export const arbGlobalProvider = defaultwssProvider
+// export const arbGlobalProvider = new JsonRpcProvider('https://arbitrum-one.gateway.pokt.network/v1/lb/9d70f26468263cb1d61de3c0')
+
+
 
 export const arbGlobalProviderEvent = awaitProviderNetwork(now(arbGlobalProvider))
 

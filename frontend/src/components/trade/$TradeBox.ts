@@ -9,7 +9,10 @@ import {
   ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd, IPricefeed,
   TRADE_CONTRACT_MAPPING, filterNull, ITradeOpen, zipState, MARGIN_FEE_BASIS_POINTS, abs, DEDUCT_FOR_GAS, getTokenAmount
 } from "@gambitdao/gmx-middleware"
-import { $anchor, $bear, $bull, $hintNumChange, $infoTooltipLabel, $IntermediatePromise, $moreDots, $tokenIconMap, $tokenLabelFromSummary, $xCross, invertColor } from "@gambitdao/ui-components"
+import {
+  $anchor, $bear, $bull, $hintNumChange, $infoTooltipLabel, $IntermediatePromise,
+  $tokenIconMap, $tokenLabelFromSummary, invertColor
+} from "@gambitdao/ui-components"
 import {
   merge, multicast, mergeArray, now, snapshot, map, switchLatest,
   skipRepeats, empty, fromPromise, constant, startWith, skipRepeatsWith, awaitPromises, zip, sample
@@ -111,7 +114,7 @@ interface ITradeBox {
 
   pricefeed: Stream<Promise<IPricefeed[]>>
   trade: Stream<Promise<ITradeOpen | null>>
-  positionChange: Stream<IPositionGetter>
+  // positionChange: Stream<IPositionGetter>
 }
 
 export type RequestTradeQuery = {
@@ -156,7 +159,6 @@ export const $TradeBox = (config: ITradeBox) => component((
   [clickResetTradeMode, clickResetTradeModeTether]: Behavior<any, any>,
   [clickMax, clickMaxTether]: Behavior<any, any>,
   [clickOpenTradeConfig, clickOpenTradeConfigTether]: Behavior<any, any>,
-
 
 ) => {
 
@@ -212,7 +214,7 @@ export const $TradeBox = (config: ITradeBox) => component((
     return null
   }, pnlCrossHairTimeChange)
 
-  const resetTrade = constant(0n, mergeArray([config.positionChange, clickResetTradeMode]))
+  const resetTrade = constant(0n, mergeArray([config.tradeState.position, clickResetTradeMode]))
 
 
   const clickMaxCollateralUsd = snapshot(state => {
@@ -344,7 +346,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
 
   return [
-    $card(style({ borderRadius: `${BOX_SPACING}px`, padding: 0, gap: 0, background: 'rgb(0 0 0 / 15%)' }))(
+    $card(style({ padding: 0, gap: 0, background: theme.name === 'dark' ? 'rgb(0 0 0 / 15%)' : '' }))(
       // $row(
       //   // styleInline(map(isIncrease => isIncrease ? { borderColor: 'none' } : {}, config.tradeConfig.isIncrease)),
       //   style({
@@ -955,8 +957,8 @@ export const $TradeBox = (config: ITradeBox) => component((
             const routerContractAddress = getContractAddress(TRADE_CONTRACT_MAPPING, w3p.chain, 'Router')
             const positionRouterAddress = getContractAddress(TRADE_CONTRACT_MAPPING, w3p.chain, 'PositionRouter')
 
-            return $column(
-              $row(layoutSheet.spacing, style({ padding: '0 16px', placeContent: 'space-between', alignItems: 'center' }), styleInline(map(mode => ({ display: mode ? 'flex' : 'none' }), inTradeMode)))(
+            return $column(style({ flex: 1 }))(
+              $row(layoutSheet.spacing, style({ padding: '0 16px', margin: 'auto 0', placeContent: 'space-between', alignItems: 'center' }), styleInline(map(mode => ({ display: mode ? 'flex' : 'none' }), inTradeMode)))(
                 $column(layoutSheet.spacingTiny)(
                   // $TextField({
                   //   label: 'Slippage %',
@@ -1264,8 +1266,10 @@ export const $TradeBox = (config: ITradeBox) => component((
                   $$done: snapshot((pos, [pricefeed, trade]) => {
                     if (trade === null) {
                       const tokenDesc = getTokenDescription(pos.indexToken)
+                      const route = pos.isLong ? `Long-${tokenDesc.symbol}` : `Short-${tokenDesc.symbol}/${getTokenDescription(pos.collateralToken).symbol}`
+
                       return $row(style({ flex: 1, placeContent: 'center', alignItems: 'center' }), styleInline(map(mode => ({ display: mode ? 'none' : 'flex' }), inTradeMode)))(
-                        $text(style({ color: pallete.foreground }))(`no ${tokenDesc.symbol} positon in contract`)
+                        $text(style({ color: pallete.foreground }))(`no ${route} position open`)
                       )
                     }
 

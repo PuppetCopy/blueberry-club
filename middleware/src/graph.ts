@@ -1,6 +1,6 @@
 import { O } from "@aelea/core"
 import { hexValue } from "@ethersproject/bytes"
-import { createSubgraphClient, gmxSubgraph, groupByMap, ICompetitionLadderRequest, IIdentifiableEntity, IPagePositionParamApi, pagingQuery } from "@gambitdao/gmx-middleware"
+import { createSubgraphClient, gmxSubgraph, groupByMap, IRequestCompetitionLadderApi, IIdentifiableEntity, IRequestPagePositionApi, pagingQuery } from "@gambitdao/gmx-middleware"
 import { awaitPromises, combine, map, now, switchLatest } from "@most/core"
 import { gql } from "@urql/core"
 import { ILabItem, ILabItemOwnership, IOwner, IProfile, IProfileTradingSummary, IToken } from "./types"
@@ -19,7 +19,7 @@ export async function querySubgraph(document: string): Promise<any> {
 
 
 export const profileList = O(
-  map(async (queryParams: Partial<IPagePositionParamApi>) => {
+  map(async (queryParams: Partial<IRequestPagePositionApi>) => {
 
     const res = await await querySubgraph(`
 {
@@ -253,7 +253,7 @@ export const profile = O(
 )
 
 export const competitionRoiAccountList = O(
-  map((queryParams: ICompetitionLadderRequest) => {
+  map((queryParams: IRequestCompetitionLadderApi) => {
 
     const accountSummaryList = gmxSubgraph.competitionCumulativeRoi(now(queryParams))
 

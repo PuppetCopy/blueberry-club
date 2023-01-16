@@ -1,14 +1,13 @@
-import { $element, $node, $text, attr, style } from "@aelea/dom"
-import { $column, $icon, $row, layoutSheet } from "@aelea/ui-components"
+import { $node, $text, style } from "@aelea/dom"
+import { $column, $row, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { BaseProvider } from "@ethersproject/providers"
-import { getAccountExplorerUrl, IClaim, IClaimSource, intervalTimeMap } from "@gambitdao/gmx-middleware"
-import { CHAIN, IWalletLink } from "@gambitdao/wallet-link"
+import { intervalTimeMap } from "@gambitdao/gmx-middleware"
+import { IWalletLink } from "@gambitdao/wallet-link"
 import { $jazzicon } from "../common/$avatar"
-import { blueberrySubgraph, getGatewayUrl, getIdentityFromENS, IEnsClaim, IProfile } from "@gambitdao/gbc-middleware"
-import { $anchor, $ethScan, $twitter } from "@gambitdao/ui-components"
+import { blueberrySubgraph, getIdentityFromENS, IEnsClaim, IProfile } from "@gambitdao/gbc-middleware"
 import { $berryByToken } from "../logic/common"
-import { awaitPromises, empty, fromPromise, map, now, switchLatest } from "@most/core"
+import { awaitPromises, empty, map, now, switchLatest } from "@most/core"
 
 
 export interface IAccountPreview {
@@ -22,7 +21,6 @@ export interface IProfilePreview {
   profile: IProfile
   labelSize?: string
   avatarSize?: number
-  claim?: IClaim
   showAddress?: boolean
 }
 
@@ -40,28 +38,28 @@ export const $AccountLabel = (address: string, fontSize = '1em') => {
 }
 
 
-export const $ProfileLinks = (address: string, claim?: IClaim) => {
-  const $explorer = $anchor(attr({ href: getAccountExplorerUrl(CHAIN.ARBITRUM, address) }))(
-    $icon({ $content: $ethScan, width: '16px', viewBox: '0 0 24 24' })
-  )
+// export const $ProfileLinks = (address: string, claim?: IClaim) => {
+//   const $explorer = $anchor(attr({ href: getAccountExplorerUrl(CHAIN.ARBITRUM, address) }))(
+//     $icon({ $content: $ethScan, width: '16px', viewBox: '0 0 24 24' })
+//   )
 
-  const twitterHandle = claim?.sourceType === IClaimSource.TWITTER
-    ? claim.name
-    : claim?.sourceType === IClaimSource.ENS
-      ? JSON.parse(claim.data).twitterUrl : null
+//   const twitterHandle = claim?.sourceType === IClaimSource.TWITTER
+//     ? claim.name
+//     : claim?.sourceType === IClaimSource.ENS
+//       ? JSON.parse(claim.data).twitterUrl : null
 
-  if (twitterHandle) {
-    return $row(layoutSheet.spacing)(
-      $explorer,
-      $anchor(attr({ href: `https://twitter.com/${twitterHandle}` }))(
-        $icon({ $content: $twitter, width: '16px', viewBox: `0 0 24 24` })
-      ),
-    )
-  }
+//   if (twitterHandle) {
+//     return $row(layoutSheet.spacing)(
+//       $explorer,
+//       $anchor(attr({ href: `https://twitter.com/${twitterHandle}` }))(
+//         $icon({ $content: $twitter, width: '16px', viewBox: `0 0 24 24` })
+//       ),
+//     )
+//   }
 
 
-  return $explorer
-}
+//   return $explorer
+// }
 
 
 

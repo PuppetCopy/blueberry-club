@@ -1,7 +1,7 @@
 
-import { Behavior } from '@aelea/core'
+import { Behavior, combineObject } from '@aelea/core'
 import { $Branch, $custom, $Node, $text, component, IBranch, NodeComposeFn, style } from '@aelea/dom'
-import { $column, designSheet, observer } from "@aelea/ui-components"
+import { $column, designSheet, layoutSheet, observer } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { zipState } from '@gambitdao/gmx-middleware'
 import { filter, join, loop, map, mergeArray, scan } from "@most/core"
@@ -27,7 +27,8 @@ export interface QuantumScroll {
 }
 
 
-const $defaultLoader = $text(style({ color: pallete.foreground, padding: '3px 10px' }))('loading...')
+export const $defaultVScrollLoader = $text(style({ color: pallete.foreground, padding: '3px 10px' }))('loading...')
+export const $defaultVScrollContainer = $column(layoutSheet.spacing)
 
 
 export const $VirtualScroll = (config: QuantumScroll) => component((
@@ -37,8 +38,7 @@ export const $VirtualScroll = (config: QuantumScroll) => component((
   const scrollIndex: Stream<ScrollRequest> = scan(seed => seed + 1, 0, intersecting)
 
 
-  const $container = (config.$container || $column)(
-    designSheet.customScroll,
+  const $container = (config.$container || $defaultVScrollContainer)(
     map(node => ({ ...node, insertAscending: config.insertAscending || false })),
   )
 
@@ -50,12 +50,12 @@ export const $VirtualScroll = (config: QuantumScroll) => component((
     }),
   )
 
-  const $loader = config.$loader || $defaultLoader
+  const $loader = config.$loader || $defaultVScrollLoader
   const $observerloader = $custom('observer')(intersectedLoader)(
     $loader
   )
 
-  const loadState = zipState({ data: config.dataSource, scrollIndex })
+  const loadState = combineObject({ data: config.dataSource, scrollIndex })
 
   const displayState = {
     isLoading: true

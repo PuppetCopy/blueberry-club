@@ -11,7 +11,7 @@ import { $ButtonPrimary, $ButtonSecondary } from "../components/form/$Button"
 import { $labItem } from "../logic/common"
 import { BrowserStore } from "../logic/store"
 import { $IntermediateConnectButton } from "../components/$ConnectAccount"
-import { IAccountParamApi, IStake } from "@gambitdao/gmx-middleware"
+import { IRequestAccountApi, IStake } from "@gambitdao/gmx-middleware"
 import { $Profile } from "./$Profile"
 import { Stream } from "@most/types"
 import { $Link, $anchor } from "@gambitdao/ui-components"
@@ -29,7 +29,7 @@ export const $ProfileConnected = (config: IAccount) => component((
   [changeRoute, changeRouteTether]: Behavior<string, string>,
   [changeNetwork, changeNetworkTether]: Behavior<CHAIN, CHAIN>,
   [walletChange, walletChangeTether]: Behavior<IWalletName, IWalletName>,
-  [requestStake, requestStakeTether]: Behavior<IAccountParamApi, IAccountParamApi>,
+  [requestStake, requestStakeTether]: Behavior<IRequestAccountApi, IRequestAccountApi>,
 ) => {
 
 

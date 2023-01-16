@@ -213,7 +213,6 @@ export interface IAccountSummary extends IAbstractPositionStake {
   fee: bigint
   winCount: number
   lossCount: number
-  claim: IClaim | null,
 }
 
 export interface IAccountLadderSummary extends IAccountSummary {
@@ -250,73 +249,47 @@ export type IPriceLatestMap = {
   [P in ITokenIndex]: IPriceLatest
 }
 
-export enum IClaimSource {
-  TWITTER = 'TWITTER',
-  ENS = 'ENS',
-}
-
-
-export interface IClaim {
-  name: string
-  account: Address
-  sourceType: IClaimSource
-  data: string
-}
-
-export interface Account {
-  address: string
-  settledPositionCount: number
-  profitablePositionsCount: number
-  realisedPnl: bigint
-  claim: IClaim | null
-}
 
 export interface IChainParamApi {
   chain: CHAIN
 }
 
-export interface IAccountQueryParamApi {
-  account: Address
-}
 
-
-
-export interface ITimerangeParamApi {
+export interface IRequestTimerangeApi {
   from: number
   to: number
 }
 
-export interface IPagePositionParamApi {
+export interface IRequestPagePositionApi {
   offset: number
   pageSize: number
 }
 
-export interface ISortParamApi<T extends string | number | symbol> {
+export interface IRequestSortApi<T extends string | number | symbol> {
   sortBy: T
   sortDirection: 'desc' | 'asc'
 }
 
-export interface IPageParapApi<T> extends IPagePositionParamApi {
+export interface IRequestPageApi<T> extends IRequestPagePositionApi {
   page: T[]
 }
 
 
-export interface ILeaderboardRequest extends IPagePositionParamApi, IChainParamApi, ISortParamApi<keyof IAccountSummary> {
+export interface IRequestLeaderboardApi extends IRequestPagePositionApi, IChainParamApi, IRequestSortApi<keyof IAccountSummary> {
   timeInterval: intervalTimeMap.HR24 | intervalTimeMap.DAY7 | intervalTimeMap.MONTH
 }
-export interface ICompetitionLadderRequest extends IChainParamApi, IPagePositionParamApi, ITimerangeParamApi {
+export interface IRequestCompetitionLadderApi extends IChainParamApi, IRequestPagePositionApi, IRequestTimerangeApi {
   referralCode: string
   maxCollateral: bigint
 }
 
+export type IRequestAccountApi = IChainParamApi & { account: string }
 
-export type IPriceTimelineParamApi = IChainParamApi & ITimerangeParamApi & { tokenAddress: ITokenIndex }
-export type IAccountHistoricalDataApi = IChainParamApi & IAccountQueryParamApi & ITimerangeParamApi
-export type IOpenTradesParamApi = IChainParamApi & IPagePositionParamApi & ISortParamApi<keyof ITradeOpen>
-export type IPricefeedParamApi = IChainParamApi & ITimerangeParamApi & { interval: intervalTimeMap, tokenAddress: ITokenTrade }
-export type IAccountParamApi = IChainParamApi & IAccountQueryParamApi
+export type IRequestPriceTimelineApi = IChainParamApi & IRequestTimerangeApi & { tokenAddress: ITokenIndex }
+export type IRequestAccountHistoricalDataApi = IChainParamApi & IRequestAccountApi & IRequestTimerangeApi
+export type IRequestPricefeedApi = IChainParamApi & IRequestTimerangeApi & { interval: intervalTimeMap, tokenAddress: ITokenTrade }
+export type IRequestTradeListApi = IChainParamApi & IRequestPagePositionApi & IRequestSortApi<keyof ITradeAbstract> & { status: TradeStatus }
 
 
-
-export interface IRequestTradeQueryparam extends IChainParamApi, IIdentifiableEntity { }
+export interface IRequestGraphEntityApi extends IChainParamApi, IIdentifiableEntity { }
 

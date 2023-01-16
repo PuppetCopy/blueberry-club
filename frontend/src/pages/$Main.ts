@@ -4,7 +4,7 @@ import * as router from '@aelea/router'
 import { $column, designSheet, layoutSheet, screenUtils } from '@aelea/ui-components'
 import {
   gmxSubgraph, ARBITRUM_ADDRESS, AVALANCHE_ADDRESS,
-  ETH_ADDRESS_REGEXP, IAccountParamApi, intervalTimeMap, IPricefeedParamApi, ICompetitionLadderRequest
+  ETH_ADDRESS_REGEXP, IRequestAccountApi, intervalTimeMap, IRequestPricefeedApi, IRequestCompetitionLadderApi
 } from '@gambitdao/gmx-middleware'
 import { CHAIN, initWalletLink, IWalletName } from "@gambitdao/wallet-link"
 import { map, merge, multicast, now } from '@most/core'
@@ -42,11 +42,11 @@ interface Website {
 export const $Main = ({ baseRoute = '' }: Website) => component((
   [routeChanges, linkClickTether]: Behavior<any, string>,
 
-  [requestAccountTradeList, requestAccountTradeListTether]: Behavior<IAccountParamApi, IAccountParamApi>,
-  [requestPricefeed, requestPricefeedTether]: Behavior<IPricefeedParamApi, IPricefeedParamApi>,
-  [requestStake, requestStakeTether]: Behavior<IAccountParamApi, IAccountParamApi>,
+  [requestAccountTradeList, requestAccountTradeListTether]: Behavior<IRequestAccountApi, IRequestAccountApi>,
+  [requestPricefeed, requestPricefeedTether]: Behavior<IRequestPricefeedApi, IRequestPricefeedApi>,
+  [requestStake, requestStakeTether]: Behavior<IRequestAccountApi, IRequestAccountApi>,
 
-  [requestCompetitionLadder, requestCompetitionLadderTether]: Behavior<ICompetitionLadderRequest, ICompetitionLadderRequest>,
+  [requestCompetitionLadder, requestCompetitionLadderTether]: Behavior<IRequestCompetitionLadderApi, IRequestCompetitionLadderApi>,
   [requestProfilePickList, requestProfilePickListTether]: Behavior<string[], string[]>,
 
   [walletChange, walletChangeTether]: Behavior<IWalletName, IWalletName>,

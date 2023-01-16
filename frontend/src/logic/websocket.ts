@@ -1,8 +1,8 @@
 import { O } from "@aelea/core"
 import { http } from "@aelea/ui-components"
-import { filter, fromPromise, map, mergeArray, multicast } from "@most/core"
+import { filter, map, mergeArray, multicast } from "@most/core"
 import { Stream } from "@most/types"
-import { fromJson, ICommunicationMessage, ILeaderboardRequest, IPositionLiquidated } from "@gambitdao/gmx-middleware"
+import { ICommunicationMessage } from "@gambitdao/gmx-middleware"
 
 
 export type ILoopMap<T> = {
@@ -35,21 +35,4 @@ export const helloBackend = <IN extends ILoopMap<IN>, OUT>(inMap: IN): {[k: stri
  
   return outMap as any
 }
-
-
-export const liquidationsQuery = (params: ILeaderboardRequest) => fromPromise(
-  http.fetchJson<IPositionLiquidated[]>(`/api/liquidations`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      parseJson: jsonList => {
-        return jsonList.map(fromJson.positionLiquidatedJson)
-      },
-      body: JSON.stringify(params)
-    }
-  )
-)
-
 

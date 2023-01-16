@@ -3,14 +3,14 @@ import { awaitPromises, map } from "@most/core"
 import { intervalTimeMap } from "./constant"
 import { tradeJson } from "./fromJson"
 import { toAccountCompetitionSummary, toAccountSummary } from "./gmxUtils"
-import { IAccountQueryParamApi, IChainParamApi, ICompetitionLadderRequest, ILeaderboardRequest, IPagePositionParamApi, IPricefeed, IPricefeedParamApi, IPriceLatest, IRequestTradeQueryparam, IStake, ITimerangeParamApi, ITrade, TradeStatus } from "./types"
+import { IRequestAccountApi, IChainParamApi, IRequestCompetitionLadderApi, IRequestLeaderboardApi, IRequestPagePositionApi, IPricefeed, IRequestPricefeedApi, IPriceLatest, IRequestGraphEntityApi, IStake, IRequestTimerangeApi, ITrade, TradeStatus } from "./types"
 import { cacheMap, createSubgraphClient, groupByMap, pagingQuery, unixTimestampNow } from "./utils"
 import { gql } from "@urql/core"
 import * as fromJson from "./fromJson"
 import * as fetch from "isomorphic-fetch"
 import { CHAIN } from "@gambitdao/wallet-link"
 
-export type IAccountTradeListParamApi = IChainParamApi & IAccountQueryParamApi & { status: TradeStatus };
+export type IAccountTradeListParamApi = IChainParamApi & IRequestAccountApi & { status: TradeStatus };
 
 
 const createCache = cacheMap({})
@@ -47,7 +47,7 @@ export const globalCache = cacheMap({})
 
 
 export const pricefeed = O(
-  map(async (queryParams: IPricefeedParamApi) => {
+  map(async (queryParams: IRequestPricefeedApi) => {
     const newLocal = `
       {
         pricefeeds(first: 1000, orderBy: timestamp, orderDirection: asc, where: {tokenAddress: _${queryParams.tokenAddress}, interval: _${queryParams.interval}, timestamp_gte: ${queryParams.from}, timestamp_lte: ${queryParams.to || unixTimestampNow()} }) {
@@ -63,7 +63,7 @@ export const pricefeed = O(
 
 
 export const stake = O(
-  map(async (queryParams: IChainParamApi & IAccountQueryParamApi) => {
+  map(async (queryParams: IChainParamApi & IRequestAccountApi) => {
 
     const priceFeedQuery = await querySubgraph(queryParams, `
 {
@@ -83,7 +83,7 @@ export const stake = O(
 )
 
 export const trade = O(
-  map(async (queryParams: IRequestTradeQueryparam) => {
+  map(async (queryParams: IRequestGraphEntityApi) => {
 
     if (!queryParams?.id) {
       return null
@@ -145,7 +145,7 @@ export const accountTradeList = O(
 )
 
 export const leaderboardTopList = O(
-  map(async (queryParams: ILeaderboardRequest) => {
+  map(async (queryParams: IRequestLeaderboardApi) => {
     const cacheLife = cacheLifeMap[queryParams.timeInterval]
     const cacheKey = 'requestLeaderboardTopList' + queryParams.timeInterval + queryParams.chain
 
@@ -176,7 +176,7 @@ export const leaderboardTopList = O(
 
 
 export const competitionCumulativeRoi = O(
-  map(async (queryParams: ICompetitionLadderRequest) => {
+  map(async (queryParams: IRequestCompetitionLadderApi) => {
     const dateNow = unixTimestampNow()
     const to = Math.min(dateNow, queryParams.to)
     const timeSlot = Math.floor(to / intervalTimeMap.MIN5)
@@ -225,7 +225,7 @@ query {
 )
 
 export const competitionAccountList = O(
-  map((queryParams: ICompetitionLadderRequest) => {
+  map((queryParams: IRequestCompetitionLadderApi) => {
 
     const competitionAccountListQuery = fetchHistoricTrades({ ...queryParams, offset: 0 }, async (params) => {
       const res = await arbitrumGraphDev(gql(`
@@ -248,7 +248,7 @@ query {
 
 
 
-export const fetchTrades = async <T extends IPagePositionParamApi & IChainParamApi, R>(params: T, getList: (res: T) => Promise<R[]>): Promise<R[]> => {
+export const fetchTrades = async <T extends IRequestPagePositionApi & IChainParamApi, R>(params: T, getList: (res: T) => Promise<R[]>): Promise<R[]> => {
   const list = await getList(params)
 
   const nextOffset = params.offset + 1000
@@ -267,7 +267,7 @@ export const fetchTrades = async <T extends IPagePositionParamApi & IChainParamA
   return list
 }
 
-export const fetchHistoricTrades = async <T extends IPagePositionParamApi & IChainParamApi & ITimerangeParamApi, R>(params: T, getList: (res: T) => Promise<R[]>): Promise<R[]> => {
+export const fetchHistoricTrades = async <T extends IRequestPagePositionApi & IChainParamApi & IRequestTimerangeApi, R>(params: T, getList: (res: T) => Promise<R[]>): Promise<R[]> => {
   const deltaTime = params.to - params.from
 
   // splits the queries because the-graph's result limit of 5k items

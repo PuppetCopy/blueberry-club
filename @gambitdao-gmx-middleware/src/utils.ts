@@ -3,7 +3,7 @@ import { AnimationFrames } from "@aelea/dom"
 import { Disposable, Scheduler, Sink, Stream } from "@most/types"
 import { at, awaitPromises, constant, continueWith, empty, filter, map, merge, multicast, now, recoverWith, switchLatest, zipArray } from "@most/core"
 import { intervalTimeMap, USD_DECIMALS } from "./constant"
-import { IPageParapApi, IPagePositionParamApi, ISortParamApi } from "./types"
+import { IRequestPageApi, IRequestPagePositionApi, IRequestSortApi } from "./types"
 import { keccak256 } from "@ethersproject/solidity"
 import { ClientOptions, createClient, OperationContext, TypedDocumentNode } from "@urql/core"
 import { CHAIN, EXPLORER_URL, NETWORK_METADATA } from "@gambitdao/wallet-link"
@@ -302,11 +302,11 @@ export function intervalListFillOrderMap<T, R, RTime extends R & TimelineTime = 
 
 
 
-export function pagingQuery<T, ReqParams extends IPagePositionParamApi & (ISortParamApi<keyof T> | {})>(
+export function pagingQuery<T, ReqParams extends IRequestPagePositionApi & (IRequestSortApi<keyof T> | {})>(
   queryParams: ReqParams,
   res: T[],
   customComperator?: (a: T, b: T) => number
-): IPageParapApi<T> {
+): IRequestPageApi<T> {
   let list = res
   if ('sortBy' in queryParams) {
     const sortBy = queryParams.sortBy

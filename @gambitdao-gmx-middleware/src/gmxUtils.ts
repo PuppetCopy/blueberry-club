@@ -1,6 +1,9 @@
 import { BASIS_POINTS_DIVISOR, FUNDING_RATE_PRECISION, LIQUIDATION_FEE, MARGIN_FEE_BASIS_POINTS, MAX_LEVERAGE } from "./constant"
-import { IAccountSummary, ITrade, IClaim, IClaimSource, ITradeSettled, ITradeClosed, ITradeLiquidated, ITradeOpen, TradeStatus, IPricefeed, IAccountLadderSummary, IPositionLiquidated } from "./types"
-import { easeInExpo, formatFixed, formatReadableUSD, getDenominator, groupByMapMany, isAddress } from "./utils"
+import {
+  IAccountSummary, ITrade, ITradeSettled, ITradeClosed, ITradeLiquidated, ITradeOpen,
+  TradeStatus, IPricefeed, IAccountLadderSummary, IPositionLiquidated
+} from "./types"
+import { easeInExpo, formatFixed, getDenominator, groupByMapMany } from "./utils"
 
 
 export function safeDiv(a: bigint, b: bigint): bigint {
@@ -188,7 +191,6 @@ export function toAccountSummary(list: ITrade[]): IAccountSummary[] {
   return allPositions.reduce((seed, [account, allSettled]) => {
 
     const seedAccountSummary: IAccountSummary = {
-      claim: null,
       account,
 
       collateral: 0n,
@@ -227,7 +229,6 @@ export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: stri
   return tradeListEntries.reduce((seed, [account, tradeList]) => {
 
     const seedAccountSummary: IAccountLadderSummary = {
-      claim: null,
       account,
       cumulativeLeverage: 0n,
 
@@ -311,8 +312,6 @@ export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: stri
         winCount,
 
         cumulativeLeverage,
-
-        claim: null,
         fee,
 
         size: seed.size + next.size,
@@ -345,21 +344,6 @@ export function validateIdentityName(name: string) {
     throw new Error('Invalid name')
   }
 
-}
-
-export function parseTwitterClaim(account: string, name: string): IClaim {
-  if (!isAddress(account)) {
-    throw new Error('Invalid address')
-  }
-
-  validateIdentityName(name)
-
-  return {
-    name,
-    account,
-    data: '',
-    sourceType: IClaimSource.TWITTER
-  }
 }
 
 

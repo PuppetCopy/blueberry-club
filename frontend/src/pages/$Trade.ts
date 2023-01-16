@@ -3,14 +3,14 @@ import { $node, $text, component, eventElementTarget, INode, nodeEvent, style, s
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 import {
-  AddressZero, formatFixed, intervalTimeMap, IPricefeed, IPricefeedParamApi, ITrade, unixTimestampNow, ITradeOpen, BASIS_POINTS_DIVISOR, getNextAveragePrice,
+  AddressZero, formatFixed, intervalTimeMap, IPricefeed, IRequestPricefeedApi, ITrade, unixTimestampNow, ITradeOpen, BASIS_POINTS_DIVISOR, getNextAveragePrice,
   getNextLiquidationPrice, getMarginFees, STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, TAX_BASIS_POINTS,
   getDenominator, USD_PERCISION, formatReadableUSD, timeSince, getPositionKey, IPositionIncrease,
   IPositionDecrease, getPnL, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE, getFundingFee, filterNull, getTokenUsd, getLiquidationPrice,
-  ITokenIndex, ITokenStable, ITokenInput, TradeStatus, LIMIT_LEVERAGE, div, readableDate, TRADE_CONTRACT_MAPPING, getTokenAmount, abs, IAccountParamApi, CHAIN_ADDRESS_MAP, DEDUCT_FOR_GAS,
+  ITokenIndex, ITokenStable, ITokenInput, TradeStatus, LIMIT_LEVERAGE, div, readableDate, TRADE_CONTRACT_MAPPING, getTokenAmount, abs, IRequestAccountApi, CHAIN_ADDRESS_MAP, DEDUCT_FOR_GAS,
 } from "@gambitdao/gmx-middleware"
 
-import { map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, snapshot, zip, combine, tap, constant } from "@most/core"
+import { map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, snapshot, zip, combine, tap, constant, periodic } from "@most/core"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
 import { $arrowsFlip, $infoTooltip, $IntermediatePromise, $ProfitLossText, $RiskLiquidator, $spinner, $txHashRef, invertColor } from "@gambitdao/ui-components"
 import { CandlestickData, LineStyle, Time } from "lightweight-charts"
@@ -18,7 +18,7 @@ import { Stream } from "@most/types"
 import { connectTradeReader, getErc20Balance, IPositionGetter, latestPriceFromExchanges } from "../logic/contract/trade"
 import { $TradeBox, ITradeFocusMode, ITradeState, RequestTradeQuery } from "../components/trade/$TradeBox"
 import { $ButtonToggle } from "../common/$Toggle"
-import { $Table2 } from "../common/$Table2"
+import { $defaultTableContainer, $Table2 } from "../common/$Table2"
 import { $Entry } from "./$Leaderboard"
 import { $CandleSticks } from "../components/chart/$CandleSticks"
 import { getFeeBasisPoints, getNativeTokenDescription, getTokenDescription, resolveAddress } from "../logic/utils"
@@ -207,7 +207,6 @@ export const $Trade = (config: ITradeComponent) => component((
     const collateralToken = params.isLong ? params.indexToken : params.collateralToken
     const address = params.account || AddressZero
     const key = getPositionKey(address, collateralToken, params.indexToken, params.isLong)
-
 
     if (latestKey === key) {
       return null
@@ -426,7 +425,7 @@ export const $Trade = (config: ITradeComponent) => component((
   }, combineObject({ position, isIncrease, collateralDeltaUsd, collateralTokenFundingInfo, sizeDeltaUsd, averagePrice, indexTokenPrice, indexTokenDescription, isLong }))
 
 
-  const requestPricefeed = combineArray((chain, tokenAddress, interval): IPricefeedParamApi => {
+  const requestPricefeed = combineArray((chain, tokenAddress, interval): IRequestPricefeedApi => {
     const range = interval * 1000
     const to = unixTimestampNow()
     const from = to - range
@@ -504,7 +503,7 @@ export const $Trade = (config: ITradeComponent) => component((
       : O()
   )
 
-  const requestAccountTradeList: Stream<IAccountParamApi | null> = map(w3p => {
+  const requestAccountTradeList: Stream<IRequestAccountApi | null> = map(w3p => {
     if (w3p === null || config.chainList.indexOf(w3p.chain) === -1) {
       return null
     }
@@ -519,10 +518,8 @@ export const $Trade = (config: ITradeComponent) => component((
   const availableIndexLiquidityUsd = tradeReader.getAvailableLiquidityUsd(indexToken, collateralToken)
 
 
-
-  const tradeListQuery: Stream<Promise<ITradeOpen[]>> = mergeArray([
+  const openTradeListQuery: Stream<Promise<ITradeOpen[]>> = mergeArray([
     combineArray(async (pos, listQuery) => {
-
       const tradeList = await listQuery
 
       if (tradeList.length === 0) {
@@ -530,7 +527,6 @@ export const $Trade = (config: ITradeComponent) => component((
       }
 
       const trade = tradeList.find(t => t.key === pos.key) || null
-      // const trade = null
 
       if (pos.averagePrice > 0n && trade === null) {
         const timestamp = unixTimestampNow()
@@ -547,8 +543,10 @@ export const $Trade = (config: ITradeComponent) => component((
         return [newTrade, ...tradeList]
       }
 
-      return listQuery
-    }, positionChange, openTradeList)
+      return pos.averagePrice === 0n
+        ? tradeList.filter(t => t.key !== pos.key)
+        : tradeList
+    }, position, openTradeList)
   ])
 
 
@@ -572,8 +570,8 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
               return trade
-            }, tradeListQuery, position),
-            positionChange,
+            }, openTradeListQuery, position),
+            // positionChange,
             pricefeed: config.pricefeed,
 
             tradeConfig,
@@ -639,7 +637,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
           return $IntermediatePromise({
-            query: tradeListQuery,
+            query: openTradeListQuery,
             $$done: map(res => {
 
               if (res.length === 0) {
@@ -651,10 +649,6 @@ export const $Trade = (config: ITradeComponent) => component((
               }
 
               return $Table2<ITradeOpen>({
-                $container: $column(layoutSheet.spacing),
-                scrollConfig: {
-                  $container: $column(layoutSheet.spacingBig)
-                },
                 dataSource: now(res),
                 columns: [
                   {
@@ -979,15 +973,7 @@ export const $Trade = (config: ITradeComponent) => component((
                 })
               }, timeframe)
             })({}),
-            // switchLatest(map(feed => {
-            //   if (feed) {
-            //     return empty()
-            //   }
 
-            //   return $node(style({ position: 'absolute', zIndex: 10, display: 'flex', inset: 0, backgroundColor: colorAlpha(pallete.middleground, .10), placeContent: 'center', alignItems: 'center' }))(
-            //     $spinner
-            //   )
-            // }, selectedPricefeed)),
           ),
 
           $column(style({ minHeight: '200px', flex: 1, position: 'relative' }))(
@@ -1006,31 +992,33 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
               return $IntermediatePromise({
-                query: tradeListQuery,
-                $$done: snapshot((position, tradeList) => {
-
-                  const trade = tradeList.find(t => t.key === position.key)
+                query: openTradeListQuery,
+                $$done: snapshot((pos, tradeList) => {
+                  const trade = tradeList.find(t => t.key === pos.key)
+                  const tokenDesc = getTokenDescription(pos.indexToken)
+                  const route = pos.isLong ? `Long-${tokenDesc.symbol}` : `Short-${tokenDesc.symbol}/${getTokenDescription(pos.collateralToken).symbol}`
 
                   if (!trade) {
                     return $column(layoutSheet.spacingSmall, style({ flex: 1, alignItems: 'center', placeContent: 'center' }))(
                       $text(style({ fontSize: '1.5em' }))('Trade History'),
                       $text(style({ color: pallete.foreground, fontSize: '.75em' }))(
-                        'No trade is open'
+                        `no ${route} position open`
                       )
                     )
                   }
 
 
+                  const initalList = trade ? [...trade.increaseList, ...trade.decreaseList] : []
                   return $Table2({
                     // headerCellOp: style({ padding: screenUtils.isDesktopScreen ? '15px 15px' : '6px 4px' }),
                     // cellOp: style({ padding: screenUtils.isDesktopScreen ? '4px 15px' : '6px 4px' }),
                     dataSource: mergeArray([
-                      now(trade ? [...trade.increaseList, ...trade.decreaseList] : []) as Stream<(RequestTrade | IPositionIncrease | IPositionDecrease)[]>,
+                      now(initalList) as Stream<(RequestTrade | IPositionIncrease | IPositionDecrease)[]>,
+                      // constant(initalList, periodic(3000)),
                       requestTradeRow
                     ]),
-                    $container: $column(layoutSheet.spacing, screenUtils.isDesktopScreen ? style({ flex: '1 1 0', minHeight: '100px' }) : style({})),
+                    $container: $defaultTableContainer(screenUtils.isDesktopScreen ? style({ flex: '1 1 0', minHeight: '100px' }) : style({})),
                     scrollConfig: {
-                      $container: $column(layoutSheet.spacingSmall),
                       insertAscending: true
                     },
                     columns: [

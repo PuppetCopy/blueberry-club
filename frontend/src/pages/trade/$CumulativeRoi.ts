@@ -1,12 +1,12 @@
 import { Behavior, replayLatest } from '@aelea/core'
-import { $node, $text, attr, component, style } from "@aelea/dom"
+import { $text, attr, component, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
 import { $column, $row, $seperator, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { colorAlpha, pallete } from '@aelea/ui-components-theme'
-import { empty, map, multicast, snapshot, switchLatest, take } from '@most/core'
+import { empty, map, multicast, snapshot, take } from '@most/core'
 import { Stream } from '@most/types'
-import { IPageParapApi, formatReadableUSD, formatFixed, unixTimestampNow, ICompetitionLadderRequest, getChainName } from '@gambitdao/gmx-middleware'
-import { $defaultHeaderCell, $defaultRowContainer, $Table2 } from "../../common/$Table2"
+import { IRequestPageApi, formatReadableUSD, formatFixed, unixTimestampNow, IRequestCompetitionLadderApi, getChainName } from '@gambitdao/gmx-middleware'
+import { $defaultTableHeaderCell, $defaultTableRowContainer, $Table2 } from "../../common/$Table2"
 import { $alertTooltip, countdown } from './$rules'
 import { CHAIN, IWalletLink } from '@gambitdao/wallet-link'
 import { $AccountLabel, $accountPreview, $profilePreview } from '../../components/$AccountProfile'
@@ -14,6 +14,7 @@ import { BLUEBERRY_REFFERAL_CODE, IProfile, IProfileTradingSummary, TOURNAMENT_S
 import { $card } from '../../elements/$common'
 import { $anchor, $Link } from '@gambitdao/ui-components'
 import { $berryByToken } from '../../logic/common'
+import { $defaultVScrollContainer } from '../../common/$VirtualScroll2'
 
 
 const prizeLadder: string[] = ['2200', '1100', '550', ...Array(15).fill('110')]
@@ -22,7 +23,7 @@ const prizeLadder: string[] = ['2200', '1100', '550', ...Array(15).fill('110')]
 export interface ICompetitonTopCumulative {
   walletLink: IWalletLink
   parentRoute: Route
-  competitionCumulativeRoi: Stream<IPageParapApi<IProfileTradingSummary>>
+  competitionCumulativeRoi: Stream<IRequestPageApi<IProfileTradingSummary>>
   profilePickList: Stream<IProfile[]>
 }
 
@@ -31,7 +32,7 @@ export interface ICompetitonTopCumulative {
 
 export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
   [routeChange, routeChangeTether]: Behavior<string, string>,
-  [requestCompetitionLadder, requestCompetitionLadderTether]: Behavior<number, ICompetitionLadderRequest>,
+  [requestCompetitionLadder, requestCompetitionLadderTether]: Behavior<number, IRequestCompetitionLadderApi>,
 ) => {
   const start = TOURNAMENT_START_PERIOD
   const end = TOURNAMENT_START_END
@@ -87,7 +88,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
             : $row(layoutSheet.spacing)(
               $column(style({ textAlign: 'right' }))(
                 $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
-                  $text(style({ fontSize: '2.2em', fontWeight: 'bold', color: pallete.primary, textShadow: `1px 1px 50px ${colorAlpha(pallete.primary, .45)}, 1px 1px 50px ${colorAlpha(pallete.primary, .25)} ` }))('#GambitROI'),
+                  $text(style({ fontSize: '2.2em', fontWeight: 'bold', color: pallete.primary, textShadow: `1px 1px 50px ${colorAlpha(pallete.primary, .45)}, 1px 1px 50px ${colorAlpha(pallete.primary, .25)} ` }))('#TradeGambit'),
                 ),
                 // $text(style({ color: pallete.foreground }))('Competition'),
                 // $text(style({ fontSize: '1.5em', color: ended ? '' : pallete.indeterminate }))('LIVE!')
@@ -118,14 +119,8 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
       //   $alert($text(`Results are being checked to ensure all data is accounted for. expected to finalize by Nov 25 12:00 UTC`)),
       // ),
 
-      $column(layoutSheet.spacing, style({ alignItems: 'center', placeContent: 'center', marginBottom: '20px', }))(
-
-        $column(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
-
-          $node(),
-
-          $details(TOURNAMENT_START_PERIOD, TOURNAMENT_START_END),
-        )
+      $column(layoutSheet.spacing, style({ alignItems: 'center', placeContent: 'center', margin: '40px 0', }))(
+        $details(TOURNAMENT_START_PERIOD, TOURNAMENT_START_END)
       ),
 
 
@@ -201,10 +196,13 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
         $Table2({
           $container: $card(style({ padding: "0", gap: 0 })),
           // rowOp: style({ backgroundColor: 'red' }),
-          $headerCell: $defaultHeaderCell(style({})),
+          $headerCell: $defaultTableHeaderCell(style({})),
           dataSource: tableList,
+          scrollConfig: {
+            $container: $defaultVScrollContainer(style({ gap: '1px' })),
+          },
           // $rowContainer: 
-          $bodyRowContainer: $defaultRowContainer(style({ background: pallete.background, margin: '0 1px', borderBottom: `1px solid ${pallete.horizon}` })),
+          $bodyRowContainer: $defaultTableRowContainer(style({ background: pallete.background, margin: '0 1px', borderBottom: `1px solid ${pallete.horizon}` })),
           columns: [
 
             {
@@ -290,7 +288,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
         })({
           scrollIndex: requestCompetitionLadderTether(
             map(pageIndex => {
-              const newLocal: ICompetitionLadderRequest = {
+              const newLocal: IRequestCompetitionLadderApi = {
                 chain: CHAIN.ARBITRUM,
                 referralCode: BLUEBERRY_REFFERAL_CODE,
                 maxCollateral: 1000000000000000000000000000000000n,

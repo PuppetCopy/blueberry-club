@@ -4,7 +4,7 @@ import { $column, $NumberTicker, $row, layoutSheet, screenUtils } from "@aelea/u
 import { pallete } from "@aelea/ui-components-theme"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import {
-  intervalTimeMap, readableNumber, formatFixed, ITimerangeParamApi, unixTimestampNow, intervalListFillOrderMap,
+  intervalTimeMap, readableNumber, formatFixed, IRequestTimerangeApi, unixTimestampNow, intervalListFillOrderMap,
   IStake, getTokenUsd, ITokenDescription, div, getDenominator, formatReadableUSD,
   BASIS_POINTS_DIVISOR, readableDate, ARBITRUM_ADDRESS, CHAIN_ADDRESS_MAP
 } from "@gambitdao/gmx-middleware"
@@ -35,7 +35,7 @@ export interface IStakingFeedDescription {
 }
 
 
-export interface ITreasuryChart extends Partial<ITimerangeParamApi> {
+export interface ITreasuryChart extends Partial<IRequestTimerangeApi> {
   walletLink: IWalletLink
   sourceList: Stream<IStake[]>
   stakingInfo: IRewardsStream
