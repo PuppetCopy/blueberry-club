@@ -163,6 +163,19 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
     return vault.cumulativeFundingRates(address)
   }, ts))
 
+  const getPoolAmounts = (ts: Stream<ITokenIndex>) => vaultReader.readInt(combine((address, vault) => {
+    return vault.poolAmounts(address)
+  }, ts))
+  const getReservedAmounts = (ts: Stream<ITokenIndex>) => vaultReader.readInt(combine((address, vault) => {
+    return vault.reservedAmounts(address)
+  }, ts))
+  const getTokenWeights = (ts: Stream<ITokenIndex>) => vaultReader.readInt(combine((address, vault) => {
+    return vault.tokenWeights(address)
+  }, ts))
+  const getUsdgAmounts = (ts: Stream<ITokenIndex>) => vaultReader.readInt(combine((address, vault) => {
+    return vault.usdgAmounts(address)
+  }, ts))
+
   // const getTokenCumulativeFunding = (ts: Stream<ITokenIndex>) => vaultReader.readInt(combine((address, vault) => {
   //   return vault.cumulativeFundingRates(address)
   // }, ts))
@@ -219,17 +232,6 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
     }, state))
   }
 
-  const getTokenInfo = (tokenEvent: Stream<ITokenIndex>) => switchOp(zipState({ vault: vaultReader.contract, positionRouter: positionRouterReader.contract }), combine(async (token, params) => {
-    const [weight, usdgAmounts, bufferAmounts, poolAmounts, reservedAmounts] = await Promise.all([
-      params.vault.tokenWeights(token).then(x => x.toBigInt()),
-      params.vault.usdgAmounts(token).then(x => x.toBigInt()),
-      params.vault.bufferAmounts(token).then(x => x.toBigInt()),
-      params.vault.poolAmounts(token).then(x => x.toBigInt()),
-      params.vault.reservedAmounts(token).then(x => x.toBigInt()),
-    ])
-
-    return { weight, bufferAmounts, usdgAmounts, poolAmounts, reservedAmounts }
-  }, tokenEvent))
 
   const nativeTokenPrice = pricefeedReader.readInt(map(async contract => {
     const chain = (await contract.provider.getNetwork()).chainId
@@ -358,7 +360,8 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
     executeIncreasePosition, getTokenWeight, getTokenDebtUsd, positionRouterReader, getTokenFundingRate,
     cancelIncreasePosition, executeDecreasePosition, cancelDecreasePosition, getTokenCumulativeFunding,
     positionIncreaseEvent, positionDecreaseEvent, positionUpdateEvent, positionCloseEvent, positionLiquidateEvent,
-    getLatestPrice, positionSettled, vaultReader, getPrice, totalTokenWeight, usdgSupply, getTokenInfo, getAvailableLiquidityUsd
+    getLatestPrice, positionSettled, vaultReader, getPrice, totalTokenWeight, usdgSupply, getPoolAmounts,
+    getReservedAmounts, getTokenWeights, getUsdgAmounts, getAvailableLiquidityUsd
   }
 }
 

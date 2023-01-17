@@ -7,7 +7,7 @@ import {
   ITokenDescription, LIMIT_LEVERAGE, bnDiv, replayState,
   div, StateStream, getPnL, MIN_LEVERAGE, formatToBasis, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE,
   ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd, IPricefeed,
-  TRADE_CONTRACT_MAPPING, filterNull, ITradeOpen, zipState, MARGIN_FEE_BASIS_POINTS, abs, DEDUCT_FOR_GAS, getTokenAmount
+  TRADE_CONTRACT_MAPPING, filterNull, ITradeOpen, zipState, MARGIN_FEE_BASIS_POINTS, abs, DEDUCT_FOR_GAS, getTokenAmount, safeDiv
 } from "@gambitdao/gmx-middleware"
 import {
   $anchor, $bear, $bull, $hintNumChange, $infoTooltipLabel, $IntermediatePromise,
@@ -71,7 +71,6 @@ export interface ITradeParams {
   averagePrice: bigint | null
   liquidationPrice: bigint | null
 
-  indexTokenInfo: ITokenInfo
   collateralTokenFundingInfo: IFundingInfo
 }
 
@@ -1047,7 +1046,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                       ),
                       $text(style({ color: pallete.positive, fontSize: '0.75em' }))(map(params => {
                         const delta = getPnL(params.isLong, params.position.averagePrice, params.indexTokenPrice, -params.sizeDeltaUsd)
-                        const adjustedSizeDelta = -params.sizeDeltaUsd * delta / params.position.size
+                        const adjustedSizeDelta = safeDiv(-params.sizeDeltaUsd * delta, params.position.size)
                         const fees = params.swapFee + params.marginFee
 
                         const collateralDelta = -params.sizeDeltaUsd === params.position.size

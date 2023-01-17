@@ -307,7 +307,8 @@ export const $Trade = (config: ITradeComponent) => component((
 
   const walletBalanceUsd = combineArray((balance, price, tokenDesc) => getTokenUsd(balance, price, tokenDesc.decimals), walletBalance, inputTokenPrice, inputTokenDescription)
 
-  const indexTokenInfo = tradeReader.getTokenInfo(indexToken)
+  const collateralTokenWeight = tradeReader.getTokenWeights(collateralToken)
+  const collateralTokenUsdgAmounts = tradeReader.getUsdgAmounts(collateralToken)
   const collateralTokenFundingInfo = tradeReader.getTokenFundingInfo(collateralToken)
 
 
@@ -350,8 +351,8 @@ export const $Trade = (config: ITradeComponent) => component((
       params.totalTokenWeight
     )
     const feeBps1 = getFeeBasisPoints(
-      params.indexTokenInfo.usdgAmounts,
-      params.indexTokenInfo.weight,
+      params.collateralTokenUsdgAmounts,
+      params.collateralTokenWeight,
       usdgAmount,
       swapFeeBasisPoints,
       taxBasisPoints,
@@ -366,7 +367,7 @@ export const $Trade = (config: ITradeComponent) => component((
     return addedSwapFee
   }, combineObject({
     collateralToken, inputToken, isIncrease, sizeDeltaUsd, isLong, collateralDeltaUsd, chain: config.walletLink.network,
-    indexTokenInfo: indexTokenInfo, usdgSupply: tradeReader.usdgSupply, totalTokenWeight: tradeReader.totalTokenWeight,
+    collateralTokenWeight, collateralTokenUsdgAmounts, usdgSupply: tradeReader.usdgSupply, totalTokenWeight: tradeReader.totalTokenWeight,
     position, inputTokenDescription, inputTokenWeight, inputTokenDebtUsd, indexTokenDescription, indexTokenPrice
   })))))
 
@@ -579,7 +580,6 @@ export const $Trade = (config: ITradeComponent) => component((
               nativeTokenPrice: tradeReader.nativeTokenPrice,
 
               position,
-              indexTokenInfo,
               collateralTokenFundingInfo,
               isTradingEnabled,
               availableIndexLiquidityUsd,

@@ -1,15 +1,15 @@
-import { Behavior, combineArray, O } from "@aelea/core"
+import { Behavior, O } from "@aelea/core"
 import { $Branch, $element, $Node, $text, attr, component, nodeEvent, style } from "@aelea/dom"
 import { $RouterAnchor, Route } from '@aelea/router'
 import { $column, $icon, $row, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { pallete, theme } from "@aelea/ui-components-theme"
 import { formatReadableUSD } from "@gambitdao/gmx-middleware"
 import { CHAIN, IWalletLink, IWalletName, walletConnect } from "@gambitdao/wallet-link"
-import { awaitPromises, constant, empty, map, now, switchLatest, tap } from '@most/core'
+import { awaitPromises, constant, empty, map, now, switchLatest } from '@most/core'
 import { $bagOfCoins, $caretDown, $stackedCoins } from "../elements/$icons"
 import { $ButtonSecondary } from "./form/$Button"
 import { totalWalletHoldingsUsd } from "../logic/gbcTreasury"
-import { $Dropdown, $defaultSelectContainer } from "./form/$Dropdown"
+import { $Dropdown } from "./form/$Dropdown"
 import { $bagOfCoinsCircle, $fileCheckCircle, $logo, $logoFull, $labLogo, $gmxLogo } from "../common/$icons"
 import { $anchor, $discord, $gitbook, $github, $instagram, $Link, $moreDots, $twitter } from "@gambitdao/ui-components"
 import { $Picker } from "../components/$ThemePicker"
@@ -17,6 +17,7 @@ import { dark, light } from "../common/theme"
 import { Stream } from "@most/types"
 import { $WalletDisplay } from "./$WalletDisplay"
 import { $Popover } from "./$Popover"
+import * as router from '@aelea/router'
 
 
 
@@ -105,6 +106,7 @@ export const $MainMenu = ({ walletLink, parentRoute, chainList, showAccount = tr
       ),
 
       $Popover({
+        dismiss: router.match(parentRoute)(now(null)),
         $target: $row(screenUtils.isDesktopScreen ? layoutSheet.spacingBig : layoutSheet.spacing, style({ fontSize: '.9em', flex: 1, alignItems: 'center', placeContent: 'center' }))(
           ...screenUtils.isDesktopScreen ? $menuItemList : [],
 

@@ -184,12 +184,14 @@ export const competitionCumulativeRoi = O(
 
     const from = queryParams.from
 
-    const competitionAccountListQuery = fetchHistoricTrades({ ...queryParams, from, to, offset: 0, pageSize: 1000 }, async (params) => {
+    const competitionAccountListQuery = fetchTrades({ ...queryParams, from, to, offset: 0, pageSize: 1000 }, async (params) => {
       const res = await arbitrumGraphDev(gql(`
 
 query {
   trades(first: 1000, skip: ${params.offset}, where: { entryReferralCode: "${queryParams.referralCode}", timestamp_gte: ${params.from}, timestamp_lte: ${params.to}}) {
       ${tradeFields}
+      entryReferralCode
+      entryReferrer
   }
 }
 `), {})
@@ -216,8 +218,6 @@ query {
     const historicTradeList = await competitionAccountListQuery
     const priceMap = await priceMapQuery
     const tradeList: ITrade[] = historicTradeList.map(fromJson.tradeJson)
-
-    // .filter(x => x.account === '0xd92f6d0c7c463bd2ec59519aeb59766ca4e56589')
 
     return toAccountCompetitionSummary(tradeList, priceMap, queryParams.maxCollateral, to)
   }),
@@ -273,8 +273,8 @@ export const fetchHistoricTrades = async <T extends IRequestPagePositionApi & IC
   // splits the queries because the-graph's result limit of 5k items
   if (deltaTime >= intervalTimeMap.DAY7) {
     const splitDelta = Math.floor(deltaTime / 2)
-    const query0 = fetchTrades({ ...params, to: params.to - splitDelta, offset: 0 }, getList)
-    const query1 = fetchTrades({ ...params, from: params.to - splitDelta, offset: 0 }, getList)
+    const query0 = fetchHistoricTrades({ ...params, to: params.to - splitDelta, offset: 0 }, getList)
+    const query1 = fetchHistoricTrades({ ...params, from: params.to - splitDelta, offset: 0 }, getList)
 
     return (await Promise.all([query0, query1])).flatMap(res => res)
   }

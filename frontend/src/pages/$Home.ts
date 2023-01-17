@@ -232,8 +232,8 @@ export const $Home = (config: ITreasury) => component((
                         )(
                           tap(async ({ element }) => {
                             element.innerHTML = `
-                            ${parts[5][hat]}
                             ${parts[4][display.custom as IAttributeFaceAccessory || faceAccessory]}
+                            ${parts[5][hat]}
                           `
                           })
                         )(),

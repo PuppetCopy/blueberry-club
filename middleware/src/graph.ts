@@ -204,6 +204,10 @@ token${id}: token(id: "${hexValue(id)}") {
 export const profilePickList = O(
   map(async (idList: string[]) => {
 
+    if (idList.length === 0) {
+      return []
+    }
+
     const doc = `
 {
   ${idList.map(id => `

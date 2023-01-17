@@ -255,8 +255,8 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
                 const isNeg = pos.pnl < 0n
 
 
-                return $column(layoutSheet.spacingTiny, style({ textAlign: 'center' }))(
-                  $text(style({ fontSize: '.75em', color: isNeg ? pallete.negative : pallete.positive }))(
+                return $column(layoutSheet.spacingTiny, style({ textAlign: 'center', fontSize: '.75em' }))(
+                  $text(style({ color: isNeg ? pallete.negative : pallete.positive }))(
                     val
                   ),
                   $seperator,
@@ -280,7 +280,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
                       $text(style({ fontSize: '1.25em', color: pallete.positive }))(prize),
                     ) : empty(),
 
-                  $text(`${formatFixed(pos.roi, 2)}%`)
+                  $text(style({ fontSize: '.75em' }))(`${formatFixed(pos.roi, 2)}%`)
                 )
               }, tableList)
             }

@@ -286,11 +286,13 @@ export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: stri
       const lastUpdate = filteredUpdates[filteredUpdates.length - 1]
 
       const indexTokenMarkPrice = BigInt(priceMap['_' + next.indexToken].c)
-      const openDelta = lastUpdate.__typename === 'UpdatePosition' ? getPnL(next.isLong, lastUpdate.averagePrice, indexTokenMarkPrice, lastUpdate.size) : 0n
+      const openDelta = lastUpdate.__typename === 'UpdatePosition'
+        ? getPnL(next.isLong, lastUpdate.averagePrice, indexTokenMarkPrice, lastUpdate.size)
+        : 0n
 
       const fee = seed.fee + next.fee
       const openPnl = seed.openPnl + openDelta
-      const realisedPnl = seed.realisedPnl + lastUpdate.realisedPnl
+      const realisedPnl = seed.realisedPnl + (lastUpdate.__typename === 'UpdatePosition' ? lastUpdate.realisedPnl : next.realisedPnl)
       const pnl = openPnl + realisedPnl
 
       const usedMinProfit = maxUsedCollateral - pnl > 0n ? pnl : 0n
