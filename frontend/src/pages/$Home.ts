@@ -142,7 +142,11 @@ export const $Home = (config: ITreasury) => component((
     $column(style(screenUtils.isDesktopScreen ? { gap: '125px' } : { gap: '90px' }))(
 
 
-      $row(style({ width: '100vw', marginLeft: 'calc(-50vw + 50%)', height: screenUtils.isDesktopScreen ? '580px' : '', alignItems: 'center', placeContent: 'center' }))(
+      $row(
+        screenUtils.isDesktopScreen
+          ? style({ width: '100vw', marginLeft: 'calc(-50vw + 50%)', height: '580px', alignItems: 'center', placeContent: 'center' })
+          : style({ height: '80vh', alignItems: 'center', placeContent: 'center' })
+      )(
         switchLatest(map(parts => {
           // const queryBerryDayId = blueberrySubgraph.token(now({ id: '4383' }))
           const queryBerryDayId = blueberrySubgraph.token(now({ id: dailyRandom(Date.now() / (intervalTimeMap.HR24 * 1000)) + '' }))

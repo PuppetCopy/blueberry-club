@@ -48,10 +48,10 @@ export const $Profile = (config: IProfile) => component((
 
   return [
     $column(layoutSheet.spacingBig)(
-      $row(style({ flex: 1, alignItems: 'center', placeContent: 'space-between', marginBottom: '-55px', zIndex: 1 }))(
+      $row(style({ flex: 1, alignItems: 'center', placeContent: 'space-between', zIndex: 1 }))(
         $discoverIdentityDisplay({
           address: config.account,
-          avatarSize: 150,
+          avatarSize: 120,
           labelSize: '2em'
         }),
 
@@ -59,17 +59,17 @@ export const $Profile = (config: IProfile) => component((
         config.$actions || empty(),
       ),
 
-      $responsiveFlex(
-        $row(style({ flex: 1 }))(
-          $StakingGraph({
-            sourceList: config.stake,
-            stakingInfo: multicast(arbitrumContract),
-            walletLink: config.walletLink,
-            // priceFeedHistoryMap: pricefeedQuery,
-            // graphInterval: intervalTimeMap.HR4,
-          })({}),
-        ),
-      ),
+      // $responsiveFlex(
+      //   $row(style({ flex: 1 }))(
+      //     $StakingGraph({
+      //       sourceList: config.stake,
+      //       stakingInfo: multicast(arbitrumContract),
+      //       walletLink: config.walletLink,
+      //       // priceFeedHistoryMap: pricefeedQuery,
+      //       // graphInterval: intervalTimeMap.HR4,
+      //     })({}),
+      //   ),
+      // ),
 
 
       $IntermediatePromise({
