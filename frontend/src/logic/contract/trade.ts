@@ -1,16 +1,16 @@
 
-import { awaitPromises, combine, empty, map, mergeArray, multicast, now, scan, skip, snapshot, switchLatest } from "@most/core"
+import { awaitPromises, combine, empty, map, mergeArray, multicast, now, scan, skip, snapshot, switchLatest, tap } from "@most/core"
 import {
   switchFailedSources, ITokenIndex, ITokenInput, ITokenTrade, AddressZero, getChainName, filterNull, IVaultPosition, unixTimestampNow, TRADE_CONTRACT_MAPPING,
-  IAbstractPositionKey, parseFixed, TOKEN_SYMBOL, getPositionKey, KeeperIncreaseRequest, KeeperDecreaseRequest, ITokenDescription, safeDiv, TOKEN_ADDRESS_TO_SYMBOL, TOKEN_DESCRIPTION_LIST, TOKEN_DESCRIPTION_MAP, div, IAbstractPositionIdentity
+  IAbstractPositionKey, getSafeMappedValue, parseFixed, TOKEN_SYMBOL, getPositionKey, KeeperIncreaseRequest, KeeperDecreaseRequest, safeDiv, TOKEN_ADDRESS_TO_SYMBOL, div, IAbstractPositionIdentity, getTokenDescription
 } from "@gambitdao/gmx-middleware"
 import { combineObject, replayLatest } from "@aelea/core"
 import { ERC20__factory, PositionRouter__factory, Router__factory, VaultPriceFeed__factory, Vault__factory } from "../gmx-contracts"
 import { periodicRun } from "@gambitdao/gmx-middleware"
-import { getTokenDescription, resolveAddress } from "../utils"
+import { resolveAddress } from "../utils"
 import { Stream } from "@most/types"
-import { getContractAddress, getSafeMappedValue, readContractMapping, switchOp } from "../common"
-import { CHAIN, zipState } from "@gambitdao/wallet-link"
+import { getContractAddress, readContractMapping } from "../common"
+import { CHAIN } from "@gambitdao/wallet-link"
 import { id } from "@ethersproject/hash"
 import { Interface } from "@ethersproject/abi"
 import { http } from "@aelea/ui-components"
@@ -21,10 +21,15 @@ import { listen } from "./listen"
 
 export type IPositionGetter = IVaultPosition & IAbstractPositionKey & IAbstractPositionIdentity
 
-export interface IFundingInfo {
-  cumulative: bigint
+export interface ITokenPoolInfo {
   rate: bigint
-  nextRate: bigint
+  rateFactor: bigint
+  cumulativeRate: bigint
+  reservedAmount: bigint
+  poolAmount: bigint
+  usdgAmount: bigint
+  maxUsdgAmount: bigint
+  weight: bigint
 }
 
 export interface ITokenInfo {
@@ -162,41 +167,21 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
   const getTokenCumulativeFunding = (ts: Stream<ITokenIndex>) => vaultReader.readInt(combine((address, vault) => {
     return vault.cumulativeFundingRates(address)
   }, ts))
-
-  const getPoolAmounts = (ts: Stream<ITokenIndex>) => vaultReader.readInt(combine((address, vault) => {
+  const getPoolAmount = (ts: Stream<ITokenIndex>) => vaultReader.readInt(combine((address, vault) => {
     return vault.poolAmounts(address)
   }, ts))
-  const getReservedAmounts = (ts: Stream<ITokenIndex>) => vaultReader.readInt(combine((address, vault) => {
+  const getReservedAmount = (ts: Stream<ITokenIndex>) => vaultReader.readInt(combine((address, vault) => {
     return vault.reservedAmounts(address)
   }, ts))
-  const getTokenWeights = (ts: Stream<ITokenIndex>) => vaultReader.readInt(combine((address, vault) => {
+  const getTokenWeight = (ts: Stream<ITokenIndex>) => vaultReader.readInt(combine((address, vault) => {
     return vault.tokenWeights(address)
   }, ts))
-  const getUsdgAmounts = (ts: Stream<ITokenIndex>) => vaultReader.readInt(combine((address, vault) => {
+  const getUsdgAmount = (ts: Stream<ITokenIndex>) => vaultReader.readInt(combine((address, vault) => {
     return vault.usdgAmounts(address)
   }, ts))
-
-  // const getTokenCumulativeFunding = (ts: Stream<ITokenIndex>) => vaultReader.readInt(combine((address, vault) => {
-  //   return vault.cumulativeFundingRates(address)
-  // }, ts))
-
-  const getTokenFundingInfo = (token: Stream<ITokenIndex>) => vaultReader.run(combine(async (address, vault) => {
-    const tokenDescription = getTokenDescription(address)
-
-    const [cumulative, nextRate, reserved, poolAmount, fundingRateFactor] = await Promise.all([
-      vault.cumulativeFundingRates(address).then(x => x.toBigInt()),
-      vault.getNextFundingRate(address).then(x => x.toBigInt()),
-      vault.reservedAmounts(address).then(x => x.toBigInt()),
-      vault.poolAmounts(address).then(x => x.toBigInt()),
-      tokenDescription.isStable
-        ? vault.stableFundingRateFactor().then(x => x.toBigInt())
-        : vault.fundingRateFactor().then(x => x.toBigInt())
-    ])
-
-    const rate = safeDiv(fundingRateFactor * reserved, poolAmount)
-
-    return { cumulative, rate, nextRate }
-  }, token))
+  const getMaxUsdgAmount = (ts: Stream<ITokenIndex>) => vaultReader.readInt(combine((address, vault) => {
+    return vault.maxUsdgAmounts(address)
+  }, ts))
 
   const getTokenFundingRate = (token: Stream<ITokenTrade>) => vaultReader.run(combine(async (address, vault) => {
     const tokenDescription = getTokenDescription(address)
@@ -211,6 +196,33 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
 
     return div(fundingRateFactor * reserved, poolAmount)
   }, token))
+
+  const getFundingRateFactor = (token: Stream<ITokenTrade>) => vaultReader.readInt(combine(async (address, vault) => {
+    const tokenDescription = getTokenDescription(address)
+    const rate = tokenDescription.isStable
+      ? vault.stableFundingRateFactor()
+      : vault.fundingRateFactor()
+    
+    return rate
+  }, token))
+
+  const getTokenPoolInfo = (token: Stream<ITokenTrade>): Stream<ITokenPoolInfo> => {
+
+    const rateFactor = getFundingRateFactor(token)
+    const cumulativeRate = getTokenCumulativeFunding(token)
+    const reservedAmount = getReservedAmount(token)
+    const poolAmount = getPoolAmount(token)
+    const usdgAmount = getUsdgAmount(token)
+    const maxUsdgAmount = getMaxUsdgAmount(token)
+    const weight = getTokenWeight(token)
+
+    const dataRead = combineObject({ rateFactor, maxUsdgAmount, cumulativeRate, usdgAmount, weight, reservedAmount, poolAmount })
+
+    return map(data => {
+      const rate = safeDiv(data.rateFactor * data.reservedAmount, data.poolAmount)
+      return { ...data, rate }
+    }, dataRead)
+  }
 
   const getAvailableLiquidityUsd = (indexToken: Stream<ITokenIndex>, collateralToken: Stream<ITokenTrade>) => {
     const state = combineObject({ collateralToken, indexToken, vault: vaultReader.contract, positionRouter: positionRouterReader.contract })
@@ -244,7 +256,6 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
     return contract.getPrimaryPrice(nativeAddress, false)
   }))
 
-  const getTokenWeight = (token: Stream<ITokenInput>) => vaultReader.readInt(combine((token, vault) => vault.tokenWeights(token), token))
   const getTokenDebtUsd = (token: Stream<ITokenInput>) => vaultReader.readInt(combine((token, vault) => vault.usdgAmounts(token), token))
   const getPrimaryPrice = (token: ITokenInput, maximize = false) => pricefeedReader.readInt(map(async (pricefeed) => {
 
@@ -356,12 +367,12 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
 
 
   return {
-    getIsPluginEnabled, routerReader, executionFee, getTokenFundingInfo, getPrimaryPrice, nativeTokenPrice,
-    executeIncreasePosition, getTokenWeight, getTokenDebtUsd, positionRouterReader, getTokenFundingRate,
+    getIsPluginEnabled, routerReader, executionFee, getPrimaryPrice, nativeTokenPrice, getTokenPoolInfo,
+    executeIncreasePosition, getTokenWeight, getMaxUsdgAmount, getTokenDebtUsd, positionRouterReader,
     cancelIncreasePosition, executeDecreasePosition, cancelDecreasePosition, getTokenCumulativeFunding,
     positionIncreaseEvent, positionDecreaseEvent, positionUpdateEvent, positionCloseEvent, positionLiquidateEvent,
-    getLatestPrice, positionSettled, vaultReader, getPrice, totalTokenWeight, usdgSupply, getPoolAmounts,
-    getReservedAmounts, getTokenWeights, getUsdgAmounts, getAvailableLiquidityUsd
+    getLatestPrice, positionSettled, vaultReader, getPrice, totalTokenWeight, usdgSupply, getPoolAmount,
+    getReservedAmount, getUsdgAmount, getAvailableLiquidityUsd, getTokenFundingRate
   }
 }
 

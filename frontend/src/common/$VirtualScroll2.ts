@@ -55,7 +55,7 @@ export const $VirtualScroll = (config: QuantumScroll) => component((
     $loader
   )
 
-  const loadState = combineObject({ data: config.dataSource, scrollIndex })
+  const loadState = zipState({ data: config.dataSource, scrollIndex })
 
   const displayState = {
     isLoading: true

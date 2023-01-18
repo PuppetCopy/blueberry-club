@@ -3,11 +3,12 @@ import { AnimationFrames } from "@aelea/dom"
 import { Disposable, Scheduler, Sink, Stream } from "@most/types"
 import { at, awaitPromises, constant, continueWith, empty, filter, map, merge, multicast, now, recoverWith, switchLatest, zipArray } from "@most/core"
 import { intervalTimeMap, USD_DECIMALS } from "./constant"
-import { IRequestPageApi, IRequestPagePositionApi, IRequestSortApi } from "./types"
+import { IRequestPageApi, IRequestPagePositionApi, IRequestSortApi, ITokenDescription, ITokenTrade } from "./types"
 import { keccak256 } from "@ethersproject/solidity"
 import { ClientOptions, createClient, OperationContext, TypedDocumentNode } from "@urql/core"
 import { CHAIN, EXPLORER_URL, NETWORK_METADATA } from "@gambitdao/wallet-link"
 import { curry2 } from "@most/prelude"
+import { TOKEN_ADDRESS_TO_SYMBOL, TOKEN_DESCRIPTION_MAP } from "./address/token"
 
 
 
@@ -15,7 +16,6 @@ export const ETH_ADDRESS_REGEXP = /^0x[a-fA-F0-9]{40}$/i
 export const TX_HASH_REGEX = /^0x([A-Fa-f0-9]{64})$/i
 export const VALID_FRACTIONAL_NUMBER_REGEXP = /^-?(0|[1-9]\d*)(\.\d+)?$/
 
-const EMPTY_MESSAGE = '-'
 
 
 
@@ -326,6 +326,7 @@ export function pagingQuery<T, ReqParams extends IRequestPagePositionApi & (IReq
 }
 
 
+
 export const unixTimestampNow = () => Math.floor(Date.now() / 1000)
 
 export const getChainName = (chain: CHAIN) => NETWORK_METADATA[chain].chainName
@@ -486,12 +487,13 @@ export const switchFailedSources = <T>(sourceList: Stream<T>[], activeSource = 0
 
 
 export const timespanPassedSinceInvoke = (timespan: number) => {
-  let lastTimePasses = 0
+  let lastTimePasses = unixTimestampNow()
 
   return () => {
-    const now = unixTimestampNow()
-    if (now - lastTimePasses > timespan) {
-      lastTimePasses = now
+    const nowTime = unixTimestampNow()
+    const delta = nowTime - lastTimePasses
+    if (delta > timespan) {
+      lastTimePasses = nowTime
       return true
     }
 
@@ -499,15 +501,21 @@ export const timespanPassedSinceInvoke = (timespan: number) => {
   }
 }
 
-export const cacheMap = (cacheMap: any) => async <T>(key: string, lifespan: number, cacheFn: () => Promise<T>): Promise<T> => {
+interface ICacheItem<T> {
+  item: Promise<T>
+  lifespanFn: () => boolean
+}
+
+
+export const cacheMap = (cacheMap: { [k: string]: ICacheItem<any> }) => <T>(key: string, lifespan: number, cacheFn: () => Promise<T>): Promise<T> => {
   const cacheEntry = cacheMap[key]
 
   if (cacheEntry && !cacheMap[key].lifespanFn()) {
     return cacheEntry.item
   } else {
     const lifespanFn = cacheMap[key]?.lifespanFn ?? timespanPassedSinceInvoke(lifespan)
-    lifespanFn()
-    cacheMap[key] = { item: cacheFn(), lifespanFn }
+    const newLocal = { item: cacheFn(), lifespanFn }
+    cacheMap[key] = newLocal
     return cacheMap[key].item
   }
 }
@@ -527,16 +535,7 @@ export function groupByMapMany<A, B extends string | symbol | number>(list: A[],
   return map
 }
 
-export function getMappedKeyByValue<T>(map: { [P in keyof T]: T[P] }, match: T[keyof T]): keyof T {
-  const entires: any[] = Object.values(map)
-  const val = entires.find(symb => symb === match)
 
-  if (!val) {
-    throw new Error(`No token ${match} matched`)
-  }
-
-  return val
-}
 
 export function groupByMap<A, B extends string | symbol | number>(list: A[], getKey: (v: A) => B) {
   const map: { [P in B]: A } = {} as any
@@ -570,19 +569,77 @@ export const createSubgraphClient = (opts: ClientOptions) => {
   }
 }
 
+export function getSafeMappedValue<T extends Object>(contractMap: T, prop: any, fallbackProp: keyof T): T[keyof T] {
+  return prop in contractMap
+    ? contractMap[prop as keyof T]
+    : contractMap[fallbackProp]
+}
+
+export function getMappedValue<T extends Object>(contractMap: T, prop: any): T[keyof T] {
+
+  if (!(prop in contractMap)) {
+    throw new Error(`prop ${prop} does not exist in object`)
+  }
+
+  return contractMap[prop as keyof T]
+}
 
 export function easeInExpo(x: number) {
   return x === 0 ? 0 : Math.pow(2, 10 * x - 10)
 }
 
-// export function getMedianPrice(numbers: number[]) {
-//   const sorted = [...numbers.sort((a, b) => a - b)]
+export function getTokenDescription(token: ITokenTrade): ITokenDescription {
+  return TOKEN_DESCRIPTION_MAP[getSafeMappedValue(TOKEN_ADDRESS_TO_SYMBOL, token, token)]
+}
 
-//   if (sorted.length % 2 === 1) {
-//     return sorted[Math.floor(sorted.length / 2)]
-//   }
-  
-//   const middleIndex = sorted.length / 2
-//   return (sorted[middleIndex - 1] + sorted[middleIndex]) / 2
-// }
+export function getTargetUsdgAmount(weight: bigint, usdgSupply: bigint, totalTokenWeights: bigint) {
+  if (usdgSupply === 0n) {
+    return 0n
+  }
+
+  return weight * usdgSupply / totalTokenWeights
+}
+
+export function getFeeBasisPoints(
+  debtUsd: bigint,
+  weight: bigint,
+
+  amountUsd: bigint,
+  feeBasisPoints: bigint,
+  taxBasisPoints: bigint,
+  increment: boolean,
+  usdgSupply: bigint,
+  totalTokenWeights: bigint
+) {
+
+  const nextAmount = increment
+    ? debtUsd + amountUsd
+    : amountUsd > debtUsd
+      ? 0n
+      : debtUsd - amountUsd
+
+  const targetAmount = getTargetUsdgAmount(weight, usdgSupply, totalTokenWeights)
+
+  if (targetAmount === 0n) {
+    return feeBasisPoints
+  }
+
+  const initialDiff = debtUsd > targetAmount ? debtUsd - targetAmount : targetAmount - debtUsd
+  const nextDiff = nextAmount > targetAmount ? nextAmount - targetAmount : targetAmount - nextAmount
+
+  if (nextDiff < initialDiff) {
+    const rebateBps = taxBasisPoints * initialDiff / targetAmount
+    return rebateBps > feeBasisPoints ? 0n : feeBasisPoints - rebateBps
+  }
+
+  let averageDiff = (initialDiff + nextDiff) / 2n
+
+  if (averageDiff > targetAmount) {
+    averageDiff = targetAmount
+  }
+
+  const taxBps = taxBasisPoints * averageDiff / targetAmount
+
+  return feeBasisPoints + taxBps
+}
 

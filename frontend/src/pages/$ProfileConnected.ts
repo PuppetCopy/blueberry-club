@@ -51,7 +51,7 @@ export const $ProfileConnected = (config: IAccount) => component((
               $actions: $Link({
                 $content: $anchor(
                   $ButtonSecondary({
-                    $content: $text('Customize my GBC')
+                    $content: $text('Wardrobe')
                   })({}),
                 ),
                 url: '/p/wardrobe', route: config.parentRoute

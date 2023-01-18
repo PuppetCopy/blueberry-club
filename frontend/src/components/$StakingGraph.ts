@@ -6,7 +6,7 @@ import { IWalletLink } from "@gambitdao/wallet-link"
 import {
   intervalTimeMap, readableNumber, formatFixed, IRequestTimerangeApi, unixTimestampNow, intervalListFillOrderMap,
   IStake, getTokenUsd, ITokenDescription, div, getDenominator, formatReadableUSD,
-  BASIS_POINTS_DIVISOR, readableDate, ARBITRUM_ADDRESS, CHAIN_ADDRESS_MAP
+  BASIS_POINTS_DIVISOR, readableDate, ARBITRUM_ADDRESS, CHAIN_ADDRESS_MAP, getTokenDescription
 } from "@gambitdao/gmx-middleware"
 import { empty, map, multicast, now, skipRepeats, skipRepeatsWith, startWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
@@ -18,7 +18,6 @@ import { $card, $responsiveFlex } from "../elements/$common"
 import { IRewardsStream } from "../logic/contract"
 import { IAsset } from "@gambitdao/gbc-middleware"
 import { $Chart } from "./chart/$Chart"
-import { getTokenDescription } from "../logic/utils"
 import { getIntervalBasedOnTimeframe } from "@gambitdao/ui-components"
 import { getContractAddress } from "../logic/common"
 

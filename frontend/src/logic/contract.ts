@@ -3,11 +3,11 @@ import { BigNumber } from "@ethersproject/bignumber"
 import { JsonRpcProvider } from "@ethersproject/providers"
 import { BI_18_PRECISION } from "@gambitdao/gbc-middleware"
 import { BASIS_POINTS_DIVISOR, getGmxTokenPrice, IGmxContractAddress, intervalTimeMap, TRADE_CONTRACT_MAPPING } from "@gambitdao/gmx-middleware"
-import { awaitPromises, combine, map, now } from "@most/core"
+import { awaitPromises, combine, map } from "@most/core"
 import { Stream } from "@most/types"
 import { IAsset } from "@gambitdao/gbc-middleware"
 import { GlpManager__factory, GMX__factory, Reader__factory, RewardReader__factory, Vault__factory } from "./gmx-contracts"
-import { getSafeMappedValue, readContract, readContractMapping } from "./common"
+import { readContractMapping } from "./common"
 
 
 export type IGmxContractInfo = ReturnType<typeof connectGmxEarn>

@@ -7,7 +7,7 @@ import {
   ITokenDescription, LIMIT_LEVERAGE, bnDiv, replayState,
   div, StateStream, getPnL, MIN_LEVERAGE, formatToBasis, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE,
   ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd, IPricefeed,
-  TRADE_CONTRACT_MAPPING, filterNull, ITradeOpen, zipState, MARGIN_FEE_BASIS_POINTS, abs, DEDUCT_FOR_GAS, getTokenAmount, safeDiv
+  TRADE_CONTRACT_MAPPING, filterNull, ITradeOpen, zipState, MARGIN_FEE_BASIS_POINTS, abs, DEDUCT_FOR_GAS, getTokenAmount, safeDiv, getTokenDescription
 } from "@gambitdao/gmx-middleware"
 import {
   $anchor, $bear, $bull, $hintNumChange, $infoTooltipLabel, $IntermediatePromise,
@@ -22,10 +22,10 @@ import { $Slider } from "../$Slider"
 import { $ButtonPrimary, $ButtonPrimaryCtx, $ButtonSecondary } from "../form/$Button"
 import { $Dropdown, $defaultSelectContainer } from "../form/$Dropdown"
 import { $caretDown } from "../../elements/$icons"
-import { getNativeTokenDescription, getTokenDescription, resolveAddress } from "../../logic/utils"
+import { getNativeTokenDescription, resolveAddress } from "../../logic/utils"
 import { $IntermediateConnectButton, $WalletLogoMap } from "../../components/$ConnectAccount"
 import { BrowserStore } from "../../logic/store"
-import { connectTradeReader, getErc20Balance, IFundingInfo, IPositionGetter, ITokenInfo } from "../../logic/contract/trade"
+import { connectTradeReader, getErc20Balance, IPositionGetter, ITokenPoolInfo } from "../../logic/contract/trade"
 import { MouseEventParams } from "lightweight-charts"
 import { $TradePnlHistory } from "./$TradePnlHistory"
 import { ContractTransaction } from "@ethersproject/contracts"
@@ -71,7 +71,7 @@ export interface ITradeParams {
   averagePrice: bigint | null
   liquidationPrice: bigint | null
 
-  collateralTokenFundingInfo: IFundingInfo
+  collateralTokenPoolInfo: ITokenPoolInfo
 }
 
 export interface ITradeConfig {
@@ -157,7 +157,6 @@ export const $TradeBox = (config: ITradeBox) => component((
   [crosshairMove, crosshairMoveTether]: Behavior<MouseEventParams, MouseEventParams>,
   [clickResetTradeMode, clickResetTradeModeTether]: Behavior<any, any>,
   [clickMax, clickMaxTether]: Behavior<any, any>,
-  [clickOpenTradeConfig, clickOpenTradeConfigTether]: Behavior<any, any>,
 
 ) => {
 
@@ -187,6 +186,17 @@ export const $TradeBox = (config: ITradeBox) => component((
 
       if (state.leverage < MIN_LEVERAGE) {
         return `Leverage below 1.1x`
+      }
+    } else {
+
+      if (state.inputToken !== state.collateralToken) {
+        const pnl = getPnL(state.isLong, state.position.averagePrice, state.indexTokenPrice, state.position.size)
+        const adjustedPnl = div(abs(state.sizeDeltaUsd) * pnl, state.position.size) / BASIS_POINTS_DIVISOR
+
+        const nextUsdgAmount = state.collateralTokenPoolInfo.usdgAmount + adjustedPnl
+        if (nextUsdgAmount > state.collateralTokenPoolInfo.maxUsdgAmount) {
+          return `${state.collateralTokenDescription.symbol} pool exceeded, can only Receive ${state.collateralTokenDescription.symbol}`
+        }
       }
 
     }
@@ -991,7 +1001,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                           const depositTokenNorm = resolveAddress(w3p.chain, params.inputToken)
                           const outputToken = params.isLong ? params.indexToken : params.collateralToken
                           const totalSizeUsd = params.position.size + params.sizeDeltaUsd
-                          const nextSize = totalSizeUsd * params.collateralTokenFundingInfo.rate / BASIS_POINTS_DIVISOR / 100n
+                          const nextSize = totalSizeUsd * params.collateralTokenPoolInfo.rate / BASIS_POINTS_DIVISOR / 100n
 
                           return $column(
                             depositTokenNorm !== outputToken ? $row(layoutSheet.spacingTiny)(

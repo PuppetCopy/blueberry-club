@@ -4,16 +4,18 @@ import { intervalTimeMap } from "./constant"
 import { tradeJson } from "./fromJson"
 import { toAccountCompetitionSummary, toAccountSummary } from "./gmxUtils"
 import { IRequestAccountApi, IChainParamApi, IRequestCompetitionLadderApi, IRequestLeaderboardApi, IRequestPagePositionApi, IPricefeed, IRequestPricefeedApi, IPriceLatest, IRequestGraphEntityApi, IStake, IRequestTimerangeApi, ITrade, TradeStatus } from "./types"
-import { cacheMap, createSubgraphClient, groupByMap, pagingQuery, unixTimestampNow } from "./utils"
+import { cacheMap, createSubgraphClient, getMappedValue, getSafeMappedValue, getTokenDescription, groupByMap, pagingQuery, parseFixed, switchFailedSources, unixTimestampNow } from "./utils"
 import { gql } from "@urql/core"
 import * as fromJson from "./fromJson"
-import * as fetch from "isomorphic-fetch"
+import fetch from "isomorphic-fetch"
 import { CHAIN } from "@gambitdao/wallet-link"
+import { TOKEN_SYMBOL } from "./address/symbol"
+import { Stream } from "@most/types"
 
 export type IAccountTradeListParamApi = IChainParamApi & IRequestAccountApi & { status: TradeStatus };
 
 
-const createCache = cacheMap({})
+const cache = cacheMap({})
 
 const cacheLifeMap = {
   [intervalTimeMap.HR24]: intervalTimeMap.MIN5,
@@ -43,22 +45,59 @@ export const subgraphChainMap: { [p in CHAIN]: typeof arbitrumGraph } = {
 } as any
 
 
-export const globalCache = cacheMap({})
+const gmxIoPricefeedIntervalLabel = {
+  [intervalTimeMap.MIN5]: '5m',
+  [intervalTimeMap.MIN15]: '15m',
+  [intervalTimeMap.MIN60]: '1h',
+  [intervalTimeMap.HR4]: '4h',
+  [intervalTimeMap.HR24]: '1d',
+}
+
+const derievedSymbolMapping: { [k: string]: TOKEN_SYMBOL } = {
+  [TOKEN_SYMBOL.WETH]: TOKEN_SYMBOL.ETH,
+  [TOKEN_SYMBOL.WBTC]: TOKEN_SYMBOL.BTC,
+  [TOKEN_SYMBOL.BTCB]: TOKEN_SYMBOL.BTC,
+  [TOKEN_SYMBOL.WBTCE]: TOKEN_SYMBOL.BTC,
+  [TOKEN_SYMBOL.WAVAX]: TOKEN_SYMBOL.AVAX,
+}
 
 
-export const pricefeed = O(
+
+export const getGmxIoPricefeed = O(
+  map(async (queryParams: IRequestPricefeedApi): Promise<IPricefeed[]> => {
+    // throw new Error('fefe')
+    const tokenDesc = getTokenDescription(queryParams.tokenAddress)
+    const intervalLabel = getMappedValue(gmxIoPricefeedIntervalLabel, queryParams.interval)
+
+    const res = fetch(`https://stats.gmx.io/api/candles/${derievedSymbolMapping[tokenDesc.symbol]}?preferableChainId=42161&period=${intervalLabel}&from=${queryParams.from}&preferableSource=fast`)
+      .then(async res => {
+        const parsed = await res.json()
+        return parsed.prices.map((json: any) => ({ o: parseFixed(json.o, 30), h: parseFixed(json.h, 30), l: parseFixed(json.l, 30), c: parseFixed(json.c, 30), timestamp: json.t }))
+      })
+    return res
+  })
+)
+
+export const subgraphPricefeed = O(
   map(async (queryParams: IRequestPricefeedApi) => {
     const newLocal = `
-      {
-        pricefeeds(first: 1000, orderBy: timestamp, orderDirection: asc, where: {tokenAddress: _${queryParams.tokenAddress}, interval: _${queryParams.interval}, timestamp_gte: ${queryParams.from}, timestamp_lte: ${queryParams.to || unixTimestampNow()} }) {
-          ${pricefeedFields}
-        }
-      }
-`
+          {
+            pricefeeds(first: 1000, orderBy: timestamp, orderDirection: asc, where: {tokenAddress: _${queryParams.tokenAddress}, interval: _${queryParams.interval}, timestamp_gte: ${queryParams.from}, timestamp_lte: ${queryParams.to || unixTimestampNow()} }) {
+              ${pricefeedFields}
+            }
+          }
+    `
 
     const priceFeedQuery = await querySubgraph(queryParams, newLocal)
     return priceFeedQuery.pricefeeds.map(fromJson.pricefeedJson) as IPricefeed[]
   })
+)
+
+export const pricefeed = O(
+  (src: Stream<IRequestPricefeedApi>) => switchFailedSources([
+    getGmxIoPricefeed(src),
+    subgraphPricefeed(src)
+  ])
 )
 
 
@@ -149,19 +188,21 @@ export const leaderboardTopList = O(
     const cacheLife = cacheLifeMap[queryParams.timeInterval]
     const cacheKey = 'requestLeaderboardTopList' + queryParams.timeInterval + queryParams.chain
 
-    const to = await createCache(cacheKey, cacheLife, async () => unixTimestampNow())
-    const from = to - queryParams.timeInterval
+    const cacheQuery = cache(cacheKey, cacheLife, async () => {
+      const to = unixTimestampNow()
+      const from = to - queryParams.timeInterval
 
-    const cacheQuery = fetchTrades({ from, to, ...queryParams }, async (params) => {
-      const res = await querySubgraph(params, `
+      const list = await fetchTrades({ from, to, ...queryParams }, async (params) => {
+        const res = await querySubgraph(params, `
 {
   trades(first: 1000, skip: ${params.offset}, where: {timestamp_gte: ${from}, timestamp_lte: ${to}}) {
     ${tradeFields}
   }
 }
 `)
-      return res.trades as ITrade[]
-    }).then(list => {
+        return res.trades as ITrade[]
+      })
+
       const formattedList = list.map(tradeJson)
 
       const summary = toAccountSummary(formattedList)
@@ -169,11 +210,58 @@ export const leaderboardTopList = O(
       return summary
     })
 
+
     return pagingQuery(queryParams, await cacheQuery)
   }),
   awaitPromises
 )
 
+
+export async function getCompetitionCumulativeRoi(queryParams: IRequestCompetitionLadderApi) {
+  const dateNow = unixTimestampNow()
+  const to = Math.min(dateNow, queryParams.to)
+  const timeSlot = Math.floor(to / intervalTimeMap.MIN5)
+  const timestamp = timeSlot * intervalTimeMap.MIN5 - intervalTimeMap.MIN5
+
+  const from = queryParams.from
+
+  const competitionAccountListQuery = fetchTrades({ ...queryParams, from, to, offset: 0, pageSize: 1000 }, async (params) => {
+    const res = await arbitrumGraphDev(gql(`
+
+query {
+  trades(first: 1000, skip: ${params.offset}, where: { entryReferralCode: "${queryParams.referralCode}", timestamp_gte: ${params.from}, timestamp_lte: ${params.to}}) {
+      ${tradeFields}
+      entryReferralCode
+      entryReferrer
+  }
+}
+`), {})
+
+    return res.trades as ITrade[]
+  })
+
+
+  const priceMapQuery = querySubgraph(queryParams, `
+      {
+        pricefeeds(where: { timestamp: ${timestamp.toString()} }) {
+          id
+          timestamp
+          tokenAddress
+          c
+          interval
+        }
+      }
+    `).then(res => {
+    const list = groupByMap(res.pricefeeds, (item: IPricefeed) => item.tokenAddress)
+    return list
+  })
+
+  const historicTradeList = await competitionAccountListQuery
+  const priceMap = await priceMapQuery
+  const tradeList: ITrade[] = historicTradeList.map(fromJson.tradeJson)
+
+  return toAccountCompetitionSummary(tradeList, priceMap, queryParams.maxCollateral, to)
+}
 
 export const competitionCumulativeRoi = O(
   map(async (queryParams: IRequestCompetitionLadderApi) => {

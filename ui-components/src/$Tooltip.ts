@@ -1,8 +1,9 @@
 import { Behavior } from "@aelea/core"
 import { $Node, component, eventElementTarget, INode, NodeComposeFn, nodeEvent, style, styleInline } from '@aelea/dom'
 import { $column, $row, observer } from "@aelea/ui-components"
-import { pallete } from "@aelea/ui-components-theme"
+import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { constant, switchLatest, empty, map, skipRepeats, startWith, skip, zip } from "@most/core"
+import { invertColor } from "./common"
 
 
 
@@ -19,8 +20,7 @@ export interface TooltipConfig {
 
 const $defaultDropContainer = $column(style({
   background: pallete.background,
-  border: pallete.middleground,
-  boxShadow: 'rgb(0 0 0 / 44%) 0px 4px 20px 3px',
+  boxShadow: `${colorAlpha(pallete.message, .14)} 0px 4px 20px 8px, ${colorAlpha(pallete.message, .1)} 0px 1px 3px 1px`,
   padding: '8px',
   minWidth: '230px',
   borderRadius: '8px',
@@ -112,7 +112,7 @@ export const $Tooltip = ({
               const boundingOffset = isLeft
                 ? leftSpace - width / 2 - targetSlice - offset
                 : rightSpace - width / 2 - targetSlice
-              
+
               const leftPx = boundingOffset < 0 ? isLeft ? Math.abs(boundingOffset) : boundingOffset : targetSlice
 
               return {

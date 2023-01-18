@@ -1,7 +1,8 @@
 import { O } from "@aelea/core"
 import { hexValue } from "@ethersproject/bytes"
-import { createSubgraphClient, gmxSubgraph, groupByMap, IRequestCompetitionLadderApi, IIdentifiableEntity, IRequestPagePositionApi, pagingQuery } from "@gambitdao/gmx-middleware"
-import { awaitPromises, combine, map, now, switchLatest } from "@most/core"
+import { createSubgraphClient, groupByMap, IRequestCompetitionLadderApi, IIdentifiableEntity, IRequestPagePositionApi, pagingQuery, cacheMap, intervalTimeMap } from "@gambitdao/gmx-middleware"
+import { getCompetitionCumulativeRoi } from "@gambitdao/gmx-middleware/src/graph"
+import { awaitPromises, map } from "@most/core"
 import { gql } from "@urql/core"
 import { ILabItem, ILabItemOwnership, IOwner, IProfile, IProfileTradingSummary, IToken } from "./types"
 
@@ -12,6 +13,7 @@ export const blueberrySubgraph = createSubgraphClient({
   url: 'https://api.thegraph.com/subgraphs/name/nissoh/blueberry-club-arbitrum',
 })
 
+const cache = cacheMap({})
 
 export async function querySubgraph(document: string): Promise<any> {
   return blueberrySubgraph(gql(document) as any, {})
@@ -202,34 +204,7 @@ token${id}: token(id: "${hexValue(id)}") {
 )
 
 export const profilePickList = O(
-  map(async (idList: string[]) => {
-
-    if (idList.length === 0) {
-      return []
-    }
-
-    const doc = `
-{
-  ${idList.map(id => `
-profile${id}: profile(id: "${id}") {
-    id
-    timestamp
-    name
-    token {
-      id
-      labItems {
-        id
-      }
-    }
-}
-  `).join('')}
-}
-`
-    const res = await querySubgraph(doc)
-    const rawList: IProfile[] = Object.values(res)
-
-    return rawList.map(token => profileJson(token))
-  }),
+  map(getProfilePickList),
   awaitPromises
 )
 
@@ -257,37 +232,64 @@ export const profile = O(
 )
 
 export const competitionRoiAccountList = O(
-  map((queryParams: IRequestCompetitionLadderApi) => {
+  map(async (queryParams: IRequestCompetitionLadderApi) => {
 
-    const accountSummaryList = gmxSubgraph.competitionCumulativeRoi(now(queryParams))
+    const list = cache('cacheKey', intervalTimeMap.MIN5, async () => {
+      const accountList = await getCompetitionCumulativeRoi(queryParams)
+      const profileList = await getProfilePickList(accountList.map(x => x.account))
+      const profileMap = groupByMap(profileList, p => p.id)
 
-    return switchLatest(map(list => {
-      const profileList = profilePickList(now(list.map(x => x.account)))
-      const competitionSummaryProfileList = map(pl => {
-        const profileMap = groupByMap(pl, p => p.id)
-        const sortedCompetitionList: IProfileTradingSummary[] = list
-          .sort((a, b) => {
-            const aN = profileMap[a.account] ? a.roi : a.roi - 100000000n
-            const bN = profileMap[b.account] ? b.roi : b.roi - 100000000n
-            return Number(bN - aN)
-          })
-          .map(summary => ({
-            ...summary,
-            profile: profileMap[summary.account] || null,
-            rank: queryParams.offset + list.indexOf(summary) + 1
-          }), pl)
-        return pagingQuery(queryParams, sortedCompetitionList)
-      }, profileList)
+      const sortedCompetitionList: IProfileTradingSummary[] = accountList
+        .sort((a, b) => {
+          const aN = profileMap[a.account] ? a.roi : a.roi - 100000000n
+          const bN = profileMap[b.account] ? b.roi : b.roi - 100000000n
+          return Number(bN - aN)
+        })
+        .map(summary => ({
+          ...summary,
+          profile: profileMap[summary.account] || null,
+          rank: queryParams.offset + accountList.indexOf(summary) + 1
+        }))
 
-      return competitionSummaryProfileList
-    }, accountSummaryList))
+      return sortedCompetitionList
+      
+    })
 
+    return pagingQuery(queryParams, await list)
   }),
-  switchLatest
+  awaitPromises
 )
 
 
 
+
+async function getProfilePickList(idList: string[]): Promise<IProfile[]> {
+  if (idList.length === 0) {
+    return []
+  }
+
+  const doc = `
+{
+  ${idList.map(id => `
+profile${id}: profile(id: "${id}") {
+    id
+    timestamp
+    name
+    token {
+      id
+      labItems {
+        id
+      }
+    }
+}
+  `).join('')}
+}
+`
+  const res = await querySubgraph(doc)
+  const rawList: IProfile[] = Object.values(res)
+
+  return rawList.map(token => profileJson(token))
+}
 
 function profileJson(obj: IProfile): IProfile {
   return {

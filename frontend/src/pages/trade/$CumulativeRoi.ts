@@ -6,7 +6,7 @@ import { colorAlpha, pallete } from '@aelea/ui-components-theme'
 import { empty, map, multicast, snapshot, take } from '@most/core'
 import { Stream } from '@most/types'
 import { IRequestPageApi, formatReadableUSD, formatFixed, unixTimestampNow, IRequestCompetitionLadderApi, getChainName } from '@gambitdao/gmx-middleware'
-import { $defaultTableHeaderCell, $defaultTableRowContainer, $Table2 } from "../../common/$Table2"
+import { $defaultTableRowContainer, $Table2 } from "../../common/$Table2"
 import { $alertTooltip, countdown } from './$rules'
 import { CHAIN, IWalletLink } from '@gambitdao/wallet-link'
 import { $AccountLabel, $accountPreview, $profilePreview } from '../../components/$AccountProfile'
@@ -88,7 +88,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
             : $row(layoutSheet.spacing)(
               $column(style({ textAlign: 'right' }))(
                 $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
-                  $text(style({ fontSize: '2.2em', fontWeight: 'bold', color: pallete.primary, textShadow: `1px 1px 50px ${colorAlpha(pallete.primary, .45)}, 1px 1px 50px ${colorAlpha(pallete.primary, .25)} ` }))('#TradeGambit'),
+                  $text(style({ fontSize: '2.2em', fontWeight: 'bold', color: pallete.primary, textShadow: `1px 1px 50px ${colorAlpha(pallete.primary, .45)}, 1px 1px 50px ${colorAlpha(pallete.primary, .25)} ` }))('#GambitGMX'),
                 ),
                 // $text(style({ color: pallete.foreground }))('Competition'),
                 // $text(style({ fontSize: '1.5em', color: ended ? '' : pallete.indeterminate }))('LIVE!')
@@ -195,8 +195,6 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
 
         $Table2({
           $container: $card(style({ padding: "0", gap: 0 })),
-          // rowOp: style({ backgroundColor: 'red' }),
-          $headerCell: $defaultTableHeaderCell(style({})),
           dataSource: tableList,
           scrollConfig: {
             $container: $defaultVScrollContainer(style({ gap: '1px' })),

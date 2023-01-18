@@ -22,6 +22,7 @@ export interface TableOption<T, FilterState> {
   $headerRowContainer?: NodeComposeFn<$Node>
   $bodyRowContainer?: NodeComposeFn<$Node>
 
+  $cell?: NodeComposeFn<$Node>
   $bodyCell?: NodeComposeFn<$Node>
   $headerCell?: NodeComposeFn<$Node>
 
@@ -55,7 +56,6 @@ export const $defaultTableCell = $row(
   layoutSheet.spacingSmall,
   style({ padding: '6px 0', flex: 1, alignItems: 'center', overflowWrap: 'break-word' }),
 )
-export const $defaultTableBodyCell = $defaultTableCell
 
 export const $defaultTableHeaderCell = $defaultTableCell(
   style({ fontSize: '15px', alignItems: 'center', padding: '12px 0', color: pallete.foreground, })
@@ -65,20 +65,17 @@ export const $defaultTableRowContainer = screenUtils.isDesktopScreen
   : $row(layoutSheet.spacingSmall, style({ padding: `2px 10px` }))
 
 
-export const $defaultTableRowHeaderContainer = $defaultTableRowContainer(
-  style({ flexShrink: 0 }),
-  stylePseudo('::-webkit-scrollbar', { backgroundColor: 'transparent', width: '6px' })
-)
 
 export const $defaultTableContainer = $column(designSheet.customScroll, style({ overflow: 'auto scroll' }))
 
 export const $Table2 = <T, FilterState = never>({
   dataSource, columns, scrollConfig,
-  $bodyCell = $defaultTableBodyCell,
+  $cell = $defaultTableCell,
+  $bodyCell = $cell,
   $headerCell = $defaultTableHeaderCell,
   $container = $defaultTableContainer,
   $rowContainer = $defaultTableRowContainer,
-  $headerRowContainer = $defaultTableRowHeaderContainer,
+  $headerRowContainer = $rowContainer,
   $bodyRowContainer = $rowContainer,
   sortChange = never(),
   filterChange = never(),

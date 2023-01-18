@@ -49,11 +49,7 @@ export function getContractAddress<T, Z extends TContractMapping<T>>(contractMap
   return newLocal
 }
 
-export function getSafeMappedValue<T extends Object>(contractMap: T, prop: any, fallbackProp: keyof T): T[keyof T] {
-  return prop in contractMap
-    ? contractMap[prop as keyof T]
-    : contractMap[fallbackProp]
-}
+
 
 export function readContractMapping<TProvider extends BaseProvider, TMap, TCmap extends TContractMapping<TMap>, TContract extends typeof ContractFactory>(
   contractMap: TCmap,
