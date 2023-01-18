@@ -1,15 +1,13 @@
 import { $node, $Node, component, nodeEvent, INode, style, styleBehavior, NodeComposeFn } from '@aelea/dom'
 import { O, Behavior } from '@aelea/core'
 import { pallete } from "@aelea/ui-components-theme"
-import { constant, empty, map, merge, mergeArray, multicast, switchLatest, until, zip } from "@most/core"
+import { constant, empty, map, merge, multicast, switchLatest, take, tap, until, zip } from "@most/core"
 import { Stream } from "@most/types"
 import { colorAlpha } from "@aelea/ui-components-theme"
-import { combineArray } from '@aelea/core'
 import { observer } from '@aelea/ui-components'
 
 
 interface IPocus {
-  
   $target: $Node
   $popContent: Stream<$Node>
 
@@ -17,16 +15,12 @@ interface IPocus {
   offset?: number
   padding?: number
   dismiss?: Stream<any>
-
-  // overlayBackgroundColor?: string
-  // overlayAlpha?: string
 }
 
 export const $Popover = ({ $popContent, offset = 30, padding = 76, dismiss = empty(), $container = $node, $target }: IPocus) => component((
   [overlayClick, overlayClickTether]: Behavior<INode, any>,
   [targetIntersection, targetIntersectionTether]: Behavior<INode, IntersectionObserverEntry[]>,
   [popoverContentDimension, popoverContentDimensionTether]: Behavior<INode, ResizeObserverEntry[]>,
-  [popoverContentIntersection, popoverContentIntersectionTether]: Behavior<INode, IntersectionObserverEntry[]>,
 ) => {
 
 
@@ -56,9 +50,9 @@ export const $Popover = ({ $popContent, offset = 30, padding = 76, dismiss = emp
 
         const left = x + (IntersectiontargetRect.intersectionRect.width / 2) + leftOffset + 'px'
 
-        const bottomSpace =  window.innerHeight - bottom
+        const bottomSpace = window.innerHeight - bottom
         const popDown = bottomSpace > bottom
-        const top = (popDown ? y + (height / 2) : y - ((height - padding) / 2) ) + 'px'
+        const top = (popDown ? y + (height / 2) : y - ((height - padding) / 2)) + 'px'
 
 
         return {
@@ -70,18 +64,15 @@ export const $Popover = ({ $popContent, offset = 30, padding = 76, dismiss = emp
   )
 
   const contentOps = O(
-    popoverContentIntersectionTether(
-      observer.intersection(),
-    ),
     popoverContentDimensionTether(
-      observer.resize({ })
+      observer.resize({})
     ),
     styleBehavior(
       zip(([contentRect], [rect]) => {
         const { y, x, width, bottom } = rect.intersectionRect
         const rootWidth = rect.rootBounds?.width || 0
 
-        const bottomSpcace =  window.innerHeight - bottom
+        const bottomSpcace = window.innerHeight - bottom
         const goDown = bottomSpcace > bottom
 
         const top = (goDown ? bottom + offset : y - offset) + 'px'
@@ -95,7 +86,7 @@ export const $Popover = ({ $popContent, offset = 30, padding = 76, dismiss = emp
         return {
           top, left,
           visibility: 'visible',
-          transform: `translate(-50%, ${goDown ? '0': '-100%'})`
+          transform: `translate(-50%, ${goDown ? '0' : '-100%'})`
         }
       }, popoverContentDimension, targetIntersection)
     ),

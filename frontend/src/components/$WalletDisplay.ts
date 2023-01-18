@@ -27,7 +27,7 @@ export const $WalletDisplay = (config: IWalletDisplay) => component((
 
 
   return [
-    $row(style({ border: `2px solid ${pallete.horizon}`, borderRadius: '30px', minHeight: '30px' }))(
+    $row(style({ border: `2px solid ${pallete.horizon}`, borderRadius: '30px', width: '146px', height: '42px' }))(
 
       switchLatest(map(w3p => {
         if (w3p === null) {
@@ -41,7 +41,7 @@ export const $WalletDisplay = (config: IWalletDisplay) => component((
 
         return $Link({
           route: config.parentRoute.create({ fragment: 'df2f23f' }),
-          $content: $discoverIdentityDisplay({ address: w3p.address, showAddress: screenUtils.isDesktopScreen }),
+          $content: $discoverIdentityDisplay({ address: w3p.address }),
           anchorOp: style({ minWidth: 0, overflow: 'hidden' }),
           url: `/p/wallet`,
         })({ click: routeChangeTether() })

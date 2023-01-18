@@ -162,6 +162,14 @@ export const $TradeBox = (config: ITradeBox) => component((
 
   const tradeReader = connectTradeReader(config.walletLink.provider)
 
+  const { collateralDeltaUsd, collateralToken, focusMode, indexToken, inputToken, isIncrease, isLong, leverage, sizeDeltaUsd, slippage } = config.tradeConfig
+  const {
+    availableIndexLiquidityUsd, averagePrice, collateralDelta, collateralTokenDescription,
+    collateralTokenPoolInfo, collateralTokenPrice, executionFee, fundingFee, indexTokenDescription, indexTokenPrice, inputTokenDescription, inputTokenPrice,
+    isInputTokenApproved, isTradingEnabled, liquidationPrice, marginFee, nativeTokenPrice,
+    position, sizeDelta, swapFee, walletBalance, walletBalanceUsd
+  } = config.tradeState
+
   const tradeState: Stream<ITradeState> = replayState({ ...config.tradeState, ...config.tradeConfig })
 
 
@@ -239,7 +247,7 @@ export const $TradeBox = (config: ITradeBox) => component((
     const deltaUsd = collateral - state.position.collateral - state.position.entryFundingRate
 
     return deltaUsd
-  }, tradeState, clickMax)
+  }, combineObject({ isIncrease, walletBalanceUsd, position }), clickMax)
 
 
   const inTradeMode = replayLatest(multicast(combineArray((sizeDeltaUsd, collateralDeltaUsd) => {
@@ -307,7 +315,7 @@ export const $TradeBox = (config: ITradeBox) => component((
       }
 
       return totalCollateral
-    }, tradeState, mergeArray([inputSizeDeltaUsd, effectCollateral])))
+    }, combineObject({ position, leverage, fundingFee, walletBalanceUsd, isIncrease, swapFee, marginFee }), mergeArray([inputSizeDeltaUsd, effectCollateral])))
   ])
 
   const autoFillSizeUsd = mergeArray([
@@ -339,17 +347,17 @@ export const $TradeBox = (config: ITradeBox) => component((
 
       const deltaAfterFees = toNumerator / toDenominator
       return deltaAfterFees
-    }, tradeState, mergeArray([inputCollateralDeltaUsd, effectSize, clickMaxCollateralUsd])))
+    }, combineObject({ leverage, position, fundingFee, swapFee, isIncrease }), mergeArray([inputCollateralDeltaUsd, effectSize, clickMaxCollateralUsd])))
   ])
 
 
   const autoFillCollateralToken = snapshot((state, amountUsd) => {
     return getTokenAmount(amountUsd, state.inputTokenPrice, state.inputTokenDescription.decimals)
-  }, tradeState, autoFillCollateralUsd)
+  }, combineObject({ inputTokenPrice, inputTokenDescription }), autoFillCollateralUsd)
 
   const autoFillSizeToken = snapshot((state, amountUsd) => {
     return getTokenAmount(amountUsd, state.indexTokenPrice, state.indexTokenDescription.decimals)
-  }, tradeState, autoFillSizeUsd)
+  }, combineObject({ indexTokenPrice, indexTokenDescription }), autoFillSizeUsd)
 
 
 
@@ -492,7 +500,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                 const netCollateral = totalCollateral + adjustedPnlDelta
 
                 return formatReadableUSD(netCollateral)
-              }, tradeState),
+              }, combineObject({ sizeDeltaUsd, position, indexTokenPrice, isIncrease, collateralDeltaUsd, swapFee, marginFee, isLong, fundingFee })),
               isIncrease: config.tradeConfig.isIncrease,
               tooltip: 'The amount deposited to maintain a leverage position',
               val: combineArray((pos, fundingFee) => formatReadableUSD(pos.collateral - fundingFee), config.tradeState.position, config.tradeState.fundingFee),
@@ -612,7 +620,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                       }
 
                       return null
-                    }, tradeState, autoFillCollateralToken))
+                    }, combineObject({ inputTokenDescription }), autoFillCollateralToken))
                   )
                 ),
                 switchLatest
@@ -634,7 +642,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                 const val = parseReadableNumber(target.value)
                 const parsedInput = parseFixed(val, state.inputTokenDescription.decimals)
                 return getTokenUsd(parsedInput, state.inputTokenPrice, state.inputTokenDescription.decimals)
-              }, tradeState, src)),
+              }, combineObject({ inputTokenDescription, inputTokenPrice }), src)),
             )(),
           ),
         ),
@@ -688,7 +696,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
 
               return 0
-            }, tradeState),
+            }, combineObject({ sizeDeltaUsd, walletBalanceUsd, position, collateralDeltaUsd, fundingFee, focusMode, isIncrease })),
             max: map(state => {
 
               if (state.position.averagePrice === 0n) {
@@ -718,7 +726,7 @@ export const $TradeBox = (config: ITradeBox) => component((
               }
 
               return 1
-            }, tradeState),
+            }, combineObject({ position, fundingFee, collateralDeltaUsd, sizeDeltaUsd, focusMode, isIncrease })),
             thumbText: map(n => formatLeverageNumber.format(n * LIMIT_LEVERAGE_NORMAL) + '\nx')
           })({
             change: slideLeverageTether(
@@ -823,7 +831,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                       }
 
                       return null
-                    }, tradeState, autoFillSizeToken))
+                    }, combineObject({ indexTokenDescription }), autoFillSizeToken))
                   )
                 ),
                 switchLatest
@@ -846,7 +854,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                 const parsedInput = parseFixed(parseReadableNumber(target.value), state.indexTokenDescription.decimals)
 
                 return getTokenUsd(parsedInput, state.indexTokenPrice, state.indexTokenDescription.decimals)
-              }, tradeState, src))
+              }, combineObject({ indexTokenDescription, indexTokenPrice }), src))
             )(),
           ),
 
@@ -921,7 +929,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                 const totalSize = params.sizeDeltaUsd + (params.position.size)
 
                 return formatReadableUSD(totalSize)
-              }, tradeState),
+              }, combineObject({ sizeDeltaUsd, position })),
               isIncrease: config.tradeConfig.isIncrease,
               tooltip: $column(layoutSheet.spacingSmall)(
                 $text('Size amplified by deposited Collateral and Leverage chosen'),
@@ -1020,12 +1028,12 @@ export const $TradeBox = (config: ITradeBox) => component((
                               )
                             )
                           )
-                        }, tradeState))
+                        }, combineObject({ sizeDeltaUsd, collateralToken, indexToken, swapFee, collateralTokenPoolInfo, position, isLong, inputToken, marginFee })))
 
                       ),
                       'Fees'
                     ),
-                    $text(style({ fontSize: '0.75em', color: pallete.indeterminate }))(map(params => formatReadableUSD(params.marginFee + params.swapFee), tradeState)),
+                    $text(style({ fontSize: '0.75em', color: pallete.indeterminate }))(map(params => formatReadableUSD(params.marginFee + params.swapFee), combineObject({ swapFee, marginFee }))),
                   ),
                   switchLatest(map(isIncrease => {
 
@@ -1037,12 +1045,12 @@ export const $TradeBox = (config: ITradeBox) => component((
                             $text('Payback accumulates every time you trade and is distributed once every week back to your account in ETH or AVAX.'),
                             $row(layoutSheet.spacingTiny)(
                               $text(style({ color: pallete.foreground }))('Open + Close Payback'),
-                              $text(style({ color: pallete.positive }))(map(params => getRebateDiscountUsd(params.marginFee * 2n), tradeState))
+                              $text(style({ color: pallete.positive }))(map(params => getRebateDiscountUsd(params.marginFee * 2n), combineObject({ marginFee })))
                             )
                           ),
                           'Payback'
                         ),
-                        $text(style({ color: pallete.positive, fontSize: '0.75em' }))(map(params => getRebateDiscountUsd(params.marginFee * 2n), tradeState))
+                        $text(style({ color: pallete.positive, fontSize: '0.75em' }))(map(params => getRebateDiscountUsd(params.marginFee * 2n), combineObject({ marginFee })))
                       )
                     }
 
@@ -1055,6 +1063,11 @@ export const $TradeBox = (config: ITradeBox) => component((
                         'Receive'
                       ),
                       $text(style({ color: pallete.positive, fontSize: '0.75em' }))(map(params => {
+
+                        if (params.position.averagePrice === 0n) {
+                          return 0n
+                        }
+
                         const delta = getPnL(params.isLong, params.position.averagePrice, params.indexTokenPrice, -params.sizeDeltaUsd)
                         const adjustedSizeDelta = safeDiv(-params.sizeDeltaUsd * delta, params.position.size)
                         const fees = params.swapFee + params.marginFee
@@ -1068,7 +1081,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                         const tokenAmount = getTokenAmount(total, params.inputTokenPrice, params.inputTokenDescription.decimals)
 
                         return `${readableNumber(formatFixed(tokenAmount, params.inputTokenDescription.decimals))} ${params.inputTokenDescription.symbol} (${formatReadableUSD(total)})`
-                      }, tradeState))
+                      }, combineObject({ sizeDeltaUsd, position, collateralDeltaUsd, inputTokenDescription, inputTokenPrice, marginFee, swapFee, indexTokenPrice, isLong, fundingFee })))
                     )
                   }, config.tradeConfig.isIncrease))
 
@@ -1156,14 +1169,14 @@ export const $TradeBox = (config: ITradeBox) => component((
                       ),
                       $ButtonPrimaryCtx({
                         ctx: map(req => req.ctxQuery, clickRequestTrade),
-                        disabled: combineArray((error, params) => {
+                        disabled: map((error) => {
 
                           if (error) {
                             return true
                           }
 
                           return false
-                        }, validationError, tradeState),
+                        }, validationError),
                         $content: $text(map(params => {
                           // const outputToken = getTokenDescription(params.indexToken)
 
@@ -1185,7 +1198,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                           // }
 
                           // return `${modLabel} ${params.isLong ? 'Long' : 'Short'} ${outputToken.symbol}`
-                        }, tradeState)),
+                        }, combineObject({ position, sizeDeltaUsd, isIncrease }))),
                         alert: validationError
                       })({
                         click: clickRequestTradeTether(
@@ -1366,7 +1379,7 @@ export const $TradeBox = (config: ITradeBox) => component((
           }
 
           return div(state.position.size, state.position.collateral - state.fundingFee)
-        }, tradeState, resetTrade)),
+        }, combineObject({ position, fundingFee }), resetTrade)),
         slideLeverage
       ]),
       switchIsIncrease,

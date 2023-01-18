@@ -520,7 +520,7 @@ export const $Trade = (config: ITradeComponent) => component((
     combineArray(async (pos, listQuery) => {
       const tradeList = await listQuery
 
-      if (tradeList.length === 0) {
+      if (pos.averagePrice === 0n && tradeList.length === 0) {
         return []
       }
 
@@ -648,7 +648,7 @@ export const $Trade = (config: ITradeComponent) => component((
               return $Table2<ITradeOpen>({
                 dataSource: now(res),
                 $rowContainer: screenUtils.isDesktopScreen
-                  ? $row(layoutSheet.spacing, style({ padding: `2px 16px` }))
+                  ? $row(layoutSheet.spacing, style({ padding: `2px 0` }))
                   : $row(layoutSheet.spacingSmall, style({ padding: `2px 0` })),
                 $container: $column,
                 columns: [
@@ -668,7 +668,6 @@ export const $Trade = (config: ITradeComponent) => component((
                       const cumulativeFee = tradeReader.getTokenCumulativeFunding(now(pos.collateralToken))
 
                       const pnl = map(params => {
-                        const entryRate = pos.updateList[pos.updateList.length - 1].entryFundingRate
                         const delta = getPnL(pos.isLong, pos.averagePrice, params.positionMarkPrice, pos.size)
 
                         return pos.realisedPnl + delta - pos.fee
@@ -676,6 +675,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
                       return $row(layoutSheet.spacingTiny)(
+                        $ProfitLossText(pnl),
                         $infoTooltip(
                           $column(layoutSheet.spacingTiny)(
                             $row(layoutSheet.spacingTiny)(
@@ -684,7 +684,7 @@ export const $Trade = (config: ITradeComponent) => component((
                             ),
                             $column(
                               $row(layoutSheet.spacingTiny)(
-                                $text(style({ color: pallete.foreground }))('Deposit'),
+                                $text(style({ color: pallete.foreground, flex: 1 }))('Deposit'),
                                 $text(map(cumFee => {
                                   const entryFundingRate = pos.updateList[0].entryFundingRate
                                   const fee = getFundingFee(entryFundingRate, cumFee, pos.size)
@@ -693,11 +693,9 @@ export const $Trade = (config: ITradeComponent) => component((
                                 }, cumulativeFee))
                               ),
                               $row(layoutSheet.spacingTiny)(
-                                $text(style({ color: pallete.foreground }))('Paid Borrow Fee'),
-                                $text(style({ color: pallete.indeterminate }))(map(cumFee => {
+                                $text(style({ color: pallete.foreground, flex: 1 }))('Borrow Fee'),
+                                $text(style({ color: pallete.negative }))(map(cumFee => {
                                   const fstUpdate = pos.updateList[0]
-                                  const lastUpdate = pos.updateList[pos.updateList.length - 1]
-
                                   const entryFundingRate = fstUpdate.entryFundingRate
 
                                   const fee = getFundingFee(entryFundingRate, cumFee, pos.size)
@@ -705,13 +703,16 @@ export const $Trade = (config: ITradeComponent) => component((
                                 }, cumulativeFee))
                               ),
                               $row(layoutSheet.spacingTiny)(
-                                $text(style({ color: pallete.foreground }))('Withdrawn Pnl'),
-                                $text(style({ color: pos.realisedPnl < 0n ? pallete.negative : pallete.positive }))(formatReadableUSD(pos.realisedPnl))
+                                $text(style({ color: pallete.foreground, flex: 1 }))('Realised Pnl'),
+                                $ProfitLossText(now(pos.realisedPnl))
+                              ),
+                              $row(layoutSheet.spacingTiny)(
+                                $text(style({ color: pallete.foreground, flex: 1 }))('Open Pnl'),
+                                $ProfitLossText(map(price => getPnL(pos.isLong, pos.averagePrice, price, pos.size), positionMarkPrice))
                               ),
                             )
                           )
                         ),
-                        $ProfitLossText(pnl)
                       )
                     })
                   },
