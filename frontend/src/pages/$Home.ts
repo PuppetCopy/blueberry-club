@@ -113,12 +113,12 @@ export const $Home = (config: ITreasury) => component((
     { name: 'APP0D14L', title: "Marketing", tokenId: 11 },
     { name: 'itburnzz', title: "Dev", tokenId: 12 },
     { name: 'B2F_zer', title: "Pleb", tokenId: 22 },
-    { name: 'IrvingDev_', title: "Dev", tokenId: 140 },
+    { name: 'defipleb', title: "Lab's Shakespeare", tokenId: 6762 },
     { name: 'kingblockchain', title: "Marketing & Advocee", tokenId: 4825 },
   ]
 
   const activeContributorList = [
-    { name: 'IrvingDev_', size: 'small', title: "Dev", tokenId: 140 },
+    { name: 'IrvingDev_', size: 'small', title: "Lab Dev", tokenId: 140 },
     { name: 'JamesCliffyz', size: 'small', title: "Dune Analyst", tokenId: 150 },
     { name: 'kitkat787878', size: 'small', title: "Witch", tokenId: 21 },
     { name: 'defiplebette', size: 'small', title: "Lab's Shakespeare", tokenId: 121 },

@@ -1046,7 +1046,9 @@ export const $TradeBox = (config: ITradeBox) => component((
                             $row(layoutSheet.spacingTiny)(
                               $text(style({ color: pallete.foreground }))('Open + Close Payback'),
                               $text(style({ color: pallete.positive }))(map(params => getRebateDiscountUsd(params.marginFee * 2n), combineObject({ marginFee })))
-                            )
+                            ),
+                            $text('Testnet competition incentives'),
+                            $text(style({ color: pallete.positive }))('Tournament competition prize pool is boosted during testnet'),
                           ),
                           'Payback'
                         ),

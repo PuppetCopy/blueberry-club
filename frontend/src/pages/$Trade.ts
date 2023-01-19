@@ -179,7 +179,6 @@ export const $Trade = (config: ITradeComponent) => component((
   const walletBalance = replayLatest(multicast(awaitPromises(combine(async (token, provider) => {
     if (provider instanceof Web3Provider) {
       const balanceAmount = await getErc20Balance(token, provider)
-
       if (token === AddressZero) {
         balanceAmount - DEDUCT_FOR_GAS
       }
@@ -333,7 +332,7 @@ export const $Trade = (config: ITradeComponent) => component((
       ? getPnL(params.isLong, params.position.averagePrice, params.indexTokenPrice, params.position.size) * abs(params.sizeDeltaUsd) / params.position.size
       : 0n
 
-    const amountUsd = abs(params.collateralDeltaUsd) + adjustedPnlDelta
+    const amountUsd = abs(params.collateralDeltaUsd) + adjustedPnlDelta > 0n ? adjustedPnlDelta : 0n
 
     const usdgAmount = amountUsd * getDenominator(params.inputTokenDescription.decimals) / USD_PERCISION
 
