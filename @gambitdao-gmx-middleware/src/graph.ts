@@ -4,7 +4,7 @@ import { intervalTimeMap } from "./constant"
 import { tradeJson } from "./fromJson"
 import { toAccountCompetitionSummary, toAccountSummary } from "./gmxUtils"
 import { IRequestAccountApi, IChainParamApi, IRequestCompetitionLadderApi, IRequestLeaderboardApi, IRequestPagePositionApi, IPricefeed, IRequestPricefeedApi, IPriceLatest, IRequestGraphEntityApi, IStake, IRequestTimerangeApi, ITrade, TradeStatus } from "./types"
-import { cacheMap, createSubgraphClient, getMappedValue, getSafeMappedValue, getTokenDescription, groupByMap, pagingQuery, parseFixed, switchFailedSources, unixTimestampNow } from "./utils"
+import { cacheMap, createSubgraphClient, getMappedValue, getTokenDescription, groupByMap, pagingQuery, parseFixed, switchFailedSources, unixTimestampNow } from "./utils"
 import { gql } from "@urql/core"
 import * as fromJson from "./fromJson"
 import fetch from "isomorphic-fetch"
@@ -68,8 +68,8 @@ export const getGmxIoPricefeed = O(
     // throw new Error('fefe')
     const tokenDesc = getTokenDescription(queryParams.tokenAddress)
     const intervalLabel = getMappedValue(gmxIoPricefeedIntervalLabel, queryParams.interval)
-
-    const res = fetch(`https://stats.gmx.io/api/candles/${derievedSymbolMapping[tokenDesc.symbol]}?preferableChainId=42161&period=${intervalLabel}&from=${queryParams.from}&preferableSource=fast`)
+    const symbol = derievedSymbolMapping[tokenDesc.symbol] || tokenDesc.symbol
+    const res = fetch(`https://stats.gmx.io/api/candles/${symbol}?preferableChainId=${queryParams.chain}&period=${intervalLabel}&from=${queryParams.from}&preferableSource=fast`)
       .then(async res => {
         const parsed = await res.json()
         return parsed.prices.map((json: any) => ({ o: parseFixed(json.o, 30), h: parseFixed(json.h, 30), l: parseFixed(json.l, 30), c: parseFixed(json.c, 30), timestamp: json.t }))

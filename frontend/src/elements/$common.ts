@@ -1,6 +1,6 @@
 import { $Branch, $text, attr, style } from "@aelea/dom"
 import { $ButtonIcon, $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
-import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
+import { pallete, theme } from "@aelea/ui-components-theme"
 import { getAccountExplorerUrl, getTxExplorerUrl, shortenAddress } from "@gambitdao/gmx-middleware"
 import { $trash } from "./$icons"
 import { IToken, LAB_CHAIN } from "@gambitdao/gbc-middleware"
@@ -117,7 +117,7 @@ export const $txnIconLink = (address: string) => $anchor(attr({ href: getTxExplo
 )
 
 
-interface ITeamMember {
+export interface ITeamMember {
   name: string
   title: string
   size?: 'small' | 'big'

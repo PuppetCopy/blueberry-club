@@ -26,6 +26,7 @@ import { $Trade } from "./$Trade"
 import { createLocalStorageChain } from "../logic/store"
 import { globalProviderMap } from "../logic/provider"
 import { $Leaderboard } from "./$Leaderboard"
+import { $Treasury } from "./$Treasury"
 
 
 const popStateEvent = eventElementTarget('popstate', window)
@@ -301,9 +302,9 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
               ),
 
             ),
-            // router.match(treasuryRoute)(
-            //   $Treasury({ walletLink, parentRoute: treasuryRoute, treasuryStore })({})
-            // ),
+            router.match(treasuryRoute)(
+              $Treasury({ walletLink, parentRoute: treasuryRoute, treasuryStore })({})
+            ),
 
             $node(),
           )

@@ -259,9 +259,9 @@ export const $Trade = (config: ITradeComponent) => component((
 
   const updatePostion = filterNull(snapshot(
     (pos, update) => {
-      if (pos.key !== update.key) {
-        return null
-      }
+      // if (pos.key !== update.key) {
+      //   return null
+      // }
 
       return { ...pos, ...update }
     },

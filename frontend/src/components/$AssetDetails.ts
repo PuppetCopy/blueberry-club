@@ -2,7 +2,7 @@ import { Behavior, combineArray } from "@aelea/core"
 import { $Branch, $Node, component, style, $text, $element, attr } from "@aelea/dom"
 import { $row, layoutSheet, $icon, $column } from "@aelea/ui-components"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
-import { formatReadableUSD, formatFixed, readableNumber } from "@gambitdao/gmx-middleware"
+import { formatReadableUSD, formatFixed, readableNumber, IPricefeed } from "@gambitdao/gmx-middleware"
 import { switchLatest, skipRepeatsWith, multicast, map } from "@most/core"
 import { Stream } from "@most/types"
 import { MouseEventParams, LineStyle, BarPrice, PriceScaleMode, Time } from "lightweight-charts"
@@ -12,6 +12,7 @@ import { IAsset } from "@gambitdao/gbc-middleware"
 import { $Chart } from "./chart/$Chart"
 import { IValueInterval } from "./$StakingGraph"
 import { CHAIN } from "@gambitdao/wallet-link"
+import { $IntermediatePromise } from "@gambitdao/ui-components"
 
 
 type ITreasuryMetric = {
@@ -21,7 +22,7 @@ type ITreasuryMetric = {
   symbol: string
   asset: Stream<IAsset>
   $distribution: $Node
-  priceChart: Stream<{time: number, value: number}[]>
+  priceChart: Stream<Promise<IPricefeed[]>>
 }
 
 
@@ -50,11 +51,11 @@ export const $AssetDetails = ({ label, $iconPath, asset, symbol, $distribution, 
 
     $row(layoutSheet.spacingBig, style({ flex: 3, width: '100%' }))(
       $row(style({ flex: 1, minHeight: '75px', position: 'relative' }))(
-        switchLatest(
-          combineArray((data) => {
+        $IntermediatePromise({
+          query: priceChart,
+          $$done: map((data) => {
 
-            
-            const baselinePrice = formatFixed(BigInt(data[0].value), 30)
+            const baselinePrice = formatFixed(BigInt(data[0].c), 30)
 
 
             return $Chart({
@@ -93,7 +94,7 @@ export const $AssetDetails = ({ label, $iconPath, asset, symbol, $distribution, 
                 })
 
 
-                const newLocal = data.map(y => ({ time: y.time as Time, value: y.value }))
+                const newLocal = data.map(y => ({ time: y.timestamp as Time, value: formatFixed(y.c, 30) }))
                 //.slice(0, 305)
 
                 series.setData(newLocal)
@@ -107,7 +108,7 @@ export const $AssetDetails = ({ label, $iconPath, asset, symbol, $distribution, 
               chartConfig: {
                 localization: {
                   priceFormatter: (priceValue: BarPrice) => {
-                    return  `$${readableNumber(priceValue)}`
+                    return `$${readableNumber(priceValue)}`
                   }
                 },
                 layout: {
@@ -141,7 +142,7 @@ export const $AssetDetails = ({ label, $iconPath, asset, symbol, $distribution, 
                   rightBarStaysOnScroll: true,
                 },
               },
-              containerOp: style({ 
+              containerOp: style({
                 position: 'absolute', left: 0, top: 0, right: 0, bottom: 0
               }),
             })({
@@ -150,8 +151,8 @@ export const $AssetDetails = ({ label, $iconPath, asset, symbol, $distribution, 
                 multicast
               )
             })
-          }, priceChart)
-        )
+          })
+        })({})
       ),
       $column(style({ flex: 1, maxWidth: '300px' }))(
         $distribution,

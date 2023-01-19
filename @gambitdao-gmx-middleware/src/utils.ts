@@ -339,6 +339,10 @@ export function getAccountExplorerUrl(chain: CHAIN, account: string) {
   return EXPLORER_URL[chain] + "address/" + account
 }
 
+export function getDebankProfileUrl(account: string) {
+  return `https://debank.com/profile/` + account
+}
+
 
 class WithAnimationFrame<T> {
   constructor(private afp: AnimationFrames, private source: Stream<T>) { }
@@ -588,7 +592,7 @@ export function easeInExpo(x: number) {
   return x === 0 ? 0 : Math.pow(2, 10 * x - 10)
 }
 
-export function getTokenDescription(token: ITokenTrade): ITokenDescription {
+export function getTokenDescription(token: keyof typeof TOKEN_ADDRESS_TO_SYMBOL): ITokenDescription {
   return TOKEN_DESCRIPTION_MAP[getSafeMappedValue(TOKEN_ADDRESS_TO_SYMBOL, token, token)]
 }
 

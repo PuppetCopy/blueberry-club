@@ -1,7 +1,7 @@
 import { Event } from "@ethersproject/contracts"
 import { CHAIN } from "@gambitdao/wallet-link"
-import { ARBITRUM_ADDRESS_INDEX, ARBITRUM_ADDRESS_STABLE } from "./address/arbitrum"
-import { AVALANCHE_ADDRESS_INDEX, AVALANCHE_ADDRESS_STABLE } from "./address/avalanche"
+import { ARBITRUM_ADDRESS, ARBITRUM_ADDRESS_INDEX, ARBITRUM_ADDRESS_STABLE } from "./address/arbitrum"
+import { AVALANCHE_ADDRESS, AVALANCHE_ADDRESS_INDEX, AVALANCHE_ADDRESS_STABLE } from "./address/avalanche"
 import { TOKEN_SYMBOL } from "./address/symbol"
 import { intervalTimeMap } from "./constant"
 
@@ -11,6 +11,8 @@ export type ITokenTrade = ITokenIndex | ITokenStable
 export type ITokenInput = ITokenTrade | "0x0000000000000000000000000000000000000000"
 export type ITokenIndex = AVALANCHE_ADDRESS_INDEX | ARBITRUM_ADDRESS_INDEX
 export type ITokenStable = AVALANCHE_ADDRESS_STABLE | ARBITRUM_ADDRESS_STABLE
+
+export type ITokenPricefeed = ITokenTrade | ARBITRUM_ADDRESS.GLP | AVALANCHE_ADDRESS.GLP | ARBITRUM_ADDRESS.GMX | AVALANCHE_ADDRESS.GMX
 
 export interface IGmxContractAddress {
   NATIVE_TOKEN: string
@@ -236,17 +238,17 @@ export interface IPricefeed extends IndexedType<'Pricefeed'> {
   h: bigint
   l: bigint
   c: bigint
-  tokenAddress: ITokenIndex
+  tokenAddress: ITokenPricefeed
 }
 
 export interface IPriceLatest extends IndexedType<'PriceLatest'> {
   value: bigint
-  id: ITokenIndex
+  id: ITokenPricefeed
   timestamp: number
 }
 
 export type IPriceLatestMap = {
-  [P in ITokenIndex]: IPriceLatest
+  [P in ITokenPricefeed]: IPriceLatest
 }
 
 
@@ -285,9 +287,9 @@ export interface IRequestCompetitionLadderApi extends IChainParamApi, IRequestPa
 
 export type IRequestAccountApi = IChainParamApi & { account: string }
 
-export type IRequestPriceTimelineApi = IChainParamApi & IRequestTimerangeApi & { tokenAddress: ITokenIndex }
+export type IRequestPriceTimelineApi = IChainParamApi & IRequestTimerangeApi & { tokenAddress: ITokenPricefeed }
 export type IRequestAccountHistoricalDataApi = IChainParamApi & IRequestAccountApi & IRequestTimerangeApi
-export type IRequestPricefeedApi = IChainParamApi & IRequestTimerangeApi & { interval: intervalTimeMap, tokenAddress: ITokenTrade }
+export type IRequestPricefeedApi = IChainParamApi & IRequestTimerangeApi & { interval: intervalTimeMap, tokenAddress: ITokenPricefeed }
 export type IRequestTradeListApi = IChainParamApi & IRequestPagePositionApi & IRequestSortApi<keyof ITradeAbstract> & { status: TradeStatus }
 
 

@@ -15,7 +15,7 @@ import {
 } from "@gambitdao/ui-components"
 import {
   merge, multicast, mergeArray, now, snapshot, map, switchLatest,
-  skipRepeats, empty, fromPromise, constant, startWith, skipRepeatsWith, awaitPromises, zip, sample
+  skipRepeats, empty, fromPromise, constant, startWith, skipRepeatsWith, awaitPromises, zip, sample, delay
 } from "@most/core"
 import { Stream } from "@most/types"
 import { $Slider } from "../$Slider"
@@ -231,7 +231,7 @@ export const $TradeBox = (config: ITradeBox) => component((
     return null
   }, pnlCrossHairTimeChange)
 
-  const resetTrade = constant(0n, mergeArray([config.tradeState.position, clickResetTradeMode]))
+  const resetTrade = constant(0n, mergeArray([delay(50, config.tradeState.position), clickResetTradeMode]))
 
 
   const clickMaxCollateralUsd = snapshot(state => {
@@ -1071,13 +1071,11 @@ export const $TradeBox = (config: ITradeBox) => component((
                         const delta = getPnL(params.isLong, params.position.averagePrice, params.indexTokenPrice, -params.sizeDeltaUsd)
                         const adjustedSizeDelta = safeDiv(-params.sizeDeltaUsd * delta, params.position.size)
                         const fees = params.swapFee + params.marginFee
-
                         const collateralDelta = -params.sizeDeltaUsd === params.position.size
                           ? params.position.collateral - params.fundingFee
                           : -params.collateralDeltaUsd
 
                         const total = collateralDelta + adjustedSizeDelta - fees
-                        const totalAfterFees = total > 0n ? total : 0n
                         const tokenAmount = getTokenAmount(total, params.inputTokenPrice, params.inputTokenDescription.decimals)
 
                         return `${readableNumber(formatFixed(tokenAmount, params.inputTokenDescription.decimals))} ${params.inputTokenDescription.symbol} (${formatReadableUSD(total)})`

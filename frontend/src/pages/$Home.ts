@@ -118,9 +118,9 @@ export const $Home = (config: ITreasury) => component((
   ]
 
   const activeContributorList = [
+    { name: 'IrvingDev_', size: 'small', title: "Dev", tokenId: 140 },
     { name: 'JamesCliffyz', size: 'small', title: "Dune Analyst", tokenId: 150 },
     { name: 'kitkat787878', size: 'small', title: "Witch", tokenId: 21 },
-    { name: 'defipleb', size: 'small', title: "Lab's Shakespeare", tokenId: 6762 },
     { name: 'defiplebette', size: 'small', title: "Lab's Shakespeare", tokenId: 121 },
     { name: 'gmx_intern', size: 'small', title: "Blueberry Podcast", tokenId: 2605 },
     { name: 'tanoeth', size: 'small', title: "Blueberry Podcast", tokenId: 1867 },
