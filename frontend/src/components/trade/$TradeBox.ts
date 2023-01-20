@@ -10,7 +10,8 @@ import {
   TRADE_CONTRACT_MAPPING, filterNull, ITradeOpen, zipState, MARGIN_FEE_BASIS_POINTS, abs, DEDUCT_FOR_GAS, getTokenAmount, safeDiv, getTokenDescription
 } from "@gambitdao/gmx-middleware"
 import {
-  $anchor, $bear, $bull, $hintNumChange, $infoTooltipLabel, $IntermediatePromise,
+  $anchor, $AnchorLink, $bear, $bull, $hintNumChange, $infoTooltipLabel, $IntermediatePromise,
+  $Link,
   $tokenIconMap, $tokenLabelFromSummary, invertColor
 } from "@gambitdao/ui-components"
 import {
@@ -35,6 +36,7 @@ import { ERC20__factory } from "../../logic/gmx-contracts"
 import { CHAIN, IWalletLink, IWalletName } from "@gambitdao/wallet-link"
 import { $Popover } from "../$Popover"
 import { $card } from "../../elements/$common"
+import { Route } from "@aelea/router"
 
 export enum ITradeFocusMode {
   collateral,
@@ -113,7 +115,7 @@ interface ITradeBox {
 
   pricefeed: Stream<Promise<IPricefeed[]>>
   trade: Stream<Promise<ITradeOpen | null>>
-  // positionChange: Stream<IPositionGetter>
+  parentRoute: Route
 }
 
 export type RequestTradeQuery = {
@@ -157,6 +159,7 @@ export const $TradeBox = (config: ITradeBox) => component((
   [crosshairMove, crosshairMoveTether]: Behavior<MouseEventParams, MouseEventParams>,
   [clickResetTradeMode, clickResetTradeModeTether]: Behavior<any, any>,
   [clickMax, clickMaxTether]: Behavior<any, any>,
+  [changeRoute, changeRouteTether]: Behavior<string, string>,
 
 ) => {
 
@@ -1045,14 +1048,21 @@ export const $TradeBox = (config: ITradeBox) => component((
                             $text('Payback accumulates every time you trade and is distributed once every week back to your account in ETH or AVAX.'),
                             $row(layoutSheet.spacingTiny)(
                               $text(style({ color: pallete.foreground }))('Open + Close Payback'),
-                              $text(style({ color: pallete.positive }))(map(params => getRebateDiscountUsd(params.marginFee * 2n), combineObject({ marginFee })))
+                              $text(style({ color: pallete.positive }))(map(params => formatReadableUSD(params.marginFee * 2000n / BASIS_POINTS_DIVISOR), combineObject({ marginFee })))
                             ),
-                            $text('Testnet competition incentives'),
-                            $text(style({ color: pallete.positive }))('Tournament competition prize pool is boosted during testnet'),
+                            $text(style({ color: pallete.positive }))('Beta competition boost'),
+                            $node(
+                              $text('Additional 15% will be aggregated towards monthly trading competition and distributed to top traders in the end '),
+                              $anchor(attr({ href: '/p/leaderboard' }))($text(' Leaderboard'))
+                            ),
+                            $row(layoutSheet.spacingTiny)(
+                              $text(style({ color: pallete.foreground }))('Your added contribution'),
+                              $text(style({ color: pallete.positive }))(map(params => formatReadableUSD(params.marginFee * 6000n / BASIS_POINTS_DIVISOR), combineObject({ marginFee })))
+                            ),
                           ),
                           'Payback'
                         ),
-                        $text(style({ color: pallete.positive, fontSize: '0.75em' }))(map(params => getRebateDiscountUsd(params.marginFee * 2n), combineObject({ marginFee })))
+                        $text(style({ color: pallete.positive, fontSize: '0.75em' }))(map(params => formatReadableUSD(params.marginFee * 2000n / BASIS_POINTS_DIVISOR), combineObject({ marginFee })))
                       )
                     }
 
@@ -1368,6 +1378,7 @@ export const $TradeBox = (config: ITradeBox) => component((
       switchIsLong,
       changeInputToken,
       changeIndexToken,
+      changeRoute,
       switchFocusMode: mergeArray([
         snapshot(isIncrease => isIncrease ? ITradeFocusMode.collateral : ITradeFocusMode.size, config.tradeConfig.isIncrease, clickMax),
         switchFocusMode,
@@ -1425,6 +1436,3 @@ const $field = $element('input')(attr({ placeholder: '0.0', type: 'text' }), sty
 
 
 
-function getRebateDiscountUsd(amountUsd: bigint) {
-  return formatReadableUSD(amountUsd * 1000n / BASIS_POINTS_DIVISOR)
-}

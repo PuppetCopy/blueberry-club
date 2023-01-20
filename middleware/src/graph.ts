@@ -4,7 +4,7 @@ import { createSubgraphClient, groupByMap, IRequestCompetitionLadderApi, IIdenti
 import { getCompetitionCumulativeRoi } from "@gambitdao/gmx-middleware/src/graph"
 import { awaitPromises, map } from "@most/core"
 import { gql } from "@urql/core"
-import { ILabItem, ILabItemOwnership, IOwner, IProfile, IProfileTradingSummary, IToken } from "./types"
+import { ILabItem, ILabItemOwnership, IOwner, IProfile, IProfileTradingList, IProfileTradingResult, IToken } from "./types"
 
 
 
@@ -232,30 +232,38 @@ export const profile = O(
 )
 
 export const competitionRoiAccountList = O(
-  map(async (queryParams: IRequestCompetitionLadderApi) => {
+  map(async (queryParams: IRequestCompetitionLadderApi): Promise<IProfileTradingResult> => {
 
-    const list = cache('cacheKey', intervalTimeMap.MIN5, async () => {
+    const queryCache = cache('cacheKey', intervalTimeMap.MIN5, async () => {
       const accountList = await getCompetitionCumulativeRoi(queryParams)
-      const profileList = await getProfilePickList(accountList.map(x => x.account))
+      const profileList = await getProfilePickList(accountList.list.map(x => x.account))
       const profileMap = groupByMap(profileList, p => p.id)
 
-      const sortedCompetitionList: IProfileTradingSummary[] = accountList
+      const sortedCompetitionList: IProfileTradingList[] = accountList.list
         .sort((a, b) => {
           const aN = profileMap[a.account] ? a.roi : a.roi - 100000000n
           const bN = profileMap[b.account] ? b.roi : b.roi - 100000000n
           return Number(bN - aN)
         })
-        .map(summary => ({
-          ...summary,
-          profile: profileMap[summary.account] || null,
-          rank: queryParams.offset + accountList.indexOf(summary) + 1
-        }))
+        .map(summary => {
 
-      return sortedCompetitionList
-      
+          return {
+            ...summary,
+            profile: profileMap[summary.account] || null,
+            rank: queryParams.offset + accountList.list.indexOf(summary) + 1
+          }
+        })
+
+
+      return { sortedCompetitionList, size: accountList.size }
     })
 
-    return pagingQuery(queryParams, await list)
+    const res = await queryCache
+
+    return {
+      list: pagingQuery(queryParams, res.sortedCompetitionList),
+      size: res.size
+    }
   }),
   awaitPromises
 )

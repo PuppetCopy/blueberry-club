@@ -1,7 +1,7 @@
 import { BASIS_POINTS_DIVISOR, FUNDING_RATE_PRECISION, LIQUIDATION_FEE, MARGIN_FEE_BASIS_POINTS, MAX_LEVERAGE } from "./constant"
 import {
   IAccountSummary, ITrade, ITradeSettled, ITradeClosed, ITradeLiquidated, ITradeOpen,
-  TradeStatus, IPricefeed, IAccountLadderSummary, IPositionLiquidated
+  TradeStatus, IPricefeed, IAccountLadderSummary, IPositionLiquidated, ILadderSummary
 } from "./types"
 import { easeInExpo, formatFixed, getDenominator, groupByMapMany } from "./utils"
 
@@ -192,10 +192,7 @@ export function toAccountSummary(list: ITrade[]): IAccountSummary[] {
 
     const seedAccountSummary: IAccountSummary = {
       account,
-
-      collateral: 0n,
       size: 0n,
-
       fee: 0n,
       realisedPnl: 0n,
 
@@ -208,7 +205,6 @@ export function toAccountSummary(list: ITrade[]): IAccountSummary[] {
       return {
         ...seed,
         fee: seed.fee + next.fee,
-        collateral: seed.collateral + next.collateral,
         realisedPnl: seed.realisedPnl + next.realisedPnl,
         size: seed.size + next.size,
         winCount: next.realisedPnl > 0n ? seed.winCount + 1 : seed.winCount,
@@ -222,28 +218,27 @@ export function toAccountSummary(list: ITrade[]): IAccountSummary[] {
   }, [] as IAccountSummary[])
 }
 
-export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: string]: IPricefeed }, minMaxCollateral: bigint, endDate: number): IAccountLadderSummary[] {
+export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: string]: IPricefeed }, minMaxCollateral: bigint, endDate: number): ILadderSummary {
   const tradeListMap = groupByMapMany(list, a => a.account)
   const tradeListEntries = Object.entries(tradeListMap)
+
+  const res: ILadderSummary = {
+    list: [],
+    size: 0n
+  }
 
   return tradeListEntries.reduce((seed, [account, tradeList]) => {
 
     const seedAccountSummary: IAccountLadderSummary = {
       account,
       cumulativeLeverage: 0n,
-
-      collateral: 0n,
       size: 0n,
-
+      maxCollateral: 0n,
       fee: 0n,
       realisedPnl: 0n,
-
       roi: 0n,
       openPnl: 0n,
       pnl: 0n,
-
-      maxCollateral: 0n,
-
       winCount: 0,
       lossCount: 0,
     }
@@ -281,9 +276,9 @@ export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: stri
 
     const summary = sortedTradeList.reduce((seed, next): IAccountLadderSummary => {
       const filteredUpdates = [...next.updateList, ...isTradeClosed(next) ? [next.closedPosition] : isTradeLiquidated(next) ? [next.liquidatedPosition as IPositionLiquidated & { key: string }] : []].filter(update => update.timestamp <= endDate)
-      const tradeMaxCollateral = filteredUpdates.reduce((s, n) => n.collateral > s ? n.collateral : s, 0n)
-      const collateral = seed.maxCollateral + tradeMaxCollateral
       const lastUpdate = filteredUpdates[filteredUpdates.length - 1]
+      const cumSizeIncrease = next.increaseList.reduce((s, n) => s + n.sizeDelta, 0n)
+      const cumSizeDecrease = next.decreaseList.reduce((s, n) => s + n.sizeDelta, 0n)
 
       const indexTokenMarkPrice = BigInt(priceMap['_' + next.indexToken].c)
       const openDelta = lastUpdate.__typename === 'UpdatePosition'
@@ -307,30 +302,31 @@ export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: stri
       const cumulativeLeverage = seed.cumulativeLeverage + div(lastUpdate.size, maxCollateral)
 
 
-      return {
-        collateral, account, realisedPnl, openPnl, pnl, roi, maxCollateral,
 
+      return {
+        account, realisedPnl, openPnl, pnl, roi, maxCollateral,
         lossCount,
         winCount,
-
         cumulativeLeverage,
         fee,
-
-        size: seed.size + next.size,
+        size: seed.size + cumSizeIncrease + cumSizeDecrease,
       }
     }, seedAccountSummary)
 
-    seed.push(summary)
+    seed.list.push(summary)
 
-    return seed
-  }, [] as IAccountLadderSummary[])
+    return {
+      list: seed.list,
+      size: summary.size + seed.size
+    }
+  }, res)
 }
 
 
 
 
 export function liquidationWeight(isLong: boolean, liquidationPriceUSD: bigint, markPriceUSD: bigint) {
-  const weight = isLong ? div(liquidationPriceUSD, markPriceUSD) : div(markPriceUSD,  liquidationPriceUSD)
+  const weight = isLong ? div(liquidationPriceUSD, markPriceUSD) : div(markPriceUSD, liquidationPriceUSD)
   const newLocal = formatFixed(weight, 4)
   const value = easeInExpo(newLocal)
   return value > 1 ? 1 : value
