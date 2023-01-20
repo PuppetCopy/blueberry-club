@@ -1,5 +1,5 @@
-import { Pool } from '@uniswap/v3-sdk'
-import { Token, } from '@uniswap/sdk-core'
+// import { Pool } from '@uniswap/v3-sdk'
+// import { Token, } from '@uniswap/sdk-core'
 import * as uniV3 from './uniV3.abi'
 import * as uniV2 from './uniV2.abi'
 import { ARBITRUM_ADDRESS } from '../address/arbitrum'
@@ -16,26 +16,27 @@ import { CHAIN } from '@gambitdao/wallet-link'
 
 
 export async function getGmxArbiPrice(provider: BaseProvider, ethPrice: bigint) {
-  const poolContract = new Contract(ARBITRUM_ADDRESS.UniswapGmxEthPool, uniV3.default.abi, provider)
+  return 0n
+  // const poolContract = new Contract(ARBITRUM_ADDRESS.UniswapGmxEthPool, uniV3.default.abi, provider)
 
-  const tokenA = new Token(CHAIN.ARBITRUM, ARBITRUM_ADDRESS.NATIVE_TOKEN, TOKEN_DESCRIPTION_MAP.ETH.decimals)
-  const tokenB = new Token(CHAIN.ARBITRUM, ARBITRUM_ADDRESS.GMX, TOKEN_DESCRIPTION_MAP.GMX.decimals)
+  // const tokenA = new Token(CHAIN.ARBITRUM, ARBITRUM_ADDRESS.NATIVE_TOKEN, TOKEN_DESCRIPTION_MAP.ETH.decimals)
+  // const tokenB = new Token(CHAIN.ARBITRUM, ARBITRUM_ADDRESS.GMX, TOKEN_DESCRIPTION_MAP.GMX.decimals)
 
-  const token0 = await poolContract.slot0()
+  // const token0 = await poolContract.slot0()
 
-  const pool = new Pool(
-    tokenA,
-    tokenB,
-    10000,
-    token0.sqrtPriceX96,
-    1,
-    token0.tick
-  )
+  // const pool = new Pool(
+  //   tokenA,
+  //   tokenB,
+  //   10000,
+  //   token0.sqrtPriceX96,
+  //   1,
+  //   token0.tick
+  // )
 
-  const poolTokenPrice = pool.priceOf(tokenB).toSignificant(6)
-  const poolTokenPriceAmount = parseFixed(poolTokenPrice, 18)
+  // const poolTokenPrice = pool.priceOf(tokenB).toSignificant(6)
+  // const poolTokenPriceAmount = parseFixed(poolTokenPrice, 18)
 
-  return getTokenUsd(poolTokenPriceAmount, ethPrice, TOKEN_DESCRIPTION_MAP.GMX.decimals)
+  // return getTokenUsd(poolTokenPriceAmount, ethPrice, TOKEN_DESCRIPTION_MAP.GMX.decimals)
 }
 
 export async function getGmxAvaxPrice(provider: JsonRpcProvider, ethPrice: bigint) {
