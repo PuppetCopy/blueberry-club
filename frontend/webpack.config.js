@@ -63,8 +63,7 @@ module.exports = {
     new CopyPlugin({
       patterns: [
         { from: "assets", to: 'assets' },
-        { from: '_redirects' },
-        { from: 'robots.txt' },
+        { from: 'netlify.toml' },
       ]
     }),
   ],
@@ -84,6 +83,6 @@ module.exports = {
   output: {
     clean: true,
     filename: '[name].[contenthash].js',
-    path: path.resolve(__dirname, '../backend/.dist/cjs/public')
+    path: path.resolve('./.dist')
   }
 }

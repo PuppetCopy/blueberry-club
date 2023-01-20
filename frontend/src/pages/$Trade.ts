@@ -678,10 +678,7 @@ export const $Trade = (config: ITradeComponent) => component((
                         $ProfitLossText(pnl),
                         $infoTooltip(
                           $column(layoutSheet.spacingTiny)(
-                            $row(layoutSheet.spacingTiny)(
-                              $text(style({}))('Net PnL(after fees)'),
-                              // $text(style({ color: pallete.negative }))(map(fee => formatReadableUSD(pos.collateral + fee), fundingFee))
-                            ),
+                            $text(style({}))('PnL breakdown'),
                             $column(
                               $row(layoutSheet.spacingTiny)(
                                 $text(style({ color: pallete.foreground, flex: 1 }))('Deposit'),

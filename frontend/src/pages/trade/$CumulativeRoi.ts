@@ -184,7 +184,6 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
             ),
             $text(style({ fontSize: '.75em' }))(`ROI (%) is defined as: Profits / Max Collateral (min $1000) * 100`),
           ),
-
           $column(
             $row(
               $infoTooltipLabel($column(layoutSheet.spacingSmall)(
