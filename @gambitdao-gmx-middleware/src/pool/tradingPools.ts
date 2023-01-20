@@ -1,5 +1,5 @@
 import { Pool } from '@uniswap/v3-sdk'
-import { Token } from '@uniswap/sdk-core'
+const sdkCoreImport = import('@uniswap/sdk-core')
 import * as uniV3 from './uniV3.abi'
 import * as uniV2 from './uniV2.abi'
 import { ARBITRUM_ADDRESS } from '../address/arbitrum'
@@ -16,6 +16,7 @@ import { CHAIN } from '@gambitdao/wallet-link'
 
 
 export async function getGmxArbiPrice(provider: BaseProvider, ethPrice: bigint) {
+  const Token = (await sdkCoreImport).Token
   const poolContract = new Contract(ARBITRUM_ADDRESS.UniswapGmxEthPool, uniV3.default.abi, provider)
 
   const tokenA = new Token(CHAIN.ARBITRUM, ARBITRUM_ADDRESS.NATIVE_TOKEN, TOKEN_DESCRIPTION_MAP.ETH.decimals)
