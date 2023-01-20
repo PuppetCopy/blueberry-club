@@ -1,3 +1,5 @@
+
+
 import { Pool } from '@uniswap/v3-sdk'
 import { Token } from '@uniswap/sdk-core'
 import * as uniV3 from './uniV3.abi'
@@ -14,13 +16,6 @@ import { awaitPromises } from '@most/core'
 import { combineArray } from '@aelea/core'
 import { CHAIN } from '@gambitdao/wallet-link'
 
-/**
- * The globalThis.regeneratorRuntime = undefined addresses a potentially unsafe-eval problem
- * Source: https://github.com/facebook/regenerator/issues/378#issuecomment-802628326
- * Date: July 14, 2021
- */
-// @ts-ignore
-globalThis.regeneratorRuntime = undefined
 
 export async function getGmxArbiPrice(provider: BaseProvider, ethPrice: bigint) {
   const poolContract = new Contract(ARBITRUM_ADDRESS.UniswapGmxEthPool, uniV3.default.abi, provider)
