@@ -43,7 +43,7 @@ export const $alertTooltip = ($content: $Branch) => {
 }
 
 export const $infoTooltipLabel = (text: string | $Node, label?: string | $Node) => {
-  return $row(layoutSheet.spacingTiny)(
+  return $row(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
     label
       ? isStream(label)
         ? label

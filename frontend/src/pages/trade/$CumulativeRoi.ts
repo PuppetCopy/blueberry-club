@@ -171,45 +171,40 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
 
 
       $column(
-        $row(style({ padding: screenUtils.isMobileScreen ? '0 12px' : '' }))(
-          $column(layoutSheet.spacingSmall, style({ marginBottom: '26px', flex: 1 }))(
-            $row(layoutSheet.spacingSmall, style({ alignItems: 'flex-end' }))(
-              $text(style({ fontWeight: 'bold' }))(`Highest ROI (%)`),
-
-              // ...ended ? [] : [
-              //   $text(style({ color: pallete.foreground, fontSize: '.75em' }))('Ending in'),
-              //   $text(style({ fontSize: '.75em' }))(countdown(end)),
-              // ]
-
+        $row(style({ padding: screenUtils.isMobileScreen ? '0 12px' : '', marginBottom: '26px', alignItems: 'flex-end' }))(
+          $column(layoutSheet.spacingSmall, style({ flex: 1 }))(
+            $infoTooltipLabel(
+              `ROI (%) is defined as: Profits / Max Collateral (min $1000) * 100`,
+              $text(style({ fontWeight: 'bold', fontSize: '1.15em' }))(`Highest ROI (%)`)
             ),
-            $text(style({ fontSize: '.75em' }))(`ROI (%) is defined as: Profits / Max Collateral (min $1000) * 100`),
+            $row(layoutSheet.spacing)(
+              $infoTooltipLabel($column(layoutSheet.spacingSmall)(
+                $text('The current amount accumulated through GMX rebate program, later to be rewarded to top traders in the end'),
+                $text('it is calculated as Aggregated size fee * 0.15% (BLUBERRY Referral)'),
+              ), 'Aggregated Size'),
+              $text(style({
+                fontSize: '1em',
+                textShadow: `${colorAlpha(pallete.message, .5)} 1px 1px 20px, ${colorAlpha(pallete.message, .5) } 0px 0px 20px`
+              }))(map(res => {
+                return formatReadableUSD(res.size)
+              }, competitionCumulativeRoi))
+            ),
           ),
           $column(
-            $row(
+            $row(layoutSheet.spacing, style({ placeContent: 'flex-end' }))(
               $infoTooltipLabel($column(layoutSheet.spacingSmall)(
                 $text('The current amount accumulated through GMX rebate program, later to be rewarded to top traders in the end'),
                 $text('it is calculated as Aggregated size fee * 0.15% (BLUBERRY Referral)'),
               ), 'Prize Pool'),
               $text(style({
                 color: pallete.positive,
-                fontSize: '1.75em',
+                fontSize: '2.25em',
                 textShadow: `${pallete.positive} 1px 1px 20px, ${pallete.positive} 0px 0px 20px`
               }))(map(res => {
                 return formatReadableUSD(getMarginFees(res.size) * 1500n / BASIS_POINTS_DIVISOR)
               }, competitionCumulativeRoi))
             ),
-            $row(
-              $infoTooltipLabel($column(layoutSheet.spacingSmall)(
-                $text('The current amount accumulated through GMX rebate program, later to be rewarded to top traders in the end'),
-                $text('it is calculated as Aggregated size fee * 0.15% (BLUBERRY Referral)'),
-              ), 'Aggregated Size'),
-              $text(style({
-                fontSize: '1.15em',
-                textShadow: `${pallete.message} 1px 1px 20px, ${pallete.message} 0px 0px 20px`
-              }))(map(res => {
-                return formatReadableUSD(res.size)
-              }, competitionCumulativeRoi))
-            ),
+
           )
         ),
 

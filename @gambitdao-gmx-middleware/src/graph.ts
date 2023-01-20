@@ -30,6 +30,7 @@ export const arbitrumGraph = createSubgraphClient({
 
 export const arbitrumGraphDev = createSubgraphClient({
   fetch: fetch as any,
+  // requestPolicy: 'network-only',
   url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-arbitrum-dev'
 })
 
@@ -225,7 +226,8 @@ export async function getCompetitionCumulativeRoi(queryParams: IRequestCompetiti
 
   const from = queryParams.from
 
-  const competitionAccountListQuery = fetchTrades({ ...queryParams, from, to, offset: 0, pageSize: 1000 }, async (params) => {
+  const competitionAccountListQuery = fetchHistoricTrades({ ...queryParams, from, to, offset: 0, pageSize: 1000 }, async (params) => {
+    console.log(params.from)
     const res = await arbitrumGraphDev(gql(`
 
 query {
@@ -235,7 +237,7 @@ query {
       entryReferrer
   }
 }
-`), {})
+`), { })
 
     return res.trades as ITrade[]
   })

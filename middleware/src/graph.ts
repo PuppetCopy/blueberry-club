@@ -236,7 +236,7 @@ export const competitionRoiAccountList = O(
 
     const queryCache = cache('cacheKey', intervalTimeMap.MIN5, async () => {
       const accountList = await getCompetitionCumulativeRoi(queryParams)
-      const profileList = await getProfilePickList(accountList.list.map(x => x.account))
+      const profileList = await getProfilePickList(accountList.list.map(x => x.account).slice(0, 40))
       const profileMap = groupByMap(profileList, p => p.id)
 
       const sortedCompetitionList: IProfileTradingList[] = accountList.list

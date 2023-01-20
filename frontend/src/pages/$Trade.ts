@@ -784,7 +784,7 @@ export const $Trade = (config: ITradeComponent) => component((
                   intervalTimeMap.MIN60,
                   intervalTimeMap.HR4,
                   intervalTimeMap.HR24,
-                  intervalTimeMap.DAY7,
+                  // intervalTimeMap.DAY7,
                 ],
                 $$option: map(option => {
                   // @ts-ignore
@@ -823,7 +823,7 @@ export const $Trade = (config: ITradeComponent) => component((
                     intervalTimeMap.MIN60,
                     intervalTimeMap.HR4,
                     intervalTimeMap.HR24,
-                    intervalTimeMap.DAY7,
+                    // intervalTimeMap.DAY7,
                   ],
                 }
               })({
