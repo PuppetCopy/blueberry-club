@@ -5642,9 +5642,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"backend@workspace:backend":
+"backend@workspace:service":
   version: 0.0.0-use.local
-  resolution: "backend@workspace:backend"
+  resolution: "backend@workspace:service"
   dependencies:
     "@aelea/core": 1.3.0
     "@ethersproject/abi": 5.7.0
