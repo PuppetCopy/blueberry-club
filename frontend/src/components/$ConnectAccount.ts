@@ -9,7 +9,7 @@ import { $ButtonPrimary, $ButtonSecondary } from "./form/$Button"
 import { $caretDown } from "../elements/$icons"
 import { $Dropdown, $defaultSelectContainer } from "./form/$Dropdown"
 import { $Popover } from "./$Popover"
-import { IButton } from "./form/$ButtonCore"
+import { IButton } from "./form/$ButtonCore2"
 import { Stream } from "@most/types"
 import { filterNull } from "@gambitdao/gmx-middleware"
 
