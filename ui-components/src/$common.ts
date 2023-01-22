@@ -2,7 +2,7 @@ import { isStream, O } from "@aelea/core"
 import { $Branch, $element, $Node, $text, attr, component, style, styleBehavior, styleInline, stylePseudo } from "@aelea/dom"
 import { $column, $icon, $row, $seperator, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { bnDiv, formatReadableUSD, getNextLiquidationPrice, getTxExplorerUrl, IAbstractPositionStake, IAbstractTrade, ITrade, ITradeOpen, liquidationWeight, readableNumber, shortenTxAddress, ITokenDescription } from "@gambitdao/gmx-middleware"
+import { bnDiv, formatReadableUSD, getNextLiquidationPrice, getTxExplorerUrl, IAbstractPositionStake, IAbstractTrade, ITrade, ITradeOpen, liquidationWeight, readableNumber, shortenTxAddress, ITokenDescription, formatToBasis } from "@gambitdao/gmx-middleware"
 import { CHAIN } from "@gambitdao/wallet-link"
 import { now, multicast, map, empty } from "@most/core"
 import { Stream } from "@most/types"
@@ -42,12 +42,18 @@ export const $alertTooltip = ($content: $Branch) => {
   })({})
 }
 
+
+
+export const $infoLabel = (label: string | $Node) => {
+  return isStream(label)
+    ? label
+    : $text(style({ color: pallete.foreground, fontSize: '.75em' }))(label)
+}
+
 export const $infoTooltipLabel = (text: string | $Node, label?: string | $Node) => {
   return $row(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
     label
-      ? isStream(label)
-        ? label
-        : $text(style({ color: pallete.foreground, fontSize: '.75em' }))(label)
+      ? $infoLabel(label)
       : empty(),
     $infoTooltip(text),
   )
@@ -68,14 +74,14 @@ export const $txHashRef = (txHash: string, chain: CHAIN, label?: $Node) => {
 }
 
 
-export const $risk = (pos: IAbstractTrade) => $column(layoutSheet.spacingTiny, style({ textAlign: 'center' }))(
+export const $sizeDisplay = (pos: IAbstractPositionStake) => $column(layoutSheet.spacingTiny, style({ textAlign: 'center' }))(
   $text(formatReadableUSD(pos.size)),
   $seperator,
-  style({ textAlign: 'center', fontSize: '.65em' }, $leverage(pos)),
+  $text(style({ textAlign: 'center', fontSize: '.65em' }))(formatReadableUSD(pos.collateral)),
 )
 
 export const $leverage = (pos: IAbstractPositionStake) =>
-  $text(style({ fontWeight: 'bold' }))(`${readableNumber(bnDiv(pos.size, pos.collateral))}x`)
+  $text(style({ fontWeight: 'bold', fontSize: '10px' }))(`${Math.round(bnDiv(pos.size, pos.collateral)) }x`)
 
 export const $ProfitLossText = (pnl: Stream<bigint> | bigint, colorful = true) => {
   const pnls = isStream(pnl) ? pnl : now(pnl)
@@ -106,30 +112,11 @@ export function $liquidationSeparator(pos: ITrade, markPrice: Stream<bigint>) {
   )
 }
 
-export const $RiskLiquidator = (pos: ITradeOpen, markPrice: Stream<bigint>) => component(() => {
-
-  return [
-    $column(layoutSheet.spacingTiny, style({ alignItems: 'flex-end' }))(
-      $text(formatReadableUSD(pos.size)),
-      $liquidationSeparator(pos, markPrice),
-      $row(style({ fontSize: '.65em', gap: '2px', alignItems: 'center' }))(
-        $leverage(pos),
-
-        // $node(),
-
-        // $icon({
-        //   $content: $skull,
-        //   width: '12px',
-        //   svgOps: style({ marginLeft: '3px' }),
-        //   viewBox: '0 0 32 32',
-        // }),
-        // $text(style({  }))(
-        //   formatReadableUSD(liquidationPrice)
-        // )
-      )
-    )
-  ]
-})
+export const $riskLiquidator = (pos: ITradeOpen, markPrice: Stream<bigint>) => $column(layoutSheet.spacingTiny, style({ alignItems: 'flex-end' }))(
+  $text(formatReadableUSD(pos.size)),
+  $liquidationSeparator(pos, markPrice),
+  $text(style({ textAlign: 'center', fontSize: '.65em' }))(formatReadableUSD(pos.collateral))
+)
 
 export const $labeledDivider = (label: string) => {
   return $row(layoutSheet.spacing, style({ placeContent: 'center', alignItems: 'center' }))(
@@ -186,5 +173,6 @@ export const $hintNumChange = (config: {
     $text(style({}))(config.change),
   ),
 )
+
 
 

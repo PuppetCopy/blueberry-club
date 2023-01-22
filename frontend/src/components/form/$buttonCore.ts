@@ -1,6 +1,6 @@
-import { constant, empty, filter, map, merge, mergeArray, never } from "@most/core"
-import { Behavior, O, Op } from '@aelea/core'
-import { $Node, $element, component, nodeEvent, INode, styleBehavior, IBranch, attrBehavior, StyleCSS, NodeComposeFn } from '@aelea/dom'
+import { constant, empty, filter, map, merge, mergeArray } from "@most/core"
+import { Behavior, O } from '@aelea/core'
+import { $Node, $element, component, nodeEvent, INode, styleBehavior, IBranch, attrBehavior, NodeComposeFn } from '@aelea/dom'
 import { pallete } from '@aelea/ui-components-theme'
 import { Control, designSheet } from "@aelea/ui-components"
 
@@ -18,25 +18,24 @@ export const dismissOp = O(
 
 export interface IButton extends Control {
   $container?: NodeComposeFn<$Node>,
-  $content: $Node,
-  buttonStyle?: StyleCSS
+  $content: $Node
 }
 
-export const $Button = (config: IButton) => component((
+export const $defaultButton = $element('button')(designSheet.btn)
+
+export default ({ $content, $container = $defaultButton, disabled = empty() }: IButton) => component((
   [focusStyle, interactionTether]: Behavior<IBranch, true>,
   [dismissstyle, dismissTether]: Behavior<IBranch, false>,
   [click, clickTether]: Behavior<INode, PointerEvent>
 ) => {
 
-  const disabled = config.disabled || empty()
 
-  const $button = (config.$container || $element('button'))(
-    designSheet.btn,
+  const $button = $container(
     clickTether(
       nodeEvent('pointerup')
     ),
     styleBehavior(
-      map(disabled => disabled ? { opacity: .4, pointerEvents: 'none' } : null, disabled)
+      map(isDisabled => isDisabled ? { opacity: .4, pointerEvents: 'none' } : null, disabled)
     ),
 
 
@@ -58,7 +57,7 @@ export const $Button = (config: IButton) => component((
   )
 
   return [
-    $button(config.$content),
+    $button($content),
 
     {
       click

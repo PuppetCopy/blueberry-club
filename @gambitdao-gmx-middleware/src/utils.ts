@@ -86,7 +86,7 @@ export function formatReadableUSD(ammount: bigint | number) {
 
   const amountUsd = typeof ammount === 'bigint' ?  formatFixed(ammount, USD_DECIMALS) : ammount
 
-  return '$' + readableNumber(amountUsd)
+  return readableNumber(amountUsd)
 }
 
 export function shortenTxAddress(address: string) {

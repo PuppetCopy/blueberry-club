@@ -10,15 +10,13 @@ import {
   ITokenIndex, ITokenStable, ITokenInput, TradeStatus, LIMIT_LEVERAGE, div, readableDate, TRADE_CONTRACT_MAPPING, getTokenAmount, abs, IRequestAccountApi, CHAIN_ADDRESS_MAP, DEDUCT_FOR_GAS, getSafeMappedValue, getTokenDescription, getFeeBasisPoints,
 } from "@gambitdao/gmx-middleware"
 
-import { map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, snapshot, zip, combine, tap, constant, periodic } from "@most/core"
+import { map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, snapshot, zip, combine, tap, constant, fromPromise } from "@most/core"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
-import { $arrowsFlip, $infoTooltip, $IntermediatePromise, $ProfitLossText, $RiskLiquidator, $spinner, $txHashRef, invertColor } from "@gambitdao/ui-components"
+import { $arrowsFlip, $defaultTableContainer, $infoTooltip, $IntermediatePromise, $ProfitLossText, $riskLiquidator, $spinner, $Table, $txHashRef, invertColor } from "@gambitdao/ui-components"
 import { CandlestickData, LineStyle, Time } from "lightweight-charts"
 import { Stream } from "@most/types"
 import { connectTradeReader, getErc20Balance, IPositionGetter, latestPriceFromExchanges } from "../logic/contract/trade"
 import { $TradeBox, ITradeFocusMode, ITradeState, RequestTradeQuery } from "../components/trade/$TradeBox"
-import { $ButtonToggle } from "../common/$Toggle"
-import { $defaultTableContainer, $Table2 } from "../common/$Table2"
 import { $Entry } from "./$Leaderboard"
 import { $CandleSticks } from "../components/chart/$CandleSticks"
 import { getNativeTokenDescription, resolveAddress } from "../logic/utils"
@@ -32,6 +30,8 @@ import { $iconCircular } from "../elements/$common"
 import { $Dropdown } from "../components/form/$Dropdown"
 import { $ButtonSecondary } from "../components/form/$Button"
 import { $caretDown } from "../elements/$icons"
+import { $CardTable } from "../components/$common"
+import * as $ButtonToggle from "@gambitdao/ui-components/src/$ButtonToggle"
 
 
 export interface ITradeComponent {
@@ -46,7 +46,7 @@ export interface ITradeComponent {
   // defaultProvider: BaseProvider
   // provider: Web3Provider | BaseProvider
 
-  accountTradeList: Stream<Promise<ITrade[]>>
+  accountTradeOpenList: Stream<Promise<ITrade[]>>
   pricefeed: Stream<Promise<IPricefeed[]>>
 }
 
@@ -107,7 +107,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
   const executionFee = replayLatest(multicast(tradeReader.executionFee))
 
-  const openTradeList = map(async list => (await list).filter((t): t is ITradeOpen => t.status === TradeStatus.OPEN), config.accountTradeList)
+  // const chain = config.walletLink.network
 
   const tradingStore = config.store.craete('trade', 'tradeBox')
 
@@ -500,7 +500,7 @@ export const $Trade = (config: ITradeComponent) => component((
       : O()
   )
 
-  const requestAccountTradeList: Stream<IRequestAccountApi | null> = map(w3p => {
+  const requestAccountOpenTradeList: Stream<IRequestAccountApi | null> = map(w3p => {
     if (w3p === null || config.chainList.indexOf(w3p.chain) === -1) {
       return null
     }
@@ -543,9 +543,56 @@ export const $Trade = (config: ITradeComponent) => component((
       return pos.averagePrice === 0n
         ? tradeList.filter(t => t.key !== pos.key)
         : tradeList
-    }, position, openTradeList)
+    }, position, config.accountTradeOpenList)
   ])
 
+  const transaction = replayLatest(multicast(map(positionRouter => {
+    return awaitPromises(map(async state => {
+
+      const resolvedIndexAddress = resolveAddress(state.chain, state.inputToken)
+      const outputToken = state.isLong ? state.indexToken : state.collateralToken
+
+      const path = state.isIncrease
+        ? resolvedIndexAddress === outputToken ? [state.indexToken] : [resolvedIndexAddress, outputToken]
+        : resolvedIndexAddress === outputToken ? [state.indexToken] : [outputToken, resolvedIndexAddress]
+
+      const slippageN = BigInt(Number(state.slippage) * 100)
+      const allowedSlippage = state.isLong ? state.isIncrease ? slippageN : -slippageN : state.isIncrease ? -slippageN : slippageN
+
+      const refPrice = state.isLong ? state.indexTokenPrice : state.indexTokenPrice
+      const priceBasisPoints = BASIS_POINTS_DIVISOR + allowedSlippage // state.isLong ? BASIS_POINTS_DIVISOR + allowedSlippage : BASIS_POINTS_DIVISOR - allowedSlippage
+
+      const acceptablePrice = refPrice * priceBasisPoints / BASIS_POINTS_DIVISOR
+
+      const gasPrice = positionRouter.provider.getGasPrice()
+
+
+      const estGasLimit = (await positionRouter.estimateGas.createIncreasePosition(
+        path,
+        state.indexToken,
+        state.collateralDelta,
+        0,
+        state.sizeDeltaUsd,
+        state.isLong,
+        acceptablePrice,
+        state.executionFee,
+        config.referralCode,
+        AddressZero,
+        {
+          value: state.executionFee,
+          // gasPrice,
+          // gasLimit: 2542725n
+        }
+      )).toBigInt()
+
+      const gasLimit = estGasLimit * BASIS_POINTS_DIVISOR + 1000n / BASIS_POINTS_DIVISOR
+
+
+      return { gasLimit }
+
+    }, combineObject({ chain: config.walletLink.network, executionFee, indexToken, slippage, indexTokenPrice, isIncrease, collateralDelta, sizeDeltaUsd, isLong, inputToken, collateralToken })))
+
+  }, tradeReader.positionRouterReader.contract)))
 
   return [
     $container(
@@ -562,7 +609,7 @@ export const $Trade = (config: ITradeComponent) => component((
           $TradeBox({
             ...config,
 
-            trade: snapshot(async (list, pos) => {
+            trade: zip(async (list, pos) => {
               const trade = (await list).find(t => t.key === pos.key) || null
 
 
@@ -645,19 +692,14 @@ export const $Trade = (config: ITradeComponent) => component((
                 )
               }
 
-              return $Table2<ITradeOpen>({
+              return $CardTable({
                 dataSource: now(res),
-                $rowContainer: screenUtils.isDesktopScreen
-                  ? $row(layoutSheet.spacing, style({ padding: `2px 0` }))
-                  : $row(layoutSheet.spacingSmall, style({ padding: `2px 0` })),
-                $container: $column,
                 columns: [
                   {
                     $head: $text('Entry'),
-                    columnOp: O(style({ maxWidth: '50px', flexDirection: 'column' }), layoutSheet.spacingTiny),
+                    columnOp: O(style({ maxWidth: '85px' }), layoutSheet.spacingTiny),
                     $$body: map((pos) => {
-
-                      return $Entry(w3p.chain, pos)
+                      return $Entry(pos)
                     })
                   },
                   {
@@ -713,29 +755,17 @@ export const $Trade = (config: ITradeComponent) => component((
                       )
                     })
                   },
-                  ...screenUtils.isDesktopScreen ? [{
-                    $head: $text('Collateral'),
-                    columnOp: O(layoutSheet.spacingTiny, style({ flex: .7, placeContent: 'flex-end' })),
-                    $$body: map((pos: ITradeOpen) => {
-                      const cumFee = tradeReader.getTokenCumulativeFunding(now(pos.collateralToken))
-
-                      return $row(
-                        $text(map(cumulative => {
-                          const entryRate = pos.updateList[pos.updateList.length - 1].entryFundingRate
-
-                          return formatReadableUSD(pos.collateral - getFundingFee(entryRate, cumulative, pos.size))
-                        }, cumFee))
-                      )
-                    })
-                  }] : [],
                   {
-                    $head: $text('Size'),
-                    columnOp: O(layoutSheet.spacingTiny, style({ flex: 1, placeContent: 'flex-end' })),
+                    $head: $column(style({ textAlign: 'center' }))(
+                      $text('Size'),
+                      $text(style({ fontSize: '.75em' }))('Collateral'),
+                    ),
+                    columnOp: O(layoutSheet.spacingTiny, style({ flex: 1.2, placeContent: 'flex-end' })),
                     $$body: map(pos => {
                       const positionMarkPrice = tradeReader.getLatestPrice(now(pos.indexToken))
 
                       return $row(
-                        $RiskLiquidator(pos, positionMarkPrice)({})
+                        $riskLiquidator(pos, positionMarkPrice)
                       )
                     })
                   },
@@ -776,7 +806,7 @@ export const $Trade = (config: ITradeComponent) => component((
         $chartContainer(
           $row(layoutSheet.spacing, style({ fontSize: '0.85em', zIndex: 5, position: 'absolute', padding: '8px', placeContent: 'center', alignItems: 'center' }))(
             screenUtils.isDesktopScreen
-              ? $ButtonToggle({
+              ? $ButtonToggle.default({
                 selected: timeframe,
                 options: [
                   intervalTimeMap.MIN5,
@@ -1001,14 +1031,14 @@ export const $Trade = (config: ITradeComponent) => component((
                     return $column(layoutSheet.spacingSmall, style({ flex: 1, alignItems: 'center', placeContent: 'center' }))(
                       $text(style({ fontSize: '1.5em' }))('Trade History'),
                       $text(style({ color: pallete.foreground, fontSize: '.75em' }))(
-                        `no ${route} position open`
+                        `no active ${route} position`
                       )
                     )
                   }
 
 
                   const initalList = trade ? [...trade.increaseList, ...trade.decreaseList] : []
-                  return $Table2({
+                  return $Table({
                     $rowContainer: screenUtils.isDesktopScreen
                       ? $row(layoutSheet.spacing, style({ padding: `2px 26px` }))
                       : $row(layoutSheet.spacingSmall, style({ padding: `2px 10px` })),
@@ -1137,7 +1167,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
     {
       requestPricefeed,
-      requestAccountTradeList,
+      requestAccountOpenTradeList,
       changeRoute,
       walletChange,
       changeNetwork

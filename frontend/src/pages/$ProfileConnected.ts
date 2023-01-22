@@ -1,17 +1,16 @@
 import { Behavior } from "@aelea/core"
-import { $text, component, style } from "@aelea/dom"
+import { $text, component } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet } from "@aelea/ui-components"
 
 import { CHAIN, IWalletLink, IWalletName } from "@gambitdao/wallet-link"
-import { map, now } from "@most/core"
-import { $responsiveFlex } from "../elements/$common"
+import { map } from "@most/core"
 import { IAccountStakingStore } from "@gambitdao/gbc-middleware"
 import { $ButtonPrimary, $ButtonSecondary } from "../components/form/$Button"
 import { $labItem } from "../logic/common"
 import { BrowserStore } from "../logic/store"
 import { $IntermediateConnectButton } from "../components/$ConnectAccount"
-import { IRequestAccountApi, IStake } from "@gambitdao/gmx-middleware"
+import { IRequestAccountApi, IRequestAccountTradeListApi, IRequestPageApi, IStake, ITradeOpen, ITradeSettled } from "@gambitdao/gmx-middleware"
 import { $Profile } from "./$Profile"
 import { Stream } from "@most/types"
 import { $Link, $anchor } from "@gambitdao/ui-components"
@@ -22,6 +21,8 @@ export interface IAccount {
   parentRoute: Route
   chainList: CHAIN[]
   accountStakingStore: BrowserStore<"ROOT.v1.treasuryStore", IAccountStakingStore>
+  accountTradeList: Stream<Promise<IRequestPageApi<ITradeSettled>>>
+  accountOpenTradeList: Stream<Promise<ITradeOpen[]>>
   stake: Stream<IStake[]>
 }
 
@@ -30,50 +31,51 @@ export const $ProfileConnected = (config: IAccount) => component((
   [changeNetwork, changeNetworkTether]: Behavior<CHAIN, CHAIN>,
   [walletChange, walletChangeTether]: Behavior<IWalletName, IWalletName>,
   [requestStake, requestStakeTether]: Behavior<IRequestAccountApi, IRequestAccountApi>,
+  [requestAccountTradeList, requestAccountTradeListTether]: Behavior<IRequestAccountTradeListApi, IRequestAccountTradeListApi>,
+  [requestAccountOpenTradeList, requestAccountOpenTradeListTether]: Behavior<IRequestAccountApi, IRequestAccountApi>,
+
 ) => {
 
 
   return [
-    $responsiveFlex(layoutSheet.spacingBig)(
+    $column(layoutSheet.spacingBig)(
+      
+      $IntermediateConnectButton({
+        chainList: config.chainList,
+        walletLink: config.walletLink,
+        $$display: map(w3p => {
 
-      $row(layoutSheet.spacingBig, style({ width: '100%', placeContent: 'center' }))(
-
-
-        $IntermediateConnectButton({
-          chainList: config.chainList,
-          walletLink: config.walletLink,
-          $$display: map(w3p => {
- 
-            return $Profile({
-              ...config,
-              walletLink: config.walletLink,
-              account: w3p.address,
-              $actions: $Link({
-                $content: $anchor(
-                  $ButtonSecondary({
-                    $content: $text('Wardrobe')
-                  })({}),
-                ),
-                url: '/p/wardrobe', route: config.parentRoute
-              })({
-                click: changeRouteTether()
-              }),
+          return $Profile({
+            ...config,
+            parentUrl: "/p/wallet/",
+            accountTradeList: config.accountTradeList,
+            walletLink: config.walletLink,
+            account: w3p.address,
+            $actions: $Link({
+              $content: $anchor(
+                $ButtonSecondary({
+                  
+                  $content: $text('Wardrobe')
+                })({}),
+              ),
+              url: '/p/wardrobe', route: config.parentRoute
             })({
-              stake: requestStakeTether(),
-              changeRoute: changeRouteTether()
-            })
+              click: changeRouteTether()
+            }),
+          })({
+            requestAccountTradeList: requestAccountTradeListTether(),
+            requestAccountOpenTradeList: requestAccountOpenTradeListTether(),
+            stake: requestStakeTether(),
+            changeRoute: changeRouteTether()
           })
-        })({
-          changeNetwork: changeNetworkTether(),
-          walletChange: walletChangeTether()
-        }),
-
-
-      )
-
+        })
+      })({
+        changeNetwork: changeNetworkTether(),
+        walletChange: walletChangeTether()
+      })
     ),
 
-    { changeRoute, changeNetwork, walletChange, requestStake }
+    { changeRoute, changeNetwork, walletChange, requestStake, requestAccountTradeList, requestAccountOpenTradeList }
   ]
 })
 

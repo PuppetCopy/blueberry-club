@@ -4,11 +4,12 @@ import { $row, screenUtils } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { empty, map, switchLatest } from "@most/core"
 import { CHAIN, IWalletLink, IWalletName } from "@gambitdao/wallet-link"
-import { $Link } from "@gambitdao/ui-components"
+import { $anchor, $Link } from "@gambitdao/ui-components"
 import { $seperator2 } from "../pages/common"
 import { $disconnectedWalletDisplay, $discoverIdentityDisplay } from "./$AccountProfile"
 import { $ConnectDropdown, $switchNetworkDropdown } from "./$ConnectAccount"
 import { Route } from "@aelea/router"
+import { IProfileActiveTab } from "../pages/$Profile"
 
 
 
@@ -20,7 +21,7 @@ export interface IWalletDisplay {
 
 export const $WalletDisplay = (config: IWalletDisplay) => component((
   [profileLinkClick, profileLinkClickTether]: Behavior<any, any>,
-  [routeChange, routeChangeTether]: Behavior<string, string>,
+  [routeChange, routeChangeTether]: Behavior<any, string>,
   [walletChange, walletChangeTether]: Behavior<IWalletName, IWalletName>,
   [changeNetwork, changeNetworkTether]: Behavior<any, CHAIN>,
 ) => {
@@ -39,12 +40,23 @@ export const $WalletDisplay = (config: IWalletDisplay) => component((
           })
         }
 
-        return $Link({
-          route: config.parentRoute.create({ fragment: 'df2f23f' }),
-          $content: $discoverIdentityDisplay({ address: w3p.address }),
-          anchorOp: style({ minWidth: 0, overflow: 'hidden' }),
-          url: `/p/wallet`,
-        })({ click: routeChangeTether() })
+        return $anchor(
+          routeChangeTether(
+            nodeEvent('click'),
+            map(path => {
+              const lastFragment = location.pathname.split('/').slice(-1)[0]
+              const newPath = `/p/wallet/${lastFragment === 'trade' ? IProfileActiveTab.TRADING.toLowerCase() : IProfileActiveTab.BERRIES.toLowerCase()}`
+
+              if (location.pathname !== newPath) {
+                history.pushState(null, '', newPath)
+              }
+
+              return newPath
+            })
+          )
+        )(
+          $discoverIdentityDisplay({ address: w3p.address })
+        )
 
       }, config.walletLink.wallet)),
 
@@ -55,7 +67,7 @@ export const $WalletDisplay = (config: IWalletDisplay) => component((
         config.walletLink,
         config.chainList,
         switchLatest(map(chainId => {
-          return $element('img')(attr({ src: `/assets/chain/${chainId}.svg` }), style({ margin: '0 4px', width: '38px', cursor: 'pointer', padding: '3px 6px' }))()
+          return $element('img')(attr({ src: `/ assets / chain / ${chainId}.svg` }), style({ margin: '0 4px', width: '38px', cursor: 'pointer', padding: '3px 6px' }))()
         }, config.walletLink.network))
       )({
         changeNetwork: changeNetworkTether()

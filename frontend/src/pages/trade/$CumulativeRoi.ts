@@ -1,20 +1,18 @@
 import { Behavior, replayLatest } from '@aelea/core'
-import { $text, attr, component, style } from "@aelea/dom"
+import { $text, attr, component, nodeEvent, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
 import { $column, $row, $seperator, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { colorAlpha, pallete } from '@aelea/ui-components-theme'
-import { empty, map, multicast, snapshot, take } from '@most/core'
+import { combine, empty, map, multicast, snapshot, take } from '@most/core'
 import { Stream } from '@most/types'
 import { formatReadableUSD, formatFixed, unixTimestampNow, IRequestCompetitionLadderApi, getChainName, BASIS_POINTS_DIVISOR, getMarginFees } from '@gambitdao/gmx-middleware'
-import { $defaultTableRowContainer, $Table2 } from "../../common/$Table2"
 import { $alertTooltip, countdown } from './$rules'
 import { CHAIN, IWalletLink } from '@gambitdao/wallet-link'
 import { $AccountLabel, $accountPreview, $profilePreview } from '../../components/$AccountProfile'
 import { BLUEBERRY_REFFERAL_CODE, IProfile, IProfileTradingList, IProfileTradingResult, TOURNAMENT_START_END, TOURNAMENT_START_PERIOD } from '@gambitdao/gbc-middleware'
-import { $card } from '../../elements/$common'
-import { $anchor, $infoTooltipLabel, $Link } from '@gambitdao/ui-components'
+import { $anchor, $infoLabel, $infoTooltipLabel, $Link } from '@gambitdao/ui-components'
 import { $berryByToken } from '../../logic/common'
-import { $defaultVScrollContainer } from '../../common/$VirtualScroll2'
+import { $CardTable } from '../../components/$common'
 
 
 const prizeLadder: string[] = ['2200', '1100', '550', ...Array(15).fill('110')]
@@ -31,7 +29,7 @@ export interface ICompetitonTopCumulative {
 
 
 export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
-  [routeChange, routeChangeTether]: Behavior<string, string>,
+  [routeChange, routeChangeTether]: Behavior<any, string>,
   [requestCompetitionLadder, requestCompetitionLadderTether]: Behavior<number, IRequestCompetitionLadderApi>,
 ) => {
   const start = TOURNAMENT_START_PERIOD
@@ -91,13 +89,11 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
                 $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
                   $text(style({ fontSize: '2.2em', fontWeight: 'bold', color: pallete.primary, textShadow: `1px 1px 50px ${colorAlpha(pallete.primary, .45)}, 1px 1px 50px ${colorAlpha(pallete.primary, .25)} ` }))('#TopBlueberry'),
                 ),
-                // $text(style({ color: pallete.foreground }))('Competition'),
-                // $text(style({ fontSize: '1.5em', color: ended ? '' : pallete.indeterminate }))('LIVE!')
               ),
             ),
           $column(
             $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
-              $text(style({ fontSize: '1.25em', color: ended ? '' : pallete.indeterminate }))('LIVE!'),
+              $text(style({ fontSize: '1.25em', color: ended ? '' : pallete.indeterminate }))('Beta LIVE!'),
               $text(style({ color: pallete.foreground }))('Ending in')
             ),
             $text(style({ fontSize: '1.25em' }))(countdown(end))
@@ -112,6 +108,19 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
   }
 
 
+  const clickAccountBehaviour = routeChangeTether(
+    nodeEvent('click'),
+    map(path => {
+      const lastFragment = location.pathname.split('/').slice(-1)[0]
+      const newPath = `/p/wallet/trade`
+
+      if (location.pathname !== newPath) {
+        history.pushState(null, '', newPath)
+      }
+
+      return newPath
+    })
+  )
 
   return [
     $column(layoutSheet.spacingBig)(
@@ -170,6 +179,8 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
       // }, newLocal)),
 
 
+
+
       $column(
         $row(style({ padding: screenUtils.isMobileScreen ? '0 12px' : '', marginBottom: '26px', alignItems: 'flex-end' }))(
           $column(layoutSheet.spacingSmall, style({ flex: 1 }))(
@@ -184,7 +195,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
               ), 'Aggregated Size'),
               $text(style({
                 fontSize: '1em',
-                textShadow: `${colorAlpha(pallete.message, .5)} 1px 1px 20px, ${colorAlpha(pallete.message, .5) } 0px 0px 20px`
+                textShadow: `${colorAlpha(pallete.message, .5)} 1px 1px 20px, ${colorAlpha(pallete.message, .5)} 0px 0px 20px`
               }))(map(res => {
                 return formatReadableUSD(res.size)
               }, competitionCumulativeRoi))
@@ -208,14 +219,8 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
           )
         ),
 
-        $Table2({
-          $container: $card(style({ padding: "0", gap: 0 })),
+        $CardTable({
           dataSource: tableList,
-          scrollConfig: {
-            $container: $defaultVScrollContainer(style({ gap: '1px' })),
-          },
-          // $rowContainer: 
-          $bodyRowContainer: $defaultTableRowContainer(style({ background: pallete.background, margin: '0 1px', borderBottom: `1px solid ${pallete.horizon}` })),
           columns: [
 
             {
@@ -226,7 +231,9 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
                 if (!pos.profile) {
                   return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
                     $alertTooltip($text(`Unclaimed profile remains below until claimed`)),
-                    $accountPreview({ address: pos.account })
+                    $anchor(clickAccountBehaviour)(
+                      $accountPreview({ address: pos.account })
+                    )
                     // style({ zoom: '0.7' })(
                     //   $alert($text('Unclaimed'))
                     // )
@@ -238,9 +245,11 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
                   $row(style({ alignItems: 'baseline', zIndex: 5, textAlign: 'center', placeContent: 'center' }))(
                     $text(style({ fontSize: '.75em', width: '18px' }))(`${pos.rank}`),
                   ),
-                  $row(layoutSheet.spacing, style({ minWidth: '0', alignItems: 'center' }))(
-                    $profilePreview({ profile: pos.profile })
-                  ),
+                  $Link({
+                    $content: $profilePreview({ profile: pos.profile }),
+                    route: config.parentRoute.create({ fragment: 'fefwef' }),
+                    url: `/p/profile/${pos.account}/trading`
+                  })({ click: routeChangeTether() }),
                 )
               })
             },
@@ -260,7 +269,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
             {
               $head: $column(style({ textAlign: 'center' }))(
                 $text('Profits $'),
-                $text(style({ fontSize: '.65em' }))('Max Collateral'),
+                $text(style({ fontSize: '.75em' }))('Max Collateral'),
               ),
               columnOp: style({ placeContent: 'center', minWidth: '125px' }),
               $$body: map((pos) => {
@@ -280,7 +289,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
             {
               $head: $column(style({ placeContent: 'flex-end', alignItems: 'flex-end' }))(
                 $text('Prize'),
-                $text(style({ fontSize: '.65em' }))('ROI %'),
+                $text(style({ fontSize: '.75em' }))('ROI %'),
               ),
               columnOp: style({ flex: 1, alignItems: 'flex-end', placeContent: 'flex-end' }),
               $$body: snapshot((list, pos) => {
@@ -300,9 +309,9 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
           ],
         })({
           scrollIndex: requestCompetitionLadderTether(
-            map(pageIndex => {
-              const newLocal: IRequestCompetitionLadderApi = {
-                chain: CHAIN.ARBITRUM,
+            combine((chain, pageIndex) => {
+              const params: IRequestCompetitionLadderApi = {
+                chain,
                 referralCode: BLUEBERRY_REFFERAL_CODE,
                 maxCollateral: 1000000000000000000000000000000000n,
                 from: start,
@@ -310,8 +319,8 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
                 offset: pageIndex * 20,
                 pageSize: 20,
               }
-              return newLocal
-            })
+              return params
+            }, config.walletLink.network)
           )
         }),
       )

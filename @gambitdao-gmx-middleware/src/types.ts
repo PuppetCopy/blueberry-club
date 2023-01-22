@@ -283,6 +283,7 @@ export interface IRequestPageApi<T> extends IRequestPagePositionApi {
   page: T[]
 }
 
+export type IRequestAccountTradeListApi = IChainParamApi & IRequestPagePositionApi & IRequestAccountApi & { status: TradeStatus };
 
 export interface IRequestLeaderboardApi extends IRequestPagePositionApi, IChainParamApi, IRequestSortApi<keyof IAccountSummary> {
   timeInterval: intervalTimeMap.HR24 | intervalTimeMap.DAY7 | intervalTimeMap.MONTH

@@ -4,15 +4,15 @@ import * as router from '@aelea/router'
 import { $column, designSheet, layoutSheet, screenUtils } from '@aelea/ui-components'
 import {
   gmxSubgraph, ARBITRUM_ADDRESS, AVALANCHE_ADDRESS,
-  ETH_ADDRESS_REGEXP, IRequestAccountApi, intervalTimeMap, IRequestPricefeedApi, IRequestCompetitionLadderApi
+  ETH_ADDRESS_REGEXP, IRequestAccountApi, intervalTimeMap, IRequestPricefeedApi, IRequestCompetitionLadderApi, IRequestAccountTradeListApi
 } from '@gambitdao/gmx-middleware'
 import { CHAIN, initWalletLink, IWalletName } from "@gambitdao/wallet-link"
-import { map, merge, multicast, now } from '@most/core'
+import { map, merge, multicast, now, tap } from '@most/core'
 import { $MainMenu } from '../components/$MainMenu'
 import { helloBackend } from '../logic/websocket'
 import { blueberrySubgraph, BLUEBERRY_REFFERAL_CODE, IAccountStakingStore, ITreasuryStore } from "@gambitdao/gbc-middleware"
 import { $BerryPage } from "./$Berry"
-import { $Profile } from "./$Profile"
+import { $Profile, IProfileActiveTab } from "./$Profile"
 
 import { $seperator2 } from "./common"
 import { $LabHome } from "./lab/$Home"
@@ -42,8 +42,10 @@ interface Website {
 
 export const $Main = ({ baseRoute = '' }: Website) => component((
   [routeChanges, linkClickTether]: Behavior<any, string>,
+  [selectProfileMode, selectProfileModeTether]: Behavior<IProfileActiveTab, IProfileActiveTab>,
 
-  [requestAccountTradeList, requestAccountTradeListTether]: Behavior<IRequestAccountApi, IRequestAccountApi>,
+  [requestAccountTradeList, requestAccountTradeListTether]: Behavior<IRequestAccountTradeListApi, IRequestAccountTradeListApi>,
+  [requestAccountOpenTradeList, requestAccountOpenTradeListTether]: Behavior<IRequestAccountApi, IRequestAccountApi>,
   [requestPricefeed, requestPricefeedTether]: Behavior<IRequestPricefeedApi, IRequestPricefeedApi>,
   [requestStake, requestStakeTether]: Behavior<IRequestAccountApi, IRequestAccountApi>,
 
@@ -99,6 +101,7 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
     pricefeed: gmxSubgraph.pricefeed(requestPricefeed),
     tradePricefeed: gmxSubgraph.pricefeed(requestPricefeed),
     accountTradeList: gmxSubgraph.accountTradeList(requestAccountTradeList),
+    accountOpenTradeList: gmxSubgraph.accountOpenTradeList(requestAccountOpenTradeList),
     latestPriceMap: gmxSubgraph.latestPriceMap(requestAccountTradeList),
 
     competitionCumulativeRoi: blueberrySubgraph.competitionRoiAccountList(requestCompetitionLadder),
@@ -185,33 +188,44 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
                 walletChange: walletChangeTether(),
               }))
             ),
-            router.match(profileRoute)(
+            router.contains(profileRoute)(
               {
                 run(sink, scheduler) {
                   const urlFragments = document.location.pathname.split('/')
-                  const account = urlFragments[urlFragments.length - 1].toLowerCase()
+                  const account = urlFragments[urlFragments.length - 2].toLowerCase()
 
                   return $Profile({
                     account: account,
+                    parentUrl: `/p/profile/${account}/`,
+                    accountTradeList: clientApi.accountTradeList,
+                    accountOpenTradeList: clientApi.accountOpenTradeList,
                     walletLink: walletLink,
-                    parentRoute: pagesRoute,
+                    parentRoute: profileRoute,
                     stake: clientApi.stake
                   })({
-                    // pricefeed: requestPricefeedTether(),
+                    requestAccountTradeList: requestAccountTradeListTether(),
+                    requestAccountOpenTradeList: requestAccountOpenTradeListTether(),
+                    changeRoute: linkClickTether(),
                     stake: requestStakeTether(),
                   }).run(sink, scheduler)
                 },
               }
             ),
-            router.match(profileWalletRoute)(
+            router.contains(profileWalletRoute)(
               fadeIn($ProfileConnected({
                 walletLink,
-                parentRoute: pagesRoute,
+                accountTradeList: clientApi.accountTradeList,
+                accountOpenTradeList: clientApi.accountOpenTradeList,
+                parentRoute: profileWalletRoute,
                 chainList: [CHAIN.ARBITRUM],
                 accountStakingStore,
                 stake: clientApi.stake
               })({
-                changeRoute: linkClickTether(),
+                requestAccountTradeList: requestAccountTradeListTether(),
+                requestAccountOpenTradeList: requestAccountOpenTradeListTether(),
+                changeRoute: linkClickTether(
+                 
+                ),
                 changeNetwork: changeNetworkTether(),
                 walletChange: walletChangeTether(),
                 requestStake: requestStakeTether()
@@ -224,7 +238,7 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
                 parentRoute: pagesRoute,
                 profilePickList: clientApi.profilePickList
               })({
-                // changeRoute: linkClickTether(),
+                routeChange: linkClickTether(),
                 requestCompetitionLadder: requestCompetitionLadderTether(),
                 requestProfilePickList: requestProfilePickListTether(),
                 // changeNetwork: changeNetworkTether(),
@@ -267,11 +281,11 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
                   ]
                 },
                 parentRoute: tradeRoute,
-                accountTradeList: clientApi.accountTradeList,
+                accountTradeOpenList: clientApi.accountOpenTradeList,
                 store
               })({
                 requestPricefeed: requestPricefeedTether(),
-                requestAccountTradeList: requestAccountTradeListTether(),
+                requestAccountOpenTradeList: requestAccountOpenTradeListTether(),
                 changeRoute: linkClickTether(),
                 walletChange: walletChangeTether(),
               })

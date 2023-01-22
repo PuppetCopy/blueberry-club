@@ -3,7 +3,11 @@ import { awaitPromises, map } from "@most/core"
 import { intervalTimeMap } from "./constant"
 import { tradeJson } from "./fromJson"
 import { toAccountCompetitionSummary, toAccountSummary } from "./gmxUtils"
-import { IRequestAccountApi, IChainParamApi, IRequestCompetitionLadderApi, IRequestLeaderboardApi, IRequestPagePositionApi, IPricefeed, IRequestPricefeedApi, IPriceLatest, IRequestGraphEntityApi, IStake, IRequestTimerangeApi, ITrade, TradeStatus } from "./types"
+import {
+  IRequestAccountApi, IChainParamApi, IRequestCompetitionLadderApi, IRequestLeaderboardApi, IRequestPagePositionApi,
+  IPricefeed, IRequestPricefeedApi, IPriceLatest, IRequestGraphEntityApi, IStake, IRequestTimerangeApi, ITrade, TradeStatus,
+  IRequestAccountTradeListApi, ITradeOpen
+} from "./types"
 import { cacheMap, createSubgraphClient, getMappedValue, getTokenDescription, groupByMap, pagingQuery, parseFixed, switchFailedSources, unixTimestampNow } from "./utils"
 import { gql } from "@urql/core"
 import * as fromJson from "./fromJson"
@@ -12,7 +16,6 @@ import { CHAIN } from "@gambitdao/wallet-link"
 import { TOKEN_SYMBOL } from "./address/symbol"
 import { Stream } from "@most/types"
 
-export type IAccountTradeListParamApi = IChainParamApi & IRequestAccountApi & { status: TradeStatus };
 
 
 const cache = cacheMap({})
@@ -166,7 +169,7 @@ export const latestPriceMap = O(
 )
 
 export const accountTradeList = O(
-  map(async (queryParams: IAccountTradeListParamApi) => {
+  map(async (queryParams: IRequestAccountTradeListApi) => {
 
     if (queryParams === null) {
       return []
@@ -174,13 +177,32 @@ export const accountTradeList = O(
 
     const res = await await querySubgraph(queryParams, `
 {
-  trades(first: 1000, skip: 0, where: { account: "${queryParams.account.toLowerCase()}" }) {
+  trades(first: 1000, orderBy: settledTimestamp, orderDirection: desc, skip: 0, where: { status_not: ${TradeStatus.OPEN}, account: "${queryParams.account.toLowerCase()}" }) {
     ${tradeFields}
   }
 }
 `)
 
-    return res.trades.map(fromJson.tradeJson) as ITrade[]
+    return pagingQuery(queryParams, res.trades.map(fromJson.tradeJson) as ITrade[])
+  })
+)
+
+export const accountOpenTradeList = O(
+  map(async (queryParams: IRequestAccountApi) => {
+
+    if (queryParams === null) {
+      return []
+    }
+
+    const res = await await querySubgraph(queryParams, `
+{
+  trades(first: 1000, skip: 0, where: { status: "${TradeStatus.OPEN}" account: "${queryParams.account.toLowerCase()}" }) {
+    ${tradeFields}
+  }
+}
+`)
+
+    return res.trades.map(fromJson.tradeJson) as ITradeOpen[]
   })
 )
 

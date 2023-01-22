@@ -7,20 +7,22 @@ import { Stream } from "@most/types"
 import { invertColor } from "./common"
 
 export interface IButtonToggle<T> {
-  $container?: NodeComposeFn<$Node>
   options: T[]
   selected: Stream<T>
 
+  $container?: NodeComposeFn<$Node>
   $button?: NodeComposeFn<$Node>
+
   $$option?: Op<T, $Node>
 }
 
-const $toggleBtn = $row(style({
+export const $defaultToggleButton = $row(style({
   placeContent: 'center', fontSize: '.75em', fontWeight: 'bold',
-  borderRadius: '12px', padding: '6px 8px', alignItems: 'center',
+  borderRadius: '12px', padding: '6px 8px', alignItems: 'center', border: '1px solid transparent',
   cursor: 'pointer'
 }))
-const $defaultContainer = $row(layoutSheet.spacingSmall, style({
+
+export const $defaulContainer = $row(layoutSheet.spacingSmall, style({
   borderRadius: '12px', padding: '6px',
   border: `1px solid ${pallete.horizon}`, backgroundColor: pallete.background
 }))
@@ -28,7 +30,7 @@ const $defaultContainer = $row(layoutSheet.spacingSmall, style({
 
 const defaultOption = map(<T>(o: T) => $text(String(o)))
 
-export const $ButtonToggle = <T>({ options, selected, $$option = defaultOption, $button = $toggleBtn, $container = $defaultContainer }: IButtonToggle<T>) => component((
+export default <T>({ options, selected, $$option = defaultOption, $button = $defaultToggleButton, $container = $defaulContainer }: IButtonToggle<T>) => component((
   [select, sampleSelect]: Behavior<INode, T>
 ) => {
 
@@ -42,10 +44,9 @@ export const $ButtonToggle = <T>({ options, selected, $$option = defaultOption, 
           ),
           styleBehavior(
             map(selectedOpt => {
-              const color = invertColor(pallete.message, false)
               return selectedOpt === opt
-                ? { border: `1px solid ${pallete.middleground}`, cursor: 'default' }
-                : { border: 'none' }
+                ? { borderColor: pallete.middleground, cursor: 'default' }
+                : null
             }, selected)
           )
         )(

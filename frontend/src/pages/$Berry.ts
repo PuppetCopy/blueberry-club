@@ -9,14 +9,14 @@ import { isAddress, readableDate, timeSince } from "@gambitdao/gmx-middleware"
 import { $anchor, $Link, $caretDblDown, $IntermediateTx } from "@gambitdao/ui-components"
 
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { awaitPromises, empty, filter, fromPromise, map, merge, multicast, now, skipRepeats, snapshot, startWith, switchLatest } from "@most/core"
-import { $Table2 } from "../common/$Table2"
+import { awaitPromises, empty, filter, map, merge, multicast, now, skipRepeats, snapshot, startWith, switchLatest } from "@most/core"
 import { $discoverIdentityDisplay } from "../components/$AccountProfile"
 import { $ButtonPrimary, $ButtonSecondary } from "../components/form/$Button"
 import { $accountRef, $card, $responsiveFlex, $txnIconLink } from "../elements/$common"
 import { $opensea } from "../elements/$icons"
-import { IToken, ITransfer } from "@gambitdao/gbc-middleware"
+import { IToken } from "@gambitdao/gbc-middleware"
 import { $berryByToken } from "../logic/common"
+import { $CardTable } from "../components/$common"
 
 
 
@@ -41,6 +41,9 @@ export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
   const berryMetadata = tokenIdAttributeTuple[Number(berryId) - 1]
   const [background, clothes, body, expression, faceAccessory, hat] = berryMetadata
 
+  const newLocal = map(md => {
+    return md.transfers
+  }, token)
   return [
     $column(layoutSheet.spacingBig)(
       $responsiveFlex(layoutSheet.spacingBig)(
@@ -115,10 +118,8 @@ export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
       $column(layoutSheet.spacing)(
         $text(style({ fontSize: '1.5em' }))('Transaction History'),
         $seperator,
-        $Table2<ITransfer>({
-          dataSource: map(md => {
-            return md.transfers
-          }, token),
+        $CardTable({
+          dataSource: newLocal,
           // cellOp: style({ alignItems: 'center' }),
           columns: [
             {

@@ -1,9 +1,10 @@
 
-import { Behavior, O, Op } from '@aelea/core'
-import { $Branch, $custom, $Node, $text, component, IBranch, style } from '@aelea/dom'
-import { $column, designSheet, observer } from "@aelea/ui-components"
+import { Behavior, combineObject } from '@aelea/core'
+import { $Branch, $custom, $Node, $text, component, IBranch, NodeComposeFn, style } from '@aelea/dom'
+import { $column, designSheet, layoutSheet, observer } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { chain, delay, empty, filter, loop, map, merge, mergeArray, multicast, scan, skip, startWith, switchLatest } from "@most/core"
+import { zipState } from '@gambitdao/gmx-middleware'
+import { filter, join, loop, map, mergeArray, scan } from "@most/core"
 import { Stream } from '@most/types'
 
 
@@ -18,32 +19,29 @@ export type IScrollPagableReponse = {
 export type ScrollResponse = $Branch[] | IScrollPagableReponse
 
 export interface QuantumScroll {
+  insertAscending?: boolean
   dataSource: Stream<ScrollResponse>
 
+  $container?: NodeComposeFn<$Node>
   $loader?: $Node
-
-  containerOps?: Op<IBranch, IBranch>
 }
 
 
-const $defaultLoader = $text(style({ color: pallete.foreground, padding: '3px 10px' }))('loading...')
+export const $defaultVScrollLoader = $text(style({ color: pallete.foreground, padding: '3px 10px' }))('loading...')
+export const $defaultVScrollContainer = $column(layoutSheet.spacing)
 
 
-export const $VirtualScroll = ({ dataSource, containerOps = O(), $loader = $defaultLoader }: QuantumScroll) => component((
+export const $VirtualScroll = (config: QuantumScroll) => component((
   [intersecting, intersectingTether]: Behavior<IBranch, IntersectionObserverEntry>,
 ) => {
 
-  const multicastDatasource = multicast(dataSource)
+  const scrollIndex: Stream<ScrollRequest> = scan(seed => seed + 1, 0, intersecting)
 
-  const scrollReuqestWithInitial: Stream<ScrollRequest> = skip(1, scan(seed => seed + 1, -1, intersecting))
 
-  const $container = $column(
-    designSheet.customScroll,
-    style({ overflow: 'auto' }),
-    map(node => ({ ...node, insertAscending: false })),
-    containerOps
+  const $container = (config.$container || $defaultVScrollContainer)(
+    map(node => ({ ...node, insertAscending: config.insertAscending || false })),
   )
-  
+
   const intersectedLoader = intersectingTether(
     observer.intersection({ threshold: 1 }),
     map(entryList => entryList[0]),
@@ -52,42 +50,37 @@ export const $VirtualScroll = ({ dataSource, containerOps = O(), $loader = $defa
     }),
   )
 
-  const $observer = $custom('observer')(intersectedLoader)()
-
-  const delayDatasource = delay(45, multicastDatasource)
-  const loadState = merge(
-    map(data => ({ $intermediate: $observer, data }), delayDatasource),
-    map(() => ({ $intermediate: $loader, }), scrollReuqestWithInitial)
+  const $loader = config.$loader || $defaultVScrollLoader
+  const $observerloader = $custom('observer')(intersectedLoader)(
+    $loader
   )
-  
+
+  const loadState = zipState({ data: config.dataSource, scrollIndex })
+
+  const displayState = {
+    isLoading: true
+  }
+
   const $itemLoader = loop((seed, state) => {
-
-    if ('data' in state && state.data) {
-      
-      if (Array.isArray(state.data)) {
-        return { seed, value: empty() }
-      }
-
-      const hasMoreItems = state.data.pageSize === state.data.$items.length
-      const value = hasMoreItems ? state.$intermediate : empty()
-
-      return { seed, value }
+    if (Array.isArray(state.data)) {
+      return { seed, value: mergeArray(state.data) }
     }
 
-    return { seed, value: state.$intermediate }
-  }, {  }, loadState)
+    const hasMoreItems = state.data.pageSize === state.data.$items.length
+
+    const $items = hasMoreItems
+      ? [...state.data.$items, $observerloader]
+      : state.data.$items
+
+
+    return { seed, value: mergeArray($items) }
+  }, displayState, loadState)
 
   return [
     $container(
-      chain($list => {
-        const $items = Array.isArray($list) ? $list : $list.$items
-        return mergeArray($items)
-      }, multicastDatasource),
-      switchLatest(
-        startWith($observer, $itemLoader)
-      )
+      join($itemLoader)
     ),
 
-    { scrollIndex: scrollReuqestWithInitial }
+    { scrollIndex }
   ]
 })

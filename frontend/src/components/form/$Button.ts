@@ -1,12 +1,12 @@
 import { Behavior, combineArray, O } from "@aelea/core"
-import { $element, $text, component, INode, style, stylePseudo } from "@aelea/dom"
+import { $element, $text, component, style, stylePseudo } from "@aelea/dom"
 import { $column, $icon, $row, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { ContractTransaction } from "@ethersproject/contracts"
 import { $alertIcon, $Tooltip } from "@gambitdao/ui-components"
-import { constant, empty, fromPromise, map, mergeArray, never, now, recoverWith, skipRepeats, startWith, switchLatest } from "@most/core"
+import { constant, fromPromise, map, never, now, recoverWith, skipRepeats, startWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
-import { $Button, IButton } from "./$buttonCore"
+import * as $ButtonCore from "./$ButtonCore"
 
 
 
@@ -24,11 +24,11 @@ export const secondaryButtonStyle = style({
 })
 
 
-export const $ButtonPrimary = (config: IButton) => {
+export const $ButtonPrimary = (config: $ButtonCore.IButton) => {
   return O(
-    $Button({
+    $ButtonCore.default({
       ...config,
-      $container: (config.$container || $element('button'))(
+      $container: $ButtonCore.$defaultButton(
         stylePseudo(':hover', { backgroundColor: pallete.middleground })
       )
     }),
@@ -36,7 +36,7 @@ export const $ButtonPrimary = (config: IButton) => {
   )
 }
 
-export interface IButtonPrimaryCtx extends IButton {
+export interface IButtonPrimaryCtx extends $ButtonCore.IButton {
   ctx: Stream<Promise<ContractTransaction>>
   alert?: Stream<string | null>
 }
@@ -55,10 +55,9 @@ export const $ButtonPrimaryCtx = (config: IButtonPrimaryCtx) => component((
   return [
     $row(style({ alignItems: 'center' }))(
       buttonPrimaryStyle(
-        $Button({
+        $ButtonCore.default({
           ...config,
-          $container: (config.$container || $element('button'))(
-
+          $container: $ButtonCore.$defaultButton(
             stylePseudo(':hover', { backgroundColor: pallete.middleground })
           ),
           disabled: combineArray((isDisabled, isCtxPending) => {
@@ -97,11 +96,11 @@ export const $ButtonPrimaryCtx = (config: IButtonPrimaryCtx) => component((
 
 
 
-export const $ButtonSecondary = (config: IButton) => {
+export const $ButtonSecondary = (config: $ButtonCore.IButton) => {
   return O(
-    $Button({
+    $ButtonCore.default({
       ...config,
-      $container: $element('button')(
+      $container: $ButtonCore.$defaultButton(
         stylePseudo(':hover', { borderColor: pallete.middleground }),
         style({ fontSize: '.85em' })
       )
