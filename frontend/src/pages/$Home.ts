@@ -113,7 +113,7 @@ export const $Home = (config: ITreasury) => component((
     { name: 'APP0D14L', title: "Marketing", tokenId: 11 },
     { name: 'itburnzz', title: "Dev", tokenId: 12 },
     { name: 'B2F_zer', title: "Pleb", tokenId: 22 },
-    { name: 'defipleb', title: "Lab's Shakespeare", tokenId: 6762 },
+    { name: 'defipleb', title: "Networking", tokenId: 7378 },
     { name: 'kingblockchain', title: "Marketing & Advocee", tokenId: 4825 },
   ]
 

@@ -52,7 +52,7 @@ const readableTinyNumber = Intl.NumberFormat("en-US", { maximumSignificantDigits
 
 export function readableNumber(ammount: number | bigint) {
   const absAmount = typeof ammount === 'bigint' ? ammount > 0n ? ammount : -ammount : Math.abs(ammount)
-  
+
   if (absAmount > 1000) {
     return readableLargeNumber.format(ammount)
   }
@@ -61,7 +61,7 @@ export function readableNumber(ammount: number | bigint) {
     return readableSmallNumber.format(ammount)
   }
 
-  
+
   return readableTinyNumber.format(ammount)
 }
 
@@ -81,10 +81,10 @@ export function readableDate(timestamp: number) {
 
 export function formatReadableUSD(ammount: bigint | number) {
   if (ammount === 0n) {
-    return '$0'
+    return '0'
   }
 
-  const amountUsd = typeof ammount === 'bigint' ?  formatFixed(ammount, USD_DECIMALS) : ammount
+  const amountUsd = typeof ammount === 'bigint' ? formatFixed(ammount, USD_DECIMALS) : ammount
 
   return readableNumber(amountUsd)
 }
@@ -426,7 +426,7 @@ interface ISwitchMapCurry2 {
 }
 
 
-function switchMapFn <T, R>(cb: (t: T) => Stream<R>, s: Stream<T>) {
+function switchMapFn<T, R>(cb: (t: T) => Stream<R>, s: Stream<T>) {
   return switchLatest(map(cb, s))
 }
 
@@ -541,21 +541,26 @@ export function groupByMapMany<A, B extends string | symbol | number>(list: A[],
 
 
 
-export function groupByMap<A, B extends string | symbol | number>(list: A[], getKey: (v: A) => B) {
-  const map: { [P in B]: A } = {} as any
+export function groupByKey<A, B extends string | symbol | number>(list: A[], getKey: (v: A) => B) {
+  return groupByKeyMap(list, getKey, (x) => x)
+}
+
+export function groupByKeyMap<A, B extends string | symbol | number, R>(list: A[], getKey: (v: A) => B, mapFn: (v: A) => R) {
+  const gmap = {} as { [P in B]: R }
 
   list.forEach((item) => {
     const key = getKey(item)
 
-    if (map[key]) {
-      console.warn(new Error(`${groupByMap.name}() is overwriting property: ${String(key)}`))
+    if (gmap[key]) {
+      console.warn(new Error(`${groupByKey.name}() is overwriting property: ${String(key)}`))
     }
 
-    map[key] = item
+    gmap[key] = mapFn(item)
   })
 
-  return map
+  return gmap
 }
+
 
 export const createSubgraphClient = (opts: ClientOptions) => {
 

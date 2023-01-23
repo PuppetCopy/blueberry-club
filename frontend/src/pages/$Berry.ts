@@ -17,6 +17,7 @@ import { $opensea } from "../elements/$icons"
 import { IToken } from "@gambitdao/gbc-middleware"
 import { $berryByToken } from "../logic/common"
 import { $CardTable } from "../components/$common"
+import { IProfileActiveTab } from "./$Profile"
 
 
 
@@ -59,7 +60,7 @@ export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
               $Link({
                 route: parentRoute.create({ fragment: 'df2f23f' }),
                 $content: $discoverIdentityDisplay({ address: token.owner.id, avatarSize: 40, labelSize: '1em' }),
-                url: `/p/profile/${token.owner.id}`,
+                url: `/p/profile/${token.owner.id}/${IProfileActiveTab.BERRIES.toLowerCase()}`,
               })({ click: changeRouteTether() }),
             ),
 

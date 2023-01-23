@@ -4,7 +4,7 @@ import { $row, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
 import { parseError } from "@gambitdao/wallet-link"
-import { chain, constant, empty, fromPromise, map, merge, mergeArray, multicast, now, recoverWith, startWith, switchLatest } from "@most/core"
+import { constant, empty, fromPromise, map, merge, mergeArray, multicast, now, recoverWith, startWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
 import { CHAIN } from '@gambitdao/wallet-link'
 import { $alert, $alertTooltip, $txHashRef, } from "./$common"
@@ -15,6 +15,7 @@ export const $spinner = $node(style({
   maxWidth: '60px',
   width: '60xp',
   height: '45px',
+  maxHeight: '45px',
   borderRadius: '14px',
   backgroundImage: 'url(/assets/gbc-loop.gif)',
   backgroundPosition: 'center',
@@ -22,6 +23,7 @@ export const $spinner = $node(style({
   backgroundRepeat: 'no-repeat',
   margin: 'auto',
   placeSelf: 'center',
+  alignSelf: 'center',
   backgroundColor: 'black',
 }))()
 

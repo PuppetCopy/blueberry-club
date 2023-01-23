@@ -5,13 +5,13 @@ import { pallete } from "@aelea/ui-components-theme"
 import { awaitPromises, constant, empty, fromPromise, map, now, snapshot, switchLatest } from "@most/core"
 import { attemptToSwitchNetwork, CHAIN, IWalletLink, IWalletName, IWalletState, metamaskQuery, NETWORK_METADATA, walletConnect } from "@gambitdao/wallet-link"
 import { $bagOfCoinsCircle, $walletConnectLogo } from "../common/$icons"
-import { $ButtonPrimary, $ButtonSecondary } from "./form/$Button"
 import { $caretDown } from "../elements/$icons"
 import { $Dropdown, $defaultSelectContainer } from "./form/$Dropdown"
 import { $Popover } from "./$Popover"
-import { IButton } from "./form/$ButtonCore2"
+import { IButtonCore } from "./form/$ButtonCore"
 import { Stream } from "@most/types"
 import { filterNull } from "@gambitdao/gmx-middleware"
+import { $ButtonPrimary, $ButtonSecondary, $defaultButtonPrimary } from "./form/$Button"
 
 
 
@@ -29,7 +29,7 @@ export interface IConnectWalletPopover {
   walletLink: IWalletLink
 
   $$display: Op<IWalletState, $Node>
-  primaryButtonConfig?: Partial<IButton>
+  primaryButtonConfig?: Partial<IButtonCore>
 }
 
 
@@ -166,7 +166,7 @@ export const $switchNetworkDropdown = (walletLink: IWalletLink, chainList: CHAIN
         }),
         list: chainList,
       },
-      $container: $column(style({ margin: 'auto', width: '46px', position: 'relative' })),
+      $container: $column(style({ margin: 'auto', position: 'relative' })),
       $selection: $trigger,
     })({}),
 

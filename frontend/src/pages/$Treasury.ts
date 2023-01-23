@@ -88,13 +88,13 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
   }))
 
   const members = [
-    { name: 'xm92boi', size: 'small', title: "Founder & Designer", tokenId: 16 },
-    { name: 'APP0D14L', size: 'small', title: "Marketing", tokenId: 11 },
-    { name: 'itburnzz', size: 'small', title: "Dev", tokenId: 12 },
-    { name: 'B2F_zer', size: 'small', title: "Pleb", tokenId: 22 },
-    { name: 'defipleb', size: 'small', title: "Lab's Shakespeare", tokenId: 6762 },
-    { name: 'xdev_10', size: 'small', title: "X", tokenId: 6 },
-    { name: 'kingblockchain', size: 'small', title: "Marketing & Advocee", tokenId: 4825 },
+    { name: 'xm92boi', size: 'small', tokenId: 16 },
+    { name: 'APP0D14L', size: 'small', tokenId: 11 },
+    { name: 'itburnzz', size: 'small', tokenId: 12 },
+    { name: 'B2F_zer', size: 'small', tokenId: 22 },
+    { name: 'defipleb', size: 'small', tokenId: 6762 },
+    { name: 'xdev_10', size: 'small', tokenId: 6 },
+    { name: 'kingblockchain', size: 'small', tokenId: 4825 },
   ]
 
   return [

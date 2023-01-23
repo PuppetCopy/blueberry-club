@@ -5,7 +5,7 @@ import { $row, layoutSheet, $column, $icon, screenUtils } from "@aelea/ui-compon
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { empty, map, periodic } from "@most/core"
 import { formatReadableUSD, unixTimestampNow } from "@gambitdao/gmx-middleware"
-import { $alertIcon, $anchor, $AnchorLink, $ProfitLossText, $Tooltip } from "@gambitdao/ui-components"
+import { $alertIcon, $anchor, $AnchorLink, $PnlValue, $Tooltip } from "@gambitdao/ui-components"
 
 
 export const $alertTooltip = ($content: $Branch) => {
@@ -39,7 +39,7 @@ export const $competitionPrize = (prize: bigint | undefined, realisedPnl: bigint
 
   return $row(
     $column(style({ alignItems: 'center' }))(
-      prize ? style({ fontSize: '1.3em' })($ProfitLossText(prize)) : empty(),
+      prize ? style({ fontSize: '1.3em' })($PnlValue(prize)) : empty(),
       style({ color: pallete.message })(
         $text(style({ color: isNeg ? pallete.negative : pallete.positive }))(
           `${isNeg ? '' : '+'}${val}`

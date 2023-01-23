@@ -1,4 +1,4 @@
-import { groupByMap, intervalTimeMap } from "@gambitdao/gmx-middleware"
+import { groupByKey, intervalTimeMap } from "@gambitdao/gmx-middleware"
 import { CHAIN } from "@gambitdao/wallet-link"
 import { parseEther } from "ethers/lib/utils"
 import { IAttributeMappings, LabItemSale, SaleType } from "./types"
@@ -1394,4 +1394,4 @@ For more details check our see discord discussions and even help us improve this
   },
 ]
 
-export const labItemDescriptionListMap = groupByMap(saleDescriptionList, i => i.id)
+export const labItemDescriptionListMap = groupByKey(saleDescriptionList, i => i.id)

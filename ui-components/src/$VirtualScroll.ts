@@ -1,7 +1,7 @@
 
-import { Behavior, combineObject } from '@aelea/core'
+import { Behavior } from '@aelea/core'
 import { $Branch, $custom, $Node, $text, component, IBranch, NodeComposeFn, style } from '@aelea/dom'
-import { $column, designSheet, layoutSheet, observer } from "@aelea/ui-components"
+import { $column, layoutSheet, observer } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { zipState } from '@gambitdao/gmx-middleware'
 import { filter, join, loop, map, mergeArray, scan } from "@most/core"

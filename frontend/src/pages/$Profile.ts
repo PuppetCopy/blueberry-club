@@ -1,32 +1,35 @@
-import { Behavior, combineArray, combineObject, O } from "@aelea/core"
+import { Behavior, combineArray, O } from "@aelea/core"
 import { $Node, $text, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
-import { $column, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
+import { $column, $row, layoutSheet } from "@aelea/ui-components"
 import { blueberrySubgraph, saleDescriptionList } from "@gambitdao/gbc-middleware"
-import { awaitPromises, combine, continueWith, empty, filter, map, mergeArray, now, switchLatest } from "@most/core"
-import { $infoTooltip, $IntermediatePromise, $ProfitLossText, $riskLiquidator, $sizeDisplay } from "@gambitdao/ui-components"
+import { awaitPromises, combine, empty, map, mergeArray, now, switchLatest } from "@most/core"
+import { $infoTooltipLabel, $IntermediatePromise, $openPositionPnlBreakdown, $PnlValue, $riskLiquidator, $sizeDisplay, $TradePnl } from "@gambitdao/ui-components"
 import { $discoverIdentityDisplay } from "../components/$AccountProfile"
 import { $berryTileId, $CardTable } from "../components/$common"
 import {
-  formatReadableUSD, getFundingFee, getPnL, getSafeMappedValue, IRequestAccountTradeListApi,
-  IRequestPageApi, IStake, ITrade, ITradeOpen, ITradeSettled, readableDate, timeSince, TRADE_CONTRACT_MAPPING, unixTimestampNow
+  getSafeMappedValue, IRequestAccountTradeListApi,
+  IRequestPageApi, IStake, ITradeOpen, ITradeSettled, readableDate, timeSince, TRADE_CONTRACT_MAPPING, unixTimestampNow
 } from "@gambitdao/gmx-middleware"
 import { Stream } from "@most/types"
 import { connectGmxEarn } from "../logic/contract"
 import { $labItem } from "../logic/common"
 import { pallete } from "@aelea/ui-components-theme"
 import { connectLab } from "../logic/contract/gbc"
-import { CHAIN, IWalletLink } from "@gambitdao/wallet-link"
-import { $Entry } from "./$Leaderboard"
+import { CHAIN, IWalletLink, IWalletName } from "@gambitdao/wallet-link"
+import { $Index } from "./$Leaderboard"
 import { connectTradeReader } from "../logic/contract/trade"
 import * as $ButtonToggle from "@gambitdao/ui-components/src/$ButtonToggle"
 import * as router from '@aelea/router'
 import { fadeIn } from "../transitions/enter"
 
 
+
+
 export enum IProfileActiveTab {
   TRADING = 'Trading',
   BERRIES = 'Berries',
+  WARDROBE = "Wardrobe"
 }
 
 export interface IProfile {
@@ -43,10 +46,11 @@ export interface IProfile {
 const $title = $text(style({ fontWeight: 'bold', fontSize: '1.55em' }))
 
 export const $Profile = (config: IProfile) => component((
-  // [changeRoute, changeRouteTether]: Behavior<string, string>,
+  [changeRoute, changeRouteTether]: Behavior<string, string>,
   [selectProfileMode, selectProfileModeTether]: Behavior<IProfileActiveTab, IProfileActiveTab>,
   [requestAccountTradeList, requestAccountTradeListTether]: Behavior<number, IRequestAccountTradeListApi>,
-
+  [walletChange, walletChangeTether]: Behavior<IWalletName, IWalletName>,
+  [changeNetwork, changeNetworkTether]: Behavior<CHAIN, CHAIN>,
 ) => {
 
   // activeTab: Stream<IProfileActiveTab>
@@ -94,6 +98,7 @@ export const $Profile = (config: IProfile) => component((
         options: [
           IProfileActiveTab.BERRIES,
           IProfileActiveTab.TRADING,
+          // IProfileActiveTab.WARDROBE,
         ],
         $$option: map(option => {
           return $text(option)
@@ -166,7 +171,7 @@ export const $Profile = (config: IProfile) => component((
                     $head: $text('Entry'),
                     columnOp: O(style({ maxWidth: '50px' }), layoutSheet.spacingTiny),
                     $$body: map((pos) => {
-                      return $Entry(pos)
+                      return $Index(pos)
                     })
                   },
                   {
@@ -190,49 +195,9 @@ export const $Profile = (config: IProfile) => component((
                       const positionMarkPrice = tradeReader.getLatestPrice(now(pos.indexToken))
                       const cumulativeFee = tradeReader.getTokenCumulativeFunding(now(pos.collateralToken))
 
-                      const pnl = map(params => {
-                        const delta = getPnL(pos.isLong, pos.averagePrice, params.positionMarkPrice, pos.size)
-
-                        return pos.realisedPnl + delta - pos.fee
-                      }, combineObject({ positionMarkPrice, cumulativeFee }))
-
-
-                      return $row(layoutSheet.spacingTiny)(
-                        $ProfitLossText(pnl),
-                        $infoTooltip(
-                          $column(layoutSheet.spacingTiny)(
-                            $text(style({}))('PnL breakdown'),
-                            $column(
-                              $row(layoutSheet.spacingTiny)(
-                                $text(style({ color: pallete.foreground, flex: 1 }))('Deposit'),
-                                $text(map(cumFee => {
-                                  const entryFundingRate = pos.updateList[0].entryFundingRate
-                                  const fee = getFundingFee(entryFundingRate, cumFee, pos.size)
-
-                                  return formatReadableUSD(pos.collateral + fee)
-                                }, cumulativeFee))
-                              ),
-                              $row(layoutSheet.spacingTiny)(
-                                $text(style({ color: pallete.foreground, flex: 1 }))('Borrow Fee'),
-                                $text(style({ color: pallete.negative }))(map(cumFee => {
-                                  const fstUpdate = pos.updateList[0]
-                                  const entryFundingRate = fstUpdate.entryFundingRate
-
-                                  const fee = getFundingFee(entryFundingRate, cumFee, pos.size)
-                                  return formatReadableUSD(fee)
-                                }, cumulativeFee))
-                              ),
-                              $row(layoutSheet.spacingTiny)(
-                                $text(style({ color: pallete.foreground, flex: 1 }))('Realised Pnl'),
-                                $ProfitLossText(now(pos.realisedPnl))
-                              ),
-                              $row(layoutSheet.spacingTiny)(
-                                $text(style({ color: pallete.foreground, flex: 1 }))('Open Pnl'),
-                                $ProfitLossText(map(price => getPnL(pos.isLong, pos.averagePrice, price, pos.size), positionMarkPrice))
-                              ),
-                            )
-                          )
-                        ),
+                      return $infoTooltipLabel(
+                        $openPositionPnlBreakdown(pos, cumulativeFee, positionMarkPrice),
+                        $TradePnl(pos, cumulativeFee, positionMarkPrice)
                       )
                     })
                   },
@@ -262,7 +227,7 @@ export const $Profile = (config: IProfile) => component((
                     $head: $text('Entry'),
                     columnOp: O(style({ maxWidth: '50px' }), layoutSheet.spacingTiny),
                     $$body: map((pos) => {
-                      return $Entry(pos)
+                      return $Index(pos)
                     })
                   },
                   {
@@ -279,7 +244,7 @@ export const $Profile = (config: IProfile) => component((
                     $head: $text('PnL'),
                     columnOp: O(layoutSheet.spacingTiny, style({ flex: 1, placeContent: 'flex-end' })),
                     $$body: map((pos) => {
-                      return $ProfitLossText(pos.realisedPnl - pos.fee)
+                      return $PnlValue(pos.realisedPnl - pos.fee)
                     })
                   },
                 ],
@@ -298,6 +263,16 @@ export const $Profile = (config: IProfile) => component((
             ),
           )
         ),
+
+        // router.match(config.parentRoute.create({ fragment: IProfileActiveTab.WARDROBE.toLowerCase() }))(
+        //   fadeIn(
+        //     $Wardrobe({ chainList: [CHAIN.ARBITRUM], walletLink: config.walletLink, parentRoute: config.parentRoute })({
+        //       changeRoute: changeRouteTether(),
+        //       changeNetwork: changeNetworkTether(),
+        //       walletChange: walletChangeTether(),
+        //     })
+        //   )
+        // ),
 
 
 
@@ -337,15 +312,20 @@ export const $Profile = (config: IProfile) => component((
 
     {
       selectProfileMode,
+      walletChange,
+      changeNetwork,
       stake: map(chain => ({ chain, account: config.account }), config.walletLink.network),
-      changeRoute: map(mode => {
-        const pathName = config.parentUrl + mode.toLowerCase()
-        if (location.pathname !== pathName) {
-          history.pushState(null, '', pathName)
-        }
+      changeRoute: mergeArray([
+        changeRoute,
+        map(mode => {
+          const pathName = config.parentUrl + mode.toLowerCase()
+          if (location.pathname !== pathName) {
+            history.pushState(null, '', pathName)
+          }
 
-        return pathName
-      }, selectProfileMode),
+          return pathName
+        }, selectProfileMode)
+      ]),
       requestAccountTradeList,
       requestAccountOpenTradeList,
     }

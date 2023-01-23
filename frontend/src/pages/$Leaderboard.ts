@@ -1,7 +1,7 @@
 import { Behavior } from "@aelea/core"
 import { $text, component, style } from "@aelea/dom"
 import { $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
-import { TOKEN_ADDRESS_TO_SYMBOL, formatReadableUSD, ITrade, TOKEN_SYMBOL, IRequestCompetitionLadderApi } from "@gambitdao/gmx-middleware"
+import { TOKEN_ADDRESS_TO_SYMBOL, formatReadableUSD, ITrade, TOKEN_SYMBOL, IRequestCompetitionLadderApi, getTokenDescription } from "@gambitdao/gmx-middleware"
 
 import { $bear, $bull, $leverage, $tokenIconMap } from "@gambitdao/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
@@ -53,19 +53,24 @@ export const $Leaderboard = (config: ILeaderboard) => component((
 
 
 
-export const $Entry = (pos: ITrade) => $row(style({ position: 'relative', alignItems: 'center' }))(
-  $TokenIcon(TOKEN_ADDRESS_TO_SYMBOL[pos.indexToken], { width: '35px' }),
-  $column(style({ marginLeft: '-5px', borderRadius: '50%', padding: '6px', alignItems: 'center', backgroundColor: pallete.horizon }))(
-    $row(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
-      $icon({
-        $content: pos.isLong ? $bull : $bear,
-        viewBox: '0 0 32 32',
-        width: '16px'
-      }),
-      $leverage(pos)
-    ),
-    $text(style({ fontSize: '.65em' }))(formatReadableUSD(pos.averagePrice))
-  )
+export const $Index = (pos: ITrade) => $column(style({ position: 'relative', placeContent: 'center' }))(
+  $row(layoutSheet.spacingTiny, style({ alignItems: 'center', fontSize: '.75em' }))(
+    $icon({
+      svgOps: style({ borderRadius: '50%', padding: '4px', marginRight: '-10px', zIndex: 0, alignItems: 'center', backgroundColor: pallete.horizon }),
+      $content: pos.isLong ? $bull : $bear,
+      viewBox: '0 0 32 32',
+      width: '26px'
+    }),
+    $TokenIcon(TOKEN_ADDRESS_TO_SYMBOL[pos.indexToken], { width: '28px' }),
+    $text(formatReadableUSD(pos.averagePrice))
+  ),
+  // $text(style({ fontSize: '.65em' }))(formatReadableUSD(pos.averagePrice)),
+  // $column(style({ marginLeft: '-5px', borderRadius: '50%', padding: '6px', alignItems: 'center', backgroundColor: pallete.horizon }))(
+  //   $row(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
+      
+  //     $leverage(pos)
+  //   ),
+  // )
 )
 
 

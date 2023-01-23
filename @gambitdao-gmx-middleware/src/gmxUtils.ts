@@ -30,7 +30,9 @@ export function formatToBasis(a: bigint): number {
   return formatFixed(a, 4)
 }
 
-
+export function getAdjustedDetla(size: bigint, sizeDeltaUsd: bigint, pnl: bigint) {
+  return sizeDeltaUsd * pnl / size
+}
 
 export function getPriceDeltaPercentage(positionPrice: bigint, price: bigint) {
   const priceDelta = price - positionPrice
@@ -218,7 +220,7 @@ export function toAccountSummary(list: ITrade[]): IAccountSummary[] {
   }, [] as IAccountSummary[])
 }
 
-export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: string]: IPricefeed }, minMaxCollateral: bigint, endDate: number): ILadderSummary {
+export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: string]: bigint }, minMaxCollateral: bigint, endDate: number): ILadderSummary {
   const tradeListMap = groupByMapMany(list, a => a.account)
   const tradeListEntries = Object.entries(tradeListMap)
 
@@ -275,12 +277,17 @@ export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: stri
 
 
     const summary = sortedTradeList.reduce((seed, next): IAccountLadderSummary => {
-      const filteredUpdates = [...next.updateList, ...isTradeClosed(next) ? [next.closedPosition] : isTradeLiquidated(next) ? [next.liquidatedPosition as IPositionLiquidated & { key: string }] : []].filter(update => update.timestamp <= endDate)
+      const filteredUpdates = [...next.updateList, ...isTradeClosed(next)
+        ? [next.closedPosition] : isTradeLiquidated(next)
+          ? [next.liquidatedPosition as IPositionLiquidated & { key: string }]
+          : []
+      ].filter(update => update.timestamp <= endDate)
+
       const lastUpdate = filteredUpdates[filteredUpdates.length - 1]
       const cumSizeIncrease = next.increaseList.reduce((s, n) => s + n.sizeDelta, 0n)
       const cumSizeDecrease = next.decreaseList.reduce((s, n) => s + n.sizeDelta, 0n)
 
-      const indexTokenMarkPrice = BigInt(priceMap['_' + next.indexToken].c)
+      const indexTokenMarkPrice = BigInt(priceMap['_' + next.indexToken])
       const openDelta = lastUpdate.__typename === 'UpdatePosition'
         ? getPnL(next.isLong, lastUpdate.averagePrice, indexTokenMarkPrice, lastUpdate.size)
         : 0n

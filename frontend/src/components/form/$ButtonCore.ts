@@ -16,14 +16,14 @@ export const dismissOp = O(
   constant(false)
 )
 
-export interface IButton extends Control {
+export interface IButtonCore extends Control {
   $container?: NodeComposeFn<$Node>,
   $content: $Node
 }
 
-export const $defaultButton = $element('button')(designSheet.btn)
+export const $defaultButtonCore = $element('button')(designSheet.btn)
 
-export default ({ $content, $container = $defaultButton, disabled = empty() }: IButton) => component((
+export const $ButtonCore = ({ $content, $container = $defaultButtonCore, disabled = empty() }: IButtonCore) => component((
   [focusStyle, interactionTether]: Behavior<IBranch, true>,
   [dismissstyle, dismissTether]: Behavior<IBranch, false>,
   [click, clickTether]: Behavior<INode, PointerEvent>

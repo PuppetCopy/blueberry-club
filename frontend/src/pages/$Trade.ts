@@ -1,5 +1,5 @@
 import { Behavior, combineArray, combineObject, O, replayLatest } from "@aelea/core"
-import { $node, $text, component, eventElementTarget, INode, nodeEvent, style, styleBehavior, styleInline } from "@aelea/dom"
+import { $node, $text, component, eventElementTarget, style, styleInline } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 import {
@@ -7,17 +7,16 @@ import {
   getNextLiquidationPrice, getMarginFees, STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, TAX_BASIS_POINTS,
   getDenominator, USD_PERCISION, formatReadableUSD, timeSince, getPositionKey, IPositionIncrease,
   IPositionDecrease, getPnL, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE, getFundingFee, filterNull, getTokenUsd, getLiquidationPrice,
-  ITokenIndex, ITokenStable, ITokenInput, TradeStatus, LIMIT_LEVERAGE, div, readableDate, TRADE_CONTRACT_MAPPING, getTokenAmount, abs, IRequestAccountApi, CHAIN_ADDRESS_MAP, DEDUCT_FOR_GAS, getSafeMappedValue, getTokenDescription, getFeeBasisPoints,
+  ITokenIndex, ITokenStable, ITokenInput, TradeStatus, LIMIT_LEVERAGE, div, readableDate, TRADE_CONTRACT_MAPPING, getTokenAmount, abs, IRequestAccountApi, CHAIN_ADDRESS_MAP, DEDUCT_FOR_GAS, getSafeMappedValue, getTokenDescription, getFeeBasisPoints, getAdjustedDetla,
 } from "@gambitdao/gmx-middleware"
 
-import { map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, snapshot, zip, combine, tap, constant, fromPromise } from "@most/core"
+import { map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, snapshot, zip, combine, tap, constant } from "@most/core"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
-import { $arrowsFlip, $defaultTableContainer, $infoTooltip, $IntermediatePromise, $ProfitLossText, $riskLiquidator, $spinner, $Table, $txHashRef, invertColor } from "@gambitdao/ui-components"
+import { $defaultTableContainer, $infoTooltip, $IntermediatePromise, $spinner, $Table, $txHashRef, invertColor } from "@gambitdao/ui-components"
 import { CandlestickData, LineStyle, Time } from "lightweight-charts"
 import { Stream } from "@most/types"
 import { connectTradeReader, getErc20Balance, IPositionGetter, latestPriceFromExchanges } from "../logic/contract/trade"
 import { $TradeBox, ITradeFocusMode, ITradeState, RequestTradeQuery } from "../components/trade/$TradeBox"
-import { $Entry } from "./$Leaderboard"
 import { $CandleSticks } from "../components/chart/$CandleSticks"
 import { getNativeTokenDescription, resolveAddress } from "../logic/utils"
 import { BrowserStore } from "../logic/store"
@@ -26,11 +25,9 @@ import { getContractAddress } from "../logic/common"
 import { CHAIN, IWalletLink, IWalletName } from "@gambitdao/wallet-link"
 import { Web3Provider } from "@ethersproject/providers"
 import { ERC20__factory } from "@gambitdao/gbc-contracts"
-import { $iconCircular } from "../elements/$common"
 import { $Dropdown } from "../components/form/$Dropdown"
 import { $ButtonSecondary } from "../components/form/$Button"
 import { $caretDown } from "../elements/$icons"
-import { $CardTable } from "../components/$common"
 import * as $ButtonToggle from "@gambitdao/ui-components/src/$ButtonToggle"
 
 
@@ -96,7 +93,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
   [enableTrading, enableTradingTether]: Behavior<boolean, boolean>,
 
-  [switchTrade, switchTradeTether]: Behavior<INode, ITrade>,
+  [switchTrade, switchTradeTether]: Behavior<ITrade, ITrade>,
   [requestTrade, requestTradeTether]: Behavior<RequestTradeQuery, RequestTradeQuery>,
 
 ) => {
@@ -180,7 +177,7 @@ export const $Trade = (config: ITradeComponent) => component((
     if (provider instanceof Web3Provider) {
       const balanceAmount = await getErc20Balance(token, provider)
       if (token === AddressZero) {
-        balanceAmount - DEDUCT_FOR_GAS
+        return balanceAmount - DEDUCT_FOR_GAS
       }
 
       return balanceAmount
@@ -207,9 +204,9 @@ export const $Trade = (config: ITradeComponent) => component((
     const address = params.account || AddressZero
     const key = getPositionKey(address, collateralToken, params.indexToken, params.isLong)
 
-    if (latestKey === key) {
-      return null
-    }
+    // if (latestKey === key) {
+    //   return null
+    // }
 
     latestKey = key
 
@@ -304,7 +301,9 @@ export const $Trade = (config: ITradeComponent) => component((
   const collateralTokenDescription = map((address) => getTokenDescription(address), collateralToken)
 
 
-  const walletBalanceUsd = combineArray((balance, price, tokenDesc) => getTokenUsd(balance, price, tokenDesc.decimals), walletBalance, inputTokenPrice, inputTokenDescription)
+  const walletBalanceUsd = combineArray(params => {
+    return getTokenUsd(params.walletBalance, params.inputTokenPrice, params.inputTokenDescription.decimals)
+  }, combineObject({ walletBalance, inputTokenPrice, inputTokenDescription }))
 
   const collateralTokenPoolInfo = replayLatest(multicast(tradeReader.getTokenPoolInfo(collateralToken)))
 
@@ -329,7 +328,7 @@ export const $Trade = (config: ITradeComponent) => component((
     }
 
     const adjustedPnlDelta = params.position.size > 0n && abs(params.sizeDeltaUsd) > 0n
-      ? getPnL(params.isLong, params.position.averagePrice, params.indexTokenPrice, params.position.size) * abs(params.sizeDeltaUsd) / params.position.size
+      ? getAdjustedDetla(params.position.size, abs(params.sizeDeltaUsd), getPnL(params.isLong, params.position.averagePrice, params.indexTokenPrice, params.position.size))
       : 0n
 
     const amountUsd = abs(params.collateralDeltaUsd) + adjustedPnlDelta > 0n ? adjustedPnlDelta : 0n
@@ -599,10 +598,7 @@ export const $Trade = (config: ITradeComponent) => component((
       $node(layoutSheet.spacingBig, style({ flex: 1, paddingBottom: screenUtils.isDesktopScreen ? '50px' : '8px', display: 'flex', flexDirection: screenUtils.isDesktopScreen ? 'column' : 'column-reverse' }))(
 
         filterNull(
-          map(ev => {
-            console.log(ev)
-            return null
-          }, adjustPosition)
+          constant(null, adjustPosition)
         ) as Stream<any>,
 
         $column(layoutSheet.spacingSmall)(
@@ -617,6 +613,7 @@ export const $Trade = (config: ITradeComponent) => component((
             }, openTradeListQuery, position),
             // positionChange,
             pricefeed: config.pricefeed,
+            openTradeListQuery,
 
             tradeConfig,
             tradeState: {
@@ -647,6 +644,7 @@ export const $Trade = (config: ITradeComponent) => component((
             }
           })({
             leverage: changeLeverageTether(),
+            switchTrade: switchTradeTether(),
             switchIsIncrease: switchIsIncreaseTether(),
             changeCollateralDeltaUsd: changeCollateralDeltaUsdTether(),
             changeSizeDeltaUsd: changeSizeDeltaUsdTether(),
@@ -667,139 +665,6 @@ export const $Trade = (config: ITradeComponent) => component((
         ),
 
         screenUtils.isDesktopScreen ? $node() : empty(),
-
-        switchLatest(combineArray((w3p) => {
-
-          if (w3p === null) {
-            return $column(style({ alignItems: 'center' }))(
-              $text(style({ color: pallete.foreground }))(
-                'Trade List'
-              )
-            )
-          }
-
-
-
-          return $IntermediatePromise({
-            query: openTradeListQuery,
-            $$done: map(res => {
-
-              if (res.length === 0) {
-                return $row(layoutSheet.spacingSmall, style({ placeContent: 'center' }))(
-                  $text(style({ color: pallete.foreground, fontSize: '.75em' }))(
-                    'No open positions'
-                  )
-                )
-              }
-
-              return $CardTable({
-                dataSource: now(res),
-                columns: [
-                  {
-                    $head: $text('Entry'),
-                    columnOp: O(style({ maxWidth: '85px' }), layoutSheet.spacingTiny),
-                    $$body: map((pos) => {
-                      return $Entry(pos)
-                    })
-                  },
-                  {
-                    $head: $text('PnL'),
-                    columnOp: O(layoutSheet.spacingTiny, style({ flex: 1, placeContent: 'flex-end' })),
-                    $$body: map((pos) => {
-                      const positionMarkPrice = tradeReader.getLatestPrice(now(pos.indexToken))
-                      const cumulativeFee = tradeReader.getTokenCumulativeFunding(now(pos.collateralToken))
-
-                      const pnl = map(params => {
-                        const delta = getPnL(pos.isLong, pos.averagePrice, params.positionMarkPrice, pos.size)
-
-                        return pos.realisedPnl + delta - pos.fee
-                      }, combineObject({ positionMarkPrice, cumulativeFee }))
-
-
-                      return $row(layoutSheet.spacingTiny)(
-                        $ProfitLossText(pnl),
-                        $infoTooltip(
-                          $column(layoutSheet.spacingTiny)(
-                            $text(style({}))('PnL breakdown'),
-                            $column(
-                              $row(layoutSheet.spacingTiny)(
-                                $text(style({ color: pallete.foreground, flex: 1 }))('Deposit'),
-                                $text(map(cumFee => {
-                                  const entryFundingRate = pos.updateList[0].entryFundingRate
-                                  const fee = getFundingFee(entryFundingRate, cumFee, pos.size)
-
-                                  return formatReadableUSD(pos.collateral + fee)
-                                }, cumulativeFee))
-                              ),
-                              $row(layoutSheet.spacingTiny)(
-                                $text(style({ color: pallete.foreground, flex: 1 }))('Borrow Fee'),
-                                $text(style({ color: pallete.negative }))(map(cumFee => {
-                                  const fstUpdate = pos.updateList[0]
-                                  const entryFundingRate = fstUpdate.entryFundingRate
-
-                                  const fee = getFundingFee(entryFundingRate, cumFee, pos.size)
-                                  return formatReadableUSD(fee)
-                                }, cumulativeFee))
-                              ),
-                              $row(layoutSheet.spacingTiny)(
-                                $text(style({ color: pallete.foreground, flex: 1 }))('Realised Pnl'),
-                                $ProfitLossText(now(pos.realisedPnl))
-                              ),
-                              $row(layoutSheet.spacingTiny)(
-                                $text(style({ color: pallete.foreground, flex: 1 }))('Open Pnl'),
-                                $ProfitLossText(map(price => getPnL(pos.isLong, pos.averagePrice, price, pos.size), positionMarkPrice))
-                              ),
-                            )
-                          )
-                        ),
-                      )
-                    })
-                  },
-                  {
-                    $head: $column(style({ textAlign: 'center' }))(
-                      $text('Size'),
-                      $text(style({ fontSize: '.75em' }))('Collateral'),
-                    ),
-                    columnOp: O(layoutSheet.spacingTiny, style({ flex: 1.2, placeContent: 'flex-end' })),
-                    $$body: map(pos => {
-                      const positionMarkPrice = tradeReader.getLatestPrice(now(pos.indexToken))
-
-                      return $row(
-                        $riskLiquidator(pos, positionMarkPrice)
-                      )
-                    })
-                  },
-                  {
-                    $head: $text('Switch'),
-                    columnOp: style({ flex: 2, placeContent: 'center', maxWidth: '60px' }),
-                    $$body: map((trade) => {
-
-                      const clickSwitchBehavior = switchTradeTether(
-                        nodeEvent('click'),
-                        constant(trade),
-                      )
-
-                      const switchActiveStyle = styleBehavior(map(vpos => {
-                        const isPosMatched = vpos?.key === trade.key
-
-                        return isPosMatched ? { pointerEvents: 'none', opacity: '0.3' } : {}
-                      }, position))
-
-
-                      return $row(switchActiveStyle)(
-                        clickSwitchBehavior(
-                          style({ height: '28px', width: '28px' }, $iconCircular($arrowsFlip, pallete.horizon))
-                        )
-                      )
-                    })
-                  },
-                ],
-              })({})
-            })
-          })({})
-        }, config.walletLink.wallet))
-
-
       ),
 
       $column(style({ flex: 1 }))(
@@ -864,7 +729,9 @@ export const $Trade = (config: ITradeComponent) => component((
 
           $row(
             style({ position: 'relative', backgroundColor: theme.name === 'dark' ? colorAlpha(invertColor(pallete.message), .15) : pallete.horizon, borderBottom: `1px solid rgba(191, 187, 207, 0.15)` }),
-            screenUtils.isDesktopScreen ? style({ flex: 3, maxHeight: '50vh' }) : style({ margin: '0 -15px', height: screenUtils.isDesktopScreen ? '50vh' : '40vh' })
+            screenUtils.isDesktopScreen
+              ? style({ flex: 3, maxHeight: '50vh' })
+              : style({ borderTop: `1px solid ${colorAlpha(pallete.foreground, .15)}`, margin: '10px -15px 0px', height: '40vh' })
           )(
 
             $IntermediatePromise({
@@ -1114,20 +981,14 @@ export const $Trade = (config: ITradeComponent) => component((
                           {
                             $head: $text('PnL Realised'),
                             columnOp: O(style({ flex: .5, placeContent: 'flex-end', textAlign: 'right', alignItems: 'center' })),
-
                             $$body: map((req: RequestTrade | IPositionIncrease | IPositionDecrease) => {
-                              if ('ctx' in req) {
-                                const fee = getMarginFees(req.state.sizeDeltaUsd)
+                              const fee = -getMarginFees('ctx' in req ? req.state.sizeDeltaUsd : req.fee)
 
+                              if ('ctx' in req) {
                                 return $text(formatReadableUSD(fee))
                               }
 
-                              const update = trade.updateList.find(ev => req.timestamp > ev.timestamp)
-                              update?.realisedPnl
-
-                              // const adjustmentPnl = div(req.sizeDelta * pnl, params.position.size) / BASIS_POINTS_DIVISOR
-
-                              return $text(formatReadableUSD(req.fee))
+                              return $text(formatReadableUSD(-req.fee))
                             })
                           }
                         ] : [],
@@ -1137,7 +998,10 @@ export const $Trade = (config: ITradeComponent) => component((
 
                         $$body: map((req) => {
                           const isKeeperReq = 'ctx' in req
-                          const delta = isKeeperReq ? req.state.collateralDeltaUsd : req.collateralDelta
+                          const delta = isKeeperReq
+                            ? req.state.isIncrease
+                              ? req.state.collateralDeltaUsd : -req.state.collateralDeltaUsd : req.__typename === 'IncreasePosition'
+                              ? req.collateralDelta : -req.collateralDelta
 
                           return $text(formatReadableUSD(delta))
                         })
@@ -1147,7 +1011,10 @@ export const $Trade = (config: ITradeComponent) => component((
                         columnOp: O(style({ flex: .7, placeContent: 'flex-end', textAlign: 'right', alignItems: 'center' })),
                         $$body: map((req) => {
                           const isKeeperReq = 'ctx' in req
-                          const delta = isKeeperReq ? req.state.sizeDeltaUsd : req.sizeDelta
+                          const delta = isKeeperReq
+                            ? req.state.isIncrease
+                              ? req.state.sizeDeltaUsd : -req.state.sizeDeltaUsd : req.__typename === 'IncreasePosition'
+                              ? req.sizeDelta : -req.sizeDelta
 
                           return $text(formatReadableUSD(delta))
                         })

@@ -1,12 +1,12 @@
 import { Behavior } from "@aelea/core"
-import { $text, component } from "@aelea/dom"
+import { $text, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet } from "@aelea/ui-components"
 
 import { CHAIN, IWalletLink, IWalletName } from "@gambitdao/wallet-link"
 import { map } from "@most/core"
 import { IAccountStakingStore } from "@gambitdao/gbc-middleware"
-import { $ButtonPrimary, $ButtonSecondary } from "../components/form/$Button"
+import { $ButtonPrimary, $ButtonSecondary, $defaultButtonSecondary, $defaultMiniButtonSecondary } from "../components/form/$Button"
 import { $labItem } from "../logic/common"
 import { BrowserStore } from "../logic/store"
 import { $IntermediateConnectButton } from "../components/$ConnectAccount"
@@ -39,7 +39,7 @@ export const $ProfileConnected = (config: IAccount) => component((
 
   return [
     $column(layoutSheet.spacingBig)(
-      
+
       $IntermediateConnectButton({
         chainList: config.chainList,
         walletLink: config.walletLink,
@@ -54,7 +54,7 @@ export const $ProfileConnected = (config: IAccount) => component((
             $actions: $Link({
               $content: $anchor(
                 $ButtonSecondary({
-                  
+                  $container: $defaultMiniButtonSecondary,
                   $content: $text('Wardrobe')
                 })({}),
               ),

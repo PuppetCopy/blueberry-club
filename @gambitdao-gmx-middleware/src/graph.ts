@@ -8,7 +8,7 @@ import {
   IPricefeed, IRequestPricefeedApi, IPriceLatest, IRequestGraphEntityApi, IStake, IRequestTimerangeApi, ITrade, TradeStatus,
   IRequestAccountTradeListApi, ITradeOpen
 } from "./types"
-import { cacheMap, createSubgraphClient, getMappedValue, getTokenDescription, groupByMap, pagingQuery, parseFixed, switchFailedSources, unixTimestampNow } from "./utils"
+import { cacheMap, createSubgraphClient, getMappedValue, getTokenDescription, groupByKey, groupByKeyMap, pagingQuery, parseFixed, switchFailedSources, unixTimestampNow } from "./utils"
 import { gql } from "@urql/core"
 import * as fromJson from "./fromJson"
 import fetch from "isomorphic-fetch"
@@ -151,20 +151,7 @@ export const trade = O(
 )
 
 export const latestPriceMap = O(
-  map(async (queryParams: IChainParamApi): Promise<IPriceLatest[]> => {
-
-    const res = await await querySubgraph(queryParams, `
-{
-  priceLatests {
-    id
-    value
-    timestamp
-  }
-}
-`)
-
-    return res.priceLatests.map(fromJson.priceLatestJson) as IPriceLatest[]
-  }),
+  map(getPriceLatestMap),
   awaitPromises
 )
 
@@ -242,13 +229,8 @@ export const leaderboardTopList = O(
 
 export async function getCompetitionCumulativeRoi(queryParams: IRequestCompetitionLadderApi) {
   const dateNow = unixTimestampNow()
-  const to = Math.min(dateNow, queryParams.to)
-  const timeSlot = Math.floor(to / intervalTimeMap.MIN5)
-  const timestamp = timeSlot * intervalTimeMap.MIN5 - intervalTimeMap.MIN5
 
-  const from = queryParams.from
-
-  const competitionAccountListQuery = fetchHistoricTrades({ ...queryParams, from, to, offset: 0, pageSize: 1000 }, async (params) => {
+  const competitionAccountListQuery = fetchTrades({ ...queryParams, offset: 0, pageSize: 1000 }, async (params) => {
     console.log(params.from)
     const res = await arbitrumGraphDev(gql(`
 
@@ -259,15 +241,20 @@ query {
       entryReferrer
   }
 }
-`), { })
+`), {})
 
     return res.trades as ITrade[]
   })
 
 
-  const priceMapQuery = querySubgraph(queryParams, `
+  const priceMapQuery = dateNow < queryParams.to
+    ? getPriceLatestMap(queryParams).then(res => {
+      const list = groupByKeyMap(res, item => '_' +  item.id, x => x.value)
+      return list
+    }) 
+    : querySubgraph(queryParams, `
       {
-        pricefeeds(where: { timestamp: ${timestamp.toString()} }) {
+        pricefeeds(where: { timestamp: ${Math.floor(queryParams.to / intervalTimeMap.MIN5) } }) {
           id
           timestamp
           tokenAddress
@@ -276,15 +263,15 @@ query {
         }
       }
     `).then(res => {
-    const list = groupByMap(res.pricefeeds, (item: IPricefeed) => item.tokenAddress)
-    return list
-  })
+      const list = groupByKeyMap(res.pricefeeds, (item: IPricefeed) => item.tokenAddress, x => x.c)
+      return list
+    })
 
   const historicTradeList = await competitionAccountListQuery
   const priceMap = await priceMapQuery
   const tradeList: ITrade[] = historicTradeList.map(fromJson.tradeJson)
 
-  return toAccountCompetitionSummary(tradeList, priceMap, queryParams.maxCollateral, to)
+  return toAccountCompetitionSummary(tradeList, priceMap, queryParams.maxCollateral, queryParams.to)
 }
 
 export const competitionCumulativeRoi = O(
@@ -323,7 +310,7 @@ query {
         }
       }
     `).then(res => {
-      const list = groupByMap(res.pricefeeds, (item: IPricefeed) => item.tokenAddress)
+      const list = groupByKeyMap(res.pricefeeds, (item: IPricefeed) => item.tokenAddress, x => x.c)
       return list
     })
 
@@ -402,15 +389,19 @@ async function querySubgraph<T extends IChainParamApi>(params: T, document: stri
 }
 
 
-// export async function createDocument<T>(entity: string, where: T): Promise<any> {
-//   return `
-//       {
-//         ${entity}(first: 1000, orderBy: timestamp, orderDirection: asc, where: {tokenAddress: _${queryParams.tokenAddress}, interval: _${queryParams.interval}, timestamp_gte: ${queryParams.from}, timestamp_lte: ${queryParams.to || unixTimestampNow()} }) {
-//           ${pricefeedFields}
-//         }
-//       }
-// `
-// }
+async function getPriceLatestMap(queryParams: IChainParamApi): Promise<IPriceLatest[]> {
+  const res = await await querySubgraph(queryParams, `
+{
+  priceLatests {
+    id
+    value
+    timestamp
+  }
+}
+`)
+
+  return res.priceLatests.map(fromJson.priceLatestJson) as IPriceLatest[]
+}
 
 
 const increasePositionFields = `

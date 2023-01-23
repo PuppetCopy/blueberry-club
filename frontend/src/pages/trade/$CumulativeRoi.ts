@@ -13,6 +13,7 @@ import { BLUEBERRY_REFFERAL_CODE, IProfile, IProfileTradingList, IProfileTrading
 import { $anchor, $infoLabel, $infoTooltipLabel, $Link } from '@gambitdao/ui-components'
 import { $berryByToken } from '../../logic/common'
 import { $CardTable } from '../../components/$common'
+import { IProfileActiveTab } from '../$Profile'
 
 
 const prizeLadder: string[] = ['2200', '1100', '550', ...Array(15).fill('110')]
@@ -122,6 +123,11 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
     })
   )
 
+  const prizePool = map(res => {
+    return formatReadableUSD(getMarginFees(res.size) * 1500n / BASIS_POINTS_DIVISOR)
+  }, competitionCumulativeRoi)
+
+
   return [
     $column(layoutSheet.spacingBig)(
 
@@ -211,9 +217,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
                 color: pallete.positive,
                 fontSize: '2.25em',
                 textShadow: `${pallete.positive} 1px 1px 20px, ${pallete.positive} 0px 0px 20px`
-              }))(map(res => {
-                return formatReadableUSD(getMarginFees(res.size) * 1500n / BASIS_POINTS_DIVISOR)
-              }, competitionCumulativeRoi))
+              }))(prizePool)
             ),
 
           )
@@ -248,7 +252,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
                   $Link({
                     $content: $profilePreview({ profile: pos.profile }),
                     route: config.parentRoute.create({ fragment: 'fefwef' }),
-                    url: `/p/profile/${pos.account}/trading`
+                    url: `/p/profile/${pos.account}/${IProfileActiveTab.TRADING.toLowerCase()}`
                   })({ click: routeChangeTether() }),
                 )
               })

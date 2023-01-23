@@ -96,13 +96,15 @@ export type IAbstractPositionStake = {
   collateral: bigint
   size: bigint
   realisedPnl: bigint
+  averagePrice: bigint
 }
+
+export type IAbstractPosition = IAbstractPositionStake & IAbstractPositionIdentity
 
 
 export interface IVaultPosition extends IAbstractPositionStake {
   entryFundingRate: bigint
   reserveAmount: bigint
-  averagePrice: bigint
   lastIncreasedTime: bigint
 }
 
@@ -122,13 +124,13 @@ export interface IPositionUpdate extends IAbstractPositionStake, IAbstractPositi
   key: string
 }
 
-export interface IPositionLiquidated extends IAbstractPositionIdentity, IAbstractPositionStake, IndexedType<'LiquidatePosition'> {
+export interface IPositionLiquidated extends IAbstractPosition, IndexedType<'LiquidatePosition'> {
   markPrice: bigint
   reserveAmount: bigint
   key: string
 }
 
-export interface IPositionClose extends IAbstractPositionIdentity, IAbstractPositionStake, IndexedType<'ClosePosition'> {
+export interface IPositionClose extends IAbstractPosition, IndexedType<'ClosePosition'> {
   entryFundingRate: bigint
   averagePrice: bigint
   reserveAmount: bigint

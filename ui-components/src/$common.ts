@@ -1,8 +1,8 @@
 import { isStream, O } from "@aelea/core"
-import { $Branch, $element, $Node, $text, attr, component, style, styleBehavior, styleInline, stylePseudo } from "@aelea/dom"
+import { $Branch, $element, $node, $Node, $text, attr, style, styleBehavior, styleInline, stylePseudo } from "@aelea/dom"
 import { $column, $icon, $row, $seperator, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { bnDiv, formatReadableUSD, getNextLiquidationPrice, getTxExplorerUrl, IAbstractPositionStake, IAbstractTrade, ITrade, ITradeOpen, liquidationWeight, readableNumber, shortenTxAddress, ITokenDescription, formatToBasis } from "@gambitdao/gmx-middleware"
+import { bnDiv, formatReadableUSD, getNextLiquidationPrice, getTxExplorerUrl, IAbstractPositionStake, ITrade, ITradeOpen, liquidationWeight, shortenTxAddress, ITokenDescription, getFundingFee, getPnL, getMarginFees } from "@gambitdao/gmx-middleware"
 import { CHAIN } from "@gambitdao/wallet-link"
 import { now, multicast, map, empty } from "@most/core"
 import { Stream } from "@most/types"
@@ -46,8 +46,17 @@ export const $alertTooltip = ($content: $Branch) => {
 
 export const $infoLabel = (label: string | $Node) => {
   return isStream(label)
-    ? label
-    : $text(style({ color: pallete.foreground, fontSize: '.75em' }))(label)
+    ? style({ lineHeight: 1 })(label)
+    : $text(style({ color: pallete.foreground, fontSize: '13.2px', lineHeight: 1 }))(label)
+}
+
+export const $infoLabeledValue = (label: string | $Node, value: string | $Node) => {
+  return $row(layoutSheet.spacingTiny, style({ fontSize: '13.2px' }))(
+    isStream(label)
+      ? label
+      : $text(style({ color: pallete.foreground }))(label),
+    isStream(value) ? value : $text(value)
+  )
 }
 
 export const $infoTooltipLabel = (text: string | $Node, label?: string | $Node) => {
@@ -81,9 +90,9 @@ export const $sizeDisplay = (pos: IAbstractPositionStake) => $column(layoutSheet
 )
 
 export const $leverage = (pos: IAbstractPositionStake) =>
-  $text(style({ fontWeight: 'bold', fontSize: '10px' }))(`${Math.round(bnDiv(pos.size, pos.collateral)) }x`)
+  $text(style({ fontWeight: 'bold', fontSize: '10px' }))(`${Math.round(bnDiv(pos.size, pos.collateral))}x`)
 
-export const $ProfitLossText = (pnl: Stream<bigint> | bigint, colorful = true) => {
+export const $PnlValue = (pnl: Stream<bigint> | bigint, colorful = true) => {
   const pnls = isStream(pnl) ? pnl : now(pnl)
 
   const display = multicast(map((n: bigint) => {
@@ -101,6 +110,17 @@ export const $ProfitLossText = (pnl: Stream<bigint> | bigint, colorful = true) =
   return $text(colorStyle)(display)
 }
 
+export const $TradePnl = (pos: ITrade, cumulativeFee: Stream<bigint>, positionMarkPrice: Stream<bigint> | bigint, colorful = true) => {
+  const pnl = isStream(positionMarkPrice)
+    ? map((markPrice: bigint) => {
+      const delta = getPnL(pos.isLong, pos.averagePrice, markPrice, pos.size)
+      return pos.realisedPnl + delta - pos.fee
+    }, positionMarkPrice)
+    : positionMarkPrice
+
+  return $PnlValue(pnl, colorful)
+}
+
 export function $liquidationSeparator(pos: ITrade, markPrice: Stream<bigint>) {
   const liquidationPrice = getNextLiquidationPrice(pos.isLong, pos.size, pos.collateral, pos.averagePrice)
   const liqWeight = map(price => liquidationWeight(pos.isLong, liquidationPrice, price), markPrice)
@@ -112,10 +132,64 @@ export function $liquidationSeparator(pos: ITrade, markPrice: Stream<bigint>) {
   )
 }
 
+export const $openPositionPnlBreakdown = (trade: ITradeOpen, cumulativeFee: Stream<bigint>, price: Stream<bigint>) => {
+  const positionMarkPrice = price
+
+  const totalMarginFee = [...trade.increaseList, ...trade.decreaseList].reduce((seed, next) => seed + getMarginFees(next.sizeDelta), 0n)
+
+
+  return $column(layoutSheet.spacingTiny)(
+    $row(style({ placeContent: 'space-between' }))(
+      $text('PnL breakdown'),
+      $row(layoutSheet.spacingTiny)(
+        $text(style({ color: pallete.foreground, flex: 1 }))('Deposit'),
+        $text(map(cumFee => {
+          const entryFundingRate = trade.updateList[0].entryFundingRate
+          const fee = getFundingFee(entryFundingRate, cumFee, trade.size)
+          const realisedLoss = trade.realisedPnl < 0n ? -trade.realisedPnl : 0n
+
+          return formatReadableUSD(trade.collateral + fee + realisedLoss + totalMarginFee)
+        }, cumulativeFee))
+      )
+    ),
+    $node(),
+    $column(layoutSheet.spacingTiny)(
+      $row(layoutSheet.spacingTiny)(
+        $text(style({ color: pallete.foreground, flex: 1 }))('Swap Fees'),
+        $text('WIP')
+      ),
+      $row(layoutSheet.spacingTiny)(
+        $text(style({ color: pallete.foreground, flex: 1 }))('Margin Fee'),
+        $PnlValue(-totalMarginFee)
+      ),
+      $row(layoutSheet.spacingTiny)(
+        $text(style({ color: pallete.foreground, flex: 1 }))('Borrow Fee'),
+        $PnlValue(
+          map(cumFee => {
+            const fstUpdate = trade.updateList[0]
+            const entryFundingRate = fstUpdate.entryFundingRate
+
+            const fee = getFundingFee(entryFundingRate, cumFee, trade.size)
+            return -fee
+          }, cumulativeFee)
+        )
+      ),
+      $row(layoutSheet.spacingTiny)(
+        $text(style({ color: pallete.foreground, flex: 1 }))('Realised Pnl'),
+        $PnlValue(now(trade.realisedPnl))
+      ),
+      $row(layoutSheet.spacingTiny)(
+        $text(style({ color: pallete.foreground, flex: 1 }))('PnL w/o fees'),
+        $PnlValue(map(price => getPnL(trade.isLong, trade.averagePrice, price, trade.size), positionMarkPrice))
+      ),
+    )
+  )
+}
+
 export const $riskLiquidator = (pos: ITradeOpen, markPrice: Stream<bigint>) => $column(layoutSheet.spacingTiny, style({ alignItems: 'flex-end' }))(
-  $text(formatReadableUSD(pos.size)),
+  $text(style({ textAlign: 'center', fontSize: '.65em' }))(formatReadableUSD(pos.collateral)),
   $liquidationSeparator(pos, markPrice),
-  $text(style({ textAlign: 'center', fontSize: '.65em' }))(formatReadableUSD(pos.collateral))
+  $text(formatReadableUSD(pos.size)),
 )
 
 export const $labeledDivider = (label: string) => {

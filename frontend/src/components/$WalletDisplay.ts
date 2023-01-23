@@ -67,7 +67,7 @@ export const $WalletDisplay = (config: IWalletDisplay) => component((
         config.walletLink,
         config.chainList,
         switchLatest(map(chainId => {
-          return $element('img')(attr({ src: `/ assets / chain / ${chainId}.svg` }), style({ margin: '0 4px', width: '38px', cursor: 'pointer', padding: '3px 6px' }))()
+          return $element('img')(attr({ src: `/assets/chain/${chainId}.svg` }), style({ margin: '0 4px', width: '38px', cursor: 'pointer', padding: '3px 6px' }))()
         }, config.walletLink.network))
       )({
         changeNetwork: changeNetworkTether()
