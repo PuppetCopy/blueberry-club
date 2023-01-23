@@ -237,9 +237,7 @@ export const $TradeBox = (config: ITradeBox) => component((
     return null
   }, pnlCrossHairTimeChange)
 
-  const resetTrade = tap(xxx => {
-    console.log(xxx)
-  }, constant(0n, mergeArray([delay(50, config.tradeState.position), clickResetTradeMode])))
+  const resetTrade = constant(0n, mergeArray([delay(50, config.tradeState.position), clickResetTradeMode]))
 
 
   const clickMaxCollateralUsd = snapshot(state => {
