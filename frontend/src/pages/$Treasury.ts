@@ -192,7 +192,6 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
 
         $node(),
 
-
         $row(layoutSheet.spacing, style({ alignItems: 'center', placeContent: 'center' }))(
           $row(layoutSheet.spacingSmall)(
             $anchor(attr({ href: getDebankProfileUrl(GBC_ADDRESS.TREASURY_ARBITRUM) }))(
