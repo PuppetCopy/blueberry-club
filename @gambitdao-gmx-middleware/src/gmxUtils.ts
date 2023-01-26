@@ -323,7 +323,7 @@ export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: stri
     seed.list.push(summary)
 
     return {
-      list: seed.list,
+      list: seed.list.sort((a, b) => Number(b.roi - a.roi)),
       size: summary.size + seed.size
     }
   }, res)

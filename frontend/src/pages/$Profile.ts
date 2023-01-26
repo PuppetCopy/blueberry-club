@@ -41,7 +41,7 @@ export interface IProfile {
   accountTradeList: Stream<Promise<IRequestPageApi<ITradeSettled>>>
   accountOpenTradeList: Stream<Promise<ITradeOpen[]>>
 
-  $actions?: $Node
+  $accountDisplay: $Node
 }
 const $title = $text(style({ fontWeight: 'bold', fontSize: '1.55em' }))
 
@@ -82,15 +82,7 @@ export const $Profile = (config: IProfile) => component((
   return [
 
     $column(layoutSheet.spacingBig, style({ width: '100%', maxWidth: '550px', margin: '0 auto', alignItems: 'center' }))(
-      $row(style({ flex: 1, alignItems: 'center', placeContent: 'center', zIndex: 1 }))(
-        $discoverIdentityDisplay({
-          address: config.account,
-          avatarSize: 100,
-          labelSize: '1.5em'
-        }),
-
-        config.$actions || empty(),
-      ),
+      config.$accountDisplay,
 
       $ButtonToggle.default({
         $container: $ButtonToggle.$defaulContainer(style({ alignSelf: 'center', })),

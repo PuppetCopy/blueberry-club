@@ -231,7 +231,6 @@ export async function getCompetitionCumulativeRoi(queryParams: IRequestCompetiti
   const dateNow = unixTimestampNow()
 
   const competitionAccountListQuery = fetchTrades({ ...queryParams, offset: 0, pageSize: 1000 }, async (params) => {
-    console.log(params.from)
     const res = await arbitrumGraphDev(gql(`
 
 query {
@@ -254,7 +253,7 @@ query {
     }) 
     : querySubgraph(queryParams, `
       {
-        pricefeeds(where: { timestamp: ${Math.floor(queryParams.to / intervalTimeMap.MIN5) } }) {
+        pricefeeds(where: { timestamp: ${Math.floor((queryParams.to / intervalTimeMap.MIN5) * 300) } }) {
           id
           timestamp
           tokenAddress

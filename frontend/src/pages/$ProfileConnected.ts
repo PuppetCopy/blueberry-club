@@ -1,11 +1,11 @@
-import { Behavior } from "@aelea/core"
+import { Behavior, combineArray } from "@aelea/core"
 import { $text, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
-import { $column, $row, layoutSheet } from "@aelea/ui-components"
+import { $column, $icon, $row, layoutSheet } from "@aelea/ui-components"
 
 import { CHAIN, IWalletLink, IWalletName } from "@gambitdao/wallet-link"
-import { map } from "@most/core"
-import { IAccountStakingStore } from "@gambitdao/gbc-middleware"
+import { awaitPromises, map, now, switchLatest } from "@most/core"
+import { IAccountStakingStore, LAB_CHAIN } from "@gambitdao/gbc-middleware"
 import { $ButtonPrimary, $ButtonSecondary, $defaultButtonSecondary, $defaultMiniButtonSecondary } from "../components/form/$Button"
 import { $labItem } from "../logic/common"
 import { BrowserStore } from "../logic/store"
@@ -13,7 +13,14 @@ import { $IntermediateConnectButton } from "../components/$ConnectAccount"
 import { IRequestAccountApi, IRequestAccountTradeListApi, IRequestPageApi, IStake, ITradeOpen, ITradeSettled } from "@gambitdao/gmx-middleware"
 import { $Profile } from "./$Profile"
 import { Stream } from "@most/types"
-import { $Link, $anchor } from "@gambitdao/ui-components"
+import { $Link, $anchor, $IntermediateTx } from "@gambitdao/ui-components"
+import { $labLogo } from "../common/$icons"
+import { pallete } from "@aelea/ui-components-theme"
+import { $caretDown } from "../elements/$icons"
+import { $Popover } from "../components/$Popover"
+import { $discoverIdentityDisplay } from "../components/$AccountProfile"
+import { ContractTransaction } from "@ethersproject/contracts"
+import { connectLab } from "../logic/contract/gbc"
 
 
 export interface IAccount {
@@ -34,6 +41,9 @@ export const $ProfileConnected = (config: IAccount) => component((
   [requestAccountTradeList, requestAccountTradeListTether]: Behavior<IRequestAccountTradeListApi, IRequestAccountTradeListApi>,
   [requestAccountOpenTradeList, requestAccountOpenTradeListTether]: Behavior<IRequestAccountApi, IRequestAccountApi>,
 
+  [clickSetIdentityPopover, clickSetIdentityPopoverTether]: Behavior<any, any>,
+  [setMainBerry, setMainBerryTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
+
 ) => {
 
 
@@ -51,17 +61,65 @@ export const $ProfileConnected = (config: IAccount) => component((
             accountTradeList: config.accountTradeList,
             walletLink: config.walletLink,
             account: w3p.address,
-            $actions: $Link({
-              $content: $anchor(
-                $ButtonSecondary({
-                  $container: $defaultMiniButtonSecondary,
-                  $content: $text('Wardrobe')
-                })({}),
+            $accountDisplay: $Popover({
+              $target: $row(layoutSheet.spacing, style({ flex: 1, alignItems: 'center', placeContent: 'center', zIndex: 1 }))(
+                $discoverIdentityDisplay({
+                  address: w3p.address,
+                  avatarSize: 100,
+                  labelSize: '1.5em'
+                }),
+                $column(layoutSheet.spacing)(
+                  $ButtonSecondary({
+                    $container: $defaultMiniButtonSecondary,
+                    $content: $row(layoutSheet.spacingTiny, style({ alignItems: 'center', cursor: 'pointer' }))(
+                      $icon({ $content: $labLogo, width: '16px', fill: pallete.middleground, viewBox: '0 0 32 32' }),
+                      $text('Set Identity'),
+                      // $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginTop: '3px' }), viewBox: '0 0 32 32' }),
+                    )
+                  })({
+                    click: clickSetIdentityPopoverTether()
+                  }),
+                  $Link({
+                    $content: $anchor(
+                      $ButtonSecondary({
+                        $container: $defaultMiniButtonSecondary,
+                        $content: $row(layoutSheet.spacingTiny, style({ alignItems: 'center', cursor: 'pointer' }))(
+                          $icon({ $content: $labLogo, width: '16px', fill: pallete.middleground, viewBox: '0 0 32 32' }),
+                          $text('Wardrobe')
+                        )
+                      })({}),
+                    ),
+                    url: '/p/wardrobe', route: config.parentRoute
+                  })({
+                    click: changeRouteTether()
+                  })
+                ),
+                
               ),
-              url: '/p/wardrobe', route: config.parentRoute
-            })({
-              click: changeRouteTether()
-            }),
+              $popContent: map(() => {
+                const connect = connectLab(config.walletLink.provider)
+
+
+                return $column(
+                  
+                  // switchLatest(awaitPromises(combineArray(async (contract, berry) => {
+                  //   const mainId = account ? (await contract.getDataOf(account).catch(() => null))?.tokenId.toNumber() : null
+                  //   const disabled = now(berry === null || berry?.id === w3p.address)
+
+                  //   return $ButtonSecondary({ $content: $text(`Set PFP`), disabled })({
+                  //     click: setMainBerryTether(map(async () => {
+                  //       return (await contract.chooseMain(berry!.id))
+                  //     }))
+                  //   })
+                  // }, connect.profile.contract, selectedBerry))),
+
+                  $IntermediateTx({
+                    chain: LAB_CHAIN,
+                    query: setMainBerry
+                  })({}),
+                )
+              }, clickSetIdentityPopover)
+            })({}),
           })({
             requestAccountTradeList: requestAccountTradeListTether(),
             requestAccountOpenTradeList: requestAccountOpenTradeListTether(),

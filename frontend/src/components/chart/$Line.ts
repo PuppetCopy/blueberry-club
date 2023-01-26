@@ -77,7 +77,6 @@
 
 //         const priceSacle = api.priceScale()
 
-//         // console.log(priceSacle.options())
 
 
 

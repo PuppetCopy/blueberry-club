@@ -3,7 +3,7 @@ import { AnimationFrames } from "@aelea/dom"
 import { Disposable, Scheduler, Sink, Stream } from "@most/types"
 import { at, awaitPromises, constant, continueWith, empty, filter, map, merge, multicast, now, recoverWith, switchLatest, zipArray } from "@most/core"
 import { intervalTimeMap, USD_DECIMALS } from "./constant"
-import { IRequestPageApi, IRequestPagePositionApi, IRequestSortApi, ITokenDescription, ITokenTrade } from "./types"
+import { IRequestPageApi, IRequestPagePositionApi, IRequestSortApi, ITokenDescription } from "./types"
 import { keccak256 } from "@ethersproject/solidity"
 import { ClientOptions, createClient, OperationContext, TypedDocumentNode } from "@urql/core"
 import { CHAIN, EXPLORER_URL, NETWORK_METADATA } from "@gambitdao/wallet-link"
@@ -53,11 +53,11 @@ const readableTinyNumber = Intl.NumberFormat("en-US", { maximumSignificantDigits
 export function readableNumber(ammount: number | bigint) {
   const absAmount = typeof ammount === 'bigint' ? ammount > 0n ? ammount : -ammount : Math.abs(ammount)
 
-  if (absAmount > 1000) {
+  if (absAmount >= 1000) {
     return readableLargeNumber.format(ammount)
   }
 
-  if (absAmount > 1) {
+  if (absAmount >= 1) {
     return readableSmallNumber.format(ammount)
   }
 
@@ -369,7 +369,6 @@ class WithAnimationFrameSink<T> implements Sink<T> {
     }
 
     this.latestPendingFrame = this.afp.requestAnimationFrame(() => {
-      // console.log(this.latestPendingFrame)
       this.latestPendingFrame = -1
       eventThenEnd(time, this.sink, value)
     })

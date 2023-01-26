@@ -231,7 +231,7 @@ export const $TradePnlHistory = (config: ITradePnlPreview) => component((
               leftPriceScale: {
                 scaleMargins: {
                   top: 0.15,
-                  bottom: 0.15,
+                  bottom: 0.05,
                 }
               },
               // rightPriceScale: {
@@ -253,7 +253,7 @@ export const $TradePnlHistory = (config: ITradePnlPreview) => component((
                 rightOffset: 0,
                 fixLeftEdge: true,
                 fixRightEdge: true,
-                
+                borderVisible: false,
                 // visible: false,
                 // rightBarStaysOnScroll: true,
               },

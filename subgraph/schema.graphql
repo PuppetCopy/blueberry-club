@@ -60,7 +60,7 @@ type Transfer @entity(immutable: true) {
   transaction: Transaction!
 }
 
-type TransferSingle @entity {
+type TransferSingle @entity(immutable: true) {
   id: ID!
   operator: String!
   from: Owner!

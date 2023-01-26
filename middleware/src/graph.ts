@@ -230,7 +230,7 @@ export const profile = O(
   })
 )
 
-export const competitionRoiAccountList = O(
+export const competitionCumulativeRoi = O(
   map(async (queryParams: IRequestCompetitionLadderApi): Promise<IProfileTradingResult> => {
 
     const queryCache = cache('cacheKey', intervalTimeMap.MIN5, async () => {

@@ -13,7 +13,7 @@ export const LIMIT_LEVERAGE = 1000000n
 export const MAX_LEVERAGE = 1000000n
 export const MIN_LEVERAGE = 11000n
 export const LEVERAGE_LIQUIDAITON = 1000000n
-export const DEDUCT_FOR_GAS = 4000000000000000n
+export const DEDUCT_USD_FOR_GAS = 10n ** 30n * 2n
 
 export const USD_PERCISION = 10n ** 30n
 export const LIQUIDATION_FEE = 10n ** 5n

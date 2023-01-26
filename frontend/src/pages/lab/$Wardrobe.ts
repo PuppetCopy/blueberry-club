@@ -64,7 +64,6 @@ export const $Wardrobe = (config: IBerryComp) => component((
   [setApproval, setApprovalTether]: Behavior<any, Promise<ContractTransaction>>,
 
   [hoverDownloadBtn, hoverDownloadBtnTether]: Behavior<INode, PointerEvent>,
-  [setMainBerry, setMainBerryTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
 
   [changeNetwork, changeNetworkTether]: Behavior<any, CHAIN>,
   [walletChange, walletChangeTether]: Behavior<IWalletName, IWalletName>,
@@ -260,17 +259,6 @@ export const $Wardrobe = (config: IBerryComp) => component((
               select: changeBerryTether()
             })
           }, tokenList)),
-
-          switchLatest(awaitPromises(combineArray(async (contract, account, berry) => {
-            const mainId = account ? (await contract.getDataOf(account).catch(() => null))?.tokenId.toNumber() : null
-            const disabled = now(berry === null || berry?.id === mainId)
-
-            return $ButtonSecondary({ $content: $text(`Set PFP`), disabled })({
-              click: setMainBerryTether(map(async () => {
-                return (await contract.chooseMain(berry!.id))
-              }))
-            })
-          }, connect.profile.contract, account, selectedBerry))),
         ),
       ),
 
@@ -469,7 +457,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
           $row(layoutSheet.spacing, style({ placeContent: 'flex-end' }))(
             $IntermediateTx({
               chain: LAB_CHAIN,
-              query: mergeArray([clickSave, setMainBerry, setApproval])
+              query: mergeArray([clickSave, setApproval])
             })({}),
           ),
         )
@@ -479,7 +467,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
     ),
 
     {
-      changeRoute, setMainBerry, changeNetwork, walletChange
+      changeRoute, changeNetwork, walletChange
     }
   ]
 })

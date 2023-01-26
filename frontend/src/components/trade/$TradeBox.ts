@@ -7,19 +7,21 @@ import {
   ITokenDescription, LIMIT_LEVERAGE, bnDiv,
   div, StateStream, getPnL, MIN_LEVERAGE, formatToBasis, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE,
   ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd, IPricefeed,
-  TRADE_CONTRACT_MAPPING, filterNull, ITradeOpen, zipState, MARGIN_FEE_BASIS_POINTS, abs, DEDUCT_FOR_GAS, getTokenAmount, safeDiv, getTokenDescription, ITrade, getAdjustedDetla
+  TRADE_CONTRACT_MAPPING, filterNull, ITradeOpen, zipState, MARGIN_FEE_BASIS_POINTS, abs, DEDUCT_USD_FOR_GAS,
+  getTokenAmount, safeDiv, getTokenDescription, ITrade, getAdjustedDetla
 } from "@gambitdao/gmx-middleware"
 import {
+  $alert,
   $anchor, $bear, $bull, $hintNumChange, $infoLabeledValue, $infoTooltipLabel, $IntermediatePromise,
   $openPositionPnlBreakdown, $PnlValue, $riskLiquidator, $spinner, $tokenIconMap, $tokenLabelFromSummary
 } from "@gambitdao/ui-components"
 import {
   merge, multicast, mergeArray, now, snapshot, map, switchLatest,
-  skipRepeats, empty, fromPromise, constant, startWith, skipRepeatsWith, awaitPromises, zip, sample, delay, tap
+  skipRepeats, empty, fromPromise, constant, startWith, skipRepeatsWith, awaitPromises, zip, sample, delay, recoverWith
 } from "@most/core"
 import { Stream } from "@most/types"
 import { $Slider } from "../$Slider"
-import { $ButtonPrimary, $ButtonPrimaryCtx, $ButtonSecondary, $defaultButtonPrimary, $defaultButtonSecondary, $defaultMiniButtonSecondary } from "../form/$Button"
+import { $ButtonPrimary, $ButtonPrimaryCtx, $ButtonSecondary, $defaultButtonPrimary, $defaultMiniButtonSecondary } from "../form/$Button"
 import { $Dropdown, $defaultSelectContainer } from "../form/$Dropdown"
 import { $caretDown } from "../../elements/$icons"
 import { getNativeTokenDescription, resolveAddress } from "../../logic/utils"
@@ -54,7 +56,6 @@ export interface ITradeParams {
   availableIndexLiquidityUsd: bigint
   indexTokenPrice: bigint
   walletBalance: bigint
-  walletBalanceUsd: bigint
 
   executionFee: bigint
   swapFee: bigint
@@ -176,11 +177,18 @@ export const $TradeBox = (config: ITradeBox) => component((
     collateralTokenPoolInfo, collateralTokenPrice, executionFee, fundingFee,
     indexTokenDescription, indexTokenPrice, inputTokenDescription, inputTokenPrice,
     isInputTokenApproved, isTradingEnabled, liquidationPrice, marginFee, nativeTokenPrice,
-    position, sizeDelta, swapFee, walletBalance, walletBalanceUsd
+    position, sizeDelta, swapFee, walletBalance
   } = config.tradeState
 
+  const walletBalanceUsd = skipRepeats(combineArray(params => {
+    const amountUsd = getTokenUsd(params.walletBalance, params.inputTokenPrice, params.inputTokenDescription.decimals)
 
-  const validationError = map((state) => {
+    return params.inputToken === AddressZero ? amountUsd - DEDUCT_USD_FOR_GAS : amountUsd
+  }, combineObject({ walletBalance, inputTokenPrice, inputToken, inputTokenDescription })))
+
+
+
+  const validationError = skipRepeats(map((state) => {
 
     if (state.leverage > LIMIT_LEVERAGE) {
       return `Leverage exceeds ${formatToBasis(LIMIT_LEVERAGE)}x`
@@ -193,7 +201,7 @@ export const $TradeBox = (config: ITradeBox) => component((
         return `Not enough liquidity. current capcity ${formatReadableUSD(state.availableIndexLiquidityUsd)}`
       }
 
-      if (state.collateralDelta > state.walletBalance + DEDUCT_FOR_GAS) {
+      if (state.collateralDeltaUsd > state.walletBalanceUsd) {
         return `Not enough ${state.inputTokenDescription.symbol} in connected account`
       }
 
@@ -224,7 +232,7 @@ export const $TradeBox = (config: ITradeBox) => component((
     }
 
     return null
-  }, combineObject({ leverage, position, liquidationPrice, isIncrease, indexTokenPrice, walletBalance, collateralDelta, collateralDeltaUsd, inputTokenDescription, collateralToken, sizeDeltaUsd, availableIndexLiquidityUsd, inputToken, collateralTokenPoolInfo, collateralTokenDescription, indexTokenDescription, isLong, }))
+  }, combineObject({ leverage, position, liquidationPrice, walletBalanceUsd, isIncrease, indexTokenPrice, collateralDelta, collateralDeltaUsd, inputTokenDescription, collateralToken, sizeDeltaUsd, availableIndexLiquidityUsd, inputToken, collateralTokenPoolInfo, collateralTokenDescription, indexTokenDescription, isLong, })))
 
 
   const pnlCrossHairTimeChange = replayLatest(multicast(startWith(null, skipRepeatsWith(((xsx, xsy) => xsx.time === xsy.time), crosshairMove))))
@@ -242,7 +250,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
   const clickMaxCollateralUsd = snapshot(state => {
     if (state.isIncrease) {
-      return state.walletBalanceUsd
+      return state.walletBalanceUsd - DEDUCT_USD_FOR_GAS
     }
 
     if (state.position.averagePrice === 0n) {
@@ -256,13 +264,13 @@ export const $TradeBox = (config: ITradeBox) => component((
   }, combineObject({ isIncrease, walletBalanceUsd, position }), clickMax)
 
 
-  const inTradeMode = replayLatest(multicast(combineArray((sizeDeltaUsd, collateralDeltaUsd) => {
+  const inTradeMode = replayLatest(multicast(skipRepeats(combineArray((sizeDeltaUsd, collateralDeltaUsd) => {
     if (sizeDeltaUsd === 0n && collateralDeltaUsd === 0n) {
       return false
     }
 
     return true
-  }, config.tradeConfig.sizeDeltaUsd, config.tradeConfig.collateralDeltaUsd)))
+  }, config.tradeConfig.sizeDeltaUsd, config.tradeConfig.collateralDeltaUsd))))
 
   const inputTokenChange = snapshot((collateralDeltaUsd, params) => {
     return collateralDeltaUsd
@@ -279,23 +287,10 @@ export const $TradeBox = (config: ITradeBox) => component((
   }, config.tradeConfig.focusMode))
 
 
-
-  const effectSize = switchLatest(map((focus) => {
-    if (focus === ITradeFocusMode.size) {
-      return empty()
-    }
-
-    const effects = mergeArray([slideLeverage, config.tradeState.indexTokenPrice])
-    return sample(config.tradeConfig.collateralDeltaUsd, effects)
-  }, config.tradeConfig.focusMode))
-
-
-
   const autoFillCollateralUsd = mergeArray([
     clickMaxCollateralUsd,
     resetTrade,
     skipRepeats(snapshot((state, sizeDeltaUsd) => {
-
       const size = sizeDeltaUsd + state.position.size
       const collateral = div(size, state.leverage)
       const positionCollateral = state.position.collateral - state.fundingFee
@@ -315,14 +310,23 @@ export const $TradeBox = (config: ITradeBox) => component((
 
       const totalCollateral = collateralDelta + state.swapFee + state.marginFee
 
-      if (state.isIncrease && totalCollateral > state.walletBalanceUsd) {
-        return state.walletBalanceUsd
-      }
+      // if (state.isIncrease && totalCollateral > state.walletBalanceUsd) {
+      //   return state.walletBalanceUsd
+      // }
 
       return totalCollateral
     }, combineObject({ position, leverage, fundingFee, walletBalanceUsd, isIncrease, swapFee, marginFee }), mergeArray([inputSizeDeltaUsd, effectCollateral])))
   ])
 
+
+  const effectSize = switchLatest(map((focus) => {
+    if (focus === ITradeFocusMode.size) {
+      return empty()
+    }
+
+    const effects = mergeArray([slideLeverage, config.tradeState.indexTokenPrice])
+    return sample(config.tradeConfig.collateralDeltaUsd, effects)
+  }, config.tradeConfig.focusMode))
 
   const autoFillSizeUsd = mergeArray([
     resetTrade,
@@ -351,6 +355,7 @@ export const $TradeBox = (config: ITradeBox) => component((
       const toDenominator = MARGIN_FEE_BASIS_POINTS * state.leverage + BASIS_POINTS_DIVISOR * BASIS_POINTS_DIVISOR
 
       const deltaAfterFees = toNumerator / toDenominator
+      console.log(deltaAfterFees)
       return deltaAfterFees
     }, combineObject({ leverage, position, fundingFee, swapFee, isIncrease }), mergeArray([inputCollateralDeltaUsd, effectSize, clickMaxCollateralUsd]))))
   ])
@@ -362,6 +367,14 @@ export const $TradeBox = (config: ITradeBox) => component((
   const autoFillSizeToken = snapshot((state, amountUsd) => {
     return getTokenAmount(amountUsd, state.indexTokenPrice, state.indexTokenDescription.decimals)
   }, combineObject({ indexTokenDescription, indexTokenPrice }), autoFillSizeUsd)
+
+  const reqTradeCtxQuery = map(req => req.ctxQuery, clickRequestTrade)
+
+  const ctxPendingDisable = startWith(false, switchLatest(map(ctxQuery => {
+    // const ctxQueryWwait = fromPromise(ctxQuery.then(req => req.wait()))
+    const ctxQueryStream = fromPromise(ctxQuery)
+    return startWith(true, constant(false, recoverWith(() => now(false), ctxQueryStream)))
+  }, reqTradeCtxQuery)))
 
   return [
     $card(style({ flexDirection: screenUtils.isDesktopScreen ? 'column' : 'column-reverse', padding: 0, gap: 0, background: theme.name === 'dark' ? 'rgb(0 0 0 / 15%)' : '' }))(
@@ -466,9 +479,9 @@ export const $TradeBox = (config: ITradeBox) => component((
             $row(layoutSheet.spacingTiny, style({ fontSize: '0.75em' }))(
               $text(style({ color: pallete.foreground }))(`Wallet`),
               $text(
-                zip((tokenDesc, balance) => {
-                  return readableNumber(formatFixed(balance, tokenDesc.decimals)) + (screenUtils.isDesktopScreen ? ` ${tokenDesc.symbol}` : '')
-                }, config.tradeState.inputTokenDescription, config.tradeState.walletBalance)
+                map(params => {
+                  return readableNumber(formatFixed(params.walletBalance, params.inputTokenDescription.decimals)) + (screenUtils.isDesktopScreen ? ` ${params.inputTokenDescription.symbol}` : '')
+                }, combineObject({ inputToken, walletBalance, inputTokenDescription }))
               ),
             ),
             $hintNumChange({
@@ -486,8 +499,13 @@ export const $TradeBox = (config: ITradeBox) => component((
                 }
 
                 const pnl = getPnL(state.isLong, state.position.averagePrice, state.indexTokenPrice, state.position.size)
+
+                if (state.position.size === abs(state.sizeDeltaUsd)) {
+                  return 0n
+                }
+
                 const adjustedPnlDelta = !state.isIncrease
-                  ? -getAdjustedDetla(state.position.size, abs(state.sizeDeltaUsd), pnl)
+                  ? getAdjustedDetla(state.position.size, abs(state.sizeDeltaUsd), pnl)
                   : 0n
 
                 const netCollateral = totalCollateral + adjustedPnlDelta
@@ -528,7 +546,6 @@ export const $TradeBox = (config: ITradeBox) => component((
                 }, config.tradeConfig.isIncrease, config.walletLink.wallet)),
                 value: {
                   value: config.tradeConfig.isIncrease,
-                  // $container: $defaultSelectContainer(style({ minWidth: '100px', right: 0 })),
                   $$option: map((isIncrease) => {
                     return $text(style({ fontSize: '0.85em' }))(isIncrease ? 'Deposit' : 'Withdraw')
                   }),
@@ -779,7 +796,6 @@ export const $TradeBox = (config: ITradeBox) => component((
               ),
               value: {
                 value: config.tradeConfig.isLong,
-                // $container: $defaultSelectContainer(style({ minWidth: '100px', right: 0 })),
                 $$option: map((isLong) => {
                   return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
                     $icon({ $content: isLong ? $bull : $bear, width: '18px', viewBox: '0 0 32 32' }),
@@ -955,7 +971,6 @@ export const $TradeBox = (config: ITradeBox) => component((
       $column(
         screenUtils.isDesktopScreen
           ? style({
-            minHeight: `100px`,
             marginTop: `-${BOX_SPACING - 5}px`,
             paddingTop: `${BOX_SPACING - 5}px`,
             placeContent: 'center',
@@ -966,7 +981,6 @@ export const $TradeBox = (config: ITradeBox) => component((
             borderRadius: `0px 0px ${BOX_SPACING}px ${BOX_SPACING}px`,
           })
           : style({
-            // height: `100px`,
             marginBottom: `-${BOX_SPACING - 5}px`,
             paddingBottom: `${BOX_SPACING - 5}px`,
             placeContent: 'center',
@@ -998,8 +1012,8 @@ export const $TradeBox = (config: ITradeBox) => component((
             const routerContractAddress = getContractAddress(TRADE_CONTRACT_MAPPING, w3p.chain, 'Router')
             const positionRouterAddress = getContractAddress(TRADE_CONTRACT_MAPPING, w3p.chain, 'PositionRouter')
 
-            return $column(style({ minHeight: '100px', flexDirection: screenUtils.isDesktopScreen ? 'column' : 'column-reverse' }))(
-              $row(layoutSheet.spacing, style({ padding: '16px', margin: 'auto 0', placeContent: 'space-between', alignItems: 'center' }), styleInline(map(mode => ({ height: '100px', display: mode ? 'flex' : 'none' }), inTradeMode)))(
+            return $column(style({ minHeight: '140px', flexDirection: screenUtils.isDesktopScreen ? 'column' : 'column-reverse' }))(
+              $row(layoutSheet.spacing, style({ flexDirection: screenUtils.isDesktopScreen ? 'column' : 'column-reverse', padding: '16px', margin: 'auto 0', placeContent: 'space-between' }), styleInline(map(mode => ({ height: '140px', display: mode ? 'flex' : 'none' }), inTradeMode)))(
                 $column(layoutSheet.spacingTiny)(
                   // $TextField({
                   //   label: 'Slippage %',
@@ -1025,7 +1039,6 @@ export const $TradeBox = (config: ITradeBox) => component((
 
                   $row(style({ placeContent: 'space-between' }))(
                     $infoTooltipLabel(
-
                       $column(layoutSheet.spacingSmall)(
                         $text('Collateral deducted upon your deposit including Borrow fee at the start of every hour. the rate changes based on utilization, it is calculated as (assets borrowed) / (total assets in pool) * 0.01%'),
 
@@ -1059,11 +1072,11 @@ export const $TradeBox = (config: ITradeBox) => component((
                   switchLatest(map(isIncrease => {
 
                     if (isIncrease) {
-                      return $row(layoutSheet.spacing)(
+                      return $row(style({ placeContent: 'space-between' }))(
                         $infoTooltipLabel(
                           $column(layoutSheet.spacingTiny)(
                             $text('BLUEBERRY Payback(Referral) code is used to provide a 10% payback'),
-                            $text('Payback accumulates every time you trade and is distributed once every week back to your account in ETH or AVAX.'),
+                            $text('Payback accumulates every time you trade and are distributed once every week back to your account in ETH or AVAX.'),
                             $row(layoutSheet.spacingTiny)(
                               $text(style({ color: pallete.foreground }))('Open + Close Payback'),
                               $text(style({ color: pallete.positive }))(map(params => formatReadableUSD(params.marginFee * 2000n / BASIS_POINTS_DIVISOR), combineObject({ marginFee })))
@@ -1084,7 +1097,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                       )
                     }
 
-                    return $row(layoutSheet.spacing)(
+                    return $row(style({ placeContent: 'space-between' }))(
                       $infoTooltipLabel(
                         $column(layoutSheet.spacingTiny)(
                           $text('BLUEBERRY Payback(Referral) code is used to provide a 10% payback'),
@@ -1116,7 +1129,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
                 ),
 
-                $column(layoutSheet.spacingSmall, style({ flex: 1, alignItems: 'flex-end' }))(
+                $column(layoutSheet.spacingSmall)(
                   switchLatest(combineArray((isPluginEnabled, isEnabled, isInputTokenApproved, inputToken, inputTokenDesc) => {
                     if (!isPluginEnabled || !isEnabled) {
                       return $Popover({
@@ -1189,25 +1202,35 @@ export const $TradeBox = (config: ITradeBox) => component((
                       })
                     }
 
-                    return $row(layoutSheet.spacingSmall)(
+                    const disableButtonVlidation = map((error) => {
+                      if (error) {
+                        return true
+                      }
+
+                      return false
+                    }, validationError)
+                    return $row(layoutSheet.spacingSmall, style({ alignItems: 'center', flex: 1 }))(
+                      $row(style({ flex: 1 }))(
+                        switchLatest(map(error => {
+                          if (error === null) {
+                            return empty()
+                          }
+
+                          return $alert(
+                            $text(style({ overflow: 'hidden', maxWidth: '225px', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }))(error)
+                          )
+                        }, validationError))
+                      ),
                       style({ padding: '8px', fontSize: '.75em', alignSelf: 'center' })(
                         $ButtonSecondary({ $content: $text('Reset') })({
                           click: clickResetTradeModeTether()
                         })
                       ),
-                      $ButtonPrimaryCtx({
-                        ctx: map(req => req.ctxQuery, clickRequestTrade),
-                        disabled: map((error) => {
-
-                          if (error) {
-                            return true
-                          }
-
-                          return false
-                        }, validationError),
+                      $ButtonPrimary({
+                        disabled: combineArray((isDisabled, isCtxPending) => {
+                          return isDisabled || isCtxPending
+                        }, disableButtonVlidation, ctxPendingDisable),
                         $content: $text(map(params => {
-                          // const outputToken = getTokenDescription(params.indexToken)
-
                           let modLabel: string
 
                           if (params.position.averagePrice > 0n) {
@@ -1221,13 +1244,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                           }
 
                           return modLabel
-                          // if (screenUtils.isMobileScreen) {
-                          //   return modLabel
-                          // }
-
-                          // return `${modLabel} ${params.isLong ? 'Long' : 'Short'} ${outputToken.symbol}`
-                        }, combineObject({ position, sizeDeltaUsd, isIncrease }))),
-                        alert: validationError
+                        }, combineObject({ position, sizeDeltaUsd, isIncrease })))
                       })({
                         click: clickRequestTradeTether(
                           snapshot((state) => {
@@ -1296,7 +1313,6 @@ export const $TradeBox = (config: ITradeBox) => component((
 
                                 // gasPrice.then(xx => {
                                 //   const usdAmount = getTokenUsd(xx.toBigInt(), state.nativeTokenPrice, 18)
-                                //   console.log(formatReadableUSD(usdAmount))
                                 // })
 
                                 // const gasLimit = positionRouter.estimateGas.createIncreasePosition(
@@ -1371,7 +1387,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                 ),
               ),
 
-              styleInline(map(mode => ({ height: '100px', display: mode ? 'none' : 'flex' }), inTradeMode))(
+              styleInline(map(mode => ({ height: '140px', borderRadius: '20px', overflow: 'hidden', display: mode ? 'none' : 'flex' }), inTradeMode))(
                 $IntermediatePromise({
                   $loader: $row(
                     $spinner
@@ -1454,12 +1470,12 @@ export const $TradeBox = (config: ITradeBox) => component((
                           leftPriceScale: {
                             scaleMargins: {
                               top: 0.38,
-                              bottom: 0.1,
+                              bottom: 0,
                             }
                           },
-                          timeScale: {
-                            visible: false
-                          }
+                          // timeScale: {
+                          //   visible: false
+                          // }
                         },
                         latestPrice: config.tradeState.indexTokenPrice
                       })({

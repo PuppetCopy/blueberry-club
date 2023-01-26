@@ -55,7 +55,6 @@ export interface IAddtoCalendarButton {
 }
 
 export const $addToCalendar = (config: IAddtoCalendarButton) => {
-  console.log(String(new Date(config.time)))
 
   const isApple = ['iPad Simulator', 'iPhone Simulator', 'iPod Simulator', 'iPad', 'iPhone', 'iPod'].includes(navigator.platform) || (navigator.userAgent.includes("Mac") && "ontouchend" in document)
   const href = isApple

@@ -176,7 +176,8 @@ export enum IAttributeMappings {
   xMithical = 217,
   "Scary Night" = 218,
   Skeleton = 219,
-  Birthday = 220
+  Birthday = 220,
+  "Marine Shirt" = 221,
 }
 
 
@@ -213,6 +214,8 @@ export enum IAttributeExpression {
 
   HIGH = IAttributeMappings.High,
 }
+
+
 
 
 export enum IAttributeClothes {
@@ -275,7 +278,8 @@ export enum IAttributeClothes {
   GLP_SHIRT = IAttributeMappings["GLP Shirt"],
   SUMMER_BUOY = IAttributeMappings["Summer Buoy"],
   ULTRASOUND_BAT = IAttributeMappings["Ultra Sound BLAT"],
-  SKELETON = IAttributeMappings.Skeleton
+  SKELETON = IAttributeMappings.Skeleton,
+  MARINE_SHIRT = IAttributeMappings["Marine Shirt"]
 }
 
 

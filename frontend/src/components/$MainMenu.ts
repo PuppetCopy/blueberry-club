@@ -69,7 +69,7 @@ export const $MainMenu = ({ walletLink, parentRoute, chainList, showAccount = tr
       // $Link({ $content: $pageLink($gmxLogo, 'Trade'), url: '/p/trade', disabled: now(false), route: parentRoute.create({ fragment: 'feefwefwe' }) })({
       click: routeChangeTether()
     }),
-    $Link({ $content: $pageLink($stackedCoins, 'Leaderboard'), disabled: now(true), url: '/p/leaderboard', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
+    $Link({ $content: $pageLink($stackedCoins, 'Leaderboard'), url: '/p/leaderboard', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
       click: routeChangeTether()
     }),
     $Link({ $content: $pageLink($labLogo, 'Lab'), url: '/p/lab', route: parentRoute.create({ fragment: 'feefwefwe' }) })({

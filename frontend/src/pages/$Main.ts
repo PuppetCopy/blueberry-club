@@ -1,7 +1,7 @@
 import { Behavior } from "@aelea/core"
 import { $element, $node, $text, component, eventElementTarget, style } from "@aelea/dom"
 import * as router from '@aelea/router'
-import { $column, designSheet, layoutSheet, screenUtils } from '@aelea/ui-components'
+import { $column, $row, designSheet, layoutSheet, screenUtils } from '@aelea/ui-components'
 import {
   gmxSubgraph, ARBITRUM_ADDRESS, AVALANCHE_ADDRESS,
   ETH_ADDRESS_REGEXP, IRequestAccountApi, intervalTimeMap, IRequestPricefeedApi, IRequestCompetitionLadderApi, IRequestAccountTradeListApi
@@ -27,6 +27,7 @@ import { createLocalStorageChain } from "../logic/store"
 import { globalProviderMap } from "../logic/provider"
 import { $Leaderboard } from "./$Leaderboard"
 import { $Treasury } from "./$Treasury"
+import { $discoverIdentityDisplay } from "../components/$AccountProfile"
 
 
 const popStateEvent = eventElementTarget('popstate', window)
@@ -104,7 +105,7 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
     accountOpenTradeList: gmxSubgraph.accountOpenTradeList(requestAccountOpenTradeList),
     latestPriceMap: gmxSubgraph.latestPriceMap(requestAccountTradeList),
 
-    competitionCumulativeRoi: blueberrySubgraph.competitionRoiAccountList(requestCompetitionLadder),
+    competitionCumulativeRoi: blueberrySubgraph.competitionCumulativeRoi(requestCompetitionLadder),
     profilePickList: blueberrySubgraph.profilePickList(requestProfilePickList),
   }
 
@@ -195,6 +196,13 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
                   const account = urlFragments[urlFragments.length - 2].toLowerCase()
 
                   return $Profile({
+                    $accountDisplay: $row(layoutSheet.spacing, style({ flex: 1, alignItems: 'center', placeContent: 'center', zIndex: 1 }))(
+                      $discoverIdentityDisplay({
+                        address: account,
+                        avatarSize: 100,
+                        labelSize: '1.5em'
+                      }),
+                    ),
                     account: account,
                     parentUrl: `/p/profile/${account}/`,
                     accountTradeList: clientApi.accountTradeList,

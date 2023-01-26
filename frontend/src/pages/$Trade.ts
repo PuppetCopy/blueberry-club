@@ -7,7 +7,7 @@ import {
   getNextLiquidationPrice, getMarginFees, STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, TAX_BASIS_POINTS,
   getDenominator, USD_PERCISION, formatReadableUSD, timeSince, getPositionKey, IPositionIncrease,
   IPositionDecrease, getPnL, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE, getFundingFee, filterNull, getTokenUsd, getLiquidationPrice,
-  ITokenIndex, ITokenStable, ITokenInput, TradeStatus, LIMIT_LEVERAGE, div, readableDate, TRADE_CONTRACT_MAPPING, getTokenAmount, abs, IRequestAccountApi, CHAIN_ADDRESS_MAP, DEDUCT_FOR_GAS, getSafeMappedValue, getTokenDescription, getFeeBasisPoints, getAdjustedDetla,
+  ITokenIndex, ITokenStable, ITokenInput, TradeStatus, LIMIT_LEVERAGE, div, readableDate, TRADE_CONTRACT_MAPPING, getTokenAmount, abs, IRequestAccountApi, CHAIN_ADDRESS_MAP, getSafeMappedValue, getTokenDescription, getFeeBasisPoints, getAdjustedDetla as getAdjustedDelta,
 } from "@gambitdao/gmx-middleware"
 
 import { map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, snapshot, zip, combine, tap, constant } from "@most/core"
@@ -104,8 +104,6 @@ export const $Trade = (config: ITradeComponent) => component((
 
   const executionFee = replayLatest(multicast(tradeReader.executionFee))
 
-  // const chain = config.walletLink.network
-
   const tradingStore = config.store.craete('trade', 'tradeBox')
 
   const timeFrameStore = tradingStore.craete('portfolio-chart-interval', intervalTimeMap.MIN60)
@@ -176,9 +174,6 @@ export const $Trade = (config: ITradeComponent) => component((
   const walletBalance = replayLatest(multicast(awaitPromises(combine(async (token, provider) => {
     if (provider instanceof Web3Provider) {
       const balanceAmount = await getErc20Balance(token, provider)
-      if (token === AddressZero) {
-        return balanceAmount - DEDUCT_FOR_GAS
-      }
 
       return balanceAmount
     }
@@ -199,7 +194,6 @@ export const $Trade = (config: ITradeComponent) => component((
 
   let latestKey = ''
   const positionKey = filterNull(map(params => {
-    console.log(params)
     const collateralToken = params.isLong ? params.indexToken : params.collateralToken
     const address = params.account || AddressZero
     const key = getPositionKey(address, collateralToken, params.indexToken, params.isLong)
@@ -301,10 +295,6 @@ export const $Trade = (config: ITradeComponent) => component((
   const collateralTokenDescription = map((address) => getTokenDescription(address), collateralToken)
 
 
-  const walletBalanceUsd = combineArray(params => {
-    return getTokenUsd(params.walletBalance, params.inputTokenPrice, params.inputTokenDescription.decimals)
-  }, combineObject({ walletBalance, inputTokenPrice, inputTokenDescription }))
-
   const collateralTokenPoolInfo = replayLatest(multicast(tradeReader.getTokenPoolInfo(collateralToken)))
 
 
@@ -327,11 +317,18 @@ export const $Trade = (config: ITradeComponent) => component((
       return 0n
     }
 
-    const adjustedPnlDelta = params.position.size > 0n && abs(params.sizeDeltaUsd) > 0n
-      ? getAdjustedDetla(params.position.size, abs(params.sizeDeltaUsd), getPnL(params.isLong, params.position.averagePrice, params.indexTokenPrice, params.position.size))
-      : 0n
 
-    const amountUsd = abs(params.collateralDeltaUsd) + adjustedPnlDelta > 0n ? adjustedPnlDelta : 0n
+    let amountUsd = abs(params.collateralDeltaUsd)
+
+    if (!params.isIncrease) {
+      const pnl = getPnL(params.isLong, params.position.averagePrice, params.indexTokenPrice, params.position.size)
+      const adjustedDelta = getAdjustedDelta(params.position.size, abs(params.sizeDeltaUsd), pnl)
+
+      if (adjustedDelta > 0n) {
+        amountUsd = amountUsd + adjustedDelta
+      }
+    }
+
 
     const usdgAmount = amountUsd * getDenominator(params.inputTokenDescription.decimals) / USD_PERCISION
 
@@ -399,12 +396,11 @@ export const $Trade = (config: ITradeComponent) => component((
 
     const pnl = getPnL(params.isLong, params.position.averagePrice, params.indexTokenPrice, params.position.size)
     // const adjustedPnlDelta = pnl < 0n ? params.sizeDeltaUsd * pnl / stake.size : pnl
-    // console.log(formatReadableUSD(adjustedPnlDelta))
 
     return getNextAveragePrice(params.isLong, params.position.size, params.indexTokenPrice, pnl, params.sizeDeltaUsd)
   }, combineObject({ position, isIncrease, indexTokenPrice, sizeDeltaUsd, isLong }))
 
-  const liquidationPrice = map(params => {
+  const liquidationPrice = skipRepeats(map(params => {
     const stake = params.position
     if (params.position.averagePrice === 0n) {
       if (params.sizeDeltaUsd === 0n) {
@@ -418,7 +414,7 @@ export const $Trade = (config: ITradeComponent) => component((
     const price = getNextLiquidationPrice(params.isLong, stake.size, stake.collateral, entryPrice, stake.entryFundingRate, params.collateralTokenPoolInfo.cumulativeRate, pnl, params.sizeDeltaUsd, params.collateralDeltaUsd)
 
     return price
-  }, combineObject({ position, isIncrease, collateralDeltaUsd, collateralTokenPoolInfo, sizeDeltaUsd, averagePrice, indexTokenPrice, indexTokenDescription, isLong }))
+  }, combineObject({ position, isIncrease, collateralDeltaUsd, collateralTokenPoolInfo, sizeDeltaUsd, averagePrice, indexTokenPrice, indexTokenDescription, isLong })))
 
 
   const requestPricefeed = combineArray((chain, tokenAddress, interval): IRequestPricefeedApi => {
@@ -640,7 +636,6 @@ export const $Trade = (config: ITradeComponent) => component((
               liquidationPrice,
               executionFee,
               walletBalance,
-              walletBalanceUsd,
             }
           })({
             leverage: changeLeverageTether(),

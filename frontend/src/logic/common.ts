@@ -133,44 +133,6 @@ export const switchOp: ISwitchOpCurry2 = curry2(function <T, R>(s: Stream<T>, oo
 
 
 
-export function readContractMapping2<TProvider extends BaseProvider, TMap, TCmap extends TContractMapping<TMap>, TContract extends typeof ContractFactory>(
-  provider: Stream<TProvider>,
-  contractCtr: TContract,
-  contractMap: TCmap,
-  contractName: keyof TMap
-  // @ts-ignore
-) {
-
-  const contract = awaitPromises(map(async (provider) => {
-    const chain = (await provider.getNetwork()).chainId as CHAIN
-    const address = getContractAddress(contractMap, chain, contractName)
-
-    if (address === null) {
-      return null
-    }
-
-    // @ts-ignore
-    const contract = contractCtr.connect(address, provider instanceof Web3Provider ? provider.getSigner() : provider)
-
-    return contract
-  }, provider))
-
-  // @ts-ignore
-  type reType = ReturnType<TContract['connect']>
-
-  // const address = getContractAddress(contractMap, provider.network.chainId, contractName)
-
-  // if (address === null) {
-  //   throw new Error('no contract matched')
-  // }
-
-  // // @ts-ignore
-  // const contract = contractCtr.connect(address, provider instanceof Web3Provider ? provider.getSigner() : provider)
-
-
-  return switchOp(contract)
-}
-
 export function readContract<T extends string, TContract extends typeof ContractFactory, TProvider extends BaseProvider>(
   contractCtr: TContract,
   provider: Stream<TProvider>,

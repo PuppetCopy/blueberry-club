@@ -3,20 +3,22 @@ import { $text, attr, component, nodeEvent, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
 import { $column, $row, $seperator, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { colorAlpha, pallete } from '@aelea/ui-components-theme'
-import { combine, empty, map, multicast, snapshot, take } from '@most/core'
+import { combine, empty, map, multicast, snapshot, take, zip } from '@most/core'
 import { Stream } from '@most/types'
-import { formatReadableUSD, formatFixed, unixTimestampNow, IRequestCompetitionLadderApi, getChainName, BASIS_POINTS_DIVISOR, getMarginFees } from '@gambitdao/gmx-middleware'
+import { formatReadableUSD, formatFixed, unixTimestampNow, IRequestCompetitionLadderApi, getChainName, BASIS_POINTS_DIVISOR, getMarginFees, div } from '@gambitdao/gmx-middleware'
 import { $alertTooltip, countdown } from './$rules'
 import { CHAIN, IWalletLink } from '@gambitdao/wallet-link'
 import { $AccountLabel, $accountPreview, $profilePreview } from '../../components/$AccountProfile'
 import { BLUEBERRY_REFFERAL_CODE, IProfile, IProfileTradingList, IProfileTradingResult, TOURNAMENT_START_END, TOURNAMENT_START_PERIOD } from '@gambitdao/gbc-middleware'
-import { $anchor, $infoLabel, $infoTooltipLabel, $Link } from '@gambitdao/ui-components'
+import { $anchor, $infoTooltipLabel, $Link } from '@gambitdao/ui-components'
 import { $berryByToken } from '../../logic/common'
 import { $CardTable } from '../../components/$common'
 import { IProfileActiveTab } from '../$Profile'
+import { $addToCalendar } from '../../elements/$common'
 
+const MAX_COLLATERAL = 1000000000000000000000000000000000n
 
-const prizeLadder: string[] = ['2200', '1100', '550', ...Array(15).fill('110')]
+const prizeRatioLadder: bigint[] = [2000n, 1000n, 500n, ...Array(7).fill(div(750n, 7n) / BASIS_POINTS_DIVISOR)]
 
 
 export interface ICompetitonTopCumulative {
@@ -33,13 +35,13 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
   [routeChange, routeChangeTether]: Behavior<any, string>,
   [requestCompetitionLadder, requestCompetitionLadderTether]: Behavior<number, IRequestCompetitionLadderApi>,
 ) => {
-  const start = TOURNAMENT_START_PERIOD
+  // const start = TOURNAMENT_START_PERIOD
+  const start = 0
   const end = TOURNAMENT_START_END
 
-  const competitionCumulativeRoi = multicast(config.competitionCumulativeRoi)
   const tableList = replayLatest(map(res => {
     return res.list
-  }, competitionCumulativeRoi))
+  }, config.competitionCumulativeRoi))
 
   const newLocal = take(1, tableList)
   // const requestProfilePickList = map(list => list.page.map(x => x.account), tableList)
@@ -74,37 +76,44 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
     const now = unixTimestampNow()
     const ended = end < now
 
-    return start > now
-      ? $column(style({ alignItems: 'center' }))(
-        $text(`Starting in`),
-        $text(style({ fontWeight: 'bold', fontSize: '3em' }))(countdown(start)),
-      )
-      : $column(layoutSheet.spacingSmall)(
-        $column(screenUtils.isDesktopScreen ? layoutSheet.spacingBig : layoutSheet.spacing, style({ flexDirection: screenUtils.isDesktopScreen ? 'row' : 'column', fontSize: '1.15em', alignItems: 'center', placeContent: 'center' }))(
-          ended
-            ? $text(style({ color: ended ? '' : pallete.indeterminate }))(
-              `Competition has ended!`
-            )
-            : $row(layoutSheet.spacing)(
-              $column(style({ textAlign: 'right' }))(
-                $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
-                  $text(style({ fontSize: '2.2em', fontWeight: 'bold', color: pallete.primary, textShadow: `1px 1px 50px ${colorAlpha(pallete.primary, .45)}, 1px 1px 50px ${colorAlpha(pallete.primary, .25)} ` }))('#TopBlueberry'),
-                ),
-              ),
-            ),
-          $column(
+    return $column(layoutSheet.spacing)(
+      $column(screenUtils.isDesktopScreen ? layoutSheet.spacingBig : layoutSheet.spacing, style({ flexDirection: screenUtils.isDesktopScreen ? 'row' : 'column', fontSize: '1.15em', alignItems: 'center', placeContent: 'center' }))(
+        $row(layoutSheet.spacing)(
+          $column(style({ textAlign: 'right' }))(
             $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
-              $text(style({ fontSize: '1.25em', color: ended ? '' : pallete.indeterminate }))('Beta LIVE!'),
+              $text(style({ fontSize: '2.35em', fontWeight: 'bold', color: pallete.primary, textShadow: `1px 1px 50px ${colorAlpha(pallete.primary, .45)}, 1px 1px 50px ${colorAlpha(pallete.primary, .25)} ` }))('#TopBlueberry'),
+            ),
+          ),
+        ),
+        ended
+          ? $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+            $addToCalendar({
+              // time: start,
+              time: new Date(Date.UTC(new Date().getFullYear(), 1, 1, 16)),
+              title: 'Blueberry Trading Compeition',
+              description: `Monthly trading competitions will be held. These tournaments will offer cash prizes, unique lab items, and more as rewards for traders who compete and win.  \n\n${document.location.href}`
+            }),
+            $column(
+              $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
+                $text(style({ fontSize: '1.25em' }))('Next Cycle!'),
+                $text(style({ color: pallete.foreground }))('Starting in')
+              ),
+              $text(style({ fontSize: '1.25em' }))(countdown(Date.UTC(new Date().getFullYear(), 1, 1, 16) / 1000))
+            )
+          )
+          : $column(
+            $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
+              $text(style({ fontSize: '1.25em', color: pallete.indeterminate }))('Beta LIVE!'),
               $text(style({ color: pallete.foreground }))('Ending in')
             ),
             $text(style({ fontSize: '1.25em' }))(countdown(end))
           )
-        ),
+      ),
 
-        $anchor(style({ fontSize: '.65em', placeSelf: 'center' }), attr({ href: 'https://medium.com/@gmx.io/' }))(
-          $text('$50,000 GBC #GAMBIT ROI Trading Contest')
-        )
+      $anchor(style({ fontSize: '.65em', placeSelf: 'center' }), attr({ href: 'https://medium.com/@gmx.io/' }))(
+        $text('$50,000 GBC #GAMBIT ROI Trading Contest')
       )
+    )
 
   }
 
@@ -124,8 +133,8 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
   )
 
   const prizePool = map(res => {
-    return formatReadableUSD(getMarginFees(res.size) * 1500n / BASIS_POINTS_DIVISOR)
-  }, competitionCumulativeRoi)
+    return getMarginFees(res.size) * 1500n / BASIS_POINTS_DIVISOR
+  }, config.competitionCumulativeRoi)
 
 
   return [
@@ -191,33 +200,33 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
         $row(style({ padding: screenUtils.isMobileScreen ? '0 12px' : '', marginBottom: '26px', alignItems: 'flex-end' }))(
           $column(layoutSheet.spacingSmall, style({ flex: 1 }))(
             $infoTooltipLabel(
-              `ROI (%) is defined as: Profits / Max Collateral (min $1000) * 100`,
+              `ROI (%) is defined as: Profits / Max Collateral (min $${formatReadableUSD(MAX_COLLATERAL)}) * 100`,
               $text(style({ fontWeight: 'bold', fontSize: '1.15em' }))(`Highest ROI (%)`)
             ),
             $row(layoutSheet.spacing)(
               $infoTooltipLabel($column(layoutSheet.spacingSmall)(
-                $text('The current amount accumulated through GMX rebate program, later to be rewarded to top traders in the end'),
-                $text('it is calculated as Aggregated size fee * 0.15% (BLUBERRY Referral)'),
-              ), 'Aggregated Size'),
+                $text('The amount traded using'),
+                $text('it is calculated as Traded Volume fees * 0.15% (BLUBERRY Referral)'),
+              ), 'Traded Volume'),
               $text(style({
                 fontSize: '1em',
                 textShadow: `${colorAlpha(pallete.message, .5)} 1px 1px 20px, ${colorAlpha(pallete.message, .5)} 0px 0px 20px`
               }))(map(res => {
                 return formatReadableUSD(res.size)
-              }, competitionCumulativeRoi))
+              }, config.competitionCumulativeRoi))
             ),
           ),
           $column(
             $row(layoutSheet.spacing, style({ placeContent: 'flex-end' }))(
               $infoTooltipLabel($column(layoutSheet.spacingSmall)(
-                $text('The current amount accumulated through GMX rebate program, later to be rewarded to top traders in the end'),
+                $text('The current accumulated amount from the GMX referral program will be rewarded to the top traders at the end'),
                 $text('it is calculated as Aggregated size fee * 0.15% (BLUBERRY Referral)'),
               ), 'Prize Pool'),
               $text(style({
                 color: pallete.positive,
                 fontSize: '2.25em',
                 textShadow: `${pallete.positive} 1px 1px 20px, ${pallete.positive} 0px 0px 20px`
-              }))(prizePool)
+              }))(map(amount => '$' + formatReadableUSD(amount), prizePool))
             ),
 
           )
@@ -234,10 +243,15 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
 
                 if (!pos.profile) {
                   return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
-                    $alertTooltip($text(`Unclaimed profile remains below until claimed`)),
-                    $anchor(clickAccountBehaviour)(
-                      $accountPreview({ address: pos.account })
-                    )
+                    $alertTooltip($text(`Unidentified profile remains below until claimed`)),
+                    $Link({
+                      $content: $accountPreview({ address: pos.account }),
+                      route: config.parentRoute.create({ fragment: 'fefwef' }),
+                      url: `/p/profile/${pos.account}/${IProfileActiveTab.TRADING.toLowerCase()}`
+                    })({ click: routeChangeTether() }),
+                    // $anchor(clickAccountBehaviour)(
+                    //   $accountPreview({ address: pos.account })
+                    // )
                     // style({ zoom: '0.7' })(
                     //   $alert($text('Unclaimed'))
                     // )
@@ -296,19 +310,19 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
                 $text(style({ fontSize: '.75em' }))('ROI %'),
               ),
               columnOp: style({ flex: 1, alignItems: 'flex-end', placeContent: 'flex-end' }),
-              $$body: snapshot((list, pos) => {
-                const prize = prizeLadder[list.offset + list.page.indexOf(pos)]
+              $$body: zip((prizePool, pos) => {
+                const prizeRatio = prizeRatioLadder[pos.rank - 1]
 
                 return $column(style({ alignItems: 'flex-end' }))(
-                  prize
+                  prizeRatio
                     ? $row(
                       // $avaxIcon,
-                      $text(style({ fontSize: '1.25em', color: pallete.positive }))(prize),
+                      $text(style({ fontSize: '1.25em', color: pallete.positive }))(formatReadableUSD(prizePool * prizeRatio / BASIS_POINTS_DIVISOR)),
                     ) : empty(),
 
                   $text(style({ fontSize: '.75em' }))(`${formatFixed(pos.roi, 2)}%`)
                 )
-              }, tableList)
+              }, prizePool)
             }
           ],
         })({
@@ -317,7 +331,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
               const params: IRequestCompetitionLadderApi = {
                 chain,
                 referralCode: BLUEBERRY_REFFERAL_CODE,
-                maxCollateral: 1000000000000000000000000000000000n,
+                maxCollateral: MAX_COLLATERAL,
                 from: start,
                 to: end,
                 offset: pageIndex * 20,
