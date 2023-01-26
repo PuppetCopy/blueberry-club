@@ -1,4 +1,4 @@
-import { Behavior, combineArray, combineObject, O, replayLatest } from "@aelea/core"
+import { Behavior, combineArray, combineObject, nullSink, O, replayLatest } from "@aelea/core"
 import { $node, $text, component, eventElementTarget, style, styleInline } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
@@ -6,11 +6,12 @@ import {
   AddressZero, formatFixed, intervalTimeMap, IPricefeed, IRequestPricefeedApi, ITrade, unixTimestampNow, ITradeOpen, BASIS_POINTS_DIVISOR, getNextAveragePrice,
   getNextLiquidationPrice, getMarginFees, STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, TAX_BASIS_POINTS,
   getDenominator, USD_PERCISION, formatReadableUSD, timeSince, getPositionKey, IPositionIncrease,
-  IPositionDecrease, getPnL, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE, getFundingFee, filterNull, getTokenUsd, getLiquidationPrice,
-  ITokenIndex, ITokenStable, ITokenInput, TradeStatus, LIMIT_LEVERAGE, div, readableDate, TRADE_CONTRACT_MAPPING, getTokenAmount, abs, IRequestAccountApi, CHAIN_ADDRESS_MAP, getSafeMappedValue, getTokenDescription, getFeeBasisPoints, getAdjustedDetla as getAdjustedDelta,
+  IPositionDecrease, getPnL, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE, getFundingFee, filterNull, getLiquidationPrice,
+  ITokenIndex, ITokenStable, ITokenInput, TradeStatus, LIMIT_LEVERAGE, div, readableDate, TRADE_CONTRACT_MAPPING, getTokenAmount, abs,
+  IRequestAccountApi, CHAIN_ADDRESS_MAP, getSafeMappedValue, getTokenDescription, getFeeBasisPoints, getAdjustedDelta,
 } from "@gambitdao/gmx-middleware"
 
-import { map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, snapshot, zip, combine, tap, constant } from "@most/core"
+import { map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, snapshot, zip, combine, tap, constant, periodic } from "@most/core"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
 import { $defaultTableContainer, $infoTooltip, $IntermediatePromise, $spinner, $Table, $txHashRef, invertColor } from "@gambitdao/ui-components"
 import { CandlestickData, LineStyle, Time } from "lightweight-charts"
@@ -853,6 +854,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
                   const initalList = trade ? [...trade.increaseList, ...trade.decreaseList] : []
+                  const newLocal = constant(initalList, periodic(1000)) as Stream<(RequestTrade | IPositionIncrease | IPositionDecrease)[]>
                   return $Table({
                     $rowContainer: screenUtils.isDesktopScreen
                       ? $row(layoutSheet.spacing, style({ padding: `2px 26px` }))
@@ -860,7 +862,7 @@ export const $Trade = (config: ITradeComponent) => component((
                     // headerCellOp: style({ padding: screenUtils.isDesktopScreen ? '15px 15px' : '6px 4px' }),
                     // cellOp: style({ padding: screenUtils.isDesktopScreen ? '4px 15px' : '6px 4px' }),
                     dataSource: mergeArray([
-                      now(initalList) as Stream<(RequestTrade | IPositionIncrease | IPositionDecrease)[]>,
+                      newLocal,
                       // constant(initalList, periodic(3000)),
                       requestTradeRow
                     ]),

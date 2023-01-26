@@ -30,7 +30,7 @@ export function formatToBasis(a: bigint): number {
   return formatFixed(a, 4)
 }
 
-export function getAdjustedDetla(size: bigint, sizeDeltaUsd: bigint, pnl: bigint) {
+export function getAdjustedDelta(size: bigint, sizeDeltaUsd: bigint, pnl: bigint) {
   return sizeDeltaUsd * pnl / size
 }
 

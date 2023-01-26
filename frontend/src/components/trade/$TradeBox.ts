@@ -8,7 +8,7 @@ import {
   div, StateStream, getPnL, MIN_LEVERAGE, formatToBasis, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE,
   ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd, IPricefeed,
   TRADE_CONTRACT_MAPPING, filterNull, ITradeOpen, zipState, MARGIN_FEE_BASIS_POINTS, abs, DEDUCT_USD_FOR_GAS,
-  getTokenAmount, safeDiv, getTokenDescription, ITrade, getAdjustedDetla
+  getTokenAmount, safeDiv, getTokenDescription, ITrade, getAdjustedDelta
 } from "@gambitdao/gmx-middleware"
 import {
   $alert,
@@ -504,7 +504,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                 }
 
                 const adjustedPnlDelta = !state.isIncrease
-                  ? getAdjustedDetla(state.position.size, abs(state.sizeDeltaUsd), pnl)
+                  ? getAdjustedDelta(state.position.size, abs(state.sizeDeltaUsd), pnl)
                   : 0n
 
                 const netCollateral = totalCollateral + adjustedPnlDelta
@@ -1302,7 +1302,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                                   }
                                 )).then(est => {
                                   // add 10% buffer
-                                  return est.toBigInt() * BASIS_POINTS_DIVISOR + 1000n / BASIS_POINTS_DIVISOR
+                                  return est.toBigInt() * 12000n / BASIS_POINTS_DIVISOR
                                 })
 
 
