@@ -355,7 +355,6 @@ export const $TradeBox = (config: ITradeBox) => component((
       const toDenominator = MARGIN_FEE_BASIS_POINTS * state.leverage + BASIS_POINTS_DIVISOR * BASIS_POINTS_DIVISOR
 
       const deltaAfterFees = toNumerator / toDenominator
-      console.log(deltaAfterFees)
       return deltaAfterFees
     }, combineObject({ leverage, position, fundingFee, swapFee, isIncrease }), mergeArray([inputCollateralDeltaUsd, effectSize, clickMaxCollateralUsd]))))
   ])
@@ -1387,7 +1386,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                 ),
               ),
 
-              styleInline(map(mode => ({ height: '140px', borderRadius: '20px', overflow: 'hidden', display: mode ? 'none' : 'flex' }), inTradeMode))(
+              styleInline(map(mode => ({ height: '140px', display: mode ? 'none' : 'flex' }), inTradeMode))(
                 $IntermediatePromise({
                   $loader: $row(
                     $spinner
@@ -1462,7 +1461,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                         ),
                       ),
                       $TradePnlHistory({
-                        $container: $column(style({ flex: 1 })),
+                        $container: $column(style({ flex: 1, overflow: 'hidden', borderRadius: '20px' })),
                         trade: trade,
                         chain: w3p.chain,
                         pricefeed,

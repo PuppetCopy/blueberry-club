@@ -110,9 +110,9 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
           )
       ),
 
-      $anchor(style({ fontSize: '.65em', placeSelf: 'center' }), attr({ href: 'https://medium.com/@gmx.io/' }))(
-        $text('$50,000 GBC #GAMBIT ROI Trading Contest')
-      )
+      // $anchor(style({ fontSize: '.65em', placeSelf: 'center' }), attr({ href: 'https://medium.com/@gmx.io/' }))(
+      //   $text('$50,000 GBC #GAMBIT ROI Trading Contest')
+      // )
     )
 
   }

@@ -541,53 +541,6 @@ export const $Trade = (config: ITradeComponent) => component((
     }, position, config.accountTradeOpenList)
   ])
 
-  const transaction = replayLatest(multicast(map(positionRouter => {
-    return awaitPromises(map(async state => {
-
-      const resolvedIndexAddress = resolveAddress(state.chain, state.inputToken)
-      const outputToken = state.isLong ? state.indexToken : state.collateralToken
-
-      const path = state.isIncrease
-        ? resolvedIndexAddress === outputToken ? [state.indexToken] : [resolvedIndexAddress, outputToken]
-        : resolvedIndexAddress === outputToken ? [state.indexToken] : [outputToken, resolvedIndexAddress]
-
-      const slippageN = BigInt(Number(state.slippage) * 100)
-      const allowedSlippage = state.isLong ? state.isIncrease ? slippageN : -slippageN : state.isIncrease ? -slippageN : slippageN
-
-      const refPrice = state.isLong ? state.indexTokenPrice : state.indexTokenPrice
-      const priceBasisPoints = BASIS_POINTS_DIVISOR + allowedSlippage // state.isLong ? BASIS_POINTS_DIVISOR + allowedSlippage : BASIS_POINTS_DIVISOR - allowedSlippage
-
-      const acceptablePrice = refPrice * priceBasisPoints / BASIS_POINTS_DIVISOR
-
-      const gasPrice = positionRouter.provider.getGasPrice()
-
-
-      const estGasLimit = (await positionRouter.estimateGas.createIncreasePosition(
-        path,
-        state.indexToken,
-        state.collateralDelta,
-        0,
-        state.sizeDeltaUsd,
-        state.isLong,
-        acceptablePrice,
-        state.executionFee,
-        config.referralCode,
-        AddressZero,
-        {
-          value: state.executionFee,
-          // gasPrice,
-          // gasLimit: 2542725n
-        }
-      )).toBigInt()
-
-      const gasLimit = estGasLimit * BASIS_POINTS_DIVISOR + 1000n / BASIS_POINTS_DIVISOR
-
-
-      return { gasLimit }
-
-    }, combineObject({ chain: config.walletLink.network, executionFee, indexToken, slippage, indexTokenPrice, isIncrease, collateralDelta, sizeDeltaUsd, isLong, inputToken, collateralToken })))
-
-  }, tradeReader.positionRouterReader.contract)))
 
   return [
     $container(

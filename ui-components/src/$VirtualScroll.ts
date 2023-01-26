@@ -4,7 +4,7 @@ import { $Branch, $custom, $Node, $text, component, IBranch, NodeComposeFn, styl
 import { $column, layoutSheet, observer } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { zipState } from '@gambitdao/gmx-middleware'
-import { filter, join, loop, map, mergeArray, scan } from "@most/core"
+import { filter, join, loop, map, mergeArray, scan, startWith, until } from "@most/core"
 import { Stream } from '@most/types'
 
 
@@ -78,6 +78,7 @@ export const $VirtualScroll = (config: QuantumScroll) => component((
 
   return [
     $container(
+      until(config.dataSource, $loader),
       join($itemLoader)
     ),
 

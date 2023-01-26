@@ -66,6 +66,12 @@ Of the new frontier land, that was truly the best.
 With a heart full of hope, and a mind full of dreams,
 He knew that this journey, was just the beginning it seems.`,
     id: IAttributeMappings["Marine Shirt"],
+    externalLinks: [
+      {
+        link: 'https://blueberry.club/p/leaderboard',
+        name: 'Leaderboard Whitelist'
+      },
+    ],
     mintRuleList: [
       {
         supply: 117,

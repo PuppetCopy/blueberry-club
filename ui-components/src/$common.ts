@@ -4,7 +4,7 @@ import { $column, $icon, $row, $seperator, layoutSheet } from "@aelea/ui-compone
 import { pallete } from "@aelea/ui-components-theme"
 import { bnDiv, formatReadableUSD, getNextLiquidationPrice, getTxExplorerUrl, IAbstractPositionStake, ITrade, ITradeOpen, liquidationWeight, shortenTxAddress, ITokenDescription, getFundingFee, getPnL, getMarginFees } from "@gambitdao/gmx-middleware"
 import { CHAIN } from "@gambitdao/wallet-link"
-import { now, multicast, map, empty } from "@most/core"
+import { now, multicast, map, empty, skipRepeats } from "@most/core"
 import { Stream } from "@most/types"
 import { $alertIcon, $caretDblDown, $info, $tokenIconMap } from "./$icons"
 import { $Tooltip } from "./$Tooltip"
@@ -51,7 +51,7 @@ export const $infoLabel = (label: string | $Node) => {
 }
 
 export const $infoLabeledValue = (label: string | $Node, value: string | $Node) => {
-  return $row(layoutSheet.spacingTiny, style({ fontSize: '13.2px' }))(
+  return $row(layoutSheet.spacingTiny, style({ fontSize: '13.2px', alignItems: 'center' }))(
     isStream(label)
       ? label
       : $text(style({ color: pallete.foreground }))(label),
@@ -95,15 +95,18 @@ export const $leverage = (pos: IAbstractPositionStake) =>
 export const $PnlValue = (pnl: Stream<bigint> | bigint, colorful = true) => {
   const pnls = isStream(pnl) ? pnl : now(pnl)
 
-  const display = multicast(map((n: bigint) => {
+  const display = map((n: bigint) => {
     return formatReadableUSD(n)
+  }, pnls)
+
+  const displayColor = skipRepeats(map((n: bigint) => {
+    return n > 0n ? pallete.positive : n === 0n ? pallete.foreground : pallete.negative
   }, pnls))
 
   const colorStyle = colorful
-    ? styleBehavior(map(str => {
-      const isNegative = str.indexOf('-') > -1
-      return { color: isNegative ? pallete.negative : pallete.positive }
-    }, display))
+    ? styleBehavior(map(color => {
+      return { color }
+    }, displayColor))
     : O()
 
   // @ts-ignore
