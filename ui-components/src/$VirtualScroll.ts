@@ -1,5 +1,5 @@
 
-import { Behavior } from '@aelea/core'
+import { Behavior, combineObject } from '@aelea/core'
 import { $Branch, $custom, $Node, $text, component, IBranch, NodeComposeFn, style } from '@aelea/dom'
 import { $column, layoutSheet, observer } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
@@ -55,7 +55,7 @@ export const $VirtualScroll = (config: QuantumScroll) => component((
     $loader
   )
 
-  const loadState = zipState({ data: config.dataSource, scrollIndex })
+  const loadState = combineObject({ data: config.dataSource, scrollIndex })
 
   const displayState = {
     isLoading: true

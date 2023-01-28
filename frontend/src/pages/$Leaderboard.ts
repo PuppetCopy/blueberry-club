@@ -1,9 +1,9 @@
 import { Behavior } from "@aelea/core"
 import { $text, component, style } from "@aelea/dom"
 import { $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
-import { TOKEN_ADDRESS_TO_SYMBOL, formatReadableUSD, ITrade, TOKEN_SYMBOL, IRequestCompetitionLadderApi, getTokenDescription } from "@gambitdao/gmx-middleware"
+import { TOKEN_ADDRESS_TO_SYMBOL, formatReadableUSD, ITrade, TOKEN_SYMBOL, IRequestCompetitionLadderApi } from "@gambitdao/gmx-middleware"
 
-import { $bear, $bull, $leverage, $tokenIconMap } from "@gambitdao/ui-components"
+import { $bear, $bull, $tokenIconMap } from "@gambitdao/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { $CompetitionRoi, ICompetitonTopCumulative } from "./trade/$CumulativeRoi"
 
@@ -54,7 +54,7 @@ export const $Leaderboard = (config: ILeaderboard) => component((
 
 
 export const $Index = (pos: ITrade) => $column(style({ position: 'relative', placeContent: 'center' }))(
-  $row(layoutSheet.spacingTiny, style({ alignItems: 'center', fontSize: '.75em' }))(
+  $row(layoutSheet.spacingTiny, style({ alignItems: 'center', fontSize: '.65em' }))(
     $icon({
       svgOps: style({ borderRadius: '50%', padding: '4px', marginRight: '-10px', zIndex: 0, alignItems: 'center', backgroundColor: pallete.horizon }),
       $content: pos.isLong ? $bull : $bear,

@@ -65,11 +65,11 @@ export const $MainMenu = ({ walletLink, parentRoute, chainList, showAccount = tr
 
 
   const $menuItemList = [
-    $Link({ $content: $pageLink($gmxLogo, 'Trade'), url: '/p/trade', disabled: now(true), route: parentRoute.create({ fragment: 'feefwefwe' }) })({
-      // $Link({ $content: $pageLink($gmxLogo, 'Trade'), url: '/p/trade', disabled: now(false), route: parentRoute.create({ fragment: 'feefwefwe' }) })({
-      click: routeChangeTether()
-    }),
-    $Link({ $content: $pageLink($stackedCoins, 'Leaderboard'), url: '/p/leaderboard', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
+    // $Link({ $content: $pageLink($gmxLogo, 'Trade'), url: '/p/trade', disabled: now(true), route: parentRoute.create({ fragment: 'feefwefwe' }) })({
+    //   // $Link({ $content: $pageLink($gmxLogo, 'Trade'), url: '/p/trade', disabled: now(false), route: parentRoute.create({ fragment: 'feefwefwe' }) })({
+    //   click: routeChangeTether()
+    // }),
+    $Link({ $content: $pageLink($gmxLogo, 'Trading'), url: '/p/leaderboard', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
       click: routeChangeTether()
     }),
     $Link({ $content: $pageLink($labLogo, 'Lab'), url: '/p/lab', route: parentRoute.create({ fragment: 'feefwefwe' }) })({
@@ -110,7 +110,7 @@ export const $MainMenu = ({ walletLink, parentRoute, chainList, showAccount = tr
       }),
     ),
     $popContent: map((_) => {
-      return $column(layoutSheet.spacingBig)(
+      return $column(layoutSheet.spacingBig, style({ marginTop: screenUtils.isMobileScreen ? '-40px' : '' }))(
         ...screenUtils.isMobileScreen
           ? [
             ...$menuItemList,
@@ -228,7 +228,7 @@ export const $MainMenu = ({ walletLink, parentRoute, chainList, showAccount = tr
           // ),
         ] : []
       )
-         
+
     ),
 
     { routeChange: routeChangeMulticast, walletChange, changeNetwork }

@@ -18,7 +18,8 @@ export interface TooltipConfig {
 }
 
 
-const $defaultDropContainer = $column(style({
+export const $defaultDropContainer = $column(style({
+  maxWidth: '600px',
   background: pallete.background,
   boxShadow: `${colorAlpha(pallete.message, .14)} 0px 4px 20px 8px, ${colorAlpha(pallete.message, .1)} 0px 1px 3px 1px`,
   padding: '8px',
@@ -28,7 +29,7 @@ const $defaultDropContainer = $column(style({
 }))
 
 
-const $defaultTooltipAnchorContainer = $row(style({ position: 'relative', fontSize: '0.75em' }))
+export const $defaultTooltipAnchorContainer = $row(style({ position: 'relative', minWidth: 0 }))
 
 export const $Tooltip = ({
   $anchor,

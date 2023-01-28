@@ -148,11 +148,11 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
   const pricefeedReader = readContractMapping(TRADE_CONTRACT_MAPPING, VaultPriceFeed__factory, provider, 'VaultPriceFeed')
   const routerReader = readContractMapping(TRADE_CONTRACT_MAPPING, Router__factory, provider, 'Router')
 
-  const executeIncreasePosition = mapKeeperEvent(positionRouterReader.listen('ExecuteIncreasePosition'))
-  const cancelIncreasePosition = mapKeeperEvent(positionRouterReader.listen('CancelIncreasePosition'))
+  const executeIncreasePosition = mapKeeperEvent(true, positionRouterReader.listen('ExecuteIncreasePosition'))
+  const cancelIncreasePosition = mapKeeperEvent(true, positionRouterReader.listen('CancelIncreasePosition'))
 
-  const executeDecreasePosition = mapKeeperEvent(positionRouterReader.listen('ExecuteDecreasePosition'))
-  const cancelDecreasePosition = mapKeeperEvent(positionRouterReader.listen('CancelDecreasePosition'))
+  const executeDecreasePosition = mapKeeperEvent(false, positionRouterReader.listen('ExecuteDecreasePosition'))
+  const cancelDecreasePosition = mapKeeperEvent(false, positionRouterReader.listen('CancelDecreasePosition'))
 
 
   const executionFee = positionRouterReader.readInt(map(async positionRouter => positionRouter.minExecutionFee()))
@@ -202,7 +202,7 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
     const rate = tokenDescription.isStable
       ? vault.stableFundingRateFactor()
       : vault.fundingRateFactor()
-    
+
     return rate
   }, token))
 
@@ -376,9 +376,8 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
   }
 }
 
-export function mapKeeperEvent<T extends KeeperIncreaseRequest | KeeperDecreaseRequest>(keeperEvent: Stream<T & { path: string[] }>): Stream<T & IAbstractPositionKey> {
+export function mapKeeperEvent<T extends KeeperIncreaseRequest | KeeperDecreaseRequest>(isIncrease: boolean, keeperEvent: Stream<T & { path: string[] }>): Stream<T & IAbstractPositionKey> {
   return map(ev => {
-    const isIncrease = 'amountIn' in ev
     const key = getPositionKey(ev.account, isIncrease ? ev.path.slice(-1)[0] : ev.path[0], ev.indexToken, ev.isLong)
 
     return { ...ev, key }

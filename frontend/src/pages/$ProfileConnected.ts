@@ -1,19 +1,19 @@
-import { Behavior, combineArray } from "@aelea/core"
-import { $text, component, style } from "@aelea/dom"
+import { Behavior, combineArray, combineObject, O } from "@aelea/core"
+import { $node, $text, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
-import { $column, $icon, $row, layoutSheet } from "@aelea/ui-components"
+import { $column, $icon, $row, $TextField, layoutSheet } from "@aelea/ui-components"
 
 import { CHAIN, IWalletLink, IWalletName } from "@gambitdao/wallet-link"
-import { awaitPromises, map, now, switchLatest } from "@most/core"
-import { IAccountStakingStore, LAB_CHAIN } from "@gambitdao/gbc-middleware"
+import { awaitPromises, combine, empty, map, mergeArray, now, snapshot, switchLatest, tap, zip } from "@most/core"
+import { blueberrySubgraph, IAccountStakingStore, LAB_CHAIN, saleDescriptionList } from "@gambitdao/gbc-middleware"
 import { $ButtonPrimary, $ButtonSecondary, $defaultButtonSecondary, $defaultMiniButtonSecondary } from "../components/form/$Button"
 import { $labItem } from "../logic/common"
 import { BrowserStore } from "../logic/store"
 import { $IntermediateConnectButton } from "../components/$ConnectAccount"
-import { IRequestAccountApi, IRequestAccountTradeListApi, IRequestPageApi, IStake, ITradeOpen, ITradeSettled } from "@gambitdao/gmx-middleware"
-import { $Profile } from "./$Profile"
+import { filterNull, IRequestAccountApi, IRequestAccountTradeListApi, IRequestPageApi, IStake, ITradeOpen, ITradeSettled, readableDate, switchMap, timeSince, unixTimestampNow } from "@gambitdao/gmx-middleware"
+import { $Profile, IProfileActiveTab } from "./$Profile"
 import { Stream } from "@most/types"
-import { $Link, $anchor, $IntermediateTx } from "@gambitdao/ui-components"
+import { $Link, $anchor, $IntermediateTx, $ButtonToggle, $defaulButtonToggleContainer, $infoTooltipLabel, $IntermediatePromise, $openPositionPnlBreakdown, $PnlValue, $riskLiquidator, $sizeDisplay, $TradePnl } from "@gambitdao/ui-components"
 import { $labLogo } from "../common/$icons"
 import { pallete } from "@aelea/ui-components-theme"
 import { $caretDown } from "../elements/$icons"
@@ -21,6 +21,13 @@ import { $Popover } from "../components/$Popover"
 import { $discoverIdentityDisplay } from "../components/$AccountProfile"
 import { ContractTransaction } from "@ethersproject/contracts"
 import { connectLab } from "../logic/contract/gbc"
+import { $berryTileId, $CardTable } from "../components/$common"
+import { fadeIn } from "../transitions/enter"
+import { $Index } from "./$Leaderboard"
+import * as router from '@aelea/router'
+import { connectTradeReader } from "../logic/contract/trade"
+import { $Wardrobe } from "./lab/$Wardrobe"
+import { $responsiveFlex } from "../elements/$common"
 
 
 export interface IAccount {
@@ -38,102 +45,412 @@ export const $ProfileConnected = (config: IAccount) => component((
   [changeNetwork, changeNetworkTether]: Behavior<CHAIN, CHAIN>,
   [walletChange, walletChangeTether]: Behavior<IWalletName, IWalletName>,
   [requestStake, requestStakeTether]: Behavior<IRequestAccountApi, IRequestAccountApi>,
-  [requestAccountTradeList, requestAccountTradeListTether]: Behavior<IRequestAccountTradeListApi, IRequestAccountTradeListApi>,
-  [requestAccountOpenTradeList, requestAccountOpenTradeListTether]: Behavior<IRequestAccountApi, IRequestAccountApi>,
+  [requestAccountTradeList, requestAccountTradeListTether]: Behavior<number, IRequestAccountTradeListApi>,
+  // [requestAccountOpenTradeList, requestAccountOpenTradeListTether]: Behavior<IRequestAccountApi, IRequestAccountApi>,
+  [selectProfileMode, selectProfileModeTether]: Behavior<IProfileActiveTab, IProfileActiveTab>,
 
   [clickSetIdentityPopover, clickSetIdentityPopoverTether]: Behavior<any, any>,
   [setMainBerry, setMainBerryTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
 
 ) => {
 
+  const $title = $text(style({ fontWeight: 'bold', fontSize: '1.55em' }))
+  const tradeReader = connectTradeReader(config.walletLink.provider)
+  const lab = connectLab(config.walletLink.provider)
+  const ownedItems = lab.accountListBalance(saleDescriptionList.map(x => x.id))
+
+  const requestAccountOpenTradeList: Stream<IRequestAccountTradeListApi> = filterNull(map(w3p => {
+    if (w3p === null) {
+      return null
+    }
+
+    return {
+      account: w3p.address,
+      chain: w3p.chain,
+    }
+  }, config.walletLink.wallet))
 
   return [
-    $column(layoutSheet.spacingBig)(
+    $responsiveFlex(
+      layoutSheet.spacingBig,
+      // style({ maxWidth: '560px', width: '100%', margin: '0 auto', })
+    )(
+      $column(layoutSheet.spacing, style({ flex: 1 }))(
+        switchMap(w3p => {
 
-      $IntermediateConnectButton({
-        chainList: config.chainList,
-        walletLink: config.walletLink,
-        $$display: map(w3p => {
+          if (w3p === null) {
+            return empty()
+          }
 
-          return $Profile({
-            ...config,
-            parentUrl: "/p/wallet/",
-            accountTradeList: config.accountTradeList,
-            walletLink: config.walletLink,
-            account: w3p.address,
-            $accountDisplay: $Popover({
-              $target: $row(layoutSheet.spacing, style({ flex: 1, alignItems: 'center', placeContent: 'center', zIndex: 1 }))(
-                $discoverIdentityDisplay({
-                  address: w3p.address,
-                  avatarSize: 100,
-                  labelSize: '1.5em'
-                }),
-                $column(layoutSheet.spacing)(
-                  $ButtonSecondary({
-                    $container: $defaultMiniButtonSecondary,
-                    $content: $row(layoutSheet.spacingTiny, style({ alignItems: 'center', cursor: 'pointer' }))(
-                      $icon({ $content: $labLogo, width: '16px', fill: pallete.middleground, viewBox: '0 0 32 32' }),
-                      $text('Set Identity'),
-                      // $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginTop: '3px' }), viewBox: '0 0 32 32' }),
-                    )
-                  })({
-                    click: clickSetIdentityPopoverTether()
+          return $Popover({
+            $target: $row(layoutSheet.spacing, style({ flex: 1, alignItems: 'center', placeContent: 'center', zIndex: 1 }))(
+              $discoverIdentityDisplay({
+                address: w3p.address,
+                avatarSize: 100,
+                labelSize: '1.5em'
+              }),
+              // $column(layoutSheet.spacing)(
+              //   $ButtonSecondary({
+              //     $container: $defaultMiniButtonSecondary,
+              //     $content: $row(layoutSheet.spacingTiny, style({ alignItems: 'center', cursor: 'pointer' }))(
+              //       $icon({ $content: $labLogo, width: '16px', fill: pallete.middleground, viewBox: '0 0 32 32' }),
+              //       $text('ID'),
+              //       $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginTop: '3px' }), viewBox: '0 0 32 32' }),
+              //     )
+              //   })({
+              //     click: clickSetIdentityPopoverTether()
+              //   })
+              // ),
+
+            ),
+            $popContent: map(() => {
+              const connect = connectLab(config.walletLink.provider)
+
+
+              return $column(layoutSheet.spacingSmall, style({ width: '300px' }))(
+
+                $text('Changing a profile name instead of displaying the wallet address'),
+
+
+
+                $TextField({
+                  label: 'Name',
+                  // labelStyle: { flex: 1 },
+                  value: now('ff'),
+                  inputOp: style({ maxWidth: '100px' }),
+                  hint: '"@" prefix will be linked to Twitter',
+                  validation: map(n => {
+                    const val = Number(n)
+                    const valid = val >= 0
+                    if (!valid) {
+                      return 'Invalid Basis point'
+                    }
+
+                    if (val > 5) {
+                      return 'Slippage should be less than 5%'
+                    }
+
+                    return null
                   }),
-                  $Link({
-                    $content: $anchor(
-                      $ButtonSecondary({
-                        $container: $defaultMiniButtonSecondary,
-                        $content: $row(layoutSheet.spacingTiny, style({ alignItems: 'center', cursor: 'pointer' }))(
-                          $icon({ $content: $labLogo, width: '16px', fill: pallete.middleground, viewBox: '0 0 32 32' }),
-                          $text('Wardrobe')
-                        )
-                      })({}),
-                    ),
-                    url: '/p/wardrobe', route: config.parentRoute
-                  })({
-                    click: changeRouteTether()
-                  })
-                ),
-                
-              ),
-              $popContent: map(() => {
-                const connect = connectLab(config.walletLink.provider)
+                })({
+                  // change: changeSlippageTether()
+                }),
 
+                $ButtonPrimary({
+                  $content: $text('Save'),
 
-                return $column(
-                  
-                  // switchLatest(awaitPromises(combineArray(async (contract, berry) => {
-                  //   const mainId = account ? (await contract.getDataOf(account).catch(() => null))?.tokenId.toNumber() : null
-                  //   const disabled = now(berry === null || berry?.id === w3p.address)
+                })({}),
 
-                  //   return $ButtonSecondary({ $content: $text(`Set PFP`), disabled })({
-                  //     click: setMainBerryTether(map(async () => {
-                  //       return (await contract.chooseMain(berry!.id))
-                  //     }))
-                  //   })
-                  // }, connect.profile.contract, selectedBerry))),
+                // switchLatest(awaitPromises(combineArray(async (contract, berry) => {
+                //   const mainId = account ? (await contract.getDataOf(account).catch(() => null))?.tokenId.toNumber() : null
+                //   const disabled = now(berry === null || berry?.id === w3p.address)
 
-                  $IntermediateTx({
-                    chain: LAB_CHAIN,
-                    query: setMainBerry
-                  })({}),
+                //   return $ButtonSecondary({ $content: $text(`Set PFP`), disabled })({
+                //     click: setMainBerryTether(map(async () => {
+                //       return (await contract.chooseMain(berry!.id))
+                //     }))
+                //   })
+                // }, connect.profile.contract, selectedBerry))),
+
+                $IntermediateTx({
+                  chain: LAB_CHAIN,
+                  query: setMainBerry
+                })({}),
+              )
+            }, clickSetIdentityPopover)
+          })({})
+
+          // return $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
+          //   $discoverIdentityDisplay({
+          //     address: w3p.address,
+          //     avatarSize: 160,
+          //     labelSize: '1.5em'
+          //   }),
+          //   $ButtonSecondary({
+          //     $container: $defaultMiniButtonSecondary,
+          //     $content: $row(layoutSheet.spacingTiny, style({ alignItems: 'center', cursor: 'pointer' }))(
+          //       $icon({ $content: $labLogo, width: '16px', fill: pallete.middleground, viewBox: '0 0 32 32' }),
+          //       $text('Change'),
+          //       // $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginTop: '3px' }), viewBox: '0 0 32 32' }),
+          //     )
+          //   })({
+          //     click: clickSetIdentityPopoverTether()
+          //   })
+          // )
+        }, config.walletLink.wallet),
+
+        $column(layoutSheet.spacing, style({ alignItems: 'center' }))(
+          $Link({
+            $content: $anchor(
+              $ButtonSecondary({
+                $container: $defaultButtonSecondary,
+                $content: $row(layoutSheet.spacingTiny, style({ alignItems: 'center', cursor: 'pointer' }))(
+                  $icon({ $content: $labLogo, width: '16px', fill: pallete.middleground, viewBox: '0 0 32 32' }),
+                  $text('Wardrobe')
                 )
-              }, clickSetIdentityPopover)
-            })({}),
+              })({}),
+            ),
+            url: '/p/wardrobe', route: config.parentRoute
           })({
-            requestAccountTradeList: requestAccountTradeListTether(),
-            requestAccountOpenTradeList: requestAccountOpenTradeListTether(),
-            stake: requestStakeTether(),
-            changeRoute: changeRouteTether()
+            click: changeRouteTether()
           })
-        })
-      })({
-        changeNetwork: changeNetworkTether(),
-        walletChange: walletChangeTether()
-      })
+        ),
+      ),
+
+      $node(),
+
+      $column(layoutSheet.spacingBig, style({ flex: 2 }))(
+        $ButtonToggle({
+          $container: $defaulButtonToggleContainer(style({ alignSelf: 'center', })),
+          selected: mergeArray([selectProfileMode, now(location.pathname.split('/').slice(-1)[0] === IProfileActiveTab.BERRIES.toLowerCase() ? IProfileActiveTab.BERRIES : IProfileActiveTab.TRADING)]),
+          options: [
+            IProfileActiveTab.BERRIES,
+            IProfileActiveTab.TRADING,
+            // IProfileActiveTab.IDENTITY,
+            // IProfileActiveTab.LAB,
+          ],
+          $$option: map(option => {
+            return $text(option)
+          })
+        })({ select: selectProfileModeTether() }),
+
+
+        router.match(config.parentRoute.create({ fragment: IProfileActiveTab.BERRIES.toLowerCase() }))(
+          fadeIn(
+
+            $responsiveFlex(layoutSheet.spacingBig)(
+
+
+
+              $IntermediatePromise({
+                query: blueberrySubgraph.owner(combineObject({ id: map(w3p => w3p?.address, config.walletLink.wallet) })),
+                $$done: map(owner => {
+                  if (owner === null) {
+                    return null
+                  }
+
+                  return $column(layoutSheet.spacingBig)(
+
+                    $title(`GBC's`),
+                    $row(layoutSheet.spacingSmall, style({ flexWrap: 'wrap' }))(...owner.ownedTokens.map(token => {
+                      return $berryTileId(token, 65)
+                    })),
+
+
+
+                    $row(
+                      $title('Lab Items'),
+
+                      // switchLatest(map(items => {
+                      //   return $Popover({
+                      //     $$popContent: map(_ => $TransferItems(items.filter(x => x.amount > 0))({}), clickTransferItems),
+
+                      //   })(
+                      //     $ButtonSecondary({ $content: $text('Transfer') })({
+                      //       click: clickTransferItemsTether()
+                      //     })
+                      //   )({})
+                      // }, ownedItems))
+
+                    ),
+
+
+                    switchLatest(map(items => {
+                      return $row(layoutSheet.spacing, style({ flexWrap: 'wrap' }))(
+                        ...items.filter(item => item.amount > 0).map(item => {
+                          return $row(style({ position: 'relative' }))(
+                            $text(style({ position: 'absolute', top: '1px', right: '4px', fontSize: '.75em', fontWeight: 'bold', color: pallete.background }))(
+                              item.amount + 'x'
+                            ),
+                            $labItem(item.id, 65)
+                          )
+                        })
+                      )
+                    }, ownedItems))
+
+                  )
+                })
+              })({})
+
+            )
+
+          )
+        ),
+
+        router.match(config.parentRoute.create({ fragment: IProfileActiveTab.TRADING.toLowerCase() }))(
+          fadeIn(
+            $column(layoutSheet.spacingBig, style({ flex: 1 }))(
+              $title('Open Positions'),
+              $CardTable({
+                dataSource: awaitPromises(config.accountOpenTradeList),
+                columns: [
+                  {
+                    $head: $text('Entry'),
+                    columnOp: O(style({ maxWidth: '100px' }), layoutSheet.spacingTiny),
+                    $$body: map((pos) => {
+                      return $Index(pos)
+                    })
+                  },
+                  {
+                    $head: $column(style({ textAlign: 'center' }))(
+                      $text('Size'),
+                      $text(style({ fontSize: '.75em' }))('Collateral'),
+                    ),
+                    columnOp: O(layoutSheet.spacingTiny, style({ flex: 1.2, placeContent: 'flex-end' })),
+                    $$body: map(pos => {
+                      const positionMarkPrice = tradeReader.getLatestPrice(now(pos.indexToken))
+
+                      return $row(
+                        $riskLiquidator(pos, positionMarkPrice)
+                      )
+                    })
+                  },
+                  {
+                    $head: $text('PnL'),
+                    columnOp: O(layoutSheet.spacingTiny, style({ flex: 1, placeContent: 'flex-end' })),
+                    $$body: map((pos) => {
+                      const positionMarkPrice = tradeReader.getLatestPrice(now(pos.indexToken))
+                      const cumulativeFee = tradeReader.getTokenCumulativeFunding(now(pos.collateralToken))
+
+                      return $infoTooltipLabel(
+                        $openPositionPnlBreakdown(pos, cumulativeFee, positionMarkPrice),
+                        $TradePnl(pos, cumulativeFee, positionMarkPrice)
+                      )
+                    })
+                  },
+                ],
+              })({}),
+
+              $title('Settled Positions'),
+              $CardTable({
+                dataSource: awaitPromises(config.accountTradeList),
+                columns: [
+                  {
+                    $head: $text('Time'),
+                    columnOp: O(style({ maxWidth: '60px' })),
+
+                    $$body: map((req) => {
+                      const isKeeperReq = 'ctx' in req
+
+                      const timestamp = isKeeperReq ? unixTimestampNow() : req.settledTimestamp
+
+                      return $column(layoutSheet.spacingTiny, style({ fontSize: '.65em' }))(
+                        $text(timeSince(timestamp) + ' ago'),
+                        $text(readableDate(timestamp)),
+                      )
+                    })
+                  },
+                  {
+                    $head: $text('Entry'),
+                    columnOp: O(style({ maxWidth: '100px' }), layoutSheet.spacingTiny),
+                    $$body: map((pos) => {
+                      return $Index(pos)
+                    })
+                  },
+                  {
+                    $head: $column(style({ textAlign: 'center' }))(
+                      $text('Size'),
+                      $text(style({ fontSize: '.75em' }))('Collateral'),
+                    ),
+                    columnOp: O(layoutSheet.spacingTiny, style({ flex: 1.2, placeContent: 'flex-end' })),
+                    $$body: map(pos => {
+                      return $sizeDisplay(pos)
+                    })
+                  },
+                  {
+                    $head: $text('PnL'),
+                    columnOp: O(layoutSheet.spacingTiny, style({ flex: 1, placeContent: 'flex-end' })),
+                    $$body: map((pos) => {
+                      return $PnlValue(pos.realisedPnl - pos.fee)
+                    })
+                  },
+                ],
+              })({
+                scrollIndex: requestAccountTradeListTether(
+                  zip((w3p, pageIndex) => {
+                    if (w3p === null) {
+                      return null
+                    }
+
+                    return {
+                      account: w3p.address,
+                      chain: w3p.chain,
+                      offset: pageIndex * 20,
+                      pageSize: 20,
+                    }
+                  }, config.walletLink.wallet),
+                  filterNull
+                )
+              }),
+            ),
+          )
+        ),
+      )
+
+
+
+      // router.match(config.parentRoute.create({ fragment: IProfileActiveTab.LAB.toLowerCase() }))(
+      //   fadeIn(
+      //     $Wardrobe({
+      //       chainList: [CHAIN.ARBITRUM],
+      //       walletLink: config.walletLink,
+      //       parentRoute: config.parentRoute
+      //     })({
+      //       changeRoute: changeRouteTether(),
+      //       changeNetwork: changeNetworkTether(),
+      //       walletChange: walletChangeTether(),
+      //     })
+      //   )
+      // ),
+
+
+
+
+
+
+
+
+      // $responsiveFlex(
+      //   $row(style({ flex: 1 }))(
+      //     $StakingGraph({
+      //       sourceList: config.stake,
+      //       stakingInfo: multicast(arbitrumContract),
+      //       walletLink: config.walletLink,
+      //       // priceFeedHistoryMap: pricefeedQuery,
+      //       // graphInterval: intervalTimeMap.HR4,
+      //     })({}),
+      //   ),
+      // ),
+
+      // $IntermediatePromise({
+      //   query: blueberrySubgraph.owner(now({ id: config.account })),
+      //   $$done: map(owner => {
+      //     if (owner == null) {
+      //       return $alert($text(style({ alignSelf: 'center' }))(`Connected account does not own any GBC's`))
+      //     }
+
+      //     return $row(layoutSheet.spacingSmall, style({ flexWrap: 'wrap' }))(...owner.ownedTokens.map(token => {
+      //       return $berryTileId(token, 85)
+      //     }))
+      //   }),
+      // })({}),
+
     ),
 
-    { changeRoute, changeNetwork, walletChange, requestStake, requestAccountTradeList, requestAccountOpenTradeList }
+    {
+      changeRoute: mergeArray([
+        changeRoute,
+        map(mode => {
+          const pathName = `/p/wallet/` + mode.toLowerCase()
+          if (location.pathname !== pathName) {
+            history.pushState(null, '', pathName)
+          }
+
+          return pathName
+        }, selectProfileMode)
+      ]),
+      changeNetwork, walletChange, requestStake, requestAccountTradeList, requestAccountOpenTradeList
+    }
   ]
 })
 

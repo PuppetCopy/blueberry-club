@@ -12,6 +12,7 @@ import {
 } from "@gambitdao/gmx-middleware"
 import {
   $alert,
+  $alertTooltip,
   $anchor, $bear, $bull, $hintNumChange, $infoLabeledValue, $infoTooltipLabel, $IntermediatePromise,
   $openPositionPnlBreakdown, $PnlValue, $riskLiquidator, $spinner, $tokenIconMap, $tokenLabelFromSummary
 } from "@gambitdao/ui-components"
@@ -34,7 +35,7 @@ import { ContractTransaction } from "@ethersproject/contracts"
 import { MaxUint256 } from "@ethersproject/constants"
 import { getContractAddress } from "../../logic/common"
 import { ERC20__factory } from "../../logic/gmx-contracts"
-import { CHAIN, IWalletLink, IWalletName } from "@gambitdao/wallet-link"
+import { CHAIN, IWalletLink, IWalletName, parseError } from "@gambitdao/wallet-link"
 import { $Popover } from "../$Popover"
 import { $card } from "../../elements/$common"
 import { Route } from "@aelea/router"
@@ -195,18 +196,20 @@ export const $TradeBox = (config: ITradeBox) => component((
     }
 
     if (state.isIncrease) {
-      const requiredReserve = state.sizeDeltaUsd - state.collateralDeltaUsd
-
-      if (requiredReserve > state.availableIndexLiquidityUsd) {
+      if (state.sizeDeltaUsd > state.availableIndexLiquidityUsd) {
         return `Not enough liquidity. current capcity ${formatReadableUSD(state.availableIndexLiquidityUsd)}`
       }
 
-      if (state.collateralDeltaUsd > state.walletBalanceUsd) {
+      if (abs(state.collateralDeltaUsd) > state.walletBalanceUsd) {
         return `Not enough ${state.inputTokenDescription.symbol} in connected account`
       }
 
       if (state.leverage < MIN_LEVERAGE) {
         return `Leverage below 1.1x`
+      }
+
+      if (state.position.averagePrice === 0n && state.collateralDeltaUsd < 10n ** 30n * 10n) {
+        return `Min 10 Collateral required`
       }
     } else {
 
@@ -227,13 +230,21 @@ export const $TradeBox = (config: ITradeBox) => component((
       return `No ${state.indexTokenDescription.symbol} position to reduce`
     }
 
-    if (state.position && state.liquidationPrice && (state.isLong ? state.liquidationPrice > state.indexTokenPrice : state.liquidationPrice < state.indexTokenPrice)) {
+    if (state.position.averagePrice > 0n && state.liquidationPrice && (state.isLong ? state.liquidationPrice > state.indexTokenPrice : state.liquidationPrice < state.indexTokenPrice)) {
       return `Exceeding liquidation price`
     }
 
     return null
   }, combineObject({ leverage, position, liquidationPrice, walletBalanceUsd, isIncrease, indexTokenPrice, collateralDelta, collateralDeltaUsd, inputTokenDescription, collateralToken, sizeDeltaUsd, availableIndexLiquidityUsd, inputToken, collateralTokenPoolInfo, collateralTokenDescription, indexTokenDescription, isLong, })))
 
+  const requestTradeError = filterNull(awaitPromises(map(async req => {
+    try {
+      await req.ctxQuery
+      return null
+    } catch (err) {
+      return parseError(err).message
+    }
+  }, clickRequestTrade)))
 
   const pnlCrossHairTimeChange = replayLatest(multicast(startWith(null, skipRepeatsWith(((xsx, xsy) => xsx.time === xsy.time), crosshairMove))))
 
@@ -754,7 +765,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
               return 1
             }, combineObject({ position, fundingFee, collateralDeltaUsd, sizeDeltaUsd, focusMode, isIncrease })),
-            thumbText: map(n => formatLeverageNumber.format(n * LIMIT_LEVERAGE_NORMAL) + '\nx')
+            thumbText: map(n => (n === 1 ? '100' : formatLeverageNumber.format(n * LIMIT_LEVERAGE_NORMAL)) + '\nx')
           })({
             change: slideLeverageTether(
               map(leverage => {
@@ -823,20 +834,20 @@ export const $TradeBox = (config: ITradeBox) => component((
                 value: {
                   value: config.tradeConfig.indexToken,
                   $container: $defaultSelectContainer(style({ minWidth: '350px', right: 0 })),
-                  $$option: snapshot((isLong, option) => {
+                  $$option: map((option) => {
                     const tokenDesc = getTokenDescription(option)
                     const liquidity = tradeReader.getAvailableLiquidityUsd(now(option), config.tradeConfig.collateralToken)
-                    const fundingRate = tradeReader.getTokenFundingRate(now(option))
+                    // const fundingRate = tradeReader.getTokenPoolInfo(now(option))
 
                     return $row(style({ placeContent: 'space-between', flex: 1 }))(
                       $tokenLabelFromSummary(tokenDesc),
 
-                      $column(style({ alignItems: 'flex-end' }))(
-                        $text(map(rate => readableNumber(formatToBasis(rate)), fundingRate)),
+                      $column(style({ alignItems: 'flex-end', placeContent: 'center' }))(
+                        // $text(map(info => readableNumber(formatToBasis(info.rate)), fundingRate)),
                         $text(style({ fontSize: '.75em', color: pallete.foreground }))(map(amountUsd => formatReadableUSD(amountUsd), liquidity))
                       )
                     )
-                  }, config.tradeConfig.isLong),
+                  }),
                   list: config.tokenIndexMap[chain] || [],
                 }
               })({
@@ -959,7 +970,7 @@ export const $TradeBox = (config: ITradeBox) => component((
               isIncrease: config.tradeConfig.isIncrease,
               tooltip: $column(layoutSheet.spacingSmall)(
                 $text('Size amplified by deposited Collateral and Leverage chosen'),
-                $text('higher leverage increases liquidation price'),
+                $text('Higher Leverage increases Liquidation Risk'),
               ),
               val: map(pos => formatReadableUSD(pos ? pos.size : 0n), config.tradeState.position)
             }),
@@ -972,6 +983,7 @@ export const $TradeBox = (config: ITradeBox) => component((
           ? style({
             marginTop: `-${BOX_SPACING - 5}px`,
             paddingTop: `${BOX_SPACING - 5}px`,
+            minHeight: '140px',
             placeContent: 'center',
             // backgroundColor: pallete.horizon,
             border: `1px solid ${colorAlpha(pallete.foreground, .15)}`,
@@ -982,6 +994,7 @@ export const $TradeBox = (config: ITradeBox) => component((
           : style({
             marginBottom: `-${BOX_SPACING - 5}px`,
             paddingBottom: `${BOX_SPACING - 5}px`,
+            minHeight: '140px',
             placeContent: 'center',
             // backgroundColor: pallete.horizon,
             border: `1px solid ${colorAlpha(pallete.foreground, .15)}`,
@@ -1087,12 +1100,12 @@ export const $TradeBox = (config: ITradeBox) => component((
                             ),
                             $row(layoutSheet.spacingTiny)(
                               $text(style({ color: pallete.foreground }))('Your added contribution'),
-                              $text(style({ color: pallete.positive }))(map(params => formatReadableUSD(params.marginFee * 6000n / BASIS_POINTS_DIVISOR), combineObject({ marginFee })))
+                              $text(style({ color: pallete.positive }))(map(params => formatReadableUSD(params.marginFee * 1500n / BASIS_POINTS_DIVISOR), combineObject({ marginFee })))
                             ),
                           ),
                           'Payback'
                         ),
-                        $text(style({ color: pallete.positive, fontSize: '0.75em' }))(map(params => formatReadableUSD(params.marginFee * 2000n / BASIS_POINTS_DIVISOR), combineObject({ marginFee })))
+                        $text(style({ color: pallete.positive, fontSize: '0.75em' }))(map(params => formatReadableUSD(params.marginFee * 1000n / BASIS_POINTS_DIVISOR), combineObject({ marginFee })))
                       )
                     }
 
@@ -1132,7 +1145,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                   switchLatest(combineArray((isPluginEnabled, isEnabled, isInputTokenApproved, inputToken, inputTokenDesc) => {
                     if (!isPluginEnabled || !isEnabled) {
                       return $Popover({
-                        $target: $row(
+                        $target: $row(style({ placeContent: 'flex-end' }))(
                           $ButtonSecondary({
                             $content: $text('Enable GMX'),
                             disabled: mergeArray([
@@ -1146,8 +1159,9 @@ export const $TradeBox = (config: ITradeBox) => component((
                         $popContent: map(() => {
 
                           return $column(layoutSheet.spacing, style({ maxWidth: '400px' }))(
-                            $text(style({ fontWeight: 'bold', fontSize: '1.25em' }))(`By using GBC Trading, I agree to the following Disclaimer`),
-                            $text(style({ whiteSpace: 'pre-wrap', fontSize: '.75em' }))(`By accessing, I agree that ${document.location.href} is an interface (hereinafter the "Interface") to interact with external GMX smart contracts, and does not have access to my funds.`),
+                            $text(style({ fontWeight: 'bold', fontSize: '1em' }))(`By using GBC Trading, I agree to the following Disclaimer`),
+                            $text(style({ fontSize: '.72em' }))(`By accessing, I agree that ${document.location.href} is an interface that interacts with external GMX smart contracts, and does not have access to my funds.`),
+
                             $node(
                               $text(style({ whiteSpace: 'pre-wrap', fontSize: '.75em' }))(`By clicking Agree you accept the `),
                               $anchor(attr({ href: '/p/trading-terms-and-conditions' }))($text('Terms & Conditions'))
@@ -1209,16 +1223,16 @@ export const $TradeBox = (config: ITradeBox) => component((
                       return false
                     }, validationError)
                     return $row(layoutSheet.spacingSmall, style({ alignItems: 'center', flex: 1 }))(
-                      $row(style({ flex: 1 }))(
+                      $row(style({ flex: 1, minWidth: 0 }))(
                         switchLatest(map(error => {
                           if (error === null) {
                             return empty()
                           }
 
-                          return $alert(
-                            $text(style({ overflow: 'hidden', maxWidth: '225px', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }))(error)
+                          return $alertTooltip(
+                            $text(error)
                           )
-                        }, validationError))
+                        }, mergeArray([requestTradeError, validationError])))
                       ),
                       style({ padding: '8px', fontSize: '.75em', alignSelf: 'center' })(
                         $ButtonSecondary({ $content: $text('Reset') })({
@@ -1377,7 +1391,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
 
                             return { ctxQuery, state, acceptablePrice }
-                          }, combineObject({ positionRouter: tradeReader.positionRouterReader.contract, chain: config.walletLink.network, collateralDeltaUsd, executionFee, indexToken, slippage, indexTokenPrice, isIncrease, collateralDelta, sizeDeltaUsd, isLong, collateralToken })),
+                          }, combineObject({ positionRouter: tradeReader.positionRouterReader.contract, chain: config.walletLink.network, position, collateralDeltaUsd, executionFee, indexToken, slippage, indexTokenPrice, isIncrease, collateralDelta, sizeDeltaUsd, isLong, collateralToken })),
                           multicast
                         )
                       })
@@ -1433,13 +1447,11 @@ export const $TradeBox = (config: ITradeBox) => component((
                           inset: '18px 16px',
                         })
                       )(
-                        $row(
-                          $infoLabeledValue(
-                            'Borrow Fee',
-                            $row(layoutSheet.spacingTiny)(
-                              $text(style({ color: pallete.indeterminate }))(formatReadableUSD(nextSize) + ' '),
-                              $text(` / 1hr`)
-                            )
+                        $infoLabeledValue(
+                          'Borrow Fee',
+                          $row(layoutSheet.spacingTiny)(
+                            $text(style({ color: pallete.indeterminate }))(formatReadableUSD(nextSize) + ' '),
+                            $text(` / 1hr`)
                           )
                         ),
                         $infoTooltipLabel(

@@ -69,7 +69,6 @@ const derievedSymbolMapping: { [k: string]: TOKEN_SYMBOL } = {
 
 export const getGmxIoPricefeed = O(
   map(async (queryParams: IRequestPricefeedApi): Promise<IPricefeed[]> => {
-    // throw new Error('fefe')
     const tokenDesc = getTokenDescription(queryParams.tokenAddress)
     const intervalLabel = getMappedValue(gmxIoPricefeedIntervalLabel, queryParams.interval)
     const symbol = derievedSymbolMapping[tokenDesc.symbol] || tokenDesc.symbol

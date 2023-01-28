@@ -1,7 +1,7 @@
 import { Behavior, replayLatest } from '@aelea/core'
 import { $text, attr, component, nodeEvent, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
-import { $column, $row, $seperator, layoutSheet, screenUtils } from '@aelea/ui-components'
+import { $column, $icon, $row, $seperator, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { colorAlpha, pallete } from '@aelea/ui-components-theme'
 import { combine, empty, map, multicast, snapshot, take, zip } from '@most/core'
 import { Stream } from '@most/types'
@@ -14,11 +14,13 @@ import { $anchor, $infoTooltipLabel, $Link } from '@gambitdao/ui-components'
 import { $berryByToken } from '../../logic/common'
 import { $CardTable } from '../../components/$common'
 import { IProfileActiveTab } from '../$Profile'
-import { $addToCalendar } from '../../elements/$common'
+import { $addToCalendar, $responsiveFlex } from '../../elements/$common'
+import { $gmxLogo } from '../../common/$icons'
+import { $ButtonSecondary, $defaultMiniButtonSecondary } from '../../components/form/$Button'
 
 const MAX_COLLATERAL = 1000000000000000000000000000000000n
 
-const prizeRatioLadder: bigint[] = [2000n, 1000n, 500n, ...Array(7).fill(div(750n, 7n) / BASIS_POINTS_DIVISOR)]
+const prizeRatioLadder: bigint[] = [3000n, 1500n, 750n, ...Array(7).fill(div(4750n, 7n) / BASIS_POINTS_DIVISOR)]
 
 
 export interface ICompetitonTopCumulative {
@@ -193,12 +195,28 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
       //   )
       // }, newLocal)),
 
-
+      // $Link({
+      //   $content: $ButtonSecondary({
+      //     $container: $defaultMiniButtonSecondary,
+      //     $content: $row(style({ alignItems: 'center', cursor: 'pointer' }))(
+      //       $icon({
+      //         $content: $gmxLogo, width: '16px',
+      //         fill: pallete.middleground,
+      //         svgOps: style({ minWidth: '36px' }), viewBox: '0 0 32 32'
+      //       }),
+      //       $text('Trade')
+      //     )
+      //   })({}),
+      //   url: '/p/trade', route: config.parentRoute.create({ fragment: 'feefwefwe' })
+      // })({
+      //   // $Link({ $content: $pageLink($gmxLogo, 'Trade'), url: '/p/trade', disabled: now(false), route: parentRoute.create({ fragment: 'feefwefwe' }) })({
+      //   click: routeChangeTether()
+      // }),
 
 
       $column(
-        $row(style({ padding: screenUtils.isMobileScreen ? '0 12px' : '', marginBottom: '26px', alignItems: 'flex-end' }))(
-          $column(layoutSheet.spacingSmall, style({ flex: 1 }))(
+        $responsiveFlex(layoutSheet.spacing, style({ padding: screenUtils.isMobileScreen ? '0 12px' : '', marginBottom: '26px', alignItems: 'flex-end' }))(
+          $column(layoutSheet.spacingSmall, style({ flex: 1, alignSelf: screenUtils.isMobileScreen ? 'center' : '' }))(
             $infoTooltipLabel(
               `ROI (%) is defined as: Profits / Max Collateral (min $${formatReadableUSD(MAX_COLLATERAL)}) * 100`,
               $text(style({ fontWeight: 'bold', fontSize: '1.15em' }))(`Highest ROI (%)`)
@@ -216,20 +234,19 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
               }, config.competitionCumulativeRoi))
             ),
           ),
-          $column(
-            $row(layoutSheet.spacing, style({ placeContent: 'flex-end' }))(
-              $infoTooltipLabel($column(layoutSheet.spacingSmall)(
-                $text('The current accumulated amount from the GMX referral program will be rewarded to the top traders at the end'),
-                $text('it is calculated as Aggregated size fee * 0.15% (BLUBERRY Referral)'),
-              ), 'Prize Pool'),
-              $text(style({
-                color: pallete.positive,
-                fontSize: '2.25em',
-                textShadow: `${pallete.positive} 1px 1px 20px, ${pallete.positive} 0px 0px 20px`
-              }))(map(amount => '$' + formatReadableUSD(amount), prizePool))
-            ),
 
-          )
+          $row(layoutSheet.spacingSmall, style({ placeContent: 'flex-end' }))(
+            $infoTooltipLabel($column(
+              $text('The current accumulated amount from the GMX referral program will be rewarded to the top traders at the end'),
+              $text('it is calculated as Aggregated size fee * 0.15% (BLUBERRY Referral)'),
+            ), 'Prize Pool'),
+            $text(style({
+              color: pallete.positive,
+              fontSize: '2.25em',
+              textShadow: `${pallete.positive} 1px 1px 20px, ${pallete.positive} 0px 0px 20px`
+            }))(map(amount => '$' + formatReadableUSD(amount), prizePool))
+          ),
+
         ),
 
         $CardTable({

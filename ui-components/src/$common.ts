@@ -7,7 +7,7 @@ import { CHAIN } from "@gambitdao/wallet-link"
 import { now, multicast, map, empty, skipRepeats } from "@most/core"
 import { Stream } from "@most/types"
 import { $alertIcon, $caretDblDown, $info, $tokenIconMap } from "./$icons"
-import { $Tooltip } from "./$Tooltip"
+import { $defaultDropContainer, $defaultTooltipAnchorContainer, $Tooltip } from "./$Tooltip"
 
 
 export const $anchor = $element('a')(
@@ -23,9 +23,9 @@ export const $anchor = $element('a')(
 )
 
 const $alertContainer = $row(layoutSheet.spacingSmall, style({
-  alignSelf: 'flex-start',
+  alignSelf: 'flex-start', minWidth: 0, maxWidth: '100%',
   borderRadius: '100px', alignItems: 'center', fontSize: '75%',
-  border: `1px solid ${pallete.negative}`, padding: '10px 14px',
+  border: `1px dashed ${pallete.negative}`, padding: '8px 10px',
 }))
 
 export const $alert = ($content: $Branch) => $alertContainer(
@@ -33,11 +33,13 @@ export const $alert = ($content: $Branch) => $alertContainer(
   $content,
 )
 
-export const $alertTooltip = ($content: $Branch) => {
+export const $alertTooltip = ($content: $Node) => {
   return $Tooltip({
-    $content,
+    $content: $content,
+    $dropContainer: $defaultDropContainer(style({ fontSize: '0.75em' })),
     $anchor: $alertContainer(
       $icon({ $content: $alertIcon, viewBox: '0 0 24 24', width: '18px', svgOps: style({ minWidth: '18px' }) }),
+      style({ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' })($content),
     ),
   })({})
 }
@@ -70,6 +72,8 @@ export const $infoTooltipLabel = (text: string | $Node, label?: string | $Node) 
 
 export const $infoTooltip = (text: string | $Node) => {
   return $Tooltip({
+    $dropContainer: $defaultDropContainer(style({ fontSize: '0.75em' })),
+    // $container: $defaultTooltipAnchorContainer(style({ fontSize: '0.75em' })),
     $content: isStream(text) ? text : $text(text),
     $anchor: $icon({ $content: $info, viewBox: '0 0 32 32', fill: pallete.foreground, width: '18px', svgOps: style({ minWidth: '18px' }) }),
   })({})

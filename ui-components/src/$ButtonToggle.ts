@@ -16,13 +16,13 @@ export interface IButtonToggle<T> {
   $$option?: Op<T, $Node>
 }
 
-export const $defaultToggleButton = $row(style({
+export const $defaulButtonToggleBtn = $row(style({
   placeContent: 'center', fontSize: '.75em', fontWeight: 'bold',
   borderRadius: '12px', padding: '6px 8px', alignItems: 'center', border: '1px solid transparent',
   cursor: 'pointer'
 }))
 
-export const $defaulContainer = $row(layoutSheet.spacingSmall, style({
+export const $defaulButtonToggleContainer = $row(layoutSheet.spacingSmall, style({
   borderRadius: '12px', padding: '6px',
   border: `1px solid ${pallete.horizon}`, backgroundColor: pallete.background
 }))
@@ -30,7 +30,7 @@ export const $defaulContainer = $row(layoutSheet.spacingSmall, style({
 
 const defaultOption = map(<T>(o: T) => $text(String(o)))
 
-export default <T>({ options, selected, $$option = defaultOption, $button = $defaultToggleButton, $container = $defaulContainer }: IButtonToggle<T>) => component((
+export const $ButtonToggle = <T>({ options, selected, $$option = defaultOption, $button = $defaulButtonToggleBtn, $container = $defaulButtonToggleContainer }: IButtonToggle<T>) => component((
   [select, sampleSelect]: Behavior<INode, T>
 ) => {
 

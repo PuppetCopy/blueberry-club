@@ -19,9 +19,13 @@ import { connectLab } from "../logic/contract/gbc"
 import { CHAIN, IWalletLink, IWalletName } from "@gambitdao/wallet-link"
 import { $Index } from "./$Leaderboard"
 import { connectTradeReader } from "../logic/contract/trade"
-import * as $ButtonToggle from "@gambitdao/ui-components/src/$ButtonToggle"
+import { $ButtonToggle, $defaulButtonToggleContainer } from "@gambitdao/ui-components/src/$ButtonToggle"
 import * as router from '@aelea/router'
 import { fadeIn } from "../transitions/enter"
+
+
+
+
 
 
 
@@ -29,7 +33,8 @@ import { fadeIn } from "../transitions/enter"
 export enum IProfileActiveTab {
   TRADING = 'Trading',
   BERRIES = 'Berries',
-  WARDROBE = "Wardrobe"
+  LAB = "Lab",
+  IDENTITY = "Identity"
 }
 
 export interface IProfile {
@@ -84,8 +89,8 @@ export const $Profile = (config: IProfile) => component((
     $column(layoutSheet.spacingBig, style({ width: '100%', maxWidth: '550px', margin: '0 auto', alignItems: 'center' }))(
       config.$accountDisplay,
 
-      $ButtonToggle.default({
-        $container: $ButtonToggle.$defaulContainer(style({ alignSelf: 'center', })),
+      $ButtonToggle({
+        $container: $defaulButtonToggleContainer(style({ alignSelf: 'center', })),
         selected: mergeArray([selectProfileMode, now(location.pathname.split('/').slice(-1)[0] === IProfileActiveTab.BERRIES.toLowerCase() ? IProfileActiveTab.BERRIES : IProfileActiveTab.TRADING)]),
         options: [
           IProfileActiveTab.BERRIES,
@@ -161,7 +166,7 @@ export const $Profile = (config: IProfile) => component((
                 columns: [
                   {
                     $head: $text('Entry'),
-                    columnOp: O(style({ maxWidth: '50px' }), layoutSheet.spacingTiny),
+                    columnOp: O(style({ maxWidth: '100px' }), layoutSheet.spacingTiny),
                     $$body: map((pos) => {
                       return $Index(pos)
                     })
@@ -202,7 +207,7 @@ export const $Profile = (config: IProfile) => component((
                 columns: [
                   {
                     $head: $text('Time'),
-                    columnOp: O(style({ maxWidth: '100px' })),
+                    columnOp: O(style({ maxWidth: '60px' })),
 
                     $$body: map((req) => {
                       const isKeeperReq = 'ctx' in req
@@ -217,7 +222,7 @@ export const $Profile = (config: IProfile) => component((
                   },
                   {
                     $head: $text('Entry'),
-                    columnOp: O(style({ maxWidth: '50px' }), layoutSheet.spacingTiny),
+                    columnOp: O(style({ maxWidth: '100px' }), layoutSheet.spacingTiny),
                     $$body: map((pos) => {
                       return $Index(pos)
                     })

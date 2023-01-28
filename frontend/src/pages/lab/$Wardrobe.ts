@@ -64,6 +64,8 @@ export const $Wardrobe = (config: IBerryComp) => component((
   [setApproval, setApprovalTether]: Behavior<any, Promise<ContractTransaction>>,
 
   [hoverDownloadBtn, hoverDownloadBtnTether]: Behavior<INode, PointerEvent>,
+  [setMainBerry, setMainBerryTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
+
 
   [changeNetwork, changeNetworkTether]: Behavior<any, CHAIN>,
   [walletChange, walletChangeTether]: Behavior<IWalletName, IWalletName>,
@@ -259,6 +261,17 @@ export const $Wardrobe = (config: IBerryComp) => component((
               select: changeBerryTether()
             })
           }, tokenList)),
+
+          switchLatest(awaitPromises(combineArray(async (contract, account, berry) => {
+            const mainId = account ? (await contract.getDataOf(account).catch(() => null))?.tokenId.toNumber() : null
+            const disabled = now(berry === null || berry?.id === mainId)
+
+            return $ButtonSecondary({ $content: $text(`Set PFP`), disabled })({
+              click: setMainBerryTether(map(async () => {
+                return (await contract.chooseMain(berry!.id))
+              }))
+            })
+          }, connect.profile.contract, account, selectedBerry))),
         ),
       ),
 
@@ -273,7 +286,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
               return attrTupleId > 0 && attrTupleId < 7
             })
 
-          return $row(layoutSheet.spacingBig, style({ flexWrap: 'wrap' }))(
+          return $row(layoutSheet.spacing, style({ flexWrap: 'wrap', placeContent: 'center' }))(
             ...storeItemList.map(item => {
               const id = item.id
 
@@ -297,7 +310,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
               return $row(style({ position: 'relative' }))(
                 $row(style({ cursor: 'pointer', overflow: 'hidden', borderRadius: '8px', backgroundColor: colorAlpha(pallete.message, theme.name === 'light' ? .12 : .92) }))(
                   fadeIn(
-                    style({ filter: itemBalance && itemBalance?.amount > 0n ? '' : 'grayscale(1)' }, selectBehavior($labItem(id, 100)))
+                    style({ filter: itemBalance && itemBalance?.amount > 0n ? '' : 'grayscale(1)' }, selectBehavior($labItem(id, 85)))
                   )
                 ),
                 itemBalance?.amount && account
@@ -457,7 +470,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
           $row(layoutSheet.spacing, style({ placeContent: 'flex-end' }))(
             $IntermediateTx({
               chain: LAB_CHAIN,
-              query: mergeArray([clickSave, setApproval])
+              query: mergeArray([clickSave, setMainBerry, setApproval])
             })({}),
           ),
         )

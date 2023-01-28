@@ -31,6 +31,10 @@ export function formatToBasis(a: bigint): number {
 }
 
 export function getAdjustedDelta(size: bigint, sizeDeltaUsd: bigint, pnl: bigint) {
+  if (size === 0n) {
+    return 0n
+  }
+
   return sizeDeltaUsd * pnl / size
 }
 
