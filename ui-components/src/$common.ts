@@ -28,7 +28,7 @@ const $alertContainer = $row(layoutSheet.spacingSmall, style({
   border: `1px dashed ${pallete.negative}`, padding: '8px 10px',
 }))
 
-export const $alert = ($content: $Branch) => $alertContainer(
+export const $alert = ($content: $Node) => $alertContainer(
   $icon({ $content: $alertIcon, viewBox: '0 0 24 24', width: '18px', svgOps: style({ minWidth: '18px' }) }),
   $content,
 )

@@ -259,8 +259,9 @@ export const competitionCumulativeRoi = O(
 
     const res = await queryCache
 
+    const list = pagingQuery(queryParams, res.sortedCompetitionList)
     return {
-      list: pagingQuery(queryParams, res.sortedCompetitionList),
+      list,
       size: res.size
     }
   }),

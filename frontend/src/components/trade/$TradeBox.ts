@@ -838,7 +838,6 @@ export const $TradeBox = (config: ITradeBox) => component((
                     const tokenDesc = getTokenDescription(option)
                     const liquidity = tradeReader.getAvailableLiquidityUsd(now(option), config.tradeConfig.collateralToken)
                     // const fundingRate = tradeReader.getTokenPoolInfo(now(option))
-
                     return $row(style({ placeContent: 'space-between', flex: 1 }))(
                       $tokenLabelFromSummary(tokenDesc),
 
@@ -1161,6 +1160,13 @@ export const $TradeBox = (config: ITradeBox) => component((
                           return $column(layoutSheet.spacing, style({ maxWidth: '400px' }))(
                             $text(style({ fontWeight: 'bold', fontSize: '1em' }))(`By using GBC Trading, I agree to the following Disclaimer`),
                             $text(style({ fontSize: '.72em' }))(`By accessing, I agree that ${document.location.href} is an interface that interacts with external GMX smart contracts, and does not have access to my funds.`),
+
+                            $alert(
+                              $node(
+                                $text('beta, this may include issues, feedback and issues reports are most welcome! '),
+                                $anchor(attr({ href: 'https://discord.com/channels/941356283234250772/1068859167554682980' }))($text('discord'))
+                              )
+                            ),
 
                             $node(
                               $text(style({ whiteSpace: 'pre-wrap', fontSize: '.75em' }))(`By clicking Agree you accept the `),

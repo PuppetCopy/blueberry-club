@@ -1,24 +1,22 @@
 import { Behavior, replayLatest } from '@aelea/core'
-import { $text, attr, component, nodeEvent, style } from "@aelea/dom"
+import { $text, component, nodeEvent, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
-import { $column, $icon, $row, $seperator, layoutSheet, screenUtils } from '@aelea/ui-components'
+import { $column, $row, $seperator, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { colorAlpha, pallete } from '@aelea/ui-components-theme'
-import { combine, empty, map, multicast, snapshot, take, zip } from '@most/core'
+import { combine, empty, map, multicast, switchLatest, take, zip } from '@most/core'
 import { Stream } from '@most/types'
 import { formatReadableUSD, formatFixed, unixTimestampNow, IRequestCompetitionLadderApi, getChainName, BASIS_POINTS_DIVISOR, getMarginFees, div } from '@gambitdao/gmx-middleware'
 import { $alertTooltip, countdown } from './$rules'
 import { CHAIN, IWalletLink } from '@gambitdao/wallet-link'
 import { $AccountLabel, $accountPreview, $profilePreview } from '../../components/$AccountProfile'
 import { BLUEBERRY_REFFERAL_CODE, IProfile, IProfileTradingList, IProfileTradingResult, TOURNAMENT_START_END, TOURNAMENT_START_PERIOD } from '@gambitdao/gbc-middleware'
-import { $anchor, $infoTooltipLabel, $Link } from '@gambitdao/ui-components'
+import { $alert, $infoTooltipLabel, $Link } from '@gambitdao/ui-components'
 import { $berryByToken } from '../../logic/common'
 import { $CardTable } from '../../components/$common'
 import { IProfileActiveTab } from '../$Profile'
 import { $addToCalendar, $responsiveFlex } from '../../elements/$common'
-import { $gmxLogo } from '../../common/$icons'
-import { $ButtonSecondary, $defaultMiniButtonSecondary } from '../../components/form/$Button'
 
-const MAX_COLLATERAL = 1000000000000000000000000000000000n
+const MAX_COLLATERAL = 100000000000000000000000000000000n
 
 const prizeRatioLadder: bigint[] = [3000n, 1500n, 750n, ...Array(7).fill(div(4750n, 7n) / BASIS_POINTS_DIVISOR)]
 
@@ -41,7 +39,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
   const start = 0
   const end = TOURNAMENT_START_END
 
-  const tableList = replayLatest(map(res => {
+  const tableList = multicast(map(res => {
     return res.list
   }, config.competitionCumulativeRoi))
 
@@ -150,6 +148,17 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
         $details(TOURNAMENT_START_PERIOD, TOURNAMENT_START_END)
       ),
 
+      switchLatest(map(chain => {
+
+        if (chain === CHAIN.AVALANCHE) {
+          return $alert(
+            $text(`The Avalanche network's Subgraph is currently experiencing upgrade issues. Despite these challenges, the competition will continue to operate in the background.`)
+          )
+        }
+
+        return empty()
+      }, config.walletLink.network)),
+
 
       // switchLatest(map(res => {
       //   const list = res.page
@@ -252,7 +261,6 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
         $CardTable({
           dataSource: tableList,
           columns: [
-
             {
               $head: $text('Account'),
               columnOp: style({ minWidth: '120px', flex: 1.2, alignItems: 'center' }),
@@ -300,7 +308,6 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
               },
 
             ] : []),
-
             {
               $head: $column(style({ textAlign: 'center' }))(
                 $text('Profits $'),
@@ -330,6 +337,13 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
               $$body: zip((prizePool, pos) => {
                 const prizeRatio = prizeRatioLadder[pos.rank - 1]
 
+                // const prizeRatio = easeInExpo()
+                // const usd1k = 10n ** 30n * 1000n
+                // const particiapnts = formatFixed(prizePool / usd1k, 30)
+                // total = rewards[i] = ((i + 1) ** 2) / total
+
+
+
                 return $column(style({ alignItems: 'flex-end' }))(
                   prizeRatio
                     ? $row(
@@ -345,6 +359,8 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
         })({
           scrollIndex: requestCompetitionLadderTether(
             combine((chain, pageIndex) => {
+              console.log(pageIndex)
+
               const params: IRequestCompetitionLadderApi = {
                 chain,
                 referralCode: BLUEBERRY_REFFERAL_CODE,
@@ -355,7 +371,8 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
                 pageSize: 20,
               }
               return params
-            }, config.walletLink.network)
+            }, config.walletLink.network),
+            multicast
           )
         }),
       )
