@@ -18,7 +18,7 @@ import {
 } from "@gambitdao/ui-components"
 import {
   merge, multicast, mergeArray, now, snapshot, map, switchLatest,
-  skipRepeats, empty, fromPromise, constant, startWith, skipRepeatsWith, awaitPromises, zip, sample, delay, recoverWith
+  skipRepeats, empty, fromPromise, constant, startWith, skipRepeatsWith, awaitPromises, zip, sample, delay, recoverWith, tap
 } from "@most/core"
 import { Stream } from "@most/types"
 import { $Slider } from "../$Slider"
@@ -162,7 +162,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
   [crosshairMove, crosshairMoveTether]: Behavior<MouseEventParams, MouseEventParams>,
   [clickResetTradeMode, clickResetTradeModeTether]: Behavior<any, any>,
-  [clickMax, clickMaxTether]: Behavior<any, any>,
+  [clickMax, clickMaxTether]: Behavior<PointerEvent, any>,
   [changeRoute, changeRouteTether]: Behavior<string, string>,
 
   [switchTrade, switchTradeTether]: Behavior<any, ITrade>,
@@ -628,7 +628,9 @@ export const $TradeBox = (config: ITradeBox) => component((
                 )
               )
             })({
-              click: clickMaxTether()
+              click: clickMaxTether(
+                delay(10)
+              )
             }),
 
             // $ButtonToggle({
