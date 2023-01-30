@@ -43,7 +43,7 @@ export const $defaultThumb = $row(
 export const $Slider = ({
   value, thumbText,
   $thumb = $defaultThumb,
-  thumbSize = screenUtils.isDesktopScreen ? 36 : 36,
+  thumbSize = 26,
   color = now(pallete.primary),
   step = 0,
   disabled = now(false),
