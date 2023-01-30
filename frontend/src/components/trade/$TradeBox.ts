@@ -583,7 +583,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                 }, config.tradeState.inputTokenDescription)),
                 value: {
                   value: config.tradeConfig.inputToken,
-                  $container: $defaultSelectContainer(style({ minWidth: '350px', left: 0 })),
+                  $container: $defaultSelectContainer(style({ minWidth: '290px', left: 0 })),
                   $$option: map(option => {
                     const token = resolveAddress(chain, option)
                     const balanceAmount = fromPromise(getErc20Balance(option, provider))
@@ -593,8 +593,8 @@ export const $TradeBox = (config: ITradeBox) => component((
                     return $row(style({ placeContent: 'space-between', flex: 1 }))(
                       $tokenLabelFromSummary(tokenDesc),
                       $column(style({ alignItems: 'flex-end' }))(
-                        $text(map(bn => readableNumber(formatFixed(bn, tokenDesc.decimals)), balanceAmount)),
-                        $text(style({ color: pallete.foreground, fontSize: '0.75em' }))(combineArray((bn, price) => {
+                        $text(style({ whiteSpace: 'nowrap', fontSize: '0.75em' }))(map(bn => readableNumber(formatFixed(bn, tokenDesc.decimals)) + ` ${tokenDesc.symbol}`, balanceAmount)),
+                        $text(style({ fontSize: '0.75em' }))(combineArray((bn, price) => {
                           return formatReadableUSD(getTokenUsd(bn, price, tokenDesc.decimals))
                         }, balanceAmount, price)),
                       )
@@ -858,7 +858,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                 }, config.tradeConfig.indexToken)),
                 value: {
                   value: config.tradeConfig.indexToken,
-                  $container: $defaultSelectContainer(style({ minWidth: '350px', right: 0 })),
+                  $container: $defaultSelectContainer(style({ minWidth: '290px', right: 0 })),
                   $$option: map((option) => {
                     const tokenDesc = getTokenDescription(option)
                     const liquidity = tradeReader.getAvailableLiquidityUsd(now(option), config.tradeConfig.collateralToken)
@@ -963,7 +963,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                     ),
                     value: {
                       value: config.tradeConfig.collateralToken,
-                      $container: $defaultSelectContainer(style({ minWidth: '300px', right: 0 })),
+                      $container: $defaultSelectContainer(style({ minWidth: '290px', right: 0 })),
                       $$option: map(option => {
                         const tokenDesc = getTokenDescription(option)
                         const liquidity = tradeReader.getAvailableLiquidityUsd(config.tradeConfig.indexToken, now(option))
@@ -1149,7 +1149,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                         ),
                         'Receive'
                       ),
-                      $text(style({  fontSize: '0.75em', whiteSpace: 'pre-wrap' }))(map(params => {
+                      $text(style({ fontSize: '0.75em', whiteSpace: 'pre-wrap' }))(map(params => {
 
                         if (params.position.averagePrice === 0n) {
                           return 0n
