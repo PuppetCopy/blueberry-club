@@ -43,7 +43,7 @@ export const $defaultThumb = $row(
 export const $Slider = ({
   value, thumbText,
   $thumb = $defaultThumb,
-  thumbSize = 26,
+  thumbSize = 36,
   color = now(pallete.primary),
   step = 0,
   disabled = now(false),
@@ -72,7 +72,7 @@ export const $Slider = ({
 
 
   return [
-    $column(style({ minHeight: '36px', zIndex: 0, touchAction: 'none', placeContent: 'center', cursor: 'pointer' }))(
+    $column(style({ minHeight: '26px', zIndex: 0, touchAction: 'none', placeContent: 'center', cursor: 'pointer' }))(
       sliderDimensionTether(observer.resize({}), map(res => res[0])),
       thumbePositionDeltaTether(
         nodeEvent('pointerdown'),
