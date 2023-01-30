@@ -547,11 +547,11 @@ export const $Trade = (config: ITradeComponent) => component((
   // const activeTradeUnique = skipRepeatsWith((prev, next) => {
   //   return prev.positionId.key === next.positionId.key
   // }, activeTrade)
-
+  // ipfs://bafyreihwgnhxonscmgxulqzqjo44fdvud3hzh6mphyvlqn2tuaqxxjaoty/metadata.json
 
   return [
     $container(
-      $node(layoutSheet.spacingBig, style({ flex: 1, minWidth: 0, paddingBottom: screenUtils.isDesktopScreen ? '50px' : '8px', display: 'flex', flexDirection: screenUtils.isDesktopScreen ? 'column' : 'column-reverse' }))(
+      $node(layoutSheet.spacingBig, style({ flex: 1, minWidth: 0, paddingBottom: screenUtils.isDesktopScreen ? '50px' : '18px', display: 'flex', flexDirection: screenUtils.isDesktopScreen ? 'column' : 'column-reverse' }))(
 
         filterNull(
           constant(null, adjustPosition)

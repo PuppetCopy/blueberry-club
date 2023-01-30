@@ -247,7 +247,8 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
           $row(layoutSheet.spacingSmall, style({ placeContent: 'flex-end' }))(
             $infoTooltipLabel($column(
               $text('The current accumulated amount from the GMX referral program will be rewarded to the top traders at the end'),
-              $text('it is calculated as Aggregated size fee * 0.15% (BLUBERRY Referral)'),
+              $text('it is calculated as:'),
+              $text(style({ fontSize: '.75em', fontStyle: 'italic' }))('Traded Volume * .001 (Margin Fee) * .15 (BLUBERRY Referral)'),
             ), 'Prize Pool'),
             $text(style({
               color: pallete.positive,

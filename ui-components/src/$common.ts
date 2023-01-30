@@ -6,7 +6,7 @@ import { bnDiv, formatReadableUSD, getNextLiquidationPrice, getTxExplorerUrl, IA
 import { CHAIN } from "@gambitdao/wallet-link"
 import { now, multicast, map, empty, skipRepeats } from "@most/core"
 import { Stream } from "@most/types"
-import { $alertIcon, $caretDblDown, $info, $tokenIconMap } from "./$icons"
+import { $alertIcon, $caretDblDown, $info, $arrowRight, $tokenIconMap } from "./$icons"
 import { $defaultDropContainer, $defaultTooltipAnchorContainer, $Tooltip } from "./$Tooltip"
 
 
@@ -246,11 +246,16 @@ export const $hintNumChange = (config: {
     ? $infoTooltipLabel(config.tooltip, config.label)
     : config.label
       ? $text(style({ color: pallete.foreground, fontSize: '0.75em' }))(config.label) : empty(),
-  $row(layoutSheet.spacingTiny, style({ fontSize: '0.75em' }))(
+  $row(layoutSheet.spacingTiny, style({ fontSize: '0.75em', alignItems: 'center' }))(
     $text(style({ color: pallete.foreground }))(config.val),
-    $text(styleBehavior(map(isIncrease => {
-      return isIncrease ? { color: pallete.positive } : { color: pallete.indeterminate }
-    }, config.isIncrease)))('→'),
+    $icon({
+      $content: $arrowRight,
+      width: '8px',
+      svgOps: styleBehavior(map(isIncrease => {
+        return isIncrease ? { fill: pallete.positive } : { fill: pallete.indeterminate }
+      }, config.isIncrease)),
+      viewBox: '0 0 32 32'
+    }),
     $text(style({}))(config.change),
   ),
 )
