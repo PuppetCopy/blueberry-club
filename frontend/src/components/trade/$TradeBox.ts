@@ -387,6 +387,12 @@ export const $TradeBox = (config: ITradeBox) => component((
     return startWith(true, constant(false, recoverWith(() => now(false), ctxQueryStream)))
   }, reqTradeCtxQuery)))
 
+  const $defualtSelectContainer = $row(
+    style({ width: '95px', cursor: 'pointer', position: 'relative', alignSelf: 'center', border: `1px solid ${pallete.middleground}`, borderRadius: '12px' }),
+    stylePseudo(':hover', { borderColor: `${pallete.primary}` })
+  )
+  const $defaultSelectionContainer = $row(layoutSheet.spacingTiny, style({ fontSize: '.75em', alignItems: 'center', flex: 1, padding: '6px 10px' }))
+
   return [
     $card(style({ flexDirection: screenUtils.isDesktopScreen ? 'column' : 'column-reverse', padding: 0, gap: 0, background: theme.name === 'dark' ? 'rgb(0 0 0 / 15%)' : '' }))(
       // $row(
@@ -531,28 +537,19 @@ export const $TradeBox = (config: ITradeBox) => component((
           $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
 
             $Dropdown({
-              $container: $row(
-                stylePseudo(':hover', { borderColor: `${pallete.primary}` }),
-                style({ width: '100px', position: 'relative', alignSelf: 'center', border: `1px solid ${pallete.middleground}`, borderRadius: '12px' }),
-                stylePseudo(':hover', { borderColor: `${pallete.primary}` }),
-              ),
+              $container: $defualtSelectContainer,
               $selection: switchLatest(combineArray((isIncrease, wallet) => {
-                return $row(
-                  $row(layoutSheet.spacingTiny, style({
-                    alignItems: 'center', cursor: 'pointer', fontWeight: 'bold', fontSize: '.75em',
-                    padding: '6px 12px', borderRadius: '12px'
-                  }))(
-                    // $icon({
-                    //   $content: $bagOfCoins,
-                    //   svgOps: styleBehavior(map(isIncrease => ({ fill: isIncrease ? pallete.message : pallete.indeterminate }), config.tradeConfig.isIncrease)),
-                    //   width: '18px', viewBox: '0 0 32 32'
-                    // }),
-                    $text(isIncrease ? 'Increase' : 'Decrease'),
-                    // $WalletLogoMap[wallet?.walletName || IWalletName.none],
-                    // $icon({ $content: isIncrease ? $walletConnectLogo : $walletConnectLogo, width: '18px', viewBox: '0 0 32 32' }),
+                return $defaultSelectionContainer(
+                  // $icon({
+                  //   $content: $bagOfCoins,
+                  //   svgOps: styleBehavior(map(isIncrease => ({ fill: isIncrease ? pallete.message : pallete.indeterminate }), config.tradeConfig.isIncrease)),
+                  //   width: '18px', viewBox: '0 0 32 32'
+                  // }),
+                  $text(style({ flex: 1 }))(isIncrease ? 'Increase' : 'Decrease'),
+                  // $WalletLogoMap[wallet?.walletName || IWalletName.none],
+                  // $icon({ $content: isIncrease ? $walletConnectLogo : $walletConnectLogo, width: '18px', viewBox: '0 0 32 32' }),
 
-                    $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginRight: '-5px' }), viewBox: '0 0 32 32' }),
-                  )
+                  $icon({ $content: $caretDown, width: '14px', viewBox: '0 0 32 32' }),
                 )
               }, config.tradeConfig.isIncrease, config.walletLink.wallet)),
               value: {
@@ -652,6 +649,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                 )
               })({
                 click: clickCloseTether(
+                  delay(10),
                   constant(0n)
                 )
               })
@@ -823,20 +821,14 @@ export const $TradeBox = (config: ITradeBox) => component((
 
 
             $Dropdown({
-              $container: $row(
-                stylePseudo(':hover', { borderColor: `${pallete.primary}` }),
-                style({ width: '100px', position: 'relative', alignSelf: 'center', border: `1px solid ${pallete.middleground}`, borderRadius: '12px' }),
-                stylePseudo(':hover', { borderColor: `${pallete.primary}` }),
-              ),
-              $selection: $row(layoutSheet.spacingTiny, style({ padding: '6px 12px', alignItems: 'center', cursor: 'pointer', fontWeight: 'bold', fontSize: '.75em' }))(
-                switchLatest(map(isLong => {
-                  return $row(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
-                    $icon({ $content: isLong ? $bull : $bear, width: '18px', svgOps: style({ padding: '2px' }), viewBox: '0 0 32 32' }),
-                    $text(isLong ? 'Long' : 'Short'),
-                  )
-                }, config.tradeConfig.isLong)),
-                $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginRight: '-5px' }), viewBox: '0 0 32 32' }),
-              ),
+              $container: $defualtSelectContainer,
+              $selection: switchLatest(map(isLong => {
+                return $defaultSelectionContainer(
+                  $icon({ $content: isLong ? $bull : $bear, width: '18px', svgOps: style({ padding: '2px' }), viewBox: '0 0 32 32' }),
+                  $text(style({ flex: 1 }))(isLong ? 'Long' : 'Short'),
+                  $icon({ $content: $caretDown, width: '14px', viewBox: '0 0 32 32' }),
+                )
+              }, config.tradeConfig.isLong)),
               value: {
                 value: config.tradeConfig.isLong,
                 $$option: map((isLong) => {
@@ -1157,7 +1149,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                         ),
                         'Receive'
                       ),
-                      $text(style({ color: pallete.positive, fontSize: '0.75em', whiteSpace: 'pre-wrap' }))(map(params => {
+                      $text(style({  fontSize: '0.75em', whiteSpace: 'pre-wrap' }))(map(params => {
 
                         if (params.position.averagePrice === 0n) {
                           return 0n
