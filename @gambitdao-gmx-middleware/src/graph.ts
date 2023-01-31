@@ -36,12 +36,22 @@ export const arbitrumGraphDev = createSubgraphClient({
   // requestPolicy: 'network-only',
   url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-arbitrum-dev'
 })
+export const avalancheGraphDev = createSubgraphClient({
+  fetch: fetch as any,
+  // requestPolicy: 'network-only',
+  url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-avalanche-dev'
+})
 
 export const avalancheGraph = createSubgraphClient({
   fetch: fetch as any,
   url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-avalanche'
 })
 
+
+export const subgraphDevChainMap: { [p in CHAIN]: typeof arbitrumGraph } = {
+  [CHAIN.ARBITRUM]: arbitrumGraphDev,
+  [CHAIN.AVALANCHE]: avalancheGraphDev,
+} as any
 
 export const subgraphChainMap: { [p in CHAIN]: typeof arbitrumGraph } = {
   [CHAIN.ARBITRUM]: arbitrumGraph,
@@ -230,7 +240,7 @@ export async function getCompetitionCumulativeRoi(queryParams: IRequestCompetiti
   const dateNow = unixTimestampNow()
 
   const competitionAccountListQuery = fetchTrades({ ...queryParams, offset: 0, pageSize: 1000 }, async (params) => {
-    const res = await arbitrumGraphDev(gql(`
+    const res = await subgraphDevChainMap[queryParams.chain](gql(`
 
 query {
   trades(first: 1000, skip: ${params.offset}, where: { entryReferralCode: "${queryParams.referralCode}", timestamp_gte: ${params.from}, timestamp_lte: ${params.to}}) {
@@ -282,7 +292,7 @@ export const competitionCumulativeRoi = O(
     const from = queryParams.from
 
     const competitionAccountListQuery = fetchTrades({ ...queryParams, from, to, offset: 0, pageSize: 1000 }, async (params) => {
-      const res = await arbitrumGraphDev(gql(`
+      const res = await subgraphDevChainMap[queryParams.chain](gql(`
 
 query {
   trades(first: 1000, skip: ${params.offset}, where: { entryReferralCode: "${queryParams.referralCode}", timestamp_gte: ${params.from}, timestamp_lte: ${params.to}}) {
@@ -325,7 +335,7 @@ export const competitionAccountList = O(
   map((queryParams: IRequestCompetitionLadderApi) => {
 
     const competitionAccountListQuery = fetchHistoricTrades({ ...queryParams, offset: 0 }, async (params) => {
-      const res = await arbitrumGraphDev(gql(`
+      const res = await subgraphDevChainMap[queryParams.chain](gql(`
 query {
   trades(first: 1000, skip: ${params.offset}, where: { entryReferralCode: "${queryParams.referralCode}", timestamp_gte: ${params.from}, timestamp_lte: ${params.to}}) {
       ${tradeFields}
