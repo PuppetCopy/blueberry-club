@@ -16,9 +16,9 @@ import { $CardTable } from '../../components/$common'
 import { IProfileActiveTab } from '../$Profile'
 import { $addToCalendar, $responsiveFlex } from '../../elements/$common'
 
-const MAX_COLLATERAL = 100000000000000000000000000000000n
+const MAX_COLLATERAL = 500000000000000000000000000000000n
 
-const prizeRatioLadder: bigint[] = [3000n, 1500n, 750n, ...Array(7).fill(div(4750n, 7n) / BASIS_POINTS_DIVISOR)]
+const prizeRatioLadder: bigint[] = [3000n, 1500n, 750n, ...Array(17).fill(div(4750n, 17n) / BASIS_POINTS_DIVISOR)]
 
 
 export interface ICompetitonTopCumulative {
