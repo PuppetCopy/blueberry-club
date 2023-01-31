@@ -148,16 +148,16 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
         $details(TOURNAMENT_START_PERIOD, TOURNAMENT_START_END)
       ),
 
-      switchLatest(map(chain => {
+      // switchLatest(map(chain => {
 
-        if (chain === CHAIN.AVALANCHE) {
-          return $alert(
-            $text(`The Avalanche network's Subgraph is currently experiencing upgrade issues. Despite these challenges, the competition will continue to operate in the background.`)
-          )
-        }
+      //   if (chain === CHAIN.AVALANCHE) {
+      //     return $alert(
+      //       $text(`The Avalanche network's Subgraph is currently experiencing upgrade issues. Despite these challenges, the competition will continue to operate in the background.`)
+      //     )
+      //   }
 
-        return empty()
-      }, config.walletLink.network)),
+      //   return empty()
+      // }, config.walletLink.network)),
 
 
       // switchLatest(map(res => {

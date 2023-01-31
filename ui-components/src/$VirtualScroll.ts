@@ -21,26 +21,32 @@ export type ScrollResponse = $Branch[] | IScrollPagableReponse
 export interface QuantumScroll {
   insertAscending?: boolean
   dataSource: Stream<ScrollResponse>
-
   $container?: NodeComposeFn<$Node>
   $loader?: $Node
+  $emptyMessage?: $Node
 }
 
 
 export const $defaultVScrollLoader = $text(style({ color: pallete.foreground, padding: '3px 10px' }))('loading...')
 export const $defaultVScrollContainer = $column(layoutSheet.spacing)
+const $defaultEmptyMessage = $column(layoutSheet.spacing, style({ padding: '20px' }))(
+  $text('No items to display')
+)
 
 
-export const $VirtualScroll = (config: QuantumScroll) => component((
+export const $VirtualScroll = ({
+  dataSource,
+  $container = $defaultVScrollContainer,
+  $emptyMessage = $defaultEmptyMessage,
+  $loader = $defaultVScrollLoader,
+  insertAscending = false
+}: QuantumScroll) => component((
   [intersecting, intersectingTether]: Behavior<IBranch, IntersectionObserverEntry>,
 ) => {
 
   const scrollIndex: Stream<ScrollRequest> = scan(seed => seed + 1, 0, intersecting)
 
 
-  const $container = (config.$container || $defaultVScrollContainer)(
-    map(node => ({ ...node, insertAscending: config.insertAscending || false })),
-  )
 
   const intersectedLoader = intersectingTether(
     observer.intersection({ threshold: 1 }),
@@ -50,12 +56,11 @@ export const $VirtualScroll = (config: QuantumScroll) => component((
     }),
   )
 
-  const $loader = config.$loader || $defaultVScrollLoader
   const $observerloader = $custom('observer')(intersectedLoader)(
     $loader
   )
 
-  const dataSourceMc = multicast(config.dataSource)
+  const dataSourceMc = multicast(dataSource)
   const loadState = zipState({ data: dataSourceMc, scrollIndex })
 
   const displayState = {
@@ -63,11 +68,19 @@ export const $VirtualScroll = (config: QuantumScroll) => component((
   }
 
   const $itemLoader = loop((seed, state) => {
+    const itemCount = Array.isArray(state.data) ? state.data.length : state.data.$items.length
+
+    if (state.scrollIndex === 0 && itemCount === 0) {
+      return { seed, value: $defaultEmptyMessage }
+    }
+
     if (Array.isArray(state.data)) {
       return { seed, value: mergeArray(state.data) }
     }
 
-    const hasMoreItems = state.data.pageSize === state.data.$items.length
+
+
+    const hasMoreItems = state.data.pageSize === itemCount
 
     const $items = hasMoreItems
       ? [...state.data.$items, $observerloader]
@@ -79,7 +92,9 @@ export const $VirtualScroll = (config: QuantumScroll) => component((
 
   return [
     $container(
-      // until(dataSourceMc, $loader),
+      map(node => ({ ...node, insertAscending })),
+    )(
+      until(dataSourceMc, $loader),
       join($itemLoader)
     ),
 
