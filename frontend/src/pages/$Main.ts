@@ -28,6 +28,7 @@ import { globalProviderMap } from "../logic/provider"
 import { $Leaderboard } from "./$Leaderboard"
 import { $Treasury } from "./$Treasury"
 import { $discoverIdentityDisplay } from "../components/$AccountProfile"
+import { pallete } from "@aelea/ui-components-theme"
 
 
 const popStateEvent = eventElementTarget('popstate', window)
@@ -131,10 +132,16 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
 
   const $liItem = $element('li')(style({ marginBottom: '14px' }))
 
-
   return [
 
-    $column(designSheet.main, style({ fontWeight: 400, alignItems: 'center', gap: screenUtils.isDesktopScreen ? '85px' : '55px', overflowX: 'hidden', placeContent: 'center', padding: screenUtils.isMobileScreen ? '0 15px' : '0 15px' }))(
+    $column(style({
+      color: pallete.message,
+      fill: pallete.message,
+      backgroundColor: pallete.background,
+      minHeight: '100vh',
+      fontWeight: 400,
+      gap: screenUtils.isDesktopScreen ? '85px' : '55px', overflowX: 'hidden', padding: screenUtils.isMobileScreen ? '0 15px' : '0 15px'
+    }))(
 
       $column(style({ gap: '25px' }))(
         $column(
