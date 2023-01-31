@@ -1,5 +1,5 @@
 
-import { awaitPromises, combine, empty, map, mergeArray, multicast, now, scan, skip, snapshot, switchLatest, tap } from "@most/core"
+import { awaitPromises, combine, empty, map, mergeArray, multicast, now, scan, skip, snapshot, switchLatest } from "@most/core"
 import {
   switchFailedSources, ITokenIndex, ITokenInput, ITokenTrade, AddressZero, getChainName, filterNull, IVaultPosition, unixTimestampNow, TRADE_CONTRACT_MAPPING,
   IAbstractPositionKey, getSafeMappedValue, parseFixed, TOKEN_SYMBOL, getPositionKey, KeeperIncreaseRequest, KeeperDecreaseRequest, safeDiv, TOKEN_ADDRESS_TO_SYMBOL, div, IAbstractPositionIdentity, getTokenDescription
@@ -13,7 +13,7 @@ import { getContractAddress, readContractMapping } from "../common"
 import { CHAIN } from "@gambitdao/wallet-link"
 import { id } from "@ethersproject/hash"
 import { Interface } from "@ethersproject/abi"
-import { http } from "@aelea/ui-components"
+import { http, observer } from "@aelea/ui-components"
 import { BaseProvider, Web3Provider } from "@ethersproject/providers"
 import { Contract } from "ethers"
 import { listen } from "./listen"
@@ -57,14 +57,14 @@ const derievedSymbolMapping: { [k: string]: TOKEN_SYMBOL } = {
 
 
 const gmxIOPriceMapSource = {
-  [CHAIN.ARBITRUM]: replayLatest(multicast(periodicRun({
-    interval: 5000,
+  [CHAIN.ARBITRUM]: replayLatest(multicast(observer.duringWindowActivity(periodicRun({
+    interval: 2000,
     actionOp: map(async time => getGmxIOPriceMap('https://gmx-server-mainnet.uw.r.appspot.com/prices'))
-  }))),
-  [CHAIN.AVALANCHE]: replayLatest(multicast(periodicRun({
-    interval: 5000,
+  })))),
+  [CHAIN.AVALANCHE]: replayLatest(multicast(observer.duringWindowActivity(periodicRun({
+    interval: 2000,
     actionOp: map(async time => getGmxIOPriceMap('https://gmx-avax-server.uc.r.appspot.com/prices'))
-  }))),
+  })))),
 }
 
 export function latestPriceFromExchanges(indexToken: ITokenTrade): Stream<bigint> {

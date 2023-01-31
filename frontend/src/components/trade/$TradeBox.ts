@@ -1057,7 +1057,7 @@ export const $TradeBox = (config: ITradeBox) => component((
             const positionRouterAddress = getContractAddress(TRADE_CONTRACT_MAPPING, w3p.chain, 'PositionRouter')
 
             return $column(style({ minHeight: '140px', flexDirection: screenUtils.isDesktopScreen ? 'column' : 'column-reverse' }))(
-              $row(layoutSheet.spacing, style({ flexDirection: screenUtils.isDesktopScreen ? 'column' : 'column-reverse', padding: '16px', margin: 'auto 0', placeContent: 'space-between' }), styleInline(map(mode => ({ height: '140px', display: mode ? 'flex' : 'none' }), inTradeMode)))(
+              $row(style({ flexDirection: screenUtils.isDesktopScreen ? 'column' : 'column-reverse', padding: '16px', margin: 'auto 0', placeContent: 'space-between' }), styleInline(map(mode => ({ height: '140px', display: mode ? 'flex' : 'none' }), inTradeMode)))(
                 $column(layoutSheet.spacingSmall)(
                   // $TextField({
                   //   label: 'Slippage %',

@@ -1,7 +1,7 @@
 import { Behavior, combineArray, combineObject, O, replayLatest } from "@aelea/core"
 import { $node, $text, component, eventElementTarget, style, styleInline } from "@aelea/dom"
 import { Route } from "@aelea/router"
-import { $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
+import { $column, $icon, $row, layoutSheet, observer, screenUtils } from "@aelea/ui-components"
 import {
   AddressZero, formatFixed, intervalTimeMap, IPricefeed, IRequestPricefeedApi, ITrade, unixTimestampNow, ITradeOpen, BASIS_POINTS_DIVISOR, getNextAveragePrice,
   getNextLiquidationPrice, getMarginFees, STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, TAX_BASIS_POINTS,
@@ -183,7 +183,9 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
   const inputTokenPrice = skipRepeats(tradeReader.getLatestPrice(inputToken))
-  const indexTokenPrice = skipRepeats(multicast(switchLatest(map(token => latestPriceFromExchanges(token), indexToken))))
+  const indexTokenPrice = skipRepeats(multicast(switchLatest(map(token => {
+    return observer.duringWindowActivity(latestPriceFromExchanges(token))
+  }, indexToken))))
   const collateralTokenPrice = skipRepeats(tradeReader.getLatestPrice(collateralToken))
 
 
@@ -778,6 +780,8 @@ export const $Trade = (config: ITradeComponent) => component((
                         const time = nextTimeSlot * tf as Time
 
                         const isNext = nextTimeSlot > prevTimeSlot
+
+                        document.title = `${readableNumber(marketPrice)}`
 
                         if (isNext) {
                           return {
