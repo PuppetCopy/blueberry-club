@@ -20,6 +20,7 @@ export interface TooltipConfig {
 
 export const $defaultDropContainer = $column(style({
   maxWidth: '600px',
+  userSelect: 'text',
   background: pallete.background,
   boxShadow: `${colorAlpha(pallete.message, .14)} 0px 4px 20px 8px, ${colorAlpha(pallete.message, .1)} 0px 1px 3px 1px`,
   padding: '8px',

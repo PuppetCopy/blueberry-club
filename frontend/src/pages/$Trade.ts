@@ -835,7 +835,10 @@ export const $Trade = (config: ITradeComponent) => component((
             $infoLabeledValue(
               'Borrow Rate',
               // 
-              $text(map(poolInfo => readableNumber(formatToBasis(poolInfo.rate)) + '%', collateralTokenPoolInfo))
+              $row(style({ whiteSpace: 'pre' }))(
+                $text(map(poolInfo => readableNumber(formatToBasis(poolInfo.rate)) + '%', collateralTokenPoolInfo)),
+                $text(style({ color: pallete.foreground }))(' / hr')
+              )
             ),
             $infoLabeledValue(
               'Available Liquidity',

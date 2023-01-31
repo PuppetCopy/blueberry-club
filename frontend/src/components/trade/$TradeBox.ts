@@ -870,7 +870,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                       $column(layoutSheet.spacingTiny, style({ fontSize: '.75em', alignItems: 'flex-end', placeContent: 'center' }))(
                         $text(map(amountUsd => formatReadableUSD(amountUsd), liquidity)),
                         $row(style({ whiteSpace: 'pre' }))(
-                          $text(map(info => readableNumber(formatToBasis(info.rate)), poolInfo)),
+                          $text(map(info => readableNumber(formatToBasis(info.rate)) + '%', poolInfo)),
                           $text(style({ color: pallete.foreground }))(' / hr')
                         ),
                       )
@@ -976,7 +976,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                           $column(layoutSheet.spacingTiny, style({ fontSize: '.75em', alignItems: 'flex-end', placeContent: 'center' }))(
                             $text(map(amountUsd => formatReadableUSD(amountUsd), liquidity)),
                             $row(style({ whiteSpace: 'pre' }))(
-                              $text(map(info => readableNumber(formatToBasis(info.rate)), poolInfo)),
+                              $text(map(info => readableNumber(formatToBasis(info.rate)) + '%', poolInfo)),
                               $text(style({ color: pallete.foreground }))(' / hr')
                             ),
                           )
