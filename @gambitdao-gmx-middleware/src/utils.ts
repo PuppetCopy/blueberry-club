@@ -81,12 +81,12 @@ export function readableDate(timestamp: number) {
 
 export function formatReadableUSD(ammount: bigint | number) {
   if (ammount === 0n) {
-    return '0'
+    return '$0'
   }
 
   const amountUsd = typeof ammount === 'bigint' ? formatFixed(ammount, USD_DECIMALS) : ammount
 
-  return readableNumber(amountUsd)
+  return '$' + readableNumber(amountUsd)
 }
 
 export function shortenTxAddress(address: string) {

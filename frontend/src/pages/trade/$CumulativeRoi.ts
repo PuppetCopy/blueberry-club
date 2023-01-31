@@ -254,7 +254,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
               color: pallete.positive,
               fontSize: '2.25em',
               textShadow: `${pallete.positive} 1px 1px 20px, ${pallete.positive} 0px 0px 20px`
-            }))(map(amount => '$' + formatReadableUSD(amount), prizePool))
+            }))(map(amount => formatReadableUSD(amount), prizePool))
           ),
 
         ),
