@@ -70,7 +70,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
 
   const $details = (start: number, end: number) => {
     const now = unixTimestampNow()
-    const started = now > start
+    const started = now >= start
 
     return $column(layoutSheet.spacing)(
       $column(screenUtils.isDesktopScreen ? layoutSheet.spacingBig : layoutSheet.spacing, style({ flexDirection: screenUtils.isDesktopScreen ? 'row' : 'column', fontSize: '1.15em', alignItems: 'center', placeContent: 'center' }))(
