@@ -1,16 +1,16 @@
-import { Behavior, replayLatest } from '@aelea/core'
+import { Behavior } from '@aelea/core'
 import { $text, component, nodeEvent, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
 import { $column, $row, $seperator, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { colorAlpha, pallete } from '@aelea/ui-components-theme'
-import { combine, empty, map, multicast, switchLatest, take, zip } from '@most/core'
+import { combine, empty, map, multicast, take, zip } from '@most/core'
 import { Stream } from '@most/types'
-import { formatReadableUSD, formatFixed, unixTimestampNow, IRequestCompetitionLadderApi, getChainName, BASIS_POINTS_DIVISOR, getMarginFees, div } from '@gambitdao/gmx-middleware'
+import { formatReadableUSD, formatFixed, unixTimestampNow, IRequestCompetitionLadderApi, getChainName, BASIS_POINTS_DIVISOR, getMarginFees, div, intervalTimeMap } from '@gambitdao/gmx-middleware'
 import { $alertTooltip, countdown } from './$rules'
 import { CHAIN, IWalletLink } from '@gambitdao/wallet-link'
 import { $AccountLabel, $accountPreview, $profilePreview } from '../../components/$AccountProfile'
-import { BLUEBERRY_REFFERAL_CODE, IProfile, IProfileTradingList, IProfileTradingResult, TOURNAMENT_START_END, TOURNAMENT_START_PERIOD } from '@gambitdao/gbc-middleware'
-import { $alert, $infoTooltipLabel, $Link } from '@gambitdao/ui-components'
+import { BLUEBERRY_REFFERAL_CODE, IProfile, IProfileTradingList, IProfileTradingResult, TOURNAMENT_START, TOURNAMENT_TIME_DURATION } from '@gambitdao/gbc-middleware'
+import { $infoTooltipLabel, $Link } from '@gambitdao/ui-components'
 import { $berryByToken } from '../../logic/common'
 import { $CardTable } from '../../components/$common'
 import { IProfileActiveTab } from '../$Profile'
@@ -30,14 +30,10 @@ export interface ICompetitonTopCumulative {
 
 
 
-
 export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
   [routeChange, routeChangeTether]: Behavior<any, string>,
   [requestCompetitionLadder, requestCompetitionLadderTether]: Behavior<number, IRequestCompetitionLadderApi>,
 ) => {
-  // const start = TOURNAMENT_START_PERIOD
-  const start = 0
-  const end = TOURNAMENT_START_END
 
   const tableList = multicast(map(res => {
     return res.list
@@ -74,7 +70,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
 
   const $details = (start: number, end: number) => {
     const now = unixTimestampNow()
-    const ended = end < now
+    const started = now > start
 
     return $column(layoutSheet.spacing)(
       $column(screenUtils.isDesktopScreen ? layoutSheet.spacingBig : layoutSheet.spacing, style({ flexDirection: screenUtils.isDesktopScreen ? 'row' : 'column', fontSize: '1.15em', alignItems: 'center', placeContent: 'center' }))(
@@ -85,11 +81,17 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
             ),
           ),
         ),
-        ended
-          ? $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+        started
+          ? $column(
+            $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
+              $text(style({ fontSize: '1.25em', color: pallete.indeterminate }))('Beta LIVE!'),
+              $text(style({ color: pallete.foreground }))('Ending in')
+            ),
+            $text(style({ fontSize: '1.25em' }))(countdown(end))
+          )
+          : $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
             $addToCalendar({
-              // time: start,
-              time: new Date(Date.UTC(new Date().getFullYear(), 1, 1, 16)),
+              time: new Date(start * 1000),
               title: 'Blueberry Trading Compeition',
               description: `Monthly trading competitions will be held. These tournaments will offer cash prizes, unique lab items, and more as rewards for traders who compete and win.  \n\n${document.location.href}`
             }),
@@ -98,15 +100,8 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
                 $text(style({ fontSize: '1.25em' }))('Next Cycle!'),
                 $text(style({ color: pallete.foreground }))('Starting in')
               ),
-              $text(style({ fontSize: '1.25em' }))(countdown(Date.UTC(new Date().getFullYear(), 1, 1, 16) / 1000))
+              $text(style({ fontSize: '1.25em' }))(countdown(start))
             )
-          )
-          : $column(
-            $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
-              $text(style({ fontSize: '1.25em', color: pallete.indeterminate }))('Beta LIVE!'),
-              $text(style({ color: pallete.foreground }))('Ending in')
-            ),
-            $text(style({ fontSize: '1.25em' }))(countdown(end))
           )
       ),
 
@@ -145,8 +140,10 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
       // ),
 
       $column(layoutSheet.spacing, style({ alignItems: 'center', placeContent: 'center', margin: '40px 0', }))(
-        $details(TOURNAMENT_START_PERIOD, TOURNAMENT_START_END)
+        $details(TOURNAMENT_START, TOURNAMENT_START + TOURNAMENT_TIME_DURATION)
       ),
+
+      // switchLatest(map(w3p => {d)),
 
       // switchLatest(map(chain => {
 
@@ -360,14 +357,20 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
         })({
           scrollIndex: requestCompetitionLadderTether(
             combine((chain, pageIndex) => {
-              console.log(pageIndex)
+              const date = new Date()
+              const started = unixTimestampNow() >= TOURNAMENT_START
+
+              const from = started
+                ? TOURNAMENT_START
+                : Date.UTC(date.getFullYear(), date.getMonth() - 1, 1, 16) / 1000
+              const to = from + TOURNAMENT_TIME_DURATION
 
               const params: IRequestCompetitionLadderApi = {
                 chain,
                 referralCode: BLUEBERRY_REFFERAL_CODE,
                 maxCollateral: MAX_COLLATERAL,
-                from: start,
-                to: end,
+                from,
+                to,
                 offset: pageIndex * 20,
                 pageSize: 20,
               }
