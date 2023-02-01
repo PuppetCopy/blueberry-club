@@ -3,13 +3,13 @@ import { $text, component, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
 import { $column, $row, $seperator, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { colorAlpha, pallete } from '@aelea/ui-components-theme'
-import { combine, empty, map, multicast, switchLatest, zip } from '@most/core'
+import { awaitPromises, combine, empty, map, multicast, now, switchLatest, zip } from '@most/core'
 import { Stream } from '@most/types'
-import { formatReadableUSD, formatFixed, unixTimestampNow, IRequestCompetitionLadderApi, BASIS_POINTS_DIVISOR, getMarginFees, div } from '@gambitdao/gmx-middleware'
+import { formatReadableUSD, formatFixed, unixTimestampNow, IRequestCompetitionLadderApi, BASIS_POINTS_DIVISOR, getMarginFees, div, switchMap, gmxSubgraph, groupByKey } from '@gambitdao/gmx-middleware'
 import { $alertTooltip, countdown } from './$rules'
 import { IWalletLink } from '@gambitdao/wallet-link'
 import { $accountPreview, $profilePreview } from '../../components/$AccountProfile'
-import { BLUEBERRY_REFFERAL_CODE, IProfile, IProfileTradingList, IProfileTradingResult, TOURNAMENT_START, TOURNAMENT_TIME_DURATION } from '@gambitdao/gbc-middleware'
+import { blueberrySubgraph, BLUEBERRY_REFFERAL_CODE, IProfile, IProfileTradingList, IProfileTradingResult, TOURNAMENT_START, TOURNAMENT_TIME_DURATION } from '@gambitdao/gbc-middleware'
 import { $infoTooltipLabel, $Link } from '@gambitdao/ui-components'
 import { $CardTable } from '../../components/$common'
 import { IProfileActiveTab } from '../$Profile'
@@ -25,7 +25,6 @@ export interface ICompetitonTopCumulative {
   walletLink: IWalletLink
   parentRoute: Route
   competitionCumulativeRoi: Stream<IProfileTradingResult>
-  profilePickList: Stream<IProfile[]>
 }
 
 
@@ -35,12 +34,27 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
   [requestCompetitionLadder, requestCompetitionLadderTether]: Behavior<number, IRequestCompetitionLadderApi>,
 ) => {
 
-  const tableList = multicast(map(res => {
-    return res.list
+  const tableList = multicast(switchMap(res => {
+
+    const accountList = res.list.page.map(a => a.account)
+
+    return combine((gbcList, ensList) => {
+      const gbcListMap = groupByKey(gbcList.filter(x => x?.id), x => x.id)
+      const ensListMap = groupByKey(ensList.filter(x => x?.id), x => {
+        return x.resolvedAddress.id
+      })
+
+      return res.list.page.map(summary => {
+        const profile = gbcListMap[summary.account]
+        const ens = ensListMap[summary.account]
+
+        return { ...summary, profile: profile ? { ...profile, ens  } : null }
+      })
+    }, awaitPromises(blueberrySubgraph.profilePickList(now(accountList))), awaitPromises(gmxSubgraph.getEnsProfileListPick(now(accountList))))
   }, config.competitionCumulativeRoi))
 
-  const now = unixTimestampNow()
-  const started = now >= TOURNAMENT_START
+  const nowTime = unixTimestampNow()
+  const started = nowTime >= TOURNAMENT_START
 
 
 
@@ -179,27 +193,33 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
 
                 const $container = pos.rank < 4
                   ? $defaultBerry(style(
-                    pos.rank === 1 ? {
+                    {
+                      width: '50px',
                       minWidth: '50px',
-                      width: '60px',
-                      border: `1px solid ${pallete.positive}`,
+                      border: `1px solid ${pallete.message}`,
                       boxShadow: `${colorAlpha(pallete.positive, .4)} 0px 3px 20px 5px`
                     }
-                      : pos.rank === 2 ? {
-                        minWidth: '50px',
-                        width: '60px',
-                        border: `1px solid ${pallete.message}`,
-                        boxShadow: `${colorAlpha(pallete.message, .4)} 0px 3px 20px 5px`
-                      }
-                        : {
-                          minWidth: '50px',
-                          width: '60px',
-                          border: `1px solid ${pallete.foreground}`,
-                          boxShadow: `${colorAlpha(pallete.foreground, .4)} 0px 3px 20px 5px`
-                        }
+                    // pos.rank === 1 ? {
+                    //   minWidth: '50px',
+                    //   width: '60px',
+                    //   border: `1px solid ${pallete.positive}`,
+                    //   boxShadow: `${colorAlpha(pallete.positive, .4)} 0px 3px 20px 5px`
+                    // }
+                    //   : pos.rank === 2 ? {
+                    //     minWidth: '50px',
+                    //     width: '60px',
+                    //     border: `1px solid ${pallete.indeterminate}`,
+                    //     boxShadow: `${colorAlpha(pallete.indeterminate, .4)} 0px 3px 20px 5px`
+                    //   }
+                    //     : {
+                    //       minWidth: '50px',
+                    //       width: '60px',
+                    //       border: `1px solid ${pallete.negative}`,
+                    //       boxShadow: `${colorAlpha(pallete.negative, .4)} 0px 3px 20px 5px`
+                    //     }
 
                   ))
-                  : $defaultBerry(style({ minWidth: '50px' }))
+                  : $defaultBerry(style({ width: '50px', minWidth: '50px', }))
 
                 return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
                   $row(style({ alignItems: 'baseline', zIndex: 5, textAlign: 'center', placeContent: 'center' }))(

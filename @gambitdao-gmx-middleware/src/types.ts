@@ -58,6 +58,19 @@ export interface ITokenDescription {
   decimals: number
 }
 
+
+export interface IEnsDomain {
+  id: string
+  name: string
+  labelName: string
+  resolvedAddress: {
+    id: string
+  }
+  resolver: {
+    texts: string[]
+  }
+}
+
 export interface ITransaction {
   token: ITokenDescription,
   from: Address

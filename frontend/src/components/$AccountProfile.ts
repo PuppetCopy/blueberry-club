@@ -101,8 +101,8 @@ export const $profilePreview = ({
         $container
       }),
     showAddress
-      ? profile.name
-        ? $text(style({ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', fontSize: labelSize }))(profile.name)
+      ? profile.ens
+        ? $text(style({ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', fontSize: labelSize }))(profile.ens.name)
         : $AccountLabel(profile.id, labelSize)
       : empty()
   )

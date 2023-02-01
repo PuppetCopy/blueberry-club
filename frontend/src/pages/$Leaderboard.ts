@@ -55,7 +55,7 @@ export const $Leaderboard = (config: ILeaderboard) => component((
 export const $Index = (pos: ITrade) => $column(style({ position: 'relative', placeContent: 'center' }))(
   $row(layoutSheet.spacingTiny, style({ alignItems: 'center', fontSize: '.65em' }))(
     $icon({
-      svgOps: style({ borderRadius: '50%', padding: '4px', marginRight: '-10px', zIndex: 0, alignItems: 'center', backgroundColor: pallete.horizon }),
+      svgOps: style({ borderRadius: '50%', padding: '4px', marginRight: '-10px', zIndex: 0, alignItems: 'center', fill: pallete.message, backgroundColor: pallete.horizon }),
       $content: pos.isLong ? $bull : $bear,
       viewBox: '0 0 32 32',
       width: '26px'
@@ -66,7 +66,7 @@ export const $Index = (pos: ITrade) => $column(style({ position: 'relative', pla
   // $text(style({ fontSize: '.65em' }))(formatReadableUSD(pos.averagePrice)),
   // $column(style({ marginLeft: '-5px', borderRadius: '50%', padding: '6px', alignItems: 'center', backgroundColor: pallete.horizon }))(
   //   $row(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
-      
+
   //     $leverage(pos)
   //   ),
   // )
@@ -85,6 +85,7 @@ export const $TokenIcon = (indexToken: TOKEN_SYMBOL, IIcon?: { width?: string })
 
   return $icon({
     $content: $token,
+    svgOps: style({ fill: pallete.message }),
     viewBox: '0 0 32 32',
     width: '24px',
     ...IIcon

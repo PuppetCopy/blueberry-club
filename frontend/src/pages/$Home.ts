@@ -194,7 +194,7 @@ export const $Home = (config: ITreasury) => component((
             )
           )
 
-          const queryBerryWallList = blueberrySubgraph.tokenListSpecific(now(randomGBCList))
+          const queryBerryWallList = blueberrySubgraph.tokenListPick(now(randomGBCList))
 
           const $mosaicItem = (token: IToken) => {
 
@@ -409,7 +409,7 @@ export const $Home = (config: ITreasury) => component((
               )
             })
           )
-        }, awaitPromises(blueberrySubgraph.tokenListSpecific(now(members.map(t => t.tokenId)))))),
+        }, awaitPromises(blueberrySubgraph.tokenListPick(now(members.map(t => t.tokenId)))))),
 
         $seperator2,
 
@@ -423,7 +423,7 @@ export const $Home = (config: ITreasury) => component((
               )
             })
           )
-        }, awaitPromises(blueberrySubgraph.tokenListSpecific(now(activeContributorList.map(t => t.tokenId)))))),
+        }, awaitPromises(blueberrySubgraph.tokenListPick(now(activeContributorList.map(t => t.tokenId)))))),
 
 
 

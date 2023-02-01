@@ -218,7 +218,7 @@ export const $Treasury = ({ walletLink, parentRoute, treasuryStore }: ITreasury)
                 return $teamMember({ ...member, token } as any)
               })
             )
-          }, awaitPromises(blueberrySubgraph.tokenListSpecific(now(members.map(t => t.tokenId))))))
+          }, awaitPromises(blueberrySubgraph.tokenListPick(now(members.map(t => t.tokenId))))))
         )
 
 

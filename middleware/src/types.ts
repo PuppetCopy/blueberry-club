@@ -1,4 +1,4 @@
-import { IAccountLadderSummary, IRequestPageApi } from "@gambitdao/gmx-middleware"
+import { IAccountLadderSummary, IEnsDomain, IRequestPageApi } from "@gambitdao/gmx-middleware"
 
 export type IPrice = {
   priceUsd: bigint
@@ -68,6 +68,7 @@ export type IProfile = {
   id: string
   token: IToken | null
   name: string | null
+  ens: IEnsDomain
 }
 
 export type ILabItemOwnership = {

@@ -250,8 +250,7 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
               fadeIn($Leaderboard({
                 walletLink,
                 competitionCumulativeRoi: clientApi.competitionCumulativeRoi,
-                parentRoute: pagesRoute,
-                profilePickList: clientApi.profilePickList
+                parentRoute: pagesRoute
               })({
                 routeChange: linkClickTether(),
                 requestCompetitionLadder: requestCompetitionLadderTether(),

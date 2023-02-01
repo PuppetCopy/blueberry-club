@@ -6,7 +6,7 @@ import { toAccountCompetitionSummary, toAccountSummary } from "./gmxUtils"
 import {
   IRequestAccountApi, IChainParamApi, IRequestCompetitionLadderApi, IRequestLeaderboardApi, IRequestPagePositionApi,
   IPricefeed, IRequestPricefeedApi, IPriceLatest, IRequestGraphEntityApi, IStake, IRequestTimerangeApi, ITrade, TradeStatus,
-  IRequestAccountTradeListApi, ITradeOpen
+  IRequestAccountTradeListApi, ITradeOpen, IEnsDomain
 } from "./types"
 import { cacheMap, createSubgraphClient, getMappedValue, getTokenDescription, groupByKey, groupByKeyMap, pagingQuery, parseFixed, switchFailedSources, unixTimestampNow } from "./utils"
 import { gql } from "@urql/core"
@@ -25,6 +25,11 @@ const cacheLifeMap = {
   [intervalTimeMap.DAY7]: intervalTimeMap.MIN30,
   [intervalTimeMap.MONTH]: intervalTimeMap.MIN60,
 }
+
+export const ensGraph = createSubgraphClient({
+  fetch: fetch as any,
+  url: 'https://api.thegraph.com/subgraphs/name/ensdomains/ens'
+})
 
 export const arbitrumGraph = createSubgraphClient({
   fetch: fetch as any,
@@ -76,6 +81,61 @@ const derievedSymbolMapping: { [k: string]: TOKEN_SYMBOL } = {
 }
 
 
+
+export const getEnsProfile = O(
+  map(async (queryParams: IRequestAccountApi): Promise<IEnsDomain> => {
+
+    const res = await ensGraph(gql(`{
+  domains( where: { resolvedAddress: "${queryParams.account.toLowerCase()}" }) {
+    id
+    name
+    labelName
+    resolvedAddress {
+      id
+    }
+    name
+    resolver {
+      texts
+    }
+  }
+}`), {})
+
+    return res.domains[0] as IEnsDomain
+  })
+)
+
+export async function getProfilePickList(idList: string[]): Promise<IEnsDomain[]> {
+  const newLocal = `{
+  ${idList.map(id => `
+  _${id}: domains( where: { resolvedAddress: "${id.toLowerCase()}" }) {
+    id
+    name
+    labelName
+    resolvedAddress {
+      id
+    }
+    name
+    resolver {
+      texts
+    }
+  }
+`).join('')}
+}
+`
+
+  const res = await ensGraph(gql(newLocal), {})
+  const rawList = Object.values(res).map(res => {
+    return Array.isArray(res) ? res[0] : null
+  }) as IEnsDomain[]
+
+  return rawList
+}
+
+export const getEnsProfileListPick = O(
+  map(async (idList: string[]): Promise<IEnsDomain[]> => {
+    return getProfilePickList(idList)
+  })
+)
 
 export const getGmxIoPricefeed = O(
   map(async (queryParams: IRequestPricefeedApi): Promise<IPricefeed[]> => {

@@ -181,13 +181,13 @@ export const token = O(
   })
 )
 
-export const tokenListSpecific = O(
+export const tokenListPick = O(
   map(async (tokenList: number[]) => {
 
     const newLocal = `
 {
   ${tokenList.map(id => `
-token${id}: token(id: "${hexValue(id)}") {
+_${id}: token(id: "${hexValue(id)}") {
   id
   labItems {
     id
@@ -204,8 +204,7 @@ token${id}: token(id: "${hexValue(id)}") {
 )
 
 export const profilePickList = O(
-  map(getProfilePickList),
-  awaitPromises
+  map(getProfilePickList)
 )
 
 export const profile = O(
@@ -235,20 +234,23 @@ export const competitionCumulativeRoi = O(
 
     const queryCache = cache('cacheKey', intervalTimeMap.MIN5, async () => {
       const accountList = await getCompetitionCumulativeRoi(queryParams)
-      const profileList = await getProfilePickList(accountList.list.map(x => x.account).slice(0, 340))
-      const profileMap = groupByKey(profileList, p => p.id)
+      // const profileList = await getProfilePickList(accountList.list.map(x => x.account).slice(0, 340))
+      // const profileMap = groupByKey(profileList, p => p.id)
       let profile: null | IProfileTradingList = null
 
       const sortedCompetitionList: IProfileTradingList[] = accountList.list
         .sort((a, b) => {
-          const aN = profileMap[a.account] ? a.roi : a.roi - 100000000n
-          const bN = profileMap[b.account] ? b.roi : b.roi - 100000000n
-          return Number(bN - aN)
+          // const aN = profileMap[a.account] ? a.roi : a.roi - 100000000n
+          // const bN = profileMap[b.account] ? b.roi : b.roi - 100000000n
+          return Number(b.roi - a.roi)
+          // const aN = profileMap[a.account] ? a.roi : a.roi - 100000000n
+          // const bN = profileMap[b.account] ? b.roi : b.roi - 100000000n
+          // return Number(bN - aN)
         })
         .map(summary => {
           const profileSummary = {
             ...summary,
-            profile: profileMap[summary.account] || null,
+            profile: null,
             rank: queryParams.offset + accountList.list.indexOf(summary) + 1
           }
 
