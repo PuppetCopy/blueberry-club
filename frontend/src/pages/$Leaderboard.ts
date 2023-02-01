@@ -24,7 +24,6 @@ export const $Leaderboard = (config: ILeaderboard) => component((
   return [
     $column(
       style({
-        fontSize: '1.1rem',
         fontFeatureSettings: '"tnum" on,"lnum" on',
         fontFamily: `-apple-system,BlinkMacSystemFont,Trebuchet MS,Roboto,Ubuntu,sans-serif`,
       })

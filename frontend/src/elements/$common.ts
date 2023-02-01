@@ -119,15 +119,14 @@ export const $txnIconLink = (address: string) => $anchor(attr({ href: getTxExplo
 export interface ITeamMember {
   name: string
   title: string
-  size?: 'small' | 'big'
   token: IToken
 }
 
-export const $teamMember = ({ name, title, size = 'big', token }: ITeamMember) => {
-  return $column(layoutSheet.spacing, style({ flexBasis: size === 'small' ? '110px' : '', alignItems: 'center', fontSize: screenUtils.isDesktopScreen ? '' : '75%' }))(
-    style({ borderRadius: '15px' }, $berryByToken(token, size === 'big' ? 100 : 75)),
+export const $teamMember = ({ name, title, token }: ITeamMember) => {
+  return $column(layoutSheet.spacing, style({ alignItems: 'center', fontSize: screenUtils.isDesktopScreen ? '' : '75%' }))(
+    $berryByToken(token),
     $column(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
-      $anchor(attr(({ href: `https://twitter.com/${name}` })), style({ fontWeight: 900, textDecoration: 'none', fontSize: size === 'big' ? '1em' : '.75em' }))($text(`@${name}`)),
+      $anchor(attr(({ href: `https://twitter.com/${name}` })), style({ fontWeight: 900, textDecoration: 'none', fontSize: '1em' }))($text(`@${name}`)),
       $text(style({ fontSize: '.75em', color: pallete.foreground, textAlign: 'center', lineHeight: '1.3' }))(title),
     )
   )

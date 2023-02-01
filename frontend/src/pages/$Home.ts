@@ -125,11 +125,11 @@ export const $Home = (config: ITreasury) => component((
     { name: 'gmx_intern', size: 'small', title: "Blueberry Podcast", tokenId: 2605 },
     { name: 'tanoeth', size: 'small', title: "Blueberry Podcast", tokenId: 1867 },
     { name: 'onisuals', size: 'small', title: "Motion Designer", tokenId: 3195 },
+    { name: 'juandelamochila', size: 'small', title: "Discord Mod", tokenId: 734 },
     { name: '1tbk1', size: 'small', title: "GBC Builder", tokenId: 9376 },
     { name: 'Mr_r0bo1', size: 'small', title: "GBC Builder", tokenId: 175 },
     { name: 'monte_xyz', size: 'small', title: "Discord Mod", tokenId: 5708 },
     { name: '0x11nze', size: 'small', title: "Fondation B Lead", tokenId: 9036 },
-    { name: 'juandelamochila', size: 'small', title: "Discord Mod", tokenId: 734 },
     { name: 'quantumzebra123', size: 'small', title: "Weekly Analysis", tokenId: 9681 },
     { name: 'CaptainPaup_', size: 'small', title: "3D Art", tokenId: 3204 },
   ]
@@ -196,10 +196,10 @@ export const $Home = (config: ITreasury) => component((
 
           const queryBerryWallList = blueberrySubgraph.tokenListSpecific(now(randomGBCList))
 
-          const $mosaicItem = (token: IToken, size: number) => {
+          const $mosaicItem = (token: IToken) => {
 
             return $anchor(style({ position: 'relative' }), attr({ href: '/p/berry/' + token.id, target: '' }))(
-              style({ borderRadius: '10px' }, $berryByToken(token, size)),
+              style({ borderRadius: '10px' }, $berryByToken(token)),
               $text(style({ textAlign: 'left', padding: screenUtils.isDesktopScreen ? '8px 0 0 8px' : '5px 0 0 5px', color: '#fff', textShadow: '#0000005e 0px 0px 5px', fontSize: screenUtils.isDesktopScreen ? '.6em' : '.6em', position: 'absolute', top: 0, fontWeight: 'bold' }))(String(token.id))
             )
           }
@@ -214,12 +214,12 @@ export const $Home = (config: ITreasury) => component((
 
               const $mainBerry = tap(({ element }) => {
                 element.querySelectorAll('.wakka').forEach(el => el.remove())
-              }, $berryByLabItems(token.id, display.background, display.custom, 340, [background, clothes, undefined, IAttributeExpression.HAPPY, ' ' as any, ' ' as any]) as $Branch)
+              }, $berryByLabItems(token.id, display.background, display.custom, $column(style({ width: '340px', height: '340px' })), [background, clothes, undefined, IAttributeExpression.HAPPY, ' ' as any, ' ' as any]) as $Branch)
 
               return screenUtils.isDesktopScreen
                 ? $node(style({ display: 'grid', width: '100%', gap: '20px', justifyContent: 'center', gridTemplateColumns: `repeat(auto-fit, ${berrySize}px)`, gridAutoRows: berrySize + 'px' }))(
                   ...berryWallList.slice(0, berryWallRowCount + aboutHalf).map(id => {
-                    return $mosaicItem(id, berrySize)
+                    return $mosaicItem(id)
                   }),
                   $row(style({ gridRow: 'span 3 / auto', gridColumn: 'span 7 / auto', gap: '35px' }))(
                     $Link({
@@ -272,16 +272,16 @@ export const $Home = (config: ITreasury) => component((
                     )
                   ),
                   ...berryWallList.slice(berryWallRowCount + aboutHalf, wallCount).map(id => {
-                    return $mosaicItem(id, berrySize)
+                    return $mosaicItem(id)
                   }),
                 )
                 : $row(style({ flexWrap: 'wrap', gap: '10px', placeContent: 'center', flex: 1 }))(
                   ...berryWallList.slice(0, berryWallRowCount * 2).map(id => {
-                    return $mosaicItem(id, berrySize)
+                    return $mosaicItem(id)
                   }),
                   style({ padding: '25px' }, $introHeadline),
                   ...berryWallList.slice(berryWallRowCount * 2, berryWallRowCount * 4).map(id => {
-                    return $mosaicItem(id, berrySize)
+                    return $mosaicItem(id)
                   }),
                 )
             })
@@ -404,7 +404,9 @@ export const $Home = (config: ITreasury) => component((
             ...res.map((token, idx) => {
               const member = members[idx]
 
-              return $teamMember({ ...member, token })
+              return style({ width: screenUtils.isDesktopScreen ? '12%' : '25%' })(
+                $teamMember({ ...member, token })
+              )
             })
           )
         }, awaitPromises(blueberrySubgraph.tokenListSpecific(now(members.map(t => t.tokenId)))))),
@@ -412,11 +414,13 @@ export const $Home = (config: ITreasury) => component((
         $seperator2,
 
         switchLatest(map(res => {
-          return $row(layoutSheet.spacingBig, style({ flexWrap: 'wrap', width: '100%', placeContent: 'center' }))(
+          return $row(style({ gap: '25px 38px', flexWrap: 'wrap', width: '100%', placeContent: screenUtils.isDesktopScreen ? 'center' : 'space-evenly' }))(
             ...res.map((token, idx) => {
               const member = activeContributorList[idx]
 
-              return $teamMember({ ...member, token } as any)
+              return style({ width: screenUtils.isDesktopScreen ? '9%' : '20%', fontSize: '75%' })(
+                $teamMember({ ...member, token } as any)
+              )
             })
           )
         }, awaitPromises(blueberrySubgraph.tokenListSpecific(now(activeContributorList.map(t => t.tokenId)))))),
@@ -428,7 +432,7 @@ export const $Home = (config: ITreasury) => component((
         $card(layoutSheet.spacingBig, style({ flexDirection: screenUtils.isDesktopScreen ? 'row' : 'column-reverse', alignItems: 'center', position: 'relative', padding: '40px' }))(
 
           $row(style({ width: screenUtils.isDesktopScreen ? '280px' : '' }))(
-            style({ margin: '-40px' }, $berry([undefined, IAttributeClothes.BUILDER, IAttributeBody.BLUEBERRY, IAttributeExpression.HAPPY, IAttributeFaceAccessory.RICH, IAttributeHat.BRAIN], screenUtils.isDesktopScreen ? 350 : 200))
+            style({ margin: '-40px' }, $berry([undefined, IAttributeClothes.BUILDER, IAttributeBody.BLUEBERRY, IAttributeExpression.HAPPY, IAttributeFaceAccessory.RICH, IAttributeHat.BRAIN]))
           ),
 
           $column(layoutSheet.spacing)(

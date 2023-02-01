@@ -10,6 +10,7 @@ import { $disconnectedWalletDisplay, $discoverIdentityDisplay } from "./$Account
 import { $ConnectDropdown, $switchNetworkDropdown } from "./$ConnectAccount"
 import { Route } from "@aelea/router"
 import { IProfileActiveTab } from "../pages/$Profile"
+import { $defaultBerry } from "./$DisplayBerry"
 
 
 
@@ -55,7 +56,7 @@ export const $WalletDisplay = (config: IWalletDisplay) => component((
             })
           )
         )(
-          $discoverIdentityDisplay({ address: w3p.address })
+          $discoverIdentityDisplay({ address: w3p.address, $container: $defaultBerry(style({ minWidth: '38px' })) })
         )
 
       }, config.walletLink.wallet)),

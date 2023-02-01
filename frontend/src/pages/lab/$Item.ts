@@ -7,7 +7,7 @@ import { $accountIconLink, $addToCalendar, $responsiveFlex } from "../../element
 import { attributeIndexToLabel, mintLabelMap, getLabItemTupleIndex, labItemDescriptionListMap, saleMaxSupply, SaleType } from "@gambitdao/gbc-middleware"
 import { countdownFn, displayDate, formatFixed, unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { pallete } from "@aelea/ui-components-theme"
-import { $labItem, takeUntilLast } from "../../logic/common"
+import { $defaultLabItem, $defaultLabItemHuge, $labItem, takeUntilLast } from "../../logic/common"
 import { $seperator2 } from "../common"
 import { getMintCount } from "../../logic/contract/sale"
 import { empty, map, multicast, switchLatest } from "@most/core"
@@ -17,7 +17,6 @@ import { $HolderMint } from "../../components/mint/$HolderMint"
 import { $WhitelistMint } from "../../components/mint/$WhitelistMint"
 import { $PublicMint } from "../../components/mint/$PublicMint"
 import { timeChange } from "../../components/mint/mintUtils2"
-import { BrowserStore } from "../../logic/store"
 
 
 interface ILabItem {
@@ -37,7 +36,6 @@ export const $LabItem = (config: ILabItem) => component((
   const itemId = Number(itemIdUrl)
 
   const item = labItemDescriptionListMap[itemId]
-  const berrySize = screenUtils.isDesktopScreen ? '415px' : '100%'
   const totalMintCount = combineArray((...countList) => countList.reduce((seed, next) => seed + next, 0), ...item.mintRuleList.map(rule => getMintCount(rule, config.walletLink, 3500)))
 
   const externalLinks = [
@@ -62,9 +60,13 @@ export const $LabItem = (config: ILabItem) => component((
 
   return [
     $responsiveFlex(screenUtils.isDesktopScreen ? style({ gap: '50px' }) : layoutSheet.spacingBig)(
-      $column(style({ width: berrySize, minHeight: berrySize }))(
-        $labItem(item.id, berrySize, true, true)
-      ),
+      $labItem({
+        id: item.id, background: true, showFace: true,
+        $container: $defaultLabItem(style({
+          alignSelf: 'flex-start',
+          width: screenUtils.isDesktopScreen ? '450px' : '100%'
+        }))
+      }),
 
       $column(style({ gap: '50px', flex: 5 }))(
 

@@ -1,9 +1,12 @@
-import { $svg, attr, $Node, $wrapNativeElement, style } from "@aelea/dom"
-import { combine, fromPromise } from "@most/core"
+import { $Node, $wrapNativeElement, style, NodeComposeFn, $svg, attr } from "@aelea/dom"
+import { combine, fromPromise, map, tap } from "@most/core"
 
 import { IBerryDisplayTupleMap, berryPartsToSvg } from "@gambitdao/gbc-middleware"
 import { Stream } from "@most/types"
 import { disposeNone } from "@most/disposable"
+import { $column } from "@aelea/ui-components"
+import { combineObject } from "@aelea/core"
+import { node } from "webpack"
 
 
 function importGlobal<T extends { default: any }>(query: Promise<T>): Stream<T['default']> {
@@ -20,7 +23,7 @@ function importGlobal<T extends { default: any }>(query: Promise<T>): Stream<T['
       } else {
         sink.event(scheduler.currentTime(), cache)
       }
-      
+
       return disposeNone()
     },
   }
@@ -40,23 +43,30 @@ export function $svgContent(content: string): $Node[] {
 }
 
 
+export const $defaultBerry = $column(style({
+  // placeSelf: 'flex-start'
+  minWidth: '85px',
+  width: '100%',
+  aspectRatio: '1 / 1',
+  borderRadius: '8px',
+  overflow: 'hidden'
+}))
 
 export const $berry = (
   displayTuple: Partial<IBerryDisplayTupleMap>,
-  size: string | number = 250
+  $container: NodeComposeFn<$Node> = $defaultBerry
 ) => {
-  const sizeNorm = typeof size === 'number' ? size + 'px' : size
 
-  return $svg('svg')(
-    style({ minWidth: sizeNorm, height: sizeNorm }),
-    attr({ xmlns: 'http://www.w3.org/2000/svg', preserveAspectRatio: "xMidYMin meet", fill: 'none', viewBox: `0 0 1500 1500` })
-  )(
-    combine((parts, node) => {
-      const newLocal = berryPartsToSvg(parts, displayTuple)
-      node.element.innerHTML = newLocal
-      return node
-    }, svgParts)
-  )()
+  return $container(
+    $svg('svg')(
+      attr({ xmlns: 'http://www.w3.org/2000/svg', preserveAspectRatio: "xMidYMin meet", fill: 'none', viewBox: `0 0 1500 1500` })
+    )(
+      combine((parts, node) => {
+        node.element.innerHTML = berryPartsToSvg(parts, displayTuple)
+        return node
+      }, svgParts)
+    )()
+  )
 }
 
 // export const $loadBerry = (

@@ -1,22 +1,20 @@
-import { Behavior, combineArray, combineObject, O } from "@aelea/core"
+import { Behavior, combineObject, O } from "@aelea/core"
 import { $node, $text, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, $TextField, layoutSheet } from "@aelea/ui-components"
 
 import { CHAIN, IWalletLink, IWalletName } from "@gambitdao/wallet-link"
-import { awaitPromises, combine, empty, map, mergeArray, now, snapshot, switchLatest, tap, zip } from "@most/core"
+import { awaitPromises, empty, map, mergeArray, now, switchLatest, zip } from "@most/core"
 import { blueberrySubgraph, IAccountStakingStore, LAB_CHAIN, saleDescriptionList } from "@gambitdao/gbc-middleware"
-import { $ButtonPrimary, $ButtonSecondary, $defaultButtonSecondary, $defaultMiniButtonSecondary } from "../components/form/$Button"
+import { $ButtonPrimary, $ButtonSecondary, $defaultButtonSecondary } from "../components/form/$Button"
 import { $labItem } from "../logic/common"
 import { BrowserStore } from "../logic/store"
-import { $IntermediateConnectButton } from "../components/$ConnectAccount"
 import { filterNull, IRequestAccountApi, IRequestAccountTradeListApi, IRequestPageApi, IStake, ITradeOpen, ITradeSettled, readableDate, switchMap, timeSince, unixTimestampNow } from "@gambitdao/gmx-middleware"
-import { $Profile, IProfileActiveTab } from "./$Profile"
+import { IProfileActiveTab } from "./$Profile"
 import { Stream } from "@most/types"
 import { $Link, $anchor, $IntermediateTx, $ButtonToggle, $defaulButtonToggleContainer, $infoTooltipLabel, $IntermediatePromise, $openPositionPnlBreakdown, $PnlValue, $riskLiquidator, $sizeDisplay, $TradePnl } from "@gambitdao/ui-components"
 import { $labLogo } from "../common/$icons"
 import { pallete } from "@aelea/ui-components-theme"
-import { $caretDown } from "../elements/$icons"
 import { $Popover } from "../components/$Popover"
 import { $discoverIdentityDisplay } from "../components/$AccountProfile"
 import { ContractTransaction } from "@ethersproject/contracts"
@@ -26,8 +24,8 @@ import { fadeIn } from "../transitions/enter"
 import { $Index } from "./$Leaderboard"
 import * as router from '@aelea/router'
 import { connectTradeReader } from "../logic/contract/trade"
-import { $Wardrobe } from "./lab/$Wardrobe"
 import { $responsiveFlex } from "../elements/$common"
+import { $defaultBerry } from "../components/$DisplayBerry"
 
 
 export interface IAccount {
@@ -86,7 +84,7 @@ export const $ProfileConnected = (config: IAccount) => component((
             $target: $row(layoutSheet.spacing, style({ flex: 1, alignItems: 'center', placeContent: 'center', zIndex: 1 }))(
               $discoverIdentityDisplay({
                 address: w3p.address,
-                avatarSize: 100,
+                $container: $defaultBerry(style({ minWidth: '125px' })),
                 labelSize: '1.5em'
               }),
               // $column(layoutSheet.spacing)(
@@ -232,8 +230,8 @@ export const $ProfileConnected = (config: IAccount) => component((
                   return $column(layoutSheet.spacingBig)(
 
                     $title(`GBC's`),
-                    $row(layoutSheet.spacingSmall, style({ flexWrap: 'wrap' }))(...owner.ownedTokens.map(token => {
-                      return $berryTileId(token, 65)
+                    $row(layoutSheet.spacingSmall, style({ flexWrap: 'wrap', placeContent: 'center' }))(...owner.ownedTokens.map(token => {
+                      return $berryTileId(token)
                     })),
 
 
@@ -256,13 +254,13 @@ export const $ProfileConnected = (config: IAccount) => component((
 
 
                     switchLatest(map(items => {
-                      return $row(layoutSheet.spacing, style({ flexWrap: 'wrap' }))(
+                      return $row(layoutSheet.spacingSmall, style({ flexWrap: 'wrap', placeContent: 'center' }))(
                         ...items.filter(item => item.amount > 0).map(item => {
                           return $row(style({ position: 'relative' }))(
                             $text(style({ position: 'absolute', top: '1px', right: '4px', fontSize: '.75em', fontWeight: 'bold', color: pallete.background }))(
                               item.amount + 'x'
                             ),
-                            $labItem(item.id, 65)
+                            $labItem({ id: item.id })
                           )
                         })
                       )
@@ -465,7 +463,7 @@ export const $TransferItems = (items: { id: number, amount: number }[]) => compo
       $row(...items.map(item => {
 
         return $row(
-          $labItem(item.id, 50)
+          $labItem({ id: item.id })
         )
       })),
 

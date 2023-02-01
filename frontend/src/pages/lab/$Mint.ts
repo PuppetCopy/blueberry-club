@@ -45,11 +45,13 @@ export const $Mint = (item: LabItemSale, rule: MintRule, walletLink: IWalletLink
 
   return $Link({
     url: `/p/item/${item.id}`,
-    anchorOp: screenUtils.isMobileScreen ? style({ maxWidth: '160px' }) : style({ maxWidth: '180px' }),
+    anchorOp: screenUtils.isDesktopScreen ? style({ width: '15%' }) : style({ width: '28%' }),
     route: parentRoute.create({ fragment: 'fefef' }),
     $content: $column(layoutSheet.spacingSmall, style({ position: 'relative', flexDirection: 'column' }))(
       $column(style({ position: 'relative' }))(
-        $labItem(item.id, screenUtils.isDesktopScreen ? 173 : 160, true, true),
+        $labItem({
+          id: item.id, background: true, showFace: true
+        }),
         $saleRuleType,
       ),
       $text(style({ fontWeight: 'bold' }))(item.name),

@@ -293,6 +293,7 @@ export interface IRequestLeaderboardApi extends IRequestPagePositionApi, IChainP
 export interface IRequestCompetitionLadderApi extends IChainParamApi, IRequestPagePositionApi, IRequestTimerangeApi {
   referralCode: string
   maxCollateral: bigint
+  account: string | null
 }
 
 export type IRequestAccountApi = IChainParamApi & { account: string }

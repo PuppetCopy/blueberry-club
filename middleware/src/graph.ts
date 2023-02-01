@@ -1,6 +1,6 @@
 import { O } from "@aelea/core"
 import { hexValue } from "@ethersproject/bytes"
-import { createSubgraphClient, groupByKey, IRequestCompetitionLadderApi, IIdentifiableEntity, IRequestPagePositionApi, pagingQuery, cacheMap, intervalTimeMap } from "@gambitdao/gmx-middleware"
+import { createSubgraphClient, groupByKey, IRequestCompetitionLadderApi, IIdentifiableEntity, IRequestPagePositionApi, pagingQuery, cacheMap, intervalTimeMap, IAccountLadderSummary } from "@gambitdao/gmx-middleware"
 import { getCompetitionCumulativeRoi } from "@gambitdao/gmx-middleware/src/graph"
 import { awaitPromises, map } from "@most/core"
 import { gql } from "@urql/core"
@@ -237,6 +237,7 @@ export const competitionCumulativeRoi = O(
       const accountList = await getCompetitionCumulativeRoi(queryParams)
       const profileList = await getProfilePickList(accountList.list.map(x => x.account).slice(0, 340))
       const profileMap = groupByKey(profileList, p => p.id)
+      let profile: null | IProfileTradingList = null
 
       const sortedCompetitionList: IProfileTradingList[] = accountList.list
         .sort((a, b) => {
@@ -245,16 +246,28 @@ export const competitionCumulativeRoi = O(
           return Number(bN - aN)
         })
         .map(summary => {
-
-          return {
+          const profileSummary = {
             ...summary,
             profile: profileMap[summary.account] || null,
             rank: queryParams.offset + accountList.list.indexOf(summary) + 1
           }
+
+          if (queryParams.account === summary.account) {
+            profile = profileSummary
+          }
+
+          return profileSummary
         })
+        .filter(summary => {
+          return profile === null || summary.account !== profile.account
+        })
+      
+      if (profile) {
+        sortedCompetitionList.unshift(profile)
+      }
 
 
-      return { sortedCompetitionList, size: accountList.size }
+      return { sortedCompetitionList, size: accountList.size, profile }
     })
 
     const res = await queryCache

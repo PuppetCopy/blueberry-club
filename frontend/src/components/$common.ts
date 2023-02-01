@@ -1,4 +1,4 @@
-import { style, $text, stylePseudo } from "@aelea/dom"
+import { style, $text, stylePseudo, NodeComposeFn, $Node } from "@aelea/dom"
 import { $column, layoutSheet, $row } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { IAttributeMappings, IToken, LAB_CHAIN } from "@gambitdao/gbc-middleware"
@@ -6,8 +6,8 @@ import { $defaultTableRowContainer, $defaultVScrollContainer, $infoLabeledValue,
 import { $card } from "../elements/$common"
 import { $berryByToken, $labItem } from "../logic/common"
 
-export const $berryTileId = (token: IToken, size = 65) => $column(style({ position: 'relative' }))(
-  style({ borderRadius: `${size / 10}px` }, $berryByToken(token, size)),
+export const $berryTileId = (token: IToken, $container?: NodeComposeFn<$Node>) => $column(style({ position: 'relative' }))(
+  $berryByToken(token, $container),
   $text(style({ textAlign: 'left', paddingLeft: '3px', paddingTop: '1px', color: '#fff', textShadow: '0px 0px 5px black', fontSize: '.55em', position: 'absolute', fontWeight: 'bold' }))(String(token.id))
 )
 
@@ -52,7 +52,9 @@ export function $mintDet1ails(txHash: string, berriesAmount: number, ids: number
       $txHashRef(txHash, LAB_CHAIN)
     ),
     $row(style({ flexWrap: 'wrap' }))(...ids.map(tokenId => {
-      return $labItem(tokenId)
+      return $labItem({
+        id: tokenId
+      })
     })),
   )
 }

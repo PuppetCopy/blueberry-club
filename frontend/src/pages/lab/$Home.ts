@@ -12,7 +12,6 @@ import { IAttributeHat, IAttributeFaceAccessory, IAttributeClothes, IAttributeEx
 import { $seperator2 } from "../common"
 import { map, mergeArray, now } from "@most/core"
 import { ContractTransaction } from "@ethersproject/contracts"
-import { $berryByToken } from "../../logic/common"
 import { $profilePreview } from "../../components/$AccountProfile"
 
 
@@ -114,9 +113,9 @@ export const $LabHome = ({ walletLink, parentRoute }: IBerry) => component((
         $bgAnimation(
           style(
             screenUtils.isDesktopScreen ? { maxWidth: '80vw', placeSelf: 'center', overflow: 'hidden', minWidth: '460px', borderRadius: '30px' } : { alignSelf: 'center', borderRadius: '30px' },
-            $berry([
-              undefined, IAttributeClothes.AVALANCHE_HOODIE, undefined, IAttributeExpression.DEAD, IAttributeFaceAccessory.BEARD_WHITE, IAttributeHat.CHRISTMAS_HAT
-            ], screenUtils.isDesktopScreen ? 460 : 300)
+            $berry(
+              [undefined, IAttributeClothes.AVALANCHE_HOODIE, undefined, IAttributeExpression.DEAD, IAttributeFaceAccessory.BEARD_WHITE, IAttributeHat.CHRISTMAS_HAT],
+            )
           )
         ),
       ),
@@ -125,28 +124,26 @@ export const $LabHome = ({ walletLink, parentRoute }: IBerry) => component((
         $text(style({ fontWeight: 'bold', textAlign: 'center', fontSize: '2.5em' }))(`Latest Lab PFP's`),
         $text(style({ textAlign: 'center' }))(`Latest Identities that were picked by GBC Owners`),
         $node(),
-        $row(
-          $IntermediatePromise({
-            query: blueberrySubgraph.profileList(now({ pageSize: screenUtils.isDesktopScreen ? 12 : 8 })),
-            $$done: map(berryWallList => {
+        $IntermediatePromise({
+          query: blueberrySubgraph.profileList(now({ pageSize: screenUtils.isDesktopScreen ? 12 : 8 })),
+          $$done: map(berryWallList => {
 
-              if (berryWallList.length === 0) {
-                return $text('No Identiees have been chosen yet. help us get this section filled using the Wardrobe or Profile section')
-              }
+            if (berryWallList.length === 0) {
+              return $text('No Identiees have been chosen yet. help us get this section filled using the Wardrobe or Profile section')
+            }
 
-              return $node(style({ display: 'flex', flexWrap: 'wrap', width: '100%', placeContent: 'space-evenly', gap: screenUtils.isDesktopScreen ? '20px 3px' : `15px` }))(
-                ...berryWallList.reverse().map(profile => {
-                  return $Link({
-                    route: parentRoute.create({ fragment: 'df2f23f' }),
-                    $content: $profilePreview({ profile, avatarSize: 80, labelSize: '1em' }),
-                    anchorOp: style({ minWidth: '15.6%', overflow: 'hidden' }),
-                    url: `/p/profile/${profile.id}`,
-                  })({ click: changeRouteTether() })
-                })
-              )
-            })
-          })({}),
-        ),
+            return $node(style({ display: 'flex', flexWrap: 'wrap', width: '100%', placeContent: 'space-evenly', gap: screenUtils.isDesktopScreen ? '18px 12px' : `15px` }))(
+              ...berryWallList.reverse().map(profile => {
+                return $Link({
+                  route: parentRoute.create({ fragment: 'df2f23f' }),
+                  $content: $profilePreview({ profile, labelSize: '1em' }),
+                  anchorOp: style({ minWidth: screenUtils.isDesktopScreen ? '14.6%' : '38%', overflow: 'hidden' }),
+                  url: `/p/profile/${profile.id}`,
+                })({ click: changeRouteTether() })
+              })
+            )
+          })
+        })({}),
       ),
 
 
@@ -182,14 +179,5 @@ export const $LabHome = ({ walletLink, parentRoute }: IBerry) => component((
   ]
 })
 
-const $mosaicProfile = (profile: IProfile, size: number) => {
-  const token = profile.token!
 
-  return $anchor(style({ position: 'relative' }), attr({ href: '/p/berry/' + token.id }))(
-    style({ borderRadius: '10px' }, $berryByToken(token, size)),
-    $text(style({ textAlign: 'left', padding: screenUtils.isDesktopScreen ? '8px 0 0 8px' : '5px 0 0 5px', color: '#fff', textShadow: '#0000005e 0px 0px 5px', fontSize: screenUtils.isDesktopScreen ? '.6em' : '.6em', position: 'absolute', fontWeight: 'bold' }))(
-      String(Number(token.id))
-    )
-  )
-}
 

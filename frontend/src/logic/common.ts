@@ -1,18 +1,18 @@
 import { O, Op } from "@aelea/core"
-import { filterNull, switchMap } from "@gambitdao/gmx-middleware"
+import { filterNull } from "@gambitdao/gmx-middleware"
 import { awaitPromises, continueWith, empty, map, multicast, never, now, recoverWith, switchLatest, takeWhile, tap } from "@most/core"
 import { Stream } from "@most/types"
-import { $berry } from "../components/$DisplayBerry"
+import { $berry, $defaultBerry } from "../components/$DisplayBerry"
 import {
   IBerryDisplayTupleMap, getLabItemTupleIndex, IAttributeExpression, IAttributeBackground, IAttributeMappings,
   IBerryLabItems, IToken, IAttributeHat, tokenIdAttributeTuple
 } from "@gambitdao/gbc-middleware"
-import { $Node, $svg, attr, style } from "@aelea/dom"
+import { $Node, $svg, attr, NodeComposeFn, style } from "@aelea/dom"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
 import { Closet } from "@gambitdao/gbc-contracts"
 import { BigNumberish, BigNumber } from "@ethersproject/bignumber"
 import { BaseProvider, Web3Provider } from "@ethersproject/providers"
-import { BaseContract, ContractFactory, Event } from "@ethersproject/contracts"
+import { ContractFactory, Event } from "@ethersproject/contracts"
 import { CHAIN } from "@gambitdao/wallet-link"
 import { GetEventFilterType, listen } from "./contract/listen"
 import { curry2 } from "@most/prelude"
@@ -155,17 +155,18 @@ export function readContract<T extends string, TContract extends typeof Contract
 
 
 
-export const $berryByToken = (token: IToken, size: string | number = 85, tuple: Partial<IBerryDisplayTupleMap> = [...tokenIdAttributeTuple[token.id - 1]]) => {
+export const $berryByToken = (token: IToken, $container?: NodeComposeFn<$Node>) => {
   const display = getBerryFromItems(token.labItems.map(li => Number(li.id)))
+  const tuple: Partial<IBerryDisplayTupleMap> = [...tokenIdAttributeTuple[token.id - 1]]
 
-  return $berryByLabItems(token.id, display.background, display.custom, size, tuple)
+  return $berryByLabItems(token.id, display.background, display.custom, $container, tuple)
 }
 
 export const $berryByLabItems = (
   berryId: number,
   backgroundId: IAttributeBackground,
   labItemId: IAttributeMappings,
-  size: string | number = 85,
+  $container?: NodeComposeFn<$Node>,
   tuple: Partial<IBerryDisplayTupleMap> = [...tokenIdAttributeTuple[berryId - 1]]
 ) => {
 
@@ -180,10 +181,33 @@ export const $berryByLabItems = (
     tuple.splice(0, 1, backgroundId)
   }
 
-  return $berry(tuple, size)
+  return $berry(tuple, $container)
 }
 
-export const $labItem = (id: number, size: string | number = 85, background = true, showFace = false): $Node => {
+export const $defaultLabItem = $defaultBerry(
+  style({ placeContent: 'center', overflow: 'hidden' })
+)
+
+export const $defaultLabItemMedium = $defaultLabItem(
+  style({ width: '70px', height: '70px' })
+)
+
+export const $defaultLabItemBig = $defaultLabItem(
+  style({ width: '250px', height: '250px' })
+)
+
+export const $defaultLabItemHuge = $defaultLabItem(
+  style({ width: '460px', height: '460px' })
+)
+
+export interface ILabItemDisplay {
+  id: number
+  $container?: NodeComposeFn<$Node>
+  background?: boolean
+  showFace?: boolean
+}
+
+export const $labItem = ({ id, $container = $defaultLabItem, background = true, showFace = false }: ILabItemDisplay): $Node => {
   const tupleIdx = getLabItemTupleIndex(id)
   const localTuple = Array(5).fill(undefined) as IBerryDisplayTupleMap
   localTuple.splice(tupleIdx, 1, id)
@@ -195,15 +219,14 @@ export const $labItem = (id: number, size: string | number = 85, background = tr
   if (tupleIdx !== 3 && showFace) {
     localTuple.splice(3, 1, IAttributeExpression.HAPPY)
   }
-  const sizeNorm = typeof size === 'number' ? size + 'px' : size
 
-  const backgroundStyle = O(
-    style({ placeContent: 'center', maxWidth: sizeNorm, overflow: 'hidden', borderRadius: 85 * 0.15 + 'px' }),
-    background ? style({ backgroundColor: tupleIdx === 0 ? '' : colorAlpha(pallete.message, theme.name === 'light' ? .12 : .92) }) : O()
+
+  const $csContainer = $container(
+    background
+      ? style({ backgroundColor: tupleIdx === 0 ? '' : colorAlpha(pallete.message, theme.name === 'light' ? .12 : .92) })
+      : O()
   )
-
-
-  return backgroundStyle($berry(localTuple, sizeNorm))
+  return $berry(localTuple, $csContainer)
 }
 
 export const $labItemAlone = (id: number, size = 80) => {

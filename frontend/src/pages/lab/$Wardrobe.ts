@@ -221,7 +221,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
                 displaytuple.splice(getLabItemTupleIndex(labCustom), 1, labCustom)
               }
 
-              $berry2 = style({ borderRadius: '30px' }, $berry(displaytuple, previewSize))
+              $berry2 = style({ borderRadius: '30px' }, $berry(displaytuple))
             }
 
             return $berry2 ? $row(
@@ -253,7 +253,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
                     throw new Error(`No berry id:${token} exists`)
                   }
 
-                  return style({ cursor: 'pointer' }, $berryTileId(token, 85))
+                  return style({ cursor: 'pointer' }, $berryTileId(token))
                 }),
                 list: tokenList
               }
@@ -310,7 +310,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
               return $row(style({ position: 'relative' }))(
                 $row(style({ cursor: 'pointer', overflow: 'hidden', borderRadius: '8px', backgroundColor: colorAlpha(pallete.message, theme.name === 'light' ? .12 : .92) }))(
                   fadeIn(
-                    style({ filter: itemBalance && itemBalance?.amount > 0n ? '' : 'grayscale(1)' }, selectBehavior($labItem(id, 85)))
+                    style({ filter: itemBalance && itemBalance?.amount > 0n ? '' : 'grayscale(1)' }, selectBehavior($labItem({ id })))
                   )
                 ),
                 itemBalance?.amount && account
@@ -533,10 +533,10 @@ const $ItemSlot = ({ selectedSlot, change, gbcItemId, slot, slotLabel }: ItemSlo
         )
         : empty(),
       $tradeBox(selectTether(nodeEvent('click'), constant(slot)))(
-        gbcItemId && isSwap && !isGbcItemRemove ? $itemWrapper($labItem(gbcItemId, itemSize, false)) : empty(),
+        gbcItemId && isSwap && !isGbcItemRemove ? $itemWrapper($labItem({ id: gbcItemId, showFace: false })) : empty(),
         gbcItemId && isSwap && !isGbcItemRemove ? style({ left: '50%', top: '50%', marginLeft: '-12px', marginTop: '-12px', pointerEvents: 'none', position: 'absolute' })($iconCircular($arrowsFlip, pallete.horizon)) : empty(),
         $itemWrapper(style({ width: isSwap && canRemove ? '65px' : itemSizePx }))(
-          item ? style({ borderRadius: 0, filter: change?.isRemove ? 'saturate(0) brightness(0.2)' : '' }, $labItem(item, itemSize, false)) : $row(style({ flex: 1, alignItems: 'center', placeContent: 'center', color: pallete.foreground, fontSize: '.65em' }))($text(slotLabel))
+          item ? style({ borderRadius: 0, filter: change?.isRemove ? 'saturate(0) brightness(0.2)' : '' }, $labItem({ id: item })) : $row(style({ flex: 1, alignItems: 'center', placeContent: 'center', color: pallete.foreground, fontSize: '.65em' }))($text(slotLabel))
         )
       )
     ),

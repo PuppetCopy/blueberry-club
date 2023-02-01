@@ -49,7 +49,7 @@ export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
     $column(layoutSheet.spacingBig)(
       $responsiveFlex(layoutSheet.spacingBig)(
         $row(style({ minWidth: '400px', height: '400px', overflow: 'hidden', borderRadius: '30px' }))(
-          switchLatest(map(t => $berryByToken(t, '100%'), token))
+          switchLatest(map(t => $berryByToken(t), token))
         ),
         $node(),
         switchLatest(map(token => {
@@ -59,7 +59,7 @@ export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
               $text(style({ color: pallete.foreground }))(`Owned by `),
               $Link({
                 route: parentRoute.create({ fragment: 'df2f23f' }),
-                $content: $discoverIdentityDisplay({ address: token.owner.id, avatarSize: 40, labelSize: '1em' }),
+                $content: $discoverIdentityDisplay({ address: token.owner.id, labelSize: '1em' }),
                 url: `/p/profile/${token.owner.id}/${IProfileActiveTab.BERRIES.toLowerCase()}`,
               })({ click: changeRouteTether() }),
             ),

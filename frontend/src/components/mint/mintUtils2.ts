@@ -28,7 +28,7 @@ export function $displayMintEvents(contract: Stream<BaseContract>, ctxStream: St
 
             return $column(layoutSheet.spacing)(
               $text(style({ color: pallete.positive }))(`Minted ${amount} ${IAttributeMappings[labItemId]}`),
-              $row(layoutSheet.spacing, style({ flexWrap: 'wrap' }))(...Array(amount).fill($labItem(labItemId))),
+              $row(layoutSheet.spacing, style({ flexWrap: 'wrap' }))(...Array(amount).fill($labItem({ id: labItemId }))),
             )
           })
         )

@@ -116,8 +116,8 @@ export const $Profile = (config: IProfile) => component((
                 return $column(layoutSheet.spacingBig)(
 
                   $title(`GBC's`),
-                  $row(layoutSheet.spacingSmall, style({ flexWrap: 'wrap' }))(...owner.ownedTokens.map(token => {
-                    return $berryTileId(token, 65)
+                  $row(layoutSheet.spacingSmall, style({ flexWrap: 'wrap', placeContent: 'center' }))(...owner.ownedTokens.map(token => {
+                    return $berryTileId(token)
                   })),
 
 
@@ -146,7 +146,9 @@ export const $Profile = (config: IProfile) => component((
                           $text(style({ position: 'absolute', top: '1px', right: '4px', fontSize: '.75em', fontWeight: 'bold', color: pallete.background }))(
                             item.amount + 'x'
                           ),
-                          $labItem(item.id, 65)
+                          $labItem({
+                            id: item.id
+                          })
                         )
                       })
                     )

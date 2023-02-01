@@ -41,7 +41,7 @@ export const $SelectBerries = (config: ISelectBerries) => component((
         $$chip: map(token => {
 
           return $row(style({ alignItems: 'center', gap: '8px', color: pallete.message }))(
-            style({ borderRadius: '50%' }, $berryByToken(token, 34)),
+            style({ borderRadius: '50%' }, $berryByToken(token)),
             $text(String(token.id)),
           )
         }),

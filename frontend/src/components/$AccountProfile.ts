@@ -1,4 +1,4 @@
-import { $node, $text, style } from "@aelea/dom"
+import { $Node, $node, $text, NodeComposeFn, style } from "@aelea/dom"
 import { $column, $row, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { BaseProvider } from "@ethersproject/providers"
@@ -13,14 +13,14 @@ import { awaitPromises, empty, map, now, switchLatest } from "@most/core"
 export interface IAccountPreview {
   address: string
   labelSize?: string
-  avatarSize?: number
   showAddress?: boolean
+  $container?: NodeComposeFn<$Node>
 }
 
 export interface IProfilePreview {
   profile: IProfile
+  $container?: NodeComposeFn<$Node>
   labelSize?: string
-  avatarSize?: number
   showAddress?: boolean
 }
 
@@ -64,36 +64,42 @@ export const $AccountLabel = (address: string, fontSize = '1em') => {
 
 
 export const $discoverIdentityDisplay = (config: IAccountPreview) => {
-  const { labelSize = '16px', avatarSize = 38, address, showAddress = true } = config
+  const { $container, address, showAddress = true } = config
 
   const profile = awaitPromises(blueberrySubgraph.profile(now({ id: address.toLowerCase() })))
   // const profile = fromPromise(queryProfile({ id: address.toLowerCase() }).catch(() => null))
 
   return switchLatest(map(p => {
     return p
-      ? $profilePreview({ labelSize, avatarSize, profile: p, showAddress })
+      ? $profilePreview({ $container, profile: p, showAddress, labelSize: config.labelSize })
       : $accountPreview(config)
   }, profile))
 }
 
 export const $accountPreview = ({
-  labelSize = '16px', avatarSize = 38, address, showAddress = true
+  address, showAddress = true, $container, labelSize
 }: IAccountPreview) => {
-  return $row(layoutSheet.spacingSmall, style({ alignItems: 'center', flexDirection: 'row-reverse', pointerEvents: 'none', textDecoration: 'none' }))(
+  return $row(layoutSheet.spacingSmall, style({ alignItems: 'center', pointerEvents: 'none', textDecoration: 'none' }))(
+    $jazzicon({
+      address,
+      $container
+    }),
     showAddress ? $AccountLabel(address, labelSize) : empty(),
-    $jazzicon(address, avatarSize),
   )
 }
 
 
 export const $profilePreview = ({
-  labelSize = '16px', avatarSize = 38, profile, showAddress = true
+  $container, profile, showAddress = true, labelSize = '16px'
 }: IProfilePreview) => {
 
   return $row(layoutSheet.row, layoutSheet.spacingSmall, style({ alignItems: 'center', pointerEvents: 'none', textDecoration: 'none' }))(
     profile.token
-      ? style({ borderRadius: '50%' }, $berryByToken(profile.token, avatarSize))
-      : $jazzicon(profile.id, avatarSize),
+      ? style({ borderRadius: '50%' }, $berryByToken(profile.token, $container))
+      : $jazzicon({
+        address: profile.id,
+        $container
+      }),
     showAddress
       ? profile.name
         ? $text(style({ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', fontSize: labelSize }))(profile.name)

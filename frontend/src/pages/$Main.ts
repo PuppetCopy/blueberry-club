@@ -138,6 +138,7 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
       color: pallete.message,
       fill: pallete.message,
       backgroundColor: pallete.background,
+      fontSize: '1.25em',
       minHeight: '100vh',
       fontWeight: 400,
       gap: screenUtils.isDesktopScreen ? '85px' : '55px', overflowX: 'hidden', padding: screenUtils.isMobileScreen ? '0 15px' : '0 15px'
@@ -206,7 +207,6 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
                     $accountDisplay: $row(layoutSheet.spacing, style({ flex: 1, alignItems: 'center', placeContent: 'center', zIndex: 1 }))(
                       $discoverIdentityDisplay({
                         address: account,
-                        avatarSize: 100,
                         labelSize: '1.5em'
                       }),
                     ),

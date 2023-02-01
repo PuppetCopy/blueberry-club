@@ -54,7 +54,7 @@ export const $LabStore = (config: ILabStore) => component((
           ),
         ),
 
-        $row(screenUtils.isDesktopScreen ? style({ gap: '50px', placeContent: 'center', flexWrap: 'wrap' }) : O(layoutSheet.spacingBig, style({ overflow: 'hidden', placeContent: 'space-evenly', flexWrap: 'wrap' })))(
+        $row(screenUtils.isDesktopScreen ? style({ gap: '50px', placeContent: 'space-between', flexWrap: 'wrap' }) : O(layoutSheet.spacingBig, style({ overflow: 'hidden', placeContent: 'space-evenly', flexWrap: 'wrap' })))(
           ...saleDescriptionList.map(sale => {
 
             const rule = getLatestSaleRule(sale)
