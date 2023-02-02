@@ -116,9 +116,11 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
       ),
 
 
-      $alert(
-        $text(`We are aware of missing data, a fix is coming soon, your data is SAFU!`)
-      ),
+      // style({ placeSelf: 'center' })(
+      //   $alert(
+      //     $text(`We are aware of missing data, a fix is coming soon, your data is SAFU!`)
+      //   )
+      // ),
 
 
       $column(layoutSheet.spacingBig)(
@@ -172,7 +174,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
 
                 if (!pos.profile) {
                   return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
-                    $alertTooltip($text(`Unidentified profile remains below until claimed`)),
+                    $alertTooltip($text(`Account requires Lab Identity, prize will be passed to the next participant if remained unclaimed`)),
                     $Link({
                       $content: $accountPreview({ address: pos.account }),
                       route: config.parentRoute.create({ fragment: 'fefwef' }),

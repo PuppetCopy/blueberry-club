@@ -1,16 +1,15 @@
-import { O, Op } from "@aelea/core"
-import { $text, style, attr, $node, $element, $Branch } from "@aelea/dom"
-import { Route } from "@aelea/router"
-import { $row, layoutSheet, $column, $icon, screenUtils } from "@aelea/ui-components"
-import { colorAlpha, pallete } from "@aelea/ui-components-theme"
+import { $text, style, attr, $element, $Branch } from "@aelea/dom"
+import { $row, $column, $icon } from "@aelea/ui-components"
+import { pallete } from "@aelea/ui-components-theme"
 import { empty, map, periodic } from "@most/core"
 import { formatReadableUSD, unixTimestampNow } from "@gambitdao/gmx-middleware"
-import { $alertIcon, $anchor, $AnchorLink, $PnlValue, $Tooltip } from "@gambitdao/ui-components"
+import { $alertIcon, $defaultDropContainer, $PnlValue, $Tooltip } from "@gambitdao/ui-components"
 
 
 export const $alertTooltip = ($content: $Branch) => {
   return $Tooltip({
     $content,
+    $dropContainer: $defaultDropContainer(style({ fontSize: '0.75em' })),
     $anchor: $icon({ $content: $alertIcon, viewBox: '0 0 24 24', width: '18px', fill: pallete.indeterminate, svgOps: style({ minWidth: '18px' }) }),
   })({})
 }

@@ -294,7 +294,7 @@ async function getProfilePickList(idList: string[]): Promise<IProfile[]> {
   const doc = `
 {
   ${idList.map(id => `
-profile${id}: profile(id: "${id}") {
+_${id}: profile(id: "${id}") {
     id
     timestamp
     name

@@ -347,75 +347,74 @@ query {
   return toAccountCompetitionSummary(tradeList, priceMap, queryParams.maxCollateral, queryParams.to)
 }
 
-export const competitionCumulativeRoi = O(
-  map(async (queryParams: IRequestCompetitionLadderApi) => {
-    const dateNow = unixTimestampNow()
-    const to = Math.min(dateNow, queryParams.to)
-    const timeSlot = Math.floor(to / intervalTimeMap.MIN5)
-    const timestamp = timeSlot * intervalTimeMap.MIN5 - intervalTimeMap.MIN5
+// export const competitionCumulativeRoi = O(
+//   map(async (queryParams: IRequestCompetitionLadderApi) => {
+//     const dateNow = unixTimestampNow()
+//     const to = Math.min(dateNow, queryParams.to)
+//     const timeSlot = Math.floor(to / intervalTimeMap.MIN5)
+//     const timestamp = timeSlot * intervalTimeMap.MIN5 - intervalTimeMap.MIN5
+//     const from = queryParams.from
 
-    const from = queryParams.from
+//     const competitionAccountListQuery = fetchTrades({ ...queryParams, from, to, offset: 0, pageSize: 1000 }, async (params) => {
+//       const res = await subgraphDevChainMap[queryParams.chain](gql(`
 
-    const competitionAccountListQuery = fetchTrades({ ...queryParams, from, to, offset: 0, pageSize: 1000 }, async (params) => {
-      const res = await subgraphDevChainMap[queryParams.chain](gql(`
+// query {
+//   trades(first: 1000, skip: ${params.offset}) {
+//       ${tradeFields}
+//       entryReferralCode
+//       entryReferrer
+//   }
+// }
+// `), {})
 
-query {
-  trades(first: 1000, skip: ${params.offset}, where: { entryReferralCode: "${queryParams.referralCode}", timestamp_gte: ${params.from}, timestamp_lte: ${params.to}}) {
-      ${tradeFields}
-      entryReferralCode
-      entryReferrer
-  }
-}
-`), {})
-
-      return res.trades as ITrade[]
-    })
-
-
-    const priceMapQuery = querySubgraph(queryParams, `
-      {
-        pricefeeds(where: { timestamp: ${timestamp.toString()} }) {
-          id
-          timestamp
-          tokenAddress
-          c
-          interval
-        }
-      }
-    `).then(res => {
-      const list = groupByKeyMap(res.pricefeeds, (item: IPricefeed) => item.tokenAddress, x => x.c)
-      return list
-    })
-
-    const historicTradeList = await competitionAccountListQuery
-    const priceMap = await priceMapQuery
-    const tradeList: ITrade[] = historicTradeList.map(fromJson.tradeJson)
-
-    return toAccountCompetitionSummary(tradeList, priceMap, queryParams.maxCollateral, to)
-  }),
-  awaitPromises
-)
-
-export const competitionAccountList = O(
-  map((queryParams: IRequestCompetitionLadderApi) => {
-
-    const competitionAccountListQuery = fetchHistoricTrades({ ...queryParams, offset: 0 }, async (params) => {
-      const res = await subgraphDevChainMap[queryParams.chain](gql(`
-query {
-  trades(first: 1000, skip: ${params.offset}, where: { entryReferralCode: "${queryParams.referralCode}", timestamp_gte: ${params.from}, timestamp_lte: ${params.to}}) {
-      ${tradeFields}
-  }
-}
-`), {})
-
-      return res.trades as ITrade[]
-    })
+//       return res.trades as ITrade[]
+//     })
 
 
-    return competitionAccountListQuery
-  }),
-  awaitPromises
-)
+//     const priceMapQuery = querySubgraph(queryParams, `
+//       {
+//         pricefeeds(where: { timestamp: ${timestamp.toString()} }) {
+//           id
+//           timestamp
+//           tokenAddress
+//           c
+//           interval
+//         }
+//       }
+//     `).then(res => {
+//       const list = groupByKeyMap(res.pricefeeds, (item: IPricefeed) => item.tokenAddress, x => x.c)
+//       return list
+//     })
+
+//     const historicTradeList = await competitionAccountListQuery
+//     const priceMap = await priceMapQuery
+//     const tradeList: ITrade[] = historicTradeList.map(fromJson.tradeJson)
+
+//     return toAccountCompetitionSummary(tradeList, priceMap, queryParams.maxCollateral, to)
+//   }),
+//   awaitPromises
+// )
+
+// export const competitionAccountList = O(
+//   map((queryParams: IRequestCompetitionLadderApi) => {
+
+//     const competitionAccountListQuery = fetchHistoricTrades({ ...queryParams, offset: 0 }, async (params) => {
+//       const res = await subgraphDevChainMap[queryParams.chain](gql(`
+// query {
+//   trades(first: 1000, skip: ${params.offset}, where: { timestamp_gte: ${params.from}, timestamp_lte: ${params.to}}) {
+//       ${tradeFields}
+//   }
+// }
+// `), {})
+
+//       return res.trades as ITrade[]
+//     })
+
+
+//     return competitionAccountListQuery
+//   }),
+//   awaitPromises
+// )
 
 
 

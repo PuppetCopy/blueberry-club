@@ -224,6 +224,7 @@ export const $Home = (config: ITreasury) => component((
                   $row(style({ gridRow: 'span 3 / auto', gridColumn: 'span 7 / auto', gap: '35px' }))(
                     $Link({
                       url: `/p/berry/${token.id}`,
+                      anchorOp: style({ minWidth: '340px' }),
                       route: config.parentRoute.create({ fragment: 'fefe' }),
                       $content: $row(style({ maxWidth: 340 + 'px', borderRadius: '30px', overflow: 'hidden', width: '100%', height: 340 + 'px', transformStyle: 'preserve-3d', perspective: '100px', position: 'relative', placeContent: 'center', alignItems: 'flex-end' }))(
                         $row(style({ alignSelf: 'flex-end', zIndex: 10, color: `white!important`, fontWeight: 'bold', position: 'absolute', left: '20px', top: '16px' }))(
