@@ -3,14 +3,14 @@ import { $text, component, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
 import { $column, $row, $seperator, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { colorAlpha, pallete } from '@aelea/ui-components-theme'
-import { awaitPromises, combine, empty, map, multicast, now, switchLatest, zip } from '@most/core'
+import { awaitPromises, combine, empty, map, multicast, now, zip } from '@most/core'
 import { Stream } from '@most/types'
 import { formatReadableUSD, formatFixed, unixTimestampNow, IRequestCompetitionLadderApi, BASIS_POINTS_DIVISOR, getMarginFees, div, switchMap, gmxSubgraph, groupByKey } from '@gambitdao/gmx-middleware'
 import { $alertTooltip, countdown } from './$rules'
 import { IWalletLink } from '@gambitdao/wallet-link'
 import { $accountPreview, $profilePreview } from '../../components/$AccountProfile'
-import { blueberrySubgraph, BLUEBERRY_REFFERAL_CODE, IProfile, IProfileTradingList, IProfileTradingResult, TOURNAMENT_START, TOURNAMENT_TIME_DURATION } from '@gambitdao/gbc-middleware'
-import { $infoTooltipLabel, $Link } from '@gambitdao/ui-components'
+import { blueberrySubgraph, BLUEBERRY_REFFERAL_CODE, IProfileTradingList, IProfileTradingResult, TOURNAMENT_START, TOURNAMENT_TIME_DURATION } from '@gambitdao/gbc-middleware'
+import { $alert, $infoTooltipLabel, $Link } from '@gambitdao/ui-components'
 import { $CardTable } from '../../components/$common'
 import { IProfileActiveTab } from '../$Profile'
 import { $addToCalendar, $responsiveFlex } from '../../elements/$common'
@@ -35,7 +35,6 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
 ) => {
 
   const tableList = multicast(switchMap(res => {
-
     const accountList = res.list.page.map(a => a.account)
 
     return combine((gbcList, ensList) => {
@@ -44,12 +43,15 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
         return x.resolvedAddress.id
       })
 
-      return res.list.page.map(summary => {
-        const profile = gbcListMap[summary.account]
-        const ens = ensListMap[summary.account]
+      return {
+        ...res.list,
+        page: res.list.page.map(summary => {
+          const profile = gbcListMap[summary.account]
+          const ens = ensListMap[summary.account]
 
-        return { ...summary, profile: profile ? { ...profile, ens  } : null }
-      })
+          return { ...summary, profile: profile ? { ...profile, ens } : null }
+        })
+      }
     }, awaitPromises(blueberrySubgraph.profilePickList(now(accountList))), awaitPromises(gmxSubgraph.getEnsProfileListPick(now(accountList))))
   }, config.competitionCumulativeRoi))
 
@@ -81,47 +83,42 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
       //   $alert($text(`Results are being checked to ensure all data is accounted for. expected to finalize by Nov 25 12:00 UTC`)),
       // ),
 
-      $column(layoutSheet.spacing, style({ alignItems: 'center', placeContent: 'center', margin: '40px 0', }))(
-        $column(layoutSheet.spacing)(
-          $column(screenUtils.isDesktopScreen ? layoutSheet.spacingBig : layoutSheet.spacing, style({ flexDirection: screenUtils.isDesktopScreen ? 'row' : 'column', fontSize: '1.15em', alignItems: 'center', placeContent: 'center' }))(
-            $row(layoutSheet.spacing)(
-              $column(style({ textAlign: 'right' }))(
-                $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
-                  $text(style({ fontSize: '2.35em', fontWeight: 'bold', color: pallete.primary, textShadow: `1px 1px 50px ${colorAlpha(pallete.primary, .45)}, 1px 1px 50px ${colorAlpha(pallete.primary, .25)} ` }))('#TopBlueberry'),
-                ),
-              ),
+      $column(screenUtils.isDesktopScreen ? layoutSheet.spacingBig : layoutSheet.spacing, style({ flexDirection: screenUtils.isDesktopScreen ? 'row' : 'column', fontSize: '1.15em', alignItems: 'center', placeContent: 'center' }))(
+        $row(layoutSheet.spacing)(
+          $column(style({ textAlign: 'right' }))(
+            $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
+              $text(style({ fontSize: '2.35em', fontWeight: 'bold', color: pallete.primary, textShadow: `1px 1px 50px ${colorAlpha(pallete.primary, .45)}, 1px 1px 50px ${colorAlpha(pallete.primary, .25)} ` }))('#TopBlueberry'),
             ),
-            started
-              ? $column(
-                $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
-                  $text(style({ fontSize: '1.25em', color: pallete.indeterminate }))('LIVE!'),
-                  $text(style({ color: pallete.foreground }))('Ending in')
-                ),
-                $text(style({ fontSize: '1.25em' }))(countdown(TOURNAMENT_START + TOURNAMENT_TIME_DURATION))
-              )
-              : $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
-                $addToCalendar({
-                  time: new Date(TOURNAMENT_START * 1000),
-                  title: 'Blueberry Trading Compeition',
-                  description: `Monthly trading competitions will be held. These tournaments will offer cash prizes, unique lab items, and more as rewards for traders who compete and win.  \n\n${document.location.href}`
-                }),
-                $column(
-                  $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
-                    $text(style({ fontSize: '1.25em' }))('Next Cycle!'),
-                    $text(style({ color: pallete.foreground }))('Starting in')
-                  ),
-                  $text(style({ fontSize: '1.25em' }))(countdown(TOURNAMENT_START))
-                )
-              )
           ),
-
-          // $anchor(style({ fontSize: '.65em', placeSelf: 'center' }), attr({ href: 'https://medium.com/@gmx.io/' }))(
-          //   $text('$50,000 GBC #GAMBIT ROI Trading Contest')
-          // )
-        )
+        ),
+        started
+          ? $column(
+            $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
+              $text(style({ fontSize: '1.25em', color: pallete.indeterminate }))('LIVE!'),
+              $text(style({ color: pallete.foreground }))('Ending in')
+            ),
+            $text(style({ fontSize: '1.25em' }))(countdown(TOURNAMENT_START + TOURNAMENT_TIME_DURATION))
+          )
+          : $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+            $addToCalendar({
+              time: new Date(TOURNAMENT_START * 1000),
+              title: 'Blueberry Trading Compeition',
+              description: `Monthly trading competitions will be held. These tournaments will offer cash prizes, unique lab items, and more as rewards for traders who compete and win.  \n\n${document.location.href}`
+            }),
+            $column(
+              $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
+                $text(style({ fontSize: '1.25em' }))('Next Cycle!'),
+                $text(style({ color: pallete.foreground }))('Starting in')
+              ),
+              $text(style({ fontSize: '1.25em' }))(countdown(TOURNAMENT_START))
+            )
+          )
       ),
 
 
+      $alert(
+        $text(`We are aware of missing data, a fix is coming soon, your data is SAFU!`)
+      ),
 
 
       $column(layoutSheet.spacingBig)(
@@ -221,7 +218,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
                   ))
                   : $defaultBerry(style({ width: '50px', minWidth: '50px', }))
 
-                return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+                return $row(layoutSheet.spacingSmall, style({ alignItems: 'center', minWidth: 0, }))(
                   $row(style({ alignItems: 'baseline', zIndex: 5, textAlign: 'center', placeContent: 'center' }))(
                     $text(style({ fontSize: '.75em', width: '10px' }))(`${pos.rank}`),
                   ),
@@ -250,7 +247,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
                 $text('Profits $'),
                 $text(style({ fontSize: '.75em' }))('Max Collateral'),
               ),
-              columnOp: style({ placeContent: 'center', minWidth: '125px' }),
+              columnOp: style({ placeContent: 'center', minWidth: '90px' }),
               $$body: map((pos) => {
                 const val = formatReadableUSD(pos.pnl)
                 const isNeg = pos.pnl < 0n

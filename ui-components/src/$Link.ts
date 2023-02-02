@@ -13,6 +13,7 @@ export interface ILink extends Omit<IAnchor, '$anchor'> {
 
 const $anchor = $element('a')(
   style({
+    minWidth: 0,
     color: pallete.message
   }),
 )
@@ -48,6 +49,6 @@ export const $Link = ({ url, route, $content, anchorOp, disabled = empty() }: IL
 export const $AnchorLink = (config: ILink) => {
   return $Link({
     ...config,
-    anchorOp: O(config.anchorOp || O(), style({ textDecoration: 'underline', textDecorationColor: pallete.primary })),
+    anchorOp: O(config.anchorOp || O(), style({ textDecoration: 'underline', minWidth: 0, textDecorationColor: pallete.primary })),
   })
 }

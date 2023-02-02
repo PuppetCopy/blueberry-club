@@ -105,6 +105,11 @@ export const getEnsProfile = O(
 )
 
 export async function getProfilePickList(idList: string[]): Promise<IEnsDomain[]> {
+
+  if (idList.length === 0) {
+    return []
+  }
+
   const newLocal = `{
   ${idList.map(id => `
   _${id}: domains( where: { resolvedAddress: "${id.toLowerCase()}" }) {
