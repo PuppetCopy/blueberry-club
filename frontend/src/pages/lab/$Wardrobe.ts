@@ -12,7 +12,7 @@ import { $labItem, getBerryFromToken, getTokenSlots } from "../../logic/common"
 import { $berryTileId } from "../../components/$common"
 import { fadeIn } from "../../transitions/enter"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
-import { $berry } from "../../components/$DisplayBerry"
+import { $berry, $defaultBerry } from "../../components/$DisplayBerry"
 import { $caretDown } from "../../elements/$icons"
 import { $alert, $arrowsFlip, $IntermediateTx, $xCross } from "@gambitdao/ui-components"
 import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
@@ -221,12 +221,12 @@ export const $Wardrobe = (config: IBerryComp) => component((
                 displaytuple.splice(getLabItemTupleIndex(labCustom), 1, labCustom)
               }
 
-              $berry2 = style({ borderRadius: '30px' }, $berry(displaytuple))
+              $berry2 = attr({ id: 'BERRY' })($berry(displaytuple, $defaultBerry(style({ borderRadius: '30px' }))))
             }
 
-            return $berry2 ? $row(
-              attr({ id: 'BERRY' }, $berry2)
-            ) : $row(style({}))()
+            return $berry2
+              ? $berry2
+              : $row(style({}))()
 
           }, exchangeState)),
         ),
@@ -245,7 +245,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
               })({}),
               $option: $row,
               value: {
-                $container: $defaultSelectContainer(style({ padding: '15px', flexWrap: 'wrap', width: '310px', maxHeight: '400px', overflow: 'auto', flexDirection: 'row' })),
+                $container: $defaultSelectContainer(layoutSheet.spacingSmall, style({ display: 'grid', overflowX: 'hidden', gridTemplateColumns: 'repeat(3, 1fr)', padding: '15px', flexWrap: 'wrap', width: '310px', maxHeight: '400px', overflow: 'auto', flexDirection: 'row' })),
                 value: now(config.initialBerry || null),
                 $$option: map(token => {
 

@@ -83,11 +83,18 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
       //   $alert($text(`Results are being checked to ensure all data is accounted for. expected to finalize by Nov 25 12:00 UTC`)),
       // ),
 
-      $column(layoutSheet.spacingSmall, style({ flexDirection: screenUtils.isDesktopScreen ? 'row' : 'column', fontSize: '1.15em', alignItems: 'center', placeContent: 'center' }))(
+      $column(screenUtils.isDesktopScreen ? layoutSheet.spacingBig : layoutSheet.spacing, style({ flexDirection: screenUtils.isDesktopScreen ? 'row' : 'column', fontSize: '1.15em', alignItems: 'center', placeContent: 'center' }))(
         $row(layoutSheet.spacing)(
-          $column(style({ textAlign: 'right' }))(
+          $column(style({ alignItems: 'center' }))(
             $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
               $text(style({ fontSize: screenUtils.isDesktopScreen ? '2.35em' : '1.95em', fontWeight: 'bold', color: pallete.primary, textShadow: `1px 1px 50px ${colorAlpha(pallete.primary, .45)}, 1px 1px 50px ${colorAlpha(pallete.primary, .25)} ` }))('#TopBlueberry'),
+            ),
+            $infoTooltipLabel(
+              $column(layoutSheet.spacingSmall)(
+                $text(`ROI (%) is defined as:`),
+                $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Profits / Max Collateral (min ${formatReadableUSD(MAX_COLLATERAL)}) * 100`),
+              ),
+              $text(style({ fontWeight: 'bold', fontSize: '1.15em', color: pallete.middleground }))(`Highest ROI (%)`)
             ),
           ),
         ),
@@ -123,23 +130,16 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
       // ),
 
 
-      $column(layoutSheet.spacingBig)(
+      $column(layoutSheet.spacing)(
         $row(layoutSheet.spacing, style({ alignItems: 'flex-end' }))(
           $column(layoutSheet.spacingSmall, style({ flex: 1, alignSelf: screenUtils.isMobileScreen ? 'center' : '' }))(
-            $infoTooltipLabel(
-              $column(layoutSheet.spacingSmall)(
-                $text(`ROI (%) is defined as:`),
-                $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Profits / Max Collateral (min ${formatReadableUSD(MAX_COLLATERAL)}) * 100`),
-              ),
-              $text(style({ fontWeight: 'bold', fontSize: '1.15em' }))(`Highest ROI (%)`)
-            ),
-            $row(layoutSheet.spacing)(
+            $responsiveFlex(layoutSheet.spacingSmall)(
               $infoTooltipLabel($column(layoutSheet.spacingSmall)(
-                $text('The amount traded using'),
-                $text('it is calculated as Traded Volume fees * 0.15% (BLUBERRY Referral)'),
+                $text('The total volume accumulated between the 1st and 28th of each competition period'),
+                $text('Higher volume means a higher prize pool'),
               ), 'Traded Volume'),
               $text(style({
-                fontSize: '1em',
+                fontSize: '1.25em',
                 textShadow: `${colorAlpha(pallete.message, .5)} 1px 1px 20px, ${colorAlpha(pallete.message, .5)} 0px 0px 20px`
               }))(map(res => {
                 return formatReadableUSD(res.size)
@@ -149,10 +149,12 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
 
           $responsiveFlex(layoutSheet.spacingSmall, style({ placeContent: 'flex-end' }))(
             $infoTooltipLabel(
-              $column(
+              $column(layoutSheet.spacingSmall)(
                 $text('The current accumulated amount from the GMX referral program will be rewarded to the top traders at the end'),
-                $text('it is calculated as:'),
-                $text(style({ fontSize: '.75em', fontStyle: 'italic' }))('Traded Volume * .001 (Margin Fee) * .15 (BLUBERRY Referral)'),
+                $column(
+                  $text('it is calculated as:'),
+                  $text(style({ fontSize: '.75em', fontStyle: 'italic' }))('Traded Volume * .001 (Margin Fee) * .15 (BLUBERRY Referral)'),
+                )
               ),
               'Prize Pool'
             ),
