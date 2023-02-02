@@ -1169,9 +1169,10 @@ export const $TradeBox = (config: ITradeBox) => component((
                           : -params.collateralDeltaUsd
 
                         const total = collateralDelta + adjustedSizeDelta - fees
-                        const tokenAmount = getTokenAmount(total, params.inputTokenPrice, params.inputTokenDescription.decimals)
+                        const totalOut = total > 0n ? total : 0n
+                        const tokenAmount = getTokenAmount(totalOut, params.inputTokenPrice, params.inputTokenDescription.decimals)
 
-                        return `${readableNumber(formatFixed(tokenAmount, params.inputTokenDescription.decimals))} ${params.inputTokenDescription.symbol} (${formatReadableUSD(total)})`
+                        return `${readableNumber(formatFixed(tokenAmount, params.inputTokenDescription.decimals))} ${params.inputTokenDescription.symbol} (${formatReadableUSD(totalOut)})`
                       }, combineObject({ sizeDeltaUsd, position, collateralDeltaUsd, inputTokenDescription, inputTokenPrice, marginFee, swapFee, indexTokenPrice, isLong, fundingFee })))
                     )
                   }, config.tradeConfig.isIncrease))
