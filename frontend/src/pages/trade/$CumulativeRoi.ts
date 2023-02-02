@@ -224,7 +224,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
 
                 return $row(layoutSheet.spacingSmall, style({ alignItems: 'center', minWidth: 0, }))(
                   $row(style({ alignItems: 'baseline', zIndex: 5, textAlign: 'center', placeContent: 'center' }))(
-                    $text(style({ fontSize: '.75em', width: '10px' }))(`${pos.rank}`),
+                    $text(style({ fontSize: '.75em' }))(`${pos.rank}`),
                   ),
                   $Link({
                     $content: $profilePreview({ profile: pos.profile, $container }),

@@ -8,7 +8,7 @@ import {
   div, StateStream, getPnL, MIN_LEVERAGE, formatToBasis, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE,
   ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd, IPricefeed,
   TRADE_CONTRACT_MAPPING, filterNull, ITradeOpen, zipState, MARGIN_FEE_BASIS_POINTS, abs, DEDUCT_USD_FOR_GAS,
-  getTokenAmount, safeDiv, getTokenDescription, ITrade, getAdjustedDelta, switchMap
+  getTokenAmount, safeDiv, getTokenDescription, ITrade, getAdjustedDelta, switchMap, USD_PERCISION, getDenominator, USDG_DECIMALS
 } from "@gambitdao/gmx-middleware"
 import {
   $alert,
@@ -215,13 +215,18 @@ export const $TradeBox = (config: ITradeBox) => component((
     } else {
 
       if (state.inputToken !== state.collateralToken) {
-        const pnl = getPnL(state.isLong, state.position.averagePrice, state.indexTokenPrice, state.position.size)
-        const adjustedPnl = div(abs(state.sizeDeltaUsd) * pnl, state.position.size) / BASIS_POINTS_DIVISOR
-        // const adjustedPnl = getAdjustedDetla(state.position.size, state.sizeDeltaUsd, pnl)
+        const delta = getPnL(state.isLong, state.position.averagePrice, state.indexTokenPrice, -state.sizeDeltaUsd)
+        const adjustedSizeDelta = safeDiv(abs(state.sizeDeltaUsd) * delta, state.position.size)
+        const fees = state.swapFee + state.marginFee
+        const collateralDelta = -state.sizeDeltaUsd === state.position.size
+          ? state.position.collateral - state.fundingFee
+          : -state.collateralDeltaUsd
+        
+        const totalOut = collateralDelta + adjustedSizeDelta - fees
 
-        const nextUsdgAmount = state.collateralTokenPoolInfo.usdgAmount + adjustedPnl
-        if (nextUsdgAmount > state.collateralTokenPoolInfo.maxUsdgAmount) {
-          return `${state.collateralTokenDescription.symbol} pool exceeded, can only Receive ${state.collateralTokenDescription.symbol}`
+        const nextUsdgAmount = totalOut * getDenominator(USDG_DECIMALS) / USD_PERCISION
+        if (state.collateralTokenPoolInfo.usdgAmount + nextUsdgAmount > state.collateralTokenPoolInfo.maxUsdgAmount) {
+          return `${state.collateralTokenDescription.symbol} pool exceeded, you cannot receive ${state.inputTokenDescription.symbol}, switch to ${state.collateralTokenDescription.symbol} in the first input token switcher`
         }
       }
 
@@ -236,7 +241,8 @@ export const $TradeBox = (config: ITradeBox) => component((
     }
 
     return null
-  }, combineObject({ leverage, position, liquidationPrice, walletBalanceUsd, isIncrease, indexTokenPrice, collateralDelta, collateralDeltaUsd, inputTokenDescription, collateralToken, sizeDeltaUsd, availableIndexLiquidityUsd, inputToken, collateralTokenPoolInfo, collateralTokenDescription, indexTokenDescription, isLong, })))
+  }, combineObject({
+    leverage, position, swapFee, marginFee, fundingFee, liquidationPrice, walletBalanceUsd, isIncrease, indexTokenPrice, collateralDelta, collateralDeltaUsd, inputTokenDescription, collateralToken, sizeDeltaUsd, availableIndexLiquidityUsd, inputToken, collateralTokenPoolInfo, collateralTokenDescription, indexTokenDescription, isLong, })))
 
   const requestTradeError = filterNull(awaitPromises(map(async req => {
     try {
