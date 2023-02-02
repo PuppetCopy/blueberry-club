@@ -1,5 +1,5 @@
 import { Behavior, combineObject } from '@aelea/core'
-import { $text, component, style } from "@aelea/dom"
+import { $node, $text, component, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
 import { $column, $row, $seperator, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { colorAlpha, pallete } from '@aelea/ui-components-theme'
@@ -77,17 +77,17 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
   // opacity: 0.7;
 
   return [
-    $column(layoutSheet.spacingBig)(
+    $column(screenUtils.isDesktopScreen ? layoutSheet.spacingBig : layoutSheet.spacing)(
 
       // style({ alignSelf: 'center', maxWidth: '500px', marginBottom: '18px' })(
       //   $alert($text(`Results are being checked to ensure all data is accounted for. expected to finalize by Nov 25 12:00 UTC`)),
       // ),
 
-      $column(screenUtils.isDesktopScreen ? layoutSheet.spacingBig : layoutSheet.spacing, style({ flexDirection: screenUtils.isDesktopScreen ? 'row' : 'column', fontSize: '1.15em', alignItems: 'center', placeContent: 'center' }))(
+      $column(layoutSheet.spacingSmall, style({ flexDirection: screenUtils.isDesktopScreen ? 'row' : 'column', fontSize: '1.15em', alignItems: 'center', placeContent: 'center' }))(
         $row(layoutSheet.spacing)(
           $column(style({ textAlign: 'right' }))(
             $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
-              $text(style({ fontSize: '2.35em', fontWeight: 'bold', color: pallete.primary, textShadow: `1px 1px 50px ${colorAlpha(pallete.primary, .45)}, 1px 1px 50px ${colorAlpha(pallete.primary, .25)} ` }))('#TopBlueberry'),
+              $text(style({ fontSize: screenUtils.isDesktopScreen ? '2.35em' : '1.95em', fontWeight: 'bold', color: pallete.primary, textShadow: `1px 1px 50px ${colorAlpha(pallete.primary, .45)}, 1px 1px 50px ${colorAlpha(pallete.primary, .25)} ` }))('#TopBlueberry'),
             ),
           ),
         ),
@@ -115,7 +115,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
           )
       ),
 
-
+      $node(),
       // style({ placeSelf: 'center' })(
       //   $alert(
       //     $text(`We are aware of missing data, a fix is coming soon, your data is SAFU!`)

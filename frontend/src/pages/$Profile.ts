@@ -174,9 +174,9 @@ export const $Profile = (config: IProfile) => component((
                     })
                   },
                   {
-                    $head: $column(style({ textAlign: 'center' }))(
-                      $text('Size'),
+                    $head: $column(style({ textAlign: 'right' }))(
                       $text(style({ fontSize: '.75em' }))('Collateral'),
+                      $text('Size'),
                     ),
                     columnOp: O(layoutSheet.spacingTiny, style({ flex: 1.2, placeContent: 'flex-end' })),
                     $$body: map(pos => {
@@ -230,9 +230,9 @@ export const $Profile = (config: IProfile) => component((
                     })
                   },
                   {
-                    $head: $column(style({ textAlign: 'center' }))(
-                      $text('Size'),
+                    $head: $column(style({ textAlign: 'right' }))(
                       $text(style({ fontSize: '.75em' }))('Collateral'),
+                      $text('Size'),
                     ),
                     columnOp: O(layoutSheet.spacingTiny, style({ flex: 1.2, placeContent: 'flex-end' })),
                     $$body: map(pos => {
