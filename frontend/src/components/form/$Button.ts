@@ -43,6 +43,7 @@ export const $buttonAnchor = $element('a')(
   secondaryButtonStyle,
   stylePseudo(':hover', { color: 'inherit', boxShadow: 'none', borderColor: pallete.primary }),
   style({
+    userSelect: 'none',
     alignItems: 'center',
     textDecoration: 'none',
     // padding: '6px 12px',

@@ -4,7 +4,7 @@ import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 
 import { CHAIN, IWalletLink, IWalletName } from "@gambitdao/wallet-link"
-import { awaitPromises, constant, empty, filter, map, merge, mergeArray, multicast, now, snapshot, startWith, switchLatest, tap } from "@most/core"
+import { awaitPromises, constant, empty, filter, map, merge, mergeArray, multicast, now, skipRepeatsWith, snapshot, startWith, switchLatest, tap } from "@most/core"
 import { $buttonAnchor, $ButtonPrimary, $ButtonSecondary } from "../../components/form/$Button"
 import { $defaultSelectContainer, $Dropdown } from "../../components/form/$Dropdown"
 import { IBerryDisplayTupleMap, getLabItemTupleIndex, saleDescriptionList, LabItemSale, IBerryLabItems, LAB_CHAIN, IToken, GBC_ADDRESS, getLatestSaleRule, tokenIdAttributeTuple, blueberrySubgraph } from "@gambitdao/gbc-middleware"
@@ -63,7 +63,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
   [changeBackgroundState, changeBackgroundStateTether]: Behavior<any, ItemSlotState | null>,
   [setApproval, setApprovalTether]: Behavior<any, Promise<ContractTransaction>>,
 
-  [hoverDownloadBtn, hoverDownloadBtnTether]: Behavior<INode, PointerEvent>,
+  [hoverDownloadBtn, hoverDownloadBtnTether]: Behavior<INode, string>,
   [setMainBerry, setMainBerryTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
 
 
@@ -362,14 +362,16 @@ export const $Wardrobe = (config: IBerryComp) => component((
 
               return $buttonAnchor(
                 hoverDownloadBtnTether(
-                  nodeEvent('pointerdown')
+                  nodeEvent('pointerover'),
+                  map(() => `GBC-${exchState.selectedBerry?.id}.png`),
+                  skipRepeatsWith((prev, next) => prev === next)
                 ),
                 style(isDisabled ? {} : { opacity: '.4', pointerEvents: 'none' }),
-                attr({ download: `GBC-${exchState.selectedBerry?.id}.png` }),
-                attrBehavior(awaitPromises(map(async pointerEvent => {
+                attrBehavior(awaitPromises(map(async name => {
                   const svg = document.querySelector('#BERRY')!.querySelector('svg')! as SVGElement
-                  downloadBlobImage(svg, `GBC-${exchState.selectedBerry?.id}.png`)
-                  return { href2: '' }
+                  const href = await getGbcDownloadableUrl(svg)
+                  // `GBC-${exchState.selectedBerry?.id}.png`
+                  return { href, download: name }
                 }, hoverDownloadBtn))),
                 multicast,
               )($text('Download'))
@@ -544,9 +546,28 @@ const $ItemSlot = ({ selectedSlot, change, gbcItemId, slot, slotLabel }: ItemSlo
   ]
 })
 
+function triggerDownload(imgURI: string) {
+  const evt = new MouseEvent('click', {
+    view: window,
+    bubbles: false,
+    cancelable: true
+  })
+
+  const a = document.createElement('a')
+  a.setAttribute('download', 'MY_COOL_IMAGE.png')
+  a.setAttribute('href', imgURI)
+  a.setAttribute('target', '_blank')
+
+  a.dispatchEvent(evt)
+}
+
 function getGbcDownloadableUrl(svg: SVGElement): Promise<string> {
-  const blob = new Blob([svg.outerHTML], { type: 'image/svg+xml' })
-  const url = URL.createObjectURL(blob)
+  const data = (new XMLSerializer()).serializeToString(svg)
+  const blob = new Blob([data], { type: 'image/svg+xml;charset=utf-8' })
+
+  const DOMURL = window.URL || window.webkitURL || window
+
+  const url = DOMURL.createObjectURL(blob)
 
   svg.setAttribute('width', svg.clientWidth + 'px')
   svg.setAttribute('height', svg.clientWidth + 'px')
@@ -575,6 +596,10 @@ function getGbcDownloadableUrl(svg: SVGElement): Promise<string> {
       const context = canvas.getContext('2d')
       context?.drawImage(image, 0, 0, 1500, 1500)
 
+      canvas
+        .toDataURL('image/png')
+        .replace('image/png', 'image/octet-stream')
+
       canvas.toBlob(blob => {
         if (!blob) throw new Error('Unable to create an image')
 
@@ -593,8 +618,9 @@ async function downloadBlobImage(svgElement: SVGElement, filename: string) {
   // Create a link element
   const link = document.createElement("a")
 
+  const imageRef = await getGbcDownloadableUrl(svgElement)
   // Set link's href to point to the Blob URL
-  link.href = await getGbcDownloadableUrl(svgElement)
+  link.href = imageRef
   link.download = filename
 
   // Append link to the body
