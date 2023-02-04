@@ -362,7 +362,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
 
               return $buttonAnchor(
                 hoverDownloadBtnTether(
-                  nodeEvent('pointerover'),
+                  nodeEvent('pointerenter'),
                   map(() => `GBC-${exchState.selectedBerry?.id}.png`),
                   skipRepeatsWith((prev, next) => prev === next)
                 ),
@@ -370,10 +370,9 @@ export const $Wardrobe = (config: IBerryComp) => component((
                 attrBehavior(awaitPromises(map(async name => {
                   const svg = document.querySelector('#BERRY')!.querySelector('svg')! as SVGElement
                   const href = await getGbcDownloadableUrl(svg)
-                  // `GBC-${exchState.selectedBerry?.id}.png`
+                  console.log(href)
                   return { href, download: name }
                 }, hoverDownloadBtn))),
-                multicast,
               )($text('Download'))
             }, exchangeState)),
 
@@ -607,7 +606,7 @@ function getGbcDownloadableUrl(svg: SVGElement): Promise<string> {
         resolve(downloadableLink)
       })
 
-      image.remove()
+      // image.remove()
     }
   })
 }
