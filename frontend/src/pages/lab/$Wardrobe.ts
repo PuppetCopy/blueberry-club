@@ -368,7 +368,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
                 style(isDisabled ? {} : { opacity: '.4', pointerEvents: 'none' }),
                 attr({ download: `GBC-${exchState.selectedBerry?.id}.png` }),
                 attrBehavior(awaitPromises(map(async x => {
-                  const svg = document.querySelector('#BERRY')! as SVGElement
+                  const svg = document.querySelector('#BERRY')!.querySelector('svg')! as SVGElement
                   const href = await getGbcDownloadableUrl(svg)
 
                   return { href }
@@ -560,9 +560,11 @@ function getGbcDownloadableUrl(svg: SVGElement): Promise<string> {
 
   image.width = 1500
   image.height = 1500
-  document.body.appendChild(image)
 
   return new Promise(resolve => {
+    document.body.appendChild(image)
+    console.log(image)
+
     image.onload = () => {
       image.onload = null
 
