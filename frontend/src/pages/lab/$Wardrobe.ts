@@ -358,21 +358,20 @@ export const $Wardrobe = (config: IBerryComp) => component((
 
 
             switchLatest(combineArray(exchState => {
-
               const isDisabled = exchState.updateBackgroundState === null && exchState.updateItemState === null && exchState.selectedBerry
 
               return $buttonAnchor(
                 hoverDownloadBtnTether(
-                  nodeEvent('pointerenter')
+                  nodeEvent('pointerdown')
                 ),
                 style(isDisabled ? {} : { opacity: '.4', pointerEvents: 'none' }),
                 attr({ download: `GBC-${exchState.selectedBerry?.id}.png` }),
-                attrBehavior(awaitPromises(map(async x => {
+                attrBehavior(awaitPromises(map(async pointerEvent => {
                   const svg = document.querySelector('#BERRY')!.querySelector('svg')! as SVGElement
-                  const href = await getGbcDownloadableUrl(svg)
-
-                  return { href }
-                }, hoverDownloadBtn)))
+                  downloadBlobImage(svg, `GBC-${exchState.selectedBerry?.id}.png`)
+                  return { href2: '' }
+                }, hoverDownloadBtn))),
+                multicast,
               )($text('Download'))
             }, exchangeState)),
 
@@ -586,4 +585,31 @@ function getGbcDownloadableUrl(svg: SVGElement): Promise<string> {
       image.remove()
     }
   })
+}
+
+
+
+async function downloadBlobImage(svgElement: SVGElement, filename: string) {
+  // Create a link element
+  const link = document.createElement("a")
+
+  // Set link's href to point to the Blob URL
+  link.href = await getGbcDownloadableUrl(svgElement)
+  link.download = filename
+
+  // Append link to the body
+  document.body.appendChild(link)
+
+  // Dispatch click event on the link
+  // This is necessary as link.click() does not work on the latest firefox
+  link.dispatchEvent(
+    new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      view: window
+    })
+  )
+
+  // Remove link from body
+  document.body.removeChild(link)
 }
