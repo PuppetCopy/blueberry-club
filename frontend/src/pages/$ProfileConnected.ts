@@ -55,7 +55,6 @@ export const $ProfileConnected = (config: IAccount) => component((
   const $title = $text(style({ fontWeight: 'bold', fontSize: '1.55em' }))
   const tradeReader = connectTradeReader(config.walletLink.provider)
   const lab = connectLab(config.walletLink.provider)
-  const ownedItems = lab.accountListBalance(saleDescriptionList.map(x => x.id))
 
   const requestAccountOpenTradeList: Stream<IRequestAccountTradeListApi> = filterNull(map(w3p => {
     if (w3p === null) {
@@ -226,6 +225,9 @@ export const $ProfileConnected = (config: IAccount) => component((
                   if (owner === null) {
                     return null
                   }
+
+
+                  const ownedItems = lab.accountListBalance(owner.id, saleDescriptionList.map(x => x.id))
 
                   return $column(layoutSheet.spacingBig)(
 

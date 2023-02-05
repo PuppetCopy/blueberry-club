@@ -32,13 +32,8 @@ export function connectLab(provider: Stream<BaseProvider>) {
   }
 
 
-  const accountListBalance = (idList: number[]) => {
+  const accountListBalance = (account: string, idList: number[]) => {
     const balanceList = lab.run(map(async c => {
-      const account = await c.signer.getAddress()
-      // if (!account) {
-      //   return []
-      // }
-
       const orderedAccountList = [...idList].fill(account as any) as any as string[]
 
       return (await c.balanceOfBatch(orderedAccountList, idList)).map(n => n.toNumber())

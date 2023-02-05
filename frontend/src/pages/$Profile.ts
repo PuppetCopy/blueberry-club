@@ -81,7 +81,7 @@ export const $Profile = (config: IProfile) => component((
   }, config.walletLink.provider, config.walletLink.network))
 
   const lab = connectLab(config.walletLink.provider)
-  const ownedItems = lab.accountListBalance(saleDescriptionList.map(x => x.id))
+  const ownedItems = lab.accountListBalance(config.account, saleDescriptionList.map(x => x.id))
 
 
   return [

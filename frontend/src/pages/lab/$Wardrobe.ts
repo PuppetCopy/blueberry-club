@@ -19,7 +19,7 @@ import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
 import { Stream } from "@most/types"
 import { $iconCircular, $responsiveFlex } from "../../elements/$common"
 import { $seperator2 } from "../common"
-import { filterNull, unixTimestampNow } from "@gambitdao/gmx-middleware"
+import { filterNull, switchMap, unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 import { Closet, GBCLab } from "@gambitdao/gbc-contracts"
 import { connectLab } from "../../logic/contract/gbc"
@@ -97,10 +97,20 @@ export const $Wardrobe = (config: IBerryComp) => component((
 
   const selectedBerry = mergeArray([constant(null, owner), changeBerry])
 
-  const ownedItemList = mergeArray([
-    connect.accountListBalance(saleDescriptionList.map(x => x.id)),
-    switchLatest(map(() => connect.accountListBalance(saleDescriptionList.map(x => x.id)), savedItemsTxSucceed))
-  ])
+  const ownedItemList: Stream<{
+    amount: number;
+    id: number;
+  }[]> = switchMap(w3p => {
+    if (w3p === null) {
+      return empty()
+    }
+
+    const list = mergeArray([
+      connect.accountListBalance(w3p.address, saleDescriptionList.map(x => x.id)),
+      switchLatest(map(() => connect.accountListBalance(w3p.address, saleDescriptionList.map(x => x.id)), savedItemsTxSucceed))
+    ])
+    return list
+  }, config.walletLink.wallet)
 
   const isClosetApproved = awaitPromises(combineArray(async (c) => {
     return c.isApprovedForAll(c.signer.getAddress(), GBC_ADDRESS.CLOSET)
