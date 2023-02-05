@@ -579,6 +579,7 @@ function getGbcDownloadableUrl(svg: SVGElement): Promise<string> {
 
   image.width = 1500
   image.height = 1500
+  image.style.display = 'none'
 
   return new Promise(resolve => {
     document.body.appendChild(image)
@@ -606,35 +607,8 @@ function getGbcDownloadableUrl(svg: SVGElement): Promise<string> {
         resolve(downloadableLink)
       })
 
-      // image.remove()
+      image.remove()
     }
   })
 }
 
-
-
-async function downloadBlobImage(svgElement: SVGElement, filename: string) {
-  // Create a link element
-  const link = document.createElement("a")
-
-  const imageRef = await getGbcDownloadableUrl(svgElement)
-  // Set link's href to point to the Blob URL
-  link.href = imageRef
-  link.download = filename
-
-  // Append link to the body
-  document.body.appendChild(link)
-
-  // Dispatch click event on the link
-  // This is necessary as link.click() does not work on the latest firefox
-  link.dispatchEvent(
-    new MouseEvent('click', {
-      bubbles: true,
-      cancelable: true,
-      view: window
-    })
-  )
-
-  // Remove link from body
-  document.body.removeChild(link)
-}

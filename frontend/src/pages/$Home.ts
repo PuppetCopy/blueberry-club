@@ -276,7 +276,7 @@ export const $Home = (config: ITreasury) => component((
                     return $mosaicItem(id)
                   }),
                 )
-                : $row(style({ flexWrap: 'wrap', gap: '10px', placeContent: 'center', flex: 1 }))(
+                : $row(style({ margin: '0px -15px', flexWrap: 'wrap', gap: '10px', placeContent: 'center', flex: 1 }))(
                   ...berryWallList.slice(0, berryWallRowCount * 2).map(id => {
                     return $mosaicItem(id)
                   }),
