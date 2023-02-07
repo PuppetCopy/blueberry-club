@@ -30,11 +30,23 @@ export interface IAccountClaim extends IAccountPreview {
 
 
 export const $AccountLabel = (address: string, fontSize = '1em') => {
-
   return $column(style({ fontSize }))(
     $text(style({ fontSize: '.75em' }))(address.slice(0, 6)),
     $text(style({ fontSize: '1em' }))(address.slice(address.length - 4, address.length))
   )
+}
+
+export const $ProfileLabel = (profile: IProfile) => {
+  const hasTwitter = profile.ens.domain.resolver?.texts?.find(t => t === 'com.twitter')
+
+  if (hasTwitter) {
+    $row(
+      $text(style({ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }))(profile.ens.labelName),
+      // $text(style({ fontSize: '1em' }))(address.slice(address.length - 4, address.length))
+    )
+  }
+
+  return $text(style({ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }))(profile.ens.labelName)
 }
 
 
@@ -66,15 +78,15 @@ export const $AccountLabel = (address: string, fontSize = '1em') => {
 export const $discoverIdentityDisplay = (config: IAccountPreview) => {
   const { $container, address, showAddress = true } = config
 
-  const profile = awaitPromises(blueberrySubgraph.profile(now({ id: address.toLowerCase() })))
-  // const profile = fromPromise(queryProfile({ id: address.toLowerCase() }).catch(() => null))
+  const profileEv = awaitPromises(blueberrySubgraph.profile(now({ id: address.toLowerCase() })))
 
-  return switchLatest(map(p => {
-    return p
-      ? $profilePreview({ $container, profile: p, showAddress, labelSize: config.labelSize })
+  return switchLatest(map(profile => {
+    return profile
+      ? $profilePreview({ ...config, profile })
       : $accountPreview(config)
-  }, profile))
+  }, profileEv))
 }
+
 
 export const $accountPreview = ({
   address, showAddress = true, $container, labelSize
@@ -102,7 +114,7 @@ export const $profilePreview = ({
       }),
     showAddress
       ? profile?.ens?.labelName
-        ? $text(style({ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', fontSize: labelSize }))(profile.ens.labelName)
+        ? $ProfileLabel(profile)
         : $AccountLabel(profile.id, labelSize)
       : empty()
   )

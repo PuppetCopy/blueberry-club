@@ -770,8 +770,8 @@ export const $Trade = (config: ITradeComponent) => component((
                         }, liquidationPrice)
 
                       ],
-                      appendData: scan((prev: CandlestickData, nextPrice): CandlestickData => {
-                        const marketPrice = formatFixed(nextPrice, 30)
+                      appendData: scan((prev: CandlestickData, next): CandlestickData => {
+                        const marketPrice = formatFixed(next.indexTokenPrice, 30)
                         const timeNow = unixTimestampNow()
 
                         const prevTimeSlot = Math.floor(prev.time as number / tf)
@@ -781,7 +781,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
                         const isNext = nextTimeSlot > prevTimeSlot
 
-                        document.title = `${readableNumber(marketPrice)}`
+                        document.title = `${next.indexTokenDescription.symbol} ${readableNumber(marketPrice)}`
 
                         if (isNext) {
                           return {
@@ -800,7 +800,7 @@ export const $Trade = (config: ITradeComponent) => component((
                           close: marketPrice,
                           time
                         }
-                      }, initialTick, indexTokenPrice),
+                      }, initialTick, combineObject({ indexTokenPrice, indexTokenDescription })),
                     }
                   ],
                   containerOp: screenUtils.isDesktopScreen ? style({ position: 'absolute', inset: 0 }) : style({}),

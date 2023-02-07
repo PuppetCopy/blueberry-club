@@ -148,8 +148,6 @@ export const $switchNetworkDropdown = (walletLink: IWalletLink, chainList: CHAIN
                     console.warn(error)
                     return Promise.reject('unable to switch network')
                   })
-
-                  document.location.reload()
                 }
 
                 return null

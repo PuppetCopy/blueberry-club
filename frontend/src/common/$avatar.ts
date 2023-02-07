@@ -9,9 +9,11 @@ export interface IJazzicon {
   $container?: NodeComposeFn<$Node>
 }
 
+export const $defaultProfileContainer = $row(style({ minWidth: '38px', aspectRatio: '1 / 1' }))
+
 export function $jazzicon({
   address,
-  $container = $row(style({ minWidth: '38px', aspectRatio: '1 / 1' }))
+  $container = $defaultProfileContainer
 }: IJazzicon) {
 
   const cnt = parseInt(address.slice(2, 10), 16)

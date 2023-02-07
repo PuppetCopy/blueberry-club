@@ -1,12 +1,10 @@
 import { $Node, $wrapNativeElement, style, NodeComposeFn, $svg, attr } from "@aelea/dom"
-import { combine, fromPromise, map, tap } from "@most/core"
+import { combine, fromPromise } from "@most/core"
 
 import { IBerryDisplayTupleMap, berryPartsToSvg } from "@gambitdao/gbc-middleware"
 import { Stream } from "@most/types"
 import { disposeNone } from "@most/disposable"
 import { $column } from "@aelea/ui-components"
-import { combineObject } from "@aelea/core"
-import { node } from "webpack"
 
 
 function importGlobal<T extends { default: any }>(query: Promise<T>): Stream<T['default']> {

@@ -2,7 +2,7 @@ import { Behavior, O, Op } from "@aelea/core"
 import { $Node, $svg, attr, component, INode, NodeComposeFn, nodeEvent, style } from '@aelea/dom'
 import { $column, $icon, $row, designSheet, layoutSheet, screenUtils } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { chain, constant, map, merge, never, now, scan, startWith, switchLatest } from "@most/core"
+import { chain, constant, empty, map, merge, never, now, scan, startWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
 import { $VirtualScroll, IScrollPagableReponse, QuantumScroll, ScrollRequest, ScrollResponse } from "./$VirtualScroll"
 
@@ -11,13 +11,14 @@ import { $VirtualScroll, IScrollPagableReponse, QuantumScroll, ScrollRequest, Sc
 export type TablePageResponse<T> = T[] | Omit<IScrollPagableReponse, '$items'> & { page: T[] }
 
 export interface TableOption<T, FilterState> {
-  $container?: NodeComposeFn<$Node>
 
   columns: TableColumn<T>[]
+  $between?: $Node
 
   dataSource: Stream<TablePageResponse<T>>
   scrollConfig?: Omit<QuantumScroll, 'dataSource'>
 
+  $container?: NodeComposeFn<$Node>
   $rowContainer?: NodeComposeFn<$Node>
   $headerRowContainer?: NodeComposeFn<$Node>
   $bodyRowContainer?: NodeComposeFn<$Node>
@@ -79,6 +80,7 @@ export const $Table = <T, FilterState = never>({
   $bodyRowContainer = $rowContainer,
   sortChange = never(),
   filterChange = never(),
+  $between = empty(),
   $sortArrowDown = $caretDown
 }: TableOption<T, FilterState>) => component((
   [scrollIndex, scrollIndexTether]: Behavior<ScrollRequest, ScrollRequest>,
@@ -164,6 +166,7 @@ export const $Table = <T, FilterState = never>({
   return [
     $container(
       $header,
+      $between,
       $body,
     ),
 

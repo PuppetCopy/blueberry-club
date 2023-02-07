@@ -1,6 +1,6 @@
-import { combineArray, combineObject, fromCallback, replayLatest } from "@aelea/core"
+import { combineArray, fromCallback, replayLatest } from "@aelea/core"
 import { BaseProvider, JsonRpcSigner, Web3Provider } from "@ethersproject/providers"
-import { awaitPromises, constant, delay, fromPromise, map, mergeArray, multicast, now, snapshot, switchLatest, tap } from "@most/core"
+import { awaitPromises, constant, delay, fromPromise, map, mergeArray, multicast, now, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
 import { eip1193ProviderEventFn } from "./common"
 import { CHAIN } from "./constant"
@@ -86,6 +86,7 @@ export function initWalletLink(
     const walletNetworkChange = awaitPromises(map(async id => {
       const chainId = Number(id)
       const w3p = new Web3Provider(wp, chainId)
+      document.location.reload()
       return { ...state, provider: w3p, chain: chainId }
     }, eip1193ProviderEventFn(wp, 'chainChanged')))
 

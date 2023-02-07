@@ -45,6 +45,7 @@ export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
   const newLocal = map(md => {
     return md.transfers
   }, token)
+
   return [
     $column(layoutSheet.spacingBig)(
       $responsiveFlex(layoutSheet.spacingBig)(
@@ -70,7 +71,6 @@ export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
                 if (w3p === null || token.owner.id.toLowerCase() !== w3p.address.toLowerCase()) {
                   return empty()
                 }
-
 
                 return $row(
                   $Popover({

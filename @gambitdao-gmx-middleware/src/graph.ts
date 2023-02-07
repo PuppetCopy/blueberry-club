@@ -6,7 +6,7 @@ import { toAccountCompetitionSummary, toAccountSummary } from "./gmxUtils"
 import {
   IRequestAccountApi, IChainParamApi, IRequestCompetitionLadderApi, IRequestLeaderboardApi, IRequestPagePositionApi,
   IPricefeed, IRequestPricefeedApi, IPriceLatest, IRequestGraphEntityApi, IStake, IRequestTimerangeApi, ITrade, TradeStatus,
-  IRequestAccountTradeListApi, ITradeOpen, IEnsDomain
+  IRequestAccountTradeListApi, ITradeOpen, IEnsRegistration
 } from "./types"
 import { cacheMap, createSubgraphClient, getMappedValue, getTokenDescription, groupByKey, groupByKeyMap, pagingQuery, parseFixed, switchFailedSources, unixTimestampNow } from "./utils"
 import { gql } from "@urql/core"
@@ -83,28 +83,30 @@ const derievedSymbolMapping: { [k: string]: TOKEN_SYMBOL } = {
 
 
 export const getEnsProfile = O(
-  map(async (queryParams: IRequestAccountApi): Promise<IEnsDomain> => {
+  map(async (queryParams: IRequestAccountApi): Promise<IEnsRegistration> => {
 
     const res = await ensGraph(gql(`{
-  domains( where: { resolvedAddress: "${queryParams.account.toLowerCase()}" }) {
-    id
-    name
-    labelName
-    resolvedAddress {
+  account(id: "${queryParams.account.toLowerCase()}") {
+    domains(where: {resolvedAddress: "${queryParams.account.toLowerCase()}"}) {
       id
-    }
-    name
-    resolver {
-      texts
+      name
+      labelName
+      resolvedAddress {
+        id
+      }
+      name
+      resolver {
+        texts
+      }
     }
   }
 }`), {})
 
-    return res.domains[0] as IEnsDomain
+    return res.domains[0] as IEnsRegistration
   })
 )
 
-export async function getProfilePickList(idList: string[]): Promise<IEnsDomain[]> {
+export async function getProfilePickList(idList: string[]): Promise<IEnsRegistration[]> {
 
   if (idList.length === 0) {
     return []
@@ -112,32 +114,46 @@ export async function getProfilePickList(idList: string[]): Promise<IEnsDomain[]
 
   const newLocal = `{
   ${idList.map(id => `
-  _${id}: domains( where: { resolvedAddress: "${id.toLowerCase()}" }) {
+  _${id}: account(id: "${id}") {
     id
-    name
-    labelName
-    resolvedAddress {
+    registrations(orderBy: expiryDate, orderDirection: desc) {
+      expiryDate
+      labelName
       id
-    }
-    name
-    resolver {
-      texts
+      domain {
+        resolvedAddress {
+          id
+        }
+        resolver {
+          texts
+        }
+      }
+      expiryDate
     }
   }
 `).join('')}
 }
 `
 
+  const nowTime = unixTimestampNow()
   const res = await ensGraph(gql(newLocal), {})
-  const rawList = Object.values(res).map(res => {
-    return Array.isArray(res) ? res[0] : null
-  }) as IEnsDomain[]
+  const rawList = Object.values(res)
+    .map((res: any) => {
+      if (!Array.isArray(res?.registrations)) {
+        return null
+      }
+
+      return res.registrations.filter((x: IEnsRegistration) => {
+        return x.domain.resolvedAddress && Number(x?.expiryDate) > nowTime
+      })[0]
+    })
+    .filter(Boolean) as IEnsRegistration[]
 
   return rawList
 }
 
 export const getEnsProfileListPick = O(
-  map(async (idList: string[]): Promise<IEnsDomain[]> => {
+  map(async (idList: string[]): Promise<IEnsRegistration[]> => {
     return getProfilePickList(idList)
   })
 )
@@ -322,12 +338,12 @@ query {
 
   const priceMapQuery = dateNow < queryParams.to
     ? getPriceLatestMap(queryParams).then(res => {
-      const list = groupByKeyMap(res, item => '_' +  item.id, x => x.value)
+      const list = groupByKeyMap(res, item => '_' + item.id, x => x.value)
       return list
-    }) 
+    })
     : querySubgraph(queryParams, `
       {
-        pricefeeds(where: { timestamp: ${Math.floor((queryParams.to / intervalTimeMap.MIN5) * 300) } }) {
+        pricefeeds(where: { timestamp: ${Math.floor((queryParams.to / intervalTimeMap.MIN5) * 300)} }) {
           id
           timestamp
           tokenAddress

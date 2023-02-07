@@ -15,6 +15,7 @@ import { $CardTable } from '../../components/$common'
 import { IProfileActiveTab } from '../$Profile'
 import { $addToCalendar, $responsiveFlex } from '../../elements/$common'
 import { $defaultBerry } from '../../components/$DisplayBerry'
+import { $defaultProfileContainer } from '../../common/$avatar'
 
 const MAX_COLLATERAL = 500000000000000000000000000000000n
 
@@ -39,9 +40,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
 
     return combine((gbcList, ensList) => {
       const gbcListMap = groupByKey(gbcList.filter(x => x?.id), x => x.id)
-      const ensListMap = groupByKey(ensList.filter(x => x?.id), x => {
-        return x.resolvedAddress.id
-      })
+      const ensListMap = groupByKey(ensList, x => x.domain.resolvedAddress.id)
 
       return {
         ...res.list,
@@ -171,14 +170,14 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
           columns: [
             {
               $head: $text('Account'),
-              columnOp: style({ minWidth: '120px', flex: 1.2, alignItems: 'center' }),
+              columnOp: style({ minWidth: '120px', flex: 2, alignItems: 'center' }),
               $$body: map((pos: IProfileTradingList) => {
 
                 if (!pos.profile) {
                   return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
                     $alertTooltip($text(`Account requires Lab Identity, prize will be passed to the next participant if remained unclaimed`)),
                     $Link({
-                      $content: $accountPreview({ address: pos.account }),
+                      $content: $accountPreview({ address: pos.account, $container: $defaultProfileContainer(style({ minWidth: '50px' })) }),
                       route: config.parentRoute.create({ fragment: 'fefwef' }),
                       url: `/p/profile/${pos.account}/${IProfileActiveTab.TRADING.toLowerCase()}`
                     })({ click: routeChangeTether() }),
@@ -223,7 +222,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
                   : $defaultBerry(style({ width: '50px', minWidth: '50px', }))
 
                 return $row(layoutSheet.spacingSmall, style({ alignItems: 'center', minWidth: 0, }))(
-                  $row(style({ alignItems: 'baseline', zIndex: 5, textAlign: 'center', placeContent: 'center' }))(
+                  $row(style({ alignItems: 'baseline', zIndex: 5, textAlign: 'center', minWidth: '18px', placeContent: 'center' }))(
                     $text(style({ fontSize: '.75em' }))(`${pos.rank}`),
                   ),
                   $Link({
@@ -236,7 +235,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
             },
             ...(screenUtils.isDesktopScreen ? [
               {
-                $head: $text('Win/Loss'),
+                $head: $text('Win / Loss'),
                 columnOp: style({ maxWidth: '88px', alignItems: 'center', placeContent: 'center' }),
                 $$body: map((pos: IProfileTradingList) => {
                   return $row(
@@ -247,17 +246,17 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
 
             ] : []),
             {
-              $head: $column(style({ textAlign: 'center' }))(
-                $text('Profits $'),
+              $head: $column(style({ textAlign: 'right' }))(
+                $text('Profits'),
                 $text(style({ fontSize: '.75em' }))('Max Collateral'),
               ),
-              columnOp: style({ placeContent: 'center', minWidth: '90px' }),
+              columnOp: style({ placeContent: 'flex-end', minWidth: '90px' }),
               $$body: map((pos) => {
                 const val = formatReadableUSD(pos.pnl)
                 const isNeg = pos.pnl < 0n
 
 
-                return $column(layoutSheet.spacingTiny, style({ textAlign: 'center', fontSize: '.75em' }))(
+                return $column(layoutSheet.spacingTiny, style({ textAlign: 'right', fontSize: '.75em' }))(
                   $text(style({ color: isNeg ? pallete.negative : pallete.positive }))(
                     val
                   ),
@@ -271,7 +270,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
                 $text('Prize'),
                 $text(style({ fontSize: '.75em' }))('ROI %'),
               ),
-              columnOp: style({ flex: 1, alignItems: 'flex-end', placeContent: 'flex-end' }),
+              columnOp: style({ minWidth: '90px', alignItems: 'flex-end', placeContent: 'flex-end' }),
               $$body: zip((prizePool, pos) => {
                 const prizeRatio = prizeRatioLadder[pos.rank - 1]
 
@@ -286,7 +285,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
                   prizeRatio
                     ? $row(
                       // $avaxIcon,
-                      $text(style({ fontSize: '1.25em', color: pallete.positive }))(formatReadableUSD(prizePool * prizeRatio / BASIS_POINTS_DIVISOR)),
+                      $text(style({ fontSize: screenUtils.isDesktopScreen ? '1.25em' : '1em', color: pallete.positive }))(formatReadableUSD(prizePool * prizeRatio / BASIS_POINTS_DIVISOR)),
                     ) : empty(),
 
                   $text(style({ fontSize: '.75em' }))(`${formatFixed(pos.roi, 2)}%`)

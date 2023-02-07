@@ -59,15 +59,17 @@ export interface ITokenDescription {
 }
 
 
-export interface IEnsDomain {
+export interface IEnsRegistration {
   id: string
-  name: string
   labelName: string
-  resolvedAddress: {
-    id: string
-  }
-  resolver: {
-    texts: string[]
+  expiryDate: number
+  domain: {
+    resolvedAddress: {
+      id: string
+    }
+    resolver: {
+      texts: string[]
+    }
   }
 }
 
