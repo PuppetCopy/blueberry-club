@@ -1,5 +1,5 @@
 import { Behavior, combineObject } from '@aelea/core'
-import { $node, $text, component, style } from "@aelea/dom"
+import { $element, $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
 import { $column, $row, $seperator, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { colorAlpha, pallete } from '@aelea/ui-components-theme'
@@ -10,7 +10,7 @@ import { $alertTooltip, countdown } from './$rules'
 import { IWalletLink } from '@gambitdao/wallet-link'
 import { $accountPreview, $profilePreview } from '../../components/$AccountProfile'
 import { blueberrySubgraph, BLUEBERRY_REFFERAL_CODE, IProfileTradingList, IProfileTradingResult, TOURNAMENT_START, TOURNAMENT_TIME_DURATION } from '@gambitdao/gbc-middleware'
-import { $alert, $infoTooltipLabel, $Link } from '@gambitdao/ui-components'
+import { $alert, $anchor, $infoTooltipLabel, $Link } from '@gambitdao/ui-components'
 import { $CardTable } from '../../components/$common'
 import { IProfileActiveTab } from '../$Profile'
 import { $addToCalendar, $responsiveFlex } from '../../elements/$common'
@@ -81,8 +81,10 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
       // style({ alignSelf: 'center', maxWidth: '500px', marginBottom: '18px' })(
       //   $alert($text(`Results are being checked to ensure all data is accounted for. expected to finalize by Nov 25 12:00 UTC`)),
       // ),
+      $node(),
 
-      $column(screenUtils.isDesktopScreen ? layoutSheet.spacingBig : layoutSheet.spacing, style({ flexDirection: screenUtils.isDesktopScreen ? 'row' : 'column', fontSize: '1.15em', alignItems: 'center', placeContent: 'center' }))(
+      $column(screenUtils.isDesktopScreen ? layoutSheet.spacingBig : layoutSheet.spacing, style({ flexDirection: screenUtils.isDesktopScreen ? 'row' : 'column', alignItems: 'center', placeContent: 'center' }))(
+
         $row(layoutSheet.spacing)(
           $column(style({ alignItems: 'center' }))(
             $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
@@ -92,6 +94,25 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
               $column(layoutSheet.spacingSmall)(
                 $text(`ROI (%) is defined as:`),
                 $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Profits / Max Collateral (min ${formatReadableUSD(MAX_COLLATERAL)}) * 100`),
+                $text(`To participate:`),
+                $element('ul')(
+                  $element('li')(
+                    $text('Own a GBC')
+                  ),
+                  $element('li')(
+                    $text('Have a Lab Identity, go to Wardrobe, choose your GBC & click “Set PFP”')
+                  ),
+                  $element('li')(
+                    $text('Start trading on GBC Trading or use/click '),
+                    $anchor(attr({ href: 'https://gmx.io/?ref=BLUEBERRY' }))($text('BLUEBERRY')),
+                    $text(' to opt our referral on GMX.io.')
+                  ),
+                ),
+                $node(
+                  $text('see '), $anchor(attr({ href: 'https://mirror.xyz/gbc.eth/gxgsTaz8nJyLP1NDUaw_vpnuwjR-2-j2mZfD1GKRtLQ' }))(
+                    $text(`Full Competition Rules`)
+                  ), $text(' for more details')
+                ),
               ),
               $text(style({ fontWeight: 'bold', fontSize: '1.15em', color: pallete.middleground }))(`Highest ROI (%)`)
             ),
