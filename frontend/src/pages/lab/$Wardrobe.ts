@@ -446,6 +446,15 @@ export const $Wardrobe = (config: IBerryComp) => component((
                             }
                           }
 
+                          // try {
+                          //   const tx = (await contract.callStatic.set(selectedBerry.id, addList, removeList, account))
+                          // } catch (err) {
+                          //   // @ts-ignore
+                          //   const revertData = err.data
+                          //   const decodedError = contract.interface.getError(revertData)
+                          //   console.log(`Transaction failed: ${decodedError.name}`)
+                          // }
+
                           const tx = (await contract.set(selectedBerry.id, addList, removeList, account))
 
                           return tx

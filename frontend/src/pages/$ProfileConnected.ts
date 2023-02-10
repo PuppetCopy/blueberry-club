@@ -105,11 +105,7 @@ export const $ProfileConnected = (config: IAccount) => component((
 
 
               return $column(layoutSheet.spacingSmall, style({ width: '300px' }))(
-
                 $text('Changing a profile name instead of displaying the wallet address'),
-
-
-
                 $TextField({
                   label: 'Name',
                   // labelStyle: { flex: 1 },
@@ -300,9 +296,7 @@ export const $ProfileConnected = (config: IAccount) => component((
                     $$body: map(pos => {
                       const positionMarkPrice = tradeReader.getLatestPrice(now(pos.indexToken))
 
-                      return $row(
-                        $riskLiquidator(pos, positionMarkPrice)
-                      )
+                      return $riskLiquidator(pos, positionMarkPrice)
                     })
                   },
                   {

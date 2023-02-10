@@ -183,9 +183,7 @@ export const $Profile = (config: IProfile) => component((
                     $$body: map(pos => {
                       const positionMarkPrice = tradeReader.getLatestPrice(now(pos.indexToken))
 
-                      return $row(
-                        $riskLiquidator(pos, positionMarkPrice)
-                      )
+                      return $riskLiquidator(pos, positionMarkPrice)
                     })
                   },
                   {

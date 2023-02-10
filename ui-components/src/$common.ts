@@ -86,14 +86,20 @@ export const $txHashRef = (txHash: string, chain: CHAIN, label?: $Node) => {
 }
 
 
-export const $sizeDisplay = (pos: IAbstractPositionStake) => $column(layoutSheet.spacingTiny, style({ textAlign: 'center' }))(
-  $text(formatReadableUSD(pos.size)),
+export const $sizeDisplay = (pos: IAbstractPositionStake) => $column(layoutSheet.spacingTiny, style({ textAlign: 'right' }))(
+  $text(style({ fontSize: '.75em' }))(formatReadableUSD(pos.collateral)),
   $seperator,
-  $text(style({ textAlign: 'center', fontSize: '.65em' }))(formatReadableUSD(pos.collateral)),
+  $text(formatReadableUSD(pos.size)),
+)
+
+export const $riskLiquidator = (pos: ITradeOpen, markPrice: Stream<bigint>) => $column(layoutSheet.spacingTiny, style({ alignItems: 'flex-end' }))(
+  $text(style({ fontSize: '.75em' }))(formatReadableUSD(pos.collateral)),
+  $liquidationSeparator(pos, markPrice),
+  $text(formatReadableUSD(pos.size)),
 )
 
 export const $leverage = (pos: IAbstractPositionStake) =>
-  $text(style({ fontWeight: 'bold', fontSize: '10px' }))(`${Math.round(bnDiv(pos.size, pos.collateral))}x`)
+  $text(style({ fontWeight: 'bold' }))(`${Math.round(bnDiv(pos.size, pos.collateral))}x`)
 
 export const $PnlValue = (pnl: Stream<bigint> | bigint, colorful = true) => {
   const pnls = isStream(pnl) ? pnl : now(pnl)
@@ -192,11 +198,6 @@ export const $openPositionPnlBreakdown = (trade: ITradeOpen, cumulativeFee: Stre
   )
 }
 
-export const $riskLiquidator = (pos: ITradeOpen, markPrice: Stream<bigint>) => $column(layoutSheet.spacingTiny, style({ alignItems: 'flex-end' }))(
-  $text(style({ textAlign: 'center', fontSize: '.65em' }))(formatReadableUSD(pos.collateral)),
-  $liquidationSeparator(pos, markPrice),
-  $text(formatReadableUSD(pos.size)),
-)
 
 export const $labeledDivider = (label: string) => {
   return $row(layoutSheet.spacing, style({ placeContent: 'center', alignItems: 'center' }))(
