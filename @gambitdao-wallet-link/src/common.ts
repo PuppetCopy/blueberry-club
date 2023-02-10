@@ -4,7 +4,6 @@ import { empty, map, switchLatest, zipArray } from "@most/core"
 import { disposeWith } from "@most/disposable"
 import { Stream } from "@most/types"
 import type { EIP1193Provider, ProviderAccounts, ProviderChainId, ProviderInfo, ProviderMessage, ProviderRpcError } from "eip1193-provider"
-import { CHAIN, NETWORK_METADATA } from "./constant"
 
 function resolveError(error: any) {
  
@@ -106,41 +105,6 @@ export const providerEvent = <A>(ps: Stream<BaseProvider | null>) => (eventType:
 )
 
 
-
-// https://eips.ethereum.org/EIPS/eip-3085
-export async function attemptToSwitchNetwork(metamask: ExternalProvider, chain: CHAIN) {
-  if (!('request' in metamask)) {
-    return console.error('External Provider does not contain request() method')
-  }
-
-  try {
-    // check if the chain to connect to is installed
-    await metamask.request!({
-      method: 'wallet_switchEthereumChain',
-      params: [{ chainId: '0x' + chain.toString(16) }], // chainId must be in hexadecimal numbers
-    })
-  } catch (error: any) {
-    if (!NETWORK_METADATA[chain]) {
-      throw new Error(`Could not add metamask network, chainId ${chain} is not supported`)
-    }
-    // This error code indicates that the chain has not been added to MetaMask
-    // if it is not, then install it into the user MetaMask
-    if (error.code === 4902) {
-      try {
-        await metamask.request!({
-          method: 'wallet_addEthereumChain',
-          params: [
-            NETWORK_METADATA[chain]
-          ],
-        })
-      } catch (addError: any) {
-        throw parseError(addError)
-      }
-    }
-
-    throw parseError(parseError(error))
-  }
-}
 
 
 export type StateStream<T> = {

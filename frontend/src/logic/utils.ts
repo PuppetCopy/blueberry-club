@@ -1,8 +1,7 @@
 import {
   AddressZero, TOKEN_DESCRIPTION_MAP,
-  ITokenDescription, TOKEN_ADDRESS_TO_SYMBOL, ITokenInput, ITokenTrade, CHAIN_ADDRESS_MAP, CHAIN_NATIVE_TO_SYMBOL, getSafeMappedValue
+  ITokenDescription, TOKEN_ADDRESS_TO_SYMBOL, ITokenInput, ITokenTrade, CHAIN_ADDRESS_MAP, CHAIN_NATIVE_TO_SYMBOL, getSafeMappedValue, CHAIN
 } from "@gambitdao/gmx-middleware"
-import { CHAIN } from "@gambitdao/wallet-link"
 
 
 

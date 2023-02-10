@@ -1,13 +1,13 @@
 import { Behavior } from "@aelea/core"
 import { $element, $node, $text, component, eventElementTarget, style } from "@aelea/dom"
 import * as router from '@aelea/router'
-import { $column, $row, designSheet, layoutSheet, screenUtils } from '@aelea/ui-components'
+import { $column, $row, layoutSheet, screenUtils } from '@aelea/ui-components'
 import {
   gmxSubgraph, ARBITRUM_ADDRESS, AVALANCHE_ADDRESS,
-  ETH_ADDRESS_REGEXP, IRequestAccountApi, intervalTimeMap, IRequestPricefeedApi, IRequestCompetitionLadderApi, IRequestAccountTradeListApi
+  ETH_ADDRESS_REGEXP, IRequestAccountApi, intervalTimeMap, IRequestPricefeedApi, IRequestCompetitionLadderApi, IRequestAccountTradeListApi, CHAIN
 } from '@gambitdao/gmx-middleware'
-import { CHAIN, initWalletLink, IWalletName } from "@gambitdao/wallet-link"
-import { map, merge, multicast, now, tap } from '@most/core'
+import { initWalletLink, IWalletName } from "@gambitdao/wallet-link"
+import { map, merge, multicast, now } from '@most/core'
 import { $MainMenu } from '../components/$MainMenu'
 import { helloBackend } from '../logic/websocket'
 import { blueberrySubgraph, BLUEBERRY_REFFERAL_CODE, IAccountStakingStore, ITreasuryStore } from "@gambitdao/gbc-middleware"

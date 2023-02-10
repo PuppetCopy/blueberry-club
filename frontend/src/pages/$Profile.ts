@@ -8,6 +8,7 @@ import { $infoTooltipLabel, $IntermediatePromise, $openPositionPnlBreakdown, $Pn
 import { $discoverIdentityDisplay } from "../components/$AccountProfile"
 import { $berryTileId, $CardTable } from "../components/$common"
 import {
+  CHAIN,
   getSafeMappedValue, IRequestAccountTradeListApi,
   IRequestPageApi, IStake, ITradeOpen, ITradeSettled, readableDate, timeSince, TRADE_CONTRACT_MAPPING, unixTimestampNow
 } from "@gambitdao/gmx-middleware"
@@ -16,7 +17,7 @@ import { connectGmxEarn } from "../logic/contract"
 import { $labItem } from "../logic/common"
 import { pallete } from "@aelea/ui-components-theme"
 import { connectLab } from "../logic/contract/gbc"
-import { CHAIN, IWalletLink, IWalletName } from "@gambitdao/wallet-link"
+import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
 import { $Index } from "./$Leaderboard"
 import { connectTradeReader } from "../logic/contract/trade"
 import { $ButtonToggle, $defaulButtonToggleContainer } from "@gambitdao/ui-components/src/$ButtonToggle"

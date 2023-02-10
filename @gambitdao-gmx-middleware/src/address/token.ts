@@ -1,4 +1,4 @@
-import { CHAIN } from "@gambitdao/wallet-link"
+import { CHAIN } from "../constant"
 import { ITokenDescription } from "../types"
 import { groupByKey } from "../utils"
 import { ARBITRUM_ADDRESS } from "./arbitrum"

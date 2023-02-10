@@ -3,16 +3,52 @@ import { $element, $node, $Node, $text, attr, component, nodeEvent, style } from
 import { $column, $icon, $row, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { awaitPromises, constant, empty, fromPromise, map, now, snapshot, switchLatest } from "@most/core"
-import { attemptToSwitchNetwork, CHAIN, IWalletLink, IWalletName, IWalletState, metamaskQuery, NETWORK_METADATA, walletConnect } from "@gambitdao/wallet-link"
+import { IWalletLink, IWalletName, IWalletState, metamaskQuery, parseError, walletConnect } from "@gambitdao/wallet-link"
 import { $bagOfCoinsCircle, $walletConnectLogo } from "../common/$icons"
 import { $caretDown } from "../elements/$icons"
-import { $Dropdown, $defaultSelectContainer } from "./form/$Dropdown"
+import { $Dropdown } from "./form/$Dropdown"
 import { $Popover } from "./$Popover"
 import { IButtonCore } from "./form/$ButtonCore"
 import { Stream } from "@most/types"
-import { filterNull } from "@gambitdao/gmx-middleware"
-import { $ButtonPrimary, $ButtonSecondary, $defaultButtonPrimary } from "./form/$Button"
+import { CHAIN, filterNull, NETWORK_METADATA } from "@gambitdao/gmx-middleware"
+import { $ButtonPrimary, $ButtonSecondary } from "./form/$Button"
+import { ExternalProvider } from "@ethersproject/providers"
 
+
+// https://eips.ethereum.org/EIPS/eip-3085
+export async function attemptToSwitchNetwork(metamask: ExternalProvider, chain: CHAIN) {
+  if (!('request' in metamask)) {
+    return console.error('External Provider does not contain request() method')
+  }
+
+  try {
+    // check if the chain to connect to is installed
+    await metamask.request!({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: '0x' + chain.toString(16) }], // chainId must be in hexadecimal numbers
+    })
+  } catch (error: any) {
+    if (!NETWORK_METADATA[chain]) {
+      throw new Error(`Could not add metamask network, chainId ${chain} is not supported`)
+    }
+    // This error code indicates that the chain has not been added to MetaMask
+    // if it is not, then install it into the user MetaMask
+    if (error.code === 4902) {
+      try {
+        await metamask.request!({
+          method: 'wallet_addEthereumChain',
+          params: [
+            NETWORK_METADATA[chain]
+          ],
+        })
+      } catch (addError: any) {
+        throw parseError(addError)
+      }
+    }
+
+    throw parseError(error)
+  }
+}
 
 
 export const $WalletLogoMap = {

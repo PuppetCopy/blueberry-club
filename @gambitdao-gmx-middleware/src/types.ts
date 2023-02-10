@@ -1,9 +1,8 @@
 import { Event } from "@ethersproject/contracts"
-import { CHAIN } from "@gambitdao/wallet-link"
 import { ARBITRUM_ADDRESS, ARBITRUM_ADDRESS_INDEX, ARBITRUM_ADDRESS_STABLE } from "./address/arbitrum"
 import { AVALANCHE_ADDRESS, AVALANCHE_ADDRESS_INDEX, AVALANCHE_ADDRESS_STABLE } from "./address/avalanche"
 import { TOKEN_SYMBOL } from "./address/symbol"
-import { intervalTimeMap } from "./constant"
+import { CHAIN, intervalTimeMap } from "./constant"
 
 export type Address = string
 export type ITokenTrade = ITokenIndex | ITokenStable

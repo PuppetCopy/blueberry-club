@@ -1,11 +1,11 @@
 import { GBC_ADDRESS } from "@gambitdao/gbc-middleware"
 import { GBCLab__factory, GBC__factory } from "@gambitdao/gbc-contracts"
 import { Closet__factory, Profile__factory } from "@gambitdao/gbc-contracts"
-import { CHAIN, IWalletLink } from "@gambitdao/wallet-link"
 import { map } from "@most/core"
 import { readContractMapping } from "../common"
 import { Stream } from "@most/types"
 import { BaseProvider } from "@ethersproject/providers"
+import { CHAIN } from "@gambitdao/gmx-middleware"
 
 
 export const GBC_CONTRACT_MAPPING = {

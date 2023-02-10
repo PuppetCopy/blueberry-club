@@ -3,7 +3,6 @@ import { BaseProvider, JsonRpcSigner, Web3Provider } from "@ethersproject/provid
 import { awaitPromises, constant, delay, fromPromise, map, mergeArray, multicast, now, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
 import { eip1193ProviderEventFn } from "./common"
-import { CHAIN } from "./constant"
 import { metamaskQuery, walletConnect } from "./provider"
 
 
@@ -11,13 +10,13 @@ export interface IWalletState {
   walletName: IWalletName
   address: string
   provider: Web3Provider
-  chain: CHAIN
+  chain: number
   signer: JsonRpcSigner
 }
 
 
 export interface IWalletLink {
-  network: Stream<CHAIN>
+  network: Stream<number>
   provider: Stream<Web3Provider | BaseProvider>
   defaultProvider: Stream<BaseProvider>
 
@@ -34,8 +33,8 @@ export enum IWalletName {
 
 
 interface IWalletLinkConfig {
-  globalProviderMap: Partial<Record<CHAIN, BaseProvider>>
-  defaultGlobalChain: CHAIN
+  globalProviderMap: Partial<Record<number, BaseProvider>>
+  defaultGlobalChain: number
 }
 
 
@@ -45,7 +44,7 @@ interface IWalletLinkConfig {
 export function initWalletLink(
   config: IWalletLinkConfig,
   walletName: Stream<IWalletName>,
-  networkChange: Stream<CHAIN> = now(config.defaultGlobalChain),
+  networkChange: Stream<number> = now(config.defaultGlobalChain),
 ): IWalletLink {
   const fallbackProvider = config.globalProviderMap[config.defaultGlobalChain]
 
@@ -123,7 +122,7 @@ export function initWalletLink(
     return fbProvider
   }, defaultProvider, wallet)))
 
-  const network: Stream<CHAIN> = replayLatest(multicast(switchLatest(map(p => {
+  const network: Stream<number> = replayLatest(multicast(switchLatest(map(p => {
     const newLocal = p.getNetwork()
 
 

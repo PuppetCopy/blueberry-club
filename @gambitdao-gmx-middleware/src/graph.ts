@@ -1,18 +1,17 @@
 import { O } from "@aelea/core"
 import { awaitPromises, map } from "@most/core"
-import { intervalTimeMap } from "./constant"
+import { CHAIN, intervalTimeMap } from "./constant"
 import { tradeJson } from "./fromJson"
-import { toAccountCompetitionSummary, toAccountSummary } from "./gmxUtils"
+import { getTokenDescription, toAccountCompetitionSummary, toAccountSummary } from "./gmxUtils"
 import {
   IRequestAccountApi, IChainParamApi, IRequestCompetitionLadderApi, IRequestLeaderboardApi, IRequestPagePositionApi,
   IPricefeed, IRequestPricefeedApi, IPriceLatest, IRequestGraphEntityApi, IStake, IRequestTimerangeApi, ITrade, TradeStatus,
   IRequestAccountTradeListApi, ITradeOpen, IEnsRegistration
 } from "./types"
-import { cacheMap, createSubgraphClient, getMappedValue, getTokenDescription, groupByKey, groupByKeyMap, pagingQuery, parseFixed, switchFailedSources, unixTimestampNow } from "./utils"
+import { cacheMap, createSubgraphClient, getMappedValue, groupByKeyMap, pagingQuery, parseFixed, switchFailedSources, unixTimestampNow } from "./utils"
 import { gql } from "@urql/core"
 import * as fromJson from "./fromJson"
 import fetch from "isomorphic-fetch"
-import { CHAIN } from "@gambitdao/wallet-link"
 import { TOKEN_SYMBOL } from "./address/symbol"
 import { Stream } from "@most/types"
 

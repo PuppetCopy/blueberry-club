@@ -14,7 +14,7 @@ import { Contract } from '@ethersproject/contracts'
 import { Stream } from '@most/types'
 import { awaitPromises } from '@most/core'
 import { combineArray } from '@aelea/core'
-import { CHAIN } from '@gambitdao/wallet-link'
+import { CHAIN } from '../constant'
 
 
 export async function getGmxArbiPrice(provider: BaseProvider, ethPrice: bigint) {

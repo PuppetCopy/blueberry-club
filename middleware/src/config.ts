@@ -1,5 +1,4 @@
 import { groupByKey, intervalTimeMap } from "@gambitdao/gmx-middleware"
-import { CHAIN } from "@gambitdao/wallet-link"
 import { parseEther } from "ethers/lib/utils"
 import { IAttributeMappings, LabItemSale, SaleType } from "./types"
 
@@ -44,6 +43,32 @@ export const saleConfig = {
 }
 
 export const saleDescriptionList: LabItemSale[] = [
+  {
+    name: "Giving Love",
+    description: `Roses are red, violets are blue,
+Gathered here together, me and you.
+
+We'll drink a fine wine, celebrate green lines,
+And dance to the beat till our hearts combine.
+
+Let's raise a glass, to friendship so true,
+And celebrate the love, that holds true.
+
+So here's to us, and a night full of cheer,
+May our bonds always be something, blue and dear.`,
+    id: IAttributeMappings["Giving Love"],
+    mintRuleList: [
+      {
+        supply: 114,
+        type: SaleType.holder,
+        cost: 0n,
+        contractAddress: "0x114Cf7F1D3046A65B5622E098AE260b26FAa2851",
+        start: toTime(2023, 1, 14, 18),
+        finish: toTime(2023, 2, 14, 18),
+        accountLimit: 1
+      }
+    ]
+  },
   {
     name: "Marine Shirt",
     description: `To the berry who set forth on a journey that is new,

@@ -7,7 +7,7 @@ import { ARBITRUM_ADDRESS } from '../address/arbitrum'
 import { parseFixed } from '../utils'
 import { JsonRpcProvider } from '@ethersproject/providers'
 import { Interface } from '@ethersproject/abi'
-import { CHAIN } from '@gambitdao/wallet-link'
+import { CHAIN } from '../constant'
 
 // default uses “http://localhost:8545”
 // can also input your own connection with "https://mainnet.infura.io/v3/<YOUR-ENDPOINT-HERE>" as an input

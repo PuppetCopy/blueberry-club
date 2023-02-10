@@ -8,7 +8,7 @@ import {
   div, StateStream, getPnL, MIN_LEVERAGE, formatToBasis, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE,
   ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd, IPricefeed,
   TRADE_CONTRACT_MAPPING, filterNull, ITradeOpen, zipState, MARGIN_FEE_BASIS_POINTS, abs, DEDUCT_USD_FOR_GAS,
-  getTokenAmount, safeDiv, getTokenDescription, ITrade, getAdjustedDelta, switchMap, USD_PERCISION, getDenominator, USDG_DECIMALS
+  getTokenAmount, safeDiv, getTokenDescription, ITrade, getAdjustedDelta, switchMap, USD_PERCISION, getDenominator, USDG_DECIMALS, CHAIN
 } from "@gambitdao/gmx-middleware"
 import {
   $alert,
@@ -35,7 +35,7 @@ import { ContractTransaction } from "@ethersproject/contracts"
 import { MaxUint256 } from "@ethersproject/constants"
 import { getContractAddress } from "../../logic/common"
 import { ERC20__factory } from "../../logic/gmx-contracts"
-import { CHAIN, IWalletLink, IWalletName, parseError } from "@gambitdao/wallet-link"
+import { IWalletLink, IWalletName, parseError } from "@gambitdao/wallet-link"
 import { $Popover } from "../$Popover"
 import { $card } from "../../elements/$common"
 import { Route } from "@aelea/router"
@@ -108,8 +108,8 @@ interface ITradeBox {
   walletLink: IWalletLink
 
   chainList: CHAIN[],
-  tokenIndexMap: Partial<Record<CHAIN, ITokenIndex[]>>
-  tokenStableMap: Partial<Record<CHAIN, ITokenStable[]>>
+  tokenIndexMap: Partial<Record<number, ITokenIndex[]>>
+  tokenStableMap: Partial<Record<number, ITokenStable[]>>
   store: BrowserStore<"ROOT.v1.trade", string>
 
   openTradeListQuery: Stream<Promise<ITradeOpen[]>>

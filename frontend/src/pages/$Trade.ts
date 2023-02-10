@@ -8,7 +8,7 @@ import {
   getDenominator, USD_PERCISION, getPositionKey,
   getPnL, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE, getFundingFee, filterNull, getLiquidationPrice,
   ITokenIndex, ITokenStable, ITokenInput, TradeStatus, LIMIT_LEVERAGE, div, TRADE_CONTRACT_MAPPING, getTokenAmount, abs,
-  IRequestAccountApi, CHAIN_ADDRESS_MAP, getSafeMappedValue, getTokenDescription, getFeeBasisPoints, getAdjustedDelta, formatReadableUSD, IPositionDecrease, IPositionIncrease, readableDate, timeSince, readableNumber, formatToBasis,
+  IRequestAccountApi, CHAIN_ADDRESS_MAP, getSafeMappedValue, getTokenDescription, getFeeBasisPoints, getAdjustedDelta, formatReadableUSD, IPositionDecrease, IPositionIncrease, readableDate, timeSince, readableNumber, formatToBasis, CHAIN,
 } from "@gambitdao/gmx-middleware"
 
 import { map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, snapshot, zip, combine, tap, constant, filter, take, skipRepeatsWith, debounce } from "@most/core"
@@ -23,7 +23,7 @@ import { getNativeTokenDescription, resolveAddress } from "../logic/utils"
 import { BrowserStore } from "../logic/store"
 import { ContractTransaction } from "@ethersproject/contracts"
 import { getContractAddress } from "../logic/common"
-import { CHAIN, IWalletLink, IWalletName } from "@gambitdao/wallet-link"
+import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
 import { Web3Provider } from "@ethersproject/providers"
 import { ERC20__factory } from "@gambitdao/gbc-contracts"
 import { $Dropdown } from "../components/form/$Dropdown"
@@ -34,8 +34,8 @@ import { $caretDown } from "../elements/$icons"
 export interface ITradeComponent {
   referralCode: string
   chainList: CHAIN[]
-  tokenIndexMap: Partial<Record<CHAIN, ITokenIndex[]>>
-  tokenStableMap: Partial<Record<CHAIN, ITokenStable[]>>
+  tokenIndexMap: Partial<Record<number, ITokenIndex[]>>
+  tokenStableMap: Partial<Record<number, ITokenStable[]>>
   store: BrowserStore<"ROOT.v1", "v1">
   parentRoute: Route
 

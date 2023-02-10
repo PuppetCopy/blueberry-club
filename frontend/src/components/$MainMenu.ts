@@ -3,8 +3,8 @@ import { $Branch, $element, $Node, $text, attr, component, nodeEvent, style } fr
 import { $RouterAnchor, Route } from '@aelea/router'
 import { $column, $icon, $row, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { pallete, theme } from "@aelea/ui-components-theme"
-import { formatReadableUSD } from "@gambitdao/gmx-middleware"
-import { CHAIN, IWalletLink, IWalletName, walletConnect } from "@gambitdao/wallet-link"
+import { CHAIN, formatReadableUSD } from "@gambitdao/gmx-middleware"
+import { IWalletLink, IWalletName, walletConnect } from "@gambitdao/wallet-link"
 import { awaitPromises, constant, empty, map, multicast, now, switchLatest } from '@most/core'
 import { $bagOfCoins, $caretDown, $stackedCoins } from "../elements/$icons"
 import { $ButtonSecondary } from "./form/$Button"

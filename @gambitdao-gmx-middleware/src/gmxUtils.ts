@@ -1,9 +1,10 @@
+import { TOKEN_ADDRESS_TO_SYMBOL, TOKEN_DESCRIPTION_MAP } from "./address/token"
 import { BASIS_POINTS_DIVISOR, FUNDING_RATE_PRECISION, LIQUIDATION_FEE, MARGIN_FEE_BASIS_POINTS, MAX_LEVERAGE } from "./constant"
 import {
   IAccountSummary, ITrade, ITradeSettled, ITradeClosed, ITradeLiquidated, ITradeOpen,
-  TradeStatus, IPricefeed, IAccountLadderSummary, IPositionLiquidated, ILadderSummary
+  TradeStatus, IAccountLadderSummary, IPositionLiquidated, ILadderSummary, ITokenDescription
 } from "./types"
-import { easeInExpo, formatFixed, getDenominator, groupByMapMany } from "./utils"
+import { easeInExpo, formatFixed, getDenominator, getSafeMappedValue, groupByMapMany } from "./utils"
 
 
 export function safeDiv(a: bigint, b: bigint): bigint {
@@ -355,4 +356,6 @@ export function validateIdentityName(name: string) {
 
 }
 
-
+export function getTokenDescription(token: keyof typeof TOKEN_ADDRESS_TO_SYMBOL): ITokenDescription {
+  return TOKEN_DESCRIPTION_MAP[getSafeMappedValue(TOKEN_ADDRESS_TO_SYMBOL, token, token)]
+}

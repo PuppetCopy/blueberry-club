@@ -179,6 +179,7 @@ export enum IAttributeMappings {
   Skeleton = 219,
   Birthday = 220,
   "Marine Shirt" = 221,
+  "Giving Love" = 222,
 }
 
 
@@ -215,6 +216,10 @@ export enum IAttributeExpression {
 
   HIGH = IAttributeMappings.High,
 }
+
+
+
+
 
 
 
@@ -280,7 +285,8 @@ export enum IAttributeClothes {
   SUMMER_BUOY = IAttributeMappings["Summer Buoy"],
   ULTRASOUND_BAT = IAttributeMappings["Ultra Sound BLAT"],
   SKELETON = IAttributeMappings.Skeleton,
-  MARINE_SHIRT = IAttributeMappings["Marine Shirt"]
+  MARINE_SHIRT = IAttributeMappings["Marine Shirt"],
+  GIVING_LOVE = IAttributeMappings["Giving Love"]
 }
 
 

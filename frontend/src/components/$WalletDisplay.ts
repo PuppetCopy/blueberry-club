@@ -1,16 +1,17 @@
 import { Behavior } from "@aelea/core"
 import { $element, attr, component, nodeEvent, style } from "@aelea/dom"
-import { $row, screenUtils } from "@aelea/ui-components"
+import { $row } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { empty, map, switchLatest } from "@most/core"
-import { CHAIN, IWalletLink, IWalletName } from "@gambitdao/wallet-link"
-import { $anchor, $Link } from "@gambitdao/ui-components"
+import { map, switchLatest } from "@most/core"
+import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
+import { $anchor } from "@gambitdao/ui-components"
 import { $seperator2 } from "../pages/common"
 import { $disconnectedWalletDisplay, $discoverIdentityDisplay } from "./$AccountProfile"
 import { $ConnectDropdown, $switchNetworkDropdown } from "./$ConnectAccount"
 import { Route } from "@aelea/router"
 import { IProfileActiveTab } from "../pages/$Profile"
 import { $defaultBerry } from "./$DisplayBerry"
+import { CHAIN } from "@gambitdao/gmx-middleware"
 
 
 

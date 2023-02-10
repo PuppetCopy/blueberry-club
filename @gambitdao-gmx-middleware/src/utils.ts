@@ -2,13 +2,11 @@ import { combineObject, O, Op, replayLatest } from "@aelea/core"
 import { AnimationFrames } from "@aelea/dom"
 import { Disposable, Scheduler, Sink, Stream } from "@most/types"
 import { at, awaitPromises, constant, continueWith, empty, filter, map, merge, multicast, now, recoverWith, switchLatest, zipArray } from "@most/core"
-import { intervalTimeMap, USD_DECIMALS } from "./constant"
-import { IRequestPageApi, IRequestPagePositionApi, IRequestSortApi, ITokenDescription } from "./types"
+import { CHAIN, EXPLORER_URL, intervalTimeMap, NETWORK_METADATA, USD_DECIMALS } from "./constant"
+import { IRequestPageApi, IRequestPagePositionApi, IRequestSortApi } from "./types"
 import { keccak256 } from "@ethersproject/solidity"
 import { ClientOptions, createClient, OperationContext, TypedDocumentNode } from "@urql/core"
-import { CHAIN, EXPLORER_URL, NETWORK_METADATA } from "@gambitdao/wallet-link"
 import { curry2 } from "@most/prelude"
-import { TOKEN_ADDRESS_TO_SYMBOL, TOKEN_DESCRIPTION_MAP } from "./address/token"
 
 
 
@@ -596,9 +594,7 @@ export function easeInExpo(x: number) {
   return x === 0 ? 0 : Math.pow(2, 10 * x - 10)
 }
 
-export function getTokenDescription(token: keyof typeof TOKEN_ADDRESS_TO_SYMBOL): ITokenDescription {
-  return TOKEN_DESCRIPTION_MAP[getSafeMappedValue(TOKEN_ADDRESS_TO_SYMBOL, token, token)]
-}
+
 
 export function getTargetUsdgAmount(weight: bigint, usdgSupply: bigint, totalTokenWeights: bigint) {
   if (usdgSupply === 0n) {

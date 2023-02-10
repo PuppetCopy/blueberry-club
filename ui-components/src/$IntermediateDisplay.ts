@@ -6,8 +6,8 @@ import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
 import { parseError } from "@gambitdao/wallet-link"
 import { constant, empty, fromPromise, map, merge, mergeArray, multicast, now, recoverWith, startWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
-import { CHAIN } from '@gambitdao/wallet-link'
 import { $alert, $alertTooltip, $txHashRef, } from "./$common"
+import { CHAIN } from "@gambitdao/gmx-middleware"
 
 
 export const $spinner = $node(style({

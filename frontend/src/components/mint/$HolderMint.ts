@@ -11,10 +11,10 @@ import { $SelectBerries } from "../$SelectBerries"
 import { $ButtonPrimary } from "../form/$Button"
 import { $displayMintEvents } from "./mintUtils2"
 import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
-import { CHAIN } from '@gambitdao/wallet-link'
 import { connectLab } from "../../logic/contract/gbc"
 import { Holder__factory } from "@gambitdao/gbc-contracts"
 import { readContract } from "../../logic/common"
+import { CHAIN } from "@gambitdao/gmx-middleware"
 
 interface MintCmp {
   chainList: CHAIN[],
