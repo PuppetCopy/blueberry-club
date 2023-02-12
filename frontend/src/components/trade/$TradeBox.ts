@@ -1199,7 +1199,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
                           return $column(layoutSheet.spacing, style({ maxWidth: '400px' }))(
                             $text(style({ fontWeight: 'bold', fontSize: '1em' }))(`By using GBC Trading, I agree to the following Disclaimer`),
-                            $text(style({ fontSize: '.72em' }))(`By accessing, I agree that ${document.location.href} is an interface that interacts with external GMX smart contracts, and does not have access to my funds.`),
+                            $text(style({  }))(`By accessing, I agree that ${document.location.href} is an interface that interacts with external GMX smart contracts, and does not have access to my funds.`),
 
                             $alert(
                               $node(
