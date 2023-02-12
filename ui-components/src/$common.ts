@@ -35,7 +35,7 @@ export const $alert = ($content: $Node) => $alertContainer(
 export const $alertTooltip = ($content: $Node) => {
   return $Tooltip({
     $content: $content,
-    $dropContainer: $defaultDropContainer(style({ fontSize: '0.75em' })),
+    // $dropContainer: $defaultDropContainer,
     $anchor: $alertContainer(
       $icon({ $content: $alertIcon, viewBox: '0 0 24 24', width: '18px', svgOps: style({ minWidth: '18px' }) }),
       style({ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' })($content),
@@ -48,11 +48,11 @@ export const $alertTooltip = ($content: $Node) => {
 export const $infoLabel = (label: string | $Node) => {
   return isStream(label)
     ? style({ lineHeight: 1 })(label)
-    : $text(style({ color: pallete.foreground, fontSize: '13.2px', lineHeight: 1 }))(label)
+    : $text(style({ color: pallete.foreground, lineHeight: 1 }))(label)
 }
 
 export const $infoLabeledValue = (label: string | $Node, value: string | $Node) => {
-  return $row(layoutSheet.spacingTiny, style({ fontSize: '13.2px', alignItems: 'center' }))(
+  return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
     isStream(label)
       ? label
       : $text(style({ color: pallete.foreground }))(label),
@@ -61,7 +61,7 @@ export const $infoLabeledValue = (label: string | $Node, value: string | $Node) 
 }
 
 export const $infoTooltipLabel = (text: string | $Node, label?: string | $Node) => {
-  return $row(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
+  return $row(style({ alignItems: 'center' }))(
     label
       ? $infoLabel(label)
       : empty(),
@@ -71,10 +71,9 @@ export const $infoTooltipLabel = (text: string | $Node, label?: string | $Node) 
 
 export const $infoTooltip = (text: string | $Node) => {
   return $Tooltip({
-    $dropContainer: $defaultDropContainer(style({ fontSize: '0.75em' })),
-    // $container: $defaultTooltipAnchorContainer(style({ fontSize: '0.75em' })),
+    $dropContainer: $defaultDropContainer,
     $content: isStream(text) ? text : $text(text),
-    $anchor: $icon({ $content: $info, viewBox: '0 0 32 32', fill: pallete.foreground, width: '18px', svgOps: style({ minWidth: '18px' }) }),
+    $anchor: $icon({ $content: $info, viewBox: '0 0 32 32', fill: pallete.foreground, svgOps: style({ width: '24px', height: '20px', padding: '2px 4px' }) }),
   })({})
 }
 
@@ -150,7 +149,7 @@ export const $openPositionPnlBreakdown = (trade: ITradeOpen, cumulativeFee: Stre
   const totalMarginFee = [...trade.increaseList, ...trade.decreaseList].reduce((seed, next) => seed + getMarginFees(next.sizeDelta), 0n)
 
 
-  return $column(layoutSheet.spacingTiny)(
+  return $column(layoutSheet.spacing)(
     $row(style({ placeContent: 'space-between' }))(
       $text('PnL breakdown'),
       $row(layoutSheet.spacingTiny)(
@@ -164,8 +163,7 @@ export const $openPositionPnlBreakdown = (trade: ITradeOpen, cumulativeFee: Stre
         }, cumulativeFee))
       )
     ),
-    $node(),
-    $column(layoutSheet.spacingTiny)(
+    $column(layoutSheet.spacingSmall)(
       $row(layoutSheet.spacingTiny)(
         $text(style({ color: pallete.foreground, flex: 1 }))('Swap Fees'),
         $text('WIP')
@@ -229,7 +227,7 @@ export const $tokenLabelFromSummary = (token: ITokenDescription, $label?: $Node)
     $icon({ $content: $iconG, width: '34px', viewBox: '0 0 32 32' }),
     $column(layoutSheet.flex)(
       $text(style({ fontWeight: 'bold' }))(token.symbol),
-      $text(style({ fontSize: '75%', color: pallete.foreground }))(token.name)
+      $text(style({ color: pallete.foreground }))(token.name)
     ),
     style({ whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }, $label || empty())
   )
@@ -245,12 +243,12 @@ export const $hintNumChange = (config: {
   config.tooltip
     ? $infoTooltipLabel(config.tooltip, config.label)
     : config.label
-      ? $text(style({ color: pallete.foreground, fontSize: '0.75em' }))(config.label) : empty(),
-  $row(layoutSheet.spacingTiny, style({ fontSize: '0.75em', alignItems: 'center' }))(
+      ? $text(style({ color: pallete.foreground }))(config.label) : empty(),
+  $row(layoutSheet.spacingSmall, style({ lineHeight: 1, alignItems: 'center' }))(
     $text(style({ color: pallete.foreground }))(config.val),
     $icon({
       $content: $arrowRight,
-      width: '8px',
+      width: '10px',
       svgOps: styleBehavior(map(isIncrease => {
         return isIncrease ? { fill: pallete.positive } : { fill: pallete.indeterminate }
       }, config.isIncrease)),

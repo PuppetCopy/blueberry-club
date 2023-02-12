@@ -31,7 +31,7 @@ export const $defaultThumb = $row(
     borderRadius: '50px',
     cursor: 'grab',
     lineHeight: .9,
-    fontSize: '0.6em',
+    fontSize: '.75em',
     alignItems: 'center',
     placeContent: 'center',
     transition: 'border 250ms ease-in',
@@ -43,7 +43,7 @@ export const $defaultThumb = $row(
 export const $Slider = ({
   value, thumbText,
   $thumb = $defaultThumb,
-  thumbSize = 36,
+  thumbSize = 40,
   color = now(pallete.primary),
   step = 0,
   disabled = now(false),

@@ -1,4 +1,4 @@
-import { WebSocketProvider, JsonRpcProvider, FallbackProvider } from "@ethersproject/providers"
+import { WebSocketProvider, JsonRpcProvider } from "@ethersproject/providers"
 import { CHAIN } from "@gambitdao/gmx-middleware"
 import { awaitProviderNetwork } from "@gambitdao/wallet-link"
 import { now } from "@most/core"

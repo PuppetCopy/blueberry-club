@@ -158,10 +158,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
                 $text('The total volume accumulated between the 1st and 28th of each competition period'),
                 $text('Higher volume means a higher prize pool'),
               ), 'Traded Volume'),
-              $text(style({
-                fontSize: '1.25em',
-                textShadow: `${colorAlpha(pallete.message, .5)} 1px 1px 20px, ${colorAlpha(pallete.message, .5)} 0px 0px 20px`
-              }))(map(res => {
+              $text(style({ fontSize: '1.25em' }))(map(res => {
                 return formatReadableUSD(res.size)
               }, config.competitionCumulativeRoi))
             ),
@@ -180,7 +177,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
             ),
             $text(style({
               color: pallete.positive,
-              fontSize: screenUtils.isDesktopScreen ? '2.25em' : '1.45em',
+              fontSize: screenUtils.isDesktopScreen ? '2.25em' : '2em',
               textShadow: `${pallete.positive} 1px 1px 20px, ${pallete.positive} 0px 0px 20px`
             }))(map(amount => formatReadableUSD(amount), prizePool))
           ),
@@ -277,19 +274,19 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
                 const isNeg = pos.pnl < 0n
 
 
-                return $column(layoutSheet.spacingTiny, style({ textAlign: 'right', fontSize: '.75em' }))(
+                return $column(layoutSheet.spacingTiny, style({ textAlign: 'right' }))(
                   $text(style({ color: isNeg ? pallete.negative : pallete.positive }))(
                     val
                   ),
                   $seperator,
-                  $text(style({}))(formatReadableUSD(BigInt(pos.maxCollateral)))
+                  $text(style({ fontSize: '.75em' }))(formatReadableUSD(BigInt(pos.maxCollateral)))
                 )
               })
             },
             {
               $head: $column(style({ placeContent: 'flex-end', alignItems: 'flex-end' }))(
                 $text('Prize'),
-                $text(style({ fontSize: '.75em' }))('ROI %'),
+                $text(style({ fontSize: '.75em' }))('ROI'),
               ),
               columnOp: style({ minWidth: '90px', alignItems: 'flex-end', placeContent: 'flex-end' }),
               $$body: zip((prizePool, pos) => {
@@ -302,14 +299,14 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
 
 
 
-                return $column(style({ alignItems: 'flex-end' }))(
+                return $column(layoutSheet.spacingTiny, style({ alignItems: 'flex-end' }))(
                   prizeRatio
                     ? $row(
                       // $avaxIcon,
-                      $text(style({ fontSize: screenUtils.isDesktopScreen ? '1.25em' : '1em', color: pallete.positive }))(formatReadableUSD(prizePool * prizeRatio / BASIS_POINTS_DIVISOR)),
+                      $text(style({ fontSize: '1.25em', color: pallete.positive }))(formatReadableUSD(prizePool * prizeRatio / BASIS_POINTS_DIVISOR)),
                     ) : empty(),
 
-                  $text(style({ fontSize: '.75em' }))(`${formatFixed(pos.roi, 2)}%`)
+                  $text(`${formatFixed(pos.roi, 2)}%`)
                 )
               }, prizePool)
             }

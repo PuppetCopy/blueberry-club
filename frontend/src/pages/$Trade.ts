@@ -652,7 +652,7 @@ export const $Trade = (config: ITradeComponent) => component((
                   // @ts-ignore
                   const newLocal: string = timeFrameLablMap[option]
 
-                  return style({ padding: '8px', fontSize: '.75em', alignSelf: 'center' })(
+                  return style({ padding: '8px', alignSelf: 'center' })(
                     $ButtonSecondary({
                       $content: $row(
                         $text(newLocal),
@@ -831,7 +831,7 @@ export const $Trade = (config: ITradeComponent) => component((
             })({}),
           ),
 
-          $row(layoutSheet.spacing, style({ height: '60px', padding: '0 20px', fontSize: '.75em', placeContent: 'flex-end', margin: screenUtils.isDesktopScreen ? '' : '0 -15px', borderBottom: `1px solid rgba(191, 187, 207, 0.15)`, backgroundColor: theme.name === 'dark' ? colorAlpha(invertColor(pallete.message), .15) : pallete.horizon }))(
+          $row(layoutSheet.spacing, style({ height: '60px', padding: '0 20px', placeContent: 'flex-end', margin: screenUtils.isDesktopScreen ? '' : '0 -15px', borderBottom: `1px solid rgba(191, 187, 207, 0.15)`, backgroundColor: theme.name === 'dark' ? colorAlpha(invertColor(pallete.message), .15) : pallete.horizon }))(
             $infoLabeledValue(
               'Borrow Rate',
               // 
@@ -855,7 +855,7 @@ export const $Trade = (config: ITradeComponent) => component((
               if (nullchain || config.chainList.indexOf(w3p.chain) === -1) {
                 return $column(layoutSheet.spacingSmall, style({ flex: 1, alignItems: 'center', placeContent: 'center' }))(
                   $text(style({ fontSize: '1.5em' }))('Trade History'),
-                  $text(style({ color: pallete.foreground, fontSize: '.75em' }))(
+                  $text(style({ color: pallete.foreground }))(
                     nullchain ? 'No wallet Connected' : 'Switch chain to see trading history'
                   )
                 )
@@ -868,8 +868,8 @@ export const $Trade = (config: ITradeComponent) => component((
               if (!params.activeTrade.trade) {
                 return $column(layoutSheet.spacingSmall, style({ flex: 1, alignItems: 'center', placeContent: 'center' }))(
                   $text(style({ fontSize: '1.5em' }))('Trade History'),
-                  $text(style({ color: pallete.foreground, fontSize: '.75em' }))(
-                    `no active ${route} position`
+                  $text(style({ color: pallete.foreground }))(
+                    `No active ${route} position`
                   )
                 )
               }
@@ -1021,7 +1021,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
 const $container = $node(
   style({
-    fontSize: '1.1rem',
+    fontSize: '1rem',
     fontFeatureSettings: '"tnum" on,"lnum" on',
     fontFamily: `-apple-system,BlinkMacSystemFont,Trebuchet MS,Roboto,Ubuntu,sans-serif`,
     display: 'flex',

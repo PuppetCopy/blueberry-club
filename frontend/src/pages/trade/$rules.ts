@@ -9,7 +9,7 @@ import { $alertIcon, $defaultDropContainer, $PnlValue, $Tooltip } from "@gambitd
 export const $alertTooltip = ($content: $Branch) => {
   return $Tooltip({
     $content,
-    $dropContainer: $defaultDropContainer(style({ fontSize: '0.75em' })),
+    $dropContainer: $defaultDropContainer(style({  })),
     $anchor: $icon({ $content: $alertIcon, viewBox: '0 0 24 24', width: '18px', fill: pallete.indeterminate, svgOps: style({ minWidth: '18px' }) }),
   })({})
 }

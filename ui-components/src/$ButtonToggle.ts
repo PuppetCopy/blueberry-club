@@ -17,7 +17,7 @@ export interface IButtonToggle<T> {
 }
 
 export const $defaulButtonToggleBtn = $row(style({
-  placeContent: 'center', fontSize: '.75em', fontWeight: 'bold',
+  placeContent: 'center', fontWeight: 'bold',
   borderRadius: '12px', padding: '6px 12px', alignItems: 'center', border: '1px solid transparent',
   cursor: 'pointer'
 }))

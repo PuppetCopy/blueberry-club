@@ -37,7 +37,7 @@ export const $Mint = (item: LabItemSale, rule: MintRule, walletLink: IWalletLink
 
   const $saleRuleType = $row(style({ borderRadius: '8px', overflow: 'hidden', position: 'absolute', top: screenUtils.isDesktopScreen ? '15px' : '8px', left: screenUtils.isDesktopScreen ? '15px' : '8px', }))(
     $text(
-      style({ fontWeight: 'bold', backgroundColor: pallete.background, fontSize: '.65em', padding: '5px 10px', color: pallete.message }),
+      style({ fontWeight: 'bold', backgroundColor: pallete.background, fontSize: '.75em', padding: '5px 10px', color: pallete.message }),
     )(
       statusLabel
     )

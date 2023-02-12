@@ -397,7 +397,7 @@ export const $TradeBox = (config: ITradeBox) => component((
     style({ width: '95px', cursor: 'pointer', position: 'relative', alignSelf: 'center', border: `1px solid ${pallete.middleground}`, borderRadius: '12px' }),
     stylePseudo(':hover', { borderColor: `${pallete.primary}` })
   )
-  const $defaultSelectionContainer = $row(layoutSheet.spacingTiny, style({ fontSize: '.75em', alignItems: 'center', flex: 1, padding: '6px 10px' }))
+  const $defaultSelectionContainer = $row(layoutSheet.spacingTiny, style({  alignItems: 'center', flex: 1, padding: '6px 10px' }))
 
   return [
     $card(style({ flexDirection: screenUtils.isDesktopScreen ? 'column' : 'column-reverse', padding: 0, gap: 0, background: theme.name === 'dark' ? 'rgb(0 0 0 / 15%)' : '' }))(
@@ -435,7 +435,7 @@ export const $TradeBox = (config: ITradeBox) => component((
       //   ),
 
       //   $Popover({
-      //     $target: $row(clickOpenTradeConfigTether(nodeEvent('click')), style({ fontSize: '.75em', padding: '6px 12px', border: `2px solid ${pallete.horizon}`, borderRadius: '30px' }))(
+      //     $target: $row(clickOpenTradeConfigTether(nodeEvent('click')), style({  padding: '6px 12px', border: `2px solid ${pallete.horizon}`, borderRadius: '30px' }))(
       //       $text('Advanced'),
       //       $icon({ $content: $caretDown, width: '14px', svgOps: style({ marginRight: '-5px' }), viewBox: '0 0 32 32' }),
       //     ),
@@ -499,7 +499,7 @@ export const $TradeBox = (config: ITradeBox) => component((
             //     }, config.tradeState.inputTokenDescription, config.tradeState.walletBalance)
             //   })),
             // ),
-            $row(layoutSheet.spacingTiny, style({ fontSize: '0.75em' }))(
+            $row(layoutSheet.spacingTiny)(
               $text(style({ color: pallete.foreground }))(`Wallet`),
               $text(
                 map(params => {
@@ -599,8 +599,8 @@ export const $TradeBox = (config: ITradeBox) => component((
                     return $row(style({ placeContent: 'space-between', flex: 1 }))(
                       $tokenLabelFromSummary(tokenDesc),
                       $column(style({ alignItems: 'flex-end' }))(
-                        $text(style({ whiteSpace: 'nowrap', fontSize: '0.75em' }))(map(bn => readableNumber(formatFixed(bn, tokenDesc.decimals)) + ` ${tokenDesc.symbol}`, balanceAmount)),
-                        $text(style({ fontSize: '0.75em' }))(combineArray((bn, price) => {
+                        $text(style({ whiteSpace: 'nowrap' }))(map(bn => readableNumber(formatFixed(bn, tokenDesc.decimals)) + ` ${tokenDesc.symbol}`, balanceAmount)),
+                        $text(style({  }))(combineArray((bn, price) => {
                           return formatReadableUSD(getTokenUsd(bn, price, tokenDesc.decimals))
                         }, balanceAmount, price)),
                       )
@@ -873,7 +873,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                     return $row(style({ placeContent: 'space-between', flex: 1 }))(
                       $tokenLabelFromSummary(tokenDesc),
 
-                      $column(layoutSheet.spacingTiny, style({ fontSize: '.75em', alignItems: 'flex-end', placeContent: 'center' }))(
+                      $column(layoutSheet.spacingTiny, style({  alignItems: 'flex-end', placeContent: 'center' }))(
                         $text(map(amountUsd => formatReadableUSD(amountUsd), liquidity)),
                         $row(style({ whiteSpace: 'pre' }))(
                           $text(map(info => readableNumber(formatToBasis(info.rate)) + '%', poolInfo)),
@@ -936,7 +936,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                 const tokenDesc = getTokenDescription(indexToken)
 
                 return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
-                  $row(layoutSheet.spacingTiny, style({ alignItems: 'center', fontSize: '.75em' }))(
+                  $row(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
                     $icon({ $content: $tokenIconMap[tokenDesc.symbol], width: '14px', viewBox: '0 0 32 32' }),
                     $text(tokenDesc.symbol)
                   ),
@@ -960,7 +960,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                       switchLatest(combineArray((collateralToken) => {
                         const tokenDesc = getTokenDescription(collateralToken)
 
-                        return $row(layoutSheet.spacingTiny, style({ fontSize: '.75em', alignItems: 'center' }))(
+                        return $row(layoutSheet.spacingTiny, style({  alignItems: 'center' }))(
                           $icon({ $content: $tokenIconMap[tokenDesc.symbol], width: '14px', viewBox: '0 0 32 32' }),
                           $text(tokenDesc.symbol)
                         )
@@ -979,7 +979,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                         return $row(style({ placeContent: 'space-between', flex: 1 }))(
                           $tokenLabelFromSummary(tokenDesc),
 
-                          $column(layoutSheet.spacingTiny, style({ fontSize: '.75em', alignItems: 'flex-end', placeContent: 'center' }))(
+                          $column(layoutSheet.spacingTiny, style({  alignItems: 'flex-end', placeContent: 'center' }))(
                             $text(map(amountUsd => formatReadableUSD(amountUsd), liquidity)),
                             $row(style({ whiteSpace: 'pre' }))(
                               $text(map(info => readableNumber(formatToBasis(info.rate)) + '%', poolInfo)),
@@ -1117,7 +1117,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                       ),
                       'Fees'
                     ),
-                    $text(style({ fontSize: '0.75em', color: pallete.indeterminate }))(map(params => formatReadableUSD(params.marginFee + params.swapFee), combineObject({ swapFee, marginFee }))),
+                    $text(style({ color: pallete.indeterminate }))(map(params => formatReadableUSD(params.marginFee + params.swapFee), combineObject({ swapFee, marginFee }))),
                   ),
                   switchLatest(map(isIncrease => {
 
@@ -1126,7 +1126,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                         $infoTooltipLabel(
                           $column(layoutSheet.spacingTiny)(
                             $text('BLUEBERRY Payback(Referral) code is used to provide a 10% payback'),
-                            $text('Payback accumulates every time you trade and are distributed once every week back to your account in ETH or AVAX.'),
+                            $text('Payback accumulates every time you trade and is distributed once every week back to your account in ETH or AVAX.'),
                             $row(layoutSheet.spacingTiny)(
                               $text(style({ color: pallete.foreground }))('Open + Close Payback'),
                               $text(style({ color: pallete.positive }))(map(params => formatReadableUSD(params.marginFee * 2000n / BASIS_POINTS_DIVISOR), combineObject({ marginFee })))
@@ -1143,7 +1143,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                           ),
                           'Payback'
                         ),
-                        $text(style({ color: pallete.positive, fontSize: '0.75em' }))(map(params => formatReadableUSD(params.marginFee * 1000n / BASIS_POINTS_DIVISOR), combineObject({ marginFee })))
+                        $text(style({ color: pallete.positive }))(map(params => formatReadableUSD(params.marginFee * 1000n / BASIS_POINTS_DIVISOR), combineObject({ marginFee })))
                       )
                     }
 
@@ -1155,7 +1155,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                         ),
                         'Receive'
                       ),
-                      $text(style({ fontSize: '0.75em', whiteSpace: 'pre-wrap' }))(map(params => {
+                      $text(style({ whiteSpace: 'pre-wrap' }))(map(params => {
 
                         if (params.position.averagePrice === 0n) {
                           return 0n
@@ -1209,7 +1209,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                             ),
 
                             $node(
-                              $text(style({ whiteSpace: 'pre-wrap', fontSize: '.75em' }))(`By clicking Agree you accept the `),
+                              $text(style({ whiteSpace: 'pre-wrap' }))(`By clicking Agree you accept the `),
                               $anchor(attr({ href: '/p/trading-terms-and-conditions' }))($text('Terms & Conditions'))
                             ),
 
@@ -1280,7 +1280,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                           )
                         }, mergeArray([requestTradeError, validationError])))
                       ),
-                      style({ padding: '8px', fontSize: '.75em', alignSelf: 'center' })(
+                      style({ padding: '8px',  alignSelf: 'center' })(
                         $ButtonSecondary({ $content: $text('Reset') })({
                           click: clickResetTradeModeTether()
                         })
@@ -1458,7 +1458,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                       const route = params.position.isLong ? `Long-${tokenDesc.symbol}` : `Short-${tokenDesc.symbol}/${getTokenDescription(params.position.collateralToken).symbol}`
 
                       return $row(style({ placeContent: 'center', alignItems: 'center' }))(
-                        $text(style({ color: pallete.foreground }))(`no active ${route} position`)
+                        $text(style({ color: pallete.foreground }))(`No active ${route} position`)
                       )
                     }
 
