@@ -3,14 +3,14 @@ import { $element, $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
 import { $column, $row, $seperator, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { colorAlpha, pallete } from '@aelea/ui-components-theme'
-import { awaitPromises, combine, empty, map, multicast, now, zip } from '@most/core'
+import { awaitPromises, combine, empty, map, mergeArray, now, zip } from '@most/core'
 import { Stream } from '@most/types'
-import { formatReadableUSD, formatFixed, unixTimestampNow, IRequestCompetitionLadderApi, BASIS_POINTS_DIVISOR, getMarginFees, div, switchMap, gmxSubgraph, groupByKey } from '@gambitdao/gmx-middleware'
+import { formatReadableUSD, formatFixed, unixTimestampNow, IRequestCompetitionLadderApi, BASIS_POINTS_DIVISOR, getMarginFees, div, switchMap, gmxSubgraph, groupByKey, IAccountLadderSummary } from '@gambitdao/gmx-middleware'
 import { $alertTooltip, countdown } from './$rules'
 import { IWalletLink } from '@gambitdao/wallet-link'
 import { $accountPreview, $profilePreview } from '../../components/$AccountProfile'
-import { blueberrySubgraph, BLUEBERRY_REFFERAL_CODE, IProfileTradingList, IProfileTradingResult, TOURNAMENT_START, TOURNAMENT_TIME_DURATION } from '@gambitdao/gbc-middleware'
-import { $alert, $anchor, $infoTooltipLabel, $Link } from '@gambitdao/ui-components'
+import { blueberrySubgraph, BLUEBERRY_REFFERAL_CODE, IProfileTradingSummary, IProfileTradingResult, TOURNAMENT_START, TOURNAMENT_TIME_DURATION } from '@gambitdao/gbc-middleware'
+import { $anchor, $infoTooltipLabel, $Link, ISortBy } from '@gambitdao/ui-components'
 import { $CardTable } from '../../components/$common'
 import { IProfileActiveTab } from '../$Profile'
 import { $addToCalendar, $responsiveFlex } from '../../elements/$common'
@@ -32,12 +32,12 @@ export interface ICompetitonTopCumulative {
 
 export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
   [routeChange, routeChangeTether]: Behavior<any, string>,
-  [requestCompetitionLadder, requestCompetitionLadderTether]: Behavior<number, IRequestCompetitionLadderApi>,
+  [sortByChange, sortByChangeTether]: Behavior<ISortBy<IAccountLadderSummary>, ISortBy<IAccountLadderSummary>>,
+  [pageIndex, pageIndexTether]: Behavior<number, number>,
 ) => {
 
-  const tableList = multicast(switchMap(res => {
+  const tableList = switchMap(res => {
     const accountList = res.list.page.map(a => a.account)
-
     return combine((gbcList, ensList) => {
       const gbcListMap = groupByKey(gbcList.filter(x => x?.id), x => x.id)
       const ensListMap = groupByKey(ensList, x => x.domain.resolvedAddress.id)
@@ -52,7 +52,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
         })
       }
     }, awaitPromises(blueberrySubgraph.profilePickList(now(accountList))), awaitPromises(gmxSubgraph.getEnsProfileListPick(now(accountList))))
-  }, config.competitionCumulativeRoi))
+  }, config.competitionCumulativeRoi)
 
   const nowTime = unixTimestampNow()
   const started = nowTime >= TOURNAMENT_START
@@ -63,17 +63,11 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
     return getMarginFees(res.size) * 1500n / BASIS_POINTS_DIVISOR
   }, config.competitionCumulativeRoi)
 
-  // pointer-events: none;
-  // content: "";
-  // position: absolute;
-  // background: var(--clr-neon);
-  // top: 120%;
-  // left: 0;
-  // width: 100%;
-  // height: 100%;
-  // transform: perspective(1em) rotateX(40deg) scale(1, 0.35);
-  // filter: blur(1em);
-  // opacity: 0.7;
+  const sortBy: Stream<ISortBy<IAccountLadderSummary>> = mergeArray([
+    now({ direction: 'desc', selector: 'roi' }),
+    sortByChange
+  ])
+  
 
   return [
     $column(screenUtils.isDesktopScreen ? layoutSheet.spacingBig : layoutSheet.spacing)(
@@ -185,11 +179,12 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
 
         $CardTable({
           dataSource: tableList,
+          sortBy,
           columns: [
             {
               $head: $text('Account'),
               columnOp: style({ minWidth: '120px', flex: 2, alignItems: 'center' }),
-              $$body: map((pos: IProfileTradingList) => {
+              $$body: map((pos: IProfileTradingSummary) => {
 
                 if (!pos.profile) {
                   return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
@@ -255,7 +250,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
               {
                 $head: $text('Win / Loss'),
                 columnOp: style({ maxWidth: '88px', alignItems: 'center', placeContent: 'center' }),
-                $$body: map((pos: IProfileTradingList) => {
+                $$body: map((pos: IProfileTradingSummary) => {
                   return $row(
                     $text(`${pos.winCount} / ${pos.lossCount}`)
                   )
@@ -268,6 +263,7 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
                 $text('Profits'),
                 $text(style({ fontSize: '.75em' }))('Max Collateral'),
               ),
+              sortBy: 'pnl',
               columnOp: style({ placeContent: 'flex-end', minWidth: '90px' }),
               $$body: map((pos) => {
                 const val = formatReadableUSD(pos.pnl)
@@ -284,11 +280,12 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
               })
             },
             {
-              $head: $column(style({ placeContent: 'flex-end', alignItems: 'flex-end' }))(
+              $head: $column(style({ placeContent: 'flex-end' }))(
                 $text('Prize'),
                 $text(style({ fontSize: '.75em' }))('ROI'),
               ),
-              columnOp: style({ minWidth: '90px', alignItems: 'flex-end', placeContent: 'flex-end' }),
+              sortBy: 'roi',
+              columnOp: style({ minWidth: '90px', placeContent: 'flex-end' }),
               $$body: zip((prizePool, pos) => {
                 const prizeRatio = prizeRatioLadder[pos.rank - 1]
 
@@ -312,37 +309,44 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
             }
           ],
         })({
-          scrollIndex: requestCompetitionLadderTether(
-            combine((params, pageIndex) => {
-              const date = new Date()
-              const started = unixTimestampNow() >= TOURNAMENT_START
-
-              const from = started
-                ? TOURNAMENT_START
-                : Date.UTC(date.getFullYear(), date.getMonth() - 1, 1, 16) / 1000
-              const to = from + TOURNAMENT_TIME_DURATION
-
-              const reqParams: IRequestCompetitionLadderApi = {
-                chain: params.chain,
-                account: params.w3p?.address || null,
-                referralCode: BLUEBERRY_REFFERAL_CODE,
-                maxCollateral: MAX_COLLATERAL,
-                from,
-                to,
-                offset: pageIndex * 20,
-                pageSize: 20,
-              }
-              return reqParams
-            }, combineObject({ w3p: config.walletLink.wallet, chain: config.walletLink.network })),
-            multicast
-          )
+          sortBy: sortByChangeTether(),
+          scrollIndex: pageIndexTether()
         }),
       )
 
     ),
 
     {
-      requestCompetitionLadder,
+      requestCompetitionLadder: map((params) => {
+        const date = new Date()
+        const started = unixTimestampNow() >= TOURNAMENT_START
+
+        const from = started
+          ? TOURNAMENT_START
+          : Date.UTC(date.getFullYear(), date.getMonth() - 1, 1, 16) / 1000
+        const to = from + TOURNAMENT_TIME_DURATION
+
+        const reqParams: IRequestCompetitionLadderApi = {
+          ...params.sortBy,
+          chain: params.chain,
+          account: params.w3p?.address || null,
+          referralCode: BLUEBERRY_REFFERAL_CODE,
+          maxCollateral: MAX_COLLATERAL,
+          from,
+          to,
+          offset: params.pageIndex * 20,
+          pageSize: 20,
+        }
+
+        console.log(reqParams.direction)
+
+        return reqParams
+      }, combineObject({
+        sortBy: sortBy, pageIndex,
+        w3p: config.walletLink.wallet,
+        chain: config.walletLink.network
+      })
+      ),
       // requestProfilePickList,
       routeChange
     }

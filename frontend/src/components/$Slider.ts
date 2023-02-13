@@ -31,19 +31,19 @@ export const $defaultThumb = $row(
     borderRadius: '50px',
     cursor: 'grab',
     lineHeight: .9,
-    fontSize: '.75em',
+    fontSize: '.65em',
     alignItems: 'center',
     placeContent: 'center',
     transition: 'border 250ms ease-in',
     borderStyle: 'solid',
-    borderWidth: '1px',
+    borderWidth: '2px',
   })
 )
 
 export const $Slider = ({
   value, thumbText,
   $thumb = $defaultThumb,
-  thumbSize = 40,
+  thumbSize = 38,
   color = now(pallete.primary),
   step = 0,
   disabled = now(false),

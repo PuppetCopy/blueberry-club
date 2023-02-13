@@ -1,4 +1,4 @@
-import { Behavior } from "@aelea/core"
+import { Behavior, replayLatest } from "@aelea/core"
 import { $element, $node, $text, component, eventElementTarget, style } from "@aelea/dom"
 import * as router from '@aelea/router'
 import { $column, $row, layoutSheet, screenUtils } from '@aelea/ui-components'

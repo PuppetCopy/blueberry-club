@@ -300,21 +300,24 @@ export function intervalListFillOrderMap<T, R, RTime extends R & TimelineTime = 
 }
 
 
+function defaultComperator<T>(queryParams: IRequestSortApi<T>) {
+  return function (a: T, b: T) {
+    return queryParams.direction === 'desc'
+      ? Number(b[queryParams.selector]) - Number(a[queryParams.selector]) 
+      : Number(a[queryParams.selector]) - Number(b[queryParams.selector])
+  }
+}
 
-export function pagingQuery<T, ReqParams extends IRequestPagePositionApi & (IRequestSortApi<keyof T> | {})>(
+export function pagingQuery<T, ReqParams extends IRequestPagePositionApi & (IRequestSortApi<T> | {})>(
   queryParams: ReqParams,
   res: T[],
   customComperator?: (a: T, b: T) => number
 ): IRequestPageApi<T> {
   let list = res
-  if ('sortBy' in queryParams) {
-    const sortBy = queryParams.sortBy
-
-    const comperator = typeof customComperator === 'function' ? customComperator : (a: T, b: T) =>
-      queryParams.sortDirection === 'asc'
-        ? Number(b[sortBy]) - Number(a[sortBy])
-        : Number(a[sortBy]) - Number(b[sortBy])
-
+  if ('selector' in queryParams) {
+    const comperator = typeof customComperator === 'function'
+      ? customComperator
+      : defaultComperator(queryParams)
 
     list = res.sort(comperator)
   }

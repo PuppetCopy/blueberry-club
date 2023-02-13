@@ -1,8 +1,8 @@
-import { Behavior, O, Op } from "@aelea/core"
+import { Behavior, combineObject, O, Op } from "@aelea/core"
 import { $Node, $svg, attr, component, INode, NodeComposeFn, nodeEvent, style } from '@aelea/dom'
 import { $column, $icon, $row, designSheet, layoutSheet, screenUtils } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { chain, constant, empty, map, merge, never, now, scan, startWith, switchLatest } from "@most/core"
+import { chain, constant, empty, map, now, scan, snapshot, startWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
 import { $VirtualScroll, IScrollPagableReponse, QuantumScroll, ScrollRequest, ScrollResponse } from "./$VirtualScroll"
 
@@ -27,8 +27,8 @@ export interface TableOption<T, FilterState> {
   $bodyCell?: NodeComposeFn<$Node>
   $headerCell?: NodeComposeFn<$Node>
 
-  sortChange?: Stream<ISortBy<T>>
-  filterChange?: Stream<FilterState>
+  sortBy?: Stream<ISortBy<T> | null>
+  filter?: Stream<FilterState | null>
   $sortArrowDown?: $Node
 }
 
@@ -47,7 +47,7 @@ export interface IPageRequest {
 
 export interface ISortBy<T> {
   direction: 'asc' | 'desc'
-  name: keyof T
+  selector: keyof T
 }
 
 
@@ -78,8 +78,8 @@ export const $Table = <T, FilterState = never>({
   $rowContainer = $defaultTableRowContainer,
   $headerRowContainer = $rowContainer,
   $bodyRowContainer = $rowContainer,
-  sortChange = never(),
-  filterChange = never(),
+  sortBy = now(null),
+  filter = now(null),
   $between = empty(),
   $sortArrowDown = $caretDown
 }: TableOption<T, FilterState>) => component((
@@ -87,19 +87,6 @@ export const $Table = <T, FilterState = never>({
   [sortByChange, sortByChangeTether]: Behavior<INode, keyof T>
 ) => {
 
-
-
-  const sortBy = chain((state) => {
-    const changeState = scan((seed, change): ISortBy<T> => {
-      const direction = seed.name === change ?
-        seed.direction === 'asc' ? 'desc' : 'asc'
-        : 'desc'
-
-      return { direction, name: change }
-    }, state, sortByChange)
-
-    return startWith(state, changeState)
-  }, sortChange)
 
   const $header = $headerRowContainer(
     ...columns.map(col => {
@@ -113,10 +100,13 @@ export const $Table = <T, FilterState = never>({
         return $headerCell(col.columnOp || O(), behavior)(
           style({ cursor: 'pointer' }, col.$head),
           switchLatest(map(s => {
+            if (s === null) {
+              return empty()
+            }
 
             return $column(style({ cursor: 'pointer' }))(
-              $icon({ $content: $sortArrowDown, fill: s.name === col.sortBy ? s.direction === 'asc' ? pallete.foreground : '' : pallete.foreground, svgOps: style({ transform: 'rotate(180deg)' }), width: '8px', viewBox: '0 0 32 19.43' }),
-              $icon({ $content: $sortArrowDown, fill: s.name === col.sortBy ? s.direction === 'desc' ? pallete.foreground : '' : pallete.foreground, width: '8px', viewBox: '0 0 32 19.43' })
+              $icon({ $content: $sortArrowDown, fill: s.selector === col.sortBy ? s.direction === 'desc' ? pallete.foreground : '' : pallete.foreground, svgOps: style({ transform: 'rotate(180deg)' }), width: '8px', viewBox: '0 0 32 19.43' }),
+              $icon({ $content: $sortArrowDown, fill: s.selector === col.sortBy ? s.direction === 'asc' ? pallete.foreground : '' : pallete.foreground, width: '8px', viewBox: '0 0 32 19.43' })
             )
           }, sortBy))
         )
@@ -130,7 +120,7 @@ export const $Table = <T, FilterState = never>({
     })
   )
 
-  const requestPageFilters = merge(sortByChange, filterChange)
+  const filterState = combineObject({ sortBy, filter })
 
   const $body = switchLatest(map(() => {
     return $VirtualScroll({
@@ -161,7 +151,7 @@ export const $Table = <T, FilterState = never>({
     })({
       scrollIndex: scrollIndexTether()
     })
-  }, startWith(null, requestPageFilters)))
+  }, filterState))
 
   return [
     $container(
@@ -172,8 +162,22 @@ export const $Table = <T, FilterState = never>({
 
     {
       scrollIndex,
-      sortBy,
-      filterChange
+      sortBy: snapshot((state, selector) => {
+        if (state === null) {
+          return state
+        }
+
+        if (state.selector === selector) {
+          const direction = state.direction === 'asc' ? 'desc' : 'asc'
+
+          return { direction, selector }
+        }
+
+
+
+        return { direction: state.direction, selector }
+      }, sortBy, sortByChange),
+      filter
     }
   ]
 

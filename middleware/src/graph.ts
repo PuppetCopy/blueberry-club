@@ -4,7 +4,7 @@ import { createSubgraphClient, groupByKey, IRequestCompetitionLadderApi, IIdenti
 import { getCompetitionCumulativeRoi } from "@gambitdao/gmx-middleware/src/graph"
 import { awaitPromises, map } from "@most/core"
 import { gql } from "@urql/core"
-import { ILabItem, ILabItemOwnership, IOwner, IProfile, IProfileTradingList, IProfileTradingResult, IToken } from "./types"
+import { ILabItem, ILabItemOwnership, IOwner, IProfile, IProfileTradingSummary, IProfileTradingResult, IToken } from "./types"
 
 
 
@@ -236,9 +236,9 @@ export const competitionCumulativeRoi = O(
       const accountList = await getCompetitionCumulativeRoi(queryParams)
       // const profileList = await getProfilePickList(accountList.list.map(x => x.account).slice(0, 340))
       // const profileMap = groupByKey(profileList, p => p.id)
-      let profile: null | IProfileTradingList = null
+      let profile2: null | IProfileTradingSummary = null
 
-      const sortedCompetitionList: IProfileTradingList[] = accountList.list
+      const sortedCompetitionList: IProfileTradingSummary[] = accountList.list
         .sort((a, b) => {
           // const aN = profileMap[a.account] ? a.roi : a.roi - 100000000n
           // const bN = profileMap[b.account] ? b.roi : b.roi - 100000000n
@@ -248,35 +248,51 @@ export const competitionCumulativeRoi = O(
           // return Number(bN - aN)
         })
         .map(summary => {
-          const profileSummary = {
+          const profileSummary: IProfileTradingSummary = {
             ...summary,
             profile: null,
             rank: queryParams.offset + accountList.list.indexOf(summary) + 1
           }
 
           if (queryParams.account === summary.account) {
-            profile = profileSummary
+            profile2 = profileSummary
           }
 
           return profileSummary
         })
-        .filter(summary => {
-          return profile === null || summary.account !== profile.account
-        })
-      
-      if (profile) {
-        sortedCompetitionList.unshift(profile)
-      }
 
-
-      return { sortedCompetitionList, size: accountList.size, profile }
+ 
+      return { sortedCompetitionList, size: accountList.size, profile: profile2 as null | IProfileTradingSummary }
     })
 
     const res = await queryCache
 
-    const list = pagingQuery(queryParams, res.sortedCompetitionList)
+
+
+    if (queryParams.selector === 'roi' && queryParams.direction === 'desc') {
+      const newLocal = pagingQuery(queryParams, res.sortedCompetitionList)
+      const { offset, pageSize } = newLocal
+
+      if (res.profile !== null) {
+        const idxProfile = newLocal.page.indexOf(res.profile)
+        if (idxProfile > -1) {
+          newLocal.page.splice(idxProfile, 1)
+          newLocal.page.unshift(res.profile)  
+        }
+      }
+
+      return {
+        profile: res.profile,
+        list: { offset, pageSize, page: newLocal.page },
+        size: res.size
+      }
+    }
+
+    const paging = pagingQuery(queryParams, res.sortedCompetitionList)
+
     return {
-      list,
+      profile: res.profile,
+      list: paging,
       size: res.size
     }
   }),

@@ -123,14 +123,15 @@ export interface IYieldInterval extends IAsset {
 
 
 
-export interface IProfileTradingList extends IAccountLadderSummary {
+export interface IProfileTradingSummary extends IAccountLadderSummary {
   profile: IProfile | null
   rank: number
 }
 
 export interface IProfileTradingResult {
-  list: IRequestPageApi<IProfileTradingList>,
+  list: IRequestPageApi<IProfileTradingSummary>,
   size: bigint
+  profile: IProfileTradingSummary | null
 }
 
 

@@ -290,9 +290,9 @@ export interface IRequestPagePositionApi {
   pageSize: number
 }
 
-export interface IRequestSortApi<T extends string | number | symbol> {
-  sortBy: T
-  sortDirection: 'desc' | 'asc'
+export interface IRequestSortApi<T> {
+  selector: keyof T
+  direction: 'desc' | 'asc'
 }
 
 export interface IRequestPageApi<T> extends IRequestPagePositionApi {
@@ -304,7 +304,7 @@ export type IRequestAccountTradeListApi = IChainParamApi & IRequestPagePositionA
 export interface IRequestLeaderboardApi extends IRequestPagePositionApi, IChainParamApi, IRequestSortApi<keyof IAccountSummary> {
   timeInterval: intervalTimeMap.HR24 | intervalTimeMap.DAY7 | intervalTimeMap.MONTH
 }
-export interface IRequestCompetitionLadderApi extends IChainParamApi, IRequestPagePositionApi, IRequestTimerangeApi {
+export interface IRequestCompetitionLadderApi extends IChainParamApi, IRequestSortApi<IAccountLadderSummary>, IRequestPagePositionApi, IRequestTimerangeApi {
   referralCode: string
   maxCollateral: bigint
   account: string | null
