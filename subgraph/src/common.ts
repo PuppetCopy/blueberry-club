@@ -32,7 +32,9 @@ export function handleLabItemTransfer(fromAddress: Address, toAddress: Address, 
 
   if (previousOwner == null) {
     previousOwner = _createNewOwner(from)
-  } else if (profile && profile.token === tokenId) {
+  }
+  
+  if (profile && profile.token === tokenId) {
     profile.token = null
   }
 
@@ -79,12 +81,13 @@ export function handleLabItemTransfer(fromAddress: Address, toAddress: Address, 
     transfer.operator = event.address.toHex()
     transfer.timestamp = event.block.timestamp
     transfer.transaction = _createTransactionIfNotExist(event)
+
+    transfer.save()
   }
 
   previousOwner.save()
   newOwner.save()
   labItem.save()
-  transfer.save()
   previousLabItemOwner.save()
   newLabItemOwner.save()
 }

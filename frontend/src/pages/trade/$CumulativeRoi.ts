@@ -159,15 +159,17 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
           ),
 
           $responsiveFlex(layoutSheet.spacingSmall, style({ placeContent: 'flex-end' }))(
-            $infoTooltipLabel(
-              $column(layoutSheet.spacingSmall)(
-                $text('The current accumulated amount from the GMX referral program will be rewarded to the top traders at the end'),
-                $column(
-                  $text('it is calculated as:'),
-                  $text(style({ fontSize: '.75em', fontStyle: 'italic' }))('Traded Volume * .001 (Margin Fee) * .15 (BLUBERRY Referral)'),
-                )
-              ),
-              'Prize Pool'
+            style({ flexDirection: 'row-reverse' })(
+              $infoTooltipLabel(
+                $column(layoutSheet.spacingSmall)(
+                  $text('The current accumulated amount from the GMX referral program will be rewarded to the top traders at the end'),
+                  $column(
+                    $text('it is calculated as:'),
+                    $text(style({ fontSize: '.75em', fontStyle: 'italic' }))('Traded Volume * .001 (Margin Fee) * .15 (BLUBERRY Referral)'),
+                  )
+                ),
+                'Prize Pool'
+              )
             ),
             $text(style({
               color: pallete.positive,

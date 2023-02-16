@@ -1309,20 +1309,24 @@ export const $TradeBox = (config: ITradeBox) => component((
                           snapshot((state) => {
 
                             const inputAddress = resolveAddress(w3p.chain, inputToken)
-                            const outputToken = state.isLong ? state.indexToken : state.collateralToken
+                            const outputToken = state.isLong ? state.indexToken : state.isIncrease ? state.collateralToken : state.indexToken
 
                             const path = state.isIncrease
-                              ? inputAddress === outputToken ? [state.indexToken] : [inputAddress, outputToken]
-                              : inputAddress === outputToken ? [state.indexToken] : [outputToken, inputAddress]
+                              ? inputAddress === outputToken ? [outputToken] : [inputAddress, outputToken]
+                              : inputAddress === outputToken ? [outputToken] : [outputToken, inputAddress]
                             
                             const slippageN = BigInt(Number(state.slippage) * 100)
-                            const allowedSlippage = state.isLong ? state.isIncrease ? slippageN : -slippageN : state.isIncrease ? -slippageN : slippageN
+                            const allowedSlippage = state.isLong ? slippageN : -slippageN
 
                             const refPrice = state.isLong ? state.indexTokenPrice : state.indexTokenPrice
-                            const priceBasisPoints = BASIS_POINTS_DIVISOR + allowedSlippage // state.isLong ? BASIS_POINTS_DIVISOR + allowedSlippage : BASIS_POINTS_DIVISOR - allowedSlippage
+                            const priceBasisPoints = BASIS_POINTS_DIVISOR + allowedSlippage
 
                             const acceptablePrice = refPrice * priceBasisPoints / BASIS_POINTS_DIVISOR
 
+                            console.log(formatReadableUSD(acceptablePrice))
+                            console.log(formatReadableUSD(acceptablePrice))
+                            console.log(formatReadableUSD(acceptablePrice))
+                            console.log(formatReadableUSD(acceptablePrice))
 
 
                             const isNative = inputToken === AddressZero

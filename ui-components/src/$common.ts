@@ -151,7 +151,7 @@ export const $openPositionPnlBreakdown = (trade: ITradeOpen, cumulativeFee: Stre
 
   return $column(layoutSheet.spacing)(
     $row(style({ placeContent: 'space-between' }))(
-      $text('PnL breakdown'),
+      $text('Total breakdown'),
       $row(layoutSheet.spacingTiny)(
         $text(style({ color: pallete.foreground, flex: 1 }))('Deposit'),
         $text(map(cumFee => {
@@ -178,20 +178,31 @@ export const $openPositionPnlBreakdown = (trade: ITradeOpen, cumulativeFee: Stre
           map(cumFee => {
             const fstUpdate = trade.updateList[0]
             const entryFundingRate = fstUpdate.entryFundingRate
+            const historicBorrowingFee = trade.fee - totalMarginFee
 
-            const fee = getFundingFee(entryFundingRate, cumFee, trade.size)
+            const fee = getFundingFee(entryFundingRate, cumFee, trade.size) + historicBorrowingFee
+            
             return -fee
           }, cumulativeFee)
         )
+      ),
+      $seperator,
+      $row(layoutSheet.spacingTiny)(
+        $text(style({ color: pallete.foreground, flex: 1 }))('Total Fees'),
+        $PnlValue(map(cumFee => {
+          const fstUpdate = trade.updateList[0]
+          const entryFundingRate = fstUpdate.entryFundingRate
+
+          const fee = getFundingFee(entryFundingRate, cumFee, trade.size) + trade.fee
+
+          return -fee
+        }, cumulativeFee))
       ),
       $row(layoutSheet.spacingTiny)(
         $text(style({ color: pallete.foreground, flex: 1 }))('Realised Pnl'),
         $PnlValue(now(trade.realisedPnl))
       ),
-      $row(layoutSheet.spacingTiny)(
-        $text(style({ color: pallete.foreground, flex: 1 }))('PnL w/o fees'),
-        $PnlValue(map(price => getPnL(trade.isLong, trade.averagePrice, price, trade.size), positionMarkPrice))
-      ),
+      
     )
   )
 }

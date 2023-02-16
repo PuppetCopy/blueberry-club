@@ -109,8 +109,6 @@ export function handleERC721Transfer(event: generated.Transfer): void {
     .concat(':'.concat(event.transactionLogIndex.toHexString()))
   let transfer = Transfer.load(transferId)
 
-  const instance = generated.ERC721.bind(event.address)
-
   if (previousOwner == null) {
     previousOwner = _createNewOwner(from)
   } else {
