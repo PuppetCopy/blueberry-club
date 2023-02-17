@@ -130,8 +130,11 @@ export interface IProfileTradingSummary extends IAccountLadderSummary {
 
 export interface IProfileTradingResult {
   list: IRequestPageApi<IProfileTradingSummary>,
-  size: bigint
   profile: IProfileTradingSummary | null
+
+  size: bigint
+  prizePool: bigint
+  totalScore: bigint
 }
 
 

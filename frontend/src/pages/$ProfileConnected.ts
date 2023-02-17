@@ -21,7 +21,7 @@ import { ContractTransaction } from "@ethersproject/contracts"
 import { connectLab } from "../logic/contract/gbc"
 import { $berryTileId, $CardTable } from "../components/$common"
 import { fadeIn } from "../transitions/enter"
-import { $Index } from "./$Leaderboard"
+import { $Index } from "./competition/$Leaderboard"
 import * as router from '@aelea/router'
 import { connectTradeReader } from "../logic/contract/trade"
 import { $responsiveFlex } from "../elements/$common"

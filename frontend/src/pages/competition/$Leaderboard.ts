@@ -1,51 +1,47 @@
-import { Behavior } from "@aelea/core"
+import { Behavior, O } from "@aelea/core"
 import { $text, component, style } from "@aelea/dom"
 import { $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 import { TOKEN_ADDRESS_TO_SYMBOL, formatReadableUSD, ITrade, TOKEN_SYMBOL, IRequestCompetitionLadderApi } from "@gambitdao/gmx-middleware"
 
 import { $bear, $bull, $tokenIconMap } from "@gambitdao/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { $CompetitionRoi, ICompetitonTopCumulative } from "./trade/$CumulativeRoi"
+import { ICompetitonCumulativeRoi, $CompetitionRoi } from "./$CumulativeRoi"
 
 
-export interface ILeaderboard extends ICompetitonTopCumulative {
+export interface ILeaderboard extends ICompetitonCumulativeRoi {
 
 }
 
 export const $Leaderboard = (config: ILeaderboard) => component((
   [routeChange, routeChangeTether]: Behavior<string, string>,
-  [highTableRequestIndex, highTableRequestIndexTether]: Behavior<number, number>,
   [requestCompetitionLadder, requestCompetitionLadderTether]: Behavior<IRequestCompetitionLadderApi, IRequestCompetitionLadderApi>,
-  [requestProfilePickList, requestProfilePickListTether]: Behavior<string[], string[]>,
 ) => {
 
 
+  const containerStyle = O(
+    style({
+      gap: '46px', display: 'flex',
+      fontFeatureSettings: '"tnum" on,"lnum" on',
+      fontFamily: `-apple-system,BlinkMacSystemFont,Trebuchet MS,Roboto,Ubuntu,sans-serif`,
+    }),
+    screenUtils.isDesktopScreen
+      ? style({ width: '780px', alignSelf: 'center' })
+      : style({ width: '100%' })
+  )
+
 
   return [
-    $column(
-      style({
-        fontFeatureSettings: '"tnum" on,"lnum" on',
-        fontFamily: `-apple-system,BlinkMacSystemFont,Trebuchet MS,Roboto,Ubuntu,sans-serif`,
-      })
-    )(
-      style({ gap: '46px', display: 'flex' }),
-      screenUtils.isDesktopScreen
-        ? style({ width: '780px', alignSelf: 'center' })
-        : style({ width: '100%' })
-    )(
-
+    containerStyle(
       $CompetitionRoi({
         ...config
       })({
         requestCompetitionLadder: requestCompetitionLadderTether(),
-        // requestProfilePickList: requestProfilePickListTether()
         routeChange: routeChangeTether()
       })
-
     ),
 
     {
-      requestCompetitionLadder, requestProfilePickList, routeChange,
+      requestCompetitionLadder, routeChange,
     }
   ]
 })

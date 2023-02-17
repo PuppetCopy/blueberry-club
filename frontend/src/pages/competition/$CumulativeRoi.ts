@@ -22,7 +22,7 @@ const MAX_COLLATERAL = 500000000000000000000000000000000n
 const prizeRatioLadder: bigint[] = [3000n, 1500n, 750n, ...Array(17).fill(div(4750n, 17n) / BASIS_POINTS_DIVISOR)]
 
 
-export interface ICompetitonTopCumulative {
+export interface ICompetitonCumulativeRoi {
   walletLink: IWalletLink
   parentRoute: Route
   competitionCumulativeRoi: Stream<IProfileTradingResult>
@@ -30,7 +30,7 @@ export interface ICompetitonTopCumulative {
 
 
 
-export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
+export const $CompetitionRoi = (config: ICompetitonCumulativeRoi) => component((
   [routeChange, routeChangeTether]: Behavior<any, string>,
   [sortByChange, sortByChangeTether]: Behavior<ISortBy<IAccountLadderSummary>, ISortBy<IAccountLadderSummary>>,
   [pageIndex, pageIndexTether]: Behavior<number, number>,
@@ -72,9 +72,6 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
   return [
     $column(screenUtils.isDesktopScreen ? layoutSheet.spacingBig : layoutSheet.spacing)(
 
-      // style({ alignSelf: 'center', maxWidth: '500px', marginBottom: '18px' })(
-      //   $alert($text(`Results are being checked to ensure all data is accounted for. expected to finalize by Nov 25 12:00 UTC`)),
-      // ),
       $node(),
 
       $column(screenUtils.isDesktopScreen ? layoutSheet.spacingBig : layoutSheet.spacing, style({ flexDirection: screenUtils.isDesktopScreen ? 'row' : 'column', alignItems: 'center', placeContent: 'center' }))(
@@ -135,13 +132,6 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
             )
           )
       ),
-
-      $node(),
-      // style({ placeSelf: 'center' })(
-      //   $alert(
-      //     $text(`We are aware of missing data, a fix is coming soon, your data is SAFU!`)
-      //   )
-      // ),
 
 
       $column(layoutSheet.spacing)(
@@ -340,7 +330,6 @@ export const $CompetitionRoi = (config: ICompetitonTopCumulative) => component((
           pageSize: 20,
         }
 
-        console.log(reqParams.direction)
 
         return reqParams
       }, combineObject({

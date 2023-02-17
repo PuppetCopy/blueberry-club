@@ -243,10 +243,6 @@ export interface IAccountLadderSummary extends IAccountSummary {
   cumulativeLeverage: bigint
 }
 
-export interface ILadderSummary {
-  list: IAccountLadderSummary[]
-  size: bigint
-}
 
 export interface IPriceTimeline {
   id: string

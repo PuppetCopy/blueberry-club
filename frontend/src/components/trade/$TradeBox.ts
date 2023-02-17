@@ -39,7 +39,7 @@ import { IWalletLink, IWalletName, parseError } from "@gambitdao/wallet-link"
 import { $Popover } from "../$Popover"
 import { $card } from "../../elements/$common"
 import { Route } from "@aelea/router"
-import { $Index } from "../../pages/$Leaderboard"
+import { $Index } from "../../pages/competition/$Leaderboard"
 
 export enum ITradeFocusMode {
   collateral,
@@ -214,7 +214,7 @@ export const $TradeBox = (config: ITradeBox) => component((
       }
     } else {
 
-      if (state.inputToken !== state.collateralToken) {
+      if (state.position.averagePrice > 0n && state.inputToken !== state.collateralToken) {
         const delta = getPnL(state.isLong, state.position.averagePrice, state.indexTokenPrice, -state.sizeDeltaUsd)
         const adjustedSizeDelta = safeDiv(abs(state.sizeDeltaUsd) * delta, state.position.size)
         const fees = state.swapFee + state.marginFee
@@ -268,7 +268,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
   const clickMaxCollateralUsd = snapshot(state => {
     if (state.isIncrease) {
-      return state.walletBalanceUsd - DEDUCT_USD_FOR_GAS
+      return state.walletBalanceUsd
     }
 
     if (state.position.averagePrice === 0n) {
@@ -1308,26 +1308,20 @@ export const $TradeBox = (config: ITradeBox) => component((
                         click: clickRequestTradeTether(
                           snapshot((state) => {
 
-                            const inputAddress = resolveAddress(w3p.chain, inputToken)
-                            const outputToken = state.isLong ? state.indexToken : state.isIncrease ? state.collateralToken : state.indexToken
+                            const from = state.isIncrease ? resolveAddress(w3p.chain, inputToken) : state.isLong ? state.indexToken : state.collateralToken
+                            const to = state.isIncrease ? state.isLong ? state.indexToken : state.collateralToken : inputToken
 
-                            const path = state.isIncrease
-                              ? inputAddress === outputToken ? [outputToken] : [inputAddress, outputToken]
-                              : inputAddress === outputToken ? [outputToken] : [outputToken, inputAddress]
+                            const swapRoute = from === to ? [to] : [from, to]
                             
                             const slippageN = BigInt(Number(state.slippage) * 100)
-                            const allowedSlippage = state.isLong ? slippageN : -slippageN
+                            // const allowedSlippage = state.isLong ? slippageN : -slippageN
+                            const allowedSlippage = state.isLong ? state.isIncrease ? slippageN : -slippageN : state.isIncrease ? -slippageN : slippageN
 
                             const refPrice = state.isLong ? state.indexTokenPrice : state.indexTokenPrice
                             const priceBasisPoints = BASIS_POINTS_DIVISOR + allowedSlippage
 
                             const acceptablePrice = refPrice * priceBasisPoints / BASIS_POINTS_DIVISOR
-
                             console.log(formatReadableUSD(acceptablePrice))
-                            console.log(formatReadableUSD(acceptablePrice))
-                            console.log(formatReadableUSD(acceptablePrice))
-                            console.log(formatReadableUSD(acceptablePrice))
-
 
                             const isNative = inputToken === AddressZero
 
@@ -1337,7 +1331,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
                               if (isNative) {
                                 ctxQuery = state.positionRouter.createIncreasePositionETH(
-                                  path,
+                                  swapRoute,
                                   state.indexToken,
                                   0,
                                   state.sizeDeltaUsd,
@@ -1351,7 +1345,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                               } else {
 
                                 const gasLimit = (state.positionRouter.estimateGas.createIncreasePosition(
-                                  path,
+                                  swapRoute,
                                   state.indexToken,
                                   0,
                                   0,
@@ -1398,7 +1392,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
 
                                 ctxQuery = state.positionRouter.createIncreasePosition(
-                                  path,
+                                  swapRoute,
                                   state.indexToken,
                                   state.collateralDelta,
                                   0,
@@ -1418,7 +1412,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
                             } else {
                               ctxQuery = state.positionRouter.createDecreasePosition(
-                                path,
+                                swapRoute,
                                 state.indexToken,
                                 // flip values. Contract code is using `uint` integers
                                 -state.collateralDeltaUsd,

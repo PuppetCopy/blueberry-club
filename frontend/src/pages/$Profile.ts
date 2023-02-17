@@ -18,7 +18,7 @@ import { $labItem } from "../logic/common"
 import { pallete } from "@aelea/ui-components-theme"
 import { connectLab } from "../logic/contract/gbc"
 import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
-import { $Index } from "./$Leaderboard"
+import { $Index } from "./competition/$Leaderboard"
 import { connectTradeReader } from "../logic/contract/trade"
 import { $ButtonToggle, $defaulButtonToggleContainer } from "@gambitdao/ui-components/src/$ButtonToggle"
 import * as router from '@aelea/router'

@@ -2,7 +2,7 @@ import { TOKEN_ADDRESS_TO_SYMBOL, TOKEN_DESCRIPTION_MAP } from "./address/token"
 import { BASIS_POINTS_DIVISOR, FUNDING_RATE_PRECISION, LIQUIDATION_FEE, MARGIN_FEE_BASIS_POINTS, MAX_LEVERAGE } from "./constant"
 import {
   IAccountSummary, ITrade, ITradeSettled, ITradeClosed, ITradeLiquidated, ITradeOpen,
-  TradeStatus, IAccountLadderSummary, IPositionLiquidated, ILadderSummary, ITokenDescription
+  TradeStatus, IAccountLadderSummary, IPositionLiquidated, ITokenDescription
 } from "./types"
 import { easeInExpo, formatFixed, getDenominator, getSafeMappedValue, groupByMapMany } from "./utils"
 
@@ -225,16 +225,11 @@ export function toAccountSummary(list: ITrade[]): IAccountSummary[] {
   }, [] as IAccountSummary[])
 }
 
-export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: string]: bigint }, minMaxCollateral: bigint, endDate: number): ILadderSummary {
+export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: string]: bigint }, minMaxCollateral: bigint, endDate: number): IAccountLadderSummary[] {
   const tradeListMap = groupByMapMany(list, a => a.account)
   const tradeListEntries = Object.entries(tradeListMap)
 
-  const res: ILadderSummary = {
-    list: [],
-    size: 0n
-  }
-
-  return tradeListEntries.reduce((seed, [account, tradeList]) => {
+  return tradeListEntries.map(([account, tradeList]) => {
 
     const seedAccountSummary: IAccountLadderSummary = {
       account,
@@ -289,8 +284,8 @@ export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: stri
       ].filter(update => update.timestamp <= endDate)
 
       const lastUpdate = filteredUpdates[filteredUpdates.length - 1]
-      const cumSizeIncrease = next.increaseList.reduce((s, n) => s + n.sizeDelta, 0n)
-      const cumSizeDecrease = next.decreaseList.reduce((s, n) => s + n.sizeDelta, 0n)
+      const cumSizeIncrease = next.increaseList.filter(update => update.timestamp <= endDate).reduce((s, n) => s + n.sizeDelta, 0n)
+      const cumSizeDecrease = next.decreaseList.filter(update => update.timestamp <= endDate).reduce((s, n) => s + n.sizeDelta, 0n)
 
       const indexTokenMarkPrice = BigInt(priceMap['_' + next.indexToken])
       const openDelta = lastUpdate.__typename === 'UpdatePosition'
@@ -325,13 +320,9 @@ export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: stri
       }
     }, seedAccountSummary)
 
-    seed.list.push(summary)
 
-    return {
-      list: seed.list.sort((a, b) => Number(b.roi - a.roi)),
-      size: summary.size + seed.size
-    }
-  }, res)
+    return summary
+  })
 }
 
 

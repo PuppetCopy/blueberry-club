@@ -1,7 +1,6 @@
 import { O } from "@aelea/core"
 import { hexValue } from "@ethersproject/bytes"
-import { createSubgraphClient, groupByKey, IRequestCompetitionLadderApi, IIdentifiableEntity, IRequestPagePositionApi, pagingQuery, cacheMap, intervalTimeMap, IAccountLadderSummary } from "@gambitdao/gmx-middleware"
-import { getCompetitionCumulativeRoi } from "@gambitdao/gmx-middleware/src/graph"
+import { createSubgraphClient, IRequestCompetitionLadderApi, IIdentifiableEntity, IRequestPagePositionApi, pagingQuery, cacheMap, intervalTimeMap, toAccountCompetitionSummary, gmxSubgraph, getMarginFees, BASIS_POINTS_DIVISOR } from "@gambitdao/gmx-middleware"
 import { awaitPromises, map } from "@most/core"
 import { gql } from "@urql/core"
 import { ILabItem, ILabItemOwnership, IOwner, IProfile, IProfileTradingSummary, IProfileTradingResult, IToken } from "./types"
@@ -233,25 +232,29 @@ export const competitionCumulativeRoi = O(
   map(async (queryParams: IRequestCompetitionLadderApi): Promise<IProfileTradingResult> => {
 
     const queryCache = cache('cacheKey', intervalTimeMap.MIN5, async () => {
-      const accountList = await getCompetitionCumulativeRoi(queryParams)
-      // const profileList = await getProfilePickList(accountList.list.map(x => x.account).slice(0, 340))
-      // const profileMap = groupByKey(profileList, p => p.id)
-      let profile2: null | IProfileTradingSummary = null
 
-      const sortedCompetitionList: IProfileTradingSummary[] = accountList.list
-        .sort((a, b) => {
-          // const aN = profileMap[a.account] ? a.roi : a.roi - 100000000n
-          // const bN = profileMap[b.account] ? b.roi : b.roi - 100000000n
-          return Number(b.roi - a.roi)
-          // const aN = profileMap[a.account] ? a.roi : a.roi - 100000000n
-          // const bN = profileMap[b.account] ? b.roi : b.roi - 100000000n
-          // return Number(bN - aN)
-        })
+      const tradeList = await gmxSubgraph.getCompetitionTrades(queryParams)
+      const priceMap = await gmxSubgraph.getPriceMap(queryParams.to, queryParams)
+
+      const competitionSummary = toAccountCompetitionSummary(tradeList, priceMap, queryParams.maxCollateral, queryParams.to)
+      const sortedByList = competitionSummary.sort((a, b) => Number(b.roi - a.roi))
+
+
+      let profile2: null | IProfileTradingSummary = null
+      const size = sortedByList.reduce((s, n) => s + n.size, 0n)
+      const prizePool = getMarginFees(size) * 1500n / BASIS_POINTS_DIVISOR
+
+      let totalScore = 0n
+
+      const sortedCompetitionList: IProfileTradingSummary[] = sortedByList
         .map(summary => {
+          totalScore += summary.roi > 0n ? summary.roi : 0n
+
+          const rank = sortedByList.indexOf(summary) + 1
           const profileSummary: IProfileTradingSummary = {
             ...summary,
             profile: null,
-            rank: queryParams.offset + accountList.list.indexOf(summary) + 1
+            rank
           }
 
           if (queryParams.account === summary.account) {
@@ -261,8 +264,8 @@ export const competitionCumulativeRoi = O(
           return profileSummary
         })
 
- 
-      return { sortedCompetitionList, size: accountList.size, profile: profile2 as null | IProfileTradingSummary }
+
+      return { sortedCompetitionList, size, totalScore, prizePool,  profile: profile2 as null | IProfileTradingSummary }
     })
 
     const res = await queryCache
@@ -277,27 +280,98 @@ export const competitionCumulativeRoi = O(
         const idxProfile = newLocal.page.indexOf(res.profile)
         if (idxProfile > -1) {
           newLocal.page.splice(idxProfile, 1)
-          newLocal.page.unshift(res.profile)  
+          newLocal.page.unshift(res.profile)
         }
       }
 
       return {
-        profile: res.profile,
-        list: { offset, pageSize, page: newLocal.page },
-        size: res.size
+        ...res,
+        list: { offset, pageSize, page: newLocal.page }
       }
     }
 
-    const paging = pagingQuery(queryParams, res.sortedCompetitionList)
 
     return {
-      profile: res.profile,
-      list: paging,
-      size: res.size
+      ...res,
+      list: pagingQuery(queryParams, res.sortedCompetitionList)
     }
   }),
   awaitPromises
 )
+
+
+
+export const competitionCumulativePnl = O(
+  map(async (queryParams: IRequestCompetitionLadderApi): Promise<IProfileTradingResult> => {
+
+    const queryCache = cache('cacheKey', intervalTimeMap.MIN5, async () => {
+
+      const tradeList = await gmxSubgraph.getCompetitionTrades(queryParams)
+      const priceMap = await gmxSubgraph.getPriceMap(queryParams.to, queryParams)
+
+      const competitionSummary = toAccountCompetitionSummary(tradeList, priceMap, queryParams.maxCollateral, queryParams.to)
+      const sortedByList = competitionSummary.sort((a, b) => Number(b.pnl - a.pnl))
+
+
+      let profile2: null | IProfileTradingSummary = null
+      const size = sortedByList.reduce((s, n) => s + n.size, 0n)
+      const prizePool = getMarginFees(size) * 1500n / BASIS_POINTS_DIVISOR
+
+      let totalScore = 0n
+
+      const sortedCompetitionList: IProfileTradingSummary[] = sortedByList
+        .map(summary => {
+          const rank = sortedByList.indexOf(summary) + 1
+          totalScore += summary.pnl > 0n ? summary.pnl : 0n
+
+          const profileSummary: IProfileTradingSummary = {
+            ...summary,
+            profile: null,
+            rank
+          }
+
+          if (queryParams.account === summary.account) {
+            profile2 = profileSummary
+          }
+
+          return profileSummary
+        })
+
+
+      return { sortedCompetitionList, size, totalScore, prizePool, profile: profile2 as null | IProfileTradingSummary }
+    })
+
+    const res = await queryCache
+
+
+
+    if (queryParams.selector === 'roi' && queryParams.direction === 'desc') {
+      const newLocal = pagingQuery(queryParams, res.sortedCompetitionList)
+      const { offset, pageSize } = newLocal
+
+      if (res.profile !== null) {
+        const idxProfile = newLocal.page.indexOf(res.profile)
+        if (idxProfile > -1) {
+          newLocal.page.splice(idxProfile, 1)
+          newLocal.page.unshift(res.profile)
+        }
+      }
+
+      return {
+        ...res,
+        list: { offset, pageSize, page: newLocal.page },
+      }
+    }
+
+
+    return {
+      ...res,
+      list: pagingQuery(queryParams, res.sortedCompetitionList)
+    }
+  }),
+  awaitPromises
+)
+
 
 
 
@@ -307,6 +381,7 @@ async function getProfilePickList(idList: string[]): Promise<IProfile[]> {
     return []
   }
 
+  
   const doc = `
 {
   ${idList.map(id => `

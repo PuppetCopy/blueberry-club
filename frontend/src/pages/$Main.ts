@@ -1,4 +1,4 @@
-import { Behavior, replayLatest } from "@aelea/core"
+import { Behavior, O, replayLatest } from "@aelea/core"
 import { $element, $node, $text, component, eventElementTarget, style } from "@aelea/dom"
 import * as router from '@aelea/router'
 import { $column, $row, layoutSheet, screenUtils } from '@aelea/ui-components'
@@ -25,10 +25,11 @@ import { $ProfileConnected } from "./$ProfileConnected"
 import { $Trade } from "./$Trade"
 import { createLocalStorageChain } from "../logic/store"
 import { globalProviderMap } from "../logic/provider"
-import { $Leaderboard } from "./$Leaderboard"
+import { $Leaderboard } from "./competition/$Leaderboard"
 import { $Treasury } from "./$Treasury"
 import { $discoverIdentityDisplay } from "../components/$AccountProfile"
 import { pallete } from "@aelea/ui-components-theme"
+import { $CompetitionPnl } from "./competition/$CumulativePnl"
 
 
 const popStateEvent = eventElementTarget('popstate', window)
@@ -78,6 +79,7 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
   const profileWalletRoute = pagesRoute.create({ fragment: 'wallet', title: 'Wallet Account' })
   const labRoute = pagesRoute.create({ fragment: 'lab', title: 'Blueberry Lab' })
   const leaderboardRoute = pagesRoute.create({ fragment: 'leaderboard', title: 'Leaderboard' })
+  const leaderboardPnlTestRoute = pagesRoute.create({ fragment: 'leaderboard-pnl-demo', title: 'Leaderboard' })
   const wardrobeRoute = pagesRoute.create({ fragment: 'wardrobe', title: 'Wardrobe' })
   const storeRoute = pagesRoute.create({ fragment: 'lab-store', title: 'Store' })
   const itemRoute = pagesRoute.create({ fragment: 'item' }).create({ fragment: /\d+/, title: 'Lab Item' })
@@ -107,6 +109,7 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
     latestPriceMap: gmxSubgraph.latestPriceMap(requestAccountTradeList),
 
     competitionCumulativeRoi: blueberrySubgraph.competitionCumulativeRoi(requestCompetitionLadder),
+    competitionCumulativePnl: blueberrySubgraph.competitionCumulativePnl(requestCompetitionLadder),
     profilePickList: blueberrySubgraph.profilePickList(requestProfilePickList),
   }
 
@@ -253,12 +256,31 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
                 parentRoute: pagesRoute
               })({
                 routeChange: linkClickTether(),
-                requestCompetitionLadder: requestCompetitionLadderTether(),
-                requestProfilePickList: requestProfilePickListTether(),
-                // changeNetwork: changeNetworkTether(),
-                // walletChange: walletChangeTether(),
-                // requestStake: requestStakeTether()
+                requestCompetitionLadder: requestCompetitionLadderTether()
               }))
+            ),
+            router.match(leaderboardPnlTestRoute)(
+              fadeIn(
+                O(
+                  style({
+                    gap: '46px', display: 'flex',
+                    fontFeatureSettings: '"tnum" on,"lnum" on',
+                    fontFamily: `-apple-system,BlinkMacSystemFont,Trebuchet MS,Roboto,Ubuntu,sans-serif`,
+                  }),
+                  screenUtils.isDesktopScreen
+                    ? style({ width: '780px', alignSelf: 'center' })
+                    : style({ width: '100%' })
+                )(
+                  $CompetitionPnl({
+                    walletLink,
+                    competitionCumulativePnl: clientApi.competitionCumulativePnl,
+                    parentRoute: pagesRoute
+                  })({
+                    requestCompetitionLadder: requestCompetitionLadderTether(),
+                    routeChange: linkClickTether()
+                  })
+                )
+              )
             ),
             router.match(tradeRoute)(
               $Trade({
