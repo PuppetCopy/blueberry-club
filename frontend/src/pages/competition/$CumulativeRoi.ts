@@ -5,7 +5,7 @@ import { $column, $row, $seperator, layoutSheet, screenUtils } from '@aelea/ui-c
 import { colorAlpha, pallete } from '@aelea/ui-components-theme'
 import { awaitPromises, combine, empty, map, mergeArray, now, zip } from '@most/core'
 import { Stream } from '@most/types'
-import { formatReadableUSD, formatFixed, unixTimestampNow, IRequestCompetitionLadderApi, BASIS_POINTS_DIVISOR, getMarginFees, div, switchMap, gmxSubgraph, groupByKey, IAccountLadderSummary } from '@gambitdao/gmx-middleware'
+import { formatReadableUSD, formatFixed, unixTimestampNow, IRequestCompetitionLadderApi, switchMap, gmxSubgraph, groupByKey, IAccountLadderSummary, USD_PERCISION } from '@gambitdao/gmx-middleware'
 import { $alertTooltip, countdown } from './$rules'
 import { IWalletLink } from '@gambitdao/wallet-link'
 import { $accountPreview, $profilePreview } from '../../components/$AccountProfile'
@@ -19,13 +19,11 @@ import { $defaultProfileContainer } from '../../common/$avatar'
 
 const MAX_COLLATERAL = 500000000000000000000000000000000n
 
-const prizeRatioLadder: bigint[] = [3000n, 1500n, 750n, ...Array(17).fill(div(4750n, 17n) / BASIS_POINTS_DIVISOR)]
-
 
 export interface ICompetitonCumulativeRoi {
   walletLink: IWalletLink
   parentRoute: Route
-  competitionCumulativeRoi: Stream<IProfileTradingResult>
+  competitionCumulative: Stream<IProfileTradingResult>
 }
 
 
@@ -52,16 +50,12 @@ export const $CompetitionRoi = (config: ICompetitonCumulativeRoi) => component((
         })
       }
     }, awaitPromises(blueberrySubgraph.profilePickList(now(accountList))), awaitPromises(gmxSubgraph.getEnsProfileListPick(now(accountList))))
-  }, config.competitionCumulativeRoi)
+  }, config.competitionCumulative)
 
   const nowTime = unixTimestampNow()
   const started = nowTime >= TOURNAMENT_START
 
 
-
-  const prizePool = map(res => {
-    return getMarginFees(res.size) * 1500n / BASIS_POINTS_DIVISOR
-  }, config.competitionCumulativeRoi)
 
   const sortBy: Stream<ISortBy<IAccountLadderSummary>> = mergeArray([
     now({ direction: 'desc', selector: 'roi' }),
@@ -144,7 +138,7 @@ export const $CompetitionRoi = (config: ICompetitonCumulativeRoi) => component((
               ), 'Traded Volume'),
               $text(style({ fontSize: '1.25em' }))(map(res => {
                 return formatReadableUSD(res.size)
-              }, config.competitionCumulativeRoi))
+              }, config.competitionCumulative))
             ),
           ),
 
@@ -165,7 +159,7 @@ export const $CompetitionRoi = (config: ICompetitonCumulativeRoi) => component((
               color: pallete.positive,
               fontSize: screenUtils.isDesktopScreen ? '2.25em' : '2em',
               textShadow: `${pallete.positive} 1px 1px 20px, ${pallete.positive} 0px 0px 20px`
-            }))(map(amount => formatReadableUSD(amount), prizePool))
+            }))(map(params => formatReadableUSD(params.prizePool), config.competitionCumulative))
           ),
         ),
 
@@ -278,26 +272,19 @@ export const $CompetitionRoi = (config: ICompetitonCumulativeRoi) => component((
               ),
               sortBy: 'roi',
               columnOp: style({ minWidth: '90px', placeContent: 'flex-end' }),
-              $$body: zip((prizePool, pos) => {
-                const prizeRatio = prizeRatioLadder[pos.rank - 1]
-
-                // const prizeRatio = easeInExpo()
-                // const usd1k = 10n ** 30n * 1000n
-                // const particiapnts = formatFixed(prizePool / usd1k, 30)
-                // total = rewards[i] = ((i + 1) ** 2) / total
-
-
+              $$body: zip((params, pos) => {
+                const prize = pos.pnl > USD_PERCISION ? params.prizePool * pos.roi / params.totalScore : 0n
 
                 return $column(layoutSheet.spacingTiny, style({ alignItems: 'flex-end' }))(
-                  prizeRatio
+                  prize
                     ? $row(
                       // $avaxIcon,
-                      $text(style({ fontSize: '1.25em', color: pallete.positive }))(formatReadableUSD(prizePool * prizeRatio / BASIS_POINTS_DIVISOR)),
+                      $text(style({ fontSize: '1.25em', color: pallete.positive }))(formatReadableUSD(prize)),
                     ) : empty(),
 
                   $text(`${formatFixed(pos.roi, 2)}%`)
                 )
-              }, prizePool)
+              }, config.competitionCumulative)
             }
           ],
         })({
@@ -324,6 +311,7 @@ export const $CompetitionRoi = (config: ICompetitonCumulativeRoi) => component((
           account: params.w3p?.address || null,
           referralCode: BLUEBERRY_REFFERAL_CODE,
           maxCollateral: MAX_COLLATERAL,
+          metric: 'roi',
           from,
           to,
           offset: params.pageIndex * 20,

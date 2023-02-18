@@ -6,7 +6,7 @@ import { getTokenDescription, toAccountSummary } from "./gmxUtils"
 import {
   IRequestAccountApi, IChainParamApi, IRequestCompetitionLadderApi, IRequestLeaderboardApi, IRequestPagePositionApi,
   IPricefeed, IRequestPricefeedApi, IPriceLatest, IRequestGraphEntityApi, IStake, IRequestTimerangeApi, ITrade, TradeStatus,
-  IRequestAccountTradeListApi, ITradeOpen, IEnsRegistration, IPriceLatestMap
+  IRequestAccountTradeListApi, ITradeOpen, IEnsRegistration
 } from "./types"
 import { cacheMap, createSubgraphClient, getMappedValue, groupByKeyMap, pagingQuery, parseFixed, switchFailedSources, unixTimestampNow } from "./utils"
 import { gql } from "@urql/core"
@@ -318,7 +318,7 @@ export const leaderboardTopList = O(
 
 export async function getCompetitionTrades(queryParams: IRequestCompetitionLadderApi) {
   const competitionAccountListQuery = fetchTrades({ ...queryParams, offset: 0, pageSize: 1000 }, async (params) => {
-    const res = await subgraphDevChainMap[queryParams.chain](gql(`
+    const res = await subgraphChainMap[queryParams.chain](gql(`
 
 query {
   trades(first: 1000, skip: ${params.offset}, where: { entryReferralCode: "${queryParams.referralCode}", timestamp_gte: ${params.from}, timestamp_lte: ${params.to}}) {

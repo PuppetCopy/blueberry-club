@@ -108,8 +108,7 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
     accountOpenTradeList: gmxSubgraph.accountOpenTradeList(requestAccountOpenTradeList),
     latestPriceMap: gmxSubgraph.latestPriceMap(requestAccountTradeList),
 
-    competitionCumulativeRoi: blueberrySubgraph.competitionCumulativeRoi(requestCompetitionLadder),
-    competitionCumulativePnl: blueberrySubgraph.competitionCumulativePnl(requestCompetitionLadder),
+    competitionCumulative: blueberrySubgraph.competitionCumulative(requestCompetitionLadder),
     profilePickList: blueberrySubgraph.profilePickList(requestProfilePickList),
   }
 
@@ -252,7 +251,7 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
             router.match(leaderboardRoute)(
               fadeIn($Leaderboard({
                 walletLink,
-                competitionCumulativeRoi: clientApi.competitionCumulativeRoi,
+                competitionCumulative: clientApi.competitionCumulative,
                 parentRoute: pagesRoute
               })({
                 routeChange: linkClickTether(),
@@ -273,7 +272,7 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
                 )(
                   $CompetitionPnl({
                     walletLink,
-                    competitionCumulativePnl: clientApi.competitionCumulativePnl,
+                    competitionCumulative: clientApi.competitionCumulative,
                     parentRoute: pagesRoute
                   })({
                     requestCompetitionLadder: requestCompetitionLadderTether(),

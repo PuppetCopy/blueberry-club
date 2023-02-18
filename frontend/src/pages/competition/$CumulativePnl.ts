@@ -5,7 +5,7 @@ import { $column, $row, $seperator, layoutSheet, screenUtils } from '@aelea/ui-c
 import { colorAlpha, pallete } from '@aelea/ui-components-theme'
 import { awaitPromises, combine, empty, map, mergeArray, now, zip } from '@most/core'
 import { Stream } from '@most/types'
-import { formatReadableUSD, formatFixed, unixTimestampNow, IRequestCompetitionLadderApi, BASIS_POINTS_DIVISOR, getMarginFees, div, switchMap, gmxSubgraph, groupByKey, IAccountLadderSummary } from '@gambitdao/gmx-middleware'
+import { formatReadableUSD, formatFixed, unixTimestampNow, IRequestCompetitionLadderApi, switchMap, gmxSubgraph, groupByKey, IAccountLadderSummary, USD_PERCISION } from '@gambitdao/gmx-middleware'
 import { $alertTooltip, countdown } from './$rules'
 import { IWalletLink } from '@gambitdao/wallet-link'
 import { $accountPreview, $profilePreview } from '../../components/$AccountProfile'
@@ -19,13 +19,11 @@ import { $defaultProfileContainer } from '../../common/$avatar'
 
 const MAX_COLLATERAL = 500000000000000000000000000000000n
 
-const prizeRatioLadder: bigint[] = [3000n, 1500n, 750n, ...Array(17).fill(div(4750n, 17n) / BASIS_POINTS_DIVISOR)]
-
 
 export interface ICompetitonCumulativePnl {
   walletLink: IWalletLink
   parentRoute: Route
-  competitionCumulativePnl: Stream<IProfileTradingResult>
+  competitionCumulative: Stream<IProfileTradingResult>
 }
 
 
@@ -52,27 +50,17 @@ export const $CompetitionPnl = (config: ICompetitonCumulativePnl) => component((
         })
       }
     }, awaitPromises(blueberrySubgraph.profilePickList(now(accountList))), awaitPromises(gmxSubgraph.getEnsProfileListPick(now(accountList))))
-  }, config.competitionCumulativePnl)
+  }, config.competitionCumulative)
 
   const nowTime = unixTimestampNow()
   const started = nowTime >= TOURNAMENT_START
 
 
-
-  const competitionMetrics = map(res => {
-    const prizePool = getMarginFees(res.size) * 1500n / BASIS_POINTS_DIVISOR
-
-    return {
-      ...res,
-      prizePool
-    }
-  }, config.competitionCumulativePnl)
-
   const sortBy: Stream<ISortBy<IAccountLadderSummary>> = mergeArray([
     now({ direction: 'desc', selector: 'pnl' }),
     sortByChange
   ])
-  
+
 
   return [
     $column(screenUtils.isDesktopScreen ? layoutSheet.spacingBig : layoutSheet.spacing)(
@@ -88,8 +76,9 @@ export const $CompetitionPnl = (config: ICompetitonCumulativePnl) => component((
             ),
             $infoTooltipLabel(
               $column(layoutSheet.spacingSmall)(
-                $text(`ROI (%) is defined as:`),
-                $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Profits / Max Collateral (min ${formatReadableUSD(MAX_COLLATERAL)}) * 100`),
+                $text(`Cumulative PnL gives larger rewards to participants with higher PnLs`),
+                $text(`Cumulative PnL is defined as:`),
+                $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`(Prize Pool / Total profits of all participants) * PnL of participant`),
                 $text(`To participate:`),
                 $element('ul')(
                   $element('li')(
@@ -110,7 +99,7 @@ export const $CompetitionPnl = (config: ICompetitonCumulativePnl) => component((
                   ), $text(' for more details')
                 ),
               ),
-              $text(style({ fontWeight: 'bold', fontSize: '1.15em', color: pallete.middleground }))(`Highest PnL (%)`)
+              $text(style({ fontWeight: 'bold', fontSize: '1.15em', color: pallete.middleground }))(`Cumulative PnL (%)`)
             ),
           ),
         ),
@@ -148,7 +137,7 @@ export const $CompetitionPnl = (config: ICompetitonCumulativePnl) => component((
               ), 'Traded Volume'),
               $text(style({ fontSize: '1.25em' }))(map(res => {
                 return formatReadableUSD(res.size)
-              }, config.competitionCumulativePnl))
+              }, config.competitionCumulative))
             ),
           ),
 
@@ -169,7 +158,7 @@ export const $CompetitionPnl = (config: ICompetitonCumulativePnl) => component((
               color: pallete.positive,
               fontSize: screenUtils.isDesktopScreen ? '2.25em' : '2em',
               textShadow: `${pallete.positive} 1px 1px 20px, ${pallete.positive} 0px 0px 20px`
-            }))(map(params => formatReadableUSD(params.prizePool), competitionMetrics))
+            }))(map(params => formatReadableUSD(params.prizePool), config.competitionCumulative))
           ),
         ),
 
@@ -283,18 +272,16 @@ export const $CompetitionPnl = (config: ICompetitonCumulativePnl) => component((
               sortBy: 'roi',
               columnOp: style({ minWidth: '90px', placeContent: 'flex-end' }),
               $$body: zip((params, pos) => {
-                const prize = div(params.prizePool, params.totalScore) * pos.pnl / BASIS_POINTS_DIVISOR
+                const prize = pos.pnl > USD_PERCISION ? params.prizePool * pos.pnl / params.totalScore : 0n
 
                 return $column(layoutSheet.spacingTiny, style({ alignItems: 'flex-end' }))(
                   prize
-                    ? $row(
-                      // $avaxIcon,
-                      $text(style({ fontSize: '1.25em', color: pallete.positive }))(formatReadableUSD(prize)),
-                    ) : empty(),
+                    ? $text(style({ fontSize: '1.25em', color: pallete.positive }))(formatReadableUSD(prize))
+                    : empty(),
 
                   $text(`${formatFixed(pos.roi, 2)}%`)
                 )
-              }, competitionMetrics)
+              }, config.competitionCumulative)
             }
           ],
         })({
@@ -321,6 +308,7 @@ export const $CompetitionPnl = (config: ICompetitonCumulativePnl) => component((
           account: params.w3p?.address || null,
           referralCode: BLUEBERRY_REFFERAL_CODE,
           maxCollateral: MAX_COLLATERAL,
+          metric: 'pnl',
           from,
           to,
           offset: params.pageIndex * 20,
