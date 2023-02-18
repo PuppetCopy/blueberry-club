@@ -26,7 +26,6 @@ export interface ICompetitonCumulativePnl {
 }
 
 
-
 export const $CompetitionPnl = (config: ICompetitonCumulativePnl) => component((
   [routeChange, routeChangeTether]: Behavior<any, string>,
   [sortByChange, sortByChangeTether]: Behavior<ISortBy<IAccountLadderSummary>, ISortBy<IAccountLadderSummary>>,
