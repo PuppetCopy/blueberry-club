@@ -19,7 +19,6 @@ import { $defaultProfileContainer } from '../../common/$avatar'
 
 const MAX_COLLATERAL = 500000000000000000000000000000000n
 
-
 export interface ICompetitonCumulativePnl {
   walletLink: IWalletLink
   parentRoute: Route
