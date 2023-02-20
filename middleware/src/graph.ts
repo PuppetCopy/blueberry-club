@@ -280,8 +280,11 @@ export const competitionCumulativeRoi = O(
         const idxProfile = newLocal.page.indexOf(res.profile)
         if (idxProfile > -1) {
           newLocal.page.splice(idxProfile, 1)
-          newLocal.page.unshift(res.profile)
+        } else {
+          newLocal.page.splice(newLocal.page.length - 1, 1)
         }
+
+        newLocal.page.unshift(res.profile)
       }
 
       return {
