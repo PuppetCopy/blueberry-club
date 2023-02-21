@@ -116,7 +116,7 @@ export const $Trade = (config: ITradeComponent) => component((
   const indexTokenStore = tradingStore.craete('indexToken', null as ITokenIndex | null)
   const collateralTokenStore = tradingStore.craete('collateralToken', null as ITokenStable | null)
   const isIncreaseStore = tradingStore.craete('isIncrease', true)
-  const slippageStore = tradingStore.craete('slippage', '0.5')
+  const slippageStore = tradingStore.craete('slippage', '0.25')
   // const collateralRatioStore = tradingStore.craete('collateralRatio', 0)
 
   const isTradingEnabled = isTradingEnabledStore.storeReplay(enableTrading)

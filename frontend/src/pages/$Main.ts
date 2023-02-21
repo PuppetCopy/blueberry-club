@@ -30,6 +30,7 @@ import { $Treasury } from "./$Treasury"
 import { $discoverIdentityDisplay } from "../components/$AccountProfile"
 import { pallete } from "@aelea/ui-components-theme"
 import { $CompetitionPnl } from "./competition/$CumulativePnl"
+import { $CompetitionSize } from "./competition/$CumulativeSize"
 
 
 const popStateEvent = eventElementTarget('popstate', window)
@@ -80,6 +81,7 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
   const labRoute = pagesRoute.create({ fragment: 'lab', title: 'Blueberry Lab' })
   const leaderboardRoute = pagesRoute.create({ fragment: 'leaderboard', title: 'Leaderboard' })
   const leaderboardPnlTestRoute = pagesRoute.create({ fragment: 'leaderboard-pnl-demo', title: 'Leaderboard' })
+  const leaderboardSizeTestRoute = pagesRoute.create({ fragment: 'leaderboard-size', title: 'Leaderboard' })
   const wardrobeRoute = pagesRoute.create({ fragment: 'wardrobe', title: 'Wardrobe' })
   const storeRoute = pagesRoute.create({ fragment: 'lab-store', title: 'Store' })
   const itemRoute = pagesRoute.create({ fragment: 'item' }).create({ fragment: /\d+/, title: 'Lab Item' })
@@ -271,6 +273,29 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
                     : style({ width: '100%' })
                 )(
                   $CompetitionPnl({
+                    walletLink,
+                    competitionCumulative: clientApi.competitionCumulative,
+                    parentRoute: pagesRoute
+                  })({
+                    requestCompetitionLadder: requestCompetitionLadderTether(),
+                    routeChange: linkClickTether()
+                  })
+                )
+              )
+            ),
+            router.match(leaderboardSizeTestRoute)(
+              fadeIn(
+                O(
+                  style({
+                    gap: '46px', display: 'flex',
+                    fontFeatureSettings: '"tnum" on,"lnum" on',
+                    fontFamily: `-apple-system,BlinkMacSystemFont,Trebuchet MS,Roboto,Ubuntu,sans-serif`,
+                  }),
+                  screenUtils.isDesktopScreen
+                    ? style({ width: '780px', alignSelf: 'center' })
+                    : style({ width: '100%' })
+                )(
+                  $CompetitionSize({
                     walletLink,
                     competitionCumulative: clientApi.competitionCumulative,
                     parentRoute: pagesRoute

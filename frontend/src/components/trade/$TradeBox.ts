@@ -1306,8 +1306,9 @@ export const $TradeBox = (config: ITradeBox) => component((
                         click: clickRequestTradeTether(
                           snapshot((state) => {
 
-                            const from = state.isIncrease ? resolveAddress(w3p.chain, inputToken) : state.isLong ? state.indexToken : state.collateralToken
-                            const to = state.isIncrease ? state.isLong ? state.indexToken : state.collateralToken : inputToken
+                            const resolvedInputAddress = resolveAddress(w3p.chain, inputToken)
+                            const from = state.isIncrease ? resolvedInputAddress : state.isLong ? state.indexToken : state.collateralToken
+                            const to = state.isIncrease ? state.isLong ? state.indexToken : state.collateralToken : resolvedInputAddress
 
                             const swapRoute = from === to ? [to] : [from, to]
 

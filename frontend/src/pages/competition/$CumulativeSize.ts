@@ -19,14 +19,16 @@ import { $defaultProfileContainer } from '../../common/$avatar'
 
 const MAX_COLLATERAL = 500000000000000000000000000000000n
 
-export interface ICompetitonCumulativePnl {
+
+export interface ICompetitonCumulativeRoi {
   walletLink: IWalletLink
   parentRoute: Route
   competitionCumulative: Stream<IProfileTradingResult>
 }
 
 
-export const $CompetitionPnl = (config: ICompetitonCumulativePnl) => component((
+
+export const $CompetitionSize = (config: ICompetitonCumulativeRoi) => component((
   [routeChange, routeChangeTether]: Behavior<any, string>,
   [sortByChange, sortByChangeTether]: Behavior<ISortBy<IAccountLadderSummary>, ISortBy<IAccountLadderSummary>>,
   [pageIndex, pageIndexTether]: Behavior<number, number>,
@@ -54,11 +56,12 @@ export const $CompetitionPnl = (config: ICompetitonCumulativePnl) => component((
   const started = nowTime >= TOURNAMENT_START
 
 
+
   const sortBy: Stream<ISortBy<IAccountLadderSummary>> = mergeArray([
-    now({ direction: 'desc', selector: 'pnl' }),
+    now({ direction: 'desc', selector: 'size' }),
     sortByChange
   ])
-
+  
 
   return [
     $column(screenUtils.isDesktopScreen ? layoutSheet.spacingBig : layoutSheet.spacing)(
@@ -74,9 +77,8 @@ export const $CompetitionPnl = (config: ICompetitonCumulativePnl) => component((
             ),
             $infoTooltipLabel(
               $column(layoutSheet.spacingSmall)(
-                $text(`Cumulative PnL gives larger rewards to participants with higher PnLs`),
-                $text(`Cumulative PnL is defined as:`),
-                $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`(Prize Pool / Total profits of all participants) * PnL of participant`),
+                $text(`ROI (%) is defined as:`),
+                $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Profits / Max Collateral (min ${formatReadableUSD(MAX_COLLATERAL)}) * 100`),
                 $text(`To participate:`),
                 $element('ul')(
                   $element('li')(
@@ -97,7 +99,7 @@ export const $CompetitionPnl = (config: ICompetitonCumulativePnl) => component((
                   ), $text(' for more details')
                 ),
               ),
-              $text(style({ fontWeight: 'bold', fontSize: '1.15em', color: pallete.middleground }))(`Cumulative PnL (%)`)
+              $text(style({ fontWeight: 'bold', fontSize: '1.15em', color: pallete.middleground }))(`Highest ROI (%)`)
             ),
           ),
         ),
@@ -124,6 +126,7 @@ export const $CompetitionPnl = (config: ICompetitonCumulativePnl) => component((
             )
           )
       ),
+
 
       $column(layoutSheet.spacing)(
         $row(layoutSheet.spacing, style({ alignItems: 'flex-end' }))(
@@ -244,9 +247,9 @@ export const $CompetitionPnl = (config: ICompetitonCumulativePnl) => component((
             {
               $head: $column(style({ textAlign: 'right' }))(
                 $text('Profits'),
-                $text(style({ fontSize: '.75em' }))('Max Collateral'),
+                $text(style({ fontSize: '.75em' }))('Size'),
               ),
-              sortBy: 'pnl',
+              sortBy: 'size',
               columnOp: style({ placeContent: 'flex-end', minWidth: '90px' }),
               $$body: map((pos) => {
                 const val = formatReadableUSD(pos.pnl)
@@ -258,7 +261,7 @@ export const $CompetitionPnl = (config: ICompetitonCumulativePnl) => component((
                     val
                   ),
                   $seperator,
-                  $text(style({ fontSize: '.75em' }))(formatReadableUSD(BigInt(pos.maxCollateral)))
+                  $text(style({ fontSize: '.75em' }))(formatReadableUSD(BigInt(pos.size)))
                 )
               })
             },
@@ -267,15 +270,17 @@ export const $CompetitionPnl = (config: ICompetitonCumulativePnl) => component((
                 $text('Prize'),
                 $text(style({ fontSize: '.75em' }))('ROI'),
               ),
-              sortBy: 'roi',
+              sortBy: 'size',
               columnOp: style({ minWidth: '90px', placeContent: 'flex-end' }),
               $$body: zip((params, pos) => {
-                const prize = pos.pnl > USD_PERCISION ? params.prizePool * pos.pnl / params.totalScore : 0n
+                const prize = params.prizePool * pos.size / params.totalScore
 
                 return $column(layoutSheet.spacingTiny, style({ alignItems: 'flex-end' }))(
                   prize
-                    ? $text(style({ fontSize: '1.25em', color: pallete.positive }))(formatReadableUSD(prize))
-                    : empty(),
+                    ? $row(
+                      // $avaxIcon,
+                      $text(style({ fontSize: '1.25em', color: pallete.positive }))(formatReadableUSD(prize)),
+                    ) : empty(),
 
                   $text(`${formatFixed(pos.roi, 2)}%`)
                 )

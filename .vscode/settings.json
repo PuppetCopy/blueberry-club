@@ -8,5 +8,6 @@
   "typescript.tsdk": ".yarn/sdks/typescript/lib",
   "typescript.enablePromptUseWorkspaceTsdk": true,
   "eslint.nodePath": ".yarn/sdks",
-  "git.ignoreLimitWarning": true
+  "git.ignoreLimitWarning": true,
+  "solidity.formatter": "forge"
 }

@@ -274,20 +274,21 @@ export const competitionCumulative = O(
 
 
     if (queryParams.selector === 'roi' && queryParams.direction === 'desc') {
-      const newLocal = pagingQuery(queryParams, res.sortedCompetitionList)
-      const { offset, pageSize } = newLocal
+      const spage = pagingQuery(queryParams, res.sortedCompetitionList)
+      const { offset, pageSize } = spage
 
       if (res.profile !== null) {
-        const idxProfile = newLocal.page.indexOf(res.profile)
+        const idxProfile = spage.page.indexOf(res.profile)
         if (idxProfile > -1) {
-          newLocal.page.splice(idxProfile, 1)
-          newLocal.page.unshift(res.profile)
+          spage.page.splice(idxProfile, 1)
         }
+
+        spage.page.unshift(res.profile)
       }
 
       return {
         ...res,
-        list: { offset, pageSize, page: newLocal.page }
+        list: { offset, pageSize, page: spage.page }
       }
     }
 
