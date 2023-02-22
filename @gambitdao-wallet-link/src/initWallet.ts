@@ -106,10 +106,8 @@ export function initWalletLink(
   const defaultProvider = replayLatest(multicast(switchLatest(map((chain) => {
     const p = config.globalProviderMap[chain] || fallbackProvider
 
-    const newLocal = p.getBlockNumber()
-
-
-    const networkEvent = delay(1000, fromPromise(newLocal))
+    const newLocal = p.getNetwork()
+    const networkEvent = fromPromise(newLocal)
 
     return constant(p, networkEvent)
   }, networkChange))))

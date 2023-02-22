@@ -1309,7 +1309,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                           snapshot((state) => {
 
                             const from = state.isIncrease ? resolveAddress(w3p.chain, inputToken) : state.isLong ? state.indexToken : state.collateralToken
-                            const to = state.isIncrease ? state.isLong ? state.indexToken : state.collateralToken : inputToken
+                            const to = state.isIncrease ? state.isLong ? state.indexToken : state.collateralToken : resolveAddress(w3p.chain, inputToken)
 
                             const swapRoute = from === to ? [to] : [from, to]
                             

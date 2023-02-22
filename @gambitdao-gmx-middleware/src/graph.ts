@@ -1,5 +1,5 @@
 import { O } from "@aelea/core"
-import { awaitPromises, map } from "@most/core"
+import { awaitPromises, map, now } from "@most/core"
 import { CHAIN, intervalTimeMap } from "./constant"
 import { tradeJson } from "./fromJson"
 import { getTokenDescription, toAccountSummary } from "./gmxUtils"
@@ -317,11 +317,11 @@ export const leaderboardTopList = O(
 
 
 export async function getCompetitionTrades(queryParams: IRequestCompetitionLadderApi) {
-  const competitionAccountListQuery = fetchTrades({ ...queryParams, offset: 0, pageSize: 1000 }, async (params) => {
-    const res = await subgraphDevChainMap[queryParams.chain](gql(`
+  const competitionAccountListQuery = fetchHistoricTrades({ ...queryParams, offset: 0, pageSize: 1000 }, async (params) => {
+    const res = await subgraphChainMap[queryParams.chain](gql(`
 
 query {
-  trades(first: 1000, skip: ${params.offset}, where: { entryReferralCode: "${queryParams.referralCode}", timestamp_gte: ${params.from}, timestamp_lte: ${params.to}}) {
+  trades(first: 1000, skip: ${params.offset}, where: { entryReferralCode: "${queryParams.referralCode}", timestamp_gte: ${params.from}, timestamp_lt: ${params.to}}) {
       ${tradeFields}
       entryReferralCode
       entryReferrer
@@ -366,7 +366,10 @@ export const fetchHistoricTrades = async <T extends IRequestPagePositionApi & IC
   // splits the queries because the-graph's result limit of 5k items
   if (deltaTime >= intervalTimeMap.DAY7) {
     const splitDelta = Math.floor(deltaTime / 2)
-    const query0 = fetchHistoricTrades({ ...params, to: params.to - splitDelta, offset: 0 }, getList)
+    const nowTime = unixTimestampNow()
+    const to = Math.min(params.to - splitDelta, nowTime)
+
+    const query0 = fetchHistoricTrades({ ...params, to, offset: 0 }, getList)
     const query1 = fetchHistoricTrades({ ...params, from: params.to - splitDelta, offset: 0 }, getList)
 
     return (await Promise.all([query0, query1])).flatMap(res => res)
