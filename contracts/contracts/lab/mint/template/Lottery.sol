@@ -4,6 +4,9 @@ pragma solidity ^0.8.17;
 import {ERC1155} from "@rari-capital/solmate/src/tokens/ERC1155.sol";
 import {ERC721} from "@rari-capital/solmate/src/tokens/ERC721.sol";
 import {Auth, Authority} from "@rari-capital/solmate/src/auth/Auth.sol";
+import {ReentrancyGuard} from "@rari-capital/solmate/src/utils/ReentrancyGuard.sol";
+import {RrpRequesterV0} from "@api3/airnode-protocol/contracts/rrp/requesters/RrpRequesterV0.sol";
+import {RandomUintProvider} from "../../services/RandomUintProvider.sol";
 
 
 struct Sale {
@@ -16,9 +19,11 @@ struct Sale {
 }
 
 
-contract SaleLottery is Auth {
-    ERC721 public immutable STAKE;
-    ERC1155 public immutable REWARD;
+contract SaleLottery is Auth, ReentrancyGuard {
+    ERC721 public immutable stake;
+    ERC1155 public immutable reward;
+
+    mapping(uint => Sale) public sales;
 
     event Participate(
         address indexed participant,
@@ -39,16 +44,16 @@ contract SaleLottery is Auth {
         uint endTime
     );
 
-    mapping(uint256 => Sale) public sales;
-
+    RandomUintProvider private immutable randomUintProvider;
 
     constructor(
         Authority _authority,
         ERC721 _stakedToken,
-        ERC1155 _rewardToken
+        ERC1155 _rewardToken,
+        RandomUintProvider _randomUnitProvider
     ) Auth(address(0), _authority) {
-        STAKE = _stakedToken;
-        REWARD = _rewardToken;
+        stake = _stakedToken;
+        reward = _rewardToken;
     }
 
     function participate(uint _rewardTokenId, uint _stakeTokenId) external payable {
@@ -58,7 +63,7 @@ contract SaleLottery is Auth {
         require(sale.endTime < block.timestamp, "Sale has ended.");
         require(sale.price == msg.value, "Incorrect deposit amount. Please provide the correct deposit amount.");
 
-        require(STAKE.ownerOf(_stakeTokenId) == msg.sender, "You do not own the staked token.");
+        require(stake.ownerOf(_stakeTokenId) == msg.sender, "You do not own the staked token.");
         require(!sale.stake[_stakeTokenId], "Staked token has already been used to participate in this sale.");
 
         sale.participantCount++;
@@ -90,11 +95,17 @@ contract SaleLottery is Auth {
     }
 
     // Selects random winners from a pool of participants who have staked their ERC721 token, distributes a reward token to the winners. Refunds the participants who did not win the lottery if a deposit was required.
-    function adminAirdrop(uint _rewardTokenId) external requiresAuth {
+    function scheduleAirdrop(uint _rewardTokenId) external {
         Sale storage sale = sales[_rewardTokenId];
 
-        require(block.timestamp > sale.endTime, "Airdrop period has not yet started.");
+        unit memory requestId = randomUintProvider.requestRandomUint(this.executeAirdrop);
+        // unit memory requestId = randomUintProvider.requestRandomUint(address(this), _rewardTokenId);
 
+        require(block.timestamp > sale.endTime, "Airdrop period has not yet started.");
+    }
+
+
+    function executeAirdrop(uint _rewardTokenId) external {
         address[] memory distList = new address[](sale.supply);
 
         address lastWinner = address(0); // set initial value to 0 address
@@ -102,7 +113,7 @@ contract SaleLottery is Auth {
 
         for (uint256 i = 0; i < sale.supply; i++) {
             // Use a cryptographic hash to generate a random index to select a winner from the participants array.
-            uint winnerIndex = uint(keccak256(abi.encodePacked(block.timestamp, winnerCount, lastWinner, i))) % winnerCount;
+            uint winnerIndex = uint(keccak256(abi.encodePacked(block.timestamp, winnerCount, lastWinner, sale.participantCount))) % winnerCount;
             address winner = sale.participants[winnerIndex];
 
             lastWinner = winner;
@@ -114,7 +125,7 @@ contract SaleLottery is Auth {
             sale.participants[i] = winner;
             sale.participants[winnerIndex] = iParticipant;
 
-            REWARD.safeTransferFrom(address(this), winner, _rewardTokenId, 1, "");
+            reward.safeTransferFrom(address(this), winner, _rewardTokenId, 1, "");
         }
 
         if (sale.price > 0) {
@@ -135,17 +146,17 @@ contract SaleLottery is Auth {
         delete sales[_rewardTokenId];
     }
 
-    // Allows participants to withdraw their deposit if the admin fails to call the adminAirdrop function within 30 days after the sale has ended.
+    // Allows participants to withdraw their deposit if API3 QRNG fails to generate randomness within 30 days after the sale has ended.
     // Participants can only withdraw their deposit once, and only if a deposit was required for the sale.
-    function withdraw(uint _rewardTokenId) external {
+    function withdraw(uint _rewardTokenId) external nonReentrant {
         Sale storage sale = sales[_rewardTokenId];
 
         require(sale.endTime != 0, "Sale does not exist.");
         require(block.timestamp > sale.endTime + 30 days, "Withdrawal period has not yet started.");
         require(sale.price > 0, "Sale did not require a deposit.");
-        require(!sale.stake[_rewardTokenId], "Token already withdrawn.");
+        require(sale.stake[_rewardTokenId], "Token already withdrawn.");
 
-        sale.stake[_rewardTokenId] = true;
+        sale.stake[_rewardTokenId] = false;
         bool success = payable(msg.sender).send(sale.price);
         require(success, "Failed to send refund");
     }
