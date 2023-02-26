@@ -277,7 +277,7 @@ export const competitionCumulative = O(
       const spage = pagingQuery(queryParams, res.sortedCompetitionList)
       const { offset, pageSize } = spage
 
-      if (res.profile !== null) {
+      if (spage.offset === 0 && res.profile !== null) {
         const idxProfile = spage.page.indexOf(res.profile)
         if (idxProfile > -1) {
           spage.page.splice(idxProfile, 1)
