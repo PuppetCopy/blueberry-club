@@ -276,7 +276,7 @@ export const competitionCumulativeRoi = O(
       const newLocal = pagingQuery(queryParams, res.sortedCompetitionList)
       const { offset, pageSize } = newLocal
 
-      if (res.profile !== null) {
+      if (newLocal.offset === 0 && res.profile !== null) {
         const idxProfile = newLocal.page.indexOf(res.profile)
         if (idxProfile > -1) {
           newLocal.page.splice(idxProfile, 1)
