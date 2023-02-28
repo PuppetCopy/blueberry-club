@@ -76,11 +76,10 @@ const main = async () => {
   if (getAddress(LAB) == AddressZero) {
     try {
       console.log(`✋ Adding roles for LAB`)
+
+      console.log(`  - MINTER role created !`)
       await police.setRoleCapability(ROLES.MINTER, lab.address, lab.interface.getSighash(lab.interface.functions["mint(address,uint256,uint256,bytes)"]), true)
       await police.setRoleCapability(ROLES.MINTER, lab.address, lab.interface.getSighash(lab.interface.functions["batchMint(address,uint256[],uint256[],bytes)"]), true)
-      console.log(`  - MINTER role created !`)
-      await police.setRoleCapability(ROLES.BURNER, lab.address, lab.interface.getSighash(lab.interface.functions["burn(address,uint256,uint256)"]), true)
-      await police.setRoleCapability(ROLES.BURNER, lab.address, lab.interface.getSighash(lab.interface.functions["batchBurn(address,uint256[],uint256[])"]), true)
       console.log(`  - BURNER role created !`)
     } catch (error) {
       console.log(`❌ Actual deployer is not owner of previous police contract`)

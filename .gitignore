@@ -21,3 +21,6 @@ node_modules/
 !.yarn/sdks
 !.yarn/versions
 .pnp.*
+
+# Local Netlify folder
+.netlify

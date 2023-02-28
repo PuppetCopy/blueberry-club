@@ -5,7 +5,7 @@ import { TOKEN_ADDRESS_TO_SYMBOL, formatReadableUSD, ITrade, TOKEN_SYMBOL, IRequ
 
 import { $bear, $bull, $tokenIconMap } from "@gambitdao/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { ICompetitonCumulativeRoi, $CompetitionRoi } from "./$CumulativeRoi"
+import { ICompetitonCumulativeRoi, $CumulativeCompetition } from "./$CumulativeCompetition"
 
 
 export interface ILeaderboard extends ICompetitonCumulativeRoi {
@@ -19,8 +19,9 @@ export const $Leaderboard = (config: ILeaderboard) => component((
 
 
   const containerStyle = O(
+    layoutSheet.spacingBig,
     style({
-      gap: '46px', display: 'flex',
+      display: 'flex',
       fontFeatureSettings: '"tnum" on,"lnum" on',
       fontFamily: `-apple-system,BlinkMacSystemFont,Trebuchet MS,Roboto,Ubuntu,sans-serif`,
     }),
@@ -32,7 +33,7 @@ export const $Leaderboard = (config: ILeaderboard) => component((
 
   return [
     containerStyle(
-      $CompetitionRoi({
+      $CumulativeCompetition({
         ...config
       })({
         requestCompetitionLadder: requestCompetitionLadderTether(),

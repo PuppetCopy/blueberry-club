@@ -2,7 +2,7 @@ import { $Node, $node, $text, NodeComposeFn, style } from "@aelea/dom"
 import { $column, $row, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { BaseProvider } from "@ethersproject/providers"
-import { intervalTimeMap } from "@gambitdao/gmx-middleware"
+import { IEnsRegistration, intervalTimeMap } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $jazzicon } from "../common/$avatar"
 import { blueberrySubgraph, getIdentityFromENS, IEnsClaim, IProfile } from "@gambitdao/gbc-middleware"
@@ -36,17 +36,17 @@ export const $AccountLabel = (address: string, fontSize = '1em') => {
   )
 }
 
-export const $ProfileLabel = (profile: IProfile) => {
-  const hasTwitter = profile.ens.domain.resolver?.texts?.find(t => t === 'com.twitter')
+export const $ProfileLabel = (ens: IEnsRegistration) => {
+  const hasTwitter = ens.domain.resolver?.texts?.find(t => t === 'com.twitter')
 
   if (hasTwitter) {
     $row(
-      $text(style({ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }))(profile.ens.labelName),
+      $text(style({ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }))(ens.labelName),
       // $text(style({ fontSize: '1em' }))(address.slice(address.length - 4, address.length))
     )
   }
 
-  return $text(style({ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }))(profile.ens.labelName)
+  return $text(style({ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }))(ens.labelName)
 }
 
 
@@ -114,7 +114,7 @@ export const $profilePreview = ({
       }),
     showAddress
       ? profile?.ens?.labelName
-        ? $ProfileLabel(profile)
+        ? $ProfileLabel(profile.ens!)
         : $AccountLabel(profile.id, labelSize)
       : empty()
   )

@@ -78,14 +78,18 @@ export function readableDate(timestamp: number) {
   return new Date(timestamp * 1000).toLocaleDateString(undefined, options)
 }
 
-export function formatReadableUSD(ammount: bigint | number) {
+export function formatReadableUSD(ammount: bigint | number, displayDecimals = true) {
   if (ammount === 0n) {
     return '$0'
   }
 
   const amountUsd = typeof ammount === 'bigint' ? formatFixed(ammount, USD_DECIMALS) : ammount
 
-  return '$' + readableNumber(amountUsd)
+  if (displayDecimals) {
+    return '$' + readableNumber(amountUsd)
+  }
+
+  return '$' + readableNumber(amountUsd).replace(/\.\d+/, '')
 }
 
 export function shortenTxAddress(address: string) {

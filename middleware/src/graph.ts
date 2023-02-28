@@ -1,7 +1,7 @@
 import { O } from "@aelea/core"
 import { hexValue } from "@ethersproject/bytes"
-import { createSubgraphClient, IRequestCompetitionLadderApi, IIdentifiableEntity, IRequestPagePositionApi, pagingQuery, cacheMap, intervalTimeMap, toAccountCompetitionSummary, gmxSubgraph, getMarginFees, BASIS_POINTS_DIVISOR } from "@gambitdao/gmx-middleware"
-import { awaitPromises, map } from "@most/core"
+import { createSubgraphClient, IRequestCompetitionLadderApi, IIdentifiableEntity, IRequestPagePositionApi, pagingQuery, cacheMap, intervalTimeMap, toAccountCompetitionSummary, gmxSubgraph, getMarginFees, BASIS_POINTS_DIVISOR, switchMap, groupByKey } from "@gambitdao/gmx-middleware"
+import { awaitPromises, combine, map, now } from "@most/core"
 import { gql } from "@urql/core"
 import { ILabItem, ILabItemOwnership, IOwner, IProfile, IProfileTradingSummary, IProfileTradingResult, IToken } from "./types"
 
@@ -228,7 +228,7 @@ export const profile = O(
   })
 )
 
-export const competitionCumulativeRoi = O(
+export const competitionCumulative = O(
   map(async (queryParams: IRequestCompetitionLadderApi): Promise<IProfileTradingResult> => {
 
     const queryCache = cache('cacheKey', intervalTimeMap.MIN5, async () => {
@@ -237,95 +237,20 @@ export const competitionCumulativeRoi = O(
       const priceMap = await gmxSubgraph.getPriceMap(queryParams.to, queryParams)
 
       const competitionSummary = toAccountCompetitionSummary(tradeList, priceMap, queryParams.maxCollateral, queryParams.to)
-      const sortedByList = competitionSummary.sort((a, b) => Number(b.roi - a.roi))
+      const sortedByList = competitionSummary.sort((a, b) => Number(b[queryParams.metric] - a[queryParams.metric]))
 
-
-      let profile2: null | IProfileTradingSummary = null
       const size = sortedByList.reduce((s, n) => s + n.size, 0n)
       const prizePool = getMarginFees(size) * 1500n / BASIS_POINTS_DIVISOR
 
-      let totalScore = 0n
-
-      const sortedCompetitionList: IProfileTradingSummary[] = sortedByList
-        .map(summary => {
-          totalScore += summary.roi > 0n ? summary.roi : 0n
-
-          const rank = sortedByList.indexOf(summary) + 1
-          const profileSummary: IProfileTradingSummary = {
-            ...summary,
-            profile: null,
-            rank
-          }
-
-          if (queryParams.account === summary.account) {
-            profile2 = profileSummary
-          }
-
-          return profileSummary
-        })
-
-
-      return { sortedCompetitionList, size, totalScore, prizePool,  profile: profile2 as null | IProfileTradingSummary }
-    })
-
-    const res = await queryCache
-
-
-
-    if (queryParams.selector === 'roi' && queryParams.direction === 'desc') {
-      const newLocal = pagingQuery(queryParams, res.sortedCompetitionList)
-      const { offset, pageSize } = newLocal
-
-      if (newLocal.offset === 0 && res.profile !== null) {
-        const idxProfile = newLocal.page.indexOf(res.profile)
-        if (idxProfile > -1) {
-          newLocal.page.splice(idxProfile, 1)
-        } else {
-          newLocal.page.splice(newLocal.page.length - 1, 1)
-        }
-
-        newLocal.page.unshift(res.profile)
-      }
-
-      return {
-        ...res,
-        list: { offset, pageSize, page: newLocal.page }
-      }
-    }
-
-
-    return {
-      ...res,
-      list: pagingQuery(queryParams, res.sortedCompetitionList)
-    }
-  }),
-  awaitPromises
-)
-
-
-
-export const competitionCumulativePnl = O(
-  map(async (queryParams: IRequestCompetitionLadderApi): Promise<IProfileTradingResult> => {
-
-    const queryCache = cache('cacheKey', intervalTimeMap.MIN5, async () => {
-
-      const tradeList = await gmxSubgraph.getCompetitionTrades(queryParams)
-      const priceMap = await gmxSubgraph.getPriceMap(queryParams.to, queryParams)
-
-      const competitionSummary = toAccountCompetitionSummary(tradeList, priceMap, queryParams.maxCollateral, queryParams.to)
-      const sortedByList = competitionSummary.sort((a, b) => Number(b.pnl - a.pnl))
-
-
       let profile2: null | IProfileTradingSummary = null
-      const size = sortedByList.reduce((s, n) => s + n.size, 0n)
-      const prizePool = getMarginFees(size) * 1500n / BASIS_POINTS_DIVISOR
-
       let totalScore = 0n
 
       const sortedCompetitionList: IProfileTradingSummary[] = sortedByList
         .map(summary => {
           const rank = sortedByList.indexOf(summary) + 1
-          totalScore += summary.pnl > 0n ? summary.pnl : 0n
+          const metric = summary[queryParams.metric]
+
+          totalScore += metric > 0n ? metric : 0n
 
           const profileSummary: IProfileTradingSummary = {
             ...summary,
@@ -349,20 +274,21 @@ export const competitionCumulativePnl = O(
 
 
     if (queryParams.selector === 'roi' && queryParams.direction === 'desc') {
-      const newLocal = pagingQuery(queryParams, res.sortedCompetitionList)
-      const { offset, pageSize } = newLocal
+      const spage = pagingQuery(queryParams, res.sortedCompetitionList)
+      const { offset, pageSize } = spage
 
-      if (res.profile !== null) {
-        const idxProfile = newLocal.page.indexOf(res.profile)
+      if (spage.offset === 0 && res.profile !== null) {
+        const idxProfile = spage.page.indexOf(res.profile)
         if (idxProfile > -1) {
-          newLocal.page.splice(idxProfile, 1)
-          newLocal.page.unshift(res.profile)
+          spage.page.splice(idxProfile, 1)
         }
+
+        spage.page.unshift(res.profile)
       }
 
       return {
         ...res,
-        list: { offset, pageSize, page: newLocal.page },
+        list: { offset, pageSize, page: spage.page }
       }
     }
 
@@ -372,7 +298,30 @@ export const competitionCumulativePnl = O(
       list: pagingQuery(queryParams, res.sortedCompetitionList)
     }
   }),
-  awaitPromises
+  awaitPromises,
+  switchMap(res => {
+    const accountList = res.list.page.map(a => a.account)
+    return combine((gbcList, ensList): IProfileTradingResult => {
+      const gbcListMap = groupByKey(gbcList.filter(x => x?.id), x => x.id)
+      const ensListMap = groupByKey(ensList, x => x.domain.resolvedAddress.id)
+
+      const page = res.list.page.map(summary => {
+        const profile = gbcListMap[summary.account]
+        const ens = ensListMap[summary.account]
+
+        return { ...summary, profile: profile ? { ...profile, ens } : null }
+      })
+
+
+      return {
+        ...res,
+        list: {
+          ...res.list,
+          page: page
+        }
+      }
+    }, awaitPromises(profilePickList(now(accountList))), awaitPromises(gmxSubgraph.getEnsProfileListPick(now(accountList))))
+  })
 )
 
 

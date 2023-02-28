@@ -303,6 +303,7 @@ export interface IRequestLeaderboardApi extends IRequestPagePositionApi, IChainP
 export interface IRequestCompetitionLadderApi extends IChainParamApi, IRequestSortApi<IAccountLadderSummary>, IRequestPagePositionApi, IRequestTimerangeApi {
   referralCode: string
   maxCollateral: bigint
+  metric: 'roi' | 'pnl' | 'size'
   account: string | null
 }
 

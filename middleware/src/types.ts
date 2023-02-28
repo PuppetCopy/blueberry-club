@@ -68,7 +68,8 @@ export type IProfile = {
   id: string
   token: IToken | null
   name: string | null
-  ens: IEnsRegistration
+  timestamp: number
+  ens?: IEnsRegistration
 }
 
 export type ILabItemOwnership = {
@@ -128,17 +129,22 @@ export interface IProfileTradingSummary extends IAccountLadderSummary {
   rank: number
 }
 
-export interface IProfileTradingResult {
-  list: IRequestPageApi<IProfileTradingSummary>,
-  profile: IProfileTradingSummary | null
-
+export interface ITradingSummary {
   size: bigint
   prizePool: bigint
   totalScore: bigint
 }
 
+export interface IProfileTradingResult extends ITradingSummary {
+  list: IRequestPageApi<IProfileTradingSummary>,
+  profile: IProfileTradingSummary | null
+}
 
-
+export interface IMonthlyTradingCompetition extends ITradingSummary {
+  nftPrize: number // mapped to global unique ID
+  metric: keyof IAccountLadderSummary
+  topTraders: IProfileTradingSummary[]
+}
 
 
 

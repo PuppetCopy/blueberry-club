@@ -1,6 +1,6 @@
 import { groupByKey, intervalTimeMap } from "@gambitdao/gmx-middleware"
 import { parseEther } from "ethers/lib/utils"
-import { IAttributeMappings, LabItemSale, SaleType } from "./types"
+import { IAttributeMappings, IMonthlyTradingCompetition, LabItemSale, SaleType } from "./types"
 
 const date = new Date()
 
@@ -13,8 +13,9 @@ export const GLOBAL_W3P_AVALANCHE = 'https://api.avax.network/ext/bc/C/rpc'
 
 export const BLUEBERRY_REFFERAL_CODE = '0x424c554542455252590000000000000000000000000000000000000000000000'
 
-export const TOURNAMENT_TIME_DURATION = intervalTimeMap.HR24 * 28
+export const TOURNAMENT_TIME_END = intervalTimeMap.HR24 * 27
 export const TOURNAMENT_START = Date.UTC(date.getFullYear(), date.getMonth(), 1, 16) / 1000
+export const TOURNAMENT_NEXT = Date.UTC(date.getFullYear(), date.getMonth() + 1, 1, 16) / 1000
 
 
 export const GBC_DESCRIPTION = {
@@ -435,6 +436,87 @@ For more details check our see discord discussions and even help us improve this
       }
     ]
   },
+]
+
+export const historicMonthlyCompetitions: IMonthlyTradingCompetition[] = [
+  {
+    topTraders: [
+      {
+        account: "0x015067ee4b1d20cb205700b012ffdcf569aa58e4",
+        realisedPnl: 3106630763883608802523631945606420n,
+        openPnl: 0n,
+        pnl: 3106630763883608802523631945606420n,
+        roi: 44108n,
+        maxCollateral: 704318688007285799394186725052002n,
+        lossCount: 4,
+        winCount: 3,
+        cumulativeLeverage: 1858006n,
+        fee: 165406740932318205768404395690748n,
+        size: 301386470789603817663521818753642738n,
+        profile: {
+          id: "0x015067ee4b1d20cb205700b012ffdcf569aa58e4",
+          timestamp: 1676366380,
+          name: null,
+          token: {
+            id: 5255,
+            labItems: [],
+          } as any
+        },
+        rank: 1
+      },
+      {
+        account: "0xd502dfa9ff8478f5d44f558a9075246f1169f400",
+        realisedPnl: 1590520984502765489946182411600487n,
+        openPnl: 0n,
+        pnl: 1590520984502765489946182411600487n,
+        roi: 31810n,
+        maxCollateral: 500000000000000000000048000000000n,
+        lossCount: 0,
+        winCount: 1,
+        cumulativeLeverage: 499999n,
+        fee: 74499999999999999999856960000000n,
+        size: 49999999999999999999904000000000000n,
+        profile: {
+          id: "0xd502dfa9ff8478f5d44f558a9075246f1169f400",
+          timestamp: 1677401346,
+          name: null,
+          token: {
+            id: 2738,
+            labItems: []
+          },
+        },
+        rank: 2
+      },
+      {
+        account: "0x407e0e4c5362395b785971fd2d62818a760f6a37",
+        realisedPnl: 1664514975811073285861585425974600n,
+        openPnl: -49732465006500221289599750354194n,
+        pnl: 1614782510804573064571985675620406n,
+        roi: 30490n,
+        maxCollateral: 529609935866756006509571940000000n,
+        lossCount: 10,
+        winCount: 6,
+        cumulativeLeverage: 6384012n,
+        fee: 393343499765866969503003802770000n,
+        size: 654888981839061685498584480000000000n,
+        profile: {
+          id: "0x407e0e4c5362395b785971fd2d62818a760f6a37",
+          timestamp: 1676028807,
+          name: null,
+          token: {
+            id: 8727,
+            labItems: []
+          }
+        },
+        rank: 3
+      },
+    ],
+    metric: 'roi',
+    prizePool: 100n,
+    size: 100n,
+    nftPrize: 1,
+    totalScore: 10n,
+  }
 ]
 
 export const labItemDescriptionListMap = groupByKey(saleDescriptionList, i => i.id)

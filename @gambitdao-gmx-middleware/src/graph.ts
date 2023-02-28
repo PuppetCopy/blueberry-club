@@ -1,14 +1,17 @@
 import { O } from "@aelea/core"
-import { awaitPromises, map, now } from "@most/core"
+import { awaitPromises, map } from "@most/core"
 import { CHAIN, intervalTimeMap } from "./constant"
 import { tradeJson } from "./fromJson"
 import { getTokenDescription, toAccountSummary } from "./gmxUtils"
 import {
   IRequestAccountApi, IChainParamApi, IRequestCompetitionLadderApi, IRequestLeaderboardApi, IRequestPagePositionApi,
   IPricefeed, IRequestPricefeedApi, IPriceLatest, IRequestGraphEntityApi, IStake, IRequestTimerangeApi, ITrade, TradeStatus,
-  IRequestAccountTradeListApi, ITradeOpen, IEnsRegistration, IPriceLatestMap
+  IRequestAccountTradeListApi, ITradeOpen, IEnsRegistration
 } from "./types"
-import { cacheMap, createSubgraphClient, getMappedValue, groupByKeyMap, pagingQuery, parseFixed, switchFailedSources, unixTimestampNow } from "./utils"
+import {
+  cacheMap, createSubgraphClient, getChainName, getMappedValue, groupByKeyMap, pagingQuery, parseFixed,
+  switchFailedSources, unixTimestampNow
+} from "./utils"
 import { gql } from "@urql/core"
 import * as fromJson from "./fromJson"
 import fetch from "isomorphic-fetch"
@@ -382,7 +385,13 @@ export const fetchHistoricTrades = async <T extends IRequestPagePositionApi & IC
 
 
 async function querySubgraph<T extends IChainParamApi>(params: T, document: string): Promise<any> {
-  return subgraphChainMap[params.chain](gql(document) as any, {})
+  const queryProvider = subgraphChainMap[params.chain]
+
+  if (!queryProvider) {
+    throw new Error(`Chain ${getChainName(params.chain) || params.chain} is not supported`)
+  }
+
+  return queryProvider(gql(document) as any, {})
 }
 
 
@@ -410,7 +419,7 @@ export async function getPriceMap(time: number, queryParams: IChainParamApi): Pr
     })
     : await querySubgraph(queryParams, `
       {
-        pricefeeds(where: { timestamp: ${Math.floor((dateNow / intervalTimeMap.MIN5) * 300)} }) {
+        pricefeeds(where: { timestamp: ${Math.floor((time / intervalTimeMap.MIN5)) * intervalTimeMap.MIN5} }) {
           id
           timestamp
           tokenAddress

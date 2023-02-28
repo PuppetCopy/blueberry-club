@@ -3,17 +3,14 @@ import { component, INode, $element, attr, style, $text, nodeEvent, $node, style
 import { $row, layoutSheet, $icon, $column, screenUtils, $NumberTicker } from "@aelea/ui-components"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
 import {
-  formatFixed, readableNumber, parseFixed, formatReadableUSD, BASIS_POINTS_DIVISOR,
-  ITokenDescription, LIMIT_LEVERAGE, bnDiv,
+  formatFixed, readableNumber, parseFixed, formatReadableUSD, BASIS_POINTS_DIVISOR, ITokenDescription, LIMIT_LEVERAGE, bnDiv,
   div, StateStream, getPnL, MIN_LEVERAGE, formatToBasis, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE,
   ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd, IPricefeed,
   TRADE_CONTRACT_MAPPING, filterNull, ITradeOpen, zipState, MARGIN_FEE_BASIS_POINTS, abs, DEDUCT_USD_FOR_GAS,
   getTokenAmount, safeDiv, getTokenDescription, ITrade, getAdjustedDelta, switchMap, USD_PERCISION, getDenominator, USDG_DECIMALS, CHAIN
 } from "@gambitdao/gmx-middleware"
 import {
-  $alert,
-  $alertTooltip,
-  $anchor, $bear, $bull, $hintNumChange, $infoLabeledValue, $infoTooltipLabel, $IntermediatePromise,
+  $alert, $alertTooltip, $anchor, $bear, $bull, $hintNumChange, $infoLabeledValue, $infoTooltipLabel, $IntermediatePromise,
   $openPositionPnlBreakdown, $PnlValue, $riskLiquidator, $spinner, $tokenIconMap, $tokenLabelFromSummary
 } from "@gambitdao/ui-components"
 import {
@@ -221,7 +218,7 @@ export const $TradeBox = (config: ITradeBox) => component((
         const collateralDelta = -state.sizeDeltaUsd === state.position.size
           ? state.position.collateral - state.fundingFee
           : -state.collateralDeltaUsd
-        
+
         const totalOut = collateralDelta + adjustedSizeDelta - fees
 
         const nextUsdgAmount = totalOut * getDenominator(USDG_DECIMALS) / USD_PERCISION
@@ -242,7 +239,8 @@ export const $TradeBox = (config: ITradeBox) => component((
 
     return null
   }, combineObject({
-    leverage, position, swapFee, marginFee, fundingFee, liquidationPrice, walletBalanceUsd, isIncrease, indexTokenPrice, collateralDelta, collateralDeltaUsd, inputTokenDescription, collateralToken, sizeDeltaUsd, availableIndexLiquidityUsd, inputToken, collateralTokenPoolInfo, collateralTokenDescription, indexTokenDescription, isLong, })))
+    leverage, position, swapFee, marginFee, fundingFee, liquidationPrice, walletBalanceUsd, isIncrease, indexTokenPrice, collateralDelta, collateralDeltaUsd, inputTokenDescription, collateralToken, sizeDeltaUsd, availableIndexLiquidityUsd, inputToken, collateralTokenPoolInfo, collateralTokenDescription, indexTokenDescription, isLong,
+  })))
 
   const requestTradeError = filterNull(awaitPromises(map(async req => {
     try {
@@ -397,7 +395,7 @@ export const $TradeBox = (config: ITradeBox) => component((
     style({ width: '95px', cursor: 'pointer', position: 'relative', alignSelf: 'center', border: `1px solid ${pallete.middleground}`, borderRadius: '12px' }),
     stylePseudo(':hover', { borderColor: `${pallete.primary}` })
   )
-  const $defaultSelectionContainer = $row(layoutSheet.spacingTiny, style({  alignItems: 'center', flex: 1, padding: '6px 10px' }))
+  const $defaultSelectionContainer = $row(layoutSheet.spacingTiny, style({ alignItems: 'center', flex: 1, padding: '6px 10px' }))
 
   return [
     $card(style({ flexDirection: screenUtils.isDesktopScreen ? 'column' : 'column-reverse', padding: 0, gap: 0, background: theme.name === 'dark' ? 'rgb(0 0 0 / 15%)' : '' }))(
@@ -600,7 +598,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                       $tokenLabelFromSummary(tokenDesc),
                       $column(style({ alignItems: 'flex-end' }))(
                         $text(style({ whiteSpace: 'nowrap' }))(map(bn => readableNumber(formatFixed(bn, tokenDesc.decimals)) + ` ${tokenDesc.symbol}`, balanceAmount)),
-                        $text(style({  }))(combineArray((bn, price) => {
+                        $text(style({}))(combineArray((bn, price) => {
                           return formatReadableUSD(getTokenUsd(bn, price, tokenDesc.decimals))
                         }, balanceAmount, price)),
                       )
@@ -873,7 +871,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                     return $row(style({ placeContent: 'space-between', flex: 1 }))(
                       $tokenLabelFromSummary(tokenDesc),
 
-                      $column(layoutSheet.spacingTiny, style({  alignItems: 'flex-end', placeContent: 'center' }))(
+                      $column(layoutSheet.spacingTiny, style({ alignItems: 'flex-end', placeContent: 'center' }))(
                         $text(map(amountUsd => formatReadableUSD(amountUsd), liquidity)),
                         $row(style({ whiteSpace: 'pre' }))(
                           $text(map(info => readableNumber(formatToBasis(info.rate)) + '%', poolInfo)),
@@ -960,7 +958,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                       switchLatest(combineArray((collateralToken) => {
                         const tokenDesc = getTokenDescription(collateralToken)
 
-                        return $row(layoutSheet.spacingTiny, style({  alignItems: 'center' }))(
+                        return $row(layoutSheet.spacingTiny, style({ alignItems: 'center' }))(
                           $icon({ $content: $tokenIconMap[tokenDesc.symbol], width: '14px', viewBox: '0 0 32 32' }),
                           $text(tokenDesc.symbol)
                         )
@@ -979,7 +977,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                         return $row(style({ placeContent: 'space-between', flex: 1 }))(
                           $tokenLabelFromSummary(tokenDesc),
 
-                          $column(layoutSheet.spacingTiny, style({  alignItems: 'flex-end', placeContent: 'center' }))(
+                          $column(layoutSheet.spacingTiny, style({ alignItems: 'flex-end', placeContent: 'center' }))(
                             $text(map(amountUsd => formatReadableUSD(amountUsd), liquidity)),
                             $row(style({ whiteSpace: 'pre' }))(
                               $text(map(info => readableNumber(formatToBasis(info.rate)) + '%', poolInfo)),
@@ -1199,7 +1197,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
                           return $column(layoutSheet.spacing, style({ maxWidth: '400px' }))(
                             $text(style({ fontWeight: 'bold', fontSize: '1em' }))(`By using GBC Trading, I agree to the following Disclaimer`),
-                            $text(style({  }))(`By accessing, I agree that ${document.location.href} is an interface that interacts with external GMX smart contracts, and does not have access to my funds.`),
+                            $text(style({}))(`By accessing, I agree that ${document.location.href} is an interface that interacts with external GMX smart contracts, and does not have access to my funds.`),
 
                             $alert(
                               $node(
@@ -1280,7 +1278,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                           )
                         }, mergeArray([requestTradeError, validationError])))
                       ),
-                      style({ padding: '8px',  alignSelf: 'center' })(
+                      style({ padding: '8px', alignSelf: 'center' })(
                         $ButtonSecondary({ $content: $text('Reset') })({
                           click: clickResetTradeModeTether()
                         })
@@ -1308,11 +1306,12 @@ export const $TradeBox = (config: ITradeBox) => component((
                         click: clickRequestTradeTether(
                           snapshot((state) => {
 
-                            const from = state.isIncrease ? resolveAddress(w3p.chain, inputToken) : state.isLong ? state.indexToken : state.collateralToken
-                            const to = state.isIncrease ? state.isLong ? state.indexToken : state.collateralToken : resolveAddress(w3p.chain, inputToken)
+                            const resolvedInputAddress = resolveAddress(w3p.chain, inputToken)
+                            const from = state.isIncrease ? resolvedInputAddress : state.isLong ? state.indexToken : state.collateralToken
+                            const to = state.isIncrease ? state.isLong ? state.indexToken : state.collateralToken : resolvedInputAddress
 
                             const swapRoute = from === to ? [to] : [from, to]
-                            
+
                             const slippageN = BigInt(Number(state.slippage) * 100)
                             // const allowedSlippage = state.isLong ? slippageN : -slippageN
                             const allowedSlippage = state.isLong ? state.isIncrease ? slippageN : -slippageN : state.isIncrease ? -slippageN : slippageN

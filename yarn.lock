@@ -97,6 +97,64 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@api3/airnode-protocol@npm:^0.10.0":
+  version: 0.10.0
+  resolution: "@api3/airnode-protocol@npm:0.10.0"
+  dependencies:
+    "@api3/airnode-utilities": ^0.10.0
+    "@openzeppelin/contracts": 4.4.2
+    ethers: ^5.7.2
+  checksum: a5966991f1265d6fe14f332f2506b738fa3ba3e382fffa40d0828e7affc489fd846be48c9cce9caea66d918a2de01a97e00163017bcc447b63e931352c7cdd75
+  languageName: node
+  linkType: hard
+
+"@api3/airnode-utilities@npm:^0.10.0":
+  version: 0.10.0
+  resolution: "@api3/airnode-utilities@npm:0.10.0"
+  dependencies:
+    "@api3/airnode-validator": ^0.10.0
+    "@api3/promise-utils": ^0.3.0
+    date-fns: ^2.29.3
+    ethers: ^5.7.2
+  checksum: 81e0bdaedc3d715b7a5083e986480257e6a56c8b2b477831ba656e999ccee05e1ae7d3e023c866882615632998287f3c5e16cc15eceae0c94c5fdd7f6648e783
+  languageName: node
+  linkType: hard
+
+"@api3/airnode-validator@npm:^0.10.0":
+  version: 0.10.0
+  resolution: "@api3/airnode-validator@npm:0.10.0"
+  dependencies:
+    "@api3/ois": 1.4.0
+    "@api3/promise-utils": ^0.3.0
+    dotenv: ^16.0.3
+    ethers: ^5.7.2
+    lodash: ^4.17.21
+    ora: ^5.4.1
+    yargs: ^17.6.2
+    zod: ^3.20.0
+  bin:
+    airnode-validator: dist/bin/validator.js
+  checksum: a2b70aa95959fc899ca3770b8e75e3b33948b3200ed0354c4735566e8d8dc70c652ceb6b6b32530e7f19e824b451d700e10d5637f92f7047c439edf5890857f3
+  languageName: node
+  linkType: hard
+
+"@api3/ois@npm:1.4.0":
+  version: 1.4.0
+  resolution: "@api3/ois@npm:1.4.0"
+  dependencies:
+    lodash: ^4.17.21
+    zod: ^3.20.0
+  checksum: c507585f4c8da0e6fc37a4449af1206f82224f03470dc5acf84a6ea16bce7d5f96ceec5bf8612f4352b9c6c1f1a11c5f6b328bd8141a5c8b3ae6207fe3cbfdaa
+  languageName: node
+  linkType: hard
+
+"@api3/promise-utils@npm:^0.3.0":
+  version: 0.3.0
+  resolution: "@api3/promise-utils@npm:0.3.0"
+  checksum: aa31cb74cf0ff362a19ef6583cfbb774ad65f402496fa1668517bc28dc22e2a28b1ca3f12446bfbf5d89d7b2be58e2b91bd8710da744443eefd998f6857c2330
+  languageName: node
+  linkType: hard
+
 "@assemblyscript/loader@npm:^0.9.4":
   version: 0.9.4
   resolution: "@assemblyscript/loader@npm:0.9.4"
@@ -677,6 +735,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@gambitdao/gbc-contracts@workspace:contracts"
   dependencies:
+    "@api3/airnode-protocol": ^0.10.0
     "@ethersproject/abi": ^5.7.0
     "@ethersproject/bytes": ^5.7.0
     "@ethersproject/providers": ^5.7.2
@@ -822,12 +881,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphprotocol/graph-ts@npm:0.29.2":
-  version: 0.29.2
-  resolution: "@graphprotocol/graph-ts@npm:0.29.2"
+"@graphprotocol/graph-ts@npm:0.29.3":
+  version: 0.29.3
+  resolution: "@graphprotocol/graph-ts@npm:0.29.3"
   dependencies:
     assemblyscript: 0.19.10
-  checksum: dceec1ee7f71d96149ca6e00ed5df7198450dcfea5585afdf8ecbc360009cac4b01914e78617847031447f9835aa6bce7f7eb7032ba59f3aeea73ce9d003624e
+  checksum: 3f79e638e9c21f4dbfac6dfcf22b5a2272f19648ac161a33b11a107f95c05f4d2e67de5684382c6c7a526b2aaf0eb72b3f734b50a5db0da780aac60943b85228
   languageName: node
   linkType: hard
 
@@ -1468,6 +1527,13 @@ __metadata:
   version: 3.4.2-solc-0.7
   resolution: "@openzeppelin/contracts@npm:3.4.2-solc-0.7"
   checksum: 1a6048f31ed560c34429a05e534102c51124ecaf113aca7ebeb7897cfaaf61007cdd7952374c282adaeb79b04ee86ee80b16eed28b62fc6d60e3ffcd7a696895
+  languageName: node
+  linkType: hard
+
+"@openzeppelin/contracts@npm:4.4.2":
+  version: 4.4.2
+  resolution: "@openzeppelin/contracts@npm:4.4.2"
+  checksum: 5c6be7bfe757c6a43eb5b24aa9c61a79deaed9de4bc5f59356b35f5519b0fb340f4da8b4df99588bded5e6b6a773fc54961917a1c657063247c1763f9752bd0e
   languageName: node
   linkType: hard
 
@@ -5362,6 +5428,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"bl@npm:^4.1.0":
+  version: 4.1.0
+  resolution: "bl@npm:4.1.0"
+  dependencies:
+    buffer: ^5.5.0
+    inherits: ^2.0.4
+    readable-stream: ^3.4.0
+  checksum: 9e8521fa7e83aa9427c6f8ccdcba6e8167ef30cc9a22df26effcc5ab682ef91d2cbc23a239f945d099289e4bbcfae7a192e9c28c84c6202e710a0dfec3722662
+  languageName: node
+  linkType: hard
+
 "bl@npm:^5.0.0":
   version: 5.1.0
   resolution: "bl@npm:5.1.0"
@@ -6218,6 +6295,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"cli-cursor@npm:^3.1.0":
+  version: 3.1.0
+  resolution: "cli-cursor@npm:3.1.0"
+  dependencies:
+    restore-cursor: ^3.1.0
+  checksum: 2692784c6cd2fd85cfdbd11f53aea73a463a6d64a77c3e098b2b4697a20443f430c220629e1ca3b195ea5ac4a97a74c2ee411f3807abf6df2b66211fec0c0a29
+  languageName: node
+  linkType: hard
+
+"cli-spinners@npm:^2.5.0":
+  version: 2.7.0
+  resolution: "cli-spinners@npm:2.7.0"
+  checksum: a9afaf73f58d1f951fb23742f503631b3cf513f43f4c7acb1b640100eb76bfa16efbcd1994d149ffc6603a6d75dd3d4a516a76f125f90dce437de9b16fd0ee6f
+  languageName: node
+  linkType: hard
+
 "cli-table3@npm:^0.5.0":
   version: 0.5.1
   resolution: "cli-table3@npm:0.5.1"
@@ -6942,7 +7035,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"date-fns@npm:^2.29.1":
+"date-fns@npm:^2.29.1, date-fns@npm:^2.29.3":
   version: 2.29.3
   resolution: "date-fns@npm:2.29.3"
   checksum: e01cf5b62af04e05dfff921bb9c9933310ed0e1ae9a81eb8653452e64dc841acf7f6e01e1a5ae5644d0337e9a7f936175fd2cb6819dc122fdd9c5e86c56be484
@@ -7101,6 +7194,15 @@ __metadata:
   dependencies:
     execa: ^5.0.0
   checksum: 126f8273ecac8ee9ff91ea778e8784f6cd732d77c3157e8c5bdd6ed03651b5291f71446d05bc02d04073b1e67583604db5394ea3cf992ede0088c70ea15b7378
+  languageName: node
+  linkType: hard
+
+"defaults@npm:^1.0.3":
+  version: 1.0.4
+  resolution: "defaults@npm:1.0.4"
+  dependencies:
+    clone: ^1.0.2
+  checksum: 3a88b7a587fc076b84e60affad8b85245c01f60f38fc1d259e7ac1d89eb9ce6abb19e27215de46b98568dd5bc48471730b327637e6f20b0f1bc85cf00440c80a
   languageName: node
   linkType: hard
 
@@ -11046,6 +11148,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"is-interactive@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "is-interactive@npm:1.0.0"
+  checksum: 824808776e2d468b2916cdd6c16acacebce060d844c35ca6d82267da692e92c3a16fdba624c50b54a63f38bdc4016055b6f443ce57d7147240de4f8cdabaf6f9
+  languageName: node
+  linkType: hard
+
 "is-ip@npm:^3.1.0":
   version: 3.1.0
   resolution: "is-ip@npm:3.1.0"
@@ -12203,7 +12312,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"log-symbols@npm:4.1.0":
+"log-symbols@npm:4.1.0, log-symbols@npm:^4.1.0":
   version: 4.1.0
   resolution: "log-symbols@npm:4.1.0"
   dependencies:
@@ -13709,7 +13818,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"onetime@npm:^5.1.2":
+"onetime@npm:^5.1.0, onetime@npm:^5.1.2":
   version: 5.1.2
   resolution: "onetime@npm:5.1.2"
   dependencies:
@@ -13750,6 +13859,23 @@ __metadata:
     type-check: ^0.4.0
     word-wrap: ^1.2.3
   checksum: dbc6fa065604b24ea57d734261914e697bd73b69eff7f18e967e8912aa2a40a19a9f599a507fa805be6c13c24c4eae8c71306c239d517d42d4c041c942f508a0
+  languageName: node
+  linkType: hard
+
+"ora@npm:^5.4.1":
+  version: 5.4.1
+  resolution: "ora@npm:5.4.1"
+  dependencies:
+    bl: ^4.1.0
+    chalk: ^4.1.0
+    cli-cursor: ^3.1.0
+    cli-spinners: ^2.5.0
+    is-interactive: ^1.0.0
+    is-unicode-supported: ^0.1.0
+    log-symbols: ^4.1.0
+    strip-ansi: ^6.0.0
+    wcwidth: ^1.0.1
+  checksum: 28d476ee6c1049d68368c0dc922e7225e3b5600c3ede88fade8052837f9ed342625fdaa84a6209302587c8ddd9b664f71f0759833cbdb3a4cf81344057e63c63
   languageName: node
   linkType: hard
 
@@ -15281,6 +15407,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"restore-cursor@npm:^3.1.0":
+  version: 3.1.0
+  resolution: "restore-cursor@npm:3.1.0"
+  dependencies:
+    onetime: ^5.1.0
+    signal-exit: ^3.0.2
+  checksum: f877dd8741796b909f2a82454ec111afb84eb45890eb49ac947d87991379406b3b83ff9673a46012fca0d7844bb989f45cc5b788254cf1a39b6b5a9659de0630
+  languageName: node
+  linkType: hard
+
 "resumer@npm:~0.0.0":
   version: 0.0.0
   resolution: "resumer@npm:0.0.0"
@@ -15813,7 +15949,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"signal-exit@npm:^3.0.3, signal-exit@npm:^3.0.7":
+"signal-exit@npm:^3.0.2, signal-exit@npm:^3.0.3, signal-exit@npm:^3.0.7":
   version: 3.0.7
   resolution: "signal-exit@npm:3.0.7"
   checksum: a2f098f247adc367dffc27845853e9959b9e88b01cb301658cfe4194352d8d2bb32e18467c786a7fe15f1d44b233ea35633d076d5e737870b7139949d1ab6318
@@ -16527,7 +16663,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "subgraph@workspace:subgraph"
   dependencies:
-    "@graphprotocol/graph-ts": 0.29.2
+    "@graphprotocol/graph-ts": 0.29.3
   languageName: unknown
   linkType: soft
 
@@ -17830,6 +17966,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"wcwidth@npm:^1.0.1":
+  version: 1.0.1
+  resolution: "wcwidth@npm:1.0.1"
+  dependencies:
+    defaults: ^1.0.3
+  checksum: 814e9d1ddcc9798f7377ffa448a5a3892232b9275ebb30a41b529607691c0491de47cba426e917a4d08ded3ee7e9ba2f3fe32e62ee3cd9c7d3bafb7754bd553c
+  languageName: node
+  linkType: hard
+
 "web-encoding@npm:1.1.5":
   version: 1.1.5
   resolution: "web-encoding@npm:1.1.5"
@@ -18872,6 +19017,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"yargs@npm:^17.6.2":
+  version: 17.7.0
+  resolution: "yargs@npm:17.7.0"
+  dependencies:
+    cliui: ^8.0.1
+    escalade: ^3.1.1
+    get-caller-file: ^2.0.5
+    require-directory: ^2.1.1
+    string-width: ^4.2.3
+    y18n: ^5.0.5
+    yargs-parser: ^21.1.1
+  checksum: e7d5f5b60e63b04ded7c27c3d4b194565565cac3ea19fffcdbb183bed973a83106822a04dda28ebba4811ce92949a9d9858d3935186ff8f343548bf98aab2120
+  languageName: node
+  linkType: hard
+
 "yargs@npm:^4.7.1":
   version: 4.8.1
   resolution: "yargs@npm:4.8.1"
@@ -18905,5 +19065,12 @@ __metadata:
   version: 0.1.0
   resolution: "yocto-queue@npm:0.1.0"
   checksum: f77b3d8d00310def622123df93d4ee654fc6a0096182af8bd60679ddcdfb3474c56c6c7190817c84a2785648cdee9d721c0154eb45698c62176c322fb46fc700
+  languageName: node
+  linkType: hard
+
+"zod@npm:^3.20.0":
+  version: 3.20.6
+  resolution: "zod@npm:3.20.6"
+  checksum: 804b1934b8b5e2fa3750bec90043e8118b201f330b9957b8b768389a971acadf812d2060cf62921086512dab4af691d10490acb03333da58fc485c0791893c89
   languageName: node
   linkType: hard
