@@ -1,8 +1,10 @@
-import { groupByKey, intervalTimeMap } from "@gambitdao/gmx-middleware"
+import { groupByKey, intervalTimeMap, unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { parseEther } from "ethers/lib/utils"
 import { IAttributeMappings, IMonthlyTradingCompetition, LabItemSale, SaleType } from "./types"
 
 const date = new Date()
+const startTime = Date.UTC(date.getFullYear(), date.getMonth(), 1, 16) / 1000
+
 
 export const LAB_CHAIN = 42161
 
@@ -13,9 +15,11 @@ export const GLOBAL_W3P_AVALANCHE = 'https://api.avax.network/ext/bc/C/rpc'
 
 export const BLUEBERRY_REFFERAL_CODE = '0x424c554542455252590000000000000000000000000000000000000000000000'
 
-export const TOURNAMENT_TIME_END = intervalTimeMap.HR24 * 27
-export const TOURNAMENT_START = Date.UTC(date.getFullYear(), date.getMonth(), 1, 16) / 1000
-export const TOURNAMENT_NEXT = Date.UTC(date.getFullYear(), date.getMonth() + 1, 1, 16) / 1000
+const started = unixTimestampNow() >= startTime
+
+export const TOURNAMENT_DURATION = intervalTimeMap.HR24 * 27
+export const TOURNAMENT_START = started ? Date.UTC(date.getFullYear(), date.getMonth() - 1, 1, 16) / 1000 : startTime
+export const TOURNAMENT_NEXT = started ? Date.UTC(date.getFullYear(), date.getMonth() + 1, 1, 16) / 1000 : startTime
 
 
 export const GBC_DESCRIPTION = {

@@ -26,10 +26,19 @@ export const $card = $column(layoutSheet.spacing,
 export const $seperator = $text(style({ color: pallete.foreground, pointerEvents: 'none' }))('|')
 export const $responsiveFlex = screenUtils.isDesktopScreen ? $row : $column
 
-function formatTime(date: Date) {
-  const newLocal = date.toISOString().replace(/-|:|\.\d+/g, '')
-  return newLocal
+
+function convertMsToGoogleCalendarDate(ms: Date) {
+  const date = new Date(ms)
+  const year = date.getUTCFullYear()
+  const month = ("0" + (date.getUTCMonth() + 1)).slice(-2)
+  const day = ("0" + date.getUTCDate()).slice(-2)
+  const hours = ("0" + date.getUTCHours()).slice(-2)
+  const minutes = ("0" + date.getUTCMinutes()).slice(-2)
+  const seconds = ("0" + date.getUTCSeconds()).slice(-2)
+
+  return `${year}${month}${day}T${hours}${minutes}${seconds}Z`
 }
+
 
 export const $labeledDivider = (label: string) => {
   return $row(layoutSheet.spacing, style({ placeContent: 'center', alignItems: 'center' }))(
@@ -63,25 +72,25 @@ export const $addToCalendar = (config: IAddtoCalendarButton) => {
   BEGIN:VEVENT
   URL:${document.location.href}
   DTSTART:${config.time.toISOString()}
-  DTEND:${config.time}
+  DTEND:${config.time.toISOString()}
   SUMMARY:${config.title}
   DESCRIPTION:${config.description ? encodeURIComponent(config.description) : ''}
-  LOCATION:${config.location}
+  ${config.location ? 'LOCATION:' + config.location : ''}
   ${config.description ? `LOCATION:${encodeURIComponent(config.description)}` : ''}
   END:VEVENT
   END:VCALENDAR`
     : `http://www.google.com/calendar/render?
 action=TEMPLATE
 &text=${config.title}
-&dates=${formatTime(config.time)}/${formatTime(config.time)}
+&dates=${convertMsToGoogleCalendarDate(config.time)}/${convertMsToGoogleCalendarDate(config.time)}
 ${config.description ? `&details=${encodeURIComponent(config.description)}` : ''}
-&location=${config.location}
+${config.location ? '&location=' + config.location : ''}
 &trp=false
 &sprop=
 &sprop=name:`
 
 
-  return $anchor(attr({ href, target: '_blank' }), style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }))(
+  return $anchor(attr({ href, target: '_blank' }), style({ padding: '0 4px', backgroundColor: pallete.background, border: `2px solid ${pallete.horizon}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }))(
     $icon({ $content: $calendar, width: '22px', viewBox: `0 0 32 32` })
   )
 }

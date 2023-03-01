@@ -9,7 +9,7 @@ import { formatReadableUSD, formatFixed, unixTimestampNow, IRequestCompetitionLa
 import { $alertTooltip, countdown } from './$rules'
 import { IWalletLink } from '@gambitdao/wallet-link'
 import { $accountPreview, $profilePreview } from '../../components/$AccountProfile'
-import { BLUEBERRY_REFFERAL_CODE, IProfileTradingSummary, IProfileTradingResult, TOURNAMENT_START, TOURNAMENT_TIME_END, TOURNAMENT_NEXT } from '@gambitdao/gbc-middleware'
+import { BLUEBERRY_REFFERAL_CODE, IProfileTradingSummary, IProfileTradingResult, TOURNAMENT_START, TOURNAMENT_DURATION, TOURNAMENT_NEXT } from '@gambitdao/gbc-middleware'
 import { $anchor, $infoLabel, $infoTooltipLabel, $Link, ISortBy } from '@gambitdao/ui-components'
 import { $CardTable } from '../../components/$common'
 import { IProfileActiveTab } from '../$Profile'
@@ -17,6 +17,7 @@ import { $addToCalendar, $responsiveFlex } from '../../elements/$common'
 import { $defaultBerry } from '../../components/$DisplayBerry'
 import { $defaultProfileContainer } from '../../common/$avatar'
 
+const competitionMetrics = ['pnl', 'roi']
 const MAX_COLLATERAL = 500000000000000000000000000000000n
 const prizeRatioLadder: bigint[] = [3000n, 1500n, 750n, ...Array(17).fill(div(4750n, 17n) / BASIS_POINTS_DIVISOR)]
 
@@ -37,9 +38,8 @@ export const $CumulativeCompetition = (config: ICompetitonCumulativeRoi) => comp
 
   const tableList = map(res => res.list, config.competitionCumulative)
 
-  const nowTime = unixTimestampNow()
-  const ended = TOURNAMENT_START >= nowTime
-
+  const date = new Date()
+  const started = unixTimestampNow() >= TOURNAMENT_START
 
 
   const sortBy: Stream<ISortBy<IAccountLadderSummary>> = mergeArray([
@@ -86,26 +86,21 @@ export const $CumulativeCompetition = (config: ICompetitonCumulativeRoi) => comp
             ),
           ),
         ),
-        ended
+        started
           ? $column(
             $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
               $text(style({ fontSize: '1.25em', color: pallete.indeterminate }))('LIVE!'),
               $text(style({ color: pallete.foreground }))('Ending in')
             ),
-            $text(style({ fontSize: '1.25em' }))(countdown(TOURNAMENT_START + TOURNAMENT_TIME_END))
+            $text(style({ fontSize: '1.25em' }))(countdown(TOURNAMENT_START + TOURNAMENT_DURATION))
           )
           : $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
-            $addToCalendar({
-              time: new Date(TOURNAMENT_START * 1000),
-              title: 'Blueberry Trading Compeition',
-              description: `Monthly trading competitions will be held. These tournaments will offer cash prizes, unique lab items, and more as rewards for traders who compete and win.  \n\n${document.location.href}`
-            }),
             $column(
               $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
                 $text(style({ fontSize: '1.25em' }))('Next Cycle!'),
                 $text(style({ color: pallete.foreground }))('Starting in')
               ),
-              $text(style({ fontSize: '1.25em' }))(countdown(TOURNAMENT_NEXT))
+              $text(style({ fontSize: '1.25em' }))(countdown(TOURNAMENT_START))
             )
           )
       ),
@@ -302,32 +297,34 @@ export const $CumulativeCompetition = (config: ICompetitonCumulativeRoi) => comp
           scrollIndex: pageIndexTether()
         }),
 
-        // position: fixed;
-        // bottom: 0;
-        // background: #252c34;
-        // border-radius: 20px 20px 0 0;
-        // padding: 22px;
-        // z-index: 100;
-        // width: 100%;
-        // max-width: 780px;
-        // $card(style({ position: 'fixed', bottom: 0, background: pallete.horizon, padding: '20px', borderRadius: '20px 20px 0 0', zIndex: 10, width: '100%', maxWidth: '780px' }))(
-        //   $column(
-        //     $infoLabel('Previous competition')
-        //   )
-        // )
+        $card(style({ position: 'fixed', placeContent: 'space-between', flexDirection: 'row', bottom: 0, background: pallete.horizon, padding: '20px', borderRadius: '20px 20px 0 0', zIndex: 10, width: '100%', maxWidth: '780px' }))(
+          $column(
+            $infoLabel('Previous competition')
+          ),
+
+          $row(layoutSheet.spacingSmall)(
+            $addToCalendar({
+              time: new Date(TOURNAMENT_NEXT * 1000),
+              title: 'Blueberry Trading Compeition',
+              description: `Monthly trading competitions will be held. These tournaments will offer cash prizes, unique lab items, and more as rewards for traders who compete and win.  \n\n${document.location.href}`
+            }),
+            $column(
+              $infoLabel('Next Competition'),
+              $text(competitionMetrics[(new Date(TOURNAMENT_NEXT * 1000).getMonth()) % 2])
+            ),
+          )
+        )
+
       )
 
     ),
 
     {
       requestCompetitionLadder: map((params) => {
-        const date = new Date()
-        const started = unixTimestampNow() >= TOURNAMENT_START
-
         const from = started
           ? TOURNAMENT_START
           : Date.UTC(date.getFullYear(), date.getMonth() - 1, 1, 16) / 1000
-        const to = from + TOURNAMENT_TIME_END
+        const to = from + TOURNAMENT_DURATION
 
         const reqParams: IRequestCompetitionLadderApi = {
           ...params.sortBy,
