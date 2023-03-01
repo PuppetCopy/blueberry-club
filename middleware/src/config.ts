@@ -3,7 +3,6 @@ import { parseEther } from "ethers/lib/utils"
 import { IAttributeMappings, IMonthlyTradingCompetition, LabItemSale, SaleType } from "./types"
 
 const date = new Date()
-const startTime = Date.UTC(date.getFullYear(), date.getMonth(), 1, 16) / 1000
 
 
 export const LAB_CHAIN = 42161
@@ -15,12 +14,16 @@ export const GLOBAL_W3P_AVALANCHE = 'https://api.avax.network/ext/bc/C/rpc'
 
 export const BLUEBERRY_REFFERAL_CODE = '0x424c554542455252590000000000000000000000000000000000000000000000'
 
-const started = unixTimestampNow() >= startTime
+export const COMPETITION_METRIC_LIST = ['roi', 'pnl'] as const
+
+export const COMPETITION_START_MONTH = 1
+export const COMPETITION_START_YEAR = 2023
 
 export const TOURNAMENT_DURATION = intervalTimeMap.HR24 * 27
-export const TOURNAMENT_START = started ? Date.UTC(date.getFullYear(), date.getMonth() - 1, 1, 16) / 1000 : startTime
-export const TOURNAMENT_NEXT = started ? Date.UTC(date.getFullYear(), date.getMonth() + 1, 1, 16) / 1000 : startTime
-
+export const TOURNAMENT_START = Date.UTC(date.getFullYear(), date.getMonth(), 1, 16) / 1000
+export const TOURNAMENT_NEXT = unixTimestampNow() >= TOURNAMENT_START
+  ? Date.UTC(date.getFullYear(), date.getMonth() + 1, 1, 16) / 1000
+  : TOURNAMENT_START
 
 export const GBC_DESCRIPTION = {
   NAME: 'Blueberry Club',

@@ -5,11 +5,11 @@ import { $card, $column, $row, $seperator, layoutSheet, screenUtils } from '@ael
 import { colorAlpha, pallete } from '@aelea/ui-components-theme'
 import { empty, map, mergeArray, now, zip } from '@most/core'
 import { Stream } from '@most/types'
-import { formatReadableUSD, formatFixed, unixTimestampNow, IRequestCompetitionLadderApi, IAccountLadderSummary, BASIS_POINTS_DIVISOR, div } from '@gambitdao/gmx-middleware'
+import { formatReadableUSD, formatFixed, unixTimestampNow, IRequestCompetitionLadderApi, IAccountLadderSummary, BASIS_POINTS_DIVISOR, div, USD_PERCISION } from '@gambitdao/gmx-middleware'
 import { $alertTooltip, countdown } from './$rules'
 import { IWalletLink } from '@gambitdao/wallet-link'
 import { $accountPreview, $profilePreview } from '../../components/$AccountProfile'
-import { BLUEBERRY_REFFERAL_CODE, IProfileTradingSummary, IProfileTradingResult, TOURNAMENT_START, TOURNAMENT_DURATION, TOURNAMENT_NEXT } from '@gambitdao/gbc-middleware'
+import { BLUEBERRY_REFFERAL_CODE, IProfileTradingSummary, IProfileTradingResult, TOURNAMENT_START, TOURNAMENT_DURATION, TOURNAMENT_NEXT, COMPETITION_METRIC_LIST } from '@gambitdao/gbc-middleware'
 import { $anchor, $infoLabel, $infoTooltipLabel, $Link, ISortBy } from '@gambitdao/ui-components'
 import { $CardTable } from '../../components/$common'
 import { IProfileActiveTab } from '../$Profile'
@@ -17,9 +17,13 @@ import { $addToCalendar, $responsiveFlex } from '../../elements/$common'
 import { $defaultBerry } from '../../components/$DisplayBerry'
 import { $defaultProfileContainer } from '../../common/$avatar'
 
-const competitionMetrics = ['pnl', 'roi']
 const MAX_COLLATERAL = 500000000000000000000000000000000n
 const prizeRatioLadder: bigint[] = [3000n, 1500n, 750n, ...Array(17).fill(div(4750n, 17n) / BASIS_POINTS_DIVISOR)]
+
+const METRIC_LABEL = {
+  [COMPETITION_METRIC_LIST[1]]: 'PnL',
+  [COMPETITION_METRIC_LIST[0]]: 'ROI',
+} as const
 
 
 export interface ICompetitonCumulativeRoi {
@@ -40,6 +44,11 @@ export const $CumulativeCompetition = (config: ICompetitonCumulativeRoi) => comp
 
   const date = new Date()
   const started = unixTimestampNow() >= TOURNAMENT_START
+
+  const currentMetric = COMPETITION_METRIC_LIST[1]
+
+  debugger
+  
 
 
   const sortBy: Stream<ISortBy<IAccountLadderSummary>> = mergeArray([
@@ -82,7 +91,7 @@ export const $CumulativeCompetition = (config: ICompetitonCumulativeRoi) => comp
                   ), $text(' for more details')
                 ),
               ),
-              $text(style({ fontWeight: 'bold', color: pallete.middleground }))(`Highest ROI (%)`)
+              $text(style({ fontWeight: 'bold', color: pallete.middleground }))(`Highest ${METRIC_LABEL[currentMetric]}`)
             ),
           ),
         ),
@@ -233,7 +242,6 @@ export const $CumulativeCompetition = (config: ICompetitonCumulativeRoi) => comp
                 const val = formatReadableUSD(pos.pnl, false)
                 const isNeg = pos.pnl < 0n
 
-
                 return $column(layoutSheet.spacingTiny, style({ textAlign: 'right' }))(
                   $text(style({ color: isNeg ? pallete.negative : pallete.positive }))(
                     val
@@ -246,30 +254,37 @@ export const $CumulativeCompetition = (config: ICompetitonCumulativeRoi) => comp
             {
               $head: $column(style({ placeContent: 'flex-end' }))(
                 $text('Prize'),
-                $text(style({ fontSize: '.75em' }))('ROI'),
+                $text(style({ fontSize: '.75em' }))(
+                  METRIC_LABEL[currentMetric]
+                ),
               ),
-              sortBy: 'roi',
+              sortBy: currentMetric,
               columnOp: style({ minWidth: '90px', placeContent: 'flex-end' }),
-              $$body: zip((prizePool, pos) => {
-                const prizeRatio = prizeRatioLadder[pos.rank - 1]
+              $$body: currentMetric === 'pnl'
+                ? zip((params, pos) => {
+                  const metricVal = pos[currentMetric]
+                  const prize = params.prizePool * metricVal / params.totalScore
+                  
 
-                // const prizeRatio = easeInExpo()
-                // const usd1k = 10n ** 30n * 1000n
-                // const particiapnts = formatFixed(prizePool / usd1k, 30)
-                // total = rewards[i] = ((i + 1) ** 2) / total
+                  return $column(layoutSheet.spacingTiny, style({ alignItems: 'flex-end' }))(
+                    prize > USD_PERCISION * 10n
+                      ? $text(style({ fontSize: '1.25em', color: pallete.positive }))(formatReadableUSD(prize, false))
+                      : empty(),
+                    $text(`${currentMetric === 'pnl' ? formatReadableUSD(metricVal, false) : formatFixed(metricVal, 2)}%`)
+                  )
+                }, config.competitionCumulative)
+                : zip((prizePool, pos) => {
+                  const prizeRatio = prizeRatioLadder[pos.rank - 1]
 
+                  return $column(layoutSheet.spacingTiny, style({ alignItems: 'flex-end' }))(
+                    prizeRatio
+                      ? $row(
+                        $text(style({ fontSize: '1.25em', color: pallete.positive }))(formatReadableUSD(prizePool.prizePool * prizeRatio / BASIS_POINTS_DIVISOR, false)),
+                      ) : empty(),
 
-
-                return $column(layoutSheet.spacingTiny, style({ alignItems: 'flex-end' }))(
-                  prizeRatio
-                    ? $row(
-                      // $avaxIcon,
-                      $text(style({ fontSize: '1.25em', color: pallete.positive }))(formatReadableUSD(prizePool.prizePool * prizeRatio / BASIS_POINTS_DIVISOR, false)),
-                    ) : empty(),
-
-                  $text(`${formatFixed(pos.roi, 2)}%`)
-                )
-              }, config.competitionCumulative)
+                    $text(`${formatFixed(pos.roi, 2)}%`)
+                  )
+                }, config.competitionCumulative),
               // $$body: zip((prizePool, pos) => {
               //   const prizeRatio = prizeRatioLadder[pos.rank - 1]
 
@@ -310,7 +325,7 @@ export const $CumulativeCompetition = (config: ICompetitonCumulativeRoi) => comp
             }),
             $column(
               $infoLabel('Next Competition'),
-              $text(competitionMetrics[(new Date(TOURNAMENT_NEXT * 1000).getMonth()) % 2])
+              $text(COMPETITION_METRIC_LIST[(new Date(TOURNAMENT_NEXT * 1000).getMonth()) % 2])
             ),
           )
         )
@@ -332,7 +347,7 @@ export const $CumulativeCompetition = (config: ICompetitonCumulativeRoi) => comp
           account: params.w3p?.address || null,
           referralCode: BLUEBERRY_REFFERAL_CODE,
           maxCollateral: MAX_COLLATERAL,
-          metric: 'roi',
+          metric: currentMetric,
           from,
           to,
           offset: params.pageIndex * 20,
