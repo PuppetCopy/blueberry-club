@@ -19,7 +19,7 @@ export const COMPETITION_METRIC_LIST = ['roi', 'pnl'] as const
 export const COMPETITION_START_MONTH = 1
 export const COMPETITION_START_YEAR = 2023
 
-export const TOURNAMENT_DURATION = intervalTimeMap.HR24 * 27
+export const TOURNAMENT_DURATION = intervalTimeMap.HR24 * 25
 export const TOURNAMENT_START = Date.UTC(date.getFullYear(), date.getMonth(), 1, 16) / 1000
 export const TOURNAMENT_NEXT = unixTimestampNow() >= TOURNAMENT_START
   ? Date.UTC(date.getFullYear(), date.getMonth() + 1, 1, 16) / 1000

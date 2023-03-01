@@ -29,6 +29,7 @@ import { $Leaderboard } from "./competition/$Leaderboard"
 import { $Treasury } from "./$Treasury"
 import { $discoverIdentityDisplay } from "../components/$AccountProfile"
 import { pallete } from "@aelea/ui-components-theme"
+import { $CompetitionRoiDeprecated } from "./competition/$RoiDeprecated"
 
 
 const popStateEvent = eventElementTarget('popstate', window)
@@ -44,7 +45,6 @@ interface Website {
 
 export const $Main = ({ baseRoute = '' }: Website) => component((
   [routeChanges, linkClickTether]: Behavior<any, string>,
-  [selectProfileMode, selectProfileModeTether]: Behavior<IProfileActiveTab, IProfileActiveTab>,
 
   [requestAccountTradeList, requestAccountTradeListTether]: Behavior<IRequestAccountTradeListApi, IRequestAccountTradeListApi>,
   [requestAccountOpenTradeList, requestAccountOpenTradeListTether]: Behavior<IRequestAccountApi, IRequestAccountApi>,
@@ -78,6 +78,7 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
   const profileWalletRoute = pagesRoute.create({ fragment: 'wallet', title: 'Wallet Account' })
   const labRoute = pagesRoute.create({ fragment: 'lab', title: 'Blueberry Lab' })
   const leaderboardRoute = pagesRoute.create({ fragment: 'leaderboard', title: 'Leaderboard' })
+  const leaderboardOldRoiRoute = pagesRoute.create({ fragment: 'feb-roi-old', title: 'Leaderboard' })
   const wardrobeRoute = pagesRoute.create({ fragment: 'wardrobe', title: 'Wardrobe' })
   const storeRoute = pagesRoute.create({ fragment: 'lab-store', title: 'Store' })
   const itemRoute = pagesRoute.create({ fragment: 'item' }).create({ fragment: /\d+/, title: 'Lab Item' })
@@ -239,7 +240,7 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
                 requestAccountTradeList: requestAccountTradeListTether(),
                 requestAccountOpenTradeList: requestAccountOpenTradeListTether(),
                 changeRoute: linkClickTether(
-                 
+
                 ),
                 changeNetwork: changeNetworkTether(),
                 walletChange: walletChangeTether(),
@@ -255,6 +256,30 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
                 routeChange: linkClickTether(),
                 requestCompetitionLadder: requestCompetitionLadderTether()
               }))
+            ),
+            router.match(leaderboardOldRoiRoute)(
+              fadeIn(
+                O(
+                  layoutSheet.spacingBig,
+                  style({
+                    display: 'flex',
+                    fontFeatureSettings: '"tnum" on,"lnum" on',
+                    fontFamily: `-apple-system,BlinkMacSystemFont,Trebuchet MS,Roboto,Ubuntu,sans-serif`,
+                  }),
+                  screenUtils.isDesktopScreen
+                    ? style({ width: '780px', alignSelf: 'center' })
+                    : style({ width: '100%' })
+                )(
+                  $CompetitionRoiDeprecated({
+                    walletLink,
+                    competitionCumulative: clientApi.competitionCumulative,
+                    parentRoute: pagesRoute
+                  })({
+                    routeChange: linkClickTether(),
+                    requestCompetitionLadder: requestCompetitionLadderTether()
+                  })
+                )
+              )
             ),
             router.match(tradeRoute)(
               $Trade({

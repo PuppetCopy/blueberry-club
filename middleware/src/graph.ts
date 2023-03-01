@@ -278,12 +278,20 @@ export const competitionCumulative = O(
       const { offset, pageSize } = spage
 
       if (spage.offset === 0 && res.profile !== null) {
+
         const idxProfile = spage.page.indexOf(res.profile)
+
         if (idxProfile > -1) {
           spage.page.splice(idxProfile, 1)
         }
+        
 
         spage.page.unshift(res.profile)
+
+        return {
+          ...res,
+          list: { offset, pageSize: pageSize + (idxProfile === -1 ? 1 : 0), page: spage.page }
+        }
       }
 
       return {
