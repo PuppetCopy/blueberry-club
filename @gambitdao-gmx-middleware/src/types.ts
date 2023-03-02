@@ -229,6 +229,7 @@ export interface IStake extends IndexedType<"Stake"> {
 export interface IAccountSummary {
   realisedPnl: bigint
   size: bigint
+  collateral: bigint
   account: string
   fee: bigint
   winCount: number
@@ -238,6 +239,7 @@ export interface IAccountSummary {
 export interface IAccountLadderSummary extends IAccountSummary {
   roi: bigint
   maxCollateral: bigint
+  avgLeverage: bigint
   openPnl: bigint
   pnl: bigint
   cumulativeLeverage: bigint

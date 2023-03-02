@@ -281,6 +281,21 @@ export const $ProfileConnected = (config: IAccount) => component((
                 dataSource: awaitPromises(config.accountOpenTradeList),
                 columns: [
                   {
+                    $head: $text('Time'),
+                    columnOp: O(style({ maxWidth: '60px' })),
+
+                    $$body: map((req) => {
+                      const isKeeperReq = 'ctx' in req
+
+                      const timestamp = isKeeperReq ? unixTimestampNow() : req.timestamp
+
+                      return $column(layoutSheet.spacingTiny, style({ fontSize: '.65em' }))(
+                        $text(timeSince(timestamp) + ' ago'),
+                        $text(readableDate(timestamp)),
+                      )
+                    })
+                  },
+                  {
                     $head: $text('Entry'),
                     columnOp: O(style({ maxWidth: '100px' }), layoutSheet.spacingTiny),
                     $$body: map((pos) => {

@@ -200,6 +200,7 @@ export function toAccountSummary(list: ITrade[]): IAccountSummary[] {
     const seedAccountSummary: IAccountSummary = {
       account,
       size: 0n,
+      collateral: 0n,
       fee: 0n,
       realisedPnl: 0n,
 
@@ -235,6 +236,8 @@ export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: stri
       account,
       cumulativeLeverage: 0n,
       size: 0n,
+      collateral: 0n,
+      avgLeverage: 0n,
       maxCollateral: 0n,
       fee: 0n,
       realisedPnl: 0n,
@@ -287,6 +290,9 @@ export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: stri
       const cumSizeIncrease = next.increaseList.filter(update => update.timestamp <= endDate).reduce((s, n) => s + n.sizeDelta, 0n)
       const cumSizeDecrease = next.decreaseList.filter(update => update.timestamp <= endDate).reduce((s, n) => s + n.sizeDelta, 0n)
 
+      const cumCollateralIncrease = next.increaseList.filter(update => update.timestamp <= endDate).reduce((s, n) => s + n.collateralDelta, 0n)
+      const cumCollateralDecrease = next.decreaseList.filter(update => update.timestamp <= endDate).reduce((s, n) => s + n.collateralDelta, 0n)
+
       const indexTokenMarkPrice = BigInt(priceMap['_' + next.indexToken])
       const openDelta = lastUpdate.__typename === 'UpdatePosition'
         ? getPnL(next.isLong, lastUpdate.averagePrice, indexTokenMarkPrice, lastUpdate.size)
@@ -316,7 +322,9 @@ export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: stri
         winCount,
         cumulativeLeverage,
         fee,
+        avgLeverage: 0n,
         size: seed.size + cumSizeIncrease + cumSizeDecrease,
+        collateral: seed.collateral + cumCollateralIncrease + cumCollateralDecrease,
       }
     }, seedAccountSummary)
 

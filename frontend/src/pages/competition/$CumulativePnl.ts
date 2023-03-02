@@ -161,7 +161,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
 
                 if (!pos.profile) {
                   return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
-                    $alertTooltip($text(`Account requires Lab Identity, prize will be passed to the next participant if remained unclaimed`)),
+                    $alertTooltip($text(`Account requires Lab Identity, prize will become a form of Revenue to GBC Treasury if remains unclaimed`)),
                     $Link({
                       $content: $accountPreview({ address: pos.account, $container: $defaultProfileContainer(style({ minWidth: '50px' })) }),
                       route: config.parentRoute.create({ fragment: 'fefwef' }),
@@ -233,8 +233,8 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
             ] : []),
             {
               $head: $column(style({ textAlign: 'right' }))(
-                $text(style({ fontSize: '.75em' }))('Max Collateral'),
-                $text('Size'),
+                $text(style({ fontSize: '.75em' }))('Cum. Collateral'),
+                $text('Cum. Size'),
               ),
               sortBy: 'pnl',
               columnOp: style({ placeContent: 'flex-end', minWidth: '90px' }),
@@ -243,7 +243,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
                 const isNeg = pos.pnl < 0n
 
                 return $column(layoutSheet.spacingTiny, style({ alignItems: 'flex-end' }))(
-                  $text(style({ fontSize: '.75em' }))(formatReadableUSD(pos.maxCollateral, false)),
+                  $text(style({ fontSize: '.75em' }))(formatReadableUSD(pos.collateral, false)),
                   $seperator,
                   $text(
                     val

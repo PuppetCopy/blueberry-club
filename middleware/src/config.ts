@@ -460,6 +460,8 @@ export const historicMonthlyCompetitions: IMonthlyTradingCompetition[] = [
         cumulativeLeverage: 1858006n,
         fee: 165406740932318205768404395690748n,
         size: 301386470789603817663521818753642738n,
+        collateral: 0n,
+        avgLeverage: 0n,
         profile: {
           id: "0x015067ee4b1d20cb205700b012ffdcf569aa58e4",
           timestamp: 1676366380,
@@ -477,8 +479,10 @@ export const historicMonthlyCompetitions: IMonthlyTradingCompetition[] = [
         openPnl: 0n,
         pnl: 1590520984502765489946182411600487n,
         roi: 31810n,
+        collateral: 0n,
         maxCollateral: 500000000000000000000048000000000n,
         lossCount: 0,
+        avgLeverage: 0n,
         winCount: 1,
         cumulativeLeverage: 499999n,
         fee: 74499999999999999999856960000000n,
@@ -490,7 +494,7 @@ export const historicMonthlyCompetitions: IMonthlyTradingCompetition[] = [
           token: {
             id: 2738,
             labItems: []
-          },
+          } as any,
         },
         rank: 2
       },
@@ -506,6 +510,8 @@ export const historicMonthlyCompetitions: IMonthlyTradingCompetition[] = [
         cumulativeLeverage: 6384012n,
         fee: 393343499765866969503003802770000n,
         size: 654888981839061685498584480000000000n,
+        collateral: 0n,
+        avgLeverage: 0n,
         profile: {
           id: "0x407e0e4c5362395b785971fd2d62818a760f6a37",
           timestamp: 1676028807,
@@ -513,7 +519,7 @@ export const historicMonthlyCompetitions: IMonthlyTradingCompetition[] = [
           token: {
             id: 8727,
             labItems: []
-          }
+          } as any
         },
         rank: 3
       },
