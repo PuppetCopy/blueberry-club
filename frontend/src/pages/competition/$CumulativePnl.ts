@@ -52,7 +52,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
 
 
   const sortBy: Stream<ISortBy<IAccountLadderSummary>> = mergeArray([
-    now({ direction: 'desc', selector: 'roi' }),
+    now({ direction: 'desc', selector: 'pnl' }),
     sortByChange
   ])
 
