@@ -41,7 +41,6 @@ export const $CumulativeCompetition = (config: ICompetitonCumulativeRoi) => comp
 ) => {
 
   const tableList = map(res => {
-
     return res.list
   }, config.competitionCumulative)
 

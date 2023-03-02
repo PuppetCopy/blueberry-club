@@ -1,24 +1,29 @@
 import { Behavior, combineObject } from '@aelea/core'
 import { $element, $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
-import { $column, $row, $seperator, layoutSheet, screenUtils } from '@aelea/ui-components'
+import { $card, $column, $row, $seperator, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { colorAlpha, pallete } from '@aelea/ui-components-theme'
-import { awaitPromises, combine, empty, map, mergeArray, now, zip } from '@most/core'
+import { empty, map, mergeArray, now, zip } from '@most/core'
 import { Stream } from '@most/types'
-import { formatReadableUSD, formatFixed, unixTimestampNow, IRequestCompetitionLadderApi, switchMap, gmxSubgraph, groupByKey, IAccountLadderSummary, USD_PERCISION, intervalTimeMap, BASIS_POINTS_DIVISOR, div } from '@gambitdao/gmx-middleware'
+import { formatReadableUSD, formatFixed, unixTimestampNow, IRequestCompetitionLadderApi, IAccountLadderSummary, BASIS_POINTS_DIVISOR, div, USD_PERCISION } from '@gambitdao/gmx-middleware'
 import { $alertTooltip, countdown } from './$rules'
 import { IWalletLink } from '@gambitdao/wallet-link'
 import { $accountPreview, $profilePreview } from '../../components/$AccountProfile'
-import { blueberrySubgraph, BLUEBERRY_REFFERAL_CODE, IProfileTradingSummary, IProfileTradingResult, TOURNAMENT_START } from '@gambitdao/gbc-middleware'
-import { $anchor, $infoTooltipLabel, $Link, ISortBy } from '@gambitdao/ui-components'
+import { BLUEBERRY_REFFERAL_CODE, IProfileTradingSummary, IProfileTradingResult, TOURNAMENT_START, TOURNAMENT_DURATION, TOURNAMENT_NEXT, COMPETITION_METRIC_LIST, COMPETITION_START_MONTH } from '@gambitdao/gbc-middleware'
+import { $anchor, $infoLabel, $infoTooltipLabel, $Link, ISortBy } from '@gambitdao/ui-components'
 import { $CardTable } from '../../components/$common'
 import { IProfileActiveTab } from '../$Profile'
-import { $responsiveFlex } from '../../elements/$common'
+import { $addToCalendar, $responsiveFlex } from '../../elements/$common'
 import { $defaultBerry } from '../../components/$DisplayBerry'
 import { $defaultProfileContainer } from '../../common/$avatar'
 
 const MAX_COLLATERAL = 500000000000000000000000000000000n
 const prizeRatioLadder: bigint[] = [3000n, 1500n, 750n, ...Array(17).fill(div(4750n, 17n) / BASIS_POINTS_DIVISOR)]
+
+const METRIC_LABEL = {
+  [COMPETITION_METRIC_LIST[1]]: 'PnL',
+  [COMPETITION_METRIC_LIST[0]]: 'ROI',
+} as const
 
 
 export interface ICompetitonCumulativeRoi {
@@ -29,7 +34,7 @@ export interface ICompetitonCumulativeRoi {
 
 
 
-export const $CompetitionRoiDeprecated = (config: ICompetitonCumulativeRoi) => component((
+export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
   [routeChange, routeChangeTether]: Behavior<any, string>,
   [sortByChange, sortByChangeTether]: Behavior<ISortBy<IAccountLadderSummary>, ISortBy<IAccountLadderSummary>>,
   [pageIndex, pageIndexTether]: Behavior<number, number>,
@@ -39,9 +44,11 @@ export const $CompetitionRoiDeprecated = (config: ICompetitonCumulativeRoi) => c
     return res.list
   }, config.competitionCumulative)
 
-  const nowTime = unixTimestampNow()
-  const started = nowTime >= TOURNAMENT_START
-  const TOURNAMENT_TIME_DURATION = intervalTimeMap.HR24 * 27
+  const date = new Date()
+  const started = unixTimestampNow() >= TOURNAMENT_START
+
+  const currentMetric = COMPETITION_METRIC_LIST[1]
+
 
 
   const sortBy: Stream<ISortBy<IAccountLadderSummary>> = mergeArray([
@@ -51,21 +58,19 @@ export const $CompetitionRoiDeprecated = (config: ICompetitonCumulativeRoi) => c
 
 
   return [
-    $column(screenUtils.isDesktopScreen ? layoutSheet.spacingBig : layoutSheet.spacing)(
-
-      $node(),
+    $column(style({ flex: 1 }), screenUtils.isDesktopScreen ? layoutSheet.spacingBig : layoutSheet.spacing)(
 
       $column(screenUtils.isDesktopScreen ? layoutSheet.spacingBig : layoutSheet.spacing, style({ flexDirection: screenUtils.isDesktopScreen ? 'row' : 'column', alignItems: 'center', placeContent: 'center' }))(
 
         $row(layoutSheet.spacing)(
           $column(style({ alignItems: 'center' }))(
             $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
-              $text(style({ fontSize: screenUtils.isDesktopScreen ? '2.35em' : '1.95em', fontWeight: 'bold', color: pallete.primary, textShadow: `1px 1px 50px ${colorAlpha(pallete.primary, .45)}, 1px 1px 50px ${colorAlpha(pallete.primary, .25)} ` }))('#TopBlueberry'),
+              $text(style({ fontSize: '1.95em', fontWeight: 'bold', color: pallete.primary, textShadow: `1px 1px 20px ${colorAlpha(pallete.primary, .25)}, 1px 1px 50px ${colorAlpha(pallete.primary, .25)} ` }))('#TopBlueberry'),
             ),
             $infoTooltipLabel(
               $column(layoutSheet.spacingSmall)(
-                $text(`ROI (%) is defined as:`),
-                $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Profits / Max Collateral (min ${formatReadableUSD(MAX_COLLATERAL)}) * 100`),
+                $text(`PnL is defined as:`),
+                $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Prize Pool * PnL of participant / Total Positive PnL of all participants`),
                 $text(`To participate:`),
                 $element('ul')(
                   $element('li')(
@@ -81,16 +86,32 @@ export const $CompetitionRoiDeprecated = (config: ICompetitonCumulativeRoi) => c
                   ),
                 ),
                 $node(
-                  $text('see '), $anchor(attr({ href: 'https://mirror.xyz/gbc.eth/gxgsTaz8nJyLP1NDUaw_vpnuwjR-2-j2mZfD1GKRtLQ' }))(
+                  $text('see '), $anchor(attr({ href: 'https://mirror.xyz/gbc.eth/Oy90Ssp0KDsCtR0TWoAZ4N9cJ2t_yj8xR1bNLKtx7aQ' }))(
                     $text(`Full Competition Rules`)
                   ), $text(' for more details')
                 ),
               ),
-              $text(style({ fontWeight: 'bold', fontSize: '1.15em', color: pallete.middleground }))(`Highest ROI (%)`)
+              $text(style({ fontWeight: 'bold', color: pallete.middleground }))(`Highest ${METRIC_LABEL[currentMetric]}`)
             ),
           ),
         ),
-
+        started
+          ? $column(
+            $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
+              $text(style({ fontSize: '1.25em', color: pallete.indeterminate }))('LIVE!'),
+              $text(style({ color: pallete.foreground }))('Ending in')
+            ),
+            $text(style({ fontSize: '1.25em' }))(countdown(TOURNAMENT_START + TOURNAMENT_DURATION))
+          )
+          : $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+            $column(
+              $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
+                $text(style({ fontSize: '1.25em' }))('Next Cycle!'),
+                $text(style({ color: pallete.foreground }))('Starting in')
+              ),
+              $text(style({ fontSize: '1.25em' }))(countdown(TOURNAMENT_START))
+            )
+          )
       ),
 
 
@@ -102,13 +123,13 @@ export const $CompetitionRoiDeprecated = (config: ICompetitonCumulativeRoi) => c
                 $text('The total volume accumulated between the 1st and 28th of each competition period'),
                 $text('Higher volume means a higher prize pool'),
               ), 'Traded Volume'),
-              $text(style({ fontSize: '1.25em' }))(map(res => {
+              $text(map(res => {
                 return formatReadableUSD(res.size)
               }, config.competitionCumulative))
             ),
           ),
 
-          $responsiveFlex(layoutSheet.spacingSmall, style({ placeContent: 'flex-end' }))(
+          $responsiveFlex(layoutSheet.spacingSmall, style({ placeContent: 'flex-end', alignItems: 'flex-end' }))(
             style({ flexDirection: 'row-reverse' })(
               $infoTooltipLabel(
                 $column(layoutSheet.spacingSmall)(
@@ -123,8 +144,8 @@ export const $CompetitionRoiDeprecated = (config: ICompetitonCumulativeRoi) => c
             ),
             $text(style({
               color: pallete.positive,
-              fontSize: screenUtils.isDesktopScreen ? '2.25em' : '2em',
-              textShadow: `${pallete.positive} 1px 1px 20px, ${pallete.positive} 0px 0px 20px`
+              fontSize: '1.65em',
+              textShadow: `${pallete.positive} 1px 1px 15px`
             }))(map(params => formatReadableUSD(params.prizePool), config.competitionCumulative))
           ),
         ),
@@ -212,58 +233,103 @@ export const $CompetitionRoiDeprecated = (config: ICompetitonCumulativeRoi) => c
             ] : []),
             {
               $head: $column(style({ textAlign: 'right' }))(
-                $text('Profits'),
                 $text(style({ fontSize: '.75em' }))('Max Collateral'),
+                $text('Size'),
               ),
               sortBy: 'pnl',
               columnOp: style({ placeContent: 'flex-end', minWidth: '90px' }),
               $$body: map((pos) => {
-                const val = formatReadableUSD(pos.pnl)
+                const val = formatReadableUSD(pos.size, false)
                 const isNeg = pos.pnl < 0n
 
-
                 return $column(layoutSheet.spacingTiny, style({ textAlign: 'right' }))(
-                  $text(style({ color: isNeg ? pallete.negative : pallete.positive }))(
+                  $text(style({ fontSize: '.75em' }))(formatReadableUSD(pos.maxCollateral, false)),
+                  $seperator,
+                  $text(
                     val
                   ),
-                  $seperator,
-                  $text(style({ fontSize: '.75em' }))(formatReadableUSD(BigInt(pos.maxCollateral)))
                 )
               })
             },
             {
               $head: $column(style({ placeContent: 'flex-end' }))(
                 $text('Prize'),
-                $text(style({ fontSize: '.75em' }))('ROI'),
+                $text(style({ fontSize: '.75em' }))(
+                  METRIC_LABEL[currentMetric]
+                ),
               ),
-              sortBy: 'roi',
+              sortBy: currentMetric,
               columnOp: style({ minWidth: '90px', placeContent: 'flex-end' }),
-              $$body: zip((prizePool, pos) => {
-                const prizeRatio = prizeRatioLadder[pos.rank - 1]
+              $$body: currentMetric === 'pnl'
+                ? zip((params, pos) => {
+                  const metricVal = pos[currentMetric]
+                  const prize = params.prizePool * metricVal / params.totalScore
 
-                return $column(layoutSheet.spacingTiny, style({ alignItems: 'flex-end' }))(
-                  prizeRatio
-                    ? $row(
-                      $text(style({ fontSize: '1.25em', color: pallete.positive }))(formatReadableUSD(prizePool.prizePool * prizeRatio / BASIS_POINTS_DIVISOR)),
-                    ) : empty(),
 
-                  $text(`${formatFixed(pos.roi, 2)}%`)
-                )
-              }, config.competitionCumulative)
+                  return $column(layoutSheet.spacingTiny, style({ alignItems: 'flex-end' }))(
+                    prize > USD_PERCISION * 10n
+                      ? $text(style({ fontSize: '1.25em', color: pallete.positive }))(formatReadableUSD(prize, false))
+                      : empty(),
+                    $text(formatReadableUSD(metricVal, false))
+                  )
+                }, config.competitionCumulative)
+                : zip((prizePool, pos) => {
+                  const prizeRatio = prizeRatioLadder[pos.rank - 1]
+
+                  return $column(layoutSheet.spacingTiny, style({ alignItems: 'flex-end' }))(
+                    prizeRatio
+                      ? $row(
+                        $text(style({ fontSize: '1.25em', color: pallete.positive }))(formatReadableUSD(prizePool.prizePool * prizeRatio / BASIS_POINTS_DIVISOR, false)),
+                      ) : empty(),
+
+                    $text(`${formatFixed(pos.roi, 2)}%`)
+                  )
+                }, config.competitionCumulative),
             }
           ],
         })({
           sortBy: sortByChangeTether(),
           scrollIndex: pageIndexTether()
         }),
+
+        $card(style({ position: 'fixed', placeContent: 'space-between', flexDirection: 'row', bottom: 0, background: pallete.horizon, padding: '20px', borderRadius: '20px 20px 0 0', zIndex: 10, width: '100%', maxWidth: '780px' }))(
+          $column(
+            // style({ fontSize: '.75em' })(
+            //   $infoLabel('Previous competition results')
+            // ),
+
+            $anchor(attr({
+              href: '/p/feb-roi-old'
+            }))(
+              $text('Previous competition results')
+            )
+          ),
+
+          $row(layoutSheet.spacingSmall)(
+            $addToCalendar({
+              time: new Date(TOURNAMENT_NEXT * 1000),
+              title: 'Blueberry Trading Compeition',
+              description: `Monthly trading competitions will be held. These tournaments will offer cash prizes, unique lab items, and more as rewards for traders who compete and win.  \n\n${document.location.href}`
+            }),
+            $column(
+              style({ fontSize: '.75em' })(
+                $infoLabel('Next Competition')
+              ),
+              $text(COMPETITION_METRIC_LIST[(new Date().getMonth()) % COMPETITION_START_MONTH])
+            ),
+          )
+        )
+
       )
 
     ),
 
     {
       requestCompetitionLadder: map((params) => {
-        const from = Date.UTC(2023, 1, 1, 16) / 1000
-        const to = from + TOURNAMENT_TIME_DURATION
+        const from = started
+          ? TOURNAMENT_START
+          : Date.UTC(date.getFullYear(), date.getMonth() - 1, 1, 16) / 1000
+        const to = from + TOURNAMENT_DURATION
 
         const reqParams: IRequestCompetitionLadderApi = {
           ...params.sortBy,
@@ -271,7 +337,7 @@ export const $CompetitionRoiDeprecated = (config: ICompetitonCumulativeRoi) => c
           account: params.w3p?.address || null,
           referralCode: BLUEBERRY_REFFERAL_CODE,
           maxCollateral: MAX_COLLATERAL,
-          metric: 'roi',
+          metric: currentMetric,
           from,
           to,
           offset: params.pageIndex * 20,
