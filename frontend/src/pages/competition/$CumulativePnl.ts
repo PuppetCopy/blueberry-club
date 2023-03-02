@@ -242,7 +242,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
                 const val = formatReadableUSD(pos.size, false)
                 const isNeg = pos.pnl < 0n
 
-                return $column(layoutSheet.spacingTiny, style({ textAlign: 'right' }))(
+                return $column(layoutSheet.spacingTiny, style({ alignItems: 'flex-end' }))(
                   $text(style({ fontSize: '.75em' }))(formatReadableUSD(pos.maxCollateral, false)),
                   $seperator,
                   $text(
@@ -267,7 +267,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
 
 
                   return $column(layoutSheet.spacingTiny, style({ alignItems: 'flex-end' }))(
-                    prize > USD_PERCISION * 10n
+                    prize > USD_PERCISION
                       ? $text(style({ fontSize: '1.25em', color: pallete.positive }))(formatReadableUSD(prize, false))
                       : empty(),
                     $text(formatReadableUSD(metricVal, false))
