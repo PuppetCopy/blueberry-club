@@ -3,13 +3,13 @@ import { $element, $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
 import { $column, $row, $seperator, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { colorAlpha, pallete } from '@aelea/ui-components-theme'
-import { awaitPromises, combine, empty, map, mergeArray, now, zip } from '@most/core'
+import { empty, map, mergeArray, now, zip } from '@most/core'
 import { Stream } from '@most/types'
-import { formatReadableUSD, formatFixed, unixTimestampNow, IRequestCompetitionLadderApi, switchMap, gmxSubgraph, groupByKey, IAccountLadderSummary, USD_PERCISION, intervalTimeMap, BASIS_POINTS_DIVISOR, div } from '@gambitdao/gmx-middleware'
-import { $alertTooltip, countdown } from './$rules'
+import { formatReadableUSD, formatFixed, unixTimestampNow, IRequestCompetitionLadderApi, IAccountLadderSummary, intervalTimeMap, BASIS_POINTS_DIVISOR, div } from '@gambitdao/gmx-middleware'
+import { $alertTooltip } from './$rules'
 import { IWalletLink } from '@gambitdao/wallet-link'
 import { $accountPreview, $profilePreview } from '../../components/$AccountProfile'
-import { blueberrySubgraph, BLUEBERRY_REFFERAL_CODE, IProfileTradingSummary, IProfileTradingResult, TOURNAMENT_START } from '@gambitdao/gbc-middleware'
+import { BLUEBERRY_REFFERAL_CODE, IProfileTradingSummary, IProfileTradingResult, TOURNAMENT_START } from '@gambitdao/gbc-middleware'
 import { $anchor, $infoTooltipLabel, $Link, ISortBy } from '@gambitdao/ui-components'
 import { $CardTable } from '../../components/$common'
 import { IProfileActiveTab } from '../$Profile'
@@ -36,7 +36,10 @@ export const $CompetitionRoiDeprecated = (config: ICompetitonCumulativeRoi) => c
 ) => {
 
   const tableList = map(res => {
-    return res.list
+    return {
+      ...res.list,
+      page: res.list.page
+    }
   }, config.competitionCumulative)
 
   const nowTime = unixTimestampNow()

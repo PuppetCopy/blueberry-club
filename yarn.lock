@@ -766,7 +766,7 @@ __metadata:
     nft.storage: ^6.3.0
     ts-node: ^10.9.1
     typechain: ^8.1.1
-    typescript: ^4.9.4
+    typescript: ^4.9.5
   languageName: unknown
   linkType: soft
 
@@ -781,7 +781,6 @@ __metadata:
     "@ethersproject/contracts": ^5.7.0
     "@ethersproject/providers": 5.7.2
     "@gambitdao/gmx-middleware": "workspace:*"
-    "@gambitdao/wallet-link": "workspace:*"
     "@most/core": 1.6.1
     "@most/disposable": 1.3.0
     "@most/prelude": 1.8.0
@@ -795,7 +794,7 @@ __metadata:
     ethers: ^5.7.2
     graphql: ^16.6.0
     typechain: ^8.1.1
-    typescript: ^4.9.4
+    typescript: ^4.9.5
   languageName: unknown
   linkType: soft
 
@@ -5287,8 +5286,8 @@ __metadata:
     isomorphic-fetch: ^3.0.0
     ts-node: ^10.9.1
     ts-node-dev: ^2.0.0
-    typescript: ^4.9.4
-    ws: ^8.12.0
+    typescript: ^4.9.5
+    ws: ^8.12.1
   languageName: unknown
   linkType: soft
 
@@ -8849,10 +8848,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fancy-canvas@npm:0.2.2":
-  version: 0.2.2
-  resolution: "fancy-canvas@npm:0.2.2"
-  checksum: 965446383e59aa0108e03a4bc2b12dbb386089a24d95ba1abfb3d0f7a96cf168af70de0c06fabb9f396542e8ea56d1fc8609db108d9ec0ca5f454749d1f78203
+"fancy-canvas@npm:2.1.0":
+  version: 2.1.0
+  resolution: "fancy-canvas@npm:2.1.0"
+  checksum: 2463ca8a9254fb4cc69bbe33a2996b2a0ba8f725721d51464d9e87b4f3c3e8759e2289b0d592f56265501d5cff0b363bb7c72bb9c38212c19114dbd006ec8959
   languageName: node
   linkType: hard
 
@@ -9334,10 +9333,10 @@ __metadata:
     graphql: ^16.6.0
     html-webpack-plugin: 5.5.0
     jazzicon: ^1.5.0
-    lightweight-charts: ^3.8.0
+    lightweight-charts: ^4.0.0
     ts-loader: 9.4.2
     tsconfig-paths-webpack-plugin: 4.0.0
-    typescript: ^4.9.4
+    typescript: ^4.9.5
     webpack: 5.75.0
     webpack-cli: 5.0.1
     webpack-dev-server: 4.11.1
@@ -12166,12 +12165,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lightweight-charts@npm:^3.8.0":
-  version: 3.8.0
-  resolution: "lightweight-charts@npm:3.8.0"
+"lightweight-charts@npm:^4.0.0":
+  version: 4.0.0
+  resolution: "lightweight-charts@npm:4.0.0"
   dependencies:
-    fancy-canvas: 0.2.2
-  checksum: 606c4b01a18e786562e7089f7e2f0051bbb322beab03053efb278e9e238a5097202c5e5008a89a1153c42f1a948e1248ab383be7985ef25d26d2149df35c52dc
+    fancy-canvas: 2.1.0
+  checksum: 9180f28393e025c20b53dcc01f75772296d3cbf63724d44894b83b37fb32e975e4002efbd8add9e253aea9cda1b7e3aba224f11698209500cd04ffe82fb92b19
   languageName: node
   linkType: hard
 
@@ -17536,7 +17535,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:4.9.4, typescript@npm:^4.9.4":
+"typescript@npm:4.9.4":
   version: 4.9.4
   resolution: "typescript@npm:4.9.4"
   bin:
@@ -17546,13 +17545,33 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@4.9.4#~builtin<compat/typescript>, typescript@patch:typescript@^4.9.4#~builtin<compat/typescript>":
+"typescript@npm:^4.9.5":
+  version: 4.9.5
+  resolution: "typescript@npm:4.9.5"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: ee000bc26848147ad423b581bd250075662a354d84f0e06eb76d3b892328d8d4440b7487b5a83e851b12b255f55d71835b008a66cbf8f255a11e4400159237db
+  languageName: node
+  linkType: hard
+
+"typescript@patch:typescript@4.9.4#~builtin<compat/typescript>":
   version: 4.9.4
   resolution: "typescript@patch:typescript@npm%3A4.9.4#~builtin<compat/typescript>::version=4.9.4&hash=ad5954"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: 1caaea6cb7f813e64345190fddc4e6c924d0b698ab81189b503763c4a18f7f5501c69362979d36e19c042d89d936443e768a78b0675690b35eb663d19e0eae71
+  languageName: node
+  linkType: hard
+
+"typescript@patch:typescript@^4.9.5#~builtin<compat/typescript>":
+  version: 4.9.5
+  resolution: "typescript@patch:typescript@npm%3A4.9.5#~builtin<compat/typescript>::version=4.9.5&hash=ad5954"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 8f6260acc86b56bfdda6004bc53f32ea548f543e8baef7071c8e34d29d292f3e375c8416556c8de10b24deef6933cd1c16a8233dc84a3dd43a13a13265d0faab
   languageName: node
   linkType: hard
 
@@ -18773,7 +18792,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ws@npm:^8.12.0, ws@npm:^8.4.2":
+"ws@npm:^8.12.1":
+  version: 8.12.1
+  resolution: "ws@npm:8.12.1"
+  peerDependencies:
+    bufferutil: ^4.0.1
+    utf-8-validate: ">=5.0.2"
+  peerDependenciesMeta:
+    bufferutil:
+      optional: true
+    utf-8-validate:
+      optional: true
+  checksum: 97301c1c4d838fc81bd413f370f75c12aabe44527b31323b761eab3043a9ecb7e32ffd668548382c9a6a5ad3a1c3a9249608e8338e6b939f2f9540f1e21970b5
+  languageName: node
+  linkType: hard
+
+"ws@npm:^8.4.2":
   version: 8.12.0
   resolution: "ws@npm:8.12.0"
   peerDependencies:

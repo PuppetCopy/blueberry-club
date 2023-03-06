@@ -155,14 +155,14 @@ export const $StakingGraph = (config: ITreasuryChart) => component((
 
 
   const hasSeriesFn = (cross: MouseEventParams): boolean => {
-    const mode = !!cross?.seriesPrices?.size
+    const mode = !!cross?.seriesData?.size
     return mode
   }
 
   const pnlCrosshairMoveMode = skipRepeats(map(hasSeriesFn, pnlCrosshairMove))
 
   const pnlCrossHairChange = skipRepeats(map(change => {
-    const newLocal = change.seriesPrices.entries()
+    const newLocal = change.seriesData.entries()
     const newLocal_1 = newLocal.next()
     const value = newLocal_1?.value
     return value ? value[1] : null
@@ -364,7 +364,6 @@ export const $StakingGraph = (config: ITreasuryChart) => component((
               },
               layout: {
                 fontFamily: "RelativeMono",
-                backgroundColor: 'transparent',
                 textColor: pallete.foreground,
                 fontSize: 11
               },

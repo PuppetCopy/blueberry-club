@@ -178,7 +178,7 @@ export const $openPositionPnlBreakdown = (trade: ITradeOpen, cumulativeFee: Stre
           map(cumFee => {
             const fstUpdate = trade.updateList[0]
             const entryFundingRate = fstUpdate.entryFundingRate
-            const historicBorrowingFee = trade.fee - totalMarginFee
+            const historicBorrowingFee = totalMarginFee - trade.fee
 
             const fee = getFundingFee(entryFundingRate, cumFee, trade.size) + historicBorrowingFee
             

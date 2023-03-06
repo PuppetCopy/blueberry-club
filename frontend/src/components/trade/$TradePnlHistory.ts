@@ -222,8 +222,10 @@ export const $TradePnlHistory = (config: ITradePnlPreview) => component((
             }),
             chartConfig: {
               layout: {
+                background: {
+                  color: 'transparent'
+                },
                 textColor: pallete.foreground,
-                backgroundColor: 'transparent',
                 fontFamily: 'RelativePro',
                 fontSize: 10
               },

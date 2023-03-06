@@ -255,7 +255,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
   const pnlCrossHairTime = map((cross: MouseEventParams) => {
     if (cross) {
-      return cross.seriesPrices.values().next().value
+      return cross.seriesData.values().next().value
     }
 
     return null

@@ -111,7 +111,6 @@ export const $AssetDetails = ({ label, $iconPath, asset, symbol, $distribution, 
                 },
                 layout: {
                   fontFamily: "RelativeMono",
-                  backgroundColor: 'transparent',
                   textColor: pallete.foreground,
                   fontSize: 11
                 },

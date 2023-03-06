@@ -69,20 +69,23 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
             ),
             $infoTooltipLabel(
               $column(layoutSheet.spacingSmall)(
-                $text(`PnL is defined as:`),
+                $text(`Rewards formula defined as:`),
                 $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Prize Pool * PnL of participant / Total Positive PnL of all participants`),
-                $text(`To participate:`),
-                $element('ul')(
-                  $element('li')(
-                    $text('Own a GBC')
-                  ),
-                  $element('li')(
-                    $text('Have a Lab Identity, go to Wardrobe, choose your GBC & click “Set PFP”')
-                  ),
-                  $element('li')(
-                    $text('Start trading on GBC Trading or use/click '),
-                    $anchor(attr({ href: 'https://gmx.io/?ref=BLUEBERRY' }))($text('BLUEBERRY')),
-                    $text(' to opt our referral on GMX.io.')
+                $node(),
+                $column(
+                  $text(`To participate:`),
+                  $element('ul')(
+                    $element('li')(
+                      $text('Own a GBC')
+                    ),
+                    $element('li')(
+                      $text('Have a Lab Identity, go to Wardrobe, choose your GBC & click “Set PFP”')
+                    ),
+                    $element('li')(
+                      $text('Start trading on GBC Trading or use/click '),
+                      $anchor(attr({ href: 'https://gmx.io/?ref=BLUEBERRY' }))($text('BLUEBERRY')),
+                      $text(' to opt our referral on GMX.io.')
+                    ),
                   ),
                 ),
                 $node(

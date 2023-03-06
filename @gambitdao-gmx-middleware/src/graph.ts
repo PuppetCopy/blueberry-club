@@ -5,8 +5,8 @@ import { tradeJson } from "./fromJson"
 import { getTokenDescription, toAccountSummary } from "./gmxUtils"
 import {
   IRequestAccountApi, IChainParamApi, IRequestCompetitionLadderApi, IRequestLeaderboardApi, IRequestPagePositionApi,
-  IPricefeed, IRequestPricefeedApi, IPriceLatest, IRequestGraphEntityApi, IStake, IRequestTimerangeApi, ITrade, TradeStatus,
-  IRequestAccountTradeListApi, ITradeOpen, IEnsRegistration
+  IPricefeed, IRequestPricefeedApi, IPriceLatest, IRequestGraphEntityApi, IStake,
+  IRequestTimerangeApi, ITrade, TradeStatus, IRequestAccountTradeListApi, ITradeOpen, IEnsRegistration
 } from "./types"
 import {
   cacheMap, createSubgraphClient, getChainName, getMappedValue, groupByKeyMap, pagingQuery, parseFixed,
@@ -176,13 +176,11 @@ export const getGmxIoPricefeed = O(
 
 export const subgraphPricefeed = O(
   map(async (queryParams: IRequestPricefeedApi) => {
-    const newLocal = `
-          {
-            pricefeeds(first: 1000, orderBy: timestamp, orderDirection: asc, where: {tokenAddress: _${queryParams.tokenAddress}, interval: _${queryParams.interval}, timestamp_gte: ${queryParams.from}, timestamp_lte: ${queryParams.to || unixTimestampNow()} }) {
-              ${pricefeedFields}
-            }
-          }
-    `
+    const newLocal = ` {
+  pricefeeds(first: 1000, orderBy: timestamp, orderDirection: asc, where: {tokenAddress: _${queryParams.tokenAddress}, interval: _${queryParams.interval}, timestamp_gte: ${queryParams.from}, timestamp_lte: ${queryParams.to || unixTimestampNow()} }) {
+    ${pricefeedFields}
+  }
+}`
 
     const priceFeedQuery = await querySubgraph(queryParams, newLocal)
     return priceFeedQuery.pricefeeds.map(fromJson.pricefeedJson) as IPricefeed[]
@@ -396,8 +394,7 @@ async function querySubgraph<T extends IChainParamApi>(params: T, document: stri
 
 
 async function getPriceLatestMap(queryParams: IChainParamApi): Promise<IPriceLatest[]> {
-  const res = await await querySubgraph(queryParams, `
-{
+  const res = await await querySubgraph(queryParams, `{
   priceLatests {
     id
     value

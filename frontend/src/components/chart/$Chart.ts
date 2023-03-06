@@ -60,7 +60,9 @@ export const $Chart = <T extends SeriesType>({ chartConfig, realtimeSource, init
     },
     layout: {
       textColor: pallete.message,
-      backgroundColor: 'transparent',
+      background: {
+        color: 'transparent'
+      },
       fontFamily: 'RelativePro',
       fontSize: 12
     },

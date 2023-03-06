@@ -58,8 +58,10 @@ export const $CandleSticks = ({ chartConfig, series, containerOp = O() }: ICandl
       borderVisible: false,
     },
     layout: {
+      background: {
+        color: 'transparent'
+      },
       textColor: pallete.message,
-      backgroundColor: 'transparent',
       fontFamily: 'RelativePro',
       fontSize: 12
     },
