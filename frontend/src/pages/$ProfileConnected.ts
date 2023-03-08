@@ -9,7 +9,7 @@ import { blueberrySubgraph, IAccountStakingStore, LAB_CHAIN, saleDescriptionList
 import { $ButtonPrimary, $ButtonSecondary, $defaultButtonSecondary } from "../components/form/$Button"
 import { $labItem } from "../logic/common"
 import { BrowserStore } from "../logic/store"
-import { CHAIN, filterNull, IRequestAccountApi, IRequestAccountTradeListApi, IRequestPageApi, IStake, ITradeOpen, ITradeSettled, readableDate, switchMap, timeSince, unixTimestampNow } from "@gambitdao/gmx-middleware"
+import { filterNull, IRequestAccountApi, IRequestAccountTradeListApi, IRequestPageApi, IStake, ITradeOpen, ITradeSettled, readableDate, switchMap, timeSince, unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { IProfileActiveTab } from "./$Profile"
 import { Stream } from "@most/types"
 import { $Link, $anchor, $IntermediateTx, $ButtonToggle, $defaulButtonToggleContainer, $infoTooltipLabel, $IntermediatePromise, $openPositionPnlBreakdown, $PnlValue, $riskLiquidator, $sizeDisplay, $TradePnl } from "@gambitdao/ui-components"
@@ -26,6 +26,7 @@ import * as router from '@aelea/router'
 import { connectTradeReader } from "../logic/contract/trade"
 import { $responsiveFlex } from "../elements/$common"
 import { $defaultBerry } from "../components/$DisplayBerry"
+import { CHAIN } from "@gambitdao/const"
 
 
 export interface IAccount {

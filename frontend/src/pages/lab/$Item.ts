@@ -5,7 +5,7 @@ import { $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-compon
 import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
 import { $accountIconLink, $addToCalendar, $responsiveFlex } from "../../elements/$common"
 import { attributeIndexToLabel, mintLabelMap, getLabItemTupleIndex, labItemDescriptionListMap, saleMaxSupply, SaleType } from "@gambitdao/gbc-middleware"
-import { CHAIN, countdownFn, displayDate, formatFixed, unixTimestampNow } from "@gambitdao/gmx-middleware"
+import { countdownFn, displayDate, formatFixed, unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { pallete } from "@aelea/ui-components-theme"
 import { $defaultLabItem, $defaultLabItemHuge, $labItem, takeUntilLast } from "../../logic/common"
 import { $seperator2 } from "../common"
@@ -17,6 +17,7 @@ import { $HolderMint } from "../../components/mint/$HolderMint"
 import { $WhitelistMint } from "../../components/mint/$WhitelistMint"
 import { $PublicMint } from "../../components/mint/$PublicMint"
 import { timeChange } from "../../components/mint/mintUtils2"
+import { CHAIN } from "@gambitdao/const"
 
 
 interface ILabItem {

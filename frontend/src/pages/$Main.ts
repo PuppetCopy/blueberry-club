@@ -4,7 +4,7 @@ import * as router from '@aelea/router'
 import { $column, $row, layoutSheet, screenUtils } from '@aelea/ui-components'
 import {
   gmxSubgraph, ARBITRUM_ADDRESS, AVALANCHE_ADDRESS,
-  ETH_ADDRESS_REGEXP, IRequestAccountApi, intervalTimeMap, IRequestPricefeedApi, IRequestCompetitionLadderApi, IRequestAccountTradeListApi, CHAIN
+  ETH_ADDRESS_REGEXP, IRequestAccountApi, intervalTimeMap, IRequestPricefeedApi, IRequestCompetitionLadderApi, IRequestAccountTradeListApi
 } from '@gambitdao/gmx-middleware'
 import { initWalletLink, IWalletName } from "@gambitdao/wallet-link"
 import { map, merge, multicast, now } from '@most/core'
@@ -30,6 +30,7 @@ import { $Treasury } from "./$Treasury"
 import { $discoverIdentityDisplay } from "../components/$AccountProfile"
 import { pallete } from "@aelea/ui-components-theme"
 import { $CompetitionRoiDeprecated } from "./competition/$RoiDeprecated"
+import { CHAIN } from "@gambitdao/const"
 
 
 const popStateEvent = eventElementTarget('popstate', window)

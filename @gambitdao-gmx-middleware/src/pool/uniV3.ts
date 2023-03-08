@@ -1,13 +1,12 @@
 import { Pool } from '@uniswap/v3-sdk'
-
-import { ethers } from 'ethers'
 import { Token, } from '@uniswap/sdk-core'
 import * as abi from './uniV3.abi'
 import { ARBITRUM_ADDRESS } from '../address/arbitrum'
 import { parseFixed } from '../utils'
 import { JsonRpcProvider } from '@ethersproject/providers'
 import { Interface } from '@ethersproject/abi'
-import { CHAIN } from '../constant'
+import { Contract } from '@ethersproject/contracts'
+import { CHAIN } from '@gambitdao/const'
 
 // default uses “http://localhost:8545”
 // can also input your own connection with "https://mainnet.infura.io/v3/<YOUR-ENDPOINT-HERE>" as an input
@@ -19,7 +18,7 @@ const poolAddress = '0x6c6bc977e13df9b0de53b251522280bb72383700'
 
 
 export async function readUniV3(provider: JsonRpcProvider) {
-  const poolContract = new ethers.Contract(poolAddress, new Interface(abi as any), provider)
+  const poolContract = new Contract(poolAddress, new Interface(abi as any), provider)
 
   const slot = await poolContract.slot0()
 

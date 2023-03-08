@@ -1,6 +1,6 @@
 import { combineArray, fromCallback, replayLatest } from "@aelea/core"
 import { BaseProvider, JsonRpcSigner, Web3Provider } from "@ethersproject/providers"
-import { awaitPromises, constant, delay, fromPromise, map, mergeArray, multicast, now, switchLatest } from "@most/core"
+import { awaitPromises, constant, fromPromise, map, mergeArray, multicast, now, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
 import { eip1193ProviderEventFn } from "./common"
 import { metamaskQuery, walletConnect } from "./provider"

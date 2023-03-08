@@ -18,11 +18,14 @@
     "dependencies": {
         "@aelea/core": "1.3.0",
         "@ethersproject/providers": "5.7.2",
+        "@gambitdao/const": "workspace:*",
+        "@metamask/detect-provider": "2.0.0",
         "@most/core": "1.6.1",
         "@most/disposable": "1.3.0",
         "@most/prelude": "1.8.0",
         "@most/scheduler": "1.3.0",
         "@most/types": "1.1.0",
+        "@walletconnect/ethereum-provider": "1.8.0",
         "eip1193-provider": "1.0.1"
     },
     "devDependencies": {

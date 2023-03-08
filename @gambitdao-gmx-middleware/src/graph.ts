@@ -1,6 +1,6 @@
 import { O } from "@aelea/core"
 import { awaitPromises, map } from "@most/core"
-import { CHAIN, intervalTimeMap } from "./constant"
+import { intervalTimeMap } from "./constant"
 import { tradeJson } from "./fromJson"
 import { getTokenDescription, toAccountSummary } from "./gmxUtils"
 import {
@@ -17,6 +17,7 @@ import * as fromJson from "./fromJson"
 import fetch from "isomorphic-fetch"
 import { TOKEN_SYMBOL } from "./address/symbol"
 import { Stream } from "@most/types"
+import { CHAIN } from "@gambitdao/const"
 
 
 
@@ -40,12 +41,10 @@ export const arbitrumGraph = createSubgraphClient({
 
 export const arbitrumGraphDev = createSubgraphClient({
   fetch: fetch as any,
-  // requestPolicy: 'network-only',
   url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-arbitrum-dev'
 })
 export const avalancheGraphDev = createSubgraphClient({
   fetch: fetch as any,
-  // requestPolicy: 'network-only',
   url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-avalanche-dev'
 })
 

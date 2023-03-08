@@ -1,0 +1,22 @@
+{
+    "name": "@gambitdao/const",
+    "version": "0.0.0",
+    "license": "MIT",
+    "module": ".dist/esm/index.js",
+    "main": ".dist/cjs/index.js",
+    "sideEffects": false,
+    "files": [
+        ".dist"
+    ],
+    "types": ".dist/types/index.d.ts",
+    "scripts": {
+        "clean": "yarn g:tsc:clean",
+        "build:project": "yarn g:tsc:project",
+        "build:cjs": "yarn g:tsc:cjs",
+        "build": "yarn g:parallel 'yarn build:cjs' 'yarn build:project'"
+    },
+    "devDependencies": {
+        "typechain": "^8.1.1",
+        "typescript": "4.9.5"
+    }
+}

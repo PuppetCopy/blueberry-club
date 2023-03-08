@@ -3,6 +3,7 @@ const webpack = require('webpack')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin')
 const CopyPlugin = require("copy-webpack-plugin")
+require('dotenv').config({ path: '../.env' }); 
 
 /**
  * @type import('webpack').Configuration
@@ -52,6 +53,9 @@ module.exports = {
     }
   },
   plugins: [
+    new webpack.DefinePlugin({
+      "process.env": JSON.stringify(process.env),
+    }),
     new webpack.ProvidePlugin({
       process: 'process/browser',
       Buffer: ['buffer', 'Buffer'],

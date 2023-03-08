@@ -7,7 +7,7 @@ import {
   div, StateStream, getPnL, MIN_LEVERAGE, formatToBasis, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE,
   ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd, IPricefeed,
   TRADE_CONTRACT_MAPPING, filterNull, ITradeOpen, zipState, MARGIN_FEE_BASIS_POINTS, abs, DEDUCT_USD_FOR_GAS,
-  getTokenAmount, safeDiv, getTokenDescription, ITrade, getAdjustedDelta, switchMap, USD_PERCISION, getDenominator, USDG_DECIMALS, CHAIN
+  getTokenAmount, safeDiv, getTokenDescription, ITrade, getAdjustedDelta, switchMap, USD_PERCISION, getDenominator, USDG_DECIMALS
 } from "@gambitdao/gmx-middleware"
 import {
   $alert, $alertTooltip, $anchor, $bear, $bull, $hintNumChange, $infoLabeledValue, $infoTooltipLabel, $IntermediatePromise,
@@ -37,6 +37,7 @@ import { $Popover } from "../$Popover"
 import { $card } from "../../elements/$common"
 import { Route } from "@aelea/router"
 import { $Index } from "../../pages/competition/$Leaderboard"
+import { CHAIN } from "@gambitdao/const"
 
 export enum ITradeFocusMode {
   collateral,

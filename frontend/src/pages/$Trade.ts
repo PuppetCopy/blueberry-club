@@ -8,7 +8,7 @@ import {
   getDenominator, USD_PERCISION, getPositionKey,
   getPnL, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE, getFundingFee, filterNull, getLiquidationPrice,
   ITokenIndex, ITokenStable, ITokenInput, TradeStatus, LIMIT_LEVERAGE, div, TRADE_CONTRACT_MAPPING, getTokenAmount, abs,
-  IRequestAccountApi, CHAIN_ADDRESS_MAP, getSafeMappedValue, getTokenDescription, getFeeBasisPoints, getAdjustedDelta, formatReadableUSD, IPositionDecrease, IPositionIncrease, readableDate, timeSince, readableNumber, formatToBasis, CHAIN,
+  IRequestAccountApi, CHAIN_ADDRESS_MAP, getSafeMappedValue, getTokenDescription, getFeeBasisPoints, getAdjustedDelta, formatReadableUSD, IPositionDecrease, IPositionIncrease, readableDate, timeSince, readableNumber, formatToBasis,
 } from "@gambitdao/gmx-middleware"
 
 import { map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, snapshot, zip, combine, tap, constant, filter, take, skipRepeatsWith, debounce } from "@most/core"
@@ -29,6 +29,7 @@ import { ERC20__factory } from "@gambitdao/gbc-contracts"
 import { $Dropdown } from "../components/form/$Dropdown"
 import { $ButtonSecondary } from "../components/form/$Button"
 import { $caretDown } from "../elements/$icons"
+import { CHAIN } from "@gambitdao/const"
 
 
 export interface ITradeComponent {

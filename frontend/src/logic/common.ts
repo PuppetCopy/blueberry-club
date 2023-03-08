@@ -1,5 +1,5 @@
 import { O, Op } from "@aelea/core"
-import { CHAIN, filterNull } from "@gambitdao/gmx-middleware"
+import { filterNull } from "@gambitdao/gmx-middleware"
 import { awaitPromises, continueWith, empty, map, multicast, never, now, recoverWith, switchLatest, takeWhile, tap } from "@most/core"
 import { Stream } from "@most/types"
 import { $berry, $defaultBerry } from "../components/$DisplayBerry"
@@ -15,6 +15,7 @@ import { BaseProvider, Web3Provider } from "@ethersproject/providers"
 import { ContractFactory, Event } from "@ethersproject/contracts"
 import { GetEventFilterType, listen } from "./contract/listen"
 import { curry2 } from "@most/prelude"
+import { CHAIN } from "@gambitdao/const"
 
 export type TContractMapping<T> = {
   [P in CHAIN]?: {

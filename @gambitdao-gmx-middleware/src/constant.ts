@@ -1,3 +1,4 @@
+import { CHAIN } from "@gambitdao/const"
 import { ARBITRUM_ADDRESS } from "./address/arbitrum"
 import { AVALANCHE_ADDRESS } from "./address/avalanche"
 
@@ -43,23 +44,6 @@ export enum intervalTimeMap {
   MONTH2 = 5256000,
   YEAR = 31536000
 }
-
-
-export enum CHAIN {
-  ETH = 1,
-  ETH_ROPSTEN = 3,
-  ETH_KOVAN = 42,
-  ETH_RINKBY = 4,
-  ETH_GOERLI = 5,
-
-  BSC = 56,
-  BSC_TESTNET = 97,
-
-  ARBITRUM = 42161,
-  ARBITRUM_RINKBY = 421611,
-  AVALANCHE = 43114
-}
-
 
 
 

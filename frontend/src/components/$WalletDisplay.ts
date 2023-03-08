@@ -11,7 +11,7 @@ import { $ConnectDropdown, $switchNetworkDropdown } from "./$ConnectAccount"
 import { Route } from "@aelea/router"
 import { IProfileActiveTab } from "../pages/$Profile"
 import { $defaultBerry } from "./$DisplayBerry"
-import { CHAIN } from "@gambitdao/gmx-middleware"
+import { CHAIN } from "@gambitdao/const"
 
 
 

@@ -1,5 +1,5 @@
 import { fromCallback } from "@aelea/core"
-import type { BaseProvider, EventType, ExternalProvider } from "@ethersproject/providers"
+import type { BaseProvider, EventType } from "@ethersproject/providers"
 import { empty, map, switchLatest, zipArray } from "@most/core"
 import { disposeWith } from "@most/disposable"
 import { Stream } from "@most/types"

@@ -4,7 +4,7 @@ import { $column, layoutSheet, $row, $icon } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { ContractTransaction } from "@ethersproject/contracts"
 import { LabItemSale, MintPrivate, LAB_CHAIN } from "@gambitdao/gbc-middleware"
-import { formatFixed, filterNull, CHAIN } from "@gambitdao/gmx-middleware"
+import { formatFixed, filterNull } from "@gambitdao/gmx-middleware"
 import { $alert } from "@gambitdao/ui-components"
 import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
 import { switchLatest, multicast, startWith, snapshot, map, tap, merge, empty } from "@most/core"
@@ -15,6 +15,7 @@ import { $Dropdown, $defaultSelectContainer } from "../form/$Dropdown"
 import { $displayMintEvents } from "./mintUtils2"
 import { $IntermediateConnectButton } from "../$ConnectAccount"
 import { Whitelist__factory } from "@gambitdao/gbc-contracts"
+import { CHAIN } from "@gambitdao/const"
 
 
 

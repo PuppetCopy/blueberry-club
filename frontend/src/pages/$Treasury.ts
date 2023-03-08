@@ -4,7 +4,7 @@ import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { GBC_ADDRESS, blueberrySubgraph } from "@gambitdao/gbc-middleware"
-import { intervalTimeMap, ARBITRUM_ADDRESS, AVALANCHE_ADDRESS, gmxSubgraph, unixTimestampNow, getDebankProfileUrl, CHAIN } from "@gambitdao/gmx-middleware"
+import { intervalTimeMap, ARBITRUM_ADDRESS, AVALANCHE_ADDRESS, gmxSubgraph, unixTimestampNow, getDebankProfileUrl } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $anchor } from "@gambitdao/ui-components"
 import { awaitPromises, map, multicast, now, switchLatest } from "@most/core"
@@ -14,6 +14,7 @@ import { arbitrumContract, avalancheContract } from "../logic/gbcTreasury"
 import { $AccountLabel } from "../components/$AccountProfile"
 import { $seperator2 } from "./common"
 import { BrowserStore } from "../logic/store"
+import { CHAIN } from "@gambitdao/const"
 
 const GRAPHS_INTERVAL = Math.floor(intervalTimeMap.HR4)
 

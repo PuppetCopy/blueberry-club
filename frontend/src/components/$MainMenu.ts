@@ -3,7 +3,7 @@ import { $Branch, $element, $Node, $text, attr, component, nodeEvent, style } fr
 import { $RouterAnchor, Route } from '@aelea/router'
 import { $column, $icon, $row, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { pallete, theme } from "@aelea/ui-components-theme"
-import { CHAIN, formatReadableUSD } from "@gambitdao/gmx-middleware"
+import { formatReadableUSD } from "@gambitdao/gmx-middleware"
 import { IWalletLink, IWalletName, walletConnect } from "@gambitdao/wallet-link"
 import { awaitPromises, constant, empty, map, multicast, now, switchLatest } from '@most/core'
 import { $bagOfCoins, $caretDown, $stackedCoins } from "../elements/$icons"
@@ -17,6 +17,7 @@ import { dark, light } from "../common/theme"
 import { Stream } from "@most/types"
 import { $WalletDisplay } from "./$WalletDisplay"
 import { $Popover } from "./$Popover"
+import { CHAIN } from "@gambitdao/const"
 
 
 

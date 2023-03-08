@@ -8,7 +8,6 @@ import { $infoTooltipLabel, $IntermediatePromise, $openPositionPnlBreakdown, $Pn
 import { $discoverIdentityDisplay } from "../components/$AccountProfile"
 import { $berryTileId, $CardTable } from "../components/$common"
 import {
-  CHAIN,
   getSafeMappedValue, IRequestAccountTradeListApi,
   IRequestPageApi, IStake, ITradeOpen, ITradeSettled, readableDate, timeSince, TRADE_CONTRACT_MAPPING, unixTimestampNow
 } from "@gambitdao/gmx-middleware"
@@ -23,6 +22,7 @@ import { connectTradeReader } from "../logic/contract/trade"
 import { $ButtonToggle, $defaulButtonToggleContainer } from "@gambitdao/ui-components/src/$ButtonToggle"
 import * as router from '@aelea/router'
 import { fadeIn } from "../transitions/enter"
+import { CHAIN } from "@gambitdao/const"
 
 
 

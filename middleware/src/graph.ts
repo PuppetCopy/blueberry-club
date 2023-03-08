@@ -1,9 +1,30 @@
 import { O } from "@aelea/core"
 import { hexValue } from "@ethersproject/bytes"
-import { createSubgraphClient, IRequestCompetitionLadderApi, IIdentifiableEntity, IRequestPagePositionApi, pagingQuery, cacheMap, intervalTimeMap, toAccountCompetitionSummary, gmxSubgraph, getMarginFees, BASIS_POINTS_DIVISOR, switchMap, groupByKey } from "@gambitdao/gmx-middleware"
+import {
+  IRequestCompetitionLadderApi, IIdentifiableEntity, IRequestPagePositionApi, pagingQuery,
+  cacheMap, intervalTimeMap, toAccountCompetitionSummary, gmxSubgraph, getMarginFees, BASIS_POINTS_DIVISOR, switchMap,
+  groupByKey, div, getTokenAmount, readableNumber, formatFixed, getMappedValue, CHAIN_ADDRESS_MAP
+} from "@gambitdao/gmx-middleware"
 import { awaitPromises, combine, map, now } from "@most/core"
-import { gql } from "@urql/core"
+import { ClientOptions, createClient, gql, OperationContext, TypedDocumentNode } from "@urql/core"
 import { ILabItem, ILabItemOwnership, IOwner, IProfile, IProfileTradingSummary, IProfileTradingResult, IToken } from "./types"
+
+
+export const createSubgraphClient = (opts: ClientOptions) => {
+
+  const client = createClient(opts)
+
+  return async <Data, Variables extends object = {}>(document: TypedDocumentNode<Data, Variables>, params: Variables, context?: Partial<OperationContext>): Promise<Data> => {
+    const result = await client.query(document, params, context)
+      .toPromise()
+
+    if (result.error) {
+      throw new Error(result.error.message)
+    }
+
+    return result.data!
+  }
+}
 
 
 
@@ -265,6 +286,28 @@ export const competitionCumulative = O(
           return profileSummary
         })
 
+      const prizeRatioLadder: bigint[] = [3000n, 1500n, 750n, ...Array(17).fill(div(4750n, 17n) / BASIS_POINTS_DIVISOR)]
+
+
+      // log CSV file for airdrop
+      // erc20,0x82aF49447D8a07e3bd95BD0d56f35241523fBab1,0xac6fac7f4081852d7d485b78a8e574d6267c6e66,53.998590801480455323,
+
+      const nativeToken = getMappedValue(CHAIN_ADDRESS_MAP, queryParams.chain).NATIVE_TOKEN
+      console.log(
+        'token_type,token_address,receiver,amount,id\n'  + sortedCompetitionList
+          // .filter(x => {
+          //   return x.profile !== null
+          // })
+          .slice(0, 20).map((x, idx) => {
+            const ethPrice = BigInt(priceMap['_' + nativeToken])
+            const prizeRatio = prizeRatioLadder[idx]
+            const prizeUsd = prizePool * prizeRatio / BASIS_POINTS_DIVISOR
+            const tokenAmount = formatFixed(getTokenAmount(prizeUsd, ethPrice, 18), 18)
+
+            return `erc20,${nativeToken},${x.account},${readableNumber(tokenAmount)},`
+          }).join('\n')
+      )
+
 
       return { sortedCompetitionList, size, totalScore, prizePool, profile: profile2 as null | IProfileTradingSummary }
     })
@@ -284,7 +327,7 @@ export const competitionCumulative = O(
         if (idxProfile > -1) {
           spage.page.splice(idxProfile, 1)
         }
-        
+
 
         spage.page.unshift(res.profile)
 
@@ -341,7 +384,7 @@ async function getProfilePickList(idList: string[]): Promise<IProfile[]> {
     return []
   }
 
-  
+
   const doc = `
 {
   ${idList.map(id => `

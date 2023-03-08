@@ -5,7 +5,7 @@ import { map } from "@most/core"
 import { readContractMapping } from "../common"
 import { Stream } from "@most/types"
 import { BaseProvider } from "@ethersproject/providers"
-import { CHAIN } from "@gambitdao/gmx-middleware"
+import { CHAIN } from "@gambitdao/const"
 
 
 export const GBC_CONTRACT_MAPPING = {

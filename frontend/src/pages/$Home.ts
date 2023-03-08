@@ -3,7 +3,7 @@ import { $Branch, $element, $node, $svg, $text, attr, component, eventElementTar
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, observer, screenUtils } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { CHAIN, getSafeMappedValue, gmxSubgraph, intervalTimeMap, TRADE_CONTRACT_MAPPING } from "@gambitdao/gmx-middleware"
+import { getSafeMappedValue, gmxSubgraph, intervalTimeMap, TRADE_CONTRACT_MAPPING } from "@gambitdao/gmx-middleware"
 import { IWalletLink, zipState } from "@gambitdao/wallet-link"
 import { $alert, $anchor, $gitbook, $IntermediatePromise, $Link } from "@gambitdao/ui-components"
 import { awaitPromises, map, multicast, now, snapshot, switchLatest, tap, zip } from "@most/core"
@@ -23,6 +23,7 @@ import { BrowserStore } from "../logic/store"
 import { $berryByLabItems, $berryByToken, getBerryFromItems } from "../logic/common"
 import { $StakingGraph } from "../components/$StakingGraph"
 import { connectGmxEarn } from "../logic/contract"
+import { CHAIN } from "@gambitdao/const"
 
 
 export interface ITreasury {

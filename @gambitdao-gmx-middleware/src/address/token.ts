@@ -1,4 +1,4 @@
-import { CHAIN } from "../constant"
+import { CHAIN } from "@gambitdao/const"
 import { ITokenDescription } from "../types"
 import { groupByKey } from "../utils"
 import { ARBITRUM_ADDRESS } from "./arbitrum"

@@ -14,7 +14,7 @@ import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 import { connectLab } from "../../logic/contract/gbc"
 import { Holder__factory } from "@gambitdao/gbc-contracts"
 import { readContract } from "../../logic/common"
-import { CHAIN } from "@gambitdao/gmx-middleware"
+import { CHAIN } from "@gambitdao/const"
 
 interface MintCmp {
   chainList: CHAIN[],

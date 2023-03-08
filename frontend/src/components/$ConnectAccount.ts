@@ -3,16 +3,17 @@ import { $element, $node, $Node, $text, attr, component, nodeEvent, style } from
 import { $column, $icon, $row, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { awaitPromises, constant, empty, fromPromise, map, now, snapshot, switchLatest } from "@most/core"
-import { IWalletLink, IWalletName, IWalletState, metamaskQuery, NETWORK_METADATA, parseError, walletConnect } from "@gambitdao/wallet-link"
+import { IWalletLink, IWalletName, IWalletState, metamaskQuery, parseError, walletConnect } from "@gambitdao/wallet-link"
 import { $bagOfCoinsCircle, $walletConnectLogo } from "../common/$icons"
 import { $caretDown } from "../elements/$icons"
 import { $Dropdown } from "./form/$Dropdown"
 import { $Popover } from "./$Popover"
 import { IButtonCore } from "./form/$ButtonCore"
 import { Stream } from "@most/types"
-import { CHAIN, filterNull } from "@gambitdao/gmx-middleware"
+import { filterNull } from "@gambitdao/gmx-middleware"
 import { $ButtonPrimary, $ButtonSecondary } from "./form/$Button"
 import { ExternalProvider } from "@ethersproject/providers"
+import { CHAIN, NETWORK_METADATA } from "@gambitdao/const"
 
 
 // https://eips.ethereum.org/EIPS/eip-3085

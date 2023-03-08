@@ -19,10 +19,11 @@ import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
 import { Stream } from "@most/types"
 import { $iconCircular, $responsiveFlex } from "../../elements/$common"
 import { $seperator2 } from "../common"
-import { CHAIN, filterNull, switchMap, unixTimestampNow } from "@gambitdao/gmx-middleware"
+import { filterNull, switchMap, unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 import { Closet, GBCLab } from "@gambitdao/gbc-contracts"
 import { connectLab } from "../../logic/contract/gbc"
+import { CHAIN } from "@gambitdao/const"
 
 
 interface IBerryComp {

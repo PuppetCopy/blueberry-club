@@ -1,6 +1,6 @@
 import { O } from "@aelea/core"
 import { BaseProvider } from "@ethersproject/providers"
-import { NETWORK_METADATA } from "@gambitdao/wallet-link"
+import { NETWORK_METADATA } from "@gambitdao/const"
 import detectEthereumProvider from "@metamask/detect-provider"
 import { awaitPromises, map } from "@most/core"
 import WalletConnectProvider from "@walletconnect/ethereum-provider"
