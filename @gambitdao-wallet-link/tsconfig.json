@@ -12,6 +12,8 @@
     "declarationDir": ".dist/types"
   },
   "references": [
-
+    {
+      "path": "../const"
+    }
   ]
 }
