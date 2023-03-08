@@ -1,16 +1,15 @@
 import {
-  Profile__factory, GBCLab__factory,
-  Police__factory, Closet__factory, GBC__factory, Public__factory, Holder__factory, Mintable, Whitelist__factory
+  Profile__factory, GBCLab__factory, Police__factory, Closet__factory, GBC__factory, Public__factory, Holder__factory,
+  Mintable, Whitelist__factory, DaoGovernor__factory
 } from "../typechain-types"
-import { AddressZero, CHAIN } from "@gambitdao/gmx-middleware"
-
+import { AddressZero } from "@gambitdao/gmx-middleware"
 import { ethers, network } from "hardhat"
-
 import getAddress, { ZERO_ADDRESS } from "../utils/getAddress"
 import { connectOrDeploy } from "../utils/deploy"
 import { GBC_ADDRESS, mintLabelMap, saleDescriptionList, SaleType } from "@gambitdao/gbc-middleware"
 import { getMerkleProofs } from "../utils/whitelist"
 import { storeImageOnIpfs } from "./ipfs-image"
+import { CHAIN } from "@gambitdao/const"
 
 
 
@@ -22,34 +21,10 @@ enum ROLES {
 export default ROLES
 
 
-/**
- *  DEPLOYER WIZARD 🧙‍♂️
- *
- *  How it works ?
- *  Each contract has is own variable if you set an address it will skip deployement of this
- *  specifique contract and just use the address given instead. Be carefull there is no verification
- *  of the address you gived !
- */
-
-// This contract/address can be used on other contracts
-const TREASURY = GBC_ADDRESS.TREASURY_ARBITRUM // Multisig or you personal address (if you leave it blank it will be the owner address)
-const GBC = GBC_ADDRESS.GBC // The GBC ERC721 (NFT) contract
-// const POLICE = "" // Police contract
-const POLICE = GBC_ADDRESS.POLICE // Police contract
-// const LAB = "" // The Lab items ERC1155 contract
-const LAB = GBC_ADDRESS.LAB // The Lab items ERC1155 contract
-
-// This contract can be redeployed safely they are not required
-// on others contract (for now)
-const PROFILE = GBC_ADDRESS.PROFILE
-const CLOSET = GBC_ADDRESS.CLOSET
-
-
-
 
 const main = async () => {
 
-  const [creator] = (await ethers.getSigners())
+  const [creator] = await ethers.getSigners()
 
   console.clear()
 
@@ -59,21 +34,21 @@ const main = async () => {
   console.log(`------------------------------------------------------------------------------\n`)
   console.log(`🔑 Deployer: ${creator.address}`)
 
-  const owner = getAddress(TREASURY) == ZERO_ADDRESS ? creator.address : getAddress(TREASURY)
+  const owner = getAddress(GBC_ADDRESS.TREASURY_ARBITRUM) == ZERO_ADDRESS ? creator.address : getAddress(GBC_ADDRESS.TREASURY_ARBITRUM)
 
   console.log(`💰 Treasury address: ${owner}\n`)
   console.log(`------------------------------------------------------------------------------\n`)
 
-  const gbc = await connectOrDeploy(GBC, GBC__factory, "Blueberry Club", "GBC", "")
+  const gbc = await connectOrDeploy(GBC_ADDRESS.GBC, GBC__factory, "Blueberry Club", "GBC", "")
 
 
   console.log(`------------------------------------------------------------------------------\n`)
-  const police = await connectOrDeploy(POLICE, Police__factory, creator.address)
+  const police = await connectOrDeploy(GBC_ADDRESS.POLICE, Police__factory, creator.address)
   console.log(`------------------------------------------------------------------------------\n`)
 
-  const lab = await connectOrDeploy(LAB, GBCLab__factory, owner, police.address)
+  const lab = await connectOrDeploy(GBC_ADDRESS.LAB, GBCLab__factory, owner, police.address)
 
-  if (getAddress(LAB) == AddressZero) {
+  if (getAddress(GBC_ADDRESS.LAB) == AddressZero) {
     try {
       console.log(`✋ Adding roles for LAB`)
 
@@ -88,18 +63,16 @@ const main = async () => {
 
   console.log(`------------------------------------------------------------------------------\n`)
 
-  await connectOrDeploy(PROFILE, Profile__factory, gbc.address, owner, police.address)
+  await connectOrDeploy(GBC_ADDRESS.PROFILE, Profile__factory, gbc.address, owner, police.address)
 
   console.log(`------------------------------------------------------------------------------\n`)
 
-  await connectOrDeploy(CLOSET, Closet__factory, gbc.address, lab.address)
+  await connectOrDeploy(GBC_ADDRESS.CLOSET, Closet__factory, gbc.address, lab.address)
+
+  await connectOrDeploy(GBC_ADDRESS.GOVERNOR, DaoGovernor__factory, gbc.address)
 
 
   for (const sale of saleDescriptionList) {
-    if (!process.env.NFT_STORAGE) {
-      throw new Error('nft.storage api key is required')
-    }
-
     let storeIpfsQuery: any
     const noContractDeployed = sale.mintRuleList.every(rule => rule.contractAddress === '')
 
@@ -140,7 +113,7 @@ const main = async () => {
       // if (owner == creator.address) {
       console.log(`🎩 Set roles from LAB to name: ${sale.name} sale: ${mintLabelMap[rule.type]} SALE`)
       await police.setUserRole(saleContract.address, ROLES.MINTER, true)
-      console.log(`  - MINTER role setted !`)
+      console.log(`  - MINTER role set !`)
       // }
 
 
