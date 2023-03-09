@@ -71,31 +71,3 @@ function downloadRecur() {
 
 
 downloadRecur()
-
-// async function downloadIPFSData(uri: string): Promise<string> {
-//   const { create } = await import('ipfs-http-client')
-//   const auth = 'Basic ' + Buffer.from(process.env.INFURA_ID + ':' + process.env.INFURA_KEY).toString('base64')
-
-//   const ipfs = await create({
-//     host: 'ipfs.infura.io',
-//     port: 5001,
-//     protocol: 'https',
-//     headers: {
-//       authorization: auth,
-//     },
-//   })
-
-//   let data = ''
-
-//   const metadata = await ipfs.cat(uri)
-
-//   const cid = metadata.cid
-
-//   for await (const file of ipfs.get(uri)) {
-//     if (!file.content) continue
-//     for await (const chunk of file.content) {
-//       data += chunk.toString()
-//     }
-//   }
-//   return data
-// }
