@@ -157,7 +157,10 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
                     }, config.competitionCumulative))
                   ),
 
-                  $text(style({ fontSize: '.75em', fontStyle: 'italic' }))('Traded Volume * .001 (Margin Fee) * .15 (BLUBERRY Referral)'),
+                  $column(
+                    $text('Current Prize Pool formula:'),
+                    $text(style({ fontSize: '.75em', fontStyle: 'italic' }))('Traded Volume * .001 (Margin Fee) * .15 (BLUBERRY Referral)'),
+                  ),
 
                   $column(
                     $text('Estimated Prize Pool formula:'),
