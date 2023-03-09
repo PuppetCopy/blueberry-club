@@ -50,7 +50,7 @@ export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
     $column(layoutSheet.spacingBig)(
       $responsiveFlex(layoutSheet.spacingBig)(
         $row(style({ minWidth: '400px', height: '400px', overflow: 'hidden', borderRadius: '30px' }))(
-          switchLatest(map(t => $berryByToken(t), token))
+          switchLatest(map(t => $berryByToken({ id: t.id, labItems: [] } as any), token))
         ),
         $node(),
         switchLatest(map(token => {

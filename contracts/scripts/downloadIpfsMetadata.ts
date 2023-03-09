@@ -1,7 +1,6 @@
 import { IAttributeMappings, IBerryDisplayTupleMap } from '@gambitdao/gbc-middleware'
 import fs from 'fs'
 import { storeGBCImage } from './image'
-import { join } from 'path'
 
 interface nftMetdata {
   attributes: Array<{
@@ -15,7 +14,7 @@ const delay = (time: number): Promise<number> => new Promise(resolve => setTimeo
 async function downloadAll() {
 
   // create directory for metadata files
-  const directory = './ipfs'
+  const directory = './.ipfs'
   const imageDir = directory + '/images'
   const metadataDir = directory + '/metadata'
   if (!fs.existsSync(directory)) {
