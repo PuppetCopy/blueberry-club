@@ -91,7 +91,6 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
 
 
   const serverApi = helloBackend({
-    // requestLeaderboardTopList,
     // requestPricefeed,
     // requestLatestPriceMap,
     // requestTrade,

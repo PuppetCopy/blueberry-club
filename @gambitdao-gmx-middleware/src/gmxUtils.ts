@@ -191,41 +191,6 @@ export function getFundingFee(entryFundingRate: bigint, cumulativeFundingRate: b
 }
 
 
-export function toAccountSummary(list: ITrade[]): IAccountSummary[] {
-  const settledListMap = groupByMapMany(list, a => a.account)
-  const allPositions = Object.entries(settledListMap)
-
-  return allPositions.reduce((seed, [account, allSettled]) => {
-
-    const seedAccountSummary: IAccountSummary = {
-      account,
-      size: 0n,
-      collateral: 0n,
-      fee: 0n,
-      realisedPnl: 0n,
-
-      lossCount: 0,
-      winCount: 0,
-    }
-
-    const summary = allSettled.reduce((seed, next): IAccountSummary => {
-
-      return {
-        ...seed,
-        fee: seed.fee + next.fee,
-        realisedPnl: seed.realisedPnl + next.realisedPnl,
-        size: seed.size + next.size,
-        winCount: next.realisedPnl > 0n ? seed.winCount + 1 : seed.winCount,
-
-      }
-    }, seedAccountSummary)
-
-    seed.push(summary)
-
-    return seed
-  }, [] as IAccountSummary[])
-}
-
 export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: string]: bigint }, minMaxCollateral: bigint, endDate: number): IAccountLadderSummary[] {
   const tradeListMap = groupByMapMany(list, a => a.account)
   const tradeListEntries = Object.entries(tradeListMap)
@@ -235,9 +200,11 @@ export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: stri
     const seedAccountSummary: IAccountLadderSummary = {
       account,
       cumulativeLeverage: 0n,
-      size: 0n,
-      collateral: 0n,
+      cumSize: 0n,
+      cumCollateral: 0n,
       avgLeverage: 0n,
+      avgCollateral: 0n,
+      avgSize: 0n,
       maxCollateral: 0n,
       fee: 0n,
       realisedPnl: 0n,
@@ -287,6 +254,9 @@ export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: stri
       ].filter(update => update.timestamp <= endDate)
 
       const lastUpdate = filteredUpdates[filteredUpdates.length - 1]
+      const avgSize = filteredUpdates.reduce((s, n) => n.size > s ? n.size : s, 0n)
+      const avgCollateral = filteredUpdates.reduce((s, n) => n.collateral > s ? n.collateral : s, 0n)
+
       const cumSizeIncrease = next.increaseList.filter(update => update.timestamp <= endDate).reduce((s, n) => s + n.sizeDelta, 0n)
       const cumSizeDecrease = next.decreaseList.filter(update => update.timestamp <= endDate).reduce((s, n) => s + n.sizeDelta, 0n)
 
@@ -322,9 +292,11 @@ export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: stri
         winCount,
         cumulativeLeverage,
         fee,
+        avgSize,
+        avgCollateral,
         avgLeverage: 0n,
-        size: seed.size + cumSizeIncrease + cumSizeDecrease,
-        collateral: seed.collateral + cumCollateralIncrease + cumCollateralDecrease,
+        cumSize: seed.cumSize + cumSizeIncrease + cumSizeDecrease,
+        cumCollateral: seed.cumCollateral + cumCollateralIncrease + cumCollateralDecrease,
       }
     }, seedAccountSummary)
 

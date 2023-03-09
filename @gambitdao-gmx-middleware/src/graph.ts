@@ -1,10 +1,9 @@
 import { O } from "@aelea/core"
 import { awaitPromises, map } from "@most/core"
 import { intervalTimeMap } from "./constant"
-import { tradeJson } from "./fromJson"
-import { getTokenDescription, toAccountSummary } from "./gmxUtils"
+import { getTokenDescription } from "./gmxUtils"
 import {
-  IRequestAccountApi, IChainParamApi, IRequestCompetitionLadderApi, IRequestLeaderboardApi, IRequestPagePositionApi,
+  IRequestAccountApi, IChainParamApi, IRequestCompetitionLadderApi, IRequestPagePositionApi,
   IPricefeed, IRequestPricefeedApi, IPriceLatest, IRequestGraphEntityApi, IStake,
   IRequestTimerangeApi, ITrade, TradeStatus, IRequestAccountTradeListApi, ITradeOpen, IEnsRegistration
 } from "./types"
@@ -282,38 +281,6 @@ export const accountOpenTradeList = O(
   })
 )
 
-export const leaderboardTopList = O(
-  map(async (queryParams: IRequestLeaderboardApi) => {
-    const cacheLife = cacheLifeMap[queryParams.timeInterval]
-    const cacheKey = 'requestLeaderboardTopList' + queryParams.timeInterval + queryParams.chain
-
-    const cacheQuery = cache(cacheKey, cacheLife, async () => {
-      const to = unixTimestampNow()
-      const from = to - queryParams.timeInterval
-
-      const list = await fetchTrades({ from, to, ...queryParams }, async (params) => {
-        const res = await querySubgraph(params, `
-{
-  trades(first: 1000, skip: ${params.offset}, where: {timestamp_gte: ${from}, timestamp_lte: ${to}}) {
-    ${tradeFields}
-  }
-}
-`)
-        return res.trades as ITrade[]
-      })
-
-      const formattedList = list.map(tradeJson)
-
-      const summary = toAccountSummary(formattedList)
-
-      return summary
-    })
-
-
-    return pagingQuery(queryParams, await cacheQuery)
-  }),
-  awaitPromises
-)
 
 
 export async function getCompetitionTrades(queryParams: IRequestCompetitionLadderApi) {

@@ -1,32 +1,76 @@
+import { IAttributeMappings, IBerryDisplayTupleMap } from '@gambitdao/gbc-middleware'
 import fs from 'fs'
+import { storeGBCImage } from './image'
+import { join } from 'path'
 
+interface nftMetdata {
+  attributes: Array<{
+    trait_type: string;
+    value: string;
+  }>
+}
 
 const delay = (time: number): Promise<number> => new Promise(resolve => setTimeout(() => resolve(time), time));
 
-(async function downloadAll() {
+async function downloadAll() {
 
   // create directory for metadata files
-  const directory = './metadata'
+  const directory = './ipfs'
+  const imageDir = directory + '/images'
+  const metadataDir = directory + '/metadata'
   if (!fs.existsSync(directory)) {
     fs.mkdirSync(directory)
   }
-  const files = (await fs.promises.readdir(directory)).length 
   // get total supply of tokens
   const totalSupply = 10000
 
   // loop through all token IDs and download metadata files
-  for (let i = files; i < totalSupply; i++) {
+  for (let i = 0; i < totalSupply; i++) {
     const tokenId = i + 1
-    await delay(3000)
-    const metadata = await fetch(`https://ipfs.io/ipfs/QmZfVGMtQPeSfre5yHDzDdw4ocZ1WEakGtbYqvtvhhD4zQ/${tokenId}`).then(async res => res.json())
+    const queryMetdataFile = fs.promises.readFile(metadataDir + `/${tokenId}.json`, 'utf8').then(data => JSON.parse(data) as nftMetdata)
 
-    const filename = `${directory}/${tokenId}.json`
+    const metadata = await queryMetdataFile.catch(async () => {
+      const md: nftMetdata = await fetch(`https://ipfs.io/ipfs/QmZfVGMtQPeSfre5yHDzDdw4ocZ1WEakGtbYqvtvhhD4zQ/${tokenId}`).then(async res => res.json())
+      const filename = `${metadataDir}/${tokenId}.json`
 
-    console.log(filename)
+      await fs.promises.writeFile(filename, JSON.stringify(md))
+      console.log(filename)
+      await delay(3000)
 
-    fs.writeFileSync(filename, JSON.stringify(metadata))
+      return md
+    })
+
+
+
+    const tuple = metadata.attributes.map((md): any => {
+      // @ts-ignore
+      const newLocal = IAttributeMappings[md.value]
+      return newLocal
+    }) as IBerryDisplayTupleMap
+
+    try {
+      (await fs.promises.readFile(imageDir + `/${tokenId}.png`))
+    } catch (err) {
+      const imgBuffer = await storeGBCImage(tuple)
+      const filename = `${imageDir}/${tokenId}.png`
+      await fs.promises.writeFile(filename, imgBuffer)
+
+      console.log(filename)
+    }
+
   }
-})()
+}
+
+function downloadRecur() {
+  downloadAll()
+    .catch(async () => {
+      await delay(20000)
+      downloadRecur()
+    })
+}
+
+
+downloadRecur()
 
 // async function downloadIPFSData(uri: string): Promise<string> {
 //   const { create } = await import('ipfs-http-client')

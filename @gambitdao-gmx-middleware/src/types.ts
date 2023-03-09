@@ -229,8 +229,10 @@ export interface IStake extends IndexedType<"Stake"> {
 
 export interface IAccountSummary {
   realisedPnl: bigint
-  size: bigint
-  collateral: bigint
+  cumSize: bigint
+  cumCollateral: bigint
+  avgCollateral: bigint
+  avgSize: bigint
   account: string
   fee: bigint
   winCount: number
@@ -306,7 +308,7 @@ export interface IRequestLeaderboardApi extends IRequestPagePositionApi, IChainP
 export interface IRequestCompetitionLadderApi extends IChainParamApi, IRequestSortApi<IAccountLadderSummary>, IRequestPagePositionApi, IRequestTimerangeApi {
   referralCode: string
   maxCollateral: bigint
-  metric: 'roi' | 'pnl' | 'size'
+  metric: 'roi' | 'pnl' | 'avgSize'
   account: string | null
 }
 

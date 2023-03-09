@@ -1,13 +1,14 @@
 import { combineObject, O, Op, replayLatest } from "@aelea/core"
 import { AnimationFrames } from "@aelea/dom"
 import { Disposable, Scheduler, Sink, Stream } from "@most/types"
-import { at, awaitPromises, constant, continueWith, empty, filter, map, merge, multicast, now, recoverWith, switchLatest, zipArray } from "@most/core"
+import { at, awaitPromises, constant, continueWith, empty, filter, fromPromise, map, merge, multicast, now, recoverWith, switchLatest, zipArray } from "@most/core"
 import { intervalTimeMap, USD_DECIMALS } from "./constant"
 import { IRequestPageApi, IRequestPagePositionApi, IRequestSortApi } from "./types"
 import { keccak256 } from "@ethersproject/solidity"
 import { ClientOptions, createClient, OperationContext, TypedDocumentNode } from "@urql/core"
 import { curry2 } from "@most/prelude"
 import { CHAIN, EXPLORER_URL, NETWORK_METADATA } from "@gambitdao/const"
+import { disposeNone } from "@most/disposable"
 
 
 
@@ -653,5 +654,24 @@ export function getFeeBasisPoints(
   const taxBps = taxBasisPoints * averageDiff / targetAmount
 
   return feeBasisPoints + taxBps
+}
+
+export function importGlobal<T extends { default: any }>(query: Promise<T>): Stream<T['default']> {
+  let cache: T['default'] | null = null
+
+  return {
+    run(sink, scheduler) {
+      if (cache === null) {
+        fromPromise(query.then(res => {
+          cache = (res as any).default
+          sink.event(scheduler.currentTime(), cache)
+        }))
+      } else {
+        sink.event(scheduler.currentTime(), cache)
+      }
+
+      return disposeNone()
+    },
+  }
 }
 

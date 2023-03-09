@@ -1,15 +1,18 @@
 
 
 import { Resvg } from '@resvg/resvg-js'
-import { attributeIndexToLabel, getLabItemTupleIndex, LabItemSale } from '@gambitdao/gbc-middleware'
+import { attributeIndexToLabel, berrySvg, getLabItemTupleIndex, IBerryDisplayTupleMap, LabItemSale } from '@gambitdao/gbc-middleware'
 import { NFTStorage, File } from 'nft.storage'
 import { labItemSvg } from '../utils/image'
 import { promises } from 'fs'
 import { join } from 'path'
+import { map, runEffects } from "@most/core"
+import { newDefaultScheduler,  } from "@most/scheduler"
 
 
 
-export async function storeImageOnIpfs(item: LabItemSale) {
+
+export async function storeLabImageOnIpfs(item: LabItemSale) {
   if (!process.env.NFT_STORAGE) {
     throw new Error('nft.storage api key is required')
   }
@@ -50,5 +53,29 @@ export async function storeImageOnIpfs(item: LabItemSale) {
   })
 
   return client.store({ name: item.name, description: item.description, image, attributes })
+}
+
+
+const scheduler = newDefaultScheduler()
+
+export async function storeGBCImage(tuple: IBerryDisplayTupleMap): Promise<Buffer> {
+  if (!process.env.NFT_STORAGE) {
+    throw new Error('nft.storage api key is required')
+  }
+
+  const svg = berrySvg(tuple)
+  
+  return new Promise(resolve => {
+
+    const streamImg = map(async (svgstr) => {
+      const resvg = new Resvg(svgstr)
+      const pngData = resvg.render()
+      const pngBuffer = pngData.asPng()
+
+      return resolve(pngBuffer)
+    }, svg)
+
+    runEffects(streamImg, scheduler)
+  })
 }
 

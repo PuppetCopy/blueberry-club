@@ -1,31 +1,10 @@
 import { $Node, $wrapNativeElement, style, NodeComposeFn, $svg, attr } from "@aelea/dom"
-import { combine, fromPromise } from "@most/core"
-
+import { combine } from "@most/core"
 import { IBerryDisplayTupleMap, berryPartsToSvg } from "@gambitdao/gbc-middleware"
-import { Stream } from "@most/types"
-import { disposeNone } from "@most/disposable"
 import { $column } from "@aelea/ui-components"
+import { importGlobal } from "@gambitdao/gmx-middleware"
 
 
-function importGlobal<T extends { default: any }>(query: Promise<T>): Stream<T['default']> {
-
-  let cache: T['default'] | null = null
-
-  return {
-    run(sink, scheduler) {
-      if (cache === null) {
-        fromPromise(query.then(res => {
-          cache = (res as any).default
-          sink.event(scheduler.currentTime(), cache)
-        }))
-      } else {
-        sink.event(scheduler.currentTime(), cache)
-      }
-
-      return disposeNone()
-    },
-  }
-}
 
 export const svgParts = importGlobal(import("@gambitdao/gbc-middleware/src/mappings/svgParts"))
 

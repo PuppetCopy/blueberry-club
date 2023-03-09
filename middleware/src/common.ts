@@ -1,6 +1,8 @@
-import { unixTimestampNow } from "@gambitdao/gmx-middleware"
+import { importGlobal, unixTimestampNow } from "@gambitdao/gmx-middleware"
+import { map } from "@most/core"
 import { IAttributeBackground, IAttributeClothes, IAttributeBody, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat, LabItemSale, MintRule, SvgPartsMap, IBerryDisplayTupleMap } from "./types"
 
+const svgParts = importGlobal(import("@gambitdao/gbc-middleware/src/mappings/svgParts"))
 
 const labAttributeTuple = [IAttributeBackground, IAttributeClothes, IAttributeBody, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat] as const
 
@@ -50,6 +52,12 @@ export function getLatestSaleRule(sale: LabItemSale): MintRule {
   }
 
   return match
+}
+
+export const berrySvg = (tuple: Partial<IBerryDisplayTupleMap>) => {
+  return map(parts => {
+    return `<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMin meet" fill="none" viewBox="0 0 1500 1500">${berryPartsToSvg(parts, tuple)}</svg>`
+  }, svgParts)
 }
 
 export const berryPartsToSvg = (svgParts: SvgPartsMap, [background, clothes, body, expression, faceAccessory, hat]: Partial<IBerryDisplayTupleMap>,) => {

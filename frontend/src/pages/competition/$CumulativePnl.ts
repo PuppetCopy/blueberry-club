@@ -123,7 +123,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
           $column(layoutSheet.spacingSmall, style({ flex: 1, alignSelf: screenUtils.isMobileScreen ? 'center' : '' }))(
             $responsiveFlex(layoutSheet.spacingSmall)(
               $infoTooltipLabel($column(layoutSheet.spacingSmall)(
-                $text('The total volume accumulated between the 1st and 28th of each competition period'),
+                $text('The total volume accumulated between the 1st and 26th of each month'),
                 $text('Higher volume means a higher prize pool'),
               ), 'Traded Volume'),
               $text(map(res => {
@@ -242,11 +242,11 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
               sortBy: 'pnl',
               columnOp: style({ placeContent: 'flex-end', minWidth: '90px' }),
               $$body: map((pos) => {
-                const val = formatReadableUSD(pos.size, false)
+                const val = formatReadableUSD(pos.cumSize, false)
                 const isNeg = pos.pnl < 0n
 
                 return $column(layoutSheet.spacingTiny, style({ alignItems: 'flex-end' }))(
-                  $text(style({ fontSize: '.75em' }))(formatReadableUSD(pos.collateral, false)),
+                  $text(style({ fontSize: '.75em' }))(formatReadableUSD(pos.cumCollateral, false)),
                   $seperator,
                   $text(
                     val

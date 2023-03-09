@@ -8,7 +8,7 @@ import getAddress, { ZERO_ADDRESS } from "../utils/getAddress"
 import { connectOrDeploy } from "../utils/deploy"
 import { GBC_ADDRESS, mintLabelMap, saleDescriptionList, SaleType } from "@gambitdao/gbc-middleware"
 import { getMerkleProofs } from "../utils/whitelist"
-import { storeImageOnIpfs } from "./ipfs-image"
+import { storeLabImageOnIpfs } from "./image"
 import { CHAIN } from "@gambitdao/const"
 
 
@@ -78,7 +78,7 @@ const main = async () => {
 
 
     if (noContractDeployed && network.config.chainId === CHAIN.ARBITRUM) {
-      storeIpfsQuery = storeImageOnIpfs(sale)
+      storeIpfsQuery = storeLabImageOnIpfs(sale)
     }
 
 

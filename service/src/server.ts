@@ -70,7 +70,6 @@ function heartbeat() {
 
 
 const apiComponent = helloFrontend(wss, {
-  requestLeaderboardTopList: gmxSubgraph.leaderboardTopList,
   requestLatestPriceMap: gmxSubgraph.latestPriceMap,
   requestAccountTradeList: gmxSubgraph.accountTradeList,
   requestTrade: gmxSubgraph.trade,
