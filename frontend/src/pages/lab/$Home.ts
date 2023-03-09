@@ -114,7 +114,7 @@ export const $LabHome = ({ walletLink, parentRoute }: IBerry) => component((
           style(
             screenUtils.isDesktopScreen ? { maxWidth: '80vw', placeSelf: 'center', overflow: 'hidden', minWidth: '460px', borderRadius: '30px' } : { alignSelf: 'center', borderRadius: '30px' },
             $berry(
-              [undefined, IAttributeClothes.AVALANCHE_HOODIE, undefined, IAttributeExpression.DEAD, IAttributeFaceAccessory.BEARD_WHITE, IAttributeHat.CHRISTMAS_HAT],
+              [undefined, IAttributeClothes.AVALANCHE_HOODIE, undefined, IAttributeExpression.DEAD, IAttributeFaceAccessory.BUBBLEGUM, IAttributeHat.CHRISTMAS_HAT],
             )
           )
         ),

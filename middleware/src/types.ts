@@ -190,6 +190,7 @@ export enum IAttributeMappings {
   Birthday = 220,
   "Marine Shirt" = 221,
   "Giving Love" = 222,
+  "Pepe Face" = 223,
 }
 
 
@@ -300,6 +301,8 @@ export enum IAttributeClothes {
 }
 
 
+
+
 export enum IAttributeFaceAccessory {
   BEARD_GREEN = IAttributeMappings["Beard Green"],
   BEARD_MULTICOLOR = IAttributeMappings["Beard Multicolor"],
@@ -335,7 +338,8 @@ export enum IAttributeFaceAccessory {
 
   // lab
   BEARD_WHITE = IAttributeMappings["Beard White"],
-  NOODLES = IAttributeMappings.Noodles
+  NOODLES = IAttributeMappings.Noodles,
+  PEPE_FACE = IAttributeMappings["Pepe Face"]
 }
 
 

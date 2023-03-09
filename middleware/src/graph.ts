@@ -3,7 +3,7 @@ import { hexValue } from "@ethersproject/bytes"
 import {
   IRequestCompetitionLadderApi, IIdentifiableEntity, IRequestPagePositionApi, pagingQuery,
   cacheMap, intervalTimeMap, toAccountCompetitionSummary, gmxSubgraph, getMarginFees, BASIS_POINTS_DIVISOR, switchMap,
-  groupByKey, div, getTokenAmount, readableNumber, formatFixed, getMappedValue, CHAIN_ADDRESS_MAP
+  groupByKey
 } from "@gambitdao/gmx-middleware"
 import { awaitPromises, combine, map, now } from "@most/core"
 import { ClientOptions, createClient, gql, OperationContext, TypedDocumentNode } from "@urql/core"
