@@ -10,7 +10,7 @@ import { $alertTooltip, countdown } from './$rules'
 import { IWalletLink } from '@gambitdao/wallet-link'
 import { $accountPreview, $profilePreview } from '../../components/$AccountProfile'
 import { BLUEBERRY_REFFERAL_CODE, IProfileTradingSummary, IProfileTradingResult, TOURNAMENT_START, TOURNAMENT_DURATION, TOURNAMENT_NEXT, COMPETITION_METRIC_LIST, COMPETITION_START_MONTH } from '@gambitdao/gbc-middleware'
-import { $anchor, $infoLabel, $infoTooltipLabel, $Link, ISortBy } from '@gambitdao/ui-components'
+import { $anchor, $infoLabel, $infoLabeledValue, $infoTooltipLabel, $Link, ISortBy } from '@gambitdao/ui-components'
 import { $CardTable } from '../../components/$common'
 import { IProfileActiveTab } from '../$Profile'
 import { $addToCalendar, $responsiveFlex } from '../../elements/$common'
@@ -125,9 +125,21 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
               $infoTooltipLabel($column(layoutSheet.spacingSmall)(
                 $text('The total volume accumulated between the 1st and 26th of each month'),
                 $text('Higher volume means a higher prize pool'),
+
+                style({
+                  flexDirection: 'column',
+                  alignItems: 'flex-start'
+                })(
+                  $infoLabeledValue(
+                    'Current Traded Volume',
+                    $text(style({ color: pallete.positive }))(map(res => {
+                      return formatReadableUSD(res.size)
+                    }, config.competitionCumulative))
+                  )
+                )
               ), 'Traded Volume'),
               $text(map(res => {
-                return formatReadableUSD(res.size)
+                return '~' + formatReadableUSD(res.estSize)
               }, config.competitionCumulative))
             ),
           ),
@@ -136,11 +148,23 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
             style({ flexDirection: 'row-reverse' })(
               $infoTooltipLabel(
                 $column(layoutSheet.spacingSmall)(
-                  $text('The current accumulated amount from the GMX referral program will be rewarded to the top traders at the end'),
+                  $text('The estimated amount distirbuted to all top traders by competition end results'),
+
+                  $infoLabeledValue(
+                    'Current Prize Pool',
+                    $text(style({ color: pallete.positive }))(map(res => {
+                      return formatReadableUSD(res.prizePool)
+                    }, config.competitionCumulative))
+                  ),
+
+                  $text(style({ fontSize: '.75em', fontStyle: 'italic' }))('Traded Volume * .001 (Margin Fee) * .15 (BLUBERRY Referral)'),
+
                   $column(
-                    $text('it is calculated as:'),
-                    $text(style({ fontSize: '.75em', fontStyle: 'italic' }))('Traded Volume * .001 (Margin Fee) * .15 (BLUBERRY Referral)'),
-                  )
+                    $text('Estimated Prize Pool formula:'),
+                    $text(style({ fontSize: '.75em', fontStyle: 'italic' }))('Current Prize Pool * Competition Duration / Duration Elapsed'),
+                  ),
+
+
                 ),
                 'Prize Pool'
               )
@@ -149,7 +173,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
               color: pallete.positive,
               fontSize: '1.65em',
               textShadow: `${pallete.positive} 1px 1px 15px`
-            }))(map(params => formatReadableUSD(params.prizePool), config.competitionCumulative))
+            }))(map(params => '~' + formatReadableUSD(params.estPrizePool), config.competitionCumulative))
           ),
         ),
 
@@ -266,7 +290,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
               $$body: currentMetric === 'pnl'
                 ? zip((params, pos) => {
                   const metricVal = pos[currentMetric]
-                  const prize = params.prizePool * metricVal / params.totalScore
+                  const prize = params.estPrizePool * metricVal / params.totalScore
 
 
                   return $column(layoutSheet.spacingTiny, style({ alignItems: 'flex-end' }))(
@@ -282,7 +306,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
                   return $column(layoutSheet.spacingTiny, style({ alignItems: 'flex-end' }))(
                     prizeRatio
                       ? $row(
-                        $text(style({ fontSize: '1.25em', color: pallete.positive }))(formatReadableUSD(prizePool.prizePool * prizeRatio / BASIS_POINTS_DIVISOR, false)),
+                        $text(style({ fontSize: '1.25em', color: pallete.positive }))(formatReadableUSD(prizePool.estPrizePool * prizeRatio / BASIS_POINTS_DIVISOR, false)),
                       ) : empty(),
 
                     $text(`${formatFixed(pos.roi, 2)}%`)

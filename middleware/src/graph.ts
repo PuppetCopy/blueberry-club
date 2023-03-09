@@ -7,6 +7,7 @@ import {
 } from "@gambitdao/gmx-middleware"
 import { awaitPromises, combine, map, now } from "@most/core"
 import { ClientOptions, createClient, gql, OperationContext, TypedDocumentNode } from "@urql/core"
+import { TOURNAMENT_DURATION, TOURNAMENT_TIME_ELAPSED } from "./config"
 import { ILabItem, ILabItemOwnership, IOwner, IProfile, IProfileTradingSummary, IProfileTradingResult, IToken } from "./types"
 
 
@@ -260,8 +261,11 @@ export const competitionCumulative = O(
       const competitionSummary = toAccountCompetitionSummary(tradeList, priceMap, queryParams.maxCollateral, queryParams.to)
       const sortedByList = competitionSummary.sort((a, b) => Number(b[queryParams.metric] - a[queryParams.metric]))
 
+
       const size = sortedByList.reduce((s, n) => s + n.cumSize, 0n)
+      const estSize = sortedByList.reduce((s, n) => s + n.cumSize, 0n) * BigInt(TOURNAMENT_DURATION) / BigInt(TOURNAMENT_TIME_ELAPSED)
       const prizePool = getMarginFees(size) * 1500n / BASIS_POINTS_DIVISOR
+      const estPrizePool = prizePool * BigInt(TOURNAMENT_DURATION) / BigInt(TOURNAMENT_TIME_ELAPSED)
 
       let profile2: null | IProfileTradingSummary = null
       let totalScore = 0n
@@ -309,7 +313,8 @@ export const competitionCumulative = O(
       // )
 
 
-      return { sortedCompetitionList, size, totalScore, prizePool, profile: profile2 as null | IProfileTradingSummary }
+      return {
+        sortedCompetitionList, estSize, estPrizePool, size, totalScore, prizePool, profile: profile2 as null | IProfileTradingSummary }
     })
 
     const res = await queryCache

@@ -131,7 +131,9 @@ export interface IProfileTradingSummary extends IAccountLadderSummary {
 
 export interface ITradingSummary {
   size: bigint
+  estSize: bigint
   prizePool: bigint
+  estPrizePool: bigint
   totalScore: bigint
 }
 
