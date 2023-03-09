@@ -62,7 +62,8 @@ async function downloadAll() {
 
 function downloadRecur() {
   downloadAll()
-    .catch(async () => {
+    .catch(async (err) => {
+      console.log(err)
       await delay(20000)
       downloadRecur()
     })
