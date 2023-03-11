@@ -79,7 +79,7 @@ export function latestPriceFromExchanges(indexToken: ITokenTrade): Stream<bigint
   const binance = http.fromWebsocket('wss://stream.binance.com:9443/ws', now({ params: [`${symbol}usd@trade`.toLowerCase()], method: "SUBSCRIBE", id: 1 }))
   const bitfinex = http.fromWebsocket('wss://api-pub.bitfinex.com/ws/2', now({ symbol: `${symbol}USD`, event: "subscribe", channel: "ticker" }))
   const coinbase = http.fromWebsocket('wss://ws-feed.pro.coinbase.com', now({ product_ids: [`${symbol}-USD`], type: "subscribe", channels: ["ticker"] }))
-  const kraken = http.fromWebsocket('wss://ws.kraken.com', now({ event: 'subscribe', pair: ['BTC/USD'], subscription: { name: 'ticker' } }))
+  const kraken = http.fromWebsocket('wss://ws.kraken.com', now({ event: 'subscribe', pair: [`${symbol.toUpperCase()}/USD`], subscription: { name: 'ticker' } }))
 
   const allSources: Stream<number> = filterNull(mergeArray([
     // map((ev: any) => {
