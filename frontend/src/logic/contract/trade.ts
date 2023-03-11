@@ -76,20 +76,32 @@ export function latestPriceFromExchanges(indexToken: ITokenTrade): Stream<bigint
     return empty()
   }
 
-  const binance = http.fromWebsocket('wss://stream.binance.com:9443/ws', now({ params: [`${symbol}usdt@trade`.toLowerCase()], method: "SUBSCRIBE", id: 1 }))
+  const binance = http.fromWebsocket('wss://stream.binance.com:9443/ws', now({ params: [`${symbol}usd@trade`.toLowerCase()], method: "SUBSCRIBE", id: 1 }))
   const bitfinex = http.fromWebsocket('wss://api-pub.bitfinex.com/ws/2', now({ symbol: `${symbol}USD`, event: "subscribe", channel: "ticker" }))
   const coinbase = http.fromWebsocket('wss://ws-feed.pro.coinbase.com', now({ product_ids: [`${symbol}-USD`], type: "subscribe", channels: ["ticker"] }))
+  const kraken = http.fromWebsocket('wss://ws.kraken.com', now({ event: 'subscribe', pair: ['BTC/USD'], subscription: { name: 'ticker' } }))
 
   const allSources: Stream<number> = filterNull(mergeArray([
-    map((ev: any) => {
-      if ('p' in ev) {
-        return Number(ev.p)
+    // map((ev: any) => {
+    //   if ('p' in ev) {
+    //     console.log(Number(ev.p))
+    //     return Number(ev.p)
+    //   }
+    //   // console.warn(ev)
+    //   return null
+    // }, binance),
+    map((data: any) => {
+      if (data[2] && data[2] === 'ticker') {
+        return Number(data[1].c[0])
+
       }
       // console.warn(ev)
+
       return null
-    }, binance),
+    }, kraken),
     map((ev: any) => {
       if (Array.isArray(ev) && ev.length === 2 && Array.isArray(ev[1]) && ev[1].length === 10) {
+        // console.log(Number(ev[1][6]))
         return ev[1][6]
       }
       // console.warn(ev)
@@ -97,6 +109,8 @@ export function latestPriceFromExchanges(indexToken: ITokenTrade): Stream<bigint
     }, bitfinex),
     map((ev: any) => {
       if ('price' in ev) {
+        // console.log(Number(ev.price))
+
         return Number(ev.price)
       }
       // console.warn(ev)
