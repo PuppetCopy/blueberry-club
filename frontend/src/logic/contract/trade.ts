@@ -76,7 +76,7 @@ export function latestPriceFromExchanges(indexToken: ITokenTrade): Stream<bigint
     return empty()
   }
 
-  const binance = http.fromWebsocket('wss://stream.binance.com:9443/ws', now({ params: [`${symbol}usd@trade`.toLowerCase()], method: "SUBSCRIBE", id: 1 }))
+  const binance = http.fromWebsocket('wss://stream.binance.com:9443/ws', now({ params: [`${symbol}usdt@trade`.toLowerCase()], method: "SUBSCRIBE", id: 1 }))
   const bitfinex = http.fromWebsocket('wss://api-pub.bitfinex.com/ws/2', now({ symbol: `${symbol}USD`, event: "subscribe", channel: "ticker" }))
   const coinbase = http.fromWebsocket('wss://ws-feed.pro.coinbase.com', now({ product_ids: [`${symbol}-USD`], type: "subscribe", channels: ["ticker"] }))
   const kraken = http.fromWebsocket('wss://ws.kraken.com', now({ event: 'subscribe', pair: [`${symbol.toUpperCase()}/USD`], subscription: { name: 'ticker' } }))
@@ -99,14 +99,14 @@ export function latestPriceFromExchanges(indexToken: ITokenTrade): Stream<bigint
 
       return null
     }, kraken),
-    map((ev: any) => {
-      if (Array.isArray(ev) && ev.length === 2 && Array.isArray(ev[1]) && ev[1].length === 10) {
-        // console.log(Number(ev[1][6]))
-        return ev[1][6]
-      }
-      // console.warn(ev)
-      return null
-    }, bitfinex),
+    // map((ev: any) => {
+    //   if (Array.isArray(ev) && ev.length === 2 && Array.isArray(ev[1]) && ev[1].length === 10) {
+    //     // console.log(Number(ev[1][6]))
+    //     return ev[1][6]
+    //   }
+    //   // console.warn(ev)
+    //   return null
+    // }, bitfinex),
     map((ev: any) => {
       if ('price' in ev) {
         // console.log(Number(ev.price))
@@ -118,9 +118,18 @@ export function latestPriceFromExchanges(indexToken: ITokenTrade): Stream<bigint
     }, coinbase),
   ]))
 
-  const avgPrice = skip(1, scan((prev, next) => prev === 0 ? next : (prev + next) / 2, 0, allSources))
+  const avgPrice = skip(1, scan((prev, next) => {
+    console.log(next)
 
-  return map(ev => parseFixed(ev, 30), avgPrice)
+    return prev === 0 ? next : (prev + next) / 2
+  }, 0, allSources))
+
+  return map(ev => {
+
+
+    const newLocal = parseFixed(ev, 30)
+    return newLocal
+  }, avgPrice)
 }
 
 
