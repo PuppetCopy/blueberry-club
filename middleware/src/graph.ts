@@ -216,25 +216,6 @@ export const profilePickList = O(
   map(getProfilePickList)
 )
 
-export const profile = O(
-  map(async (queryParams: IIdentifiableEntity) => {
-    const res = await await querySubgraph(`
-{
-  owner(id: "${queryParams.id}") {
-    id
-    profile {
-      id
-      labItems {
-        id
-      }
-    }
-  }
-}
-`)
-
-    return res.profile ? ownerJson(res.profile) : null
-  })
-)
 
 export const competitionCumulative = O(
   map(async (queryParams: IRequestCompetitionLadderApi): Promise<IProfileTradingResult> => {
@@ -275,29 +256,6 @@ export const competitionCumulative = O(
 
           return profileSummary
         })
-
-      // const prizeRatioLadder: bigint[] = [3000n, 1500n, 750n, ...Array(17).fill(div(4750n, 17n) / BASIS_POINTS_DIVISOR)]
-
-
-      // log CSV file for airdrop
-      // erc20,0x82aF49447D8a07e3bd95BD0d56f35241523fBab1,0xac6fac7f4081852d7d485b78a8e574d6267c6e66,53.998590801480455323,
-
-      // const nativeToken = getMappedValue(CHAIN_ADDRESS_MAP, queryParams.chain).NATIVE_TOKEN
-      // console.log(
-      //   'token_type,token_address,receiver,amount,id\n'  + sortedCompetitionList
-      //     // .filter(x => {
-      //     //   return x.profile !== null
-      //     // })
-      //     .slice(0, 20).map((x, idx) => {
-      //       const ethPrice = BigInt(priceMap['_' + nativeToken])
-      //       const prizeRatio = prizeRatioLadder[idx]
-      //       const prizeUsd = prizePool * prizeRatio / BASIS_POINTS_DIVISOR
-      //       const tokenAmount = formatFixed(getTokenAmount(prizeUsd, ethPrice, 18), 18)
-
-      //       return `erc20,${nativeToken},${x.account},${readableNumber(tokenAmount)},`
-      //     }).join('\n')
-      // )
-
 
       return {
         sortedCompetitionList, estSize, estPrizePool, size, totalScore, prizePool, profile: profile2 as null | IProfileTradingSummary }

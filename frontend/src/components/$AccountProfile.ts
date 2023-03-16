@@ -5,7 +5,7 @@ import { BaseProvider } from "@ethersproject/providers"
 import { IEnsRegistration, intervalTimeMap } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $jazzicon } from "../common/$avatar"
-import { blueberrySubgraph, getIdentityFromENS, IEnsClaim, IProfile } from "@gambitdao/gbc-middleware"
+import { blueberrySubgraph, getIdentityFromENS, IEnsClaim, IOwner } from "@gambitdao/gbc-middleware"
 import { $berryByToken } from "../logic/common"
 import { awaitPromises, empty, map, now, switchLatest } from "@most/core"
 
@@ -18,7 +18,7 @@ export interface IAccountPreview {
 }
 
 export interface IProfilePreview {
-  profile: IProfile
+  profile: IOwner
   $container?: NodeComposeFn<$Node>
   labelSize?: string
   showAddress?: boolean
@@ -78,7 +78,7 @@ export const $ProfileLabel = (ens: IEnsRegistration) => {
 export const $discoverIdentityDisplay = (config: IAccountPreview) => {
   const { $container, address, showAddress = true } = config
 
-  const profileEv = awaitPromises(blueberrySubgraph.profile(now({ id: address.toLowerCase() })))
+  const profileEv = awaitPromises(blueberrySubgraph.owner(now({ id: address.toLowerCase() })))
 
   return switchLatest(map(profile => {
     return profile
@@ -104,10 +104,9 @@ export const $accountPreview = ({
 export const $profilePreview = ({
   $container, profile, showAddress = true, labelSize = '16px'
 }: IProfilePreview) => {
-
   return $row(layoutSheet.row, layoutSheet.spacingSmall, style({ alignItems: 'center', pointerEvents: 'none', textDecoration: 'none' }))(
-    profile.token
-      ? style({ borderRadius: '50%' }, $berryByToken(profile.token, $container))
+    profile.profile
+      ? style({ borderRadius: '50%' }, $berryByToken(profile.profile, $container))
       : $jazzicon({
         address: profile.id,
         $container

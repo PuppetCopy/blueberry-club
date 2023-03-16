@@ -81,6 +81,8 @@ export interface IOwner {
   ownedLabItems: ILabItemOwnership[]
 
   profile: IToken | null
+
+  ens?: IEnsRegistration
 }
 
 
