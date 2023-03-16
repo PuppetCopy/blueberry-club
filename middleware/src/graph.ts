@@ -7,8 +7,8 @@ import {
 } from "@gambitdao/gmx-middleware"
 import { awaitPromises, combine, map, now } from "@most/core"
 import { ClientOptions, createClient, gql, OperationContext, TypedDocumentNode } from "@urql/core"
-import { TOURNAMENT_DURATION, TOURNAMENT_TIME_ELAPSED } from "./config"
-import { ILabItem, ILabItemOwnership, IOwner, IProfile, IProfileTradingSummary, IProfileTradingResult, IToken } from "./types"
+import { COMPETITION_METRIC_LIST, TOURNAMENT_DURATION, TOURNAMENT_TIME_ELAPSED } from "./config"
+import { ILabItem, ILabItemOwnership, IOwner, IProfileTradingSummary, IProfileTradingResult, IToken } from "./types"
 
 
 export const createSubgraphClient = (opts: ClientOptions) => {
@@ -61,7 +61,7 @@ export const profileList = O(
 }
 `)
 
-    return res.profiles.map(profileJson) as IProfile[]
+    return res.profiles.map(ownerJson) as IOwner[]
   })
 )
 
@@ -80,7 +80,6 @@ export const ownerList = O(
       }
       id
     }
-    displayName
     rewardClaimedCumulative
     ownedTokens {
       id
@@ -89,11 +88,9 @@ export const ownerList = O(
       }
     }
     profile {
-      token {
+      id
+      labItems {
         id
-        labItems {
-          id
-        }
       }
       name
     }
@@ -119,8 +116,6 @@ export const owner = O(
       balance
       id
     }
-    displayName
-    rewardClaimedCumulative
     ownedTokens(first: 1000) {
       id
       labItems {
@@ -128,13 +123,10 @@ export const owner = O(
       }
     }
     profile {
-      token {
+      id
+      labItems {
         id
-        labItems {
-          id
-        }
       }
-      name
     }
   }
 }
@@ -158,7 +150,6 @@ export const token = O(
         balance
         id
       }
-      displayName
       rewardClaimedCumulative
       ownedTokens(first: 1000) {
         id
@@ -167,13 +158,10 @@ export const token = O(
         }
       }
       profile {
-        token {
+        id
+        labItems {
           id
-          labItems {
-            id
-          }
         }
-        name
       }
     }
     transfers {
@@ -232,21 +220,19 @@ export const profile = O(
   map(async (queryParams: IIdentifiableEntity) => {
     const res = await await querySubgraph(`
 {
-  profile(id: "${queryParams.id}") {
+  owner(id: "${queryParams.id}") {
     id
-    timestamp
-    token {
+    profile {
       id
       labItems {
         id
       }
     }
-    name
   }
 }
 `)
 
-    return res.profile ? profileJson(res.profile) : null
+    return res.profile ? ownerJson(res.profile) : null
   })
 )
 
@@ -321,7 +307,7 @@ export const competitionCumulative = O(
 
 
 
-    if (queryParams.selector === 'roi' && queryParams.direction === 'desc') {
+    if (COMPETITION_METRIC_LIST.indexOf(queryParams.selector as any) > -1 && queryParams.direction === 'desc') {
       const spage = pagingQuery(queryParams, res.sortedCompetitionList)
       const { offset, pageSize } = spage
 
@@ -384,7 +370,7 @@ export const competitionCumulative = O(
 
 
 
-async function getProfilePickList(idList: string[]): Promise<IProfile[]> {
+async function getProfilePickList(idList: string[]): Promise<IOwner[]> {
   if (idList.length === 0) {
     return []
   }
@@ -393,32 +379,39 @@ async function getProfilePickList(idList: string[]): Promise<IProfile[]> {
   const doc = `
 {
   ${idList.map(id => `
-_${id}: profile(id: "${id}") {
+_${id}: owner(id: "${id}") {
     id
-    timestamp
-    name
-    token {
+    ownedLabItems {
+      balance
+      item {
+        id
+      }
+      id
+    }
+    ownedTokens {
       id
       labItems {
         id
       }
     }
+    profile {
+      id
+      labItems {
+        id
+      }
+    }
+
 }
   `).join('')}
 }
 `
   const res = await querySubgraph(doc)
-  const rawList: IProfile[] = Object.values(res)
+  const rawList: IOwner[] = Object.values(res)
 
-  return rawList.map(token => profileJson(token))
+  return rawList.filter(x => x !== null).map(token => ownerJson(token))
 }
 
-function profileJson(obj: IProfile): IProfile {
-  return {
-    ...obj,
-    token: obj?.token ? tokenJson(obj.token) : null
-  }
-}
+
 
 function labItemJson(obj: ILabItem): ILabItem {
   return {
@@ -444,7 +437,7 @@ function ownerJson(obj: IOwner): IOwner {
 
   return {
     ...obj,
-    profile: obj.profile ? profileJson(obj.profile) : null,
+    profile: obj.profile ? tokenJson(obj.profile) : null,
     ownedTokens,
     ownedLabItems: newLocal
   }

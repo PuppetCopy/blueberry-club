@@ -64,13 +64,7 @@ export type IBerryLabItems = {
   custom: number;
 }
 
-export type IProfile = {
-  id: string
-  token: IToken | null
-  name: string | null
-  timestamp: number
-  ens?: IEnsRegistration
-}
+
 
 export type ILabItemOwnership = {
   id: string
@@ -82,13 +76,11 @@ export type ILabItemOwnership = {
 export interface IOwner {
   id: string
   balance: bigint
-  rewardClaimedCumulative: bigint
 
   ownedTokens: IToken[]
   ownedLabItems: ILabItemOwnership[]
 
-  profile: IProfile | null
-  displayName: string | null
+  profile: IToken | null
 }
 
 
@@ -125,7 +117,7 @@ export interface IYieldInterval extends IAsset {
 
 
 export interface IProfileTradingSummary extends IAccountLadderSummary {
-  profile: IProfile | null
+  profile: IOwner | null
   rank: number
 }
 

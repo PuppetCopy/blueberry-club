@@ -145,9 +145,8 @@ export function $liquidationSeparator(pos: ITrade, markPrice: Stream<bigint>) {
 }
 
 export const $openPositionPnlBreakdown = (trade: ITradeOpen, cumulativeFee: Stream<bigint>, price: Stream<bigint>) => {
-  const positionMarkPrice = price
-
   const totalMarginFee = [...trade.increaseList, ...trade.decreaseList].reduce((seed, next) => seed + getMarginFees(next.sizeDelta), 0n)
+  const totalFee = [...trade.increaseList, ...trade.decreaseList].reduce((seed, next) => next.fee, 0n)
 
 
   return $column(layoutSheet.spacing)(
@@ -179,7 +178,7 @@ export const $openPositionPnlBreakdown = (trade: ITradeOpen, cumulativeFee: Stre
           map(cumFee => {
             const fstUpdate = trade.updateList[0]
             const entryFundingRate = fstUpdate.entryFundingRate
-            const historicBorrowingFee = totalMarginFee - trade.fee
+            const historicBorrowingFee = totalFee - trade.fee
 
             const fee = getFundingFee(entryFundingRate, cumFee, trade.size) + historicBorrowingFee
             

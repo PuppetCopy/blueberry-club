@@ -1,5 +1,5 @@
 import { groupByKey, intervalTimeMap, unixTimestampNow } from "@gambitdao/gmx-middleware"
-import { parseEther } from "ethers/lib/utils"
+import { hexlify, parseEther } from "ethers/lib/utils"
 import { IAttributeMappings, IMonthlyTradingCompetition, LabItemSale, SaleType } from "./types"
 
 const date = new Date()
@@ -470,13 +470,18 @@ export const historicMonthlyCompetitions: IMonthlyTradingCompetition[] = [
         avgSize: 0n,
         avgLeverage: 0n,
         profile: {
-          id: "0x015067ee4b1d20cb205700b012ffdcf569aa58e4",
-          timestamp: 1676366380,
-          name: null,
-          token: {
+          balance: 0n,
+          id: '0x015067ee4b1d20cb205700b012ffdcf569aa58e4',
+          ownedLabItems: [],
+          ownedTokens: [],
+          profile: {
             id: 5255,
             labItems: [],
-          } as any
+            contract: {} as any,
+            operator: '',
+            owner: {} as any,
+            transfers: []
+          }
         },
         rank: 1
       },
@@ -497,14 +502,20 @@ export const historicMonthlyCompetitions: IMonthlyTradingCompetition[] = [
         fee: 74499999999999999999856960000000n,
         cumSize: 49999999999999999999904000000000000n,
         profile: {
-          id: "0xd502dfa9ff8478f5d44f558a9075246f1169f400",
-          timestamp: 1677401346,
-          name: null,
-          token: {
+          balance: 0n,
+          id: '0xd502dfa9ff8478f5d44f558a9075246f1169f400',
+          ownedLabItems: [],
+          ownedTokens: [],
+          profile: {
             id: 2738,
-            labItems: []
-          } as any,
+            labItems: [],
+            contract: {} as any,
+            operator: '',
+            owner: {} as any,
+            transfers: []
+          }
         },
+        
         rank: 2
       },
       {
@@ -524,13 +535,18 @@ export const historicMonthlyCompetitions: IMonthlyTradingCompetition[] = [
         cumCollateral: 0n,
         avgLeverage: 0n,
         profile: {
-          id: "0x407e0e4c5362395b785971fd2d62818a760f6a37",
-          timestamp: 1676028807,
-          name: null,
-          token: {
+          balance: 0n,
+          id: '0x407e0e4c5362395b785971fd2d62818a760f6a37',
+          ownedLabItems: [],
+          ownedTokens: [],
+          profile: {
             id: 8727,
-            labItems: []
-          } as any
+            labItems: [],
+            contract: {} as any,
+            operator: '',
+            owner: {} as any,
+            transfers: []
+          }
         },
         rank: 3
       },

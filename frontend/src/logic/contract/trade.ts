@@ -90,15 +90,15 @@ export function latestPriceFromExchanges(indexToken: ITokenTrade): Stream<bigint
     //   // console.warn(ev)
     //   return null
     // }, binance),
-    map((data: any) => {
-      if (data[2] && data[2] === 'ticker') {
-        return Number(data[1].c[0])
+    // map((data: any) => {
+    //   if (data[2] && data[2] === 'ticker') {
+    //     return Number(data[1].c[0])
 
-      }
-      // console.warn(ev)
+    //   }
+    //   // console.warn(ev)
 
-      return null
-    }, kraken),
+    //   return null
+    // }, kraken),
     // map((ev: any) => {
     //   if (Array.isArray(ev) && ev.length === 2 && Array.isArray(ev[1]) && ev[1].length === 10) {
     //     // console.log(Number(ev[1][6]))

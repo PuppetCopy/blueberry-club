@@ -284,11 +284,13 @@ export const accountOpenTradeList = O(
 
 
 export async function getCompetitionTrades(queryParams: IRequestCompetitionLadderApi) {
+  const newLocal = intervalTimeMap.HR24 * 3
   const competitionAccountListQuery = fetchHistoricTrades({ ...queryParams, offset: 0, pageSize: 1000 }, async (params) => {
     const res = await subgraphChainMap[queryParams.chain](gql(`
 
 query {
   trades(first: 1000, skip: ${params.offset}, where: { entryReferralCode: "${queryParams.referralCode}", timestamp_gte: ${params.from}, timestamp_lt: ${params.to}}) {
+  # trades(first: 1000, skip: ${params.offset}, where: { timestamp_gte: ${params.from}, timestamp_lt: ${params.to}}) {
       ${tradeFields}
       entryReferralCode
       entryReferrer
@@ -297,7 +299,7 @@ query {
 `), {})
 
     return res.trades as ITrade[]
-  })
+  }, newLocal)
 
 
   const historicTradeList = await competitionAccountListQuery
@@ -327,11 +329,11 @@ export const fetchTrades = async <T extends IRequestPagePositionApi & IChainPara
   return list
 }
 
-export const fetchHistoricTrades = async <T extends IRequestPagePositionApi & IChainParamApi & IRequestTimerangeApi, R>(params: T, getList: (res: T) => Promise<R[]>): Promise<R[]> => {
+export const fetchHistoricTrades = async <T extends IRequestPagePositionApi & IChainParamApi & IRequestTimerangeApi, R>(params: T, getList: (res: T) => Promise<R[]>, splitSpan = intervalTimeMap.DAY7): Promise<R[]> => {
   const deltaTime = params.to - params.from
 
   // splits the queries because the-graph's result limit of 5k items
-  if (deltaTime >= intervalTimeMap.DAY7) {
+  if (deltaTime >= splitSpan) {
     const splitDelta = Math.floor(deltaTime / 2)
     const nowTime = unixTimestampNow()
     const to = Math.min(params.to - splitDelta, nowTime)

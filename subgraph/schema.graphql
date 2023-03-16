@@ -31,23 +31,13 @@ type LabItem @entity {
   operator: String!
 }
 
-type Profile @entity {
-  id: ID!
-  owner: Owner!
-  timestamp: BigInt!
-
-  token: Token
-  name: String
-}
 
 type Owner @entity {
   id: ID!
   ownedTokens: [Token!]! @derivedFrom(field: "owner")
   ownedLabItems: [LabItemOwnership!]! @derivedFrom(field: "owner")
-  profile: Profile
-  displayName: String
+  profile: Token
   balance: BigInt!
-  rewardClaimedCumulative: BigInt!
 }
 
 type Transfer @entity(immutable: true) {
@@ -60,7 +50,7 @@ type Transfer @entity(immutable: true) {
   transaction: Transaction!
 }
 
-type TransferSingle @entity(immutable: true) {
+type TransferSingle @entity {
   id: ID!
   operator: String!
   from: Owner!

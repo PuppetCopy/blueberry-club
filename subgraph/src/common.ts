@@ -1,12 +1,13 @@
 import { Address, ethereum, BigInt } from "@graphprotocol/graph-ts"
-import { Owner, TransferSingle, LabItem, LabItemOwnership, Profile } from "../generated/schema"
+import { Owner, TransferSingle, LabItem, LabItemOwnership } from "../generated/schema"
 import * as lab from "../generated/ERC1155/ERC1155"
 import { AddressZero, ZERO_BI, _createTransactionIfNotExist } from "./helpers"
 
-export function _createNewOwner(address: string): Owner {
+export function _createNewOwner(address: string, defaultToken: string | null): Owner {
   const owner = new Owner(address)
   owner.rewardClaimedCumulative = ZERO_BI
   owner.balance = ZERO_BI
+  owner.profile = defaultToken
 
   return owner
 }
@@ -25,21 +26,15 @@ export function handleLabItemTransfer(fromAddress: Address, toAddress: Address, 
   let transfer = TransferSingle.load(transferId)
   let newLabItemOwner = LabItemOwnership.load(newLabItemOwnerId)
   let previousLabItemOwner = LabItemOwnership.load(previousLabItemOwnerId)
-  const profile = Profile.load(from)
-
 
   const instance = lab.ERC1155.bind(event.address)
 
   if (previousOwner == null) {
-    previousOwner = _createNewOwner(from)
-  }
-  
-  if (profile && profile.token === tokenId) {
-    profile.token = null
+    previousOwner = _createNewOwner(from, null)
   }
 
   if (newOwner == null) {
-    newOwner = _createNewOwner(to)
+    newOwner = _createNewOwner(to, null)
   }
 
   if (labItem == null) {
