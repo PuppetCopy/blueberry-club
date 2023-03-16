@@ -75,9 +75,6 @@ export const $CompetitionRoiDeprecated = (config: ICompetitonCumulativeRoi) => c
                     $text('Own a GBC')
                   ),
                   $element('li')(
-                    $text('Have a Lab Identity, go to Wardrobe, choose your GBC & click “Set PFP”')
-                  ),
-                  $element('li')(
                     $text('Start trading on GBC Trading or use/click '),
                     $anchor(attr({ href: 'https://gmx.io/?ref=BLUEBERRY' }))($text('BLUEBERRY')),
                     $text(' to opt our referral on GMX.io.')

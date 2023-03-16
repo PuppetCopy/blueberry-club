@@ -69,7 +69,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
             ),
             $infoTooltipLabel(
               $column(layoutSheet.spacingSmall)(
-                $text(`Rewards formula defined as:`),
+                $text(`Participant reward formula:`),
                 $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Prize Pool * PnL of participant / Total Positive PnL of all participants`),
                 $node(),
                 $column(
@@ -77,9 +77,6 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
                   $element('ul')(
                     $element('li')(
                       $text('Own a GBC')
-                    ),
-                    $element('li')(
-                      $text('Have a Lab Identity, go to Wardrobe, choose your GBC & click “Set PFP”')
                     ),
                     $element('li')(
                       $text('Start trading on GBC Trading or use/click '),
