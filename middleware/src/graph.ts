@@ -41,47 +41,19 @@ export async function querySubgraph(document: string): Promise<any> {
 }
 
 
-export const profileList = O(
+export const ownerList = O(
   map(async (queryParams: Partial<IRequestPagePositionApi>) => {
 
     const res = await await querySubgraph(`
 {
-  profiles(first: ${queryParams.pageSize || 1000}, skip: ${queryParams.offset || 0}, orderBy: timestamp, orderDirection: desc) {
-    id
-    timestamp
-    token {
-      id
-      owner
-      labItems {
-        id
-      }
-    }
-    name
-  }
-}
-`)
-
-    return res.profiles.map(ownerJson) as IOwner[]
-  })
-)
-
-export const ownerList = O(
-  map(async (queryParams: {}) => {
-
-    const res = await await querySubgraph(`
-{
-  owners(first: 1000) {
+  owners(first: ${queryParams.pageSize || 1000}, skip: ${queryParams.offset || 0}, orderDirection: asc) {
     id
     balance
-    ownedLabItems {
+    ownedLabItems(first: 1000) {
       balance
-      item {
-        id
-      }
       id
     }
-    rewardClaimedCumulative
-    ownedTokens {
+    ownedTokens(first: 1000) {
       id
       labItems {
         id
@@ -92,7 +64,6 @@ export const ownerList = O(
       labItems {
         id
       }
-      name
     }
   }
 }
@@ -100,8 +71,7 @@ export const ownerList = O(
 
 
     return res.owners.map(ownerJson) as IOwner[]
-  }),
-  awaitPromises
+  })
 )
 
 export const owner = O(

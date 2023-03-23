@@ -12,12 +12,9 @@ import {
   Police,
   Police__factory,
 } from "../typechain-types"
+import { ROLES } from "./const"
 
-export enum ROLES {
-  MINTER,
-  BURNER,
-  DESIGNER,
-}
+
 
 describe("Closet test", function () {
   let owner: SignerWithAddress

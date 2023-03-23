@@ -3,14 +3,9 @@ import { expect } from "chai"
 import { ethers } from "hardhat"
 import { Police, GBC, GBCLab, GBCLab__factory, GBC__factory, Police__factory } from "../typechain-types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
+import { ROLES } from "./const"
 
 // TODO: (aling to custom errors) https://github.com/dethcrypto/TypeChain/pull/682
-
-export enum ROLES {
-  MINTER,
-  BURNER,
-  DESIGNER
-}
 
 describe("Minting through contracts", function () {
 

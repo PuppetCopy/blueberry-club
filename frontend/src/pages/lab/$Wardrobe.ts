@@ -44,6 +44,7 @@ type ItemSlotState = {
 interface ExchangeState {
   updateItemState: ItemSlotState | null
   updateBackgroundState: ItemSlotState | null
+  updateBadgeState: ItemSlotState | null
   closet: Closet
   lab: GBCLab
   selectedBerry: IToken | null
@@ -62,6 +63,8 @@ export const $Wardrobe = (config: IBerryComp) => component((
 
   [changeItemState, changeItemStateTether]: Behavior<any, ItemSlotState | null>,
   [changeBackgroundState, changeBackgroundStateTether]: Behavior<any, ItemSlotState | null>,
+  [changeBadgeState, changeBadgeStateTether]: Behavior<any, ItemSlotState | null>,
+
   [setApproval, setApprovalTether]: Behavior<any, Promise<ContractTransaction>>,
 
   [hoverDownloadBtn, hoverDownloadBtnTether]: Behavior<INode, string>,
@@ -126,6 +129,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
 
   const itemChangeState = startWith(null, merge(resetItemOnSave, changeItemState))
   const backgroundChangeState = startWith(null, merge(resetItemOnSave, changeBackgroundState))
+  const badgeChangeState = startWith(null, merge(resetItemOnSave, changeBadgeState))
 
   const berryItemState = mergeArray([snapshot((berry) => berry, selectedBerry, savedItemsTxSucceed), changeBerry])
 
@@ -141,6 +145,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
   const exchangeState: Stream<ExchangeState> = multicast(combineObject({
     updateItemState: itemChangeState,
     updateBackgroundState: backgroundChangeState,
+    updateBadgeState: backgroundChangeState,
     selectedBerry,
     closet: connect.closet.contract,
     selectedBerryItems,
@@ -177,8 +182,9 @@ export const $Wardrobe = (config: IBerryComp) => component((
 
 
 
-  const berrySel = map(b => b?.custom || null, selectedBerryItems)
-  const berryBgSel = map(b => b?.background || null, selectedBerryItems)
+  const berryItemSelection = map(b => b?.custom || null, selectedBerryItems)
+  const berryBackgroundSelection = map(b => b?.background || null, selectedBerryItems)
+  const berryBadgeSelection = map(b => b?.badge || null, selectedBerryItems)
   const selectedSlotState = startWith(null, selectedSlot)
 
 
@@ -200,7 +206,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
                 remove: changeItemStateTether(),
                 select: selectedSlotTether()
               })
-            }), itemChangeState, berrySel, selectedSlotState)),
+            }), itemChangeState, berryItemSelection, selectedSlotState)),
             switchLatest(combineArray(((a, b, c) => {
               return $ItemSlot({
                 slot: 0,
@@ -212,7 +218,19 @@ export const $Wardrobe = (config: IBerryComp) => component((
                 remove: changeBackgroundStateTether(),
                 select: selectedSlotTether()
               })
-            }), backgroundChangeState, berryBgSel, selectedSlotState)),
+            }), backgroundChangeState, berryBackgroundSelection, selectedSlotState)),
+            switchLatest(combineArray(((a, b, c) => {
+              return $ItemSlot({
+                slot: 7,
+                slotLabel: 'Badge',
+                gbcItemId: b,
+                change: a,
+                selectedSlot: c
+              })({
+                remove: changeBadgeStateTether(),
+                select: selectedSlotTether()
+              })
+            }), badgeChangeState, berryBadgeSelection, selectedSlotState)),
             // style({ opacity: '0.2', pointerEvents: 'none' }, switchLatest(combineArray(((a, b, c) => $ItemSlot(7, c, a, b)({ remove: changeDecoStateTether(), select: selectedSlotTether() })), backgroundChangeState, berryBgSel, selectedSlotState)),)
           ),
 

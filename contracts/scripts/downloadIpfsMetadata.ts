@@ -9,7 +9,7 @@ interface nftMetdata {
   }>
 }
 
-const delay = (time: number): Promise<number> => new Promise(resolve => setTimeout(() => resolve(time), time));
+const delay = (time: number): Promise<number> => new Promise(resolve => setTimeout(() => resolve(time), time))
 
 async function downloadAll() {
 
@@ -26,11 +26,11 @@ async function downloadAll() {
   // loop through all token IDs and download metadata files
   for (let i = 0; i < totalSupply; i++) {
     const tokenId = i + 1
-    const queryMetdataFile = fs.promises.readFile(metadataDir + `/${tokenId}.json`, 'utf8').then(data => JSON.parse(data) as nftMetdata)
+    const queryMetdataFile = fs.promises.readFile(metadataDir + `/${tokenId}`, 'utf8').then(data => JSON.parse(data) as nftMetdata)
 
     const metadata = await queryMetdataFile.catch(async () => {
       const md: nftMetdata = await fetch(`https://ipfs.io/ipfs/QmZfVGMtQPeSfre5yHDzDdw4ocZ1WEakGtbYqvtvhhD4zQ/${tokenId}`).then(async res => res.json())
-      const filename = `${metadataDir}/${tokenId}.json`
+      const filename = `${metadataDir}/${tokenId}`
 
       await fs.promises.writeFile(filename, JSON.stringify(md))
       console.log(filename)
@@ -48,11 +48,11 @@ async function downloadAll() {
     }) as IBerryDisplayTupleMap
 
     try {
-      (await fs.promises.readFile(imageDir + `/${tokenId}.png`))
+      (await fs.promises.readFile(imageDir + `/${tokenId}.webp`))
     } catch (err) {
       const imgBuffer = await storeGBCImage(tuple)
-      const filename = `${imageDir}/${tokenId}.png`
-      await fs.promises.writeFile(filename, imgBuffer)
+      const filename = `${imageDir}/${tokenId}.webp`
+      await imgBuffer.toFile(filename)
 
       console.log(filename)
     }

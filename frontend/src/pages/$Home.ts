@@ -168,7 +168,7 @@ export const $Home = (config: ITreasury) => component((
               $text(style({ fontWeight: 'bold' }))(`GMX Blueberry Club`)
             ),
             $node(
-              $text(style({ lineHeight: '1.5em' }))(`10,000 Blueberries NFT Collection on Arbitrum, building a community driven `),
+              $text(style({ lineHeight: '1.5em' }))(`10,000 Blueberries NFT Collection on Arbitrum, building community-driven `),
               $anchor(style({ display: 'inline' }), attr({ href: `https://twitter.com/GMX_IO`, target: '_blank' }))(
                 $text('@GMX_io')
               ),

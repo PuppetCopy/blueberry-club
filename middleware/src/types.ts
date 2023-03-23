@@ -60,7 +60,7 @@ export type ITransaction = {
 
 export type IBerryLabItems = {
   background: number;
-  special: number;
+  badge: number;
   custom: number;
 }
 
@@ -187,6 +187,8 @@ export enum IAttributeMappings {
   "Marine Shirt" = 221,
   "Giving Love" = 222,
   "Pepe Face" = 223,
+  "Holographic Badge" = 224,
+  "Arbitrum Swag" = 224,
 }
 
 
@@ -223,8 +225,6 @@ export enum IAttributeExpression {
 
   HIGH = IAttributeMappings.High,
 }
-
-
 
 
 
@@ -293,11 +293,9 @@ export enum IAttributeClothes {
   ULTRASOUND_BAT = IAttributeMappings["Ultra Sound BLAT"],
   SKELETON = IAttributeMappings.Skeleton,
   MARINE_SHIRT = IAttributeMappings["Marine Shirt"],
-  GIVING_LOVE = IAttributeMappings["Giving Love"]
+  GIVING_LOVE = IAttributeMappings["Giving Love"],
+  ARBITRUM_SWAG = IAttributeMappings["Arbitrum Swag"],
 }
-
-
-
 
 export enum IAttributeFaceAccessory {
   BEARD_GREEN = IAttributeMappings["Beard Green"],
@@ -337,7 +335,6 @@ export enum IAttributeFaceAccessory {
   NOODLES = IAttributeMappings.Noodles,
   PEPE_FACE = IAttributeMappings["Pepe Face"]
 }
-
 
 export enum IAttributeHat {
   AFRO_GREEN = IAttributeMappings["Afro Green"],
@@ -409,9 +406,6 @@ export enum IAttributeHat {
   BIRTHDAY = IAttributeMappings.Birthday
 }
 
-
-
-
 export enum IAttributeBackground {
   RED = IAttributeMappings.Red,
   BLUE = IAttributeMappings.Blue,
@@ -432,6 +426,11 @@ export enum IAttributeBackground {
   GIORGIO_BALBI_BG = IAttributeMappings["GBC x Giorgio Balbi"],
   HOLOGRAPHIC_BG = IAttributeMappings["Holographic Background"],
   SCARY_NIGHT = IAttributeMappings["Scary Night"]
+}
+
+
+export enum IAttributeBadge {
+  HOLOGRAPHIC_BADGE = IAttributeMappings["Holographic Badge"]
 }
 
 export enum SaleType {
@@ -458,6 +457,7 @@ export type SvgPartsMap = [
   { [p in IAttributeExpression]: string },
   { [p in IAttributeFaceAccessory]: string },
   { [p in IAttributeHat]: string },
+  { [p in IAttributeBadge]: string },
 ]
 
 export interface MintAccountRule {

@@ -125,7 +125,7 @@ export const $LabHome = ({ walletLink, parentRoute }: IBerry) => component((
         $text(style({ textAlign: 'center' }))(`Latest Identities that were picked by GBC Owners`),
         $node(),
         $IntermediatePromise({
-          query: blueberrySubgraph.profileList(now({ pageSize: screenUtils.isDesktopScreen ? 12 : 8 })),
+          query: blueberrySubgraph.ownerList(now({ pageSize: screenUtils.isDesktopScreen ? 12 : 8 })),
           $$done: map(berryWallList => {
 
             if (berryWallList.length === 0) {

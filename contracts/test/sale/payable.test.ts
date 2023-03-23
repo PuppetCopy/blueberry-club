@@ -11,13 +11,10 @@ import {
   FakeToken
 } from "../../typechain-types"
 import { MintRuleStruct } from "../../typechain-types/contracts/lab/mint/template/Holder"
+import { ROLES } from "../const"
 import { now } from "../utils"
 
-export enum ROLES {
-  MINTER,
-  BURNER,
-  DESIGNER,
-}
+
 
 const MINTED_TOKEN = 100
 

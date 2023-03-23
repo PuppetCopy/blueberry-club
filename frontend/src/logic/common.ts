@@ -251,7 +251,7 @@ export async function getTokenSlots(token: BigNumberish, closet: Closet): Promis
 }
 
 export function getBerryFromItems(items: number[]) {
-  const seedObj = { background: 0, special: 0, custom: 0, }
+  const seedObj = { background: 0, badge: 0, custom: 0, }
 
   return items.reduce((seed, next) => {
     const ndx = getLabItemTupleIndex(next)
@@ -259,7 +259,7 @@ export function getBerryFromItems(items: number[]) {
     if (ndx === 0) {
       seed.background = next
     } else if (ndx === 7) {
-      seed.special = next
+      seed.badge = next
     } else {
       seed.custom = next
     }

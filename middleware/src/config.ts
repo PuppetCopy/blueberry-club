@@ -1,5 +1,5 @@
 import { groupByKey, intervalTimeMap, unixTimestampNow } from "@gambitdao/gmx-middleware"
-import { hexlify, parseEther } from "ethers/lib/utils"
+import { parseEther } from "ethers/lib/utils"
 import { IAttributeMappings, IMonthlyTradingCompetition, LabItemSale, SaleType } from "./types"
 
 const date = new Date()
@@ -47,7 +47,6 @@ export const REWARD_DISTRIBUTOR = {
 }
 
 
-
 const toTime = (...params: Parameters<typeof Date.UTC>) => Math.floor(Date.UTC(...params) / 1000)
 
 export const saleConfig = {
@@ -56,6 +55,40 @@ export const saleConfig = {
 }
 
 export const saleDescriptionList: LabItemSale[] = [
+  {
+    name: "Arbitrum Swag",
+    description: `In the land of blockchain, where DAOs come to play,
+Our GMX Blueberry Club was overlooked one day.
+Eligibility criteria met, has ERC-721 led astray?
+Now we reach out to Arbitrum, with a hopeful plea to sway.
+
+Oh, dear Arbitrum, can't you see?
+Our DAO, it longs to join your spree.
+With our platform, ecosystem, and financial flywheel,
+ERC-721's our choice, but it shouldn't be a big deal.
+
+A story unfolds, of triumph and cheer,
+As GBC and Arbitrum draw ever so near.
+So, join us in laughter, song, and glee,
+For together we'll write a grand history.
+
+We'll wait with bated breath, hopes held high,
+For the moment we unite and reach the sky.
+Hand in hand, a new path we'll steer,
+With GBC and Arbitrum, an alliance most dear!`,
+    id: IAttributeMappings["Arbitrum Swag"],
+    mintRuleList: [
+      {
+        supply: 256,
+        type: SaleType.holder,
+        cost: 0n,
+        contractAddress: "",
+        start: toTime(2023, 2, 23, 11, 20),
+        finish: toTime(2023, 3, 23, 11, 20),
+        accountLimit: 1
+      }
+    ]
+  },
   {
     name: "Giving Love",
     description: `Roses are red, violets are blue,

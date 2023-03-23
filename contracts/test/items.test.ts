@@ -4,13 +4,10 @@ import { expect } from "chai"
 import { BigNumber } from "ethers"
 import { ethers } from "hardhat"
 import { Police, GBC, GBCLab, GBCLab__factory, GBC__factory, Police__factory } from "../typechain-types"
+import { ROLES } from "./const"
 
 
-export enum ROLES {
-  MINTER,
-  BURNER,
-  DESIGNER
-}
+
 
 
 describe("GBC Labs Items", function () {
