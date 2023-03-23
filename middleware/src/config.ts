@@ -82,7 +82,7 @@ With GBC and Arbitrum, an alliance most dear!`,
         supply: 256,
         type: SaleType.holder,
         cost: 0n,
-        contractAddress: "",
+        contractAddress: "0x6E249731C915EA1E7901378CF49F941c495Eecc3",
         start: toTime(2023, 2, 23, 11, 20),
         finish: toTime(2023, 3, 23, 11, 20),
         accountLimit: 1
