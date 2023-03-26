@@ -133,7 +133,7 @@ contract Lottery is Auth, ReentrancyGuard {
         );
 
         require(
-            ERC721(ev.markToken).ownerOf(_markTokenId) == msg.sender,
+            TokenOwner(ev.markToken).ownerOf(_markTokenId) == msg.sender,
             "You do not own the marked token."
         );
         require(
@@ -431,5 +431,9 @@ contract Lottery is Auth, ReentrancyGuard {
         randomizer = IRandomizer(newAddr);
     }
 
+}
 
+/// @notice A generic interface to recive the ownership address by the token id
+interface TokenOwner {
+    function ownerOf(uint tokenId) external view returns (address);
 }
