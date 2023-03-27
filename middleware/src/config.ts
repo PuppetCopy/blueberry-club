@@ -20,7 +20,7 @@ export const COMPETITION_START_MONTH = 1
 export const COMPETITION_START_YEAR = 2023
 
 const timeNow = unixTimestampNow()
-export const TOURNAMENT_DURATION = intervalTimeMap.HR24 * 25
+export const TOURNAMENT_DURATION = intervalTimeMap.HR24 * 25 + intervalTimeMap.MIN60 * 16
 export const TOURNAMENT_START = Date.UTC(date.getFullYear(), date.getMonth(), 1, 16) / 1000
 export const TOURNAMENT_END = TOURNAMENT_START + TOURNAMENT_DURATION
 
