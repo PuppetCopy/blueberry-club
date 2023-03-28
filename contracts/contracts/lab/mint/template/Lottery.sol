@@ -111,14 +111,22 @@ contract Lottery is Auth, ReentrancyGuard {
         return events[eventId].settings;
     }
 
+    function isParticipant(bytes32 eventId, address participant) external view returns (bool) {
+        return events[eventId].beforeEventData.participantsMap[participant];
+    }
+
+    function isMarked(bytes32 eventId, uint256 markTokenId) external view returns (bool) {
+        return events[eventId].beforeEventData.marks[markTokenId];
+    }
+
     /********************************** External functions **********************************/
 
     // function that allows the contract owner to create a new event with the given parameters
-    function createEvent(address _markToken, address _rewardToken, uint256 _rewardTokenId, uint256 _supply, uint256 _price, uint256 _endTime) external requiresAuth nonReentrant {
+    function createEvent(address _markToken, address _rewardToken, uint256 _rewardTokenId, uint256 _supply, uint256 _price, uint256 _endTime) external requiresAuth nonReentrant returns (bytes32 _eventId) {
         if (_supply <= 0) revert SupplyMustBeGreaterThanZero();
         if (_endTime <= block.timestamp) revert EndTimeMustBeInFuture();
 
-        bytes32 _eventId = keccak256(abi.encodePacked(_markToken, _rewardToken, _rewardTokenId, _supply, _price, _endTime));
+        _eventId = keccak256(abi.encodePacked(_markToken, _rewardToken, _rewardTokenId, _supply, _price, _endTime));
         if (getState(_eventId) != State.DOES_NOT_EXIST) revert EventAlreadyExists();
 
         EventSettings storage _eventSettings = events[_eventId].settings;
@@ -130,6 +138,8 @@ contract Lottery is Auth, ReentrancyGuard {
         _eventSettings.endTime = _endTime;
 
         emit EventCreation(_eventId, _markToken, _rewardToken, _rewardTokenId, _supply, _price, _endTime);
+
+        return _eventId;
     }
 
     function participate(bytes32 _eventId, uint256 _markTokenId) external payable nonReentrant {
@@ -161,13 +171,10 @@ contract Lottery is Auth, ReentrancyGuard {
 
     // Callback function called by the randomizer contract when the random value is generated
     // Picks the winners
-    function randomizerCallback(uint256 _id, bytes32 _value) external nonReentrant {
+    function randomizerCallback(uint256 _id, bytes32 _value) external {
         if (msg.sender != address(randomizer)) revert CallerNotRandomizer();
 
         LotteryEvent storage _event = events[randomizerIdToEventsId[_id]];
-
-        if (_event.afterEventData.randomizerId != _id) revert InvalidRandomizerId(); // overzealous check
-
         if (_event.settings.supply >= _event.beforeEventData.participantsArr.length) {
             // everyone is a winner
             _event.settings.supply = _event.beforeEventData.participantsArr.length;
@@ -215,7 +222,7 @@ contract Lottery is Auth, ReentrancyGuard {
     }
 
     // gas optimized version of withdrawMulti(winners) + withdrawMulti(losers)
-    function executeAirdropForWinnersAndRefundForLosers(bytes32 _eventId) external nonReentrant {
+    function executeAirdropForWinnersAndRefundForLosers(bytes32 _eventId) external {
         _executeAirdropForWinners(_eventId);
         _executeRefundForLosers(_eventId);
     }
@@ -340,6 +347,12 @@ contract Lottery is Auth, ReentrancyGuard {
         randomizer = IRandomizer(_randomizer);
     }
 
+    /********************************** Fallback **********************************/
+
+    receive() external payable {
+        emit Received(msg.value);
+    }
+
     /********************************** Events **********************************/
 
     event Participation(
@@ -361,6 +374,10 @@ contract Lottery is Auth, ReentrancyGuard {
     event Withdrawal(
         bytes32 indexed eventId,
         address indexed participant
+    );
+
+    event Received(
+        uint256 amount
     );
 
     /********************************** Errors **********************************/
