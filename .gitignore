@@ -24,3 +24,9 @@ node_modules/
 
 # Local Netlify folder
 .netlify
+
+# Foundry
+contracts/broadcast/
+contracts/out/
+contracts/cache_forge/
+contracts/.env
