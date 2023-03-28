@@ -1,7 +1,7 @@
 import { Behavior, combineObject } from '@aelea/core'
 import { $element, $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
-import { $card, $column, $row, $seperator, layoutSheet, screenUtils } from '@aelea/ui-components'
+import { $card, $column, $row, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { colorAlpha, pallete } from '@aelea/ui-components-theme'
 import { empty, map, mergeArray, now, zip } from '@most/core'
 import { Stream } from '@most/types'
@@ -16,6 +16,7 @@ import { IProfileActiveTab } from '../$Profile'
 import { $addToCalendar, $responsiveFlex } from '../../elements/$common'
 import { $defaultBerry } from '../../components/$DisplayBerry'
 import { $defaultProfileContainer } from '../../common/$avatar'
+import { $seperator2 } from '../common'
 
 const MAX_COLLATERAL = 500000000000000000000000000000000n
 const prizeRatioLadder: bigint[] = [3000n, 1500n, 750n, ...Array(17).fill(div(4750n, 17n) / BASIS_POINTS_DIVISOR)]
@@ -267,11 +268,10 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
               columnOp: style({ placeContent: 'flex-end', minWidth: '90px' }),
               $$body: map((pos) => {
                 const val = formatReadableUSD(pos.cumSize, false)
-                const isNeg = pos.pnl < 0n
 
-                return $column(layoutSheet.spacingTiny, style({ alignItems: 'flex-end' }))(
+                return $column(style({ gap: '3px', textAlign: 'right' }))(
                   $text(style({ fontSize: '.75em' }))(formatReadableUSD(pos.cumCollateral, false)),
-                  $seperator,
+                  $seperator2,
                   $text(
                     val
                   ),
@@ -287,31 +287,17 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
               ),
               sortBy: currentMetric,
               columnOp: style({ minWidth: '90px', placeContent: 'flex-end' }),
-              $$body: currentMetric === 'pnl'
-                ? zip((params, pos) => {
-                  const metricVal = pos[currentMetric]
-                  const prize = params.estPrizePool * metricVal / params.totalScore
+              $$body: zip((params, pos) => {
+                const metricVal = pos[currentMetric]
+                const prize = params.estPrizePool * metricVal / params.totalScore
 
-
-                  return $column(layoutSheet.spacingTiny, style({ alignItems: 'flex-end' }))(
-                    prize > USD_PERCISION
-                      ? $text(style({ fontSize: '1.25em', color: pallete.positive }))(formatReadableUSD(prize, false))
-                      : empty(),
-                    $text(formatReadableUSD(metricVal, false))
-                  )
-                }, config.competitionCumulative)
-                : zip((prizePool, pos) => {
-                  const prizeRatio = prizeRatioLadder[pos.rank - 1]
-
-                  return $column(layoutSheet.spacingTiny, style({ alignItems: 'flex-end' }))(
-                    prizeRatio
-                      ? $row(
-                        $text(style({ fontSize: '1.25em', color: pallete.positive }))(formatReadableUSD(prizePool.estPrizePool * prizeRatio / BASIS_POINTS_DIVISOR, false)),
-                      ) : empty(),
-
-                    $text(`${formatFixed(pos.roi, 2)}%`)
-                  )
-                }, config.competitionCumulative),
+                return $column(layoutSheet.spacingTiny, style({ alignItems: 'flex-end' }))(
+                  prize > USD_PERCISION * 5n
+                    ? $text(style({ color: pallete.positive }))(formatReadableUSD(prize, false))
+                    : empty(),
+                  $text(style({ fontSize: '.75em' }))(formatReadableUSD(metricVal, false))
+                )
+              }, config.competitionCumulative),
             }
           ],
         })({

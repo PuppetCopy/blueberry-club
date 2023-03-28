@@ -1,10 +1,10 @@
 import { importGlobal, unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { map } from "@most/core"
-import { IAttributeBackground, IAttributeClothes, IAttributeBody, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat, LabItemSale, MintRule, SvgPartsMap, IBerryDisplayTupleMap } from "./types"
+import { IAttributeBackground, IAttributeClothes, IAttributeBody, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat, LabItemSale, MintRule, SvgPartsMap, IBerryDisplayTupleMap, IAttributeBadge } from "./types"
 
 const svgParts = importGlobal(import("@gambitdao/gbc-middleware/src/mappings/svgParts"))
 
-const labAttributeTuple = [IAttributeBackground, IAttributeClothes, IAttributeBody, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat] as const
+export const labAttributeTuple = [IAttributeBackground, IAttributeClothes, IAttributeBody, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat, IAttributeBadge] as const
 
 export const getLabItemTupleIndex = (itemId: number) => {
   const attrMap = itemId in IAttributeHat
@@ -12,7 +12,8 @@ export const getLabItemTupleIndex = (itemId: number) => {
       ? IAttributeBackground : itemId in IAttributeClothes
         ? IAttributeClothes : itemId in IAttributeFaceAccessory
           ? IAttributeFaceAccessory : itemId in IAttributeExpression
-            ? IAttributeExpression : null
+            ? IAttributeExpression : itemId in IAttributeBadge
+              ? IAttributeBadge : null
 
   if (attrMap === null) {
     throw new Error(`item id: ${itemId} doesn't match any attribute`)
@@ -60,7 +61,7 @@ export const berrySvg = (tuple: Partial<IBerryDisplayTupleMap>) => {
   }, svgParts)
 }
 
-export const berryPartsToSvg = (svgParts: SvgPartsMap, [background, clothes, body, expression, faceAccessory, hat]: Partial<IBerryDisplayTupleMap>,) => {
+export const berryPartsToSvg = (svgParts: SvgPartsMap, [background, clothes, body, expression, faceAccessory, hat, badge]: Partial<IBerryDisplayTupleMap>,) => {
   return `
     ${background ? svgParts[0][background] : ''}
     ${svgParts[1][clothes ? clothes : IAttributeClothes.NUDE]}
@@ -68,5 +69,6 @@ export const berryPartsToSvg = (svgParts: SvgPartsMap, [background, clothes, bod
     ${expression ? svgParts[3][expression] : ''}
     ${faceAccessory ? svgParts[4][faceAccessory] : ''}
     ${svgParts[5][hat ? hat : IAttributeHat.NUDE]}
+    ${badge ? svgParts[6][badge] : ''}
   `
 }

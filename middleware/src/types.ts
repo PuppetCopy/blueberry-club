@@ -187,8 +187,11 @@ export enum IAttributeMappings {
   "Marine Shirt" = 221,
   "Giving Love" = 222,
   "Pepe Face" = 223,
-  "Holographic Badge" = 224,
   "Arbitrum Swag" = 224,
+  "Holographic Badge" = 225,
+  "Degen Ape" = 226,
+  "NFT Paris Bandana" = 227,
+  "Blueberry Fly" = 228,
 }
 
 
@@ -297,6 +300,7 @@ export enum IAttributeClothes {
   ARBITRUM_SWAG = IAttributeMappings["Arbitrum Swag"],
 }
 
+
 export enum IAttributeFaceAccessory {
   BEARD_GREEN = IAttributeMappings["Beard Green"],
   BEARD_MULTICOLOR = IAttributeMappings["Beard Multicolor"],
@@ -333,8 +337,10 @@ export enum IAttributeFaceAccessory {
   // lab
   BEARD_WHITE = IAttributeMappings["Beard White"],
   NOODLES = IAttributeMappings.Noodles,
-  PEPE_FACE = IAttributeMappings["Pepe Face"]
+  PEPE_FACE = IAttributeMappings["Pepe Face"],
+  NFT_PARIS_BANDANA = IAttributeMappings["NFT Paris Bandana"],
 }
+
 
 export enum IAttributeHat {
   AFRO_GREEN = IAttributeMappings["Afro Green"],
@@ -403,7 +409,8 @@ export enum IAttributeHat {
   JUICE_HEAD = IAttributeMappings["Juice Head"],
   // UZUMAKI = IAttributeMappings.Uzumaki,
   XMITHICAL = IAttributeMappings.xMithical,
-  BIRTHDAY = IAttributeMappings.Birthday
+  BIRTHDAY = IAttributeMappings.Birthday,
+  DEGEN_APE = IAttributeMappings["Degen Ape"],
 }
 
 export enum IAttributeBackground {
@@ -430,13 +437,15 @@ export enum IAttributeBackground {
 
 
 export enum IAttributeBadge {
-  HOLOGRAPHIC_BADGE = IAttributeMappings["Holographic Badge"]
+  HOLOGRAPHIC_BADGE = IAttributeMappings["Holographic Badge"],
+  BLUEBERRY_FLY = IAttributeMappings["Blueberry Fly"],
 }
 
 export enum SaleType {
   Public,
   holder,
-  whitelist,
+  Whitelist,
+  Lottery,
 }
 
 export type IBerryDisplayTupleMap = [
@@ -445,10 +454,11 @@ export type IBerryDisplayTupleMap = [
   IAttributeBody,
   IAttributeExpression,
   IAttributeFaceAccessory,
-  IAttributeHat
+  IAttributeHat,
+  IAttributeBadge
 ]
 
-export type ILabAttributeOptions = typeof IAttributeBackground | typeof IAttributeClothes | typeof IAttributeHat | typeof IAttributeFaceAccessory
+export type ILabAttributeOptions = typeof IAttributeBackground | typeof IAttributeClothes | typeof IAttributeHat | typeof IAttributeFaceAccessory | typeof IAttributeBadge
 
 export type SvgPartsMap = [
   { [p in IAttributeBackground]: string },
@@ -504,7 +514,7 @@ export interface MintHolder extends MintRuleConfig {
 }
 
 export interface MintPrivate extends MintRuleConfig {
-  type: SaleType.whitelist
+  type: SaleType.Whitelist
 
   nonce: number // uint120
   addressList: string[]

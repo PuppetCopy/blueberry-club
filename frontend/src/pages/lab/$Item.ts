@@ -109,7 +109,7 @@ export const $LabItem = (config: ILabItem) => component((
               const sale = mintRule.type === SaleType.Public
                 ? $PublicMint({ ...config, item, mintRule })({})
                 : mintRule.type === SaleType.holder
-                  ? $HolderMint({ ...config, item, mintRule })({}) : mintRule.type === SaleType.whitelist
+                  ? $HolderMint({ ...config, item, mintRule })({}) : mintRule.type === SaleType.Whitelist
                     ? $WhitelistMint({ ...config, item, mintRule })({}) : empty()
 
               return [

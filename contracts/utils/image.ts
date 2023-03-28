@@ -1,9 +1,10 @@
-import { IBerryDisplayTupleMap, berryPartsToSvg, getLabItemTupleIndex } from "@gambitdao/gbc-middleware"
+import { IBerryDisplayTupleMap, berryPartsToSvg, getLabItemTupleIndex, labAttributeTuple } from "@gambitdao/gbc-middleware"
 
+const tupleLength = labAttributeTuple.length
 
 export const labItemSvg = async (id: number) => {
   const state = getLabItemTupleIndex(id)
-  const localTuple = Array(5).fill(undefined) as IBerryDisplayTupleMap
+  const localTuple = Array(tupleLength).fill(undefined) as IBerryDisplayTupleMap
   localTuple.splice(state, 1, id)
 
   const svgParts = (await import("@gambitdao/gbc-middleware/src/mappings/svgParts")).default
