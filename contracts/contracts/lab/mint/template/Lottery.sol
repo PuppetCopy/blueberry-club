@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Auth, Authority, RolesAuthority} from "@rari-capital/solmate/src/auth/authorities/RolesAuthority.sol";
 import {ERC721} from "@rari-capital/solmate/src/tokens/ERC721.sol";
 import {ReentrancyGuard} from "@rari-capital/solmate/src/utils/ReentrancyGuard.sol";
@@ -56,6 +57,8 @@ struct AfterEvent {
 }
 
 contract Lottery is Auth, ReentrancyGuard {
+
+    using Address for address payable;
 
     IRandomizer public randomizer;
     uint256 public randomizerCallbackGas = 2000000;
@@ -116,10 +119,9 @@ contract Lottery is Auth, ReentrancyGuard {
         if (_endTime <= block.timestamp) revert EndTimeMustBeInFuture();
 
         bytes32 _eventId = keccak256(abi.encodePacked(_markToken, _rewardToken, _rewardTokenId, _supply, _price, _endTime));
-
-        EventSettings storage _eventSettings = events[_eventId].settings;
         if (getState(_eventId) != State.DOES_NOT_EXIST) revert EventAlreadyExists();
 
+        EventSettings storage _eventSettings = events[_eventId].settings;
         _eventSettings.markToken = _markToken;
         _eventSettings.rewardToken = _rewardToken;
         _eventSettings.rewardTokenId = _rewardTokenId;
@@ -132,17 +134,16 @@ contract Lottery is Auth, ReentrancyGuard {
 
     function participate(bytes32 _eventId, uint256 _markTokenId) external payable nonReentrant {
         LotteryEvent storage _event = events[_eventId];
-        BeforeEvent storage _beforeEventData = _event.beforeEventData;
 
         if (getState(_eventId) != State.OPEN) revert EventNotActive();
         if (_event.settings.price != msg.value) revert IncorrectDepositAmount();
         if (ERC721(_event.settings.markToken).ownerOf(_markTokenId) != msg.sender) revert NotMarkOwner();
-        if (_beforeEventData.participantsMap[msg.sender]) revert AlreadyParticipated();
-        if (_beforeEventData.marks[_markTokenId]) revert MarkedTokenAlreadyUsed();
+        if (_event.beforeEventData.participantsMap[msg.sender]) revert AlreadyParticipated();
+        if (_event.beforeEventData.marks[_markTokenId]) revert MarkedTokenAlreadyUsed();
 
-        _beforeEventData.participantsArr.push(msg.sender);
-        _beforeEventData.participantsMap[msg.sender] = true;
-        _beforeEventData.marks[_markTokenId] = true;
+        _event.beforeEventData.participantsArr.push(msg.sender);
+        _event.beforeEventData.participantsMap[msg.sender] = true;
+        _event.beforeEventData.marks[_markTokenId] = true;
 
         emit Participation(_eventId, msg.sender, _markTokenId);
     }
@@ -178,9 +179,7 @@ contract Lottery is Auth, ReentrancyGuard {
             // move the winner to the start of the array
             for (uint256 i = 0; i < _event.settings.supply; i++) {
                 // Use a cryptographic hash to generate a random index to select a winner from the participants array
-                uint256 winnerIndex = (uint256(
-                    keccak256(abi.encodePacked(uint256(_value), i))
-                ) % (_event.beforeEventData.participantsArr.length - i)) + i;
+                uint256 winnerIndex = (uint256(keccak256(abi.encodePacked(uint256(_value), i))) % (_event.beforeEventData.participantsArr.length - i)) + i;
                 address winner = _event.beforeEventData.participantsArr[winnerIndex];
                 _event.afterEventData.winners.push(winner);
 
@@ -190,8 +189,7 @@ contract Lottery is Auth, ReentrancyGuard {
                 _event.beforeEventData.participantsArr[winnerIndex] = iParticipant;
             }
         }
-        // TODO - send value
-        payable(owner).transfer(_event.settings.price * _event.settings.supply);
+        payable(owner).sendValue(_event.settings.price * _event.settings.supply);
     }
 
     function withdraw(bytes32 _eventId, address _participant) external nonReentrant {
@@ -228,9 +226,8 @@ contract Lottery is Auth, ReentrancyGuard {
 
         LotteryEvent storage _event = events[_eventId];
 
-        uint256 _participantsLength = _event.beforeEventData.participantsArr.length;
         // transfer the deposits back to everyone
-        for (uint256 i = 0; i < _participantsLength; i++) {
+        for (uint256 i = 0; i < _event.beforeEventData.participantsArr.length; i++) {
             address participant = _event.beforeEventData.participantsArr[i];
             if (_event.afterEventData.withdrawn[participant]) {
                 // loser might have already withdrawn before airdrop
@@ -252,10 +249,7 @@ contract Lottery is Auth, ReentrancyGuard {
             // reentrancy guard is in place, no problem to send ETH here.
             // if the send fails, the transaction will revert and the state will be unchanged.
             // all other participants should still be able to withdraw
-            // TODO - send value
-            // slither-disable-next-line arbitrary-send
-            bool success = payable(_participant).send(_price);
-            require(success, "Failed to send refund");
+            payable(_participant).sendValue(_price);
         }
     }
 
@@ -330,14 +324,12 @@ contract Lottery is Auth, ReentrancyGuard {
     /********************************** DAO Maintanance **********************************/
 
     function fundRandomizer() external payable nonReentrant {
-        // TODO - send value
-        randomizer.clientDeposit{value: msg.value}(address(this));
+        payable(address(randomizer)).functionCallWithValue(abi.encodeWithSignature("clientDeposit(address)", address(this)), msg.value);
     }
 
     function withdrawRandomizer(uint256 _amount) external requiresAuth nonReentrant {
         randomizer.clientWithdrawTo(address(this), _amount);
-        // TODO - send value
-        payable(owner).transfer(_amount);
+        payable(owner).sendValue(_amount);
     }
 
     function updateRandomizerCallbackGas(uint256 _limit) external requiresAuth {
