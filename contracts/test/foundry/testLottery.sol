@@ -23,6 +23,10 @@ contract testLottery is BaseTest {
         address _randomizer = address(0x5b8bB80f2d72D0C85caB8fB169e8170A05C94bAF);
         lottery = new Lottery(rolesAuthority, _randomizer);
         vm.deal(address(lottery), 100 ether);
+
+        vm.startPrank(owner);
+        rolesAuthority.setUserRole(address(lottery), 0, true);
+        vm.stopPrank();
     }
 
     function testCorrectFlow() public {
@@ -33,25 +37,44 @@ contract testLottery is BaseTest {
 
         _getRandomNumber(_eventId);
 
-        // 5. withdraw (withdraws from one user)
-        // 6. withdrawMulti (withdraws from all users)
+        _withdraw(_eventId);
     }
 
-    // function testFailedEvent() public {
-    //     // event is failed when block.timestamp > _event.settings.endTime + 30 days
-    //     // 1. createEvent
-    //     // 2. participate
-    //     // 3. getRandomNumber (call once event is CLOSED (block.timestamp > event.endTime))
-    //     // 4. make sure randomizerCallback is being called
-    //     // 5. withdraw (withdraws from one user)
-    //     // 6. withdrawMulti (withdraws from all users) - SKIP THIS STAKE
-    //     // 7. executeRefundAllOnFailedEvent
-    // }
+    function testWithdrawMulti() public {
+
+        bytes32 _eventId = _createEvent();
+
+        _participate(_eventId);
+
+        _getRandomNumber(_eventId);
+
+        _withdrawMulti(_eventId);
+    }
+
+    function testExecuteAirdropForWinnersAndRefundForLosers() public {
+
+        bytes32 _eventId = _createEvent();
+
+        _participate(_eventId);
+
+        _getRandomNumber(_eventId);
+
+        _executeAirdropForWinnersAndRefundForLosers(_eventId);
+    }
+
+    function testRefundOnFailedEvent() public {
+        
+        bytes32 _eventId = _createEvent();
+
+        _participate(_eventId);
+
+        _executeRefundAllOnFailedEvent(_eventId);
+    }
 
     /********************************** Internal functions **********************************/
 
     function _createEvent() internal returns (bytes32 _eventId) {
-        address _rewardToken = address(0x864e4b0c28dF7E2f317FF339CebDB5224F47220e);
+        address _rewardToken = address(0xF4f935F4272e6FD9C779cF0036589A63b48d77A7);
         uint256 _rewardTokenId = 1;
         uint256 _supply = 100;
         uint256 _price = 0.1 ether;
@@ -119,15 +142,17 @@ contract testLottery is BaseTest {
         vm.expectRevert(EventNotClosed.selector);
         lottery.getRandomNumber(_eventId);
 
+        if (lottery.getState(_eventId) != State.OPEN) revert("ERROR - _getRandomNumber: E0");
         skip(lottery.getEventSettings(_eventId).endTime - block.timestamp);
+        if (lottery.getState(_eventId) != State.CLOSED) revert("ERROR - _getRandomNumber: E1");
 
         randomizerMock = new RandomizerMock();
         lottery.updateRandomizer(address(randomizerMock));
-        
+
         lottery.getRandomNumber(_eventId);
         vm.stopPrank();
 
-        if (lottery.getState(_eventId) != State.CLOSED) revert("ERROR - _getRandomNumber: E1");
+        if (lottery.getState(_eventId) != State.DECIDED) revert("ERROR - _getRandomNumber: E2");
     }
 
     function _fundRandomizer() internal {
@@ -143,9 +168,96 @@ contract testLottery is BaseTest {
         vm.stopPrank();
     }
 
+    function _withdraw(bytes32 _eventId) internal {
+        if (lottery.getState(_eventId) != State.DECIDED) revert("ERROR - _withdraw: E0");
+ 
+        vm.startPrank(alice);
+        vm.expectRevert(ParticipantNotInEvent.selector);
+        lottery.withdraw(_eventId, address(alice));
+        vm.stopPrank();
+
+        vm.startPrank(gbcOwner1);
+        lottery.withdraw(_eventId, address(gbcOwner1));
+
+        vm.expectRevert(AlreadyWithdrawn.selector);
+        lottery.withdraw(_eventId, address(gbcOwner1));
+
+        vm.stopPrank();
+
+        vm.startPrank(gbcOwner2);
+        lottery.withdraw(_eventId, address(gbcOwner2));
+        vm.stopPrank();
+    }
+
+    function _withdrawMulti(bytes32 _eventId) internal {
+        if (lottery.getState(_eventId) != State.DECIDED) revert("ERROR - _withdrawMulti: E0");
+
+        address[] memory _participants = lottery.getParticipants(_eventId);
+
+        vm.startPrank(alice);
+        lottery.withdrawMulti(_eventId, _participants);
+        vm.stopPrank();
+
+        vm.startPrank(gbcOwner1);
+        vm.expectRevert(AlreadyWithdrawn.selector);
+        lottery.withdraw(_eventId, address(gbcOwner2));
+        vm.stopPrank();
+    }
+
+    function _executeAirdropForWinnersAndRefundForLosers(bytes32 _eventId) internal {
+        if (lottery.getState(_eventId) != State.DECIDED) revert("ERROR - _executeAirdropForWinnersAndRefundForLosers: E0");
+
+        vm.startPrank(alice);
+        lottery.executeAirdropForWinnersAndRefundForLosers(_eventId);
+        vm.stopPrank();
+
+        vm.startPrank(gbcOwner1);
+        vm.expectRevert(AlreadyWithdrawn.selector);
+        lottery.withdraw(_eventId, address(gbcOwner2));
+        vm.stopPrank();
+    }
+
+    function _executeRefundAllOnFailedEvent(bytes32 _eventId) internal {
+        if (lottery.getState(_eventId) != State.OPEN) revert("ERROR - _executeRefundAllOnFailedEvent: E0");
+        
+        vm.startPrank(alice);
+        vm.expectRevert(EventNotFailed.selector);
+        lottery.executeRefundAllOnFailedEvent(_eventId);
+        vm.stopPrank();
+
+        skip(lottery.getEventSettings(_eventId).endTime - block.timestamp);
+        if (lottery.getState(_eventId) != State.CLOSED) revert("ERROR - _executeRefundAllOnFailedEvent: E1");
+        
+        vm.startPrank(alice);
+        vm.expectRevert(EventNotFailed.selector);
+        lottery.executeRefundAllOnFailedEvent(_eventId);
+        vm.stopPrank();
+        
+        skip(35 days);
+        if (lottery.getState(_eventId) != State.FAILED) revert("ERROR - _executeRefundAllOnFailedEvent: E2");
+
+        uint256 _participate1Balance = address(gbcOwner1).balance;
+        uint256 _participate2Balance = address(gbcOwner2).balance;
+        
+        vm.startPrank(alice);
+        lottery.executeRefundAllOnFailedEvent(_eventId);
+        vm.stopPrank();
+
+        vm.startPrank(gbcOwner1);
+        vm.expectRevert(AlreadyWithdrawn.selector);
+        lottery.withdraw(_eventId, address(gbcOwner2));
+        vm.stopPrank();
+
+        assertTrue(address(gbcOwner1).balance > _participate1Balance, "ERROR - _executeRefundAllOnFailedEvent: E3");
+        assertTrue(address(gbcOwner2).balance > _participate2Balance, "ERROR - _executeRefundAllOnFailedEvent: E4");
+    }
+
     /********************************** Errors **********************************/
 
     error IncorrectDepositAmount();
     error AlreadyParticipated();
     error EventNotClosed();
+    error ParticipantNotInEvent();
+    error AlreadyWithdrawn();
+    error EventNotFailed();
 }

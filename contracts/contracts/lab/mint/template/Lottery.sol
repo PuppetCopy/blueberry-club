@@ -61,9 +61,11 @@ contract Lottery is Auth, ReentrancyGuard {
     using Address for address payable;
 
     IRandomizer public randomizer;
+
     uint256 public randomizerCallbackGas = 2000000;
 
-    mapping(uint256 => bytes32) public randomizerIdToEventsId;
+    bytes32 private currentEventId;
+
     mapping(bytes32 => LotteryEvent) private events;
 
     /********************************** Constructor **********************************/
@@ -165,8 +167,8 @@ contract Lottery is Auth, ReentrancyGuard {
         if (getState(_eventId) != State.CLOSED) revert EventNotClosed();
         if (_afterEventData.randomizerId != 0) revert RandomNumberAlreadyRequested();
 
+        currentEventId = _eventId;
         _afterEventData.randomizerId = randomizer.request(randomizerCallbackGas);
-        randomizerIdToEventsId[_afterEventData.randomizerId] = _eventId;
     }
 
     // Callback function called by the randomizer contract when the random value is generated
@@ -174,7 +176,7 @@ contract Lottery is Auth, ReentrancyGuard {
     function randomizerCallback(uint256 _id, bytes32 _value) external {
         if (msg.sender != address(randomizer)) revert CallerNotRandomizer();
 
-        LotteryEvent storage _event = events[randomizerIdToEventsId[_id]];
+        LotteryEvent storage _event = events[currentEventId];
         if (_event.settings.supply >= _event.beforeEventData.participantsArr.length) {
             // everyone is a winner
             _event.settings.supply = _event.beforeEventData.participantsArr.length;
@@ -197,6 +199,8 @@ contract Lottery is Auth, ReentrancyGuard {
             }
         }
         payable(owner).sendValue(_event.settings.price * _event.settings.supply);
+
+        emit WinnersPicked(_id, currentEventId, _event.afterEventData.winners);
     }
 
     function withdraw(bytes32 _eventId, address _participant) external nonReentrant {
@@ -369,6 +373,12 @@ contract Lottery is Auth, ReentrancyGuard {
         uint256 supply,
         uint256 price,
         uint256 endTime
+    );
+
+    event WinnersPicked(
+        uint256 indexed _randomizerId,
+        bytes32 indexed _currentEventId,
+        address[] _winners
     );
 
     event Withdrawal(
