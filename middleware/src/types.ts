@@ -445,7 +445,7 @@ export enum SaleType {
   Public,
   holder,
   Whitelist,
-  Lottery,
+  Airdrop,
 }
 
 export type IBerryDisplayTupleMap = [

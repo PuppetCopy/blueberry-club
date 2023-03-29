@@ -17,7 +17,7 @@ enum State {
     FAILED
 }
 
-struct LotteryEvent {
+struct AirdropEvent {
     EventSettings settings;
     BeforeEvent beforeEventData;
     AfterEvent afterEventData;
@@ -56,7 +56,7 @@ struct AfterEvent {
     mapping(address => bool) withdrawn;
 }
 
-contract Lottery is Auth, ReentrancyGuard {
+contract Airdrop is Auth, ReentrancyGuard {
 
     using Address for address payable;
 
@@ -66,7 +66,7 @@ contract Lottery is Auth, ReentrancyGuard {
 
     bytes32 private currentEventId;
 
-    mapping(bytes32 => LotteryEvent) private events;
+    mapping(bytes32 => AirdropEvent) private events;
 
     /********************************** Constructor **********************************/
 
@@ -77,7 +77,7 @@ contract Lottery is Auth, ReentrancyGuard {
     /********************************** View functions **********************************/
 
     function getState(bytes32 eventId) public view returns (State) {
-        LotteryEvent storage _event = events[eventId];
+        AirdropEvent storage _event = events[eventId];
 
         if (_event.settings.endTime == 0) {
             return State.DOES_NOT_EXIST;
@@ -146,7 +146,7 @@ contract Lottery is Auth, ReentrancyGuard {
 
     /// @notice Participate in the event with the given ID. Must send the correct amount of ETH and must own the mark token
     function participate(bytes32 _eventId, uint256 _markTokenId) external payable nonReentrant {
-        LotteryEvent storage _event = events[_eventId];
+        AirdropEvent storage _event = events[_eventId];
 
         if (getState(_eventId) != State.OPEN) revert EventNotActive();
         if (_event.settings.price != msg.value) revert IncorrectDepositAmount();
@@ -161,7 +161,7 @@ contract Lottery is Auth, ReentrancyGuard {
         emit Participation(_eventId, msg.sender, _markTokenId);
     }
 
-    /// @notice Callable by anyone to start the end process of the lottery
+    /// @notice Callable by anyone to start the end process of the airdrop
     function getRandomNumber(bytes32 _eventId) external nonReentrant {
         AfterEvent storage _afterEventData = events[_eventId].afterEventData;
 
@@ -177,7 +177,7 @@ contract Lottery is Auth, ReentrancyGuard {
     function randomizerCallback(uint256 _id, bytes32 _value) external {
         if (msg.sender != address(randomizer)) revert CallerNotRandomizer();
 
-        LotteryEvent storage _event = events[currentEventId];
+        AirdropEvent storage _event = events[currentEventId];
         if (_event.settings.supply >= _event.beforeEventData.participantsArr.length) {
             // everyone is a winner
             _event.settings.supply = _event.beforeEventData.participantsArr.length;
@@ -238,7 +238,7 @@ contract Lottery is Auth, ReentrancyGuard {
     function executeRefundAllOnFailedEvent(bytes32 _eventId) external nonReentrant {
         if (getState(_eventId) != State.FAILED) revert EventNotFailed();
 
-        LotteryEvent storage _event = events[_eventId];
+        AirdropEvent storage _event = events[_eventId];
 
         // transfer the deposits back to everyone
         for (uint256 i = 0; i < _event.beforeEventData.participantsArr.length; i++) {
@@ -274,7 +274,7 @@ contract Lottery is Auth, ReentrancyGuard {
     }
 
     function _withdraw(bytes32 _eventId, address _participant) internal {
-        LotteryEvent storage _event = events[_eventId];
+        AirdropEvent storage _event = events[_eventId];
 
         if (!_event.beforeEventData.participantsMap[_participant]) revert ParticipantNotInEvent();
         if (_event.afterEventData.withdrawn[_participant]) revert AlreadyWithdrawn();
@@ -302,7 +302,7 @@ contract Lottery is Auth, ReentrancyGuard {
     function _executeAirdropForWinners(bytes32 _eventId) internal {
         if (getState(_eventId) != State.DECIDED) revert EventNotDecided();
 
-        LotteryEvent storage _event = events[_eventId];
+        AirdropEvent storage _event = events[_eventId];
 
         // transfer the reward tokens to the winners
         for (uint256 i = 0; i < _event.settings.supply; i++) {
@@ -320,7 +320,7 @@ contract Lottery is Auth, ReentrancyGuard {
     function _executeRefundForLosers(bytes32 _eventId) internal {
         if (getState(_eventId) != State.DECIDED) revert EventNotDecided();
 
-        LotteryEvent storage _event = events[_eventId];
+        AirdropEvent storage _event = events[_eventId];
 
         // transfer the deposits back to the losers
         for (uint256 i = _event.settings.supply; i < _event.beforeEventData.participantsArr.length; i++) {

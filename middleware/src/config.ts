@@ -141,7 +141,7 @@ The NFT realm, globally adored.`,
   //     mintRuleList: [
   //       {
   //         supply: 117,
-  //         type: SaleType.Lottery,
+  //         type: SaleType.Airdrop,
   //         cost: 0n,
   //         contractAddress: "0x20456036C223FaC2544ff28Bf382495d29e20B6b",
   //         start: toTime(2022, 11, 24, 18),
