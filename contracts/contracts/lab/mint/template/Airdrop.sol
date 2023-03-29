@@ -67,6 +67,7 @@ contract Airdrop is Auth, ReentrancyGuard {
     bytes32 private currentEventId;
 
     mapping(bytes32 => AirdropEvent) private events;
+    mapping(bytes32 => bool) private randomizerCalled;
 
     /********************************** Constructor **********************************/
 
@@ -176,8 +177,12 @@ contract Airdrop is Auth, ReentrancyGuard {
     /// @notice Picks the winners
     function randomizerCallback(uint256 _id, bytes32 _value) external {
         if (msg.sender != address(randomizer)) revert CallerNotRandomizer();
-
-        AirdropEvent storage _event = events[currentEventId];
+        
+        bytes32 _currentEventId = currentEventId;
+        if (randomizerCalled[_currentEventId] == true) revert RandomizerCallbackAlreadyCalled();
+        
+        randomizerCalled[_currentEventId] = true;
+        AirdropEvent storage _event = events[_currentEventId];
         if (_event.settings.supply >= _event.beforeEventData.participantsArr.length) {
             // everyone is a winner
             _event.settings.supply = _event.beforeEventData.participantsArr.length;
@@ -412,4 +417,5 @@ contract Airdrop is Auth, ReentrancyGuard {
     error AlreadyWithdrawn();
     error EventNotDecidedOrFailed();
     error EventNotDecided();
+    error RandomizerCallbackAlreadyCalled();
 }

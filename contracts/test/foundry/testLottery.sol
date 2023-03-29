@@ -11,6 +11,8 @@ contract testAirdrop is BaseTest {
     address gbcOwner1 = address(0xa435530d50d7D17Fd9fc6E1c897Dbf7C08E12d35);
     address gbcOwner2 = address(0x7054cA242E23C8bf4E4a6f10F177E4342E60B1f1);
 
+    address randomizer = address(0x5b8bB80f2d72D0C85caB8fB169e8170A05C94bAF);
+    
     Airdrop airdrop;
     RandomizerMock randomizerMock;
 
@@ -18,8 +20,7 @@ contract testAirdrop is BaseTest {
         
         _setUp();   
         
-        address _randomizer = address(0x5b8bB80f2d72D0C85caB8fB169e8170A05C94bAF);
-        airdrop = new Airdrop(rolesAuthority, _randomizer);
+        airdrop = new Airdrop(rolesAuthority, randomizer);
         vm.deal(address(airdrop), 100 ether);
 
         vm.startPrank(owner);
@@ -148,6 +149,12 @@ contract testAirdrop is BaseTest {
         airdrop.updateRandomizer(address(randomizerMock));
 
         airdrop.getRandomNumber(_eventId);
+
+        vm.stopPrank();
+
+        vm.startPrank(address(randomizerMock));
+        vm.expectRevert(RandomizerCallbackAlreadyCalled.selector);
+        airdrop.randomizerCallback(0, bytes32(0));
         vm.stopPrank();
 
         if (airdrop.getState(_eventId) != State.DECIDED) revert("ERROR - _getRandomNumber: E2");
@@ -258,4 +265,5 @@ contract testAirdrop is BaseTest {
     error ParticipantNotInEvent();
     error AlreadyWithdrawn();
     error EventNotFailed();
+    error RandomizerCallbackAlreadyCalled();
 }
