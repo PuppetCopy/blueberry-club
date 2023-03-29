@@ -123,7 +123,7 @@ contract Lottery is Auth, ReentrancyGuard {
 
     /********************************** External functions **********************************/
 
-    // function that allows the contract owner to create a new event with the given parameters
+    /// @notice Create a new event with the given parameters. Only callable by the owner
     function createEvent(address _markToken, address _rewardToken, uint256 _rewardTokenId, uint256 _supply, uint256 _price, uint256 _endTime) external requiresAuth nonReentrant returns (bytes32 _eventId) {
         if (_supply <= 0) revert SupplyMustBeGreaterThanZero();
         if (_endTime <= block.timestamp) revert EndTimeMustBeInFuture();
@@ -144,6 +144,7 @@ contract Lottery is Auth, ReentrancyGuard {
         return _eventId;
     }
 
+    /// @notice Participate in the event with the given ID. Must send the correct amount of ETH and must own the mark token
     function participate(bytes32 _eventId, uint256 _markTokenId) external payable nonReentrant {
         LotteryEvent storage _event = events[_eventId];
 
@@ -160,7 +161,7 @@ contract Lottery is Auth, ReentrancyGuard {
         emit Participation(_eventId, msg.sender, _markTokenId);
     }
 
-    // can be poked by anyone to start the end process of the lottery
+    /// @notice Callable by anyone to start the end process of the lottery
     function getRandomNumber(bytes32 _eventId) external nonReentrant {
         AfterEvent storage _afterEventData = events[_eventId].afterEventData;
 
@@ -171,8 +172,8 @@ contract Lottery is Auth, ReentrancyGuard {
         _afterEventData.randomizerId = randomizer.request(randomizerCallbackGas);
     }
 
-    // Callback function called by the randomizer contract when the random value is generated
-    // Picks the winners
+    /// @notice Callback function called by the randomizer contract when the random value is generated
+    /// @notice Picks the winners
     function randomizerCallback(uint256 _id, bytes32 _value) external {
         if (msg.sender != address(randomizer)) revert CallerNotRandomizer();
 
@@ -203,35 +204,37 @@ contract Lottery is Auth, ReentrancyGuard {
         emit WinnersPicked(_id, currentEventId, _event.afterEventData.winners);
     }
 
+    /// @notice Withdraw the reward or refund the given participant
     function withdraw(bytes32 _eventId, address _participant) external nonReentrant {
         _withdraw(_eventId, _participant);
     }
 
     /********************************** Convenience functions **********************************/
 
+    /// @notice Withdraw the reward or refund the given list of participants
     function withdrawMulti(bytes32 _eventId, address[] calldata _participants) external nonReentrant {
         for (uint256 i = 0; i < _participants.length; i++) {
             _withdraw(_eventId, _participants[i]);
         }
     }
 
-    // gas optimized version of withdrawMulti(winners)
+    /// @notice Gas optimized version of withdrawMulti(winners)
     function executeAirdropForWinners(bytes32 _eventId) external nonReentrant {
         _executeAirdropForWinners(_eventId);
     }
 
-    // gas optimized version of withdrawMulti(losers)
+    /// @notice Gas optimized version of withdrawMulti(losers)
     function executeRefundForLosers(bytes32 _eventId) external nonReentrant {
         _executeRefundForLosers(_eventId);
     }
 
-    // gas optimized version of withdrawMulti(winners) + withdrawMulti(losers)
+    /// @notice Gas optimized version of withdrawMulti(winners) + withdrawMulti(losers)
     function executeAirdropForWinnersAndRefundForLosers(bytes32 _eventId) external {
         _executeAirdropForWinners(_eventId);
         _executeRefundForLosers(_eventId);
     }
 
-    // gas optimized version of withdrawMulti(allParticipants) on failed event
+    /// @notice Gas optimized version of withdrawMulti(allParticipants) on failed event
     function executeRefundAllOnFailedEvent(bytes32 _eventId) external nonReentrant {
         if (getState(_eventId) != State.FAILED) revert EventNotFailed();
 
