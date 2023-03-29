@@ -5,5 +5,5 @@ export const attributeIndexToLabel: TraitAppearanceValue[] = ['Background', 'Clo
 export const mintLabelMap = {
   [SaleType.Public]: 'Public',
   [SaleType.holder]: 'Holder',
-  [SaleType.whitelist]: 'Whitelist',
+  [SaleType.Whitelist]: 'Whitelist',
 }

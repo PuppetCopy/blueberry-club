@@ -3,7 +3,14 @@ import { hexValue } from "@ethersproject/bytes"
 import {
   IRequestCompetitionLadderApi, IIdentifiableEntity, IRequestPagePositionApi, pagingQuery,
   cacheMap, intervalTimeMap, toAccountCompetitionSummary, gmxSubgraph, getMarginFees, BASIS_POINTS_DIVISOR, switchMap,
-  groupByKey
+  groupByKey,
+  div,
+  getMappedValue,
+  CHAIN_ADDRESS_MAP,
+  formatFixed,
+  getTokenAmount,
+  readableNumber,
+  USD_PERCISION
 } from "@gambitdao/gmx-middleware"
 import { awaitPromises, combine, map, now } from "@most/core"
 import { ClientOptions, createClient, gql, OperationContext, TypedDocumentNode } from "@urql/core"
@@ -227,8 +234,33 @@ export const competitionCumulative = O(
           return profileSummary
         })
 
+      
+      if (TOURNAMENT_DURATION === TOURNAMENT_TIME_ELAPSED) {
+        // log CSV file for airdrop
+
+        const nativeToken = getMappedValue(CHAIN_ADDRESS_MAP, queryParams.chain).NATIVE_TOKEN
+
+        console.log(
+          'token_type,token_address,receiver,amount,id\n' + sortedCompetitionList
+            .filter(x => {
+              const prize = prizePool * x[queryParams.metric] / totalScore
+              return prize > USD_PERCISION * 5n
+            })
+            .map((x, idx) => {
+              const ethPrice = BigInt(priceMap['_' + nativeToken])
+              const prizeUsd = prizePool * x[queryParams.metric] / totalScore
+              const tokenAmount = formatFixed(getTokenAmount(prizeUsd, ethPrice, 18), 18)
+
+              return `erc20,${nativeToken},${x.account},${readableNumber(tokenAmount)},`
+            }).join('\n')
+        )
+      }
+
+
+
       return {
-        sortedCompetitionList, estSize, estPrizePool, size, totalScore, prizePool, profile: profile2 as null | IProfileTradingSummary }
+        sortedCompetitionList, estSize, estPrizePool, size, totalScore, prizePool, profile: profile2 as null | IProfileTradingSummary
+      }
     })
 
     const res = await queryCache

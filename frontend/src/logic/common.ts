@@ -5,7 +5,7 @@ import { Stream } from "@most/types"
 import { $berry, $defaultBerry } from "../components/$DisplayBerry"
 import {
   IBerryDisplayTupleMap, getLabItemTupleIndex, IAttributeExpression, IAttributeBackground, IAttributeMappings,
-  IBerryLabItems, IToken, IAttributeHat, tokenIdAttributeTuple
+  IBerryLabItems, IToken, IAttributeHat, tokenIdAttributeTuple, labAttributeTuple
 } from "@gambitdao/gbc-middleware"
 import { $Node, $svg, attr, NodeComposeFn, style } from "@aelea/dom"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
@@ -206,10 +206,11 @@ export interface ILabItemDisplay {
   background?: boolean
   showFace?: boolean
 }
+const tupleLength = labAttributeTuple.length
 
 export const $labItem = ({ id, $container = $defaultLabItem, background = true, showFace = false }: ILabItemDisplay): $Node => {
   const tupleIdx = getLabItemTupleIndex(id)
-  const localTuple = Array(5).fill(undefined) as IBerryDisplayTupleMap
+  const localTuple = Array(tupleLength).fill(undefined) as IBerryDisplayTupleMap
   localTuple.splice(tupleIdx, 1, id)
 
   if (tupleIdx !== 5) {
@@ -258,7 +259,7 @@ export function getBerryFromItems(items: number[]) {
 
     if (ndx === 0) {
       seed.background = next
-    } else if (ndx === 7) {
+    } else if (ndx === 6) {
       seed.badge = next
     } else {
       seed.custom = next

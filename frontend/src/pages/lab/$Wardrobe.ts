@@ -53,7 +53,7 @@ interface ExchangeState {
   account: string
 }
 
-type Slot = 0 | 7 | null
+type Slot = 0 | 6 | null
 
 export const $Wardrobe = (config: IBerryComp) => component((
   [changeRoute, changeRouteTether]: Behavior<any, string>,
@@ -145,7 +145,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
   const exchangeState: Stream<ExchangeState> = multicast(combineObject({
     updateItemState: itemChangeState,
     updateBackgroundState: backgroundChangeState,
-    updateBadgeState: backgroundChangeState,
+    updateBadgeState: badgeChangeState,
     selectedBerry,
     closet: connect.closet.contract,
     selectedBerryItems,
@@ -221,7 +221,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
             }), backgroundChangeState, berryBackgroundSelection, selectedSlotState)),
             switchLatest(combineArray(((a, b, c) => {
               return $ItemSlot({
-                slot: 7,
+                slot: 6,
                 slotLabel: 'Badge',
                 gbcItemId: b,
                 change: a,
@@ -234,21 +234,27 @@ export const $Wardrobe = (config: IBerryComp) => component((
             // style({ opacity: '0.2', pointerEvents: 'none' }, switchLatest(combineArray(((a, b, c) => $ItemSlot(7, c, a, b)({ remove: changeDecoStateTether(), select: selectedSlotTether() })), backgroundChangeState, berryBgSel, selectedSlotState)),)
           ),
 
-          switchLatest(map(({ selectedBerry, updateItemState, updateBackgroundState, selectedBerryItems }) => {
+          switchLatest(map(({ selectedBerry, updateItemState, updateBackgroundState, updateBadgeState, selectedBerryItems }) => {
 
             let $berry2: $Node | null = null
 
             const labCustom = !updateItemState?.isRemove && (updateItemState?.id || selectedBerryItems?.custom)
             const labBackground = !updateBackgroundState?.isRemove && (updateBackgroundState?.id || selectedBerryItems?.background)
+            const badge = !updateBadgeState?.isRemove && (updateBadgeState?.id || selectedBerryItems?.badge)
 
             if (selectedBerry) {
               const [background, clothes, body, expression, faceAccessory, hat] = tokenIdAttributeTuple[selectedBerry.id - 1]
 
               const displaytuple: Partial<IBerryDisplayTupleMap> = [labBackground || background, clothes, body, expression, faceAccessory, hat]
 
+              if (badge) { 
+                displaytuple[6] = badge
+              }
+
               if (labCustom) {
                 displaytuple.splice(getLabItemTupleIndex(labCustom), 1, labCustom)
               }
+
 
               $berry2 = attr({ id: 'BERRY' })($berry(displaytuple, $defaultBerry(style({ borderRadius: '30px' }))))
             }
@@ -308,12 +314,12 @@ export const $Wardrobe = (config: IBerryComp) => component((
       $column(layoutSheet.spacingBig, style({ flex: 1, }))(
 
         switchLatest(combineArray((ownedItems, selected, account) => {
-          const storeItemList: LabItemSale[] = selected === 0 || selected === 7
+          const storeItemList: LabItemSale[] = selected === 0 || selected === 6
             ? saleDescriptionList.filter(item => getLabItemTupleIndex(item.id) === selected)
             : saleDescriptionList.filter(item => {
               const attrTupleId = getLabItemTupleIndex(item.id)
-              return attrTupleId > 0 && attrTupleId < 7
-            })
+              return attrTupleId > 0 && attrTupleId < 6
+            })        
 
           return $row(layoutSheet.spacing, style({ flexWrap: 'wrap', placeContent: 'center' }))(
             ...storeItemList.map(item => {
@@ -328,7 +334,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
 
               const isSaleUpcomming = upcommingSaleDate > unixTime
 
-              const wearBehavior = getLabItemTupleIndex(id) === 0 ? changeBackgroundStateTether : changeItemStateTether
+              const wearBehavior = getLabItemTupleIndex(id) === 0 ? changeBackgroundStateTether : getLabItemTupleIndex(id) === 6 ? changeBadgeStateTether  : changeItemStateTether
               const selectBehavior: Op<any, any> = wearBehavior(nodeEvent('click'), constant({ isRemove: false, id }))
 
 
