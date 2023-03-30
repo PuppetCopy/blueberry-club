@@ -421,12 +421,12 @@ export const $Wardrobe = (config: IBerryComp) => component((
                   if (isApproved === true) {
                     return $ButtonPrimary({
                       $content: $text(startWith('Save', primaryActionLabel as Stream<string>)),
-                      disabled: combineArray(({ selectedBerry, updateBackgroundState, updateItemState, selectedBerryItems }) => {
-                        if (selectedBerryItems === null || selectedBerry === null || updateItemState === null && updateBackgroundState === null) {
+                      disabled: combineArray(({ selectedBerry, updateBackgroundState, updateItemState, selectedBerryItems, updateBadgeState }) => {
+                        if (selectedBerryItems === null || selectedBerry === null || updateItemState === null && updateBackgroundState === null && updateBadgeState === null) {
                           return true
                         }
 
-                        if (!updateItemState?.isRemove && updateItemState?.id === selectedBerryItems.custom || !updateBackgroundState?.isRemove && updateBackgroundState?.id === selectedBerryItems.background) {
+                        if (!updateItemState?.isRemove && updateItemState?.id === selectedBerryItems.custom || !updateBackgroundState?.isRemove && updateBackgroundState?.id === selectedBerryItems.background && !updateBadgeState?.isRemove && updateBadgeState?.id === selectedBerryItems.badge) {
                           return true
                         }
 
@@ -434,7 +434,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
                       }, exchangeState)
                     })({
                       click: clickSaveTether(
-                        snapshot(async ({ selectedBerry, selectedBerryItems, updateBackgroundState, updateItemState, closet: contract, account }) => {
+                        snapshot(async ({ selectedBerry, selectedBerryItems, updateBackgroundState, updateItemState, updateBadgeState, closet: contract, account }) => {
 
                           if (!selectedBerry || !account) {
                             throw 'no berry selected'
@@ -442,8 +442,6 @@ export const $Wardrobe = (config: IBerryComp) => component((
 
                           const addList: number[] = []
                           const removeList: number[] = []
-
-                          selectedBerryItems.custom
 
                           if (updateItemState) {
 
@@ -457,6 +455,18 @@ export const $Wardrobe = (config: IBerryComp) => component((
                               }
                             }
 
+                          }
+
+                          if (updateBadgeState) {
+                            if (updateBadgeState.isRemove) {
+                              removeList.push(selectedBerryItems.badge)
+                            } else {
+                              addList.push(updateBadgeState.id)
+
+                              if (selectedBerryItems.badge) {
+                                removeList.push(selectedBerryItems.badge)
+                              }
+                            }
                           }
 
                           if (updateBackgroundState) {

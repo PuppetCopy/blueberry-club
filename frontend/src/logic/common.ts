@@ -5,7 +5,7 @@ import { Stream } from "@most/types"
 import { $berry, $defaultBerry } from "../components/$DisplayBerry"
 import {
   IBerryDisplayTupleMap, getLabItemTupleIndex, IAttributeExpression, IAttributeBackground, IAttributeMappings,
-  IBerryLabItems, IToken, IAttributeHat, tokenIdAttributeTuple, labAttributeTuple
+  IBerryLabItems, IToken, IAttributeHat, tokenIdAttributeTuple, labAttributeTuple, IAttributeBadge
 } from "@gambitdao/gbc-middleware"
 import { $Node, $svg, attr, NodeComposeFn, style } from "@aelea/dom"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
@@ -159,13 +159,14 @@ export const $berryByToken = (token: IToken, $container?: NodeComposeFn<$Node>) 
   const display = getBerryFromItems(token.labItems.map(li => Number(li.id)))
   const tuple: Partial<IBerryDisplayTupleMap> = [...tokenIdAttributeTuple[token.id - 1]]
 
-  return $berryByLabItems(token.id, display.background, display.custom, $container, tuple)
+  return $berryByLabItems(token.id, display.background, display.custom, display.badge, $container, tuple)
 }
 
 export const $berryByLabItems = (
   berryId: number,
   backgroundId: IAttributeBackground,
   labItemId: IAttributeMappings,
+  badgeId: IAttributeBadge,
   $container?: NodeComposeFn<$Node>,
   tuple: Partial<IBerryDisplayTupleMap> = [...tokenIdAttributeTuple[berryId - 1]]
 ) => {
@@ -175,6 +176,10 @@ export const $berryByLabItems = (
 
     // @ts-ignore
     tuple.splice(customIdx, 1, labItemId)
+  }
+
+  if (badgeId) {
+    tuple.splice(6, 1, badgeId)
   }
 
   if (backgroundId) {

@@ -215,7 +215,7 @@ export const $Home = (config: ITreasury) => component((
 
               const $mainBerry = tap(({ element }) => {
                 element.querySelectorAll('.wakka').forEach(el => el.remove())
-              }, $berryByLabItems(token.id, display.background, display.custom, $column(style({ width: '340px', height: '340px' })), [background, clothes, undefined, IAttributeExpression.HAPPY, ' ' as any, ' ' as any]) as $Branch)
+              }, $berryByLabItems(token.id, display.background, display.custom, display.badge, $column(style({ width: '340px', height: '340px' })), [background, clothes, undefined, IAttributeExpression.HAPPY, ' ' as any, ' ' as any]) as $Branch)
 
               return screenUtils.isDesktopScreen
                 ? $node(style({ display: 'grid', width: '100%', gap: '20px', justifyContent: 'center', gridTemplateColumns: `repeat(auto-fit, ${berrySize}px)`, gridAutoRows: berrySize + 'px' }))(
