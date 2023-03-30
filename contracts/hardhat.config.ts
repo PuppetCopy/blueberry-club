@@ -3,6 +3,7 @@ import "@nomiclabs/hardhat-etherscan"
 import "@nomiclabs/hardhat-waffle"
 import "hardhat-gas-reporter"
 import "@typechain/hardhat"
+import "@nomicfoundation/hardhat-foundry"
 
 import dotenv from "dotenv"
 dotenv.config({ path: "../.env" })

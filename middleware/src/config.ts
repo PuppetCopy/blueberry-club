@@ -22,7 +22,7 @@ export const COMPETITION_START_MONTH = 1
 export const COMPETITION_START_YEAR = 2023
 
 const timeNow = unixTimestampNow()
-export const TOURNAMENT_DURATION = intervalTimeMap.HR24 * 25
+export const TOURNAMENT_DURATION = intervalTimeMap.HR24 * 25 + intervalTimeMap.MIN60 * 16
 export const TOURNAMENT_START = Date.UTC(date.getFullYear(), date.getMonth(), 1, 16) / 1000
 export const TOURNAMENT_END = TOURNAMENT_START + TOURNAMENT_DURATION
 
@@ -141,7 +141,7 @@ The NFT realm, globally adored.`,
   //     mintRuleList: [
   //       {
   //         supply: 117,
-  //         type: SaleType.Lottery,
+  //         type: SaleType.Airdrop,
   //         cost: 0n,
   //         contractAddress: "0x20456036C223FaC2544ff28Bf382495d29e20B6b",
   //         start: toTime(2022, 11, 24, 18),

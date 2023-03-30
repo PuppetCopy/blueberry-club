@@ -16,6 +16,11 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: 16.x
+      
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
 
       - name: Check if commit includes version information
         # Run `yarn version check --interactive` before committing
