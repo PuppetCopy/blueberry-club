@@ -1,11 +1,12 @@
 #!/bin/bash
 set -e
 
-# Install forge
+# Download foundryup
 curl -L https://foundry.paradigm.xyz | bash
 
-# Add forge to the PATH
+# Install Foundry using foundryup
 export PATH="$HOME/.foundry/bin:$PATH"
+foundryup
 
 # Run your build command
 yarn build
