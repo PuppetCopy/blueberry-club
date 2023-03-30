@@ -1,7 +1,7 @@
 [build]
   publish="./frontend/.dist/"
   base = "."
-  command = "curl -L https://foundry.paradigm.xyz | bash && export PATH=\"$HOME/.forge/bin:$PATH\" && yarn build"
+  command = "curl -L https://foundry.paradigm.xyz | bash && export PATH=\"$HOME/.foundry/bin:$PATH\" && yarn build"
 
 [[redirects]]
   from = "/*"
