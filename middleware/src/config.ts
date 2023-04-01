@@ -3,7 +3,7 @@ import { parseEther } from "ethers/lib/utils"
 import { IAttributeMappings, IMonthlyTradingCompetition, LabItemSale, SaleType } from "./types"
 
 const date = new Date()
-// const date = new Date(1680364800 * 1000)
+const timeNow = unixTimestampNow()
 
 
 
@@ -21,15 +21,15 @@ export const COMPETITION_METRIC_LIST = ['roi', 'pnl'] as const
 export const COMPETITION_START_MONTH = 1
 export const COMPETITION_START_YEAR = 2023
 
-const timeNow = unixTimestampNow()
 export const TOURNAMENT_DURATION = intervalTimeMap.HR24 * 25
-export const TOURNAMENT_START = Date.UTC(date.getFullYear(), date.getMonth(), 1, 16) / 1000
+export const TOURNAMENT_START = Date.UTC(date.getUTCFullYear(), date.getUTCMonth()) / 1000
 export const TOURNAMENT_END = TOURNAMENT_START + TOURNAMENT_DURATION
 
 export const TOURNAMENT_TIME_ELAPSED = Math.min(timeNow, TOURNAMENT_END) - TOURNAMENT_START
 
+
 export const TOURNAMENT_NEXT = timeNow >= TOURNAMENT_START
-  ? Date.UTC(date.getFullYear(), date.getMonth() + 1, 1, 16) / 1000
+  ? Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1, 16) / 1000
   : TOURNAMENT_START
 
 export const GBC_DESCRIPTION = {

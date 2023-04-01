@@ -5,7 +5,7 @@ import { $card, $column, $row, layoutSheet, screenUtils } from '@aelea/ui-compon
 import { colorAlpha, pallete } from '@aelea/ui-components-theme'
 import { empty, map, mergeArray, now, zip } from '@most/core'
 import { Stream } from '@most/types'
-import { formatReadableUSD, formatFixed, unixTimestampNow, IRequestCompetitionLadderApi, IAccountLadderSummary, BASIS_POINTS_DIVISOR, div, USD_PERCISION } from '@gambitdao/gmx-middleware'
+import { formatReadableUSD, IRequestCompetitionLadderApi, IAccountLadderSummary, BASIS_POINTS_DIVISOR, div, USD_PERCISION } from '@gambitdao/gmx-middleware'
 import { $alertTooltip, countdown } from './$rules'
 import { IWalletLink } from '@gambitdao/wallet-link'
 import { $accountPreview, $profilePreview } from '../../components/$AccountProfile'
@@ -19,7 +19,6 @@ import { $defaultProfileContainer } from '../../common/$avatar'
 import { $seperator2 } from '../common'
 
 const MAX_COLLATERAL = 500000000000000000000000000000000n
-const prizeRatioLadder: bigint[] = [3000n, 1500n, 750n, ...Array(17).fill(div(4750n, 17n) / BASIS_POINTS_DIVISOR)]
 
 const METRIC_LABEL = {
   [COMPETITION_METRIC_LIST[1]]: 'PnL',
