@@ -21,8 +21,8 @@ import { $seperator2 } from '../common'
 const MAX_COLLATERAL = 500000000000000000000000000000000n
 
 const METRIC_LABEL = {
-  [COMPETITION_METRIC_LIST[1]]: 'PnL',
-  [COMPETITION_METRIC_LIST[0]]: 'ROI',
+  [COMPETITION_METRIC_LIST[0]]: 'PnL',
+  [COMPETITION_METRIC_LIST[1]]: 'ROI',
 } as const
 
 
@@ -44,15 +44,13 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
     return res.list
   }, config.competitionCumulative)
 
-  const date = new Date()
   const ended = TOURNAMENT_DURATION === TOURNAMENT_TIME_ELAPSED
-
-  const currentMetric = COMPETITION_METRIC_LIST[1]
-
+  const currentMetric = COMPETITION_METRIC_LIST[new Date().getUTCMonth() % 2]
+  const currentMetricLabel = METRIC_LABEL[currentMetric]
 
 
   const sortBy: Stream<ISortBy<IAccountLadderSummary>> = mergeArray([
-    now({ direction: 'desc', selector: 'pnl' }),
+    now({ direction: 'desc', selector: currentMetric }),
     sortByChange
   ])
 
@@ -70,7 +68,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
             $infoTooltipLabel(
               $column(layoutSheet.spacingSmall)(
                 $text(`Participant reward formula:`),
-                $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Prize Pool * PnL of participant / Total Positive PnL of all participants`),
+                $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Prize Pool * ${currentMetricLabel} of participant / Total Positive ${currentMetricLabel} of all participants`),
                 $node(),
                 $column(
                   $text(`To participate:`),
@@ -91,7 +89,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
                   ), $text(' for more details')
                 ),
               ),
-              $text(style({ fontWeight: 'bold', color: pallete.middleground }))(`Highest ${METRIC_LABEL[currentMetric]}`)
+              $text(style({ fontWeight: 'bold', color: pallete.middleground }))(`Highest ${currentMetricLabel}`)
             ),
           ),
         ),
@@ -280,9 +278,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
             {
               $head: $column(style({ placeContent: 'flex-end' }))(
                 $text('Prize'),
-                $text(style({ fontSize: '.75em' }))(
-                  METRIC_LABEL[currentMetric]
-                ),
+                $text(style({ fontSize: '.75em' }))(currentMetricLabel),
               ),
               sortBy: currentMetric,
               columnOp: style({ minWidth: '90px', placeContent: 'flex-end' }),
@@ -327,7 +323,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
               style({ fontSize: '.75em' })(
                 $infoLabel('Next Competition')
               ),
-              $text(COMPETITION_METRIC_LIST[(new Date().getUTCMonth()) % COMPETITION_START_MONTH])
+              $text(METRIC_LABEL[COMPETITION_METRIC_LIST[new Date(TOURNAMENT_NEXT * 1000).getUTCMonth() % 2]])
             ),
           )
         )

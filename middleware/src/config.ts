@@ -16,7 +16,7 @@ export const GLOBAL_W3P_AVALANCHE = 'https://api.avax.network/ext/bc/C/rpc'
 
 export const BLUEBERRY_REFFERAL_CODE = '0x424c554542455252590000000000000000000000000000000000000000000000'
 
-export const COMPETITION_METRIC_LIST = ['roi', 'pnl'] as const
+export const COMPETITION_METRIC_LIST = ['pnl', 'roi'] as const
 
 export const COMPETITION_START_MONTH = 1
 export const COMPETITION_START_YEAR = 2023
