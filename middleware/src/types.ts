@@ -129,6 +129,7 @@ export interface ITradingSummary {
   prizePool: bigint
   estPrizePool: bigint
   totalScore: bigint
+  averageMaxCollateral: bigint
 }
 
 export interface IProfileTradingResult extends ITradingSummary {

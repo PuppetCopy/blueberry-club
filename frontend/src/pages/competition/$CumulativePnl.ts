@@ -5,11 +5,11 @@ import { $card, $column, $row, layoutSheet, screenUtils } from '@aelea/ui-compon
 import { colorAlpha, pallete } from '@aelea/ui-components-theme'
 import { empty, map, mergeArray, now, zip } from '@most/core'
 import { Stream } from '@most/types'
-import { formatReadableUSD, IRequestCompetitionLadderApi, IAccountLadderSummary, BASIS_POINTS_DIVISOR, div, USD_PERCISION } from '@gambitdao/gmx-middleware'
+import { formatReadableUSD, IRequestCompetitionLadderApi, IAccountLadderSummary, USD_PERCISION, formatToBasis, readableNumber } from '@gambitdao/gmx-middleware'
 import { $alertTooltip, countdown } from './$rules'
 import { IWalletLink } from '@gambitdao/wallet-link'
 import { $accountPreview, $profilePreview } from '../../components/$AccountProfile'
-import { BLUEBERRY_REFFERAL_CODE, IProfileTradingSummary, IProfileTradingResult, TOURNAMENT_START, TOURNAMENT_DURATION, TOURNAMENT_NEXT, COMPETITION_METRIC_LIST, COMPETITION_START_MONTH, TOURNAMENT_TIME_ELAPSED } from '@gambitdao/gbc-middleware'
+import { BLUEBERRY_REFFERAL_CODE, IProfileTradingSummary, IProfileTradingResult, TOURNAMENT_START, TOURNAMENT_DURATION, TOURNAMENT_NEXT, COMPETITION_METRIC_LIST, TOURNAMENT_TIME_ELAPSED } from '@gambitdao/gbc-middleware'
 import { $anchor, $infoLabel, $infoLabeledValue, $infoTooltipLabel, $Link, ISortBy } from '@gambitdao/ui-components'
 import { $CardTable } from '../../components/$common'
 import { IProfileActiveTab } from '../$Profile'
@@ -67,8 +67,24 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
             ),
             $infoTooltipLabel(
               $column(layoutSheet.spacingSmall)(
-                $text(`Participant reward formula:`),
-                $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Prize Pool * ${currentMetricLabel} of participant / Total Positive ${currentMetricLabel} of all participants`),
+                $text(`Participant prize formula:`),
+                $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Prize = Prize Pool * ${currentMetricLabel} of participant / Total Positive ${currentMetricLabel} of all participants`),
+                currentMetric === COMPETITION_METRIC_LIST[1]
+                  ? $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(map(res => {
+                    return `ROI = Total PnL / Max Collateral (Floor ${formatReadableUSD(res.averageMaxCollateral)}) * 100`
+                  }, config.competitionCumulative))
+                  : empty(),
+                currentMetric === COMPETITION_METRIC_LIST[1]
+                  ? $text(style({ fontSize: '.75em', fontStyle: 'italic', whiteSpace: 'pre-wrap' }))(`Max Collateral is the highest amount of collateral used for all open positions at any given time. Reinvesting profits or reusing collateral from prior trades during the competition will not increase it.\n\nThe floor Max Collateral value is the average Max Collateral of all participants, which is $212.57 currently`)
+                  : empty(),
+                // currentMetric === COMPETITION_METRIC_LIST[1]
+                //   ? $infoLabeledValue(
+                //     'Current Floor Max Collateral',
+                //     $text(style({ color: pallete.positive }))(map(res => {
+                //       return formatReadableUSD(res.averageMaxCollateral)
+                //     }, config.competitionCumulative))
+                //   )
+                //   : empty(),
                 $node(),
                 $column(
                   $text(`To participate:`),
@@ -83,11 +99,11 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
                     ),
                   ),
                 ),
-                $node(
-                  $text('see '), $anchor(attr({ href: 'https://mirror.xyz/gbc.eth/Oy90Ssp0KDsCtR0TWoAZ4N9cJ2t_yj8xR1bNLKtx7aQ' }))(
-                    $text(`Full Competition Rules`)
-                  ), $text(' for more details')
-                ),
+                // $node(
+                //   $text('see '), $anchor(attr({ href: 'https://mirror.xyz/gbc.eth/Oy90Ssp0KDsCtR0TWoAZ4N9cJ2t_yj8xR1bNLKtx7aQ' }))(
+                //     $text(`Full Competition Rules`)
+                //   ), $text(' for more details')
+                // ),
               ),
               $text(style({ fontWeight: 'bold', color: pallete.middleground }))(`Highest ${currentMetricLabel}`)
             ),
@@ -286,11 +302,14 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
                 const metricVal = pos[currentMetric]
                 const prize = params.estPrizePool * metricVal / params.totalScore
 
+                const newLocal = readableNumber(formatToBasis(metricVal) * 100)
+                const newLocal_1 = currentMetric === 'pnl' ? formatReadableUSD(metricVal, false) : `${Number(newLocal)} %`
+
                 return $column(layoutSheet.spacingTiny, style({ alignItems: 'flex-end' }))(
                   prize > USD_PERCISION * 5n
                     ? $text(style({ color: pallete.positive }))(formatReadableUSD(prize, false))
                     : empty(),
-                  $text(style({ fontSize: '.75em' }))(formatReadableUSD(metricVal, false))
+                  $text(style({ fontSize: '.75em' }))(newLocal_1)
                 )
               }, config.competitionCumulative),
             }

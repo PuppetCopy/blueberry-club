@@ -213,6 +213,7 @@ export const competitionCumulative = O(
 
       let profile2: null | IProfileTradingSummary = null
       let totalScore = 0n
+      let totalMaxCollateral = 0n
 
       const sortedCompetitionList: IProfileTradingSummary[] = sortedByList
         .map(summary => {
@@ -220,6 +221,8 @@ export const competitionCumulative = O(
           const metric = summary[queryParams.metric]
 
           totalScore += metric > 0n ? metric : 0n
+
+          totalMaxCollateral += summary.maxCollateral 
 
           const profileSummary: IProfileTradingSummary = {
             ...summary,
@@ -256,10 +259,12 @@ export const competitionCumulative = O(
         )
       }
 
+      const averageMaxCollateral = totalMaxCollateral / BigInt(sortedCompetitionList.length)
 
 
       return {
-        sortedCompetitionList, estSize, estPrizePool, size, totalScore, prizePool, profile: profile2 as null | IProfileTradingSummary
+        sortedCompetitionList, averageMaxCollateral, estSize, estPrizePool,
+        size, totalScore, prizePool, profile: profile2 as null | IProfileTradingSummary
       }
     })
 

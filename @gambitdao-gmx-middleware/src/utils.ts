@@ -65,12 +65,6 @@ export function readableNumber(ammount: number | bigint) {
   return readableTinyNumber.format(ammount)
 }
 
-export const trimTrailingNumber = (n: string) => {
-  const match = n.match(/(^0+\d{2}|^\d{2})/)
-  // const match = n.match(new RegExp(`(^0+d{2}|^d{2})`))
-  return match ? match[0] : ''
-}
-
 
 
 const options: Intl.DateTimeFormatOptions = { year: '2-digit', month: 'short', day: '2-digit' }
