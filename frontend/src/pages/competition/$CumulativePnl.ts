@@ -78,7 +78,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
                 $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Profits reinvestment or collateral reuse from closed trades doesn't affect Max Collateral.`),
                 currentMetric === COMPETITION_METRIC_LIST[1]
                   ? $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(map(res => {
-                    return `The Minimum Highest Collateral is the average for all participants, currently ${formatReadableUSD(res.averageMaxCollateral)}. Lower <m>inimum Max Collateral will be adjusted to the minimum.`
+                    return `The Minimum Highest Collateral is the average for all participants, currently ${formatReadableUSD(res.averageMaxCollateral)}. Lower Minimum Max Collateral will be adjusted to the minimum.`
                   }, config.competitionCumulative))
                   : empty(),
                 // currentMetric === COMPETITION_METRIC_LIST[1]
