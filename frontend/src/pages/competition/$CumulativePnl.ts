@@ -71,16 +71,16 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
                 $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Prize = Prize Pool * ${currentMetricLabel} of participant / Profit ${currentMetricLabel} of all participants`),
                 currentMetric === COMPETITION_METRIC_LIST[1]
                   ? $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(map(res => {
-                    return `ROI = Total PnL / Max Collateral [Min ${formatReadableUSD(res.averageMaxCollateral)}] * 100`
+                    return `ROI = (Total PnL / Max Collateral [Min ${formatReadableUSD(res.averageMaxCollateral)}]) * 100`
                   }, config.competitionCumulative))
                   : empty(),
-                $text(style({ fontSize: '.75em', fontStyle: 'italic' }))('Highest Collateral refers to the peak amount used for open positions at any time.'),
-                $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Profits reinvestment or collateral reuse from closed trades doesn't affect Max Collateral.`),
+                $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Max Collateral represents the highest amount used for open positions at any point. Reinvesting profits or reusing collateral from closed trades won't affect Max Collateral.`),
                 currentMetric === COMPETITION_METRIC_LIST[1]
                   ? $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(map(res => {
-                    return `The Minimum Highest Collateral is the average for all participants, currently ${formatReadableUSD(res.averageMaxCollateral)}. Lower Minimum Max Collateral will be adjusted to the minimum.`
+                    return `The Minimum Max Collateral is the average for all participants, currently ${formatReadableUSD(res.averageMaxCollateral)}. Participants' prizes are always calculated using a Max Collateral above the minimum.`
                   }, config.competitionCumulative))
                   : empty(),
+
                 // currentMetric === COMPETITION_METRIC_LIST[1]
                 //   ? $infoLabeledValue(
                 //     'Current Floor Max Collateral',
