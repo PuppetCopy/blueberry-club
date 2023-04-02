@@ -66,16 +66,20 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
               $text(style({ fontSize: '1.95em', fontWeight: 'bold', color: pallete.primary, textShadow: `1px 1px 20px ${colorAlpha(pallete.primary, .25)}, 1px 1px 50px ${colorAlpha(pallete.primary, .25)} ` }))('#TopBlueberry'),
             ),
             $infoTooltipLabel(
-              $column(layoutSheet.spacingSmall)(
+              $column(layoutSheet.spacingSmall, style({ width: '400px' }))(
                 $text(`Participant prize formula:`),
-                $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Prize = Prize Pool * ${currentMetricLabel} of participant / Total Positive ${currentMetricLabel} of all participants`),
+                $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Prize = Prize Pool * ${currentMetricLabel} of participant / Profit ${currentMetricLabel} of all participants`),
                 currentMetric === COMPETITION_METRIC_LIST[1]
                   ? $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(map(res => {
-                    return `ROI = Total PnL / Max Collateral (Floor ${formatReadableUSD(res.averageMaxCollateral)}) * 100`
+                    return `ROI = Total PnL / Max Collateral [Min ${formatReadableUSD(res.averageMaxCollateral)}] * 100`
                   }, config.competitionCumulative))
                   : empty(),
+                $text(style({ fontSize: '.75em', fontStyle: 'italic' }))('Highest Collateral refers to the peak amount used for open positions at any time.'),
+                $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Profits reinvestment or collateral reuse from closed trades doesn't affect Highest Collateral.`),
                 currentMetric === COMPETITION_METRIC_LIST[1]
-                  ? $text(style({ fontSize: '.75em', fontStyle: 'italic', whiteSpace: 'pre-wrap' }))(`Max Collateral is the highest amount of collateral used for all open positions at any given time. Reinvesting profits or reusing collateral from prior trades during the competition will not increase it.\n\nThe floor Max Collateral value is the average Max Collateral of all participants, which is $212.57 currently`)
+                  ? $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(map(res => {
+                    return `The minimum Highest Collateral is the average for all participants, currently ${formatReadableUSD(res.averageMaxCollateral)}. Lower Highest Collateral will be adjusted to the minimum.`
+                  }, config.competitionCumulative))
                   : empty(),
                 // currentMetric === COMPETITION_METRIC_LIST[1]
                 //   ? $infoLabeledValue(
@@ -272,32 +276,49 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
               },
 
             ] : []),
+            currentMetric === 'pnl'
+              ? {
+                $head: $column(style({ textAlign: 'right' }))(
+                  $text(style({ fontSize: '.75em' }))('Cum. Collateral'),
+                  $text('Cum. Size'),
+                ),
+                sortBy: 'pnl',
+                columnOp: style({ placeContent: 'flex-end', minWidth: '90px' }),
+                $$body: map((pos) => {
+                  const val = formatReadableUSD(pos.cumSize, false)
+
+                  return $column(style({ gap: '3px', textAlign: 'right' }))(
+                    $text(style({ fontSize: '.75em' }))(formatReadableUSD(pos.cumCollateral, false)),
+                    $seperator2,
+                    $text(
+                      val
+                    ),
+                  )
+                })
+              }
+              : {
+                $head: $column(style({ textAlign: 'right' }))(
+                  $text(style({ fontSize: '.75em' }))('Total PnL'),
+                  $text('Max Collateral'),
+                ),
+                sortBy: 'pnl',
+                columnOp: style({ placeContent: 'flex-end', minWidth: '90px' }),
+                $$body: map((pos) => {
+
+                  return $column(layoutSheet.spacingTiny, style({ gap: '3px', textAlign: 'right' }))(
+                    $text(style({ fontSize: '.75em' }))(formatReadableUSD(pos.pnl, false)),
+                    $seperator2,
+                    $text(formatReadableUSD(pos.maxCollateral, false))
+                  )
+                })
+              },
             {
               $head: $column(style({ textAlign: 'right' }))(
-                $text(style({ fontSize: '.75em' }))('Cum. Collateral'),
-                $text('Cum. Size'),
-              ),
-              sortBy: 'pnl',
-              columnOp: style({ placeContent: 'flex-end', minWidth: '90px' }),
-              $$body: map((pos) => {
-                const val = formatReadableUSD(pos.cumSize, false)
-
-                return $column(style({ gap: '3px', textAlign: 'right' }))(
-                  $text(style({ fontSize: '.75em' }))(formatReadableUSD(pos.cumCollateral, false)),
-                  $seperator2,
-                  $text(
-                    val
-                  ),
-                )
-              })
-            },
-            {
-              $head: $column(style({ placeContent: 'flex-end' }))(
-                $text('Prize'),
                 $text(style({ fontSize: '.75em' }))(currentMetricLabel),
+                $text('Prize'),
               ),
               sortBy: currentMetric,
-              columnOp: style({ minWidth: '90px', placeContent: 'flex-end' }),
+              columnOp: style({ minWidth: '90px', alignItems: 'flex-end', placeContent: 'flex-end' }),
               $$body: zip((params, pos) => {
                 const metricVal = pos[currentMetric]
                 const prize = params.estPrizePool * metricVal / params.totalScore
@@ -305,11 +326,12 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
                 const newLocal = readableNumber(formatToBasis(metricVal) * 100)
                 const newLocal_1 = currentMetric === 'pnl' ? formatReadableUSD(metricVal, false) : `${Number(newLocal)} %`
 
-                return $column(layoutSheet.spacingTiny, style({ alignItems: 'flex-end' }))(
+                return $column(layoutSheet.spacingTiny, style({ gap: '3px', textAlign: 'right' }))(
+                  $text(style({ fontSize: '.75em' }))(newLocal_1),
+                  $seperator2,
                   prize > USD_PERCISION * 5n
                     ? $text(style({ color: pallete.positive }))(formatReadableUSD(prize, false))
                     : empty(),
-                  $text(style({ fontSize: '.75em' }))(newLocal_1)
                 )
               }, config.competitionCumulative),
             }
