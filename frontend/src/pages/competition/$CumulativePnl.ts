@@ -66,7 +66,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
               $text(style({ fontSize: '1.95em', fontWeight: 'bold', color: pallete.primary, textShadow: `1px 1px 20px ${colorAlpha(pallete.primary, .25)}, 1px 1px 50px ${colorAlpha(pallete.primary, .25)} ` }))('#TopBlueberry'),
             ),
             $infoTooltipLabel(
-              $column(layoutSheet.spacingSmall, style({ width: '400px' }))(
+              $column(layoutSheet.spacingSmall, style({ width: '300px' }))(
                 $text(`Participant prize formula:`),
                 $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Prize = Prize Pool * ${currentMetricLabel} of participant / Profit ${currentMetricLabel} of all participants`),
                 currentMetric === COMPETITION_METRIC_LIST[1]
@@ -75,10 +75,10 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
                   }, config.competitionCumulative))
                   : empty(),
                 $text(style({ fontSize: '.75em', fontStyle: 'italic' }))('Highest Collateral refers to the peak amount used for open positions at any time.'),
-                $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Profits reinvestment or collateral reuse from closed trades doesn't affect Highest Collateral.`),
+                $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Profits reinvestment or collateral reuse from closed trades doesn't affect Max Collateral.`),
                 currentMetric === COMPETITION_METRIC_LIST[1]
                   ? $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(map(res => {
-                    return `The minimum Highest Collateral is the average for all participants, currently ${formatReadableUSD(res.averageMaxCollateral)}. Lower Highest Collateral will be adjusted to the minimum.`
+                    return `The Minimum Highest Collateral is the average for all participants, currently ${formatReadableUSD(res.averageMaxCollateral)}. Lower <m>inimum Max Collateral will be adjusted to the minimum.`
                   }, config.competitionCumulative))
                   : empty(),
                 // currentMetric === COMPETITION_METRIC_LIST[1]
