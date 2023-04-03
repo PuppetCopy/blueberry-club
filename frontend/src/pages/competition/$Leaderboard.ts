@@ -1,11 +1,12 @@
 import { Behavior, O } from "@aelea/core"
 import { $text, component, style } from "@aelea/dom"
 import { $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
-import { TOKEN_ADDRESS_TO_SYMBOL, formatReadableUSD, ITrade, TOKEN_SYMBOL, IRequestCompetitionLadderApi } from "@gambitdao/gmx-middleware"
+import { TOKEN_ADDRESS_TO_SYMBOL, formatReadableUSD, ITrade, TOKEN_SYMBOL } from "@gambitdao/gmx-middleware"
 
 import { $bear, $bull, $tokenIconMap } from "@gambitdao/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { ICompetitonCumulativeRoi, $CumulativePnl } from "./$CumulativePnl"
+import { IRequestCompetitionLadderApi } from "@gambitdao/gbc-middleware"
 
 
 export interface ILeaderboard extends ICompetitonCumulativeRoi {

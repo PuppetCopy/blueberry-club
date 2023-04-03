@@ -1,21 +1,14 @@
 import { O } from "@aelea/core"
 import { hexValue } from "@ethersproject/bytes"
 import {
-  IRequestCompetitionLadderApi, IIdentifiableEntity, IRequestPagePositionApi, pagingQuery,
-  cacheMap, intervalTimeMap, toAccountCompetitionSummary, gmxSubgraph, getMarginFees, BASIS_POINTS_DIVISOR, switchMap,
-  groupByKey,
-  div,
-  getMappedValue,
-  CHAIN_ADDRESS_MAP,
-  formatFixed,
-  getTokenAmount,
-  readableNumber,
-  USD_PERCISION
+  IIdentifiableEntity, IRequestPagePositionApi, pagingQuery,
+  cacheMap, intervalTimeMap, gmxSubgraph, getMarginFees, BASIS_POINTS_DIVISOR, switchMap, groupByKey, getMappedValue, CHAIN_ADDRESS_MAP,
+  formatFixed, getTokenAmount, readableNumber, USD_PERCISION, toAccountSummaryList, div
 } from "@gambitdao/gmx-middleware"
 import { awaitPromises, combine, map, now } from "@most/core"
 import { ClientOptions, createClient, gql, OperationContext, TypedDocumentNode } from "@urql/core"
 import { COMPETITION_METRIC_LIST, TOURNAMENT_DURATION, TOURNAMENT_TIME_ELAPSED } from "./config"
-import { ILabItem, ILabItemOwnership, IOwner, IProfileTradingSummary, IProfileTradingResult, IToken } from "./types"
+import { ILabItem, ILabItemOwnership, IOwner, IBlueberryLadder, IProfileTradingResult, IToken, IRequestCompetitionLadderApi } from "./types"
 
 
 export const createSubgraphClient = (opts: ClientOptions) => {
@@ -194,6 +187,9 @@ export const profilePickList = O(
 )
 
 
+
+
+
 export const competitionCumulative = O(
   map(async (queryParams: IRequestCompetitionLadderApi): Promise<IProfileTradingResult> => {
 
@@ -202,31 +198,36 @@ export const competitionCumulative = O(
       const tradeList = await gmxSubgraph.getCompetitionTrades(queryParams)
       const priceMap = await gmxSubgraph.getPriceMap(queryParams.to, queryParams)
 
-      const competitionSummary = toAccountCompetitionSummary(tradeList, priceMap, queryParams.maxCollateral, queryParams.to)
-      const sortedByList = competitionSummary.sort((a, b) => Number(b[queryParams.metric] - a[queryParams.metric]))
+      const summaryList = toAccountSummaryList(tradeList, priceMap, queryParams.maxCollateral, queryParams.to)
 
 
-      const size = sortedByList.reduce((s, n) => s + n.cumSize, 0n)
-      const estSize = sortedByList.reduce((s, n) => s + n.cumSize, 0n) * BigInt(TOURNAMENT_DURATION) / BigInt(TOURNAMENT_TIME_ELAPSED)
+      const totalMaxCollateral = summaryList.reduce((s, n) => s + n.maxCollateral, 0n)
+      const averageMaxCollateral = totalMaxCollateral / BigInt(summaryList.length)
+
+      const size = summaryList.reduce((s, n) => s + n.cumSize, 0n)
+      const estSize = summaryList.reduce((s, n) => s + n.cumSize, 0n) * BigInt(TOURNAMENT_DURATION) / BigInt(TOURNAMENT_TIME_ELAPSED)
       const prizePool = getMarginFees(size) * 1500n / BASIS_POINTS_DIVISOR
       const estPrizePool = prizePool * BigInt(TOURNAMENT_DURATION) / BigInt(TOURNAMENT_TIME_ELAPSED)
 
-      let profile2: null | IProfileTradingSummary = null
+      let profile2: null | IBlueberryLadder = null
       let totalScore = 0n
-      let totalMaxCollateral = 0n
 
-      const sortedCompetitionList: IProfileTradingSummary[] = sortedByList
+      const sortedCompetitionList: IBlueberryLadder[] = summaryList
         .map(summary => {
-          const rank = sortedByList.indexOf(summary) + 1
-          const metric = summary[queryParams.metric]
+          const rank = summaryList.indexOf(summary) + 1
+          const maxCollateral = summary.maxCollateral > averageMaxCollateral ? summary.maxCollateral : averageMaxCollateral
 
-          totalScore += metric > 0n ? metric : 0n
+          const score = queryParams.metric === 'roi'
+            ? div(summary.pnl, maxCollateral)
+            : summary[queryParams.metric]
 
-          totalMaxCollateral += summary.maxCollateral 
+          totalScore += score > 0n ? score : 0n
 
-          const profileSummary: IProfileTradingSummary = {
+
+          const profileSummary: IBlueberryLadder = {
             ...summary,
             profile: null,
+            score,
             rank
           }
 
@@ -236,8 +237,10 @@ export const competitionCumulative = O(
 
           return profileSummary
         })
+        .sort((a, b) => Number(b.score - a.score))
+        .map((summary, idx) => ({ ...summary, rank: idx + 1 }))
 
-      
+
       if (TOURNAMENT_DURATION === TOURNAMENT_TIME_ELAPSED) {
         // log CSV file for airdrop
 
@@ -246,12 +249,12 @@ export const competitionCumulative = O(
         console.log(
           'token_type,token_address,receiver,amount,id\n' + sortedCompetitionList
             .filter(x => {
-              const prize = prizePool * x[queryParams.metric] / totalScore
+              const prize = prizePool * x.score / totalScore
               return prize > USD_PERCISION * 5n
             })
             .map((x, idx) => {
               const ethPrice = BigInt(priceMap['_' + nativeToken])
-              const prizeUsd = prizePool * x[queryParams.metric] / totalScore
+              const prizeUsd = prizePool * x.score / totalScore
               const tokenAmount = formatFixed(getTokenAmount(prizeUsd, ethPrice, 18), 18)
 
               return `erc20,${nativeToken},${x.account},${readableNumber(tokenAmount)},`
@@ -259,12 +262,11 @@ export const competitionCumulative = O(
         )
       }
 
-      const averageMaxCollateral = totalMaxCollateral / BigInt(sortedCompetitionList.length)
 
 
       return {
         sortedCompetitionList, averageMaxCollateral, estSize, estPrizePool,
-        size, totalScore, prizePool, profile: profile2 as null | IProfileTradingSummary
+        size, totalScore, prizePool, profile: profile2 as null | IBlueberryLadder
       }
     })
 

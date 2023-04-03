@@ -1,8 +1,8 @@
 import { isTradeClosed, isTradeLiquidated } from "."
 import {
   ITrade, IIdentifiableEntity, IPositionClose, IPositionDecrease,
-  IPositionIncrease, IPositionLiquidated, IPositionUpdate, IAccountSummary, IAbstractPositionAdjustment,
-  IPricefeed, IPriceLatest, ITokenIndex, IStake, ITokenPricefeed,
+  IPositionIncrease, IPositionLiquidated, IPositionUpdate, IAbstractPositionAdjustment,
+  IPricefeed, IPriceLatest, IStake, ITokenPricefeed,
 } from "./types"
 
 

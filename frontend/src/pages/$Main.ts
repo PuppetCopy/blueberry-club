@@ -1,18 +1,18 @@
-import { Behavior, O, replayLatest } from "@aelea/core"
+import { Behavior, O } from "@aelea/core"
 import { $element, $node, $text, component, eventElementTarget, style } from "@aelea/dom"
 import * as router from '@aelea/router'
 import { $column, $row, layoutSheet, screenUtils } from '@aelea/ui-components'
 import {
   gmxSubgraph, ARBITRUM_ADDRESS, AVALANCHE_ADDRESS,
-  ETH_ADDRESS_REGEXP, IRequestAccountApi, intervalTimeMap, IRequestPricefeedApi, IRequestCompetitionLadderApi, IRequestAccountTradeListApi
+  ETH_ADDRESS_REGEXP, IRequestAccountApi, intervalTimeMap, IRequestPricefeedApi, IRequestAccountTradeListApi
 } from '@gambitdao/gmx-middleware'
 import { initWalletLink, IWalletName } from "@gambitdao/wallet-link"
 import { map, merge, multicast, now } from '@most/core'
 import { $MainMenu } from '../components/$MainMenu'
 import { helloBackend } from '../logic/websocket'
-import { blueberrySubgraph, BLUEBERRY_REFFERAL_CODE, IAccountStakingStore, ITreasuryStore } from "@gambitdao/gbc-middleware"
+import { blueberrySubgraph, BLUEBERRY_REFFERAL_CODE, IAccountStakingStore, IRequestCompetitionLadderApi, ITreasuryStore } from "@gambitdao/gbc-middleware"
 import { $BerryPage } from "./$Berry"
-import { $Profile, IProfileActiveTab } from "./$Profile"
+import { $Profile } from "./$Profile"
 
 import { $seperator2 } from "./common"
 import { $LabHome } from "./lab/$Home"

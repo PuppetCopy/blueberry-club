@@ -3,7 +3,7 @@ import { AnimationFrames } from "@aelea/dom"
 import { Disposable, Scheduler, Sink, Stream } from "@most/types"
 import { at, awaitPromises, constant, continueWith, empty, filter, fromPromise, map, merge, multicast, now, recoverWith, switchLatest, zipArray } from "@most/core"
 import { intervalTimeMap, USD_DECIMALS } from "./constant"
-import { IRequestPageApi, IRequestPagePositionApi, IRequestSortApi } from "./types"
+import { IResponsePageApi, IRequestPagePositionApi, IRequestSortApi } from "./types"
 import { keccak256 } from "@ethersproject/solidity"
 import { ClientOptions, createClient, OperationContext, TypedDocumentNode } from "@urql/core"
 import { curry2 } from "@most/prelude"
@@ -311,7 +311,7 @@ export function pagingQuery<T, ReqParams extends IRequestPagePositionApi & (IReq
   queryParams: ReqParams,
   res: T[],
   customComperator?: (a: T, b: T) => number
-): IRequestPageApi<T> {
+): IResponsePageApi<T> {
   let list = res
   if ('selector' in queryParams) {
     const comperator = typeof customComperator === 'function'

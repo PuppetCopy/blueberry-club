@@ -1,6 +1,6 @@
 import { groupByKey, intervalTimeMap, unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { parseEther } from "ethers/lib/utils"
-import { IAttributeMappings, IMonthlyTradingCompetition, LabItemSale, SaleType } from "./types"
+import { IAttributeMappings, LabItemSale, SaleType } from "./types"
 
 const date = new Date()
 const timeNow = unixTimestampNow()
@@ -650,116 +650,6 @@ For more details check our see discord discussions and even help us improve this
   },
 ]
 
-export const historicMonthlyCompetitions: IMonthlyTradingCompetition[] = [
-  {
-    topTraders: [
-      {
-        account: "0x015067ee4b1d20cb205700b012ffdcf569aa58e4",
-        realisedPnl: 3106630763883608802523631945606420n,
-        openPnl: 0n,
-        pnl: 3106630763883608802523631945606420n,
-        roi: 44108n,
-        maxCollateral: 704318688007285799394186725052002n,
-        lossCount: 4,
-        winCount: 3,
-        cumulativeLeverage: 1858006n,
-        fee: 165406740932318205768404395690748n,
-        cumSize: 301386470789603817663521818753642738n,
-        cumCollateral: 0n,
-        avgCollateral: 0n,
-        avgSize: 0n,
-        avgLeverage: 0n,
-        profile: {
-          balance: 0n,
-          id: '0x015067ee4b1d20cb205700b012ffdcf569aa58e4',
-          ownedLabItems: [],
-          ownedTokens: [],
-          profile: {
-            id: 5255,
-            labItems: [],
-            contract: {} as any,
-            operator: '',
-            owner: {} as any,
-            transfers: []
-          }
-        },
-        rank: 1
-      },
-      {
-        account: "0xd502dfa9ff8478f5d44f558a9075246f1169f400",
-        realisedPnl: 1590520984502765489946182411600487n,
-        openPnl: 0n,
-        pnl: 1590520984502765489946182411600487n,
-        roi: 31810n,
-        cumCollateral: 0n,
-        avgCollateral: 0n,
-        avgSize: 0n,
-        maxCollateral: 500000000000000000000048000000000n,
-        lossCount: 0,
-        avgLeverage: 0n,
-        winCount: 1,
-        cumulativeLeverage: 499999n,
-        fee: 74499999999999999999856960000000n,
-        cumSize: 49999999999999999999904000000000000n,
-        profile: {
-          balance: 0n,
-          id: '0xd502dfa9ff8478f5d44f558a9075246f1169f400',
-          ownedLabItems: [],
-          ownedTokens: [],
-          profile: {
-            id: 2738,
-            labItems: [],
-            contract: {} as any,
-            operator: '',
-            owner: {} as any,
-            transfers: []
-          }
-        },
 
-        rank: 2
-      },
-      {
-        account: "0x407e0e4c5362395b785971fd2d62818a760f6a37",
-        realisedPnl: 1664514975811073285861585425974600n,
-        openPnl: -49732465006500221289599750354194n,
-        pnl: 1614782510804573064571985675620406n,
-        roi: 30490n,
-        maxCollateral: 529609935866756006509571940000000n,
-        lossCount: 10,
-        winCount: 6,
-        avgCollateral: 0n,
-        avgSize: 0n,
-        cumulativeLeverage: 6384012n,
-        fee: 393343499765866969503003802770000n,
-        cumSize: 654888981839061685498584480000000000n,
-        cumCollateral: 0n,
-        avgLeverage: 0n,
-        profile: {
-          balance: 0n,
-          id: '0x407e0e4c5362395b785971fd2d62818a760f6a37',
-          ownedLabItems: [],
-          ownedTokens: [],
-          profile: {
-            id: 8727,
-            labItems: [],
-            contract: {} as any,
-            operator: '',
-            owner: {} as any,
-            transfers: []
-          }
-        },
-        rank: 3
-      },
-    ],
-    metric: 'roi',
-    estPrizePool: 0n,
-    averageMaxCollateral: 0n,
-    estSize: 0n,
-    prizePool: 100n,
-    size: 100n,
-    nftPrize: 1,
-    totalScore: 10n,
-  }
-]
 
 export const labItemDescriptionListMap = groupByKey(saleDescriptionList, i => i.id)

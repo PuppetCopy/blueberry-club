@@ -237,10 +237,6 @@ export interface IAccountSummary {
   fee: bigint
   winCount: number
   lossCount: number
-}
-
-export interface IAccountLadderSummary extends IAccountSummary {
-  roi: bigint
   maxCollateral: bigint
   avgLeverage: bigint
   openPnl: bigint
@@ -296,21 +292,12 @@ export interface IRequestSortApi<T> {
   direction: 'desc' | 'asc'
 }
 
-export interface IRequestPageApi<T> extends IRequestPagePositionApi {
-  page: T[]
-}
 
-export type IRequestAccountTradeListApi = IChainParamApi & IRequestPagePositionApi & IRequestAccountApi & { status: TradeStatus };
 
-export interface IRequestLeaderboardApi extends IRequestPagePositionApi, IChainParamApi, IRequestSortApi<keyof IAccountSummary> {
-  timeInterval: intervalTimeMap.HR24 | intervalTimeMap.DAY7 | intervalTimeMap.MONTH
-}
-export interface IRequestCompetitionLadderApi extends IChainParamApi, IRequestSortApi<IAccountLadderSummary>, IRequestPagePositionApi, IRequestTimerangeApi {
-  referralCode: string
-  maxCollateral: bigint
-  metric: 'roi' | 'pnl' | 'avgSize'
-  account: string | null
-}
+export type IRequestAccountTradeListApi = IChainParamApi & IRequestPagePositionApi & IRequestAccountApi & { status: TradeStatus }
+export type IRequestPageApi = IRequestPagePositionApi & IChainParamApi & IRequestTimerangeApi
+
+
 
 export type IRequestAccountApi = IChainParamApi & { account: string }
 
@@ -322,3 +309,8 @@ export type IRequestTradeListApi = IChainParamApi & IRequestPagePositionApi & IR
 
 export interface IRequestGraphEntityApi extends IChainParamApi, IIdentifiableEntity { }
 
+
+
+export interface IResponsePageApi<T> extends IRequestPagePositionApi {
+  page: T[]
+}

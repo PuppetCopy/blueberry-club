@@ -1,4 +1,4 @@
-import { IAccountLadderSummary, IEnsRegistration, IRequestPageApi } from "@gambitdao/gmx-middleware"
+import { IAccountSummary, IChainParamApi, IEnsRegistration, intervalTimeMap, IResponsePageApi, IRequestPagePositionApi, IRequestSortApi, IRequestTimerangeApi } from "@gambitdao/gmx-middleware"
 
 export type IPrice = {
   priceUsd: bigint
@@ -118,12 +118,13 @@ export interface IYieldInterval extends IAsset {
 
 
 
-export interface IProfileTradingSummary extends IAccountLadderSummary {
+export interface IBlueberryLadder extends IAccountSummary {
   profile: IOwner | null
   rank: number
+  score: bigint
 }
 
-export interface ITradingSummary {
+export interface ILadderSummary {
   size: bigint
   estSize: bigint
   prizePool: bigint
@@ -132,18 +133,10 @@ export interface ITradingSummary {
   averageMaxCollateral: bigint
 }
 
-export interface IProfileTradingResult extends ITradingSummary {
-  list: IRequestPageApi<IProfileTradingSummary>,
-  profile: IProfileTradingSummary | null
+export interface IProfileTradingResult extends ILadderSummary {
+  list: IResponsePageApi<IBlueberryLadder>,
+  profile: IBlueberryLadder | null
 }
-
-export interface IMonthlyTradingCompetition extends ITradingSummary {
-  nftPrize: number // mapped to global unique ID
-  metric: keyof IAccountLadderSummary
-  topTraders: IProfileTradingSummary[]
-}
-
-
 
 
 
@@ -525,3 +518,12 @@ export interface MintPrivate extends MintRuleConfig {
 export type MintRule = MintPublic | MintHolder | MintPrivate
 
 
+export interface IRequestLeaderboardApi extends IRequestPagePositionApi, IChainParamApi, IRequestSortApi<keyof IBlueberryLadder> {
+  timeInterval: intervalTimeMap.HR24 | intervalTimeMap.DAY7 | intervalTimeMap.MONTH
+}
+export interface IRequestCompetitionLadderApi extends IChainParamApi, IRequestSortApi<IBlueberryLadder>, IRequestPagePositionApi, IRequestTimerangeApi {
+  referralCode: string
+  maxCollateral: bigint
+  account: string | null
+  metric: 'roi' | 'pnl'
+}

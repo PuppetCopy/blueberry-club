@@ -5,11 +5,11 @@ import { $card, $column, $row, layoutSheet, screenUtils } from '@aelea/ui-compon
 import { colorAlpha, pallete } from '@aelea/ui-components-theme'
 import { empty, map, mergeArray, now, zip } from '@most/core'
 import { Stream } from '@most/types'
-import { formatReadableUSD, IRequestCompetitionLadderApi, IAccountLadderSummary, USD_PERCISION, formatToBasis, readableNumber } from '@gambitdao/gmx-middleware'
+import { formatReadableUSD, IAccountSummary, USD_PERCISION, formatToBasis, readableNumber } from '@gambitdao/gmx-middleware'
 import { $alertTooltip, countdown } from './$rules'
 import { IWalletLink } from '@gambitdao/wallet-link'
 import { $accountPreview, $profilePreview } from '../../components/$AccountProfile'
-import { BLUEBERRY_REFFERAL_CODE, IProfileTradingSummary, IProfileTradingResult, TOURNAMENT_START, TOURNAMENT_DURATION, TOURNAMENT_NEXT, COMPETITION_METRIC_LIST, TOURNAMENT_TIME_ELAPSED } from '@gambitdao/gbc-middleware'
+import { BLUEBERRY_REFFERAL_CODE, IBlueberryLadder, IProfileTradingResult, TOURNAMENT_START, TOURNAMENT_DURATION, TOURNAMENT_NEXT, COMPETITION_METRIC_LIST, TOURNAMENT_TIME_ELAPSED, IRequestCompetitionLadderApi } from '@gambitdao/gbc-middleware'
 import { $anchor, $infoLabel, $infoLabeledValue, $infoTooltipLabel, $Link, ISortBy } from '@gambitdao/ui-components'
 import { $CardTable } from '../../components/$common'
 import { IProfileActiveTab } from '../$Profile'
@@ -36,7 +36,7 @@ export interface ICompetitonCumulativeRoi {
 
 export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
   [routeChange, routeChangeTether]: Behavior<any, string>,
-  [sortByChange, sortByChangeTether]: Behavior<ISortBy<IAccountLadderSummary>, ISortBy<IAccountLadderSummary>>,
+  [sortByChange, sortByChangeTether]: Behavior<ISortBy<IAccountSummary>, ISortBy<IAccountSummary>>,
   [pageIndex, pageIndexTether]: Behavior<number, number>,
 ) => {
 
@@ -49,7 +49,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
   const currentMetricLabel = METRIC_LABEL[currentMetric]
 
 
-  const sortBy: Stream<ISortBy<IAccountLadderSummary>> = mergeArray([
+  const sortBy: Stream<ISortBy<IAccountSummary>> = mergeArray([
     now({ direction: 'desc', selector: currentMetric }),
     sortByChange
   ])
@@ -202,7 +202,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
             {
               $head: $text('Account'),
               columnOp: style({ minWidth: '120px', flex: 2, alignItems: 'center' }),
-              $$body: map((pos: IProfileTradingSummary) => {
+              $$body: map((pos: IBlueberryLadder) => {
 
                 if (!pos.profile) {
                   return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
@@ -268,7 +268,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
               {
                 $head: $text('Win / Loss'),
                 columnOp: style({ maxWidth: '88px', alignItems: 'center', placeContent: 'center' }),
-                $$body: map((pos: IProfileTradingSummary) => {
+                $$body: map((pos: IBlueberryLadder) => {
                   return $row(
                     $text(`${pos.winCount} / ${pos.lossCount}`)
                   )
@@ -317,10 +317,10 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
                 $text(style({ fontSize: '.75em' }))(currentMetricLabel),
                 $text('Prize'),
               ),
-              sortBy: currentMetric,
+              sortBy: 'score',
               columnOp: style({ minWidth: '90px', alignItems: 'flex-end', placeContent: 'flex-end' }),
               $$body: zip((params, pos) => {
-                const metricVal = pos[currentMetric]
+                const metricVal = pos.score
                 const prize = params.estPrizePool * metricVal / params.totalScore
 
                 const newLocal = readableNumber(formatToBasis(metricVal) * 100)
@@ -347,11 +347,11 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
             //   $infoLabel('Previous competition results')
             // ),
 
-            $anchor(attr({
-              href: '/p/feb-roi-old'
-            }))(
-              $text('Previous competition results')
-            )
+            // $anchor(attr({
+            //   href: '/p/feb-roi-old'
+            // }))(
+            //   $text('Previous competition results')
+            // )
           ),
 
           $row(layoutSheet.spacingSmall)(

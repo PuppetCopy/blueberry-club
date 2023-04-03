@@ -3,9 +3,9 @@ import { awaitPromises, map } from "@most/core"
 import { intervalTimeMap } from "./constant"
 import { getTokenDescription } from "./gmxUtils"
 import {
-  IRequestAccountApi, IChainParamApi, IRequestCompetitionLadderApi, IRequestPagePositionApi,
+  IRequestAccountApi, IChainParamApi, IRequestPagePositionApi,
   IPricefeed, IRequestPricefeedApi, IPriceLatest, IRequestGraphEntityApi, IStake,
-  IRequestTimerangeApi, ITrade, TradeStatus, IRequestAccountTradeListApi, ITradeOpen, IEnsRegistration
+  IRequestTimerangeApi, ITrade, TradeStatus, IRequestAccountTradeListApi, ITradeOpen, IEnsRegistration, IRequestPageApi
 } from "./types"
 import {
   cacheMap, createSubgraphClient, getChainName, getMappedValue, groupByKeyMap, pagingQuery, parseFixed,
@@ -283,31 +283,6 @@ export const accountOpenTradeList = O(
 
 
 
-export async function getCompetitionTrades(queryParams: IRequestCompetitionLadderApi) {
-  const newLocal = intervalTimeMap.HR24 * 3
-  const competitionAccountListQuery = fetchHistoricTrades({ ...queryParams, offset: 0, pageSize: 1000 }, async (params) => {
-    const res = await subgraphChainMap[queryParams.chain](gql(`
-
-query {
-  trades(first: 1000, skip: ${params.offset}, where: { entryReferralCode: "${queryParams.referralCode}", timestamp_gte: ${params.from}, timestamp_lt: ${params.to}}) {
-  # trades(first: 1000, skip: ${params.offset}, where: { timestamp_gte: ${params.from}, timestamp_lt: ${params.to}}) {
-      ${tradeFields}
-      entryReferralCode
-      entryReferrer
-  }
-}
-`), {})
-
-    return res.trades as ITrade[]
-  }, newLocal)
-
-
-  const historicTradeList = await competitionAccountListQuery
-  const tradeList: ITrade[] = historicTradeList.map(fromJson.tradeJson)
-  return tradeList
-}
-
-
 
 
 export const fetchTrades = async <T extends IRequestPagePositionApi & IChainParamApi, R>(params: T, getList: (res: T) => Promise<R[]>): Promise<R[]> => {
@@ -348,8 +323,6 @@ export const fetchHistoricTrades = async <T extends IRequestPagePositionApi & IC
   return fetchTrades(params, getList)
 }
 
-
-
 async function querySubgraph<T extends IChainParamApi>(params: T, document: string): Promise<any> {
   const queryProvider = subgraphChainMap[params.chain]
 
@@ -359,7 +332,6 @@ async function querySubgraph<T extends IChainParamApi>(params: T, document: stri
 
   return queryProvider(gql(document) as any, {})
 }
-
 
 async function getPriceLatestMap(queryParams: IChainParamApi): Promise<IPriceLatest[]> {
   const res = await await querySubgraph(queryParams, `{
@@ -399,6 +371,31 @@ export async function getPriceMap(time: number, queryParams: IChainParamApi): Pr
 
 
   return priceMap
+}
+
+
+export async function getCompetitionTrades(queryParams: IRequestPageApi & { referralCode: string }) {
+  const newLocal = intervalTimeMap.HR24 * 3
+  const competitionAccountListQuery = fetchHistoricTrades({ ...queryParams, offset: 0, pageSize: 1000 }, async (params) => {
+    const res = await subgraphChainMap[queryParams.chain](gql(`
+
+query {
+  trades(first: 1000, skip: ${params.offset}, where: { entryReferralCode: "${queryParams.referralCode}", timestamp_gte: ${params.from}, timestamp_lt: ${params.to}}) {
+  # trades(first: 1000, skip: ${params.offset}, where: { timestamp_gte: ${params.from}, timestamp_lt: ${params.to}}) {
+      ${tradeFields}
+      entryReferralCode
+      entryReferrer
+  }
+}
+`), {})
+
+    return res.trades as ITrade[]
+  }, newLocal)
+
+
+  const historicTradeList = await competitionAccountListQuery
+  const tradeList: ITrade[] = historicTradeList.map(fromJson.tradeJson)
+  return tradeList
 }
 
 

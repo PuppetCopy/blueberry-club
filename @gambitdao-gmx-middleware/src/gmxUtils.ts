@@ -1,8 +1,8 @@
 import { TOKEN_ADDRESS_TO_SYMBOL, TOKEN_DESCRIPTION_MAP } from "./address/token"
 import { BASIS_POINTS_DIVISOR, FUNDING_RATE_PRECISION, LIQUIDATION_FEE, MARGIN_FEE_BASIS_POINTS, MAX_LEVERAGE } from "./constant"
 import {
-  IAccountSummary, ITrade, ITradeSettled, ITradeClosed, ITradeLiquidated, ITradeOpen,
-  TradeStatus, IAccountLadderSummary, IPositionLiquidated, ITokenDescription
+  ITrade, ITradeSettled, ITradeClosed, ITradeLiquidated, ITradeOpen,
+  TradeStatus, IAccountSummary as IAccountSummary, IPositionLiquidated, ITokenDescription
 } from "./types"
 import { easeInExpo, formatFixed, getDenominator, getSafeMappedValue, groupByMapMany } from "./utils"
 
@@ -191,13 +191,13 @@ export function getFundingFee(entryFundingRate: bigint, cumulativeFundingRate: b
 }
 
 
-export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: string]: bigint }, minMaxCollateral: bigint, endDate: number): IAccountLadderSummary[] {
+export function toAccountSummaryList(list: ITrade[], priceMap: { [k: string]: bigint }, minMaxCollateral: bigint, endDate: number): IAccountSummary[] {
   const tradeListMap = groupByMapMany(list, a => a.account)
   const tradeListEntries = Object.entries(tradeListMap)
 
-  return tradeListEntries.map(([account, tradeList]) => {
+  const summaryList = tradeListEntries.map(([account, tradeList]) => {
 
-    const seedAccountSummary: IAccountLadderSummary = {
+    const seedAccountSummary: IAccountSummary = {
       account,
       cumulativeLeverage: 0n,
       cumSize: 0n,
@@ -208,7 +208,6 @@ export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: stri
       maxCollateral: 0n,
       fee: 0n,
       realisedPnl: 0n,
-      roi: 0n,
       openPnl: 0n,
       pnl: 0n,
       winCount: 0,
@@ -220,11 +219,11 @@ export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: stri
     const initSeed = {
       maxUsedCollateral: 0n,
       positions: {}
-    } as { maxUsedCollateral: bigint, positions: { [k: string]: bigint } }
+    } as { maxUsedCollateral: bigint; positions: { [k: string]: bigint} } 
 
 
     const adjustmentsDuringTimerange = sortedTradeList
-      .flatMap(next => [...next.updateList, ...isTradeClosed(next) ? [next.closedPosition] : isTradeLiquidated(next) ? [next.liquidatedPosition as IPositionLiquidated & { key: string }] : []])
+      .flatMap(next => [...next.updateList, ...isTradeClosed(next) ? [next.closedPosition] : isTradeLiquidated(next) ? [next.liquidatedPosition as IPositionLiquidated & { key: string} ] : []])
       // .filter(n => n.timestamp <= endDate)
       .sort((a, b) => a.timestamp - b.timestamp)
 
@@ -246,10 +245,10 @@ export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: stri
 
 
 
-    const summary = sortedTradeList.reduce((seed, next): IAccountLadderSummary => {
+    const summary = sortedTradeList.reduce((seed, next): IAccountSummary => {
       const filteredUpdates = [...next.updateList, ...isTradeClosed(next)
         ? [next.closedPosition] : isTradeLiquidated(next)
-          ? [next.liquidatedPosition as IPositionLiquidated & { key: string }]
+          ? [next.liquidatedPosition as IPositionLiquidated & { key: string} ]
           : []
       ].filter(update => update.timestamp <= endDate)
 
@@ -276,8 +275,6 @@ export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: stri
       const usedMinProfit = maxUsedCollateral - pnl > 0n ? pnl : 0n
       const maxCollateral = usedMinProfit > maxUsedCollateral ? usedMinProfit : maxUsedCollateral
 
-      const roi = div(pnl, (maxCollateral > minMaxCollateral ? maxCollateral : minMaxCollateral))
-
       const currentPnl = lastUpdate.realisedPnl + openDelta
       const winCount = seed.winCount + (currentPnl > 0n ? 1 : 0)
       const lossCount = seed.lossCount + (currentPnl < 0n ? 1 : 0)
@@ -287,7 +284,7 @@ export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: stri
 
 
       return {
-        account, realisedPnl, openPnl, pnl, roi, maxCollateral,
+        account, realisedPnl, openPnl, pnl, maxCollateral,
         lossCount,
         winCount,
         cumulativeLeverage,
@@ -303,10 +300,13 @@ export function toAccountCompetitionSummary(list: ITrade[], priceMap: { [k: stri
 
     return summary
   })
+
+  return summaryList
 }
 
 
-
+// export function toLadder(summaryList: IAccountSummary[]) {
+// }
 
 export function liquidationWeight(isLong: boolean, liquidationPriceUSD: bigint, markPriceUSD: bigint) {
   const weight = isLong ? div(liquidationPriceUSD, markPriceUSD) : div(markPriceUSD, liquidationPriceUSD)

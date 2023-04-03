@@ -5,11 +5,11 @@ import { $column, $row, $seperator, layoutSheet, screenUtils } from '@aelea/ui-c
 import { colorAlpha, pallete } from '@aelea/ui-components-theme'
 import { empty, map, mergeArray, now, zip } from '@most/core'
 import { Stream } from '@most/types'
-import { formatReadableUSD, formatFixed, unixTimestampNow, IRequestCompetitionLadderApi, IAccountLadderSummary, intervalTimeMap, BASIS_POINTS_DIVISOR, div } from '@gambitdao/gmx-middleware'
+import { formatReadableUSD, formatFixed, unixTimestampNow, IAccountSummary, intervalTimeMap, BASIS_POINTS_DIVISOR, div } from '@gambitdao/gmx-middleware'
 import { $alertTooltip } from './$rules'
 import { IWalletLink } from '@gambitdao/wallet-link'
 import { $accountPreview, $profilePreview } from '../../components/$AccountProfile'
-import { BLUEBERRY_REFFERAL_CODE, IProfileTradingSummary, IProfileTradingResult, TOURNAMENT_START } from '@gambitdao/gbc-middleware'
+import { BLUEBERRY_REFFERAL_CODE, IBlueberryLadder, IProfileTradingResult, IRequestCompetitionLadderApi, TOURNAMENT_START } from '@gambitdao/gbc-middleware'
 import { $anchor, $infoTooltipLabel, $Link, ISortBy } from '@gambitdao/ui-components'
 import { $CardTable } from '../../components/$common'
 import { IProfileActiveTab } from '../$Profile'
@@ -31,7 +31,7 @@ export interface ICompetitonCumulativeRoi {
 
 export const $CompetitionRoiDeprecated = (config: ICompetitonCumulativeRoi) => component((
   [routeChange, routeChangeTether]: Behavior<any, string>,
-  [sortByChange, sortByChangeTether]: Behavior<ISortBy<IAccountLadderSummary>, ISortBy<IAccountLadderSummary>>,
+  [sortByChange, sortByChangeTether]: Behavior<ISortBy<IAccountSummary>, ISortBy<IAccountSummary>>,
   [pageIndex, pageIndexTether]: Behavior<number, number>,
 ) => {
 
@@ -47,7 +47,7 @@ export const $CompetitionRoiDeprecated = (config: ICompetitonCumulativeRoi) => c
   const TOURNAMENT_TIME_DURATION = intervalTimeMap.HR24 * 27
 
 
-  const sortBy: Stream<ISortBy<IAccountLadderSummary>> = mergeArray([
+  const sortBy: Stream<ISortBy<IAccountSummary>> = mergeArray([
     now({ direction: 'desc', selector: 'roi' }),
     sortByChange
   ])
@@ -136,7 +136,7 @@ export const $CompetitionRoiDeprecated = (config: ICompetitonCumulativeRoi) => c
             {
               $head: $text('Account'),
               columnOp: style({ minWidth: '120px', flex: 2, alignItems: 'center' }),
-              $$body: map((pos: IProfileTradingSummary) => {
+              $$body: map((pos: IBlueberryLadder) => {
 
                 if (!pos.profile) {
                   return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
@@ -202,7 +202,7 @@ export const $CompetitionRoiDeprecated = (config: ICompetitonCumulativeRoi) => c
               {
                 $head: $text('Win / Loss'),
                 columnOp: style({ maxWidth: '88px', alignItems: 'center', placeContent: 'center' }),
-                $$body: map((pos: IProfileTradingSummary) => {
+                $$body: map((pos: IBlueberryLadder) => {
                   return $row(
                     $text(`${pos.winCount} / ${pos.lossCount}`)
                   )
@@ -236,7 +236,7 @@ export const $CompetitionRoiDeprecated = (config: ICompetitonCumulativeRoi) => c
                 $text('Prize'),
                 $text(style({ fontSize: '.75em' }))('ROI'),
               ),
-              sortBy: 'roi',
+              sortBy: 'score',
               columnOp: style({ minWidth: '90px', placeContent: 'flex-end' }),
               $$body: zip((prizePool, pos) => {
                 const prizeRatio = prizeRatioLadder[pos.rank - 1]
@@ -247,7 +247,7 @@ export const $CompetitionRoiDeprecated = (config: ICompetitonCumulativeRoi) => c
                       $text(style({ fontSize: '1.25em', color: pallete.positive }))(formatReadableUSD(prizePool.prizePool * prizeRatio / BASIS_POINTS_DIVISOR)),
                     ) : empty(),
 
-                  $text(`${formatFixed(pos.roi, 2)}%`)
+                  $text(`${formatFixed(pos.score, 2)}%`)
                 )
               }, config.competitionCumulative)
             }

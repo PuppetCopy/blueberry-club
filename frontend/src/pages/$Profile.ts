@@ -9,7 +9,7 @@ import { $discoverIdentityDisplay } from "../components/$AccountProfile"
 import { $berryTileId, $CardTable } from "../components/$common"
 import {
   getSafeMappedValue, IRequestAccountTradeListApi,
-  IRequestPageApi, IStake, ITradeOpen, ITradeSettled, readableDate, timeSince, TRADE_CONTRACT_MAPPING, unixTimestampNow
+  IRequestPageApi, IResponsePageApi, IStake, ITradeOpen, ITradeSettled, readableDate, timeSince, TRADE_CONTRACT_MAPPING, unixTimestampNow
 } from "@gambitdao/gmx-middleware"
 import { Stream } from "@most/types"
 import { connectGmxEarn } from "../logic/contract"
@@ -44,7 +44,7 @@ export interface IProfile {
   parentRoute: Route
   stake: Stream<IStake[]>
   walletLink: IWalletLink
-  accountTradeList: Stream<Promise<IRequestPageApi<ITradeSettled>>>
+  accountTradeList: Stream<Promise<IResponsePageApi<ITradeSettled>>>
   accountOpenTradeList: Stream<Promise<ITradeOpen[]>>
 
   $accountDisplay: $Node
