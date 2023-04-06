@@ -19,6 +19,10 @@ export function div(a: bigint, b: bigint): bigint {
   return safeDiv(a * BASIS_POINTS_DIVISOR, b)
 }
 
+export function min(a: bigint, b: bigint): bigint {
+  return a < b ? a : b
+}
+
 export function abs(a: bigint): bigint {
   return a < 0n ? -a : a
 }

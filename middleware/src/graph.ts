@@ -3,7 +3,7 @@ import { hexValue } from "@ethersproject/bytes"
 import {
   IIdentifiableEntity, IRequestPagePositionApi, pagingQuery,
   cacheMap, intervalTimeMap, gmxSubgraph, getMarginFees, BASIS_POINTS_DIVISOR, switchMap, groupByKey, getMappedValue, CHAIN_ADDRESS_MAP,
-  formatFixed, getTokenAmount, readableNumber, USD_PERCISION, toAccountSummaryList, div
+  formatFixed, getTokenAmount, readableNumber, USD_PERCISION, toAccountSummaryList, div, min, IAccountSummary
 } from "@gambitdao/gmx-middleware"
 import { awaitPromises, combine, map, now } from "@most/core"
 import { ClientOptions, createClient, gql, OperationContext, TypedDocumentNode } from "@urql/core"
@@ -187,8 +187,13 @@ export const profilePickList = O(
 )
 
 
+const MIN_ROI_THRESHOLD = 50n
+const MIN_PNL_THRESHOLD = USD_PERCISION * 5n
 
 
+function isWinner(summary: IAccountSummary) {
+  return summary.pnl > MIN_PNL_THRESHOLD && div(summary.pnl, summary.maxCollateral) > MIN_ROI_THRESHOLD
+}
 
 export const competitionCumulative = O(
   map(async (queryParams: IRequestCompetitionLadderApi): Promise<IProfileTradingResult> => {
@@ -200,47 +205,71 @@ export const competitionCumulative = O(
 
       const summaryList = toAccountSummaryList(tradeList, priceMap, queryParams.maxCollateral, queryParams.to)
 
+      const { size, totalScore, activeWinnerCount,totalMaxCollateral } = summaryList.reduce((s, n) => {
 
-      const totalMaxCollateral = summaryList.reduce((s, n) => s + n.maxCollateral, 0n)
-      const averageMaxCollateral = totalMaxCollateral / BigInt(summaryList.length)
 
-      const size = summaryList.reduce((s, n) => s + n.cumSize, 0n)
-      const estSize = summaryList.reduce((s, n) => s + n.cumSize, 0n) * BigInt(TOURNAMENT_DURATION) / BigInt(TOURNAMENT_TIME_ELAPSED)
+        if (isWinner(n)) {
+          const score = queryParams.metric === 'roi'
+            ? div(n.pnl, n.maxCollateral)
+            : n[queryParams.metric]
+
+          s.activeWinnerCount++
+          s.totalMaxCollateral += n.maxCollateral
+          s.totalScore += score > 0n ? score : 0n
+
+          // s.totalMaxCollateral += min(n.maxCollateral, highestMaxCollateralBasedOnPnl.maxCollateral)
+        }
+
+        if (n.pnl > s.pnl ? n.pnl : s.pnl) {
+          s.pnl = n.pnl
+          s.highestMaxCollateralBasedOnPnl = n.maxCollateral
+        }
+
+
+
+        s.size += n.cumSize
+
+
+        return s
+      }, { highestMaxCollateralBasedOnPnl: 0n, totalScore: 0n, pnl: 0n, size: 0n, totalMaxCollateral: 0n, activeWinnerCount: 0n })
+
+
+      const averageMaxCollateral = totalMaxCollateral / activeWinnerCount
+      const estSize = size * BigInt(TOURNAMENT_DURATION) / BigInt(TOURNAMENT_TIME_ELAPSED)
+
       const prizePool = getMarginFees(size) * 1500n / BASIS_POINTS_DIVISOR
       const estPrizePool = prizePool * BigInt(TOURNAMENT_DURATION) / BigInt(TOURNAMENT_TIME_ELAPSED)
 
-      let profile2: null | IBlueberryLadder = null
-      let totalScore = 0n
+      let connectedProfile: null | IBlueberryLadder = null
+
 
       const sortedCompetitionList: IBlueberryLadder[] = summaryList
         .map(summary => {
-          const rank = summaryList.indexOf(summary) + 1
           const maxCollateral = summary.maxCollateral > averageMaxCollateral ? summary.maxCollateral : averageMaxCollateral
+          const score = queryParams.metric === 'roi' ? div(summary.pnl, maxCollateral) : summary[queryParams.metric]
 
-          const score = queryParams.metric === 'roi'
-            ? div(summary.pnl, maxCollateral)
-            : summary[queryParams.metric]
-
-          totalScore += score > 0n ? score : 0n
+          const reward = estPrizePool * score / totalScore
+          const prize = isWinner(summary) ? reward : 0n
 
 
-          const profileSummary: IBlueberryLadder = {
-            ...summary,
-            profile: null,
-            score,
-            rank
+          return {
+            summary,
+            prize,
+            score
           }
-
-
-
-          return profileSummary
         })
         .sort((a, b) => Number(b.score - a.score))
-        .map((summary, idx) => {
-          const tempSummary = { ...summary, rank: idx + 1 }
+        .map(({ prize, score, summary }, idx) => {
+          const tempSummary: IBlueberryLadder = {
+            ...summary,
+            profile: null,
+            rank: idx + 1,
+            prize, score
+
+          }
 
           if (queryParams.account === summary.account) {
-            profile2 = tempSummary
+            connectedProfile = tempSummary
           }
 
           return tempSummary
@@ -270,7 +299,7 @@ export const competitionCumulative = O(
 
       return {
         sortedCompetitionList, averageMaxCollateral, estSize, estPrizePool,
-        size, totalScore, prizePool, profile: profile2 as null | IBlueberryLadder
+        size, totalScore, prizePool, profile: connectedProfile as null | IBlueberryLadder
       }
     })
 

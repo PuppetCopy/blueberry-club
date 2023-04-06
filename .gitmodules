@@ -1,3 +1,7 @@
 [submodule "gmx-contracts"]
 	path = gmx-contracts
 	url = https://github.com/gmx-io/gmx-contracts.git
+[submodule "gmx-synthetics"]
+	path = gmx-synthetics
+	url = https://github.com/gmx-io/gmx-synthetics.git
+	branch = updates

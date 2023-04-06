@@ -77,7 +77,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
                 $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Max Collateral represents the highest amount used for open positions at any point. Reinvesting profits or reusing collateral from closed trades won't affect Max Collateral.`),
                 currentMetric === COMPETITION_METRIC_LIST[1]
                   ? $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(map(res => {
-                    return `The Minimum Max Collateral is the average for all participants, currently ${formatReadableUSD(res.averageMaxCollateral)}. Participants' prizes are always calculated using a Max Collateral above the minimum.`
+                    return `The Minimum Max Collateral is the average for all winners, currently ${formatReadableUSD(res.averageMaxCollateral)}. Winners prizes are always calculated using a Max Collateral above the minimum.`
                   }, config.competitionCumulative))
                   : empty(),
 
@@ -319,21 +319,20 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
               ),
               sortBy: 'score',
               columnOp: style({ minWidth: '90px', alignItems: 'center', placeContent: 'flex-end' }),
-              $$body: zip((params, pos) => {
+              $$body: map(pos => {
                 const metricVal = pos.score
-                const prize = params.estPrizePool * metricVal / params.totalScore
 
                 const newLocal = readableNumber(formatToBasis(metricVal) * 100)
-                const newLocal_1 = currentMetric === 'pnl' ? formatReadableUSD(metricVal, false) : `${Number(newLocal)} %`
+                const pnl = currentMetric === 'pnl' ? formatReadableUSD(metricVal, false) : `${Number(newLocal)} %`
 
                 return $column(layoutSheet.spacingTiny, style({ gap: '3px', textAlign: 'right' }))(
-                  $text(style({ fontSize: '.75em' }))(newLocal_1),
+                  $text(style({ fontSize: '.75em' }))(pnl),
                   $seperator2,
-                  prize > USD_PERCISION * 5n
-                    ? $text(style({ color: pallete.positive }))(formatReadableUSD(prize, false))
+                  pos.prize > 0n
+                    ? $text(style({ color: pallete.positive }))(formatReadableUSD(pos.prize, false))
                     : empty(),
                 )
-              }, config.competitionCumulative),
+              }),
             }
           ],
         })({
