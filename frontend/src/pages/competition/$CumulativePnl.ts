@@ -3,14 +3,14 @@ import { $element, $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
 import { $card, $column, $row, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { colorAlpha, pallete } from '@aelea/ui-components-theme'
-import { empty, map, mergeArray, now, zip } from '@most/core'
+import { empty, map, mergeArray, now, snapshot, zip } from '@most/core'
 import { Stream } from '@most/types'
 import { formatReadableUSD, IAccountSummary, USD_PERCISION, formatToBasis, readableNumber } from '@gambitdao/gmx-middleware'
 import { $alertTooltip, countdown } from './$rules'
 import { IWalletLink } from '@gambitdao/wallet-link'
 import { $accountPreview, $profilePreview } from '../../components/$AccountProfile'
 import { BLUEBERRY_REFFERAL_CODE, IBlueberryLadder, IProfileTradingResult, TOURNAMENT_START, TOURNAMENT_DURATION, TOURNAMENT_NEXT, COMPETITION_METRIC_LIST, TOURNAMENT_TIME_ELAPSED, IRequestCompetitionLadderApi } from '@gambitdao/gbc-middleware'
-import { $anchor, $infoLabel, $infoLabeledValue, $infoTooltipLabel, $Link, ISortBy } from '@gambitdao/ui-components'
+import { $anchor, $infoLabel, $infoLabeledValue, $infoTooltipLabel, $Link, invertColor, ISortBy } from '@gambitdao/ui-components'
 import { $CardTable } from '../../components/$common'
 import { IProfileActiveTab } from '../$Profile'
 import { $addToCalendar, $responsiveFlex } from '../../elements/$common'
@@ -202,7 +202,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
             {
               $head: $text('Account'),
               columnOp: style({ minWidth: '120px', flex: 2, alignItems: 'center' }),
-              $$body: map((pos: IBlueberryLadder) => {
+              $$body: snapshot((w3p, pos: IBlueberryLadder) => {
 
                 if (!pos.profile) {
                   return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
@@ -252,7 +252,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
                   ))
                   : $defaultBerry(style({ width: '50px', minWidth: '50px', }))
 
-                return $row(layoutSheet.spacingSmall, style({ alignItems: 'center', minWidth: 0, }))(
+                return $row(layoutSheet.spacingSmall, w3p?.address === pos.account ? style({ background: invertColor(pallete.message), borderRadius: '15px', padding: '6px 12px' }) : style({}), style({ alignItems: 'center', minWidth: 0 }))(
                   $row(style({ alignItems: 'baseline', zIndex: 5, textAlign: 'center', minWidth: '18px', placeContent: 'center' }))(
                     $text(style({ fontSize: '.75em' }))(`${pos.rank}`),
                   ),
@@ -262,7 +262,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
                     url: `/p/profile/${pos.account}/${IProfileActiveTab.TRADING.toLowerCase()}`
                   })({ click: routeChangeTether() }),
                 )
-              })
+              }, config.walletLink.wallet)
             },
             ...(screenUtils.isDesktopScreen ? [
               {
@@ -318,7 +318,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
                 $text('Prize'),
               ),
               sortBy: 'score',
-              columnOp: style({ minWidth: '90px', alignItems: 'flex-end', placeContent: 'flex-end' }),
+              columnOp: style({ minWidth: '90px', alignItems: 'center', placeContent: 'flex-end' }),
               $$body: zip((params, pos) => {
                 const metricVal = pos.score
                 const prize = params.estPrizePool * metricVal / params.totalScore

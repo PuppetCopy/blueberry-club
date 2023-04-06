@@ -3,13 +3,12 @@ import { $Node, $text, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet } from "@aelea/ui-components"
 import { blueberrySubgraph, saleDescriptionList } from "@gambitdao/gbc-middleware"
-import { awaitPromises, combine, empty, map, mergeArray, now, switchLatest } from "@most/core"
+import { awaitPromises, combine, map, mergeArray, now, switchLatest } from "@most/core"
 import { $infoTooltipLabel, $IntermediatePromise, $openPositionPnlBreakdown, $PnlValue, $riskLiquidator, $sizeDisplay, $TradePnl } from "@gambitdao/ui-components"
-import { $discoverIdentityDisplay } from "../components/$AccountProfile"
 import { $berryTileId, $CardTable } from "../components/$common"
 import {
-  getSafeMappedValue, IRequestAccountTradeListApi,
-  IRequestPageApi, IResponsePageApi, IStake, ITradeOpen, ITradeSettled, readableDate, timeSince, TRADE_CONTRACT_MAPPING, unixTimestampNow
+  getSafeMappedValue, IRequestAccountTradeListApi, unixTimestampNow, TRADE_CONTRACT_MAPPING,
+  IResponsePageApi, IStake, ITradeOpen, ITradeSettled, readableDate, timeSince,
 } from "@gambitdao/gmx-middleware"
 import { Stream } from "@most/types"
 import { connectGmxEarn } from "../logic/contract"
@@ -23,10 +22,6 @@ import { $ButtonToggle, $defaulButtonToggleContainer } from "@gambitdao/ui-compo
 import * as router from '@aelea/router'
 import { fadeIn } from "../transitions/enter"
 import { CHAIN } from "@gambitdao/const"
-
-
-
-
 
 
 
@@ -49,6 +44,7 @@ export interface IProfile {
 
   $accountDisplay: $Node
 }
+
 const $title = $text(style({ fontWeight: 'bold', fontSize: '1.55em' }))
 
 export const $Profile = (config: IProfile) => component((

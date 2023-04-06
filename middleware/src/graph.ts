@@ -231,14 +231,20 @@ export const competitionCumulative = O(
             rank
           }
 
-          if (queryParams.account === summary.account) {
-            profile2 = profileSummary
-          }
+
 
           return profileSummary
         })
         .sort((a, b) => Number(b.score - a.score))
-        .map((summary, idx) => ({ ...summary, rank: idx + 1 }))
+        .map((summary, idx) => {
+          const tempSummary = { ...summary, rank: idx + 1 }
+
+          if (queryParams.account === summary.account) {
+            profile2 = tempSummary
+          }
+
+          return tempSummary
+        })
 
 
       if (TOURNAMENT_DURATION === TOURNAMENT_TIME_ELAPSED) {
@@ -261,8 +267,6 @@ export const competitionCumulative = O(
             }).join('\n')
         )
       }
-
-
 
       return {
         sortedCompetitionList, averageMaxCollateral, estSize, estPrizePool,
