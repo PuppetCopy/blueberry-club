@@ -206,7 +206,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
 
                 if (!pos.profile) {
                   return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
-                    $alertTooltip($text(`Account requires Lab Identity, prize will become a form of Revenue to GBC Treasury if remains unclaimed`)),
+                    $alertTooltip($text(`This account requires GBC to receive the prize once competition ends`)),
                     $Link({
                       $content: $accountPreview({ address: pos.account, $container: $defaultProfileContainer(style({ minWidth: '50px' })) }),
                       route: config.parentRoute.create({ fragment: 'fefwef' }),
