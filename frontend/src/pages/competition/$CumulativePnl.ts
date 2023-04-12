@@ -68,7 +68,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
             $infoTooltipLabel(
               $column(layoutSheet.spacingSmall, style({ width: '300px' }))(
                 $text(`Participant prize formula:`),
-                $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Prize = Prize Pool * ${currentMetricLabel} of participant / Profit ${currentMetricLabel} of all participants`),
+                $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Prize = Prize Pool * ${currentMetricLabel} of participant / sum ${currentMetricLabel} of all winners`),
                 currentMetric === COMPETITION_METRIC_LIST[1]
                   ? $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(map(res => {
                     return `ROI = (Total PnL / Max Collateral [Min ${formatReadableUSD(res.averageMaxCollateral)}]) * 100`

@@ -205,19 +205,12 @@ export const competitionCumulative = O(
 
       const summaryList = toAccountSummaryList(tradeList, priceMap, queryParams.maxCollateral, queryParams.to)
 
-      const { size, totalScore, activeWinnerCount,totalMaxCollateral } = summaryList.reduce((s, n) => {
+      const { size, activeWinnerCount, totalMaxCollateral } = summaryList.reduce((s, n) => {
 
 
         if (isWinner(n)) {
-          const score = queryParams.metric === 'roi'
-            ? div(n.pnl, n.maxCollateral)
-            : n[queryParams.metric]
-
           s.activeWinnerCount++
           s.totalMaxCollateral += n.maxCollateral
-          s.totalScore += score > 0n ? score : 0n
-
-          // s.totalMaxCollateral += min(n.maxCollateral, highestMaxCollateralBasedOnPnl.maxCollateral)
         }
 
         if (n.pnl > s.pnl ? n.pnl : s.pnl) {
@@ -231,7 +224,7 @@ export const competitionCumulative = O(
 
 
         return s
-      }, { highestMaxCollateralBasedOnPnl: 0n, totalScore: 0n, pnl: 0n, size: 0n, totalMaxCollateral: 0n, activeWinnerCount: 0n })
+      }, { highestMaxCollateralBasedOnPnl: 0n, pnl: 0n, size: 0n, totalMaxCollateral: 0n, activeWinnerCount: 0n })
 
 
       const averageMaxCollateral = totalMaxCollateral / activeWinnerCount
@@ -239,6 +232,14 @@ export const competitionCumulative = O(
 
       const prizePool = getMarginFees(size) * 1500n / BASIS_POINTS_DIVISOR
       const estPrizePool = prizePool * BigInt(TOURNAMENT_DURATION) / BigInt(TOURNAMENT_TIME_ELAPSED)
+
+      const totalScore = summaryList.reduce((s, n) => {
+        const score = queryParams.metric === 'roi'
+          ? div(n.pnl, n.maxCollateral > averageMaxCollateral ? n.maxCollateral : averageMaxCollateral)
+          : n[queryParams.metric]
+        
+        return score > 0n ? s + score : s
+      }, 0n)
 
       let connectedProfile: null | IBlueberryLadder = null
 
