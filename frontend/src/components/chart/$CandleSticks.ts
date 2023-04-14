@@ -22,7 +22,7 @@ export interface ISeries {
   data: Array<SeriesDataItemTypeMap["Candlestick"]>
 
   appendData?: Stream<SeriesDataItemTypeMap["Candlestick"]>
-  priceLines?: Stream<PriceLineOptions | null>[]
+  priceLines?: Stream<Partial<PriceLineOptions> & Pick<PriceLineOptions, "price"> | null>[]
   drawMarkers?: Stream<IMarker[]>
 }
 

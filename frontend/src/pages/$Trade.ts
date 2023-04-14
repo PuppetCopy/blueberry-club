@@ -14,7 +14,7 @@ import {
 import { map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, snapshot, zip, combine, tap, constant, filter, take, skipRepeatsWith, debounce } from "@most/core"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
 import { $ButtonToggle, $defaultTableContainer, $infoLabeledValue, $infoTooltip, $IntermediatePromise, $spinner, $Table, $txHashRef, invertColor } from "@gambitdao/ui-components"
-import { CandlestickData, LineStyle, Time } from "lightweight-charts"
+import { CandlestickData, LineStyle, PriceLineOptions, Time } from "lightweight-charts"
 import { Stream } from "@most/types"
 import { connectTradeReader, getErc20Balance, IPositionGetter, latestPriceFromExchanges } from "../logic/contract/trade"
 import { $TradeBox, ITradeFocusMode, ITradeState, RequestTradeQuery } from "../components/trade/$TradeBox"
@@ -745,11 +745,10 @@ export const $Trade = (config: ITradeComponent) => component((
                             price: formatFixed(val, 30),
                             color: pallete.middleground,
                             lineVisible: true,
-                            crosshairMarkerRadius: 155,
-                            crosshairMarkerBorderColor: 'red',
-                            crosshairMarkerBorderWidth: 2,
+                            // axisLabelColor: '#fff',
+                            // axisLabelTextColor: 'red',
+                            // axisLabelVisible: true,
                             lineWidth: 1,
-                            axisLabelVisible: true,
                             title: `Entry`,
                             lineStyle: LineStyle.SparseDotted,
                           }
@@ -763,10 +762,10 @@ export const $Trade = (config: ITradeComponent) => component((
                             price: formatFixed(val, 30),
                             color: pallete.indeterminate,
                             lineVisible: true,
-                            crosshairMarkerRadius: 155,
-
+                            // axisLabelColor: 'red',
+                            // axisLabelVisible: true,
+                            // axisLabelTextColor: 'red',
                             lineWidth: 1,
-                            axisLabelVisible: true,
                             title: `Liquidation`,
                             lineStyle: LineStyle.SparseDotted,
                           }
