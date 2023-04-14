@@ -3,9 +3,9 @@ import { $element, $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
 import { $card, $column, $row, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { colorAlpha, pallete } from '@aelea/ui-components-theme'
-import { empty, map, mergeArray, now, snapshot, zip } from '@most/core'
+import { continueWith, empty, map, mergeArray, never, now, snapshot, switchLatest } from '@most/core'
 import { Stream } from '@most/types'
-import { formatReadableUSD, IAccountSummary, USD_PERCISION, formatToBasis, readableNumber } from '@gambitdao/gmx-middleware'
+import { formatReadableUSD, IAccountSummary, formatToBasis, readableNumber, importGlobal } from '@gambitdao/gmx-middleware'
 import { $alertTooltip, countdown } from './$rules'
 import { IWalletLink } from '@gambitdao/wallet-link'
 import { $accountPreview, $profilePreview } from '../../components/$AccountProfile'
@@ -53,6 +53,9 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
     now({ direction: 'desc', selector: currentMetric }),
     sortByChange
   ])
+
+
+  const crateLoadEvent = importGlobal(import('@widgetbot/crate'))
 
 
   return [
@@ -130,6 +133,21 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
             ),
             $text(style({ fontSize: '1.25em' }))(countdown(TOURNAMENT_START + TOURNAMENT_DURATION))
           )
+      ),
+
+      $column(
+        switchLatest(
+          map(Crate => {
+
+            const trollbox = new Crate({
+              server: '941356283234250772',
+              channel: '1068946527021695168',
+              // css: '"height": 100px; display: none;'
+            })
+
+            return empty()
+          }, crateLoadEvent)
+        )
       ),
 
 
