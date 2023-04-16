@@ -11,25 +11,24 @@ import {
   IRequestAccountApi, CHAIN_ADDRESS_MAP, getSafeMappedValue, getTokenDescription, getFeeBasisPoints, getAdjustedDelta, formatReadableUSD, IPositionDecrease, IPositionIncrease, readableDate, timeSince, readableNumber, formatToBasis,
 } from "@gambitdao/gmx-middleware"
 
-import { map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, snapshot, zip, combine, tap, constant, filter, take, skipRepeatsWith, debounce } from "@most/core"
+import { map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, snapshot, zip, combine, constant, filter, take, skipRepeatsWith, debounce } from "@most/core"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
 import { $ButtonToggle, $defaultTableContainer, $infoLabeledValue, $infoTooltip, $IntermediatePromise, $spinner, $Table, $txHashRef, invertColor } from "@gambitdao/ui-components"
-import { CandlestickData, LineStyle, PriceLineOptions, Time } from "lightweight-charts"
+import { CandlestickData, LineStyle, Time } from "lightweight-charts"
 import { Stream } from "@most/types"
 import { connectTradeReader, getErc20Balance, IPositionGetter, latestPriceFromExchanges } from "../logic/contract/trade"
 import { $TradeBox, ITradeFocusMode, ITradeState, RequestTradeQuery } from "../components/trade/$TradeBox"
 import { $CandleSticks } from "../components/chart/$CandleSticks"
 import { getNativeTokenDescription, resolveAddress } from "../logic/utils"
 import { BrowserStore } from "../logic/store"
-import { ContractTransaction } from "@ethersproject/contracts"
 import { getContractAddress } from "../logic/common"
 import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
-import { Web3Provider } from "@ethersproject/providers"
 import { ERC20__factory } from "@gambitdao/gbc-contracts"
 import { $Dropdown } from "../components/form/$Dropdown"
 import { $ButtonSecondary } from "../components/form/$Button"
 import { $caretDown } from "../elements/$icons"
 import { CHAIN } from "@gambitdao/const"
+import { BrowserProvider, ContractTransactionResponse } from "ethers"
 
 
 export interface ITradeComponent {
@@ -51,7 +50,7 @@ export interface ITradeComponent {
 
 
 type RequestTrade = {
-  ctx: ContractTransaction
+  ctx: ContractTransactionResponse
   state: ITradeState
   acceptablePrice: bigint
 }
@@ -173,7 +172,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
   const walletBalance = replayLatest(multicast(awaitPromises(combine(async (token, provider) => {
-    if (provider instanceof Web3Provider) {
+    if (provider instanceof BrowserProvider) {
       const balanceAmount = await getErc20Balance(token, provider)
 
       return balanceAmount
@@ -232,16 +231,16 @@ export const $Trade = (config: ITradeComponent) => component((
   const positionChange: Stream<IPositionGetter> = multicast(tradeReader.vaultReader.run(combine(async (pos, vault) => {
     const positionAbstract = await vault.positions(pos.key)
     const [size, collateral, averagePrice, entryFundingRate, reserveAmount, realisedPnl, lastIncreasedTime] = positionAbstract
-    const lastIncreasedTimeBn = lastIncreasedTime.toBigInt()
+    const lastIncreasedTimeBn = lastIncreasedTime
 
     return {
       ...pos,
-      size: size.toBigInt(),
-      collateral: collateral.toBigInt(),
-      averagePrice: averagePrice.toBigInt(),
-      entryFundingRate: entryFundingRate.toBigInt(),
-      reserveAmount: reserveAmount.toBigInt(),
-      realisedPnl: realisedPnl.toBigInt(),
+      size: size,
+      collateral: collateral,
+      averagePrice: averagePrice,
+      entryFundingRate: entryFundingRate,
+      reserveAmount: reserveAmount,
+      realisedPnl: realisedPnl,
       lastIncreasedTime: lastIncreasedTimeBn,
     }
   }, positionKey)))
@@ -446,8 +445,7 @@ export const $Trade = (config: ITradeComponent) => component((
         return false
       }
 
-      // const erc20 = connectErc20(inputToken, map(w3p => , config.walletProvider))
-      const c = ERC20__factory.connect(params.inputToken, params.wallet.signer)
+      const c = ERC20__factory.connect(params.inputToken, await params.wallet.signer)
 
       if (params.inputToken === AddressZero || !params.isIncrease) {
         return true
@@ -460,7 +458,7 @@ export const $Trade = (config: ITradeComponent) => component((
       }
 
       try {
-        const allowedSpendAmount = (await c.allowance(params.wallet.address, contractAddress)).toBigInt()
+        const allowedSpendAmount = await c.allowance(params.wallet.address, contractAddress)
         return allowedSpendAmount > collateralDeltaUsd
       } catch (err) {
         console.warn(err)

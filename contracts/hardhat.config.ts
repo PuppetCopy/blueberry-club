@@ -1,6 +1,4 @@
-import { HardhatUserConfig, task } from "hardhat/config"
-import "@nomiclabs/hardhat-etherscan"
-import "@nomiclabs/hardhat-waffle"
+import { HardhatUserConfig } from "hardhat/config"
 import "hardhat-gas-reporter"
 import "@typechain/hardhat"
 
@@ -55,6 +53,11 @@ const config: HardhatUserConfig = {
     coinmarketcap: process.env.COINMARKETCAP,
     token: "ETH",
     gasPriceApi: "https://api.arbiscan.io/api?module=proxy&action=eth_gasPrice",
+  },
+  typechain: {
+    // outDir: 'src/types',
+    target: 'ethers-v6',
+    alwaysGenerateOverloads: false, // should overloads with full signatures like deposit(uint256) be generated always, even if there are no overloads?
   },
 }
 

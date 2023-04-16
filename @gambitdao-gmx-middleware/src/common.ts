@@ -1,6 +1,6 @@
 import { map, periodic } from "@most/core"
-import { intervalTimeMap } from "./constant"
-import { unixTimestampNow } from "./utils"
+import { intervalTimeMap } from "./constant.js"
+import { unixTimestampNow } from "./utils.js"
 
 
 const intervals = [

@@ -12,12 +12,13 @@ import { IButtonCore } from "./form/$ButtonCore"
 import { Stream } from "@most/types"
 import { filterNull } from "@gambitdao/gmx-middleware"
 import { $ButtonPrimary, $ButtonSecondary } from "./form/$Button"
-import { ExternalProvider } from "@ethersproject/providers"
 import { CHAIN, NETWORK_METADATA } from "@gambitdao/const"
+import { EthereumProvider } from "eip1193-provider"
+import { BrowserProvider } from "ethers"
 
 
 // https://eips.ethereum.org/EIPS/eip-3085
-export async function attemptToSwitchNetwork(metamask: ExternalProvider, chain: CHAIN) {
+export async function attemptToSwitchNetwork(metamask: EthereumProvider, chain: CHAIN) {
   if (!('request' in metamask)) {
     return console.error('External Provider does not contain request() method')
   }
@@ -136,7 +137,7 @@ export const $IntermediateConnectButton = (config: IConnectWalletPopover) => com
           // constant(fstChain)
           snapshot(async (wallet) => {
             if (wallet) {
-              const externalProvider = wallet.provider.provider
+              const externalProvider = wallet.provider.provider as any as EthereumProvider
               await attemptToSwitchNetwork(externalProvider, fstChain).catch(error => {
                 alert(error.message)
                 console.error(error)
@@ -180,7 +181,7 @@ export const $switchNetworkDropdown = (walletLink: IWalletLink, chainList: CHAIN
               // constant(option)
               snapshot(async (wallet) => {
                 if (wallet) {
-                  const externalProvider = wallet.provider.provider
+                  const externalProvider = wallet.provider.provider as any as EthereumProvider
                   await attemptToSwitchNetwork(externalProvider, option).catch(error => {
                     console.warn(error)
                     return Promise.reject('unable to switch network')

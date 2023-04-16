@@ -4,8 +4,8 @@ import { Closet__factory, Profile__factory } from "@gambitdao/gbc-contracts"
 import { map } from "@most/core"
 import { readContractMapping } from "../common"
 import { Stream } from "@most/types"
-import { BaseProvider } from "@ethersproject/providers"
 import { CHAIN } from "@gambitdao/const"
+import { Provider } from "ethers"
 
 
 export const GBC_CONTRACT_MAPPING = {
@@ -15,7 +15,7 @@ export const GBC_CONTRACT_MAPPING = {
 }
 
 
-export function connectLab(provider: Stream<BaseProvider>) {
+export function connectLab(provider: Stream<Provider>) {
 
   const closet = readContractMapping(GBC_CONTRACT_MAPPING, Closet__factory, provider, 'CLOSET')
   const lab = readContractMapping(GBC_CONTRACT_MAPPING, GBCLab__factory, provider, 'LAB')
@@ -23,12 +23,12 @@ export function connectLab(provider: Stream<BaseProvider>) {
   const gbc = readContractMapping(GBC_CONTRACT_MAPPING, GBC__factory, provider, 'GBC')
 
 
-  const main = (address: string) => profile.readInt(map(async (c) => {
+  const main = (address: string) => profile.run(map(async (c) => {
     return (await c.getDataOf(address)).tokenId
   }))
 
   const ownersListBalance = (owners: string[], idList: number[]) => {
-    return lab.run(map(async c => (await c.balanceOfBatch(owners, idList)).map(n => n.toNumber())))
+    return lab.run(map(async c => (await c.balanceOfBatch(owners, idList)).map(Number)))
   }
 
 
@@ -36,7 +36,7 @@ export function connectLab(provider: Stream<BaseProvider>) {
     const balanceList = lab.run(map(async c => {
       const orderedAccountList = [...idList].fill(account as any) as any as string[]
 
-      return (await c.balanceOfBatch(orderedAccountList, idList)).map(n => n.toNumber())
+      return (await c.balanceOfBatch(orderedAccountList, idList)).map(Number)
     }))
 
     return map(list => {

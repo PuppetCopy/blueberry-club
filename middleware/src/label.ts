@@ -1,4 +1,4 @@
-import { SaleType, TraitAppearanceValue } from "./types"
+import { SaleType, TraitAppearanceValue } from "./types.js"
 
 export const attributeIndexToLabel: TraitAppearanceValue[] = ['Background', 'Clothes', 'Body', 'Expression', 'Face Accessory', 'Hat']
 

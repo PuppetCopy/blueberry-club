@@ -1,6 +1,6 @@
 import { CHAIN } from "@gambitdao/const"
-import { ARBITRUM_ADDRESS } from "./address/arbitrum"
-import { AVALANCHE_ADDRESS } from "./address/avalanche"
+import { ARBITRUM_ADDRESS } from "./address/arbitrum.js"
+import { AVALANCHE_ADDRESS } from "./address/avalanche.js"
 
 export const AddressZero = "0x0000000000000000000000000000000000000000" as const
 

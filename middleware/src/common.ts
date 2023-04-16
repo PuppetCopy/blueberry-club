@@ -1,8 +1,8 @@
 import { importGlobal, unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { map } from "@most/core"
-import { IAttributeBackground, IAttributeClothes, IAttributeBody, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat, LabItemSale, MintRule, SvgPartsMap, IBerryDisplayTupleMap, IAttributeBadge } from "./types"
+import { IAttributeBackground, IAttributeClothes, IAttributeBody, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat, LabItemSale, MintRule, SvgPartsMap, IBerryDisplayTupleMap, IAttributeBadge } from "./types.js"
 
-const svgParts = importGlobal(import("@gambitdao/gbc-middleware/src/mappings/svgParts"))
+const svgParts = importGlobal(import("@gambitdao/gbc-middleware/src/mappings/svgParts.js"))
 
 export const labAttributeTuple = [IAttributeBackground, IAttributeClothes, IAttributeBody, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat, IAttributeBadge] as const
 

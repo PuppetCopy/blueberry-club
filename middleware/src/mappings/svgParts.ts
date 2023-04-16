@@ -1,4 +1,4 @@
-import { IAttributeBackground, IAttributeBadge, IAttributeBody, IAttributeClothes, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat, SvgPartsMap } from "../types"
+import { IAttributeBackground, IAttributeBadge, IAttributeBody, IAttributeClothes, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat, SvgPartsMap } from "../types.js"
 
 const blueberryBody = `<g clip-path="url(#prefix__clip0_299_662)"><path d="M775 1185c231.41 0 419-168.12 419-375.5 0-207.383-187.59-375.5-419-375.5-231.407 0-419 168.117-419 375.5 0 207.38 187.593 375.5 419 375.5z" fill="#ABF"/><path d="M457.5 796c7.6 194 131.833 327.5 193 370l-130-55.5L438 1034l-57.5-89.5-27-106 11-104L394 662l45-82.5 83.5-69.5 109-54.182 28.5-1C569.452 513.314 451.119 633.132 457.5 796z" fill="#001647" fill-opacity=".2"/><path d="M775 1185c231.41 0 419-168.12 419-375.5 0-207.383-187.59-375.5-419-375.5-231.407 0-419 168.117-419 375.5 0 207.38 187.593 375.5 419 375.5z" stroke="#000" stroke-width="20"/></g><defs><clipPath id="prefix__clip0_299_662"><path fill="#fff" d="M0 0h1500v1500H0z"/></clipPath></defs>`
 

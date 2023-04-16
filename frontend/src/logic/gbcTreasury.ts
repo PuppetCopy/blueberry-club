@@ -9,15 +9,15 @@ import { arbGlobalProviderEvent, avaGlobalProviderEvent } from "./provider"
 
 
 
-export const vaultArbitrumEthBalance = awaitPromises(map(async p => (await p.getBalance(GBC_ADDRESS.TREASURY_ARBITRUM)).toBigInt(), arbGlobalProviderEvent))
+export const vaultArbitrumEthBalance = awaitPromises(map(async p => (await p.getBalance(GBC_ADDRESS.TREASURY_ARBITRUM)), arbGlobalProviderEvent))
 export const arbWethContract = awaitPromises(map(async (provider) => {
-  return (await IERC20__factory.connect(ARBITRUM_ADDRESS.NATIVE_TOKEN, provider).balanceOf(GBC_ADDRESS.TREASURY_ARBITRUM)).toBigInt()
+  return (await IERC20__factory.connect(ARBITRUM_ADDRESS.NATIVE_TOKEN, provider).balanceOf(GBC_ADDRESS.TREASURY_ARBITRUM))
 }, arbGlobalProviderEvent))
 
 export const avalancheWethContract = awaitPromises(map(async provider => {
-  return (await IERC20__factory.connect(AVALANCHE_ADDRESS.WETHE, provider).balanceOf(GBC_ADDRESS.TREASURY_AVALANCHE)).toBigInt()
+  return (await IERC20__factory.connect(AVALANCHE_ADDRESS.WETHE, provider).balanceOf(GBC_ADDRESS.TREASURY_AVALANCHE))
 }, avaGlobalProviderEvent))
-export const vaultAvalancheAvaxBalance = awaitPromises(map(async provider => (await provider.getBalance(GBC_ADDRESS.TREASURY_AVALANCHE)).toBigInt(), avaGlobalProviderEvent))
+export const vaultAvalancheAvaxBalance = awaitPromises(map(async provider => (await provider.getBalance(GBC_ADDRESS.TREASURY_AVALANCHE)), avaGlobalProviderEvent))
 
 const arbPricefeed = readContract(VaultPriceFeed__factory, arbGlobalProviderEvent, ARBITRUM_ADDRESS.VaultPriceFeed)
 const avaxPricefeed = readContract(VaultPriceFeed__factory, avaGlobalProviderEvent, AVALANCHE_ADDRESS.VaultPriceFeed)
@@ -27,9 +27,9 @@ const avaxPricefeed = readContract(VaultPriceFeed__factory, avaGlobalProviderEve
 const globalMapPrice = replayLatest(multicast(awaitPromises(combineArray(async (provider, arb, ava) => {
   const queryEthPrice = arb.getPrimaryPrice(ARBITRUM_ADDRESS.NATIVE_TOKEN, false)
   const queryAvaxPrice = ava.getPrimaryPrice(AVALANCHE_ADDRESS.NATIVE_TOKEN, false)
-  const eth = (await queryEthPrice).toBigInt()
+  const eth = await queryEthPrice
   const gmx = await getGmxArbiPrice(provider, eth)
-  const avax = (await queryAvaxPrice).toBigInt()
+  const avax = await queryAvaxPrice
 
   return { gmx, eth, avax }
 }, arbGlobalProviderEvent, arbPricefeed, avaxPricefeed))))

@@ -1,23 +1,34 @@
 import { O } from "@aelea/core"
+import { CHAIN } from "@gambitdao/const"
 import { awaitPromises, map } from "@most/core"
-import { intervalTimeMap } from "./constant"
-import { getTokenDescription } from "./gmxUtils"
+import { Stream } from "@most/types"
+import { cacheExchange, fetchExchange, gql } from "@urql/core"
+import fetch from "isomorphic-fetch"
+import { TOKEN_SYMBOL } from "./address/symbol.js"
+import { intervalTimeMap } from "./constant.js"
+import * as fromJson from "./fromJson.js"
+import { getTokenDescription } from "./gmxUtils.js"
 import {
-  IRequestAccountApi, IChainParamApi, IRequestPagePositionApi,
-  IPricefeed, IRequestPricefeedApi, IPriceLatest, IRequestGraphEntityApi, IStake,
-  IRequestTimerangeApi, ITrade, TradeStatus, IRequestAccountTradeListApi, ITradeOpen, IEnsRegistration, IRequestPageApi
-} from "./types"
+  IChainParamApi,
+  IEnsRegistration,
+  IPriceLatest,
+  IPricefeed,
+  IRequestAccountApi,
+  IRequestAccountTradeListApi,
+  IRequestGraphEntityApi,
+  IRequestPageApi,
+  IRequestPagePositionApi,
+  IRequestPricefeedApi,
+  IRequestTimerangeApi,
+  IStake,
+  ITrade,
+  ITradeOpen,
+  TradeStatus
+} from "./types.js"
 import {
   cacheMap, createSubgraphClient, getChainName, getMappedValue, groupByKeyMap, pagingQuery, parseFixed,
   switchFailedSources, unixTimestampNow
-} from "./utils"
-import { gql } from "@urql/core"
-import * as fromJson from "./fromJson"
-import fetch from "isomorphic-fetch"
-import { TOKEN_SYMBOL } from "./address/symbol"
-import { Stream } from "@most/types"
-import { CHAIN } from "@gambitdao/const"
-
+} from "./utils.js"
 
 
 const cache = cacheMap({})
@@ -30,26 +41,31 @@ const cacheLifeMap = {
 
 export const ensGraph = createSubgraphClient({
   fetch: fetch as any,
-  url: 'https://api.thegraph.com/subgraphs/name/ensdomains/ens'
+  url: 'https://api.thegraph.com/subgraphs/name/ensdomains/ens',
+  exchanges: [cacheExchange, fetchExchange,],
 })
 
 export const arbitrumGraph = createSubgraphClient({
   fetch: fetch as any,
-  url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-arbitrum'
+  url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-arbitrum',
+  exchanges: [cacheExchange, fetchExchange,],
 })
 
 export const arbitrumGraphDev = createSubgraphClient({
   fetch: fetch as any,
-  url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-arbitrum-dev'
+  url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-arbitrum-dev',
+  exchanges: [cacheExchange, fetchExchange,],
 })
 export const avalancheGraphDev = createSubgraphClient({
   fetch: fetch as any,
-  url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-avalanche-dev'
+  url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-avalanche-dev',
+  exchanges: [cacheExchange, fetchExchange,],
 })
 
 export const avalancheGraph = createSubgraphClient({
   fetch: fetch as any,
-  url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-avalanche'
+  url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-avalanche',
+  exchanges: [cacheExchange, fetchExchange,],
 })
 
 

@@ -284,7 +284,6 @@ export enum IAttributeClothes {
   NUDE = IAttributeMappings.Nude,
 
   // lab
-  BUILDER = IAttributeMappings.Builder,
   AVALANCHE_HOODIE = IAttributeMappings["Avalanche Hoodie"],
   GLP_SHIRT = IAttributeMappings["GLP Shirt"],
   SUMMER_BUOY = IAttributeMappings["Summer Buoy"],

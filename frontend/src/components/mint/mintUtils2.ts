@@ -2,17 +2,17 @@ import { combineArray } from "@aelea/core"
 import { $text, style } from "@aelea/dom"
 import { $row, layoutSheet, $column } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { BaseContract, ContractTransaction } from "@ethersproject/contracts"
-import { LAB_CHAIN, IAttributeMappings } from "@gambitdao/gbc-middleware"
+import { LAB_CHAIN, IAttributeMappings, GBC_ADDRESS } from "@gambitdao/gbc-middleware"
 import { unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { $IntermediateTx } from "@gambitdao/ui-components"
-import { join, map, now, periodic } from "@most/core"
+import { empty, join, map, now, periodic } from "@most/core"
 import { Stream } from "@most/types"
 import { $labItem } from "../../logic/common"
+import { ContractFactory, ContractTransactionResponse } from "ethers"
 
 
 
-export function $displayMintEvents(contract: Stream<BaseContract>, ctxStream: Stream<Promise<ContractTransaction>>) {
+export function $displayMintEvents(contract: Stream<ContractFactory>, ctxStream: Stream<Promise<ContractTransactionResponse>>) {
   return join(combineArray((lab, ctx) => {
 
     return $IntermediateTx({
@@ -21,8 +21,14 @@ export function $displayMintEvents(contract: Stream<BaseContract>, ctxStream: St
       $$success: map(tx => {
 
         return $column(
-          ...tx.logs.filter(address => lab.address === address.address).map(log => {
-            const parsedLog = lab.interface.parseLog(log)
+          ...tx.logs.filter(address => address.address === GBC_ADDRESS.LAB).map(log => {
+            const parsedLog = lab.interface.parseLog({ data: log.data, topics: [...log.topics] })
+
+            if (parsedLog === null) {
+              console.warn('Could not parse log', log)
+              return empty()
+            }
+
             const labItemId: number = parsedLog.args.id.toNumber()
             const amount: number = parsedLog.args.amount.toNumber()
 

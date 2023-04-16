@@ -3,8 +3,9 @@
   "compilerOptions": {
     "outDir": ".dist/esm",
     "rootDir": "src",
+    "allowSyntheticDefaultImports": true,
     "lib": [
-      "es2021",
+      "es2022",
       "DOM"
     ],
     "types": [],

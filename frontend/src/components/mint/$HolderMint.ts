@@ -1,8 +1,6 @@
 import { Behavior, replayLatest, combineArray, combineObject } from "@aelea/core"
 import { component, style, $text } from "@aelea/dom"
 import { $column, layoutSheet, $row } from "@aelea/ui-components"
-import { formatFixed } from "@ethersproject/bignumber"
-import { ContractTransaction } from "@ethersproject/contracts"
 import { blueberrySubgraph, IToken, LabItemSale, MintRule, } from "@gambitdao/gbc-middleware"
 import { $alert, $IntermediatePromise, $spinner } from "@gambitdao/ui-components"
 import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
@@ -15,6 +13,8 @@ import { connectLab } from "../../logic/contract/gbc"
 import { Holder__factory } from "@gambitdao/gbc-contracts"
 import { readContract } from "../../logic/common"
 import { CHAIN } from "@gambitdao/const"
+import { ContractTransactionResponse } from "ethers"
+import { formatFixed } from "@gambitdao/gmx-middleware"
 
 interface MintCmp {
   chainList: CHAIN[],
@@ -25,7 +25,7 @@ interface MintCmp {
 }
 
 export const $HolderMint = (config: MintCmp) => component((
-  [clickMintWhitelist, clickMintWhitelistTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
+  [clickMintWhitelist, clickMintWhitelistTether]: Behavior<PointerEvent, Promise<ContractTransactionResponse>>,
   [selectTokensForWhitelist, selectTokensForWhitelistTether]: Behavior<IToken[], IToken[]>,
   [walletChange, walletChangeTether]: Behavior<IWalletName, IWalletName>,
 

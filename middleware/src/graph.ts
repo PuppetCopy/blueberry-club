@@ -1,14 +1,14 @@
 import { O } from "@aelea/core"
-import { hexValue } from "@ethersproject/bytes"
 import {
   IIdentifiableEntity, IRequestPagePositionApi, pagingQuery,
   cacheMap, intervalTimeMap, gmxSubgraph, getMarginFees, BASIS_POINTS_DIVISOR, switchMap, groupByKey, getMappedValue, CHAIN_ADDRESS_MAP,
-  formatFixed, getTokenAmount, readableNumber, USD_PERCISION, toAccountSummaryList, div, min, IAccountSummary
+  formatFixed, getTokenAmount, readableNumber, USD_PERCISION, toAccountSummaryList, div, IAccountSummary
 } from "@gambitdao/gmx-middleware"
 import { awaitPromises, combine, map, now } from "@most/core"
-import { ClientOptions, createClient, gql, OperationContext, TypedDocumentNode } from "@urql/core"
-import { COMPETITION_METRIC_LIST, TOURNAMENT_DURATION, TOURNAMENT_TIME_ELAPSED } from "./config"
-import { ILabItem, ILabItemOwnership, IOwner, IBlueberryLadder, IProfileTradingResult, IToken, IRequestCompetitionLadderApi } from "./types"
+import { cacheExchange, ClientOptions, createClient, fetchExchange, gql, OperationContext, TypedDocumentNode } from "@urql/core"
+import { COMPETITION_METRIC_LIST, TOURNAMENT_DURATION, TOURNAMENT_TIME_ELAPSED } from "./config.js"
+import { ILabItem, ILabItemOwnership, IOwner, IBlueberryLadder, IProfileTradingResult, IToken, IRequestCompetitionLadderApi } from "./types.js"
+import { toBeHex } from "ethers"
 
 
 export const createSubgraphClient = (opts: ClientOptions) => {
@@ -32,6 +32,7 @@ export const createSubgraphClient = (opts: ClientOptions) => {
 export const blueberrySubgraph = createSubgraphClient({
   fetch: fetch,
   url: 'https://api.thegraph.com/subgraphs/name/nissoh/blueberry-club-arbitrum',
+  exchanges: [ cacheExchange, fetchExchange, ],
 })
 
 const cache = cacheMap({})
@@ -111,7 +112,7 @@ export const token = O(
 
     const res = await await querySubgraph(`
 {
-  token(id: "${hexValue(Number(queryParams.id))}") {
+  token(id: "${toBeHex(Number(queryParams.id))}") {
     id
     owner {
       id
@@ -166,7 +167,7 @@ export const tokenListPick = O(
     const newLocal = `
 {
   ${tokenList.map(id => `
-_${id}: token(id: "${hexValue(id)}") {
+_${id}: token(id: "${toBeHex(id)}") {
   id
   labItems {
     id

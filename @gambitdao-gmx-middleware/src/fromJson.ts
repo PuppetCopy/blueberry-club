@@ -1,9 +1,5 @@
-import { isTradeClosed, isTradeLiquidated } from "."
-import {
-  ITrade, IIdentifiableEntity, IPositionClose, IPositionDecrease,
-  IPositionIncrease, IPositionLiquidated, IPositionUpdate, IAbstractPositionAdjustment,
-  IPricefeed, IPriceLatest, IStake, ITokenPricefeed,
-} from "./types"
+import { isTradeClosed, isTradeLiquidated } from "./gmxUtils.js"
+import { IIdentifiableEntity, IPositionClose, IPositionLiquidated, IPricefeed, ITokenPricefeed, IPriceLatest, IAbstractPositionAdjustment, IPositionIncrease, IPositionDecrease, IPositionUpdate, ITrade, IStake } from "./types.js"
 
 
 export function baseEntityJson<T extends  IIdentifiableEntity>(json: T): T {

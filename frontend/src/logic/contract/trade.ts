@@ -10,11 +10,8 @@ import { periodicRun } from "@gambitdao/gmx-middleware"
 import { resolveAddress } from "../utils"
 import { Stream } from "@most/types"
 import { getContractAddress, readContractMapping } from "../common"
-import { id } from "@ethersproject/hash"
-import { Interface } from "@ethersproject/abi"
 import { http, observer } from "@aelea/ui-components"
-import { BaseProvider, Web3Provider } from "@ethersproject/providers"
-import { Contract } from "ethers"
+import { BrowserProvider, Contract, Interface, Provider, id } from "ethers"
 import { listen } from "./listen"
 import { CHAIN } from "@gambitdao/const"
 
@@ -133,19 +130,20 @@ export function latestPriceFromExchanges(indexToken: ITokenTrade): Stream<bigint
 }
 
 
-export async function getErc20Balance(token: ITokenTrade | typeof AddressZero, w3p: Web3Provider | BaseProvider) {
-  if (!(w3p instanceof Web3Provider)) {
+export async function getErc20Balance(token: ITokenTrade | typeof AddressZero, w3p: Provider) {
+  if (!(w3p instanceof BrowserProvider)) {
     return 0n
   }
 
-  const signer = w3p.getSigner()
+
+  const signer = await w3p.getSigner()
 
   if (token === AddressZero) {
-    return (await signer.getBalance()).toBigInt()
+    return (await w3p.getBalance(signer.address))
   }
 
 
-  const chainId = (await w3p.getNetwork()).chainId
+  const chainId = Number((await w3p.getNetwork()).chainId)
 
   // @ts-ignore
   const contractMapping = TRADE_CONTRACT_MAPPING[chainId]
@@ -158,13 +156,14 @@ export async function getErc20Balance(token: ITokenTrade | typeof AddressZero, w
 
   const erc20 = ERC20__factory.connect(resolvedTokenAddress, w3p)
 
-  return (await erc20.balanceOf(await signer.getAddress())).toBigInt()
+  return (await erc20.balanceOf(await signer.getAddress()))
 }
 
 
 
 
-export function connectTradeReader(provider: Stream<BaseProvider>) {
+export function connectTradeReader(provider: Stream<Provider>) {
+  
   const vaultReader = readContractMapping(TRADE_CONTRACT_MAPPING, Vault__factory, provider, 'Vault')
   const positionRouterReader = readContractMapping(TRADE_CONTRACT_MAPPING, PositionRouter__factory, provider, 'PositionRouter')
   const usdgReader = readContractMapping(TRADE_CONTRACT_MAPPING, ERC20__factory, provider, 'USDG')
@@ -178,53 +177,53 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
   const cancelDecreasePosition = mapKeeperEvent(false, positionRouterReader.listen('CancelDecreasePosition'))
 
 
-  const executionFee = positionRouterReader.readInt(map(async positionRouter => positionRouter.minExecutionFee()))
-  const usdgSupply = usdgReader.readInt(map(usdg => usdg.totalSupply()))
-  const totalTokenWeight = vaultReader.readInt(map(vault => vault.totalTokenWeights()))
+  const executionFee = positionRouterReader.run(map(async positionRouter => positionRouter.contract.minExecutionFee()))
+  const usdgSupply = usdgReader.run(map(usdg => usdg.contract.totalSupply()))
+  const totalTokenWeight = vaultReader.run(map(vault => vault.contract.totalTokenWeights()))
 
 
   const getIsPluginEnabled = (address: string) => routerReader.run(map(async router => {
-    return router.approvedPlugins(address, getContractAddress(TRADE_CONTRACT_MAPPING, (await router.provider.getNetwork()).chainId, 'PositionRouter'))
+    return router.contract.approvedPlugins(address, getContractAddress(TRADE_CONTRACT_MAPPING, router.chainId, 'PositionRouter'))
   }))
 
-  const getTokenCumulativeFunding = (ts: Stream<ITokenIndex>) => vaultReader.readInt(combine((address, vault) => {
-    return vault.cumulativeFundingRates(address)
+  const getTokenCumulativeFunding = (ts: Stream<ITokenIndex>) => vaultReader.run(combine((address, vault) => {
+    return vault.contract.cumulativeFundingRates(address)
   }, ts))
-  const getPoolAmount = (ts: Stream<ITokenIndex>) => vaultReader.readInt(combine((address, vault) => {
-    return vault.poolAmounts(address)
+  const getPoolAmount = (ts: Stream<ITokenIndex>) => vaultReader.run(combine((address, vault) => {
+    return vault.contract.poolAmounts(address)
   }, ts))
-  const getReservedAmount = (ts: Stream<ITokenIndex>) => vaultReader.readInt(combine((address, vault) => {
-    return vault.reservedAmounts(address)
+  const getReservedAmount = (ts: Stream<ITokenIndex>) => vaultReader.run(combine((address, vault) => {
+    return vault.contract.reservedAmounts(address)
   }, ts))
-  const getTokenWeight = (ts: Stream<ITokenIndex>) => vaultReader.readInt(combine((address, vault) => {
-    return vault.tokenWeights(address)
+  const getTokenWeight = (ts: Stream<ITokenIndex>) => vaultReader.run(combine((address, vault) => {
+    return vault.contract.tokenWeights(address)
   }, ts))
-  const getUsdgAmount = (ts: Stream<ITokenIndex>) => vaultReader.readInt(combine((address, vault) => {
-    return vault.usdgAmounts(address)
+  const getUsdgAmount = (ts: Stream<ITokenIndex>) => vaultReader.run(combine((address, vault) => {
+    return vault.contract.usdgAmounts(address)
   }, ts))
-  const getMaxUsdgAmount = (ts: Stream<ITokenIndex>) => vaultReader.readInt(combine((address, vault) => {
-    return vault.maxUsdgAmounts(address)
+  const getMaxUsdgAmount = (ts: Stream<ITokenIndex>) => vaultReader.run(combine((address, vault) => {
+    return vault.contract.maxUsdgAmounts(address)
   }, ts))
 
   const getTokenFundingRate = (token: Stream<ITokenTrade>) => vaultReader.run(combine(async (address, vault) => {
     const tokenDescription = getTokenDescription(address)
 
     const [reserved, poolAmount, fundingRateFactor] = await Promise.all([
-      vault.reservedAmounts(address).then(x => x.toBigInt()),
-      vault.poolAmounts(address).then(x => x.toBigInt()),
+      vault.contract.reservedAmounts(address),
+      vault.contract.poolAmounts(address),
       tokenDescription.isStable
-        ? vault.stableFundingRateFactor().then(x => x.toBigInt())
-        : vault.fundingRateFactor().then(x => x.toBigInt())
+        ? vault.contract.stableFundingRateFactor()
+        : vault.contract.fundingRateFactor()
     ])
 
     return div(fundingRateFactor * reserved, poolAmount)
   }, token))
 
-  const getFundingRateFactor = (token: Stream<ITokenTrade>) => vaultReader.readInt(combine(async (address, vault) => {
+  const getFundingRateFactor = (token: Stream<ITokenTrade>) => vaultReader.run(combine(async (address, vault) => {
     const tokenDescription = getTokenDescription(address)
     const rate = tokenDescription.isStable
-      ? vault.stableFundingRateFactor()
-      : vault.fundingRateFactor()
+      ? vault.contract.stableFundingRateFactor()
+      : vault.contract.fundingRateFactor()
 
     return rate
   }, token))
@@ -256,11 +255,11 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
 
       const [vaultSize, globalMaxSize] = await Promise.all([
         isStable
-          ? params.vault.globalShortSizes(params.indexToken).then(x => x.toBigInt())
-          : params.vault.guaranteedUsd(params.indexToken).then(x => x.toBigInt()),
+          ? params.vault.contract.globalShortSizes(params.indexToken)
+          : params.vault.contract.guaranteedUsd(params.indexToken),
         isStable
-          ? params.positionRouter.maxGlobalShortSizes(params.indexToken).then(x => x.toBigInt())
-          : params.positionRouter.maxGlobalLongSizes(params.indexToken).then(x => x.toBigInt())
+          ? params.positionRouter.contract.maxGlobalShortSizes(params.indexToken)
+          : params.positionRouter.contract.maxGlobalLongSizes(params.indexToken)
       ])
 
       return globalMaxSize - vaultSize
@@ -268,22 +267,21 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
   }
 
 
-  const nativeTokenPrice = pricefeedReader.readInt(map(async contract => {
-    const chain = (await contract.provider.getNetwork()).chainId
-    const nativeAddress = getContractAddress(TRADE_CONTRACT_MAPPING, chain, 'NATIVE_TOKEN')
+  const nativeTokenPrice = pricefeedReader.run(map(async contract => {
+    const nativeAddress = getContractAddress(TRADE_CONTRACT_MAPPING, contract.chainId, 'NATIVE_TOKEN')
 
     if (nativeAddress === null) {
       throw new Error(`couldn't get native token contract address`)
     }
 
-    return contract.getPrimaryPrice(nativeAddress, false)
+    return contract.contract.getPrimaryPrice(nativeAddress, false)
   }))
 
-  const getTokenDebtUsd = (token: Stream<ITokenInput>) => vaultReader.readInt(combine((token, vault) => vault.usdgAmounts(token), token))
-  const getPrimaryPrice = (token: ITokenInput, maximize = false) => pricefeedReader.readInt(map(async (pricefeed) => {
+  const getTokenDebtUsd = (token: Stream<ITokenInput>) => vaultReader.run(combine((token, vault) => vault.contract.usdgAmounts(token), token))
+  const getPrimaryPrice = (token: ITokenInput, maximize = false) => pricefeedReader.run(map(async (pricefeed) => {
 
     try {
-      return await pricefeed.getPrimaryPrice(token, maximize)
+      return await pricefeed.contract.getPrimaryPrice(token, maximize)
     } catch (err) {
       throw new Error(`Pricefeed token ${token} does not exists`)
     }
@@ -297,17 +295,16 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
   const positionLiquidateEvent = vaultReader.listen('LiquidatePosition')
 
   const getLatestPrice = (token: Stream<ITokenTrade>) => switchLatest(pricefeedReader.run(combine(async (token, pricefeed) => {
-    const chain = (await pricefeed.provider.getNetwork()).chainId
-    const resovledA = resolveAddress(chain, token)
+    const resovledA = resolveAddress(pricefeed.chainId, token)
 
     return switchFailedSources([
-      gmxIoLatestPrice(chain, resovledA),
+      gmxIoLatestPrice(pricefeed.chainId, resovledA),
       periodicRun({
         recoverError: false,
         interval: 5000,
         actionOp: map(async () => {
           try {
-            const price = (await pricefeed.getPrimaryPrice(resovledA, true)).toBigInt()
+            const price = (await pricefeed.contract.getPrimaryPrice(resovledA, true))
             return price
           } catch (err) {
             throw new Error(`Pricefeed token ${token} does not exists within ${pricefeed.address} pricefeed`)
@@ -318,7 +315,7 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
   }, token)))
 
   const positionUpdateEvent = switchLatest(vaultReader.run(map(async vault => {
-    const chain = (await vault.provider.getNetwork()).chainId
+    const chain = vault.chainId
 
     if (!chain) {
       throw new Error('no chain detected')
@@ -349,12 +346,12 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
           markPrice: 0n,
           timestamp: unixTimestampNow(),
           lastIncreasedTime: BigInt(unixTimestampNow()),
-          size: size.toBigInt(),
-          collateral: collateral.toBigInt(),
-          averagePrice: averagePrice.toBigInt(),
-          entryFundingRate: entryFundingRate.toBigInt(),
-          reserveAmount: reserveAmount.toBigInt(),
-          realisedPnl: realisedPnl.toBigInt()
+          size: size,
+          collateral: collateral,
+          averagePrice: averagePrice,
+          entryFundingRate: entryFundingRate,
+          reserveAmount: reserveAmount,
+          realisedPnl: realisedPnl
         }
       }, listener) as any
 
@@ -381,7 +378,7 @@ export function connectTradeReader(provider: Stream<BaseProvider>) {
   const getPrice = (token: Stream<ITokenIndex>) => switchLatest(vaultReader.run(combine(async (token, vault) => {
     return periodicRun({
       actionOp: map(async () => {
-        const price = (await vault.getMaxPrice(token)).toBigInt()
+        const price = await vault.contract.getMaxPrice(token)
         return price
       })
     })

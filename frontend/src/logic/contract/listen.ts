@@ -1,19 +1,9 @@
 import { fromCallback } from "@aelea/core"
-import { BigNumber } from "@ethersproject/bignumber"
-import { BaseContract, Event } from "@ethersproject/contracts"
-import { empty, map, switchLatest } from "@most/core"
 import type { Stream } from '@most/types'
-import { TypedEventFilter } from "../gmx-contracts/common"
+import { BaseContract, ContractEventName } from "ethers"
 
 
-
-export type ConvertTypeToBigInt<T> = {
-  [P in keyof T]: T[P] extends BigNumber ? bigint : T[P]
-}
-export type GetEventFilterType<T extends BaseContract, Name extends keyof T['filters']> = ConvertTypeToBigInt<ReturnType<T['filters'][Name]> extends TypedEventFilter<any, infer C> ? C : never>
-
-
-export const listen = <T extends BaseContract, Name extends keyof T['filters'], ET extends GetEventFilterType<T, Name>>(contract: T, ev: Name extends string ? Name : never | TypedEventFilter<any, any>): Stream<ET & { __event: Event }> => {
+export const listen = <T extends BaseContract, ET>(contract: T, ev: ContractEventName): Stream<ET & { __event: any }> => {
   return fromCallback(
     cb => {
       contract.on(ev, cb)
@@ -21,7 +11,7 @@ export const listen = <T extends BaseContract, Name extends keyof T['filters'], 
     },
     (...argsArray: any[]) => {
       const arrLength = argsArray.length
-      const eventDescriptor = argsArray[arrLength - 1] as Event
+      const eventDescriptor = argsArray[arrLength - 1] as any
       const argsObj: any = {
         __event: eventDescriptor
       }
@@ -30,27 +20,11 @@ export const listen = <T extends BaseContract, Name extends keyof T['filters'], 
 
           const value = eventDescriptor.args[prop]
 
-          if (BigNumber.isBigNumber(value)) {
-            argsObj[prop] = value.toBigInt()
-          } else {
-            argsObj[prop] = value
-          }
-
+          argsObj[prop] = value
         }
       }
       return argsObj
     }
   )
 }
-
-// export const listen = <T extends BaseContract, Name extends keyof T['filters'], ET extends GetEventFilterType<T, Name>>(provider: Stream<T>, filter: Name extends string ? Name : never): Stream<ET & { __event: Event }> => switchLatest(
-//   map(provider => {
-//     if (provider === null) {
-//       return empty()
-//     }
-
-//     return listenFn(provider, filter)
-//   }, provider)
-// )
-
 

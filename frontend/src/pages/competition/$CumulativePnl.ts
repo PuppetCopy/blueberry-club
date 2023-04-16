@@ -3,7 +3,7 @@ import { $element, $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
 import { $card, $column, $row, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { colorAlpha, pallete } from '@aelea/ui-components-theme'
-import { continueWith, empty, map, mergeArray, never, now, snapshot, switchLatest } from '@most/core'
+import { empty, map, mergeArray, now, snapshot, switchLatest } from '@most/core'
 import { Stream } from '@most/types'
 import { formatReadableUSD, IAccountSummary, formatToBasis, readableNumber, importGlobal } from '@gambitdao/gmx-middleware'
 import { $alertTooltip, countdown } from './$rules'

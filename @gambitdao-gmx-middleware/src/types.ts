@@ -1,9 +1,8 @@
-import { Event } from "@ethersproject/contracts"
 import { CHAIN } from "@gambitdao/const"
-import { ARBITRUM_ADDRESS, ARBITRUM_ADDRESS_INDEX, ARBITRUM_ADDRESS_STABLE } from "./address/arbitrum"
-import { AVALANCHE_ADDRESS, AVALANCHE_ADDRESS_INDEX, AVALANCHE_ADDRESS_STABLE } from "./address/avalanche"
-import { TOKEN_SYMBOL } from "./address/symbol"
-import { intervalTimeMap } from "./constant"
+import { ARBITRUM_ADDRESS, ARBITRUM_ADDRESS_INDEX, ARBITRUM_ADDRESS_STABLE } from "./address/arbitrum.js"
+import { AVALANCHE_ADDRESS, AVALANCHE_ADDRESS_INDEX, AVALANCHE_ADDRESS_STABLE } from "./address/avalanche.js"
+import { TOKEN_SYMBOL } from "./address/symbol.js"
+import { intervalTimeMap } from "./constant.js"
 
 export type Address = string
 export type ITokenTrade = ITokenIndex | ITokenStable
@@ -182,10 +181,6 @@ export interface KeeperDecreaseRequest {
   blockGap: bigint
   timeGap: bigint
   // key: string
-}
-
-export interface IMappedEvent {
-  __event: Event
 }
 
 

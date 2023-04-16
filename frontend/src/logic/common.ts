@@ -1,21 +1,19 @@
 import { O, Op } from "@aelea/core"
-import { filterNull } from "@gambitdao/gmx-middleware"
-import { awaitPromises, continueWith, empty, map, multicast, never, now, recoverWith, switchLatest, takeWhile, tap } from "@most/core"
-import { Stream } from "@most/types"
-import { $berry, $defaultBerry } from "../components/$DisplayBerry"
-import {
-  IBerryDisplayTupleMap, getLabItemTupleIndex, IAttributeExpression, IAttributeBackground, IAttributeMappings,
-  IBerryLabItems, IToken, IAttributeHat, tokenIdAttributeTuple, labAttributeTuple, IAttributeBadge
-} from "@gambitdao/gbc-middleware"
-import { $Node, $svg, attr, NodeComposeFn, style } from "@aelea/dom"
+import { $Node, $svg, NodeComposeFn, attr, style } from "@aelea/dom"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
-import { Closet } from "@gambitdao/gbc-contracts"
-import { BigNumberish, BigNumber } from "@ethersproject/bignumber"
-import { BaseProvider, Web3Provider } from "@ethersproject/providers"
-import { ContractFactory, Event } from "@ethersproject/contracts"
-import { GetEventFilterType, listen } from "./contract/listen"
-import { curry2 } from "@most/prelude"
 import { CHAIN } from "@gambitdao/const"
+import { Closet } from "@gambitdao/gbc-contracts"
+import {
+  IAttributeBackground, IAttributeBadge, IAttributeExpression, IAttributeHat, IAttributeMappings,
+  IBerryDisplayTupleMap, IBerryLabItems, IToken, getLabItemTupleIndex, labAttributeTuple, tokenIdAttributeTuple
+} from "@gambitdao/gbc-middleware"
+import { filterNull, getMappedValue } from "@gambitdao/gmx-middleware"
+import { awaitPromises, continueWith, empty, map, multicast, never, now, recoverWith, switchLatest, takeWhile, tap } from "@most/core"
+import { curry2 } from "@most/prelude"
+import { Stream } from "@most/types"
+import { BigNumberish, BrowserProvider, ContractFactory, Provider } from "ethers"
+import { $berry, $defaultBerry } from "../components/$DisplayBerry"
+import { listen } from "./contract/listen"
 
 export type TContractMapping<T> = {
   [P in CHAIN]?: {
@@ -50,35 +48,40 @@ export function getContractAddress<T, Z extends TContractMapping<T>>(contractMap
 }
 
 
+export interface IContractRunner<T extends ContractFactory<any, any>, TMap, TProvider extends Provider> {
+  contract: T,
+  address: string,
+  chainId: number
+  contractMapping: TContractMapping<TMap>
+  provider: TProvider
+}
 
-export function readContractMapping<TProvider extends BaseProvider, TMap, TCmap extends TContractMapping<TMap>, TContract extends typeof ContractFactory>(
-  contractMap: TCmap,
+export function readContractMapping<TProvider extends Provider, TMap, CCMap extends TContractMapping<TMap>, TContract extends typeof ContractFactory<any, any>>(
+  contractMap: CCMap,
   contractCtr: TContract,
   connect: Stream<TProvider>,
   contractName: keyof TMap
 ) {
 
   // @ts-ignore
-  type RetContract = ReturnType<TContract['connect']>
+  type RetContract = IContractRunner<ReturnType<TContract['connect']>, TMap, TProvider>
 
-  const contract = filterNull(map((provider): RetContract | null => {
-    if (!provider || !provider.network?.chainId) {
+  const contract: Stream<RetContract> = filterNull(awaitPromises(map(async (provider): Promise<RetContract | null> => {
+    if (!provider) {
       return null
     }
 
-    const chainId = provider.network.chainId as CHAIN
+    const network = await provider.getNetwork()
+    const chainId = Number(network.chainId)
+    const contractMapping: any = getMappedValue(chainId, contractMap)
+    const address = getMappedValue(contractMapping, contractName)
 
-    const address = getContractAddress(contractMap, chainId, contractName)
-
-    if (address === null) {
-      return null
-    }
 
     // @ts-ignore
-    const contract = contractCtr.connect(address, provider instanceof Web3Provider ? provider.getSigner() : provider)
+    const contract = contractCtr.connect(address, provider instanceof BrowserProvider ? provider.getSigner() : provider)
 
-    return contract
-  }, connect))
+    return { contract, address, contractMapping, chainId, provider }
+  }, connect)))
 
   const run = <R>(op: Op<RetContract, Promise<R>>) => {
     const switchOp = switchLatest(map(c => {
@@ -94,19 +97,9 @@ export function readContractMapping<TProvider extends BaseProvider, TMap, TCmap 
     return switchOp
   }
 
-  const readInt = (op: Op<RetContract, Promise<BigNumber>>): Stream<bigint> => {
-    const newLocal = O(
-      op,
-      map(async (n) => {
-        return (await n).toBigInt()
-      })
-    )
-
-    return run(newLocal)
-  }
 
   // @ts-ignore
-  const _listen = <T extends RetContract, Name extends keyof T['filters'], ET extends GetEventFilterType<T, Name>>(name: Name extends string ? Name : never): Stream<ET & { __event: Event }> => switchLatest(map(res => {
+  const _listen = <T extends RetContract['contract'], Name extends keyof T['filters'], ET extends GetEventFilterType<T, Name>>(name: Name extends string ? Name : never): Stream<ET & { __event: Event }> => switchLatest(map(res => {
     if (res === null) {
       return never()
     }
@@ -116,7 +109,7 @@ export function readContractMapping<TProvider extends BaseProvider, TMap, TCmap 
   }, contract))
 
 
-  return { run, readInt, contract, listen: _listen }
+  return { run, contract, listen: _listen }
 }
 
 
@@ -133,7 +126,7 @@ export const switchOp: ISwitchOpCurry2 = curry2(function <T, R>(s: Stream<T>, oo
 
 
 
-export function readContract<T extends string, TContract extends typeof ContractFactory, TProvider extends BaseProvider>(
+export function readContract<T extends string, TContract extends typeof ContractFactory<any, any>, TProvider extends Provider>(
   contractCtr: TContract,
   provider: Stream<TProvider>,
   address: T
@@ -142,7 +135,7 @@ export function readContract<T extends string, TContract extends typeof Contract
   type RetContract = ReturnType<TContract['connect']>
 
   const contract = awaitPromises(map(async (provider): Promise<RetContract> => {
-    const signerOrProvider = provider instanceof Web3Provider ? provider.getSigner() : provider
+    const signerOrProvider = provider instanceof BrowserProvider ? provider.getSigner() : provider
     // @ts-ignore
     const contract = contractCtr.connect(address, signerOrProvider)
 
@@ -253,7 +246,7 @@ export const $labItemAlone = (id: number, size = 80) => {
 
 export async function getTokenSlots(token: BigNumberish, closet: Closet): Promise<IBerryLabItems> {
   const items = await closet.get(token, 0, 2)
-  return getBerryFromItems(items.map(it => it.toNumber()))
+  return getBerryFromItems(items.map(it => Number(it)))
 }
 
 export function getBerryFromItems(items: number[]) {

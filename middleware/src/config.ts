@@ -1,6 +1,6 @@
 import { groupByKey, intervalTimeMap, unixTimestampNow } from "@gambitdao/gmx-middleware"
-import { parseEther } from "ethers/lib/utils"
-import { IAttributeMappings, LabItemSale, SaleType } from "./types"
+import { parseEther } from "ethers"
+import { IAttributeMappings, LabItemSale, SaleType } from "./types.js"
 
 const date = new Date()
 const timeNow = unixTimestampNow()
@@ -438,7 +438,7 @@ For more details check our see discord discussions and even help us improve this
       {
         supply: 41,
         type: SaleType.holder,
-        cost: parseEther('0.35').toBigInt(),
+        cost: parseEther('0.35'),
         contractAddress: "0xaA8f27dA5e73deF9ffc1CfedD90BCaD9FeA36B20",
         start: toTime(2022, 9, 28, 18),
         finish: toTime(2022, 10, 28, 18),
@@ -447,7 +447,7 @@ For more details check our see discord discussions and even help us improve this
       {
         supply: 4,
         type: SaleType.Whitelist,
-        cost: parseEther('0.35').toBigInt(),
+        cost: parseEther('0.35'),
         nonce: 0,
         contractAddress: "0xA8503345A18EF77C21F5eE0Fcf587B115A4bBbe4",
         start: toTime(2022, 9, 28, 18),
@@ -501,7 +501,7 @@ For more details check our see discord discussions and even help us improve this
       {
         supply: 50,
         type: SaleType.holder,
-        cost: parseEther('0.05').toBigInt(),
+        cost: parseEther('0.05'),
         contractAddress: "0xCB65F3FB88887f85B0C152dBdECdabb8e1aAC82F",
         start: toTime(2022, 7, 10, 18),
         finish: toTime(2022, 8, 10, 18),
@@ -517,7 +517,7 @@ For more details check our see discord discussions and even help us improve this
       {
         supply: 82,
         type: SaleType.holder,
-        cost: parseEther('0.0420').toBigInt(),
+        cost: parseEther('0.0420'),
         contractAddress: "0xa90C156D2632d18F4EB20f96991609DAC5689288",
         start: toTime(2022, 7, 8, 18),
         finish: toTime(2022, 8, 8, 18),
@@ -533,7 +533,7 @@ For more details check our see discord discussions and even help us improve this
       {
         supply: 75,
         type: SaleType.holder,
-        cost: parseEther('0.04').toBigInt(),
+        cost: parseEther('0.04'),
         contractAddress: "0x8CcC075E1c845FB3e0caBf04aF537171DF66b3A6",
         start: toTime(2022, 6, 9, 18),
         finish: toTime(2022, 7, 9, 18),
@@ -568,7 +568,7 @@ For more details check our see discord discussions and even help us improve this
       {
         supply: 77,
         type: SaleType.holder,
-        cost: parseEther('0.03').toBigInt(),
+        cost: parseEther('0.03'),
         contractAddress: "0x1695819e85B26F31A2a89f60152C3A1151D865C1",
         start: toTime(2022, 5, 22, 18),
         finish: toTime(2022, 6, 22, 18),

@@ -1,11 +1,10 @@
 import { $Node, $node, $text, NodeComposeFn, style } from "@aelea/dom"
 import { $column, $row, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { BaseProvider } from "@ethersproject/providers"
-import { IEnsRegistration, intervalTimeMap } from "@gambitdao/gmx-middleware"
+import { IEnsRegistration } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
 import { $jazzicon } from "../common/$avatar"
-import { blueberrySubgraph, getIdentityFromENS, IEnsClaim, IOwner } from "@gambitdao/gbc-middleware"
+import { blueberrySubgraph, IOwner } from "@gambitdao/gbc-middleware"
 import { $berryByToken } from "../logic/common"
 import { awaitPromises, empty, map, now, switchLatest } from "@most/core"
 
@@ -135,33 +134,6 @@ export const $disconnectedWalletDisplay = (avatarSize = 38) => {
   )
 }
 
-
-
-
-
-const CACHE_TTL = intervalTimeMap.DAY7
-
-
-type ICachedId = IEnsClaim & { createdAt: number }
-export async function getCachedMetadata(address: string, provider: BaseProvider) {
-  const normalizedAddress = address.toLowerCase()
-
-  const cachedItem = window.localStorage.getItem(`ens-${normalizedAddress}`)
-  const item: ICachedId = cachedItem && JSON.parse(cachedItem)
-
-  if (!item || item.createdAt > Date.now() + CACHE_TTL) {
-    const ensName = await getIdentityFromENS(address, provider)
-
-    if (ensName?.ensName) {
-      const data: ICachedId = { createdAt: Date.now(), ...ensName }
-      window.localStorage.setItem(`ens-${normalizedAddress}`, JSON.stringify(data))
-    }
-
-    return null
-  }
-
-  return item
-}
 
 
 

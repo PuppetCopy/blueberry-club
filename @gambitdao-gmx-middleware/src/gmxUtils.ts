@@ -1,10 +1,10 @@
-import { TOKEN_ADDRESS_TO_SYMBOL, TOKEN_DESCRIPTION_MAP } from "./address/token"
-import { BASIS_POINTS_DIVISOR, FUNDING_RATE_PRECISION, LIQUIDATION_FEE, MARGIN_FEE_BASIS_POINTS, MAX_LEVERAGE } from "./constant"
+import { TOKEN_ADDRESS_TO_SYMBOL, TOKEN_DESCRIPTION_MAP } from "./address/token.js"
+import { BASIS_POINTS_DIVISOR, FUNDING_RATE_PRECISION, LIQUIDATION_FEE, MARGIN_FEE_BASIS_POINTS, MAX_LEVERAGE } from "./constant.js"
 import {
   ITrade, ITradeSettled, ITradeClosed, ITradeLiquidated, ITradeOpen,
   TradeStatus, IAccountSummary as IAccountSummary, IPositionLiquidated, ITokenDescription
-} from "./types"
-import { easeInExpo, formatFixed, getDenominator, getSafeMappedValue, groupByMapMany } from "./utils"
+} from "./types.js"
+import { easeInExpo, formatFixed, getDenominator, getSafeMappedValue, groupByMapMany } from "./utils.js"
 
 
 export function safeDiv(a: bigint, b: bigint): bigint {

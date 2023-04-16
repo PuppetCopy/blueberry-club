@@ -1,7 +1,7 @@
-import { WebSocketProvider, JsonRpcProvider } from "@ethersproject/providers"
 import { CHAIN } from "@gambitdao/const"
 import { awaitProviderNetwork } from "@gambitdao/wallet-link"
 import { now } from "@most/core"
+import { JsonRpcProvider, WebSocketProvider } from "ethers"
 
 const defaultwssProvider = new WebSocketProvider(`wss://arb-mainnet.g.alchemy.com/v2/${process.env.RPC_API_DEV_ARB || 'Rf-9XHJG_C6xvhApXKg1tNCZmAOBaA5A'}`)
 export const arbGlobalProvider = defaultwssProvider

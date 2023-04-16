@@ -1,9 +1,9 @@
 import { fromCallback } from "@aelea/core"
-import type { BaseProvider, EventType } from "@ethersproject/providers"
 import { empty, map, switchLatest, zipArray } from "@most/core"
 import { disposeWith } from "@most/disposable"
 import { Stream } from "@most/types"
 import type { EIP1193Provider, ProviderAccounts, ProviderChainId, ProviderInfo, ProviderMessage, ProviderRpcError } from "eip1193-provider"
+import { Provider, ProviderEvent } from "ethers"
 
 function resolveError(error: any) {
  
@@ -84,7 +84,7 @@ export const eip1193ProviderEvent = (provider: Stream<EIP1193Provider | null>, e
   }, provider)
 )
 
-export const providerEvent = <A>(ps: Stream<BaseProvider | null>) => (eventType: EventType) => switchLatest(
+export const providerEvent = <A>(ps: Stream<Provider | null>) => (eventType: ProviderEvent) => switchLatest(
   map(provider => {
     if (provider === null) {
       return empty()

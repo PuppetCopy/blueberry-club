@@ -6,8 +6,8 @@ import { CHAIN } from "@gambitdao/const"
 import { bnDiv, formatReadableUSD, getNextLiquidationPrice, getTxExplorerUrl, IAbstractPositionStake, ITrade, ITradeOpen, liquidationWeight, shortenTxAddress, ITokenDescription, getFundingFee, getPnL, getMarginFees } from "@gambitdao/gmx-middleware"
 import { now, map, empty, skipRepeats } from "@most/core"
 import { Stream } from "@most/types"
-import { $alertIcon, $caretDblDown, $info, $arrowRight, $tokenIconMap } from "./$icons"
-import { $defaultDropContainer, $Tooltip } from "./$Tooltip"
+import { $alertIcon, $caretDblDown, $info, $arrowRight, $tokenIconMap } from "./$icons.js"
+import { $defaultDropContainer, $Tooltip } from "./$Tooltip.js"
 
 
 export const $anchor = $element('a')(

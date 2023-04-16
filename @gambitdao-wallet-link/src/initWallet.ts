@@ -1,24 +1,24 @@
 import { combineArray, fromCallback, replayLatest } from "@aelea/core"
-import { BaseProvider, JsonRpcSigner, Web3Provider } from "@ethersproject/providers"
 import { awaitPromises, constant, fromPromise, map, mergeArray, multicast, now, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
-import { eip1193ProviderEventFn } from "./common"
-import { metamaskQuery, walletConnect } from "./provider"
+import { BrowserProvider, JsonRpcSigner, Provider } from "ethers"
+import { eip1193ProviderEventFn } from "./common.js"
+import { metamaskQuery, walletConnect } from "./provider.js"
 
 
 export interface IWalletState {
   walletName: IWalletName
   address: string
-  provider: Web3Provider
+  provider: Provider
   chain: number
-  signer: JsonRpcSigner
+  signer: Promise<JsonRpcSigner>
 }
 
 
 export interface IWalletLink {
   network: Stream<number>
-  provider: Stream<Web3Provider | BaseProvider>
-  defaultProvider: Stream<BaseProvider>
+  provider: Stream<Provider | BrowserProvider>
+  defaultProvider: Stream<Provider>
 
   wallet: Stream<IWalletState | null>
 }
@@ -33,7 +33,7 @@ export enum IWalletName {
 
 
 interface IWalletLinkConfig {
-  globalProviderMap: Partial<Record<number, BaseProvider>>
+  globalProviderMap: Partial<Record<number, Provider>>
   defaultGlobalChain: number
 }
 
@@ -67,7 +67,7 @@ export function initWalletLink(
       return now(null)
     }
 
-    const prov: Web3Provider = new Web3Provider(wp, chain)
+    const prov: BrowserProvider = new BrowserProvider(wp, chain)
 
     const state: IWalletState = {
       walletName: name,
@@ -84,7 +84,7 @@ export function initWalletLink(
 
     const walletNetworkChange = awaitPromises(map(async id => {
       const chainId = Number(id)
-      const w3p = new Web3Provider(wp, chainId)
+      const w3p = new BrowserProvider(wp, chainId)
       document.location.reload()
       return { ...state, provider: w3p, chain: chainId }
     }, eip1193ProviderEventFn(wp, 'chainChanged')))
@@ -120,13 +120,7 @@ export function initWalletLink(
     return fbProvider
   }, defaultProvider, wallet)))
 
-  const network: Stream<number> = replayLatest(multicast(switchLatest(map(p => {
-    const newLocal = p.getNetwork()
-
-
-    const networkEvent = fromPromise(newLocal)
-    return map(nw => nw.chainId, networkEvent)
-  }, provider))))
+  const network: Stream<number> = replayLatest(multicast(awaitPromises(map(async p => Number((await p.getNetwork()).chainId), provider))))
 
   return { network, wallet, provider, defaultProvider }
 }

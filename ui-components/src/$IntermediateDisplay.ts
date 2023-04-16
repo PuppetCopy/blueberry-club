@@ -2,12 +2,12 @@ import { Op, replayLatest } from "@aelea/core"
 import { $Node, $node, $text, component, style } from "@aelea/dom"
 import { $row, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
 import { CHAIN } from "@gambitdao/const"
 import { parseError } from "@gambitdao/wallet-link"
 import { constant, empty, fromPromise, map, merge, mergeArray, multicast, now, recoverWith, startWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
-import { $alert, $alertTooltip, $txHashRef, } from "./$common"
+import { $alert, $alertTooltip, $txHashRef, } from "./$common.js"
+import { ContractTransactionReceipt, ContractTransactionResponse } from "ethers"
 
 
 
@@ -88,15 +88,15 @@ export const $IntermediatePromise = <T>({
 })
 
 
-type IIntermediateTx<T extends ContractTransaction> = {
-  $$success?: Op<ContractReceipt, $Node>
+type IIntermediateTx<T extends ContractTransactionResponse> = {
+  $$success?: Op<ContractTransactionReceipt, $Node>
   chain: CHAIN
   query: Stream<Promise<T>>
   clean?: Stream<any>
   showTooltip?: boolean
 }
 
-export const $IntermediateTx = <T extends ContractTransaction>({
+export const $IntermediateTx = <T extends ContractTransactionResponse>({
   query,
   chain,
   clean = empty(),
@@ -112,10 +112,10 @@ export const $IntermediateTx = <T extends ContractTransaction>({
       const n = await x
       return await n.wait()
     }, multicastQuery),
-    $$done: map((res: ContractReceipt) => {
+    $$done: map((res: ContractTransactionReceipt) => {
       return $row(layoutSheet.spacingSmall, style({ color: pallete.positive }))(
         switchLatest($$success(now(res))),
-        $txHashRef(res.transactionHash, chain)
+        $txHashRef(res.hash, chain)
       )
     }),
     $loader: switchLatest(map(c => {

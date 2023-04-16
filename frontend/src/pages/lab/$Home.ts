@@ -11,7 +11,6 @@ import { $responsiveFlex } from "../../elements/$common"
 import { IAttributeHat, IAttributeFaceAccessory, IAttributeClothes, IAttributeExpression, blueberrySubgraph } from "@gambitdao/gbc-middleware"
 import { $seperator2 } from "../common"
 import { map, mergeArray, now } from "@most/core"
-import { ContractTransaction } from "@ethersproject/contracts"
 import { $profilePreview } from "../../components/$AccountProfile"
 
 
@@ -66,7 +65,6 @@ interface IBerry {
 export const $LabHome = ({ walletLink, parentRoute }: IBerry) => component((
   [walletChange, walletChangeTether]: Behavior<IWalletName, IWalletName>,
   [changeRoute, changeRouteTether]: Behavior<string, string>,
-  [mintTestGbc, mintTestGbcTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
 ) => {
 
 

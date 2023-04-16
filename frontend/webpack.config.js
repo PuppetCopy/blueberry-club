@@ -3,7 +3,7 @@ const webpack = require('webpack')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin')
 const CopyPlugin = require("copy-webpack-plugin")
-require('dotenv').config({ path: '../.env' }); 
+require('dotenv').config({ path: '../.env' })
 
 /**
  * @type import('webpack').Configuration

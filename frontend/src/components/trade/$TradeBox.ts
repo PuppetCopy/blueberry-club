@@ -1,43 +1,88 @@
 import { Behavior, combineArray, combineObject, O, replayLatest } from "@aelea/core"
-import { component, INode, $element, attr, style, $text, nodeEvent, $node, styleBehavior, motion, MOTION_NO_WOBBLE, styleInline, stylePseudo } from "@aelea/dom"
-import { $row, layoutSheet, $icon, $column, screenUtils, $NumberTicker } from "@aelea/ui-components"
+import { $element, $node, $text, attr, component, INode, motion, MOTION_NO_WOBBLE, nodeEvent, style, styleBehavior, styleInline, stylePseudo } from "@aelea/dom"
+import { Route } from "@aelea/router"
+import { $column, $icon, $NumberTicker, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
+import { CHAIN } from "@gambitdao/const"
 import {
-  formatFixed, readableNumber, parseFixed, formatReadableUSD, BASIS_POINTS_DIVISOR, ITokenDescription, LIMIT_LEVERAGE, bnDiv,
-  div, StateStream, getPnL, MIN_LEVERAGE, formatToBasis, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE,
-  ITokenInput, ITokenIndex, ITokenStable, AddressZero, parseReadableNumber, getTokenUsd, IPricefeed,
-  TRADE_CONTRACT_MAPPING, filterNull, ITradeOpen, zipState, MARGIN_FEE_BASIS_POINTS, abs, DEDUCT_USD_FOR_GAS,
-  getTokenAmount, safeDiv, getTokenDescription, ITrade, getAdjustedDelta, switchMap, USD_PERCISION, getDenominator, USDG_DECIMALS
+  abs,
+  AddressZero,
+  ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE,
+  BASIS_POINTS_DIVISOR,
+  bnDiv,
+  DEDUCT_USD_FOR_GAS,
+  div,
+  filterNull,
+  formatFixed,
+  formatReadableUSD,
+  formatToBasis,
+  getAdjustedDelta,
+  getDenominator,
+  getPnL,
+  getTokenAmount,
+  getTokenDescription,
+  getTokenUsd, IPricefeed,
+  ITokenDescription,
+  ITokenIndex,
+  ITokenInput,
+  ITokenStable,
+  ITrade,
+  ITradeOpen,
+  LIMIT_LEVERAGE,
+  MARGIN_FEE_BASIS_POINTS,
+  MIN_LEVERAGE,
+  parseFixed,
+  parseReadableNumber,
+  readableNumber,
+  safeDiv,
+  StateStream,
+  switchMap,
+  TRADE_CONTRACT_MAPPING,
+  USD_PERCISION,
+  USDG_DECIMALS,
+  zipState
 } from "@gambitdao/gmx-middleware"
 import {
   $alert, $alertTooltip, $anchor, $bear, $bull, $hintNumChange, $infoLabeledValue, $infoTooltipLabel, $IntermediatePromise,
   $openPositionPnlBreakdown, $PnlValue, $riskLiquidator, $spinner, $tokenIconMap, $tokenLabelFromSummary
 } from "@gambitdao/ui-components"
+import { IWalletLink, IWalletName, parseError } from "@gambitdao/wallet-link"
 import {
-  merge, multicast, mergeArray, now, snapshot, map, switchLatest,
-  skipRepeats, empty, fromPromise, constant, startWith, skipRepeatsWith, awaitPromises, zip, sample, delay, recoverWith
+  awaitPromises,
+  constant,
+  delay,
+  empty, fromPromise,
+  map,
+  merge,
+  mergeArray,
+  multicast,
+  now,
+  recoverWith,
+  sample,
+  skipRepeats,
+  skipRepeatsWith,
+  snapshot,
+  startWith,
+  switchLatest,
+  zip
 } from "@most/core"
 import { Stream } from "@most/types"
-import { $Slider } from "../$Slider"
-import { $ButtonPrimary, $ButtonPrimaryCtx, $ButtonSecondary, $defaultButtonPrimary, $defaultMiniButtonSecondary } from "../form/$Button"
-import { $Dropdown, $defaultSelectContainer } from "../form/$Dropdown"
-import { $caretDown } from "../../elements/$icons"
-import { getNativeTokenDescription, resolveAddress } from "../../logic/utils"
-import { $IntermediateConnectButton, $WalletLogoMap } from "../../components/$ConnectAccount"
-import { BrowserStore } from "../../logic/store"
-import { connectTradeReader, getErc20Balance, IPositionGetter, ITokenPoolInfo } from "../../logic/contract/trade"
+import { ContractTransaction, ContractTransactionResponse, MaxUint256 } from "ethers"
 import { MouseEventParams } from "lightweight-charts"
-import { $TradePnlHistory } from "./$TradePnlHistory"
-import { ContractTransaction } from "@ethersproject/contracts"
-import { MaxUint256 } from "@ethersproject/constants"
-import { getContractAddress } from "../../logic/common"
-import { ERC20__factory } from "../../logic/gmx-contracts"
-import { IWalletLink, IWalletName, parseError } from "@gambitdao/wallet-link"
 import { $Popover } from "../$Popover"
+import { $Slider } from "../$Slider"
+import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 import { $card } from "../../elements/$common"
-import { Route } from "@aelea/router"
+import { $caretDown } from "../../elements/$icons"
+import { getContractAddress } from "../../logic/common"
+import { connectTradeReader, getErc20Balance, IPositionGetter, ITokenPoolInfo } from "../../logic/contract/trade"
+import { ERC20__factory } from "../../logic/gmx-contracts"
+import { BrowserStore } from "../../logic/store"
+import { getNativeTokenDescription, resolveAddress } from "../../logic/utils"
 import { $Index } from "../../pages/competition/$Leaderboard"
-import { CHAIN } from "@gambitdao/const"
+import { $ButtonPrimary, $ButtonPrimaryCtx, $ButtonSecondary, $defaultButtonPrimary, $defaultMiniButtonSecondary } from "../form/$Button"
+import { $defaultSelectContainer, $Dropdown } from "../form/$Dropdown"
+import { $TradePnlHistory } from "./$TradePnlHistory"
 
 export enum ITradeFocusMode {
   collateral,
@@ -121,7 +166,7 @@ interface ITradeBox {
 }
 
 export type RequestTradeQuery = {
-  ctxQuery: Promise<ContractTransaction>
+  ctxQuery: Promise<ContractTransactionResponse>
   state: any // ITradeState
   acceptablePrice: bigint
 }
@@ -134,7 +179,7 @@ export const $TradeBox = (config: ITradeBox) => component((
   [openEnableTradingPopover, openEnableTradingPopoverTether]: Behavior<any, any>,
   [enableTrading, enableTradingTether]: Behavior<any, boolean>,
   [approveInputToken, approveInputTokenTether]: Behavior<PointerEvent, boolean>,
-  [clickEnablePlugin, clickEnablePluginTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
+  [clickEnablePlugin, clickEnablePluginTether]: Behavior<PointerEvent, Promise<ContractTransactionResponse>>,
 
   [dismissEnableTradingOverlay, dismissEnableTradingOverlayTether]: Behavior<false, false>,
 
@@ -570,8 +615,8 @@ export const $TradeBox = (config: ITradeBox) => component((
             })({
               select: switchisIncreaseTether()
             }),
-            switchLatest(map((provider) => {
-              const chain: CHAIN = provider ? provider.network.chainId : CHAIN.ARBITRUM
+            switchLatest(combineArray((provider, chainId) => {
+              const chain: CHAIN = provider ? chainId : CHAIN.ARBITRUM
 
               return $Dropdown<ITokenInput>({
                 $container: $row(style({ position: 'relative', alignSelf: 'center' })),
@@ -614,7 +659,7 @@ export const $TradeBox = (config: ITradeBox) => component((
               })({
                 select: changeInputTokenTether()
               })
-            }, config.walletLink.provider)),
+            }, config.walletLink.provider, config.walletLink.network)),
 
             switchMap(isIncrease => {
 
@@ -951,8 +996,8 @@ export const $TradeBox = (config: ITradeBox) => component((
                   $text(map(token => `${getTokenDescription(token).symbol} will be borrowed to maintain a Short Position. you can switch with other USD tokens to receive it later`, config.tradeConfig.collateralToken)),
                   screenUtils.isDesktopScreen ? 'Indexed In' : undefined,
                 ),
-                switchLatest(map((provider) => {
-                  const chain: CHAIN = provider ? provider.network.chainId : CHAIN.ARBITRUM
+                switchLatest(combineArray((provider, chainId) => {
+                  const chain: CHAIN = provider ? chainId : CHAIN.ARBITRUM
                   return $Dropdown({
                     $container: $row(style({ position: 'relative', alignSelf: 'center' })),
                     $selection: $row(style({ alignItems: 'center', cursor: 'pointer' }))(
@@ -992,7 +1037,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                   })({
                     select: changeCollateralTokenTether()
                   })
-                }, config.walletLink.provider))
+                }, config.walletLink.provider, config.walletLink.network))
 
               )
             }, config.tradeConfig.isLong, config.tradeConfig.indexToken)),
@@ -1218,9 +1263,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                                 $content: $text(!isPluginEnabled ? 'Enable GMX & Agree' : 'Agree')
                               })({
                                 click: clickEnablePluginTether(
-                                  snapshot((router) => {
-                                    return router.approvePlugin(positionRouterAddress)
-                                  }, tradeReader.routerReader.contract),
+                                  snapshot(router => router.approvePlugin(positionRouterAddress), tradeReader.routerReader.contract),
                                   multicast
                                 )
                               })
@@ -1245,7 +1288,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                       })({
                         click: approveInputTokenTether(
                           map(async (c) => {
-                            const erc20 = ERC20__factory.connect(inputToken, w3p.signer)
+                            const erc20 = ERC20__factory.connect(inputToken, await w3p.signer)
 
                             if (c === null) {
                               return false
@@ -1344,29 +1387,29 @@ export const $TradeBox = (config: ITradeBox) => component((
                                 )
                               } else {
 
-                                const gasLimit = (state.positionRouter.estimateGas.createIncreasePosition(
-                                  swapRoute,
-                                  state.indexToken,
-                                  0,
-                                  0,
-                                  state.sizeDeltaUsd,
-                                  state.isLong,
-                                  acceptablePrice,
-                                  state.executionFee,
-                                  config.referralCode,
-                                  AddressZero,
-                                  {
-                                    value: state.executionFee,
-                                  }
-                                )).then(est => {
-                                  // add 10% buffer
-                                  return est.toBigInt() * 12000n / BASIS_POINTS_DIVISOR
-                                })
+                                // const gasLimit = (state.positionRouter.interface.estimateGas.createIncreasePosition(
+                                //   swapRoute,
+                                //   state.indexToken,
+                                //   0,
+                                //   0,
+                                //   state.sizeDeltaUsd,
+                                //   state.isLong,
+                                //   acceptablePrice,
+                                //   state.executionFee,
+                                //   config.referralCode,
+                                //   AddressZero,
+                                //   {
+                                //     value: state.executionFee,
+                                //   }
+                                // )).then(est => {
+                                //   // add 10% buffer
+                                //   return est * 12000n / BASIS_POINTS_DIVISOR
+                                // })
 
 
 
 
-                                const gasPrice = state.positionRouter.provider.getGasPrice()
+                                // const gasPrice = state.positionRouter.getGasPrice()
 
                                 // gasPrice.then(xx => {
                                 //   const usdAmount = getTokenUsd(xx.toBigInt(), state.nativeTokenPrice, 18)
@@ -1404,8 +1447,8 @@ export const $TradeBox = (config: ITradeBox) => component((
                                   AddressZero,
                                   {
                                     value: state.executionFee,
-                                    gasPrice,
-                                    gasLimit
+                                    // gasPrice,
+                                    // gasLimit
                                   }
                                 )
                               }

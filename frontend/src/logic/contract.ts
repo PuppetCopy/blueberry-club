@@ -1,6 +1,4 @@
 import { combineArray } from "@aelea/core"
-import { BigNumber } from "@ethersproject/bignumber"
-import { JsonRpcProvider } from "@ethersproject/providers"
 import { BI_18_PRECISION } from "@gambitdao/gbc-middleware"
 import { BASIS_POINTS_DIVISOR, getGmxTokenPrice, IGmxContractAddress, intervalTimeMap, TRADE_CONTRACT_MAPPING } from "@gambitdao/gmx-middleware"
 import { awaitPromises, combine, map } from "@most/core"
@@ -8,6 +6,7 @@ import { Stream } from "@most/types"
 import { IAsset } from "@gambitdao/gbc-middleware"
 import { GlpManager__factory, GMX__factory, Reader__factory, RewardReader__factory, Vault__factory } from "./gmx-contracts"
 import { readContractMapping } from "./common"
+import { JsonRpcProvider } from "ethers"
 
 
 export type IGmxContractInfo = ReturnType<typeof connectGmxEarn>
@@ -54,14 +53,14 @@ export const connectGmxEarn = (provider: Stream<JsonRpcProvider>, account: strin
 
   const gmxVestingInfo = reader.run(map(async (contract) => {
     const balancesQuery = contract.getVestingInfo(account, [environmentContract.GmxVester])
-    const [pairAmount, vestedAmount, escrowedBalance, claimedAmounts, claimable, maxVestableAmount, averageStakedAmount] = (await balancesQuery).map(x => x.toBigInt())
+    const [pairAmount, vestedAmount, escrowedBalance, claimedAmounts, claimable, maxVestableAmount, averageStakedAmount] = balancesQuery
 
     return { pairAmount, vestedAmount, escrowedBalance, claimedAmounts, claimable, maxVestableAmount, averageStakedAmount }
   }))
 
   const glpVestingInfo = reader.run(map(async contract => {
     const balancesQuery = contract.getVestingInfo(account, [environmentContract.GlpVester])
-    const [pairAmount, vestedAmount, escrowedBalance, claimedAmounts, claimable, maxVestableAmount, averageStakedAmount] = (await balancesQuery).map(x => x.toBigInt())
+    const [pairAmount, vestedAmount, escrowedBalance, claimedAmounts, claimable, maxVestableAmount, averageStakedAmount] = balancesQuery
 
     return { pairAmount, vestedAmount, escrowedBalance, claimedAmounts, claimable, maxVestableAmount, averageStakedAmount }
   }))
@@ -239,14 +238,14 @@ export const connectGmxEarn = (provider: Stream<JsonRpcProvider>, account: strin
   }, accountBalances, depositbalances, accountStaking, gmxVestingInfo, glpVestingInfo, aum, nativeTokenPrice, stakedGmxSupply, gmxPrice)
 
 
-  const nativeAssetBalance = awaitPromises(map(async p => (await p.getBalance(account)).toBigInt(), provider))
+  const nativeAssetBalance = awaitPromises(map(async p => p.getBalance(account), provider))
   const nativeAsset: Stream<IAsset> = combine((amount, price) => ({ balance: price * amount / BI_18_PRECISION }), nativeAssetBalance, nativeTokenPrice)
 
 
   return { nativeAsset, stakingRewards, accountStaking, depositbalances, stakedGmxSupply, gmxSupply, nativeTokenPrice, aum, accountBalances, gmxVestingInfo, glpVestingInfo }
 }
 
-async function parseTrackerMap<T extends ReadonlyArray<string>, R extends ReadonlyArray<string>>(argsQuery: Promise<BigNumber[]>, keys: T, trackers: R): Promise<{ [K in R[number]]: keysToObject<T> }> {
+async function parseTrackerMap<T extends ReadonlyArray<string>, R extends ReadonlyArray<string>>(argsQuery: Promise<bigint[]>, keys: T, trackers: R): Promise<{ [K in R[number]]: keysToObject<T> }> {
   const args = await argsQuery
   return args.reduce((seed, next, idx) => {
     const trackersLength = trackers.length
@@ -255,7 +254,7 @@ async function parseTrackerMap<T extends ReadonlyArray<string>, R extends Readon
     seed[k] ??= {}
 
     const propIdx = idx % trackersLength
-    seed[k][keys[propIdx]] = next.toBigInt()
+    seed[k][keys[propIdx]] = next
 
     return seed
   }, {} as any)
@@ -263,11 +262,11 @@ async function parseTrackerMap<T extends ReadonlyArray<string>, R extends Readon
 
 type keysToObject<KS extends ReadonlyArray<string>> = { [K in KS[number]]: bigint }
 
-async function parseTrackerInfo<T extends ReadonlyArray<string>>(argsQuery: Promise<BigNumber[]>, keys: T): Promise<keysToObject<T>> {
+async function parseTrackerInfo<T extends ReadonlyArray<string>>(argsQuery: Promise<bigint[]>, keys: T): Promise<keysToObject<T>> {
   const args = await argsQuery
 
   return args.reduce((seed, next, idx) => {
-    seed[keys[idx]] = next.toBigInt()
+    seed[keys[idx]] = next
 
     return seed
   }, {} as any)

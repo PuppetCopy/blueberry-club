@@ -2,7 +2,6 @@ import { Behavior, combineArray, combineObject } from "@aelea/core"
 import { component, style, $text, attr, nodeEvent, styleInline, stylePseudo, INode } from "@aelea/dom"
 import { $column, layoutSheet, $row, $icon } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { ContractTransaction } from "@ethersproject/contracts"
 import { LabItemSale, MintPrivate, LAB_CHAIN } from "@gambitdao/gbc-middleware"
 import { formatFixed, filterNull } from "@gambitdao/gmx-middleware"
 import { $alert } from "@gambitdao/ui-components"
@@ -16,6 +15,7 @@ import { $displayMintEvents } from "./mintUtils2"
 import { $IntermediateConnectButton } from "../$ConnectAccount"
 import { Whitelist__factory } from "@gambitdao/gbc-contracts"
 import { CHAIN } from "@gambitdao/const"
+import { ContractTransaction, ContractTransactionResponse } from "ethers"
 
 
 
@@ -29,7 +29,7 @@ interface MintCmp {
 
 
 export const $WhitelistMint = (config: MintCmp) => component((
-  [clickMintPublic, clickMintPublicTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
+  [clickMintPublic, clickMintPublicTether]: Behavior<PointerEvent, Promise<ContractTransactionResponse>>,
   [customNftAmount, customNftAmountTether]: Behavior<INode, number>,
   [selectMintAmount, selectMintAmountTether]: Behavior<number, number>,
   [walletChange, walletChangeTether]: Behavior<IWalletName, IWalletName>,

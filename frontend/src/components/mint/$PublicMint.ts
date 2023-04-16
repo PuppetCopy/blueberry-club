@@ -2,7 +2,6 @@ import { Behavior } from "@aelea/core"
 import { component, style, $text, attr, nodeEvent, styleInline, stylePseudo, INode } from "@aelea/dom"
 import { $column, layoutSheet, $row, $icon } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { ContractTransaction } from "@ethersproject/contracts"
 import { LabItemSale, MintRule, LAB_CHAIN } from "@gambitdao/gbc-middleware"
 import { filterNull, formatFixed } from "@gambitdao/gmx-middleware"
 import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
@@ -17,6 +16,7 @@ import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 import { Public__factory } from "@gambitdao/gbc-contracts"
 import { connectLab } from "../../logic/contract/gbc"
 import { CHAIN } from "@gambitdao/const"
+import { ContractTransaction } from "ethers"
 
 
 

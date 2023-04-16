@@ -2,14 +2,14 @@ import { combineObject, O, Op, replayLatest } from "@aelea/core"
 import { AnimationFrames } from "@aelea/dom"
 import { Disposable, Scheduler, Sink, Stream } from "@most/types"
 import { at, awaitPromises, constant, continueWith, empty, filter, fromPromise, map, merge, multicast, now, recoverWith, switchLatest, zipArray } from "@most/core"
-import { intervalTimeMap, USD_DECIMALS } from "./constant"
-import { IResponsePageApi, IRequestPagePositionApi, IRequestSortApi } from "./types"
-import { keccak256 } from "@ethersproject/solidity"
+import { intervalTimeMap, USD_DECIMALS } from "./constant.js"
+import { IResponsePageApi, IRequestPagePositionApi, IRequestSortApi } from "./types.js"
 import { ClientOptions, createClient, OperationContext, TypedDocumentNode } from "@urql/core"
 import { curry2 } from "@most/prelude"
 import { CHAIN, EXPLORER_URL, NETWORK_METADATA } from "@gambitdao/const"
 import { disposeNone } from "@most/disposable"
-
+import { solidityPackedKeccak256 } from "ethers"
+export * as GraphQL from '@urql/core'
 
 
 export const ETH_ADDRESS_REGEXP = /^0x[a-fA-F0-9]{40}$/i
@@ -435,7 +435,7 @@ export const switchMap: ISwitchMapCurry2 = curry2(switchMapFn)
 
 
 export function getPositionKey(account: string, collateralToken: string, indexToken: string, isLong: boolean) {
-  return keccak256(
+  return solidityPackedKeccak256(
     ["address", "address", "address", "bool"],
     [account, collateralToken, indexToken, isLong]
   )
@@ -561,12 +561,12 @@ export function groupByKeyMap<A, B extends string | symbol | number, R>(list: A[
   return gmap
 }
 
+export { Client, ClientOptions } from '@urql/core'
 
 export const createSubgraphClient = (opts: ClientOptions) => {
+  return async <Data, Variables extends object = {}>(document: any, params: Variables, context?: any): Promise<any> => {
+    const client = createClient(opts)
 
-  const client = createClient(opts)
-
-  return async <Data, Variables extends object = {}>(document: TypedDocumentNode<Data, Variables>, params: Variables, context?: Partial<OperationContext>): Promise<Data> => {
     const result = await client.query(document, params, context)
       .toPromise()
 

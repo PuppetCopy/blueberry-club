@@ -2,28 +2,29 @@ import { Behavior, combineArray, combineObject, Op } from "@aelea/core"
 import { $node, $Node, $text, attr, attrBehavior, component, INode, nodeEvent, style, stylePseudo } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
-
+import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
+import { CHAIN } from "@gambitdao/const"
+import {
+  blueberrySubgraph, GBC_ADDRESS, getLabItemTupleIndex, getLatestSaleRule, IBerryDisplayTupleMap, IBerryLabItems, IToken, LAB_CHAIN,
+  LabItemSale, saleDescriptionList, tokenIdAttributeTuple
+} from "@gambitdao/gbc-middleware"
+import { filterNull, switchMap, unixTimestampNow } from "@gambitdao/gmx-middleware"
+import { $alert, $arrowsFlip, $IntermediateTx, $xCross } from "@gambitdao/ui-components"
 import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
 import { awaitPromises, constant, empty, filter, map, merge, mergeArray, multicast, now, skipRepeatsWith, snapshot, startWith, switchLatest, tap } from "@most/core"
+import { Stream } from "@most/types"
+import { ContractTransactionResponse } from "ethers"
+import { $berryTileId } from "../../components/$common"
+import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
+import { $berry, $defaultBerry } from "../../components/$DisplayBerry"
 import { $buttonAnchor, $ButtonPrimary, $ButtonSecondary } from "../../components/form/$Button"
 import { $defaultSelectContainer, $Dropdown } from "../../components/form/$Dropdown"
-import { IBerryDisplayTupleMap, getLabItemTupleIndex, saleDescriptionList, LabItemSale, IBerryLabItems, LAB_CHAIN, IToken, GBC_ADDRESS, getLatestSaleRule, tokenIdAttributeTuple, blueberrySubgraph } from "@gambitdao/gbc-middleware"
-import { $labItem, getBerryFromToken, getTokenSlots } from "../../logic/common"
-import { $berryTileId } from "../../components/$common"
-import { fadeIn } from "../../transitions/enter"
-import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
-import { $berry, $defaultBerry } from "../../components/$DisplayBerry"
-import { $caretDown } from "../../elements/$icons"
-import { $alert, $arrowsFlip, $IntermediateTx, $xCross } from "@gambitdao/ui-components"
-import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts"
-import { Stream } from "@most/types"
 import { $iconCircular, $responsiveFlex } from "../../elements/$common"
-import { $seperator2 } from "../common"
-import { filterNull, switchMap, unixTimestampNow } from "@gambitdao/gmx-middleware"
-import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
-import { Closet, GBCLab } from "@gambitdao/gbc-contracts"
+import { $caretDown } from "../../elements/$icons"
+import { $labItem, getBerryFromToken, getTokenSlots } from "../../logic/common"
 import { connectLab } from "../../logic/contract/gbc"
-import { CHAIN } from "@gambitdao/const"
+import { fadeIn } from "../../transitions/enter"
+import { $seperator2 } from "../common"
 
 
 interface IBerryComp {
@@ -45,8 +46,6 @@ interface ExchangeState {
   updateItemState: ItemSlotState | null
   updateBackgroundState: ItemSlotState | null
   updateBadgeState: ItemSlotState | null
-  closet: Closet
-  lab: GBCLab
   selectedBerry: IToken | null
   selectedBerryItems: IBerryLabItems
 
@@ -59,16 +58,16 @@ export const $Wardrobe = (config: IBerryComp) => component((
   [changeRoute, changeRouteTether]: Behavior<any, string>,
   [changeBerry, changeBerryTether]: Behavior<IToken, IToken>,
   [selectedSlot, selectedSlotTether]: Behavior<Slot, Slot>,
-  [clickSave, clickSaveTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
+  [clickSave, clickSaveTether]: Behavior<PointerEvent, Promise<ContractTransactionResponse>>,
 
   [changeItemState, changeItemStateTether]: Behavior<any, ItemSlotState | null>,
   [changeBackgroundState, changeBackgroundStateTether]: Behavior<any, ItemSlotState | null>,
   [changeBadgeState, changeBadgeStateTether]: Behavior<any, ItemSlotState | null>,
 
-  [setApproval, setApprovalTether]: Behavior<any, Promise<ContractTransaction>>,
+  [setApproval, setApprovalTether]: Behavior<any, Promise<ContractTransactionResponse>>,
 
   [hoverDownloadBtn, hoverDownloadBtnTether]: Behavior<INode, string>,
-  [setMainBerry, setMainBerryTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
+  [setMainBerry, setMainBerryTether]: Behavior<PointerEvent, Promise<ContractTransactionResponse>>,
 
 
   [changeNetwork, changeNetworkTether]: Behavior<any, CHAIN>,
@@ -89,14 +88,13 @@ export const $Wardrobe = (config: IBerryComp) => component((
 
   const tokenList = map(xz => xz ? xz.ownedTokens : [], owner)
 
-  const savedItemsTxSucceed: Stream<ContractReceipt> = filter(res => res !== null, awaitPromises(map(async txc => {
+  const savedItemsTxSucceed: Stream<ContractTransactionResponse> = filter(res => res !== null, awaitPromises(map(async txc => {
     const res = await txc.catch(() => null)
 
-    if (res === null) {
-      return null
-    }
+    return res
 
-    return res.wait()
+
+    // return res.wait()
   }, clickSave)))
 
   const selectedBerry = mergeArray([constant(null, owner), changeBerry])
@@ -116,9 +114,13 @@ export const $Wardrobe = (config: IBerryComp) => component((
     return list
   }, config.walletLink.wallet)
 
-  const isClosetApproved = awaitPromises(combineArray(async (c) => {
-    return c.isApprovedForAll(c.signer.getAddress(), GBC_ADDRESS.CLOSET)
-  }, connect.lab.contract))
+  const isClosetApproved = awaitPromises(combineArray(async (lab, w3p) => {
+    if (w3p === null) {
+      return false
+    }
+
+    return lab.contract.isApprovedForAll(w3p.address, GBC_ADDRESS.CLOSET)
+  }, connect.lab.contract, config.walletLink.wallet))
 
   const isClosetApprovedState = mergeArray([isClosetApproved, switchLatest(awaitPromises(map(async tx => {
     await (await tx).wait()
@@ -137,7 +139,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
   const selectedBerryItems = multicast(startWith(null, awaitPromises(snapshot(async (closet, token) => {
     if (token === null) return null
 
-    const newLocal = await getTokenSlots(token.id, closet)
+    const newLocal = await getTokenSlots(token.id, closet.contract)
     return newLocal
   }, connect.closet.contract, berryItemState))))
 
@@ -147,9 +149,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
     updateBackgroundState: backgroundChangeState,
     updateBadgeState: badgeChangeState,
     selectedBerry,
-    closet: connect.closet.contract,
     selectedBerryItems,
-    lab: connect.lab.contract,
     account
   }))
 
@@ -247,7 +247,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
 
               const displaytuple: Partial<IBerryDisplayTupleMap> = [labBackground || background, clothes, body, expression, faceAccessory, hat]
 
-              if (badge) { 
+              if (badge) {
                 displaytuple[6] = badge
               }
 
@@ -298,12 +298,12 @@ export const $Wardrobe = (config: IBerryComp) => component((
           }, tokenList)),
 
           switchLatest(awaitPromises(combineArray(async (contract, account, berry) => {
-            const mainId = account ? (await contract.getDataOf(account).catch(() => null))?.tokenId.toNumber() : null
+            const mainId = account ? Number((await contract.contract.getDataOf(account).catch(() => null))?.tokenId) : null
             const disabled = now(berry === null || berry?.id === mainId)
 
             return $ButtonSecondary({ $content: $text(`Set PFP`), disabled })({
               click: setMainBerryTether(map(async () => {
-                return (await contract.chooseMain(berry!.id))
+                return (await contract.contract.chooseMain(berry!.id))
               }))
             })
           }, connect.profile.contract, account, selectedBerry))),
@@ -319,7 +319,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
             : saleDescriptionList.filter(item => {
               const attrTupleId = getLabItemTupleIndex(item.id)
               return attrTupleId > 0 && attrTupleId < 6
-            })        
+            })
 
           return $row(layoutSheet.spacing, style({ flexWrap: 'wrap', placeContent: 'center' }))(
             ...storeItemList.map(item => {
@@ -334,7 +334,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
 
               const isSaleUpcomming = upcommingSaleDate > unixTime
 
-              const wearBehavior = getLabItemTupleIndex(id) === 0 ? changeBackgroundStateTether : getLabItemTupleIndex(id) === 6 ? changeBadgeStateTether  : changeItemStateTether
+              const wearBehavior = getLabItemTupleIndex(id) === 0 ? changeBackgroundStateTether : getLabItemTupleIndex(id) === 6 ? changeBadgeStateTether : changeItemStateTether
               const selectBehavior: Op<any, any> = wearBehavior(nodeEvent('click'), constant({ isRemove: false, id }))
 
 
@@ -434,49 +434,49 @@ export const $Wardrobe = (config: IBerryComp) => component((
                       }, exchangeState)
                     })({
                       click: clickSaveTether(
-                        snapshot(async ({ selectedBerry, selectedBerryItems, updateBackgroundState, updateItemState, updateBadgeState, closet: contract, account }) => {
+                        snapshot(async ({ exchangeState, labConnect }) => {
 
-                          if (!selectedBerry || !account) {
+                          if (!exchangeState.selectedBerry || !exchangeState.account) {
                             throw 'no berry selected'
                           }
 
                           const addList: number[] = []
                           const removeList: number[] = []
 
-                          if (updateItemState) {
+                          if (exchangeState.updateItemState) {
 
-                            if (updateItemState.isRemove) {
-                              removeList.push(selectedBerryItems.custom)
+                            if (exchangeState.updateItemState.isRemove) {
+                              removeList.push(exchangeState.selectedBerryItems.custom)
                             } else {
-                              addList.push(updateItemState.id)
+                              addList.push(exchangeState.updateItemState.id)
 
-                              if (selectedBerryItems.custom) {
-                                removeList.push(selectedBerryItems.custom)
+                              if (exchangeState.selectedBerryItems.custom) {
+                                removeList.push(exchangeState.selectedBerryItems.custom)
                               }
                             }
 
                           }
 
-                          if (updateBadgeState) {
-                            if (updateBadgeState.isRemove) {
-                              removeList.push(selectedBerryItems.badge)
+                          if (exchangeState.updateBadgeState) {
+                            if (exchangeState.updateBadgeState.isRemove) {
+                              removeList.push(exchangeState.selectedBerryItems.badge)
                             } else {
-                              addList.push(updateBadgeState.id)
+                              addList.push(exchangeState.updateBadgeState.id)
 
-                              if (selectedBerryItems.badge) {
-                                removeList.push(selectedBerryItems.badge)
+                              if (exchangeState.selectedBerryItems.badge) {
+                                removeList.push(exchangeState.selectedBerryItems.badge)
                               }
                             }
                           }
 
-                          if (updateBackgroundState) {
-                            if (updateBackgroundState.isRemove) {
-                              removeList.push(selectedBerryItems.background)
+                          if (exchangeState.updateBackgroundState) {
+                            if (exchangeState.updateBackgroundState.isRemove) {
+                              removeList.push(exchangeState.selectedBerryItems.background)
                             } else {
-                              addList.push(updateBackgroundState.id)
+                              addList.push(exchangeState.updateBackgroundState.id)
 
-                              if (selectedBerryItems.background || updateBackgroundState.isRemove) {
-                                removeList.push(selectedBerryItems.background)
+                              if (exchangeState.selectedBerryItems.background || exchangeState.updateBackgroundState.isRemove) {
+                                removeList.push(exchangeState.selectedBerryItems.background)
                               }
                             }
                           }
@@ -490,10 +490,11 @@ export const $Wardrobe = (config: IBerryComp) => component((
                           //   console.log(`Transaction failed: ${decodedError.name}`)
                           // }
 
-                          const tx = (await contract.set(selectedBerry.id, addList, removeList, account))
+                          const tx = await labConnect.contract.set(exchangeState.selectedBerry.id, addList, removeList, exchangeState.account)
+
 
                           return tx
-                        }, exchangeState),
+                        }, combineObject({ exchangeState, labConnect: connect.closet.contract })),
                         multicast
                       )
                     })
@@ -507,7 +508,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
                     $content: $text('Approve Contract'),
                   })({
                     click: setApprovalTether(
-                      snapshot(contract => contract.setApprovalForAll(GBC_ADDRESS.CLOSET, true), connect.lab.contract),
+                      snapshot(contract => contract.contract.setApprovalForAll(GBC_ADDRESS.CLOSET, true), connect.lab.contract),
                       multicast
                     )
                   })

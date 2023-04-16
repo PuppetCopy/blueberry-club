@@ -434,7 +434,7 @@ export const $Home = (config: ITreasury) => component((
         $card(layoutSheet.spacingBig, style({ flexDirection: screenUtils.isDesktopScreen ? 'row' : 'column-reverse', alignItems: 'center', position: 'relative', padding: '40px' }))(
 
           $row(style({ width: screenUtils.isDesktopScreen ? '280px' : '' }))(
-            style({ margin: '-40px' }, $berry([undefined, IAttributeClothes.BUILDER, IAttributeBody.BLUEBERRY, IAttributeExpression.HAPPY, IAttributeFaceAccessory.RICH, IAttributeHat.BRAIN]))
+            style({ margin: '-40px' }, $berry([undefined, IAttributeClothes.BATHROBE_ORANGE, IAttributeBody.BLUEBERRY, IAttributeExpression.HAPPY, IAttributeFaceAccessory.RICH, IAttributeHat.BRAIN]))
           ),
 
           $column(layoutSheet.spacing)(

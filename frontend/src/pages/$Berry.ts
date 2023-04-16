@@ -170,7 +170,7 @@ const $TrasnferOwnership = (address: string, token: IToken, walletLink: IWalletL
       return null
     }
 
-    const contract = GBC__factory.connect(GBC_ADDRESS.GBC, w3p.provider.getSigner())
+    const contract = GBC__factory.connect(GBC_ADDRESS.GBC, w3p.provider)
 
     if (await contract.deployed()) {
       return contract
