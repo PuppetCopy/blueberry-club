@@ -320,7 +320,7 @@ export const fetchTrades = async <T extends IRequestPagePositionApi & IChainPara
   return list
 }
 
-export const fetchHistoricTrades = async <T extends IRequestPagePositionApi & IChainParamApi & IRequestTimerangeApi, R>(params: T, getList: (res: T) => Promise<R[]>, splitSpan = intervalTimeMap.DAY7): Promise<R[]> => {
+export const fetchHistoricTrades = async <T extends IRequestPagePositionApi & IChainParamApi & IRequestTimerangeApi, R>(params: T, getList: (res: T) => Promise<R[]>, splitSpan: number = intervalTimeMap.DAY7): Promise<R[]> => {
   const deltaTime = params.to - params.from
 
   // splits the queries because the-graph's result limit of 5k items
@@ -391,7 +391,7 @@ export async function getPriceMap(time: number, queryParams: IChainParamApi): Pr
 
 
 export async function getCompetitionTrades(queryParams: IRequestPageApi & { referralCode: string }) {
-  const newLocal = intervalTimeMap.HR24 * 3
+  const interval = intervalTimeMap.HR24 * 3
   const competitionAccountListQuery = fetchHistoricTrades({ ...queryParams, offset: 0, pageSize: 1000 }, async (params) => {
     const res = await subgraphChainMap[queryParams.chain](gql(`
 
@@ -406,7 +406,7 @@ query {
 `), {})
 
     return res.trades as ITrade[]
-  }, newLocal)
+  }, interval)
 
 
   const historicTradeList = await competitionAccountListQuery

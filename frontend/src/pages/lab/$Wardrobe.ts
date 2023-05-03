@@ -13,7 +13,6 @@ import { $alert, $arrowsFlip, $IntermediateTx, $xCross } from "@gambitdao/ui-com
 import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
 import { awaitPromises, constant, empty, filter, map, merge, mergeArray, multicast, now, skipRepeatsWith, snapshot, startWith, switchLatest, tap } from "@most/core"
 import { Stream } from "@most/types"
-import { ContractTransactionResponse } from "ethers"
 import { $berryTileId } from "../../components/$common"
 import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 import { $berry, $defaultBerry } from "../../components/$DisplayBerry"
@@ -21,10 +20,11 @@ import { $buttonAnchor, $ButtonPrimary, $ButtonSecondary } from "../../component
 import { $defaultSelectContainer, $Dropdown } from "../../components/form/$Dropdown"
 import { $iconCircular, $responsiveFlex } from "../../elements/$common"
 import { $caretDown } from "../../elements/$icons"
-import { $labItem, getBerryFromToken, getTokenSlots } from "../../logic/common"
+import { $labItem, getBerryFromToken } from "../../logic/common"
 import { connectLab } from "../../logic/contract/gbc"
 import { fadeIn } from "../../transitions/enter"
 import { $seperator2 } from "../common"
+import { Address } from "viem"
 
 
 interface IBerryComp {
@@ -49,7 +49,7 @@ interface ExchangeState {
   selectedBerry: IToken | null
   selectedBerryItems: IBerryLabItems
 
-  account: string
+  account: Address
 }
 
 type Slot = 0 | 6 | null
@@ -74,7 +74,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
   [walletChange, walletChangeTether]: Behavior<IWalletName, IWalletName>,
 ) => {
 
-  const connect = connectLab(config.walletLink.provider)
+  const connect = connectLab(config.walletLink.client)
   // const gbc = connectGbc(walletLink)
   // const closet = connectManager(config.walletLink)
   const account = filterNull(map(w3p => w3p ? w3p.address : null, config.walletLink.wallet))

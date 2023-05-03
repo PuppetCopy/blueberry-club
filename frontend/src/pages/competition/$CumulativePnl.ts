@@ -55,7 +55,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
   ])
 
 
-  const crateLoadEvent = importGlobal(import('@widgetbot/crate'))
+  // const crateLoadEvent = importGlobal(import('@widgetbot/crate'))
 
 
   return [
@@ -77,7 +77,9 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
                     return `ROI = (Total PnL / Max Collateral [Min ${formatReadableUSD(res.averageMaxCollateral)}]) * 100`
                   }, config.competitionCumulative))
                   : empty(),
-                $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Max Collateral represents the highest amount used for open positions at any point. Reinvesting profits or reusing collateral from closed trades won't affect Max Collateral.`),
+                currentMetric === COMPETITION_METRIC_LIST[1]
+                  ? $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Max Collateral represents the highest amount used for open positions at any point. Reinvesting profits or reusing collateral from closed trades won't affect Max Collateral.`)
+                  : empty(),
                 currentMetric === COMPETITION_METRIC_LIST[1]
                   ? $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(map(res => {
                     return `The Minimum Max Collateral is the average for all winners, currently ${formatReadableUSD(res.averageMaxCollateral)}. Winners prizes are always calculated using a Max Collateral above the minimum.`
@@ -135,20 +137,20 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
           )
       ),
 
-      $column(
-        switchLatest(
-          map(Crate => {
+      // $column(
+      //   switchLatest(
+      //     map(Crate => {
 
-            const trollbox = new Crate({
-              server: '941356283234250772',
-              channel: '1068946527021695168',
-              // css: '"height": 100px; display: none;'
-            })
+      //       const trollbox = new Crate({
+      //         server: '941356283234250772',
+      //         channel: '1068946527021695168',
+      //         // css: '"height": 100px; display: none;'
+      //       })
 
-            return empty()
-          }, crateLoadEvent)
-        )
-      ),
+      //       return empty()
+      //     }, crateLoadEvent)
+      //   )
+      // ),
 
 
       $column(layoutSheet.spacing)(

@@ -1,24 +1,23 @@
 import { Behavior, Op } from "@aelea/core"
-import { $element, $node, $Node, $text, attr, component, nodeEvent, style } from "@aelea/dom"
+import { $Node, $element, $node, $text, attr, component, nodeEvent, style } from "@aelea/dom"
 import { $column, $icon, $row, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
+import { CHAIN, NETWORK_METADATA } from "@gambitdao/const"
+import { filterNull } from "@gambitdao/gmx-middleware"
+import { IWalletLink, IWalletName, IWalletclient, metamaskQuery, parseError, walletConnect } from "@gambitdao/wallet-link"
 import { awaitPromises, constant, empty, fromPromise, map, now, snapshot, switchLatest } from "@most/core"
-import { IWalletLink, IWalletName, IWalletState, metamaskQuery, parseError, walletConnect } from "@gambitdao/wallet-link"
+import { Stream } from "@most/types"
+import { EIP1193Provider, WalletClient } from "viem"
 import { $bagOfCoinsCircle, $walletConnectLogo } from "../common/$icons"
 import { $caretDown } from "../elements/$icons"
-import { $Dropdown } from "./form/$Dropdown"
 import { $Popover } from "./$Popover"
-import { IButtonCore } from "./form/$ButtonCore"
-import { Stream } from "@most/types"
-import { filterNull } from "@gambitdao/gmx-middleware"
 import { $ButtonPrimary, $ButtonSecondary } from "./form/$Button"
-import { CHAIN, NETWORK_METADATA } from "@gambitdao/const"
-import { EthereumProvider } from "eip1193-provider"
-import { BrowserProvider } from "ethers"
+import { IButtonCore } from "./form/$ButtonCore"
+import { $Dropdown } from "./form/$Dropdown"
 
 
 // https://eips.ethereum.org/EIPS/eip-3085
-export async function attemptToSwitchNetwork(metamask: EthereumProvider, chain: CHAIN) {
+export async function attemptToSwitchNetwork(metamask: EIP1193Provider, chain: CHAIN) {
   if (!('request' in metamask)) {
     return console.error('External Provider does not contain request() method')
   }
@@ -66,7 +65,7 @@ export interface IConnectWalletPopover {
   chainList: CHAIN[]
   walletLink: IWalletLink
 
-  $$display: Op<IWalletState, $Node>
+  $$display: Op<IWalletclient, $Node>
   primaryButtonConfig?: Partial<IButtonCore>
 }
 
@@ -103,7 +102,7 @@ export const $IntermediateConnectButton = (config: IConnectWalletPopover) => com
       }
 
 
-      const isCompatibleChain = config.chainList.some(c => c === w3p.chain)
+      const isCompatibleChain = config.chainList.some(c => c === w3p.chain.id)
 
       if (isCompatibleChain) {
         return switchLatest(config.$$display(now(w3p)))
@@ -137,8 +136,8 @@ export const $IntermediateConnectButton = (config: IConnectWalletPopover) => com
           // constant(fstChain)
           snapshot(async (wallet) => {
             if (wallet) {
-              const externalProvider = wallet.provider.provider as any as EthereumProvider
-              await attemptToSwitchNetwork(externalProvider, fstChain).catch(error => {
+              const switchRequest = wallet.switchChain({ id: fstChain })
+              await switchRequest.catch(error => {
                 alert(error.message)
                 console.error(error)
                 return Promise.reject('unable to switch network')
@@ -168,12 +167,12 @@ export const $switchNetworkDropdown = (walletLink: IWalletLink, chainList: CHAIN
     $Dropdown({
       value: {
         value: walletLink.network,
-        $$option: map(option => {
-          if (option === null) {
+        $$option: map(chainId => {
+          if (chainId === null) {
             return $text('?')
           }
 
-          const chainName = NETWORK_METADATA[option].chainName
+          const chainName = NETWORK_METADATA[chainId].chainName
 
           return $row(
             changeNetworkTether(
@@ -181,8 +180,9 @@ export const $switchNetworkDropdown = (walletLink: IWalletLink, chainList: CHAIN
               // constant(option)
               snapshot(async (wallet) => {
                 if (wallet) {
-                  const externalProvider = wallet.provider.provider as any as EthereumProvider
-                  await attemptToSwitchNetwork(externalProvider, option).catch(error => {
+                  const switchRequest = wallet.switchChain({ id: chainId })
+
+                  await switchRequest.catch(error => {
                     console.warn(error)
                     return Promise.reject('unable to switch network')
                   })
@@ -196,13 +196,13 @@ export const $switchNetworkDropdown = (walletLink: IWalletLink, chainList: CHAIN
             ),
             style({ alignItems: 'center', width: '100%' })
           )(
-            $element('img')(attr({ src: `/assets/chain/${option}.svg` }), style({ width: '32px', padding: '3px 6px' }))(),
+            $element('img')(attr({ src: `/assets/chain/${chainId}.svg` }), style({ width: '32px', padding: '3px 6px' }))(),
             $text(chainName)
           )
         }),
         list: chainList,
       },
-      $container: $column(style({ margin: 'auto', position: 'relative' })),
+      $container: $column(style({ position: 'relative' })),
       $selection: $trigger,
     })({}),
 

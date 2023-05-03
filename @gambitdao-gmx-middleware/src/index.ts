@@ -12,6 +12,7 @@ export * from './comTypes.js'
 export * from './common.js'
 export * from './pool/tradingPools.js'
 
+export * as abi from './abi/abi.js'
 export * as fromJson from './fromJson.js'
 export * as gmxSubgraph from './graph.js'
 // export * as gmxContract from '../../frontend/src/logic/gmx-contracts'

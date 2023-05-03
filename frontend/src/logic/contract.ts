@@ -1,12 +1,12 @@
 import { combineArray } from "@aelea/core"
-import { BI_18_PRECISION } from "@gambitdao/gbc-middleware"
-import { BASIS_POINTS_DIVISOR, getGmxTokenPrice, IGmxContractAddress, intervalTimeMap, TRADE_CONTRACT_MAPPING } from "@gambitdao/gmx-middleware"
+import { BI_18_PRECISION, IAsset } from "@gambitdao/gbc-middleware"
+import { ArbitrumAddress, AvalancheAddress, BASIS_POINTS_DIVISOR, TRADE_CONTRACT_MAPPING, intervalTimeMap } from "@gambitdao/gmx-middleware"
+import { abi } from "@gambitdao/gmx-middleware"
 import { awaitPromises, combine, map } from "@most/core"
 import { Stream } from "@most/types"
-import { IAsset } from "@gambitdao/gbc-middleware"
-import { GlpManager__factory, GMX__factory, Reader__factory, RewardReader__factory, Vault__factory } from "./gmx-contracts"
-import { readContractMapping } from "./common"
-import { JsonRpcProvider } from "ethers"
+import { erc20Abi } from "abitype/test"
+import { Address, PublicClient } from "viem"
+import { connectMappedContract, contractReader } from "./common"
 
 
 export type IGmxContractInfo = ReturnType<typeof connectGmxEarn>
@@ -14,29 +14,26 @@ export type IRewardsStream = IGmxContractInfo['stakingRewards']
 
 
 
-
 const SECONDS_PER_YEAR = BigInt(intervalTimeMap.YEAR)
 
-export const connectGmxEarn = (provider: Stream<JsonRpcProvider>, account: string, environmentContract: IGmxContractAddress) => {
+export const connectGmxEarn = (client: Stream<PublicClient>, accountAddress: Address, gmxPrice: Stream<bigint>, environmentContract: ArbitrumAddress | AvalancheAddress) => {
 
-  const gmx = readContractMapping(TRADE_CONTRACT_MAPPING, GMX__factory, provider, 'GMX')
-  const vault = readContractMapping(TRADE_CONTRACT_MAPPING, Vault__factory, provider, 'Vault')
-  const manager = readContractMapping(TRADE_CONTRACT_MAPPING, GlpManager__factory, provider, 'GlpManager')
-  const reader = readContractMapping(TRADE_CONTRACT_MAPPING, Reader__factory, provider, 'Reader')
-  const rewardReader = readContractMapping(TRADE_CONTRACT_MAPPING, RewardReader__factory, provider, 'RewardReader')
+  const gmxReader = contractReader(connectMappedContract(TRADE_CONTRACT_MAPPING, 'GMX', erc20Abi, client))
+  const vaultReader = contractReader(connectMappedContract(TRADE_CONTRACT_MAPPING, 'Vault', abi.vault, client))
+  const glpManagerReader = contractReader(connectMappedContract(TRADE_CONTRACT_MAPPING, 'GlpManager', abi.glpManager, client))
+  const readerReader = contractReader(connectMappedContract(TRADE_CONTRACT_MAPPING, 'Reader', abi.gmxReader, client))
+  const rewardReader = contractReader(connectMappedContract(TRADE_CONTRACT_MAPPING, 'RewardReader', abi.rewardReader, client))
+
+  const gmxSupply = gmxReader('totalSupply')
+  const stakedGmxSupply = gmxReader('balanceOf', environmentContract.StakedGmxTracker)
+  const nativeTokenPrice = vaultReader('getMinPrice', environmentContract.NATIVE_TOKEN)
+  const aum = glpManagerReader('getAum', true)
+
+  const walletTokens = [environmentContract.GMX, environmentContract.ES_GMX, environmentContract.GLP, environmentContract.StakedGmxTracker] as const
+  const tokenBalancesWithSupplies = readerReader('getTokenBalancesWithSupplies', accountAddress, walletTokens)
 
 
-  const gmxSupply = gmx.readInt(map(c => c.totalSupply()))
-  const stakedGmxSupply = gmx.readInt(map(c => c.balanceOf(environmentContract.StakedGmxTracker)))
-  const nativeTokenPrice = vault.readInt(map(c => c.getMinPrice(environmentContract.NATIVE_TOKEN)))
-  const aum = manager.readInt(map(c => c.getAum(true)))
-
-  const accountBalances = reader.run(map(async (readerContract) => {
-    const walletTokens = [environmentContract.GMX, environmentContract.ES_GMX, environmentContract.GLP, environmentContract.StakedGmxTracker] as const
-
-    const balancesQuery = readerContract.getTokenBalancesWithSupplies(account, walletTokens as any)
-    const balances = await balancesQuery
-
+  const accountBalances = map(balances => {
     const keys = walletTokens
     const balanceData = {} as keysToObject<typeof walletTokens>
     const supplyData = {} as keysToObject<typeof walletTokens>
@@ -44,65 +41,64 @@ export const connectGmxEarn = (provider: Stream<JsonRpcProvider>, account: strin
 
     for (let i = 0; i < keys.length; i++) {
       const key = keys[i]
-      balanceData[key] = balances[i * propsLength].toBigInt()
-      supplyData[key] = balances[i * propsLength + 1].toBigInt()
+      balanceData[key] = balances[i * propsLength]
+      supplyData[key] = balances[i * propsLength + 1]
     }
 
     return { balanceData, supplyData }
-  }))
+  }, tokenBalancesWithSupplies)
 
-  const gmxVestingInfo = reader.run(map(async (contract) => {
-    const balancesQuery = contract.getVestingInfo(account, [environmentContract.GmxVester])
-    const [pairAmount, vestedAmount, escrowedBalance, claimedAmounts, claimable, maxVestableAmount, averageStakedAmount] = balancesQuery
 
-    return { pairAmount, vestedAmount, escrowedBalance, claimedAmounts, claimable, maxVestableAmount, averageStakedAmount }
-  }))
+  const balancesQuery = readerReader('getVestingInfo', accountAddress, [environmentContract.GmxVester])
 
-  const glpVestingInfo = reader.run(map(async contract => {
-    const balancesQuery = contract.getVestingInfo(account, [environmentContract.GlpVester])
-    const [pairAmount, vestedAmount, escrowedBalance, claimedAmounts, claimable, maxVestableAmount, averageStakedAmount] = balancesQuery
+  const gmxVestingInfo = map(balances => {
+    const [pairAmount, vestedAmount, escrowedBalance, claimedAmounts, claimable, maxVestableAmount, averageStakedAmount] = balances
 
     return { pairAmount, vestedAmount, escrowedBalance, claimedAmounts, claimable, maxVestableAmount, averageStakedAmount }
-  }))
+  }, balancesQuery)
 
-  const accountStaking = rewardReader.run(map(contract => {
-    const stakingTrackers = [
-      environmentContract.StakedGmxTracker,
-      environmentContract.BonusGmxTracker,
-      environmentContract.FeeGmxTracker,
-      environmentContract.StakedGlpTracker,
-      environmentContract.FeeGlpTracker,
-    ] as const
+  const glpVestingInfo = map(balances => {
+    const [pairAmount, vestedAmount, escrowedBalance, claimedAmounts, claimable, maxVestableAmount, averageStakedAmount] = balances
 
-    const trackersQuery = contract.getStakingInfo(account, stakingTrackers as any)
-    return parseTrackerMap(trackersQuery, ['claimable', 'tokensPerInterval', 'averageStakedAmounts', 'cumulativeRewards', 'totalSupply'] as const, stakingTrackers)
-  }))
+    return { pairAmount, vestedAmount, escrowedBalance, claimedAmounts, claimable, maxVestableAmount, averageStakedAmount }
+  }, readerReader('getVestingInfo', accountAddress, [environmentContract.GlpVester]))
 
-  const depositbalances = rewardReader.run(map(contract => {
-    const tokens = [
-      environmentContract.GMX,
-      environmentContract.ES_GMX,
-      environmentContract.StakedGmxTracker,
-      environmentContract.BonusGmxTracker,
-      environmentContract.BN_GMX,
-      environmentContract.GLP,
-    ] as const
-    const balancesQuery = contract.getDepositBalances(account, tokens as any,
-      [
-        environmentContract.StakedGmxTracker,
-        environmentContract.StakedGmxTracker,
-        environmentContract.BonusGmxTracker,
-        environmentContract.FeeGmxTracker,
-        environmentContract.FeeGmxTracker,
-        environmentContract.FeeGlpTracker,
-      ]
-    )
+  const stakingTrackers = [
+    environmentContract.StakedGmxTracker,
+    environmentContract.BonusGmxTracker,
+    environmentContract.FeeGmxTracker,
+    environmentContract.StakedGlpTracker,
+    environmentContract.FeeGlpTracker,
+  ] as const
 
-    return parseTrackerInfo(balancesQuery, tokens)
-  }))
+  const trackersQuery = rewardReader('getStakingInfo', accountAddress, stakingTrackers)
+
+  const accountStaking = map(trackers => {
+    return parseTrackerMap(trackers, ['claimable', 'tokensPerInterval', 'averageStakedAmounts', 'cumulativeRewards', 'totalSupply'] as const, stakingTrackers)
+  }, trackersQuery)
+
+  const tokens = [
+    environmentContract.GMX,
+    environmentContract.ES_GMX,
+    environmentContract.StakedGmxTracker,
+    environmentContract.BonusGmxTracker,
+    environmentContract.BN_GMX,
+    environmentContract.GLP,
+  ] as const
 
 
-  const gmxPrice = getGmxTokenPrice(provider, nativeTokenPrice)
+  const depositBalancesQuery = rewardReader('getDepositBalances', accountAddress, tokens, [
+    environmentContract.StakedGmxTracker,
+    environmentContract.StakedGmxTracker,
+    environmentContract.BonusGmxTracker,
+    environmentContract.FeeGmxTracker,
+    environmentContract.FeeGmxTracker,
+    environmentContract.FeeGlpTracker,
+  ])
+
+  const depositbalances = map(balances => {
+    return parseTrackerInfo(balances, tokens)
+  }, depositBalancesQuery)
 
 
   const stakingRewards = combineArray(({ balanceData, supplyData }, depositbalances, accountStaking, gmxVesting, glpVesting, aum, nativeTokenPrice, stakedGmxSupply, gmxPrice) => {
@@ -238,15 +234,14 @@ export const connectGmxEarn = (provider: Stream<JsonRpcProvider>, account: strin
   }, accountBalances, depositbalances, accountStaking, gmxVestingInfo, glpVestingInfo, aum, nativeTokenPrice, stakedGmxSupply, gmxPrice)
 
 
-  const nativeAssetBalance = awaitPromises(map(async p => p.getBalance(account), provider))
+  const nativeAssetBalance = awaitPromises(map(p => p.getBalance({ address: accountAddress }), client))
   const nativeAsset: Stream<IAsset> = combine((amount, price) => ({ balance: price * amount / BI_18_PRECISION }), nativeAssetBalance, nativeTokenPrice)
 
 
   return { nativeAsset, stakingRewards, accountStaking, depositbalances, stakedGmxSupply, gmxSupply, nativeTokenPrice, aum, accountBalances, gmxVestingInfo, glpVestingInfo }
 }
 
-async function parseTrackerMap<T extends ReadonlyArray<string>, R extends ReadonlyArray<string>>(argsQuery: Promise<bigint[]>, keys: T, trackers: R): Promise<{ [K in R[number]]: keysToObject<T> }> {
-  const args = await argsQuery
+function parseTrackerMap<T extends ReadonlyArray<string>, R extends ReadonlyArray<string>>(args: readonly bigint[], keys: T, trackers: R): { [K in R[number]]: keysToObject<T> } {
   return args.reduce((seed, next, idx) => {
     const trackersLength = trackers.length
     const k = trackers[Math.floor(idx / trackersLength)]
@@ -262,8 +257,7 @@ async function parseTrackerMap<T extends ReadonlyArray<string>, R extends Readon
 
 type keysToObject<KS extends ReadonlyArray<string>> = { [K in KS[number]]: bigint }
 
-async function parseTrackerInfo<T extends ReadonlyArray<string>>(argsQuery: Promise<bigint[]>, keys: T): Promise<keysToObject<T>> {
-  const args = await argsQuery
+function parseTrackerInfo<T extends ReadonlyArray<string>>(args: readonly bigint[], keys: T): keysToObject<T> {
 
   return args.reduce((seed, next, idx) => {
     seed[keys[idx]] = next

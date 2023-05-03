@@ -1,6 +1,5 @@
 import { fromCallback } from "@aelea/core"
 import type { Stream } from '@most/types'
-import { BaseContract, ContractEventName } from "ethers"
 
 
 export const listen = <T extends BaseContract, ET>(contract: T, ev: ContractEventName): Stream<ET & { __event: any }> => {

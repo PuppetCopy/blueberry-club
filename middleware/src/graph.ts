@@ -8,7 +8,7 @@ import { awaitPromises, combine, map, now } from "@most/core"
 import { cacheExchange, ClientOptions, createClient, fetchExchange, gql, OperationContext, TypedDocumentNode } from "@urql/core"
 import { COMPETITION_METRIC_LIST, TOURNAMENT_DURATION, TOURNAMENT_TIME_ELAPSED } from "./config.js"
 import { ILabItem, ILabItemOwnership, IOwner, IBlueberryLadder, IProfileTradingResult, IToken, IRequestCompetitionLadderApi } from "./types.js"
-import { toBeHex } from "ethers"
+import { numberToHex } from "viem"
 
 
 export const createSubgraphClient = (opts: ClientOptions) => {
@@ -112,7 +112,7 @@ export const token = O(
 
     const res = await await querySubgraph(`
 {
-  token(id: "${toBeHex(Number(queryParams.id))}") {
+  token(id: "${numberToHex(Number(queryParams.id))}") {
     id
     owner {
       id
@@ -167,7 +167,7 @@ export const tokenListPick = O(
     const newLocal = `
 {
   ${tokenList.map(id => `
-_${id}: token(id: "${toBeHex(id)}") {
+_${id}: token(id: "${numberToHex(id)}") {
   id
   labItems {
     id

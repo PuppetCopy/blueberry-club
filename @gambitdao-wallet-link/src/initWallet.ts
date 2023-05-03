@@ -1,27 +1,9 @@
 import { combineArray, fromCallback, replayLatest } from "@aelea/core"
 import { awaitPromises, constant, fromPromise, map, mergeArray, multicast, now, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
-import { BrowserProvider, JsonRpcSigner, Provider } from "ethers"
+import { createWalletClient, custom, WalletClient, Transport, createPublicClient, PublicClient, Chain, Address, Account } from 'viem'
 import { eip1193ProviderEventFn } from "./common.js"
-import { metamaskQuery, walletConnect } from "./provider.js"
-
-
-export interface IWalletState {
-  walletName: IWalletName
-  address: string
-  provider: Provider
-  chain: number
-  signer: Promise<JsonRpcSigner>
-}
-
-
-export interface IWalletLink {
-  network: Stream<number>
-  provider: Stream<Provider | BrowserProvider>
-  defaultProvider: Stream<Provider>
-
-  wallet: Stream<IWalletState | null>
-}
+import { metamaskQuery, walletConnect } from "./walletProvider.js"
 
 export enum IWalletName {
   none = 'none',
@@ -29,53 +11,96 @@ export enum IWalletName {
   walletConnect = 'walletconnect'
 }
 
+export type ISupportedChainMap = Record<number, PublicClient<Transport, Chain>>
 
 
 
-interface IWalletLinkConfig {
-  globalProviderMap: Partial<Record<number, Provider>>
-  defaultGlobalChain: number
+export type IWalletclient<
+  TTransport extends Transport = Transport,
+  TChain extends Chain = Chain,
+> = WalletClient<TTransport, TChain, Account>
+
+export type IPublicClient<
+  TTransport extends Transport = Transport,
+  TChain extends Chain = Chain,
+> = PublicClient<TTransport, TChain>
+
+export interface IWalletLink<
+  TChain extends Chain = Chain,
+  TChainMap extends ISupportedChainMap = ISupportedChainMap,
+  TTransport extends Transport = Transport,
+  TPublicClient extends PublicClient<TTransport, TChain> = PublicClient<TTransport, TChain>,
+  TWalletClient extends IWalletclient<TTransport, TChain> = WalletClient<TTransport, TChain, Account>,
+> {
+  chainMap: TChainMap,
+  network: Stream<number>
+  client: Stream<TPublicClient>
+  defaultClient: Stream<TPublicClient>
+
+  wallet: Stream<TWalletClient>
 }
+
+
+
 
 
 // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1193.md
 // walletconnect chaining chain issue https://github.com/WalletConnect/walletconnect-monorepo/issues/612
 // attempting to manage wallet connection and event flow
-export function initWalletLink(
-  config: IWalletLinkConfig,
+export function initWalletLink<
+  TChain extends Chain,
+  TChainMap extends ISupportedChainMap,
+  TTransport extends Transport,
+  TPublicClient extends PublicClient<TTransport, TChain>,
+  TWalletClient extends WalletClient<TTransport, TChain, Account>
+>(
+  clientMap: TChainMap,
   walletName: Stream<IWalletName>,
-  networkChange: Stream<number> = now(config.defaultGlobalChain),
-): IWalletLink {
-  const fallbackProvider = config.globalProviderMap[config.defaultGlobalChain]
+  networkChange: Stream<number>,
+): IWalletLink<TChain, TChainMap, TTransport, TPublicClient, TWalletClient> {
+  const chainMapKeys = Object.keys(clientMap)
 
-  if (!fallbackProvider) {
-    throw new Error('no Default Provider configured')
+  if (!chainMapKeys?.length) {
+    throw new Error('chainMap is empty')
   }
 
+  const defaultChain = chainMapKeys[0] as keyof TChainMap
+  const initialClient = clientMap[defaultChain]
 
-  const wallet: Stream<IWalletState | null> = replayLatest(multicast(switchLatest(awaitPromises(combineArray(async (metamask, name) => {
+
+  const wallet: Stream<TWalletClient | null> = replayLatest(multicast(switchLatest(awaitPromises(combineArray(async (metamask, name) => {
     if (name === IWalletName.none) {
       return now(null)
     }
 
     const isWc = name === IWalletName.walletConnect
     const wp = isWc ? walletConnect : metamask!
-    const [address]: string[] = await wp.request({ method: 'eth_accounts' }) as any
-    const chain = Number(await wp.request({ method: 'eth_chainId' }))
+    const transport = custom(wp)
+    const [[address], chainId] = await Promise.all([
+      wp.request({ method: 'eth_accounts' }) as Promise<Address[]>,
+      wp.request({ method: 'eth_chainId' }).then(Number) as Promise<number>
+    ])
 
     if (!address) {
       return now(null)
     }
 
-    const prov: BrowserProvider = new BrowserProvider(wp, chain)
+    const newLocal: PublicClient<Transport, Chain>[] = Object.values(clientMap)
+    const chain: Chain | undefined = newLocal.find(c => c.chain.id === chainId)?.chain
 
-    const state: IWalletState = {
-      walletName: name,
-      address,
-      provider: prov,
-      chain: chain,
-      signer: prov.getSigner(),
-    }
+    const walletClient = createWalletClient({
+      name,
+      account: address,
+      chain,
+      transport
+    }) as unknown as TWalletClient
+
+
+
+    // publicClient.getChainId()
+
+
+    const state = walletClient
 
     // WalletConnet doesn't emit standart disconnect
     const disconnect = isWc
@@ -83,10 +108,9 @@ export function initWalletLink(
       : eip1193ProviderEventFn(wp, 'disconnect')
 
     const walletNetworkChange = awaitPromises(map(async id => {
-      const chainId = Number(id)
-      const w3p = new BrowserProvider(wp, chainId)
       document.location.reload()
-      return { ...state, provider: w3p, chain: chainId }
+
+      return walletClient
     }, eip1193ProviderEventFn(wp, 'chainChanged')))
 
     const nullWallet = constant(null, disconnect)
@@ -96,33 +120,45 @@ export function initWalletLink(
         return null
       }
 
-      return { ...state, address: account }
+
+      return walletClient
     }, eip1193ProviderEventFn(wp, 'accountsChanged'))
 
-    return mergeArray([now(state), walletNetworkChange, accountChange, nullWallet])
+    return mergeArray([now(walletClient), walletNetworkChange, accountChange, nullWallet])
   }, fromPromise(metamaskQuery), walletName)))))
 
 
-  const defaultProvider = replayLatest(multicast(switchLatest(map((chain) => {
-    const p = config.globalProviderMap[chain] || fallbackProvider
+  const defaultClient = replayLatest(multicast(map((chain): TPublicClient => {
+    const globalClient = clientMap[chain] || initialClient
+    // const client: PublicClient<TTransport, Chain> = createPublicClient({
+    // const client = createPublicClient({
+    //   transport: globalClient.transport,
+    //   chain: arbitrum,
+    //   batch: {
+    //     multicall: true,
+    //   },
+    // }) as TPublicClient
 
-    const newLocal = p.getNetwork()
-    const networkEvent = fromPromise(newLocal)
+    return globalClient as any
+  }, networkChange)))
 
-    return constant(p, networkEvent)
-  }, networkChange))))
+  const client: Stream<TPublicClient> = replayLatest(multicast(combineArray((defClient, walletState) => {
+    if (walletState && walletState.chain) {
+      const publicClient: TPublicClient = createPublicClient({
+        batch: { multicall: true, },
+        chain: walletState.chain,
+        transport: custom(walletState.transport)
+      }) as any
 
-  const provider = replayLatest(multicast(combineArray((fbProvider, w3p) => {
-    if (w3p) {
-      return w3p.provider
+      return publicClient
     }
 
-    return fbProvider
-  }, defaultProvider, wallet)))
+    return defClient
+  }, defaultClient, wallet)))
 
-  const network: Stream<number> = replayLatest(multicast(awaitPromises(map(async p => Number((await p.getNetwork()).chainId), provider))))
+  const network: Stream<number> = replayLatest(multicast(map(p => p.chain.id!, client)))
 
-  return { network, wallet, provider, defaultProvider }
+  return { network, wallet, client, defaultClient, chainMap: clientMap }
 }
 
 

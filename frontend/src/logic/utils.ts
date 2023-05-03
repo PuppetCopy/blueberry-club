@@ -1,7 +1,7 @@
 import { CHAIN } from "@gambitdao/const"
 import {
   AddressZero, TOKEN_DESCRIPTION_MAP,
-  ITokenDescription, TOKEN_ADDRESS_TO_SYMBOL, ITokenInput, ITokenTrade, CHAIN_ADDRESS_MAP, CHAIN_NATIVE_TO_SYMBOL, getSafeMappedValue
+  ITokenDescription, TOKEN_ADDRESS_TO_SYMBOL, ITokenInput, ITokenTrade, CHAIN_ADDRESS_MAP, CHAIN_NATIVE_TO_SYMBOL, getSafeMappedValue, getMappedValue
 } from "@gambitdao/gmx-middleware"
 
 
@@ -22,9 +22,3 @@ export function resolveAddress(chain: CHAIN, indexToken: ITokenInput): ITokenTra
 
   return indexToken
 }
-
-export function getNativeTokenDescription(chain: CHAIN): ITokenDescription {
-  const symbol = getSafeMappedValue(CHAIN_NATIVE_TO_SYMBOL, chain, CHAIN.ARBITRUM)
-  return TOKEN_DESCRIPTION_MAP[symbol]
-}
-

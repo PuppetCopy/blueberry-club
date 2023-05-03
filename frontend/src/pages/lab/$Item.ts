@@ -2,22 +2,22 @@ import { Behavior, combineArray } from "@aelea/core"
 import { $element, $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, screenUtils } from "@aelea/ui-components"
-import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
-import { $accountIconLink, $addToCalendar, $responsiveFlex } from "../../elements/$common"
-import { attributeIndexToLabel, mintLabelMap, getLabItemTupleIndex, labItemDescriptionListMap, saleMaxSupply, SaleType } from "@gambitdao/gbc-middleware"
-import { countdownFn, displayDate, formatFixed, unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { pallete } from "@aelea/ui-components-theme"
-import { $defaultLabItem, $defaultLabItemHuge, $labItem, takeUntilLast } from "../../logic/common"
-import { $seperator2 } from "../common"
-import { getMintCount } from "../../logic/contract/sale"
-import { empty, map, multicast, switchLatest } from "@most/core"
-import { $anchor } from "@gambitdao/ui-components"
-import { $opensea } from "../../elements/$icons"
-import { $HolderMint } from "../../components/mint/$HolderMint"
-import { $WhitelistMint } from "../../components/mint/$WhitelistMint"
-import { $PublicMint } from "../../components/mint/$PublicMint"
-import { timeChange } from "../../components/mint/mintUtils2"
 import { CHAIN } from "@gambitdao/const"
+import { SaleType, attributeIndexToLabel, getLabItemTupleIndex, labItemDescriptionListMap, mintLabelMap, saleMaxSupply } from "@gambitdao/gbc-middleware"
+import { countdownFn, displayDate, formatFixed, takeUntilLast, unixTimestampNow } from "@gambitdao/gmx-middleware"
+import { $anchor } from "@gambitdao/ui-components"
+import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
+import { empty, map, multicast, switchLatest } from "@most/core"
+import { $HolderMint } from "../../components/mint/$HolderMint"
+import { $PublicMint } from "../../components/mint/$PublicMint"
+import { $WhitelistMint } from "../../components/mint/$WhitelistMint"
+import { timeChange } from "../../components/mint/mintUtils2"
+import { $accountIconLink, $addToCalendar, $responsiveFlex } from "../../elements/$common"
+import { $opensea } from "../../elements/$icons"
+import { $defaultLabItem, $labItem, } from "../../logic/common"
+import { getMintCount } from "../../logic/contract/sale"
+import { $seperator2 } from "../common"
 
 
 interface ILabItem {
@@ -25,6 +25,7 @@ interface ILabItem {
   walletLink: IWalletLink
   parentRoute: Route
 }
+
 
 export const $LabItem = (config: ILabItem) => component((
   [changeRoute, changeRouteTether]: Behavior<string, string>,
@@ -37,7 +38,14 @@ export const $LabItem = (config: ILabItem) => component((
   const itemId = Number(itemIdUrl)
 
   const item = labItemDescriptionListMap[itemId]
-  const totalMintCount = combineArray((...countList) => countList.reduce((seed, next) => seed + next, 0), ...item.mintRuleList.map(rule => getMintCount(rule, config.walletLink, 3500)))
+  const totalMintCount = combineArray((...countList) => countList.reduce((seed, next) => {
+    return seed + next
+  }, 0n), ...item.mintRuleList.map(rule => getMintCount(rule, config.walletLink, 3500)))
+
+  // const readTotalMinted = readContract(walletLink.client, abi.mintable, {
+  //   totalMinted
+  //   address: rule.contractAddress
+  // })
 
   const externalLinks = [
     $anchor(layoutSheet.spacingTiny, attr({ href: `https://opensea.io/assets/arbitrum/0xf4f935f4272e6fd9c779cf0036589a63b48d77a7/${item.id}` }))(
@@ -121,8 +129,7 @@ export const $LabItem = (config: ILabItem) => component((
                       $accountIconLink(mintRule.contractAddress)
                     ),
                     $node(style({ flex: 1 }))(),
-                    switchLatest(map(amount => {
-                      const count = Number(amount)
+                    switchLatest(map(count => {
                       const isSoldOut = count === mintRule.supply
 
                       const $supply = isSoldOut
@@ -140,7 +147,7 @@ export const $LabItem = (config: ILabItem) => component((
                   ),
 
                   switchLatest(combineArray((time, mintedAmount) => {
-                    if (mintedAmount === mintRule.supply) {
+                    if (mintedAmount === BigInt(mintRule.supply)) {
                       return empty()
                     }
 
@@ -153,7 +160,7 @@ export const $LabItem = (config: ILabItem) => component((
                         $text(style({ color: pallete.foreground }))('Starting In '),
                         $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
                           $addToCalendar({
-                            time: new Date(mintRule.start * 1000),
+                            time: new Date(Number(mintRule.start) * 1000),
                             title: `blueberry.club MINT - ${item.name}`,
                             description: `${item.description}  \n\n${document.location.href}`
                           }),

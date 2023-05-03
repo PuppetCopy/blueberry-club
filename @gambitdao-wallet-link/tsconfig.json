@@ -3,16 +3,13 @@
   "compilerOptions": {
     "outDir": ".dist/esm",
     "rootDir": "src",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "lib": [
       "DOM",
       "ES2022",
     ],
     "declarationDir": ".dist/types"
-  },
-  "paths": {
-    "graphql": [
-      ".yarn/cache/graphql-npm-*/node_modules/graphql/index.d.ts"
-    ]
   },
   "references": [
     {

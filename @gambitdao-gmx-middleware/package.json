@@ -27,9 +27,10 @@
         "@most/scheduler": "1.3.0",
         "@most/types": "1.1.0",
         "@types/isomorphic-fetch": "^0.0.36",
-        "@urql/core": "4.0.4",
-        "ethers": "^6.3.0",
+        "@urql/core": "4.0.7",
+        "abitype": "^0.8.2",
         "graphql": "^16.6.0",
-        "isomorphic-fetch": "^3.0.0"
+        "isomorphic-fetch": "^3.0.0",
+        "viem": "^0.3.16"
     }
 }

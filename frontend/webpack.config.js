@@ -1,17 +1,20 @@
-const path = require('path')
-const webpack = require('webpack')
-const HtmlWebpackPlugin = require('html-webpack-plugin')
-const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin')
-const CopyPlugin = require("copy-webpack-plugin")
-require('dotenv').config({ path: '../.env' })
+import path from 'path'
+import webpack from 'webpack'
+import HtmlWebpackPlugin from 'html-webpack-plugin'
+import ForkTsCheckerWebpackPlugin from 'fork-ts-checker-webpack-plugin'
+import CopyPlugin from "copy-webpack-plugin"
+import dotenv from "dotenv"
+
+
+dotenv.config({ path: '../.env' })
 
 /**
  * @type import('webpack').Configuration
  */
-module.exports = {
+export default {
   mode: "development",
   watch: false,
-  context: __dirname, // to automatically find tsconfig.json
+  // context: './', // to automatically find tsconfig.json
   devtool: 'eval-cheap-module-source-map',
   entry: {
     theme: './src/assignThemeSync.ts',
@@ -39,15 +42,14 @@ module.exports = {
   resolve: {
     modules: [
       "node_modules",
-      path.resolve(__dirname)
+      path.resolve('.')
     ],
     extensions: [".ts", '.js'],
     fallback: {
-      '@walletconnect/encoding': require.resolve("@walletconnect/encoding"),
+      // '@walletconnect/encoding': require.resolve("@walletconnect/encoding"),
       // ethers: false,
-      ethers: require.resolve("ethers"),
       process: false,
-      events: require.resolve("eventemitter3"),
+      // events: require.resolve("eventemitter3"),
       buffer: false
       // buffer: require.resolve("buffer/")
     }

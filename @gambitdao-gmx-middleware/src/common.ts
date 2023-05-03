@@ -26,16 +26,16 @@ export function timeSince(time: number) {
 
 export const everySec = map(unixTimestampNow, periodic(1000))
 
-export const displayDate = (unixTime: number) => {
-  return `${new Date(unixTime * 1000).toDateString()} ${new Date(unixTime * 1000).toLocaleTimeString()}`
+export const displayDate = (unixTime: number | bigint) => {
+  return `${new Date(Number(unixTime) * 1000).toDateString()} ${new Date(Number(unixTime) * 1000).toLocaleTimeString()}`
 }
 
 export const countdown = (targetDate: number) => {
   return map(now => countdownFn(targetDate, now), everySec)
 }
 
-export function countdownFn(targetDate: number, now: number) {
-  const distance = targetDate - now
+export function countdownFn(targetDate: number | bigint, now: number | bigint) {
+  const distance = Number(targetDate) - Number(now)
 
   const days = Math.floor(distance / (60 * 60 * 24))
   const hours = Math.floor((distance % (60 * 60 * 24)) / (60 * 60))

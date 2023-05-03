@@ -7,7 +7,8 @@ import { parseError } from "@gambitdao/wallet-link"
 import { constant, empty, fromPromise, map, merge, mergeArray, multicast, now, recoverWith, startWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
 import { $alert, $alertTooltip, $txHashRef, } from "./$common.js"
-import { ContractTransactionReceipt, ContractTransactionResponse } from "ethers"
+import { Chain, TransactionReceipt } from "viem"
+import { Abi } from "abitype"
 
 
 
@@ -88,34 +89,45 @@ export const $IntermediatePromise = <T>({
 })
 
 
-type IIntermediateTx<T extends ContractTransactionResponse> = {
-  $$success?: Op<ContractTransactionReceipt, $Node>
+type IIntermediateTx<
+  TAbi extends Abi,
+  TFunctionName extends string,
+  TChain extends Chain,
+  TChainOverride extends Chain,
+  TSuccess extends TransactionReceipt,
+> = {
+  $$success?: Op<TSuccess, $Node>
   chain: CHAIN
-  query: Stream<Promise<T>>
+  query: Stream<Promise<TSuccess>>
   clean?: Stream<any>
   showTooltip?: boolean
 }
 
-export const $IntermediateTx = <T extends ContractTransactionResponse>({
+export const $IntermediateTx = <
+  TAbi extends Abi,
+  TFunctionName extends string,
+  TChain extends Chain,
+  TChainOverride extends Chain,
+  TSuccess extends TransactionReceipt,
+>({
   query,
   chain,
   clean = empty(),
   $$success = constant($text(style({ color: pallete.positive }))('Tx Succeeded')),
   showTooltip = false
-}: IIntermediateTx<T>) => {
+}: IIntermediateTx<TAbi, TFunctionName, TChain, TChainOverride, TSuccess>) => {
 
   const multicastQuery = replayLatest(multicast(query))
 
-  return $IntermediatePromise({
+  return $IntermediatePromise<TSuccess>({
     clean,
     query: map(async x => {
-      const n = await x
-      return await n.wait()
+      return x
     }, multicastQuery),
-    $$done: map((res: ContractTransactionReceipt) => {
+    $$done: map((res) => {
       return $row(layoutSheet.spacingSmall, style({ color: pallete.positive }))(
         switchLatest($$success(now(res))),
-        $txHashRef(res.hash, chain)
+        $txHashRef(res.transactionHash, chain)
       )
     }),
     $loader: switchLatest(map(c => {
@@ -124,7 +136,7 @@ export const $IntermediateTx = <T extends ContractTransactionResponse>({
         $spinner,
         $text(startWith('Wallet Request...', map(() => 'Awaiting confirmation...', fromPromise(c)))),
         $node(style({ flex: 1 }))(),
-        switchLatest(map(txHash => $txHashRef(txHash.hash, chain), fromPromise(c)))
+        switchLatest(map(txHash => $txHashRef(txHash.transactionHash, chain), fromPromise(c)))
       )
     }, multicastQuery)),
     $$fail: map(res => {

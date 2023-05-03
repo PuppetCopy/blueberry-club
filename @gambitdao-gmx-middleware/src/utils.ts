@@ -1,14 +1,14 @@
 import { combineObject, O, Op, replayLatest } from "@aelea/core"
 import { AnimationFrames } from "@aelea/dom"
-import { Disposable, Scheduler, Sink, Stream } from "@most/types"
-import { at, awaitPromises, constant, continueWith, empty, filter, fromPromise, map, merge, multicast, now, recoverWith, switchLatest, zipArray } from "@most/core"
-import { intervalTimeMap, USD_DECIMALS } from "./constant.js"
-import { IResponsePageApi, IRequestPagePositionApi, IRequestSortApi } from "./types.js"
-import { ClientOptions, createClient, OperationContext, TypedDocumentNode } from "@urql/core"
-import { curry2 } from "@most/prelude"
 import { CHAIN, EXPLORER_URL, NETWORK_METADATA } from "@gambitdao/const"
+import { at, awaitPromises, constant, continueWith, empty, filter, fromPromise, map, merge, multicast, now, recoverWith, switchLatest, takeWhile, zipArray } from "@most/core"
 import { disposeNone } from "@most/disposable"
-import { solidityPackedKeccak256 } from "ethers"
+import { curry2 } from "@most/prelude"
+import { Disposable, Scheduler, Sink, Stream } from "@most/types"
+import { ClientOptions, createClient } from "@urql/core"
+import { IntervalTime, intervalTimeMap, USD_DECIMALS } from "./constant.js"
+import { IRequestPagePositionApi, IRequestSortApi, IResponsePageApi } from "./types.js"
+import { Address, encodePacked } from "viem"
 export * as GraphQL from '@urql/core'
 
 
@@ -67,10 +67,10 @@ export function readableNumber(ammount: number | bigint) {
 
 
 
-const options: Intl.DateTimeFormatOptions = { year: '2-digit', month: 'short', day: '2-digit' }
+const intlOptions: Intl.DateTimeFormatOptions = { year: '2-digit', month: 'short', day: '2-digit' }
 
 export function readableDate(timestamp: number) {
-  return new Date(timestamp * 1000).toLocaleDateString(undefined, options)
+  return new Date(timestamp * 1000).toLocaleDateString(undefined, intlOptions)
 }
 
 export function formatReadableUSD(ammount: bigint | number, displayDecimals = true) {
@@ -228,7 +228,7 @@ export type TimelineTime = {
 }
 
 export interface IFillGap<T, R, RTime extends R & TimelineTime = R & TimelineTime> {
-  interval: intervalTimeMap
+  interval: IntervalTime
   getTime: (t: T) => number
   seed: R & TimelineTime
   source: T[]
@@ -243,7 +243,6 @@ export function intervalListFillOrderMap<T, R, RTime extends R & TimelineTime = 
   source, getTime, seed, interval,
   fillMap, squashMap = fillMap, fillGapMap = (prev, _next) => prev
 }: IFillGap<T, R, RTime>) {
-
 
 
   const sortedSource = [...source].sort((a, b) => getTime(a) - getTime(b))
@@ -302,7 +301,7 @@ export function intervalListFillOrderMap<T, R, RTime extends R & TimelineTime = 
 function defaultComperator<T>(queryParams: IRequestSortApi<T>) {
   return function (a: T, b: T) {
     return queryParams.direction === 'desc'
-      ? Number(b[queryParams.selector]) - Number(a[queryParams.selector]) 
+      ? Number(b[queryParams.selector]) - Number(a[queryParams.selector])
       : Number(a[queryParams.selector]) - Number(b[queryParams.selector])
   }
 }
@@ -336,11 +335,11 @@ export const getTxExplorerUrl = (chain: CHAIN, hash: string) => {
   return EXPLORER_URL[chain] + 'tx/' + hash
 }
 
-export function getAccountExplorerUrl(chain: CHAIN, account: string) {
+export function getAccountExplorerUrl(chain: CHAIN, account: Address) {
   return EXPLORER_URL[chain] + "address/" + account
 }
 
-export function getDebankProfileUrl(account: string) {
+export function getDebankProfileUrl(account: Address) {
   return `https://debank.com/profile/` + account
 }
 
@@ -420,6 +419,16 @@ export function zipState<A, K extends keyof A = keyof A>(state: StateStream<A>):
   return zipped
 }
 
+export function takeUntilLast<T>(fn: (t: T) => boolean, s: Stream<T>) {
+  let last: T
+
+  return continueWith(() => now(last), takeWhile(x => {
+    const res = !fn(x)
+    last = x
+    return res
+  }, s))
+}
+
 interface ISwitchMapCurry2 {
   <T, R>(cb: (t: T) => Stream<R>, s: Stream<T>): Stream<R>
   <T, R>(cb: (t: T) => Stream<R>): (s: Stream<T>) => Stream<R>
@@ -434,8 +443,8 @@ export const switchMap: ISwitchMapCurry2 = curry2(switchMapFn)
 
 
 
-export function getPositionKey(account: string, collateralToken: string, indexToken: string, isLong: boolean) {
-  return solidityPackedKeccak256(
+export function getPositionKey(account: Address, collateralToken: Address, indexToken: Address, isLong: boolean) {
+  return encodePacked(
     ["address", "address", "address", "bool"],
     [account, collateralToken, indexToken, isLong]
   )
@@ -470,6 +479,37 @@ export const periodicRun = <T>({ actionOp, interval = 1000, startImmediate = tru
       : O(),
     continueWith(() => {
       return periodicRun({ interval, actionOp, recoverError, startImmediate: false, })
+    }),
+  )(tick)
+}
+
+export interface IPeriodSample<T> {
+  interval?: number
+  startImmediate?: boolean
+  recoverError?: boolean
+}
+
+const defaultSampleArgs = { interval: 1000, startImmediate: true, recoverError: true }
+
+export const periodicSample = <T>(sample: Stream<T>, options: IPeriodSample<T> = defaultSampleArgs): Stream<T> => {
+  const params = { ...defaultSampleArgs, ...options }
+
+  const tickDelay = at(params.interval, null)
+  const tick = params.startImmediate ? merge(now(null), tickDelay) : tickDelay
+
+  return O(
+    constant(performance.now()),
+    map(() => sample),
+    switchLatest,
+    params.recoverError
+      ? recoverWith(err => {
+        console.error(err)
+
+        return periodicSample(sample, { ...params, interval: params.interval * 2, })
+      })
+      : O(),
+    continueWith(() => {
+      return periodicSample(sample, { ...params, startImmediate: false })
     }),
   )(tick)
 }
@@ -561,7 +601,6 @@ export function groupByKeyMap<A, B extends string | symbol | number, R>(list: A[
   return gmap
 }
 
-export { Client, ClientOptions } from '@urql/core'
 
 export const createSubgraphClient = (opts: ClientOptions) => {
   return async <Data, Variables extends object = {}>(document: any, params: Variables, context?: any): Promise<any> => {
@@ -584,13 +623,12 @@ export function getSafeMappedValue<T extends Object>(contractMap: T, prop: any, 
     : contractMap[fallbackProp]
 }
 
-export function getMappedValue<T extends Object>(contractMap: T, prop: any): T[keyof T] {
-
-  if (!(prop in contractMap)) {
-    throw new Error(`prop ${prop} does not exist in object`)
+export function getMappedValue<TMap extends object, TMapkey extends keyof TMap>(contractMap: TMap, prop: unknown): TMap[TMapkey] {
+  if (contractMap[prop as TMapkey]) {
+    return contractMap[prop as TMapkey]
   }
 
-  return contractMap[prop as keyof T]
+  throw new Error(`prop ${String(prop)} does not exist in object`)
 }
 
 export function easeInExpo(x: number) {

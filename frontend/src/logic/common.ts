@@ -1,118 +1,207 @@
-import { O, Op } from "@aelea/core"
+import { O, Op, combineArray, fromCallback, isStream } from "@aelea/core"
 import { $Node, $svg, NodeComposeFn, attr, style } from "@aelea/dom"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
-import { CHAIN } from "@gambitdao/const"
-import { Closet } from "@gambitdao/gbc-contracts"
 import {
   IAttributeBackground, IAttributeBadge, IAttributeExpression, IAttributeHat, IAttributeMappings,
-  IBerryDisplayTupleMap, IBerryLabItems, IToken, getLabItemTupleIndex, labAttributeTuple, tokenIdAttributeTuple
+  IBerryDisplayTupleMap, IToken, getLabItemTupleIndex, labAttributeTuple, svgParts, tokenIdAttributeTuple
 } from "@gambitdao/gbc-middleware"
-import { filterNull, getMappedValue } from "@gambitdao/gmx-middleware"
-import { awaitPromises, continueWith, empty, map, multicast, never, now, recoverWith, switchLatest, takeWhile, tap } from "@most/core"
+import { ContractFunctionConfig, StreamInput, StreamInputArray } from "@gambitdao/gmx-middleware"
+import { awaitPromises, map, now, switchLatest, tap } from "@most/core"
 import { curry2 } from "@most/prelude"
 import { Stream } from "@most/types"
-import { BigNumberish, BrowserProvider, ContractFactory, Provider } from "ethers"
+import type { Abi, AbiParametersToPrimitiveTypes, Address, ExtractAbiEvent, ExtractAbiFunction, } from 'abitype'
+import {
+  Chain, GetEventArgs, Hash, InferEventName, InferFunctionName, Log, PublicClient, ReadContractReturnType, SimulateContractParameters, SimulateContractReturnType, TransactionReceipt, Transport
+} from "viem"
 import { $berry, $defaultBerry } from "../components/$DisplayBerry"
-import { listen } from "./contract/listen"
-
-export type TContractMapping<T> = {
-  [P in CHAIN]?: {
-    [Z in keyof T]: T[Z]
-  }
-}
+import { IWalletclient, IPublicClient } from "@gambitdao/wallet-link"
 
 
+export const getMappedContractAddress = <
+  TDeepMap extends Record<number, { [k: string]: Address }>,
+  TKey1 extends keyof TDeepMap,
+  TKey2 extends keyof TDeepMap[TKey1],
+  TAddress extends TDeepMap[TKey1][TKey2],
+>(contractMap: TDeepMap, contractName: TKey2, client_: Stream<IWalletclient | IPublicClient>): Stream<TDeepMap[TKey1][TKey2]> => {
+  const newLocal = map(client => {
+    const contractAddressMap = contractMap[client.chain.id as TKey1]
 
+    if (!contractAddressMap) {
+      throw new Error(`Contract address not found for chain ${client.chain.id}`)
+    }
 
-export function takeUntilLast<T>(fn: (t: T) => boolean, s: Stream<T>) {
-  let last: T
-
-  return continueWith(() => now(last), takeWhile(x => {
-
-    const res = !fn(x)
-    last = x
-
-    return res
-  }, s))
-}
-
-export function getContractAddress<T, Z extends TContractMapping<T>>(contractMap: Z, chain: CHAIN, contractName: keyof T): T[keyof T] | null {
-  const addressMapping = contractMap[chain]
-
-  if (!addressMapping) {
-    return null
-  }
-
-  const newLocal = addressMapping[contractName]
+    const address = contractMap[client.chain.id as TKey1][contractName] as TAddress
+    return address
+  }, client_)
   return newLocal
 }
 
 
-export interface IContractRunner<T extends ContractFactory<any, any>, TMap, TProvider extends Provider> {
-  contract: T,
-  address: string,
-  chainId: number
-  contractMapping: TContractMapping<TMap>
-  provider: TProvider
-}
+export const connectMappedContract = <
+  TDeepMap extends Record<number, { [k: string]: Address }>,
+  TKey1 extends keyof TDeepMap,
+  TKey2 extends keyof TDeepMap[TKey1],
+  TAddress extends TDeepMap[TKey1][TKey2],
+  TTransport extends Transport,
+  TChain extends Chain,
+  TIncludeActions extends true,
+  TPublicClient extends PublicClient<TTransport, TChain, TIncludeActions>,
+  TAbi extends Abi,
+>(contractMap: TDeepMap, contractName: TKey2, abi: TAbi, client_: Stream<TPublicClient> | TPublicClient): Stream<ContractFunctionConfig<TAbi, TAddress, TTransport, TChain, TIncludeActions, TPublicClient>> => {
+  const newLocal = map(client => {
+    const contractAddressMap = contractMap[client.chain.id as TKey1]
 
-export function readContractMapping<TProvider extends Provider, TMap, CCMap extends TContractMapping<TMap>, TContract extends typeof ContractFactory<any, any>>(
-  contractMap: CCMap,
-  contractCtr: TContract,
-  connect: Stream<TProvider>,
-  contractName: keyof TMap
-) {
-
-  // @ts-ignore
-  type RetContract = IContractRunner<ReturnType<TContract['connect']>, TMap, TProvider>
-
-  const contract: Stream<RetContract> = filterNull(awaitPromises(map(async (provider): Promise<RetContract | null> => {
-    if (!provider) {
-      return null
+    if (!contractAddressMap) {
+      throw new Error(`Contract address not found for chain ${client.chain.id}`)
     }
 
-    const network = await provider.getNetwork()
-    const chainId = Number(network.chainId)
-    const contractMapping: any = getMappedValue(chainId, contractMap)
-    const address = getMappedValue(contractMapping, contractName)
+    const address = contractMap[client.chain.id as TKey1][contractName] as TAddress
+    return { client, address, abi }
+  }, fromStream(client_))
+  return newLocal
+}
+
+export const connectContract = <
+  TAddress extends Address,
+  TTransport extends Transport,
+  TChain extends Chain,
+  TIncludeActions extends true,
+  TPublicClient extends PublicClient<TTransport, TChain, TIncludeActions>,
+  TAbi extends Abi,
+>(client_: Stream<TPublicClient> | TPublicClient, address_: TAddress | Stream<TAddress>, abi: TAbi): Stream<ContractFunctionConfig<TAbi, TAddress, TTransport, TChain, TIncludeActions, TPublicClient>> => {
+  return combineArray((client, address) => {
+    return { client, address, abi }
+  }, fromStream(client_), fromStream(address_))
+}
 
 
-    // @ts-ignore
-    const contract = contractCtr.connect(address, provider instanceof BrowserProvider ? provider.getSigner() : provider)
+function fromStream<T>(maybeStream: T | Stream<T>): Stream<T> {
+  return isStream(maybeStream) ? maybeStream : now(maybeStream)
+}
 
-    return { contract, address, contractMapping, chainId, provider }
-  }, connect)))
 
-  const run = <R>(op: Op<RetContract, Promise<R>>) => {
-    const switchOp = switchLatest(map(c => {
-      const internalOp = awaitPromises(op(now(c)))
-      const recoverOpError = recoverWith(err => {
-        console.warn(err)
-        return empty()
-      }, internalOp)
+export function combineState<A extends object, K extends keyof A>(state: StreamInput<A>): Stream<A> {
+  const entries = Object.entries(state) as [keyof A, Stream<A[K] | A[K]>][]
+  const streams = entries.map(([_, stream]) => {
+    return isStream(stream) ? stream : now(stream)
+  })
 
-      return recoverOpError
-    }, contract))
+  const combined = combineArray((...arrgs: A[K][]) => {
+    return arrgs.reduce((seed, val, idx) => {
+      const key = entries[idx][0]
+      seed[key] = val
 
-    return switchOp
+      return seed
+    }, {} as A)
+  }, ...streams)
+
+  return combined
+}
+
+type onlyArray<T> = T extends readonly any[] ? T : never
+
+
+export const contractReader = <
+  TAddress extends Address,
+  TTransport extends Transport,
+  TChain extends Chain,
+  TIncludeActions extends true,
+  TPublicClient extends PublicClient<TTransport, TChain, TIncludeActions>,
+  TAbi extends Abi,
+>(params_: Stream<ContractFunctionConfig<TAbi, TAddress, TTransport, TChain, TIncludeActions, TPublicClient>>) =>
+  <TFunctionName extends string, TArgs extends AbiParametersToPrimitiveTypes<ExtractAbiFunction<TAbi, TFunctionName>['inputs']>>(functionName: InferFunctionName<TAbi, TFunctionName, 'view' | 'pure'>, ...args_: onlyArray<TArgs> | onlyArray<StreamInputArray<onlyArray<TArgs>>>): Stream<ReadContractReturnType<TAbi, TFunctionName>> => {
+
+    const mapState = switchLatest(map(({ abi, address, client }) => {
+      const resolveArgs: Stream<onlyArray<TArgs>> = isStream(args_[0]) ? combineArray((..._args) => _args, ...args_ as any) : now(args_ as any) as any
+      return awaitPromises(map(args => {
+        return client.readContract({ abi, address, functionName, args } as any)
+      }, resolveArgs))
+    }, params_))
+
+    return mapState
   }
 
 
-  // @ts-ignore
-  const _listen = <T extends RetContract['contract'], Name extends keyof T['filters'], ET extends GetEventFilterType<T, Name>>(name: Name extends string ? Name : never): Stream<ET & { __event: Event }> => switchLatest(map(res => {
-    if (res === null) {
-      return never()
-    }
+export const listenContract = <
+  TAddress extends Address,
+  TAbi extends Abi,
+  TTransport extends Transport,
+  TChain extends Chain,
+  TIncludeActions extends true,
+  TPublicClient extends PublicClient<TTransport, TChain, TIncludeActions>,
+>(params_: Stream<ContractFunctionConfig<TAbi, TAddress, TTransport, TChain, TIncludeActions, TPublicClient>>) =>
+  <TEventName extends string, TLogs = Log<bigint, number, ExtractAbiEvent<TAbi, TEventName>>>(eventName: InferEventName<TAbi, TEventName>, args?: GetEventArgs<TAbi, TEventName>): Stream<TLogs> => {
 
-    // @ts-ignore
-    return multicast(listen(res, name))
-  }, contract))
+    const mapState = switchLatest(map(({ abi, address, client }) => {
+      const eventStream = fromCallback(emitCb => {
+        const listener = client.watchContractEvent<TAbi, TEventName>({
+          abi, address,
+          eventName, args,
+          onLogs: logs => {
+            for (const log in logs) {
+              if (Object.prototype.hasOwnProperty.call(logs, log)) {
+                emitCb(log)
+              }
+            }
+          }
+        })
+
+        return listener
+      })
+
+      return eventStream
+    }, params_))
+
+    return mapState
+  }
 
 
-  return { run, contract, listen: _listen }
+// export const simulateContract = <
+//   TAddress extends Address,
+//   TAbi extends Abi,
+//   TTransport extends Transport,
+//   TChain extends Chain,
+//   TChainOverride extends Chain | undefined = undefined,
+//   TPublicClient extends PublicClient<TTransport, TChain, true> = PublicClient<TTransport, TChain, true>,
+
+// >(params_: Stream<ContractFunctionConfig<TAbi, TAddress, TTransport, TChain, true, TPublicClient>>) =>
+//   <TFunctionName extends string>(simParams: Omit<SimulateContractParameters<TAbi, TFunctionName, TChain, TChainOverride>, 'address' | 'abi'>): Stream<Promise<SimulateContractReturnType<TAbi, TFunctionName, TChain, TChainOverride>>> => {
+
+//     const mapState = map(({ abi, address, client }) => {
+//       const simReq = client.simulateContract<TAbi, TFunctionName, TChainOverride>({ address, abi, ...simParams } as any)
+//       return simReq
+//     }, params_)
+
+
+//     return mapState
+//   }
+
+export const waitForTransactionReceipt = async<
+  TTransport extends Transport,
+  TChain extends Chain,
+>(client: PublicClient<TTransport, TChain>, hash_: Promise<Hash> | Hash): Promise<TransactionReceipt> => {
+  const hash = await hash_
+  const req = client.waitForTransactionReceipt({ hash })
+  return req
 }
 
+export const simulateContract = <
+  TFunctionName extends string,
 
+  TAddress extends Address,
+  TAbi extends Abi,
+  TTransport extends Transport,
+  TChain extends Chain,
+  TChainOverride extends Chain | undefined = undefined,
+  TPublicClient extends PublicClient<TTransport, TChain, true> = PublicClient<TTransport, TChain, true>,
+>(params_: ContractFunctionConfig<TAbi, TAddress, TTransport, TChain, true, TPublicClient>, simParams: Omit<SimulateContractParameters<TAbi, TFunctionName, TChain, TChainOverride>, 'address' | 'abi'>): Promise<SimulateContractReturnType<TAbi, TFunctionName, TChain, TChainOverride>> => {
+
+  const { abi, address, client } = params_
+
+  const sim = client.simulateContract<TAbi, TFunctionName, TChainOverride>({ address, abi, ...simParams } as any)
+
+  return sim
+}
 
 interface ISwitchOpCurry2 {
   <T, R>(s: Stream<T>, oop: Op<T, Promise<R>>): Stream<R>
@@ -124,27 +213,6 @@ export const switchOp: ISwitchOpCurry2 = curry2(function <T, R>(s: Stream<T>, oo
 })
 
 
-
-
-export function readContract<T extends string, TContract extends typeof ContractFactory<any, any>, TProvider extends Provider>(
-  contractCtr: TContract,
-  provider: Stream<TProvider>,
-  address: T
-) {
-  // @ts-ignore
-  type RetContract = ReturnType<TContract['connect']>
-
-  const contract = awaitPromises(map(async (provider): Promise<RetContract> => {
-    const signerOrProvider = provider instanceof BrowserProvider ? provider.getSigner() : provider
-    // @ts-ignore
-    const contract = contractCtr.connect(address, signerOrProvider)
-
-    return contract
-  }, provider))
-
-
-  return contract
-}
 
 
 
@@ -204,6 +272,7 @@ export interface ILabItemDisplay {
   background?: boolean
   showFace?: boolean
 }
+
 const tupleLength = labAttributeTuple.length
 
 export const $labItem = ({ id, $container = $defaultLabItem, background = true, showFace = false }: ILabItemDisplay): $Node => {
@@ -236,18 +305,16 @@ export const $labItemAlone = (id: number, size = 80) => {
     style({})
   )(
     tap(async ({ element }) => {
-      const svgParts = (await import("@gambitdao/gbc-middleware/src/mappings/svgParts")).default
-
       // @ts-ignore
       element.innerHTML = svgParts[state][id]
     })
   )()
 }
 
-export async function getTokenSlots(token: BigNumberish, closet: Closet): Promise<IBerryLabItems> {
-  const items = await closet.get(token, 0, 2)
-  return getBerryFromItems(items.map(it => Number(it)))
-}
+// export async function getTokenSlots(token: bigint, closet: Closet): Promise<IBerryLabItems> {
+//   const items = await closet.get(token, 0, 2)
+//   return getBerryFromItems(items.map(it => Number(it)))
+// }
 
 export function getBerryFromItems(items: number[]) {
   const seedObj = { background: 0, badge: 0, custom: 0, }

@@ -6,7 +6,6 @@ import { $alertIcon, $Tooltip } from "@gambitdao/ui-components"
 import { constant, fromPromise, map, never, now, recoverWith, skipRepeats, startWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
 import { $ButtonCore, $defaultButtonCore, IButtonCore } from "./$ButtonCore"
-import { ContractTransaction, ContractTransactionResponse } from "ethers"
 
 
 

@@ -1,13 +1,12 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "useDefineForClassFields": true,
-    "module": "ESNext",
+    "target": "ESNext",
     "lib": [
-      "ES2020",
       "DOM",
-      "DOM.Iterable"
+      "DOM.Iterable",
+      "ESNext"
     ],
+    "module": "ESNext",
     "skipLibCheck": true,
     /* Bundler mode */
     "moduleResolution": "bundler",
@@ -15,10 +14,12 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     /* Linting */
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    // "noUnusedLocals": true,
+    // "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
   "include": [
@@ -29,9 +30,6 @@
       "path": "../ui-components"
     },
     {
-      "path": "../contracts/tsconfig.typechain.json"
-    },
-    {
       "path": "../middleware"
     },
     {
@@ -39,6 +37,9 @@
     },
     {
       "path": "../@gambitdao-wallet-link"
+    },
+    {
+      "path": "./tsconfig.node.json"
     }
   ]
 }

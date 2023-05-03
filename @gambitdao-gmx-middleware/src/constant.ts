@@ -1,6 +1,7 @@
 import { CHAIN } from "@gambitdao/const"
 import { ARBITRUM_ADDRESS } from "./address/arbitrum.js"
 import { AVALANCHE_ADDRESS } from "./address/avalanche.js"
+import { Address } from "viem"
 
 export const AddressZero = "0x0000000000000000000000000000000000000000" as const
 
@@ -28,26 +29,29 @@ export const MARGIN_FEE_BASIS_POINTS = 10n
 export const FUNDING_RATE_PRECISION = 1000000n
 
 
-export enum intervalTimeMap {
-  SEC = 1,
-  MIN = 60,
-  MIN5 = 300,
-  MIN15 = 900,
-  MIN30 = 1800,
-  MIN60 = 3600,
-  HR2 = 7200,
-  HR4 = 14400,
-  HR8 = 28800,
-  HR24 = 86400,
-  DAY7 = 604800,
-  MONTH = 2628000,
-  MONTH2 = 5256000,
-  YEAR = 31536000
-}
+export const intervalTimeMap = {
+  SEC: 1,
+  MIN: 60,
+  MIN5: 300,
+  MIN15: 900,
+  MIN30: 1800,
+  MIN60: 3600,
+  HR2: 7200,
+  HR4: 14400,
+  HR8: 28800,
+  HR24: 86400,
+  DAY7: 604800,
+  MONTH: 2628000,
+  MONTH2: 5256000,
+  YEAR: 31536000
+} as const
 
+export type IntervalTime = typeof intervalTimeMap[keyof typeof intervalTimeMap]
 
 
 export const TRADE_CONTRACT_MAPPING = {
   [CHAIN.ARBITRUM]: ARBITRUM_ADDRESS,
   [CHAIN.AVALANCHE]: AVALANCHE_ADDRESS
-}
+} as const
+
+

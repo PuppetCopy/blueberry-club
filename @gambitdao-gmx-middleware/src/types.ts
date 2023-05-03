@@ -1,53 +1,20 @@
 import { CHAIN } from "@gambitdao/const"
-import { ARBITRUM_ADDRESS, ARBITRUM_ADDRESS_INDEX, ARBITRUM_ADDRESS_STABLE } from "./address/arbitrum.js"
-import { AVALANCHE_ADDRESS, AVALANCHE_ADDRESS_INDEX, AVALANCHE_ADDRESS_STABLE } from "./address/avalanche.js"
+import { Address, CallParameters, Chain, GetEventArgs, GetFunctionArgs, InferEventName, InferFunctionName, PublicClient, ReadContractParameters, SimulateContractParameters, Transport, WatchContractEventParameters, WatchEventParameters } from "viem"
+import { Abi, AbiEvent, AbiStateMutability, Narrow } from "abitype"
+import { ARBITRUM_ADDRESS_INDEX, ARBITRUM_ADDRESS_STABLE, ArbitrumAddress } from "./address/arbitrum.js"
+import { AVALANCHE_ADDRESS_INDEX, AVALANCHE_ADDRESS_STABLE, AvalancheAddress } from "./address/avalanche.js"
 import { TOKEN_SYMBOL } from "./address/symbol.js"
-import { intervalTimeMap } from "./constant.js"
+import { IntervalTime } from "./constant.js"
+import { Stream } from "@most/types"
 
-export type Address = string
-export type ITokenTrade = ITokenIndex | ITokenStable
 
-export type ITokenInput = ITokenTrade | "0x0000000000000000000000000000000000000000"
 export type ITokenIndex = AVALANCHE_ADDRESS_INDEX | ARBITRUM_ADDRESS_INDEX
 export type ITokenStable = AVALANCHE_ADDRESS_STABLE | ARBITRUM_ADDRESS_STABLE
 
-export type ITokenPricefeed = ITokenTrade | ARBITRUM_ADDRESS.GLP | AVALANCHE_ADDRESS.GLP | ARBITRUM_ADDRESS.GMX | AVALANCHE_ADDRESS.GMX
+export type ITokenTrade = ITokenIndex | ITokenStable
+export type ITokenInput = ITokenTrade | "0x0000000000000000000000000000000000000000"
 
-export interface IGmxContractAddress {
-  NATIVE_TOKEN: string
-
-  Vault: string
-  VaultPriceFeed: string
-  Router: string
-  Reader: string
-  GlpManager: string
-  RewardRouter: string
-  RewardReader: string
-
-  GLP: string
-  GMX: string
-  ES_GMX: string
-  BN_GMX: string
-  USDG: string
-
-  StakedGmxTracker: string
-  BonusGmxTracker: string
-  FeeGmxTracker: string
-  StakedGlpTracker: string
-  FeeGlpTracker: string
-  StakedGmxDistributor: string
-  StakedGlpDistributor: string
-
-  GmxVester: string
-  GlpVester: string
-
-  OrderBook: string
-  OrderBookReader: string
-
-  FastPriceFeed: string
-  PositionRouter: string
-  PositionManager: string
-}
+export type ITokenPricefeed = ITokenTrade | ArbitrumAddress['GLP'] | AvalancheAddress['GLP'] | ArbitrumAddress['GMX'] | AvalancheAddress['GMX']
 
 
 export interface ITokenDescription {
@@ -92,7 +59,7 @@ export type IndexedType<T extends string> = TypeName<T> & IEntityIndexed
 
 export interface IAbstractPositionIdentity {
   indexToken: ITokenIndex
-  collateralToken: ITokenIndex
+  collateralToken: ITokenIndex | ITokenStable
   account: Address
   isLong: boolean
 }
@@ -152,7 +119,7 @@ export interface IPositionClose extends IAbstractPosition, IndexedType<'ClosePos
 }
 
 export interface KeeperIncreaseRequest {
-  account: string
+  account: Address
   path: string[]
   indexToken: string
   amountIn: bigint
@@ -168,7 +135,7 @@ export interface KeeperIncreaseRequest {
 
 
 export interface KeeperDecreaseRequest {
-  account: string
+  account: Address
   path: string[]
   indexToken: string
   collateralDelta: bigint
@@ -213,7 +180,7 @@ export type ITrade = ITradeSettled | ITradeOpen
 
 export interface IStake extends IndexedType<"Stake"> {
   id: string
-  account: string
+  account: Address
   contract: string
   token: string
   amount: bigint
@@ -228,7 +195,7 @@ export interface IAccountSummary {
   cumCollateral: bigint
   avgCollateral: bigint
   avgSize: bigint
-  account: string
+  account: Address
   fee: bigint
   winCount: number
   lossCount: number
@@ -294,11 +261,11 @@ export type IRequestPageApi = IRequestPagePositionApi & IChainParamApi & IReques
 
 
 
-export type IRequestAccountApi = IChainParamApi & { account: string }
+export type IRequestAccountApi = IChainParamApi & { account: Address }
 
 export type IRequestPriceTimelineApi = IChainParamApi & IRequestTimerangeApi & { tokenAddress: ITokenPricefeed }
 export type IRequestAccountHistoricalDataApi = IChainParamApi & IRequestAccountApi & IRequestTimerangeApi
-export type IRequestPricefeedApi = IChainParamApi & IRequestTimerangeApi & { interval: intervalTimeMap, tokenAddress: ITokenPricefeed }
+export type IRequestPricefeedApi = IChainParamApi & IRequestTimerangeApi & { interval: IntervalTime, tokenAddress: ITokenPricefeed }
 export type IRequestTradeListApi = IChainParamApi & IRequestPagePositionApi & IRequestSortApi<keyof ITradeAbstract> & { status: TradeStatus }
 
 
@@ -308,4 +275,25 @@ export interface IRequestGraphEntityApi extends IChainParamApi, IIdentifiableEnt
 
 export interface IResponsePageApi<T> extends IRequestPagePositionApi {
   page: T[]
+}
+
+export type StreamInputArray<T extends readonly unknown[]> = {
+  [P in keyof T]: Stream<T[P]>;
+}
+
+export type StreamInput<T> = {
+  [P in keyof T]: Stream<T[P]> | T[P]
+}
+
+export type ContractFunctionConfig<
+  TAbi extends Abi,
+  TAddress,
+  TTransport extends Transport,
+  TChain extends Chain,
+  TIncludeActions extends boolean,
+  TPublicClient extends PublicClient<TTransport, TChain, TIncludeActions>,
+> = {
+  abi: Narrow<TAbi>
+  address: TAddress
+  client: TPublicClient
 }

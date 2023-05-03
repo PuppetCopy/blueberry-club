@@ -3,9 +3,10 @@ import { $row } from "@aelea/ui-components"
 import { tap } from "@most/core"
 // @ts-ignore
 import jazzicon from 'jazzicon'
+import { Address } from "viem"
 
 export interface IJazzicon {
-  address: string
+  address: Address
   $container?: NodeComposeFn<$Node>
 }
 

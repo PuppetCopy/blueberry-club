@@ -31,6 +31,8 @@ import { $discoverIdentityDisplay } from "../components/$AccountProfile"
 import { pallete } from "@aelea/ui-components-theme"
 import { $CompetitionRoiDeprecated } from "./competition/$RoiDeprecated"
 import { CHAIN } from "@gambitdao/const"
+import { Address } from "viem"
+
 
 
 const popStateEvent = eventElementTarget('popstate', window)
@@ -123,10 +125,7 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
 
 
   const walletLink = initWalletLink(
-    {
-      globalProviderMap,
-      defaultGlobalChain: CHAIN.ARBITRUM
-    },
+    globalProviderMap,
     walletStore.storeReplay(walletChange),
     chainStore.storeReplay(changeNetwork)
   )
@@ -202,7 +201,7 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
               {
                 run(sink, scheduler) {
                   const urlFragments = document.location.pathname.split('/')
-                  const account = urlFragments[urlFragments.length - 2].toLowerCase()
+                  const account = urlFragments[urlFragments.length - 2].toLowerCase() as Address
 
                   return $Profile({
                     $accountDisplay: $row(layoutSheet.spacing, style({ flex: 1, alignItems: 'center', placeContent: 'center', zIndex: 1 }))(

@@ -54,8 +54,8 @@ export const $ProfileConnected = (config: IAccount) => component((
 ) => {
 
   const $title = $text(style({ fontWeight: 'bold', fontSize: '1.55em' }))
-  const tradeReader = connectTradeReader(config.walletLink.provider)
-  const lab = connectLab(config.walletLink.provider)
+  const tradeReader = connectTradeReader(config.walletLink.client)
+  const lab = connectLab(config.walletLink.client)
 
   const requestAccountOpenTradeList: Stream<IRequestAccountTradeListApi> = filterNull(map(w3p => {
     if (w3p === null) {
@@ -83,7 +83,7 @@ export const $ProfileConnected = (config: IAccount) => component((
           return $Popover({
             $target: $row(layoutSheet.spacing, style({ flex: 1, alignItems: 'center', placeContent: 'center', zIndex: 1 }))(
               $discoverIdentityDisplay({
-                address: w3p.address,
+                address: w3p.account.address,
                 $container: $defaultBerry(style({ minWidth: '125px' })),
                 labelSize: '1.5em'
               }),
@@ -102,7 +102,7 @@ export const $ProfileConnected = (config: IAccount) => component((
 
             ),
             $popContent: map(() => {
-              const connect = connectLab(config.walletLink.provider)
+              const connect = connectLab(config.walletLink.client)
 
 
               return $column(layoutSheet.spacingSmall, style({ width: '300px' }))(

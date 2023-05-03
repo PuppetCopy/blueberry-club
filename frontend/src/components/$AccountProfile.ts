@@ -7,10 +7,11 @@ import { $jazzicon } from "../common/$avatar"
 import { blueberrySubgraph, IOwner } from "@gambitdao/gbc-middleware"
 import { $berryByToken } from "../logic/common"
 import { awaitPromises, empty, map, now, switchLatest } from "@most/core"
+import { Account, Address } from "viem"
 
 
 export interface IAccountPreview {
-  address: string
+  address: Address
   labelSize?: string
   showAddress?: boolean
   $container?: NodeComposeFn<$Node>
@@ -127,7 +128,7 @@ export const $disconnectedWalletDisplay = (avatarSize = 38) => {
     $wrapper(style({ display: 'flex', border: `1px solid ${pallete.foreground}`, placeContent: 'center', alignItems: 'center' }))(
       $text(style({ fontWeight: 800, color: pallete.foreground }))('?')
     ),
-    $column(style({ whiteSpace: 'nowrap', paddingRight: '8px' }))(
+    $column(style({ whiteSpace: 'nowrap', fontSize: '16px' }))(
       $text(style({ fontSize: '.75em' }))('0x----'),
       $text(style({ fontSize: '1em' }))('----')
     )

@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "esModuleInterop": true,
     "noUnusedLocals": false,
     "forceConsistentCasingInFileNames": true,
     "declarationMap": true,

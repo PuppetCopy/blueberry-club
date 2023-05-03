@@ -6,6 +6,7 @@ import { $trash } from "./$icons"
 import { IToken, LAB_CHAIN } from "@gambitdao/gbc-middleware"
 import { $anchor, $calendar, $caretDblDown, $ethScan } from "@gambitdao/ui-components"
 import { $berryByToken } from "../logic/common"
+import { Address, Transaction } from "viem"
 
 export const $TrashBtn = $ButtonIcon($trash)
 
@@ -110,12 +111,12 @@ export const $iconCircular = ($iconPath: $Branch<SVGPathElement>, backgroundColo
 
 
 
-export const $accountRef = (id: string) => $anchor(attr({ href: getAccountExplorerUrl(LAB_CHAIN, id) }))(
+export const $accountRef = (id: Address) => $anchor(attr({ href: getAccountExplorerUrl(LAB_CHAIN, id) }))(
   $text(style({}))(`${shortenAddress(id)}`)
 )
 
 
-export const $accountIconLink = (address: string) => $anchor(attr({ href: getAccountExplorerUrl(LAB_CHAIN, address) }))(
+export const $accountIconLink = (address: Address) => $anchor(attr({ href: getAccountExplorerUrl(LAB_CHAIN, address) }))(
   $icon({ $content: $ethScan, width: '16px', viewBox: '0 0 24 24', svgOps: style({ margin: '3px 4px 0 0' }) }),
   $text(style({}))(` ${shortenAddress(address)} `),
 )

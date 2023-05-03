@@ -3,32 +3,71 @@ import { $node, $text, component, eventElementTarget, style, styleInline } from 
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, observer, screenUtils } from "@aelea/ui-components"
 import {
-  AddressZero, formatFixed, intervalTimeMap, IPricefeed, IRequestPricefeedApi, ITrade, unixTimestampNow, ITradeOpen, BASIS_POINTS_DIVISOR, getNextAveragePrice,
-  getNextLiquidationPrice, getMarginFees, STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, TAX_BASIS_POINTS,
-  getDenominator, USD_PERCISION, getPositionKey,
-  getPnL, ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE, getFundingFee, filterNull, getLiquidationPrice,
-  ITokenIndex, ITokenStable, ITokenInput, TradeStatus, LIMIT_LEVERAGE, div, TRADE_CONTRACT_MAPPING, getTokenAmount, abs,
-  IRequestAccountApi, CHAIN_ADDRESS_MAP, getSafeMappedValue, getTokenDescription, getFeeBasisPoints, getAdjustedDelta, formatReadableUSD, IPositionDecrease, IPositionIncrease, readableDate, timeSince, readableNumber, formatToBasis,
+  abi,
+  abs,
+  AddressZero,
+  ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE,
+  BASIS_POINTS_DIVISOR,
+  CHAIN_ADDRESS_MAP,
+  div,
+  filterNull,
+  formatFixed,
+  formatReadableUSD,
+  formatToBasis,
+  getAdjustedDelta,
+  getDenominator,
+  getFeeBasisPoints,
+  getFundingFee,
+  getLiquidationPrice,
+  getMarginFees,
+  getNativeTokenDescription,
+  getNextAveragePrice,
+  getNextLiquidationPrice,
+  getPnL,
+  getPositionKey,
+  getSafeMappedValue,
+  getTokenAmount,
+  getTokenDescription,
+  IntervalTime,
+  intervalTimeMap,
+  IPositionDecrease, IPositionIncrease,
+  IPricefeed,
+  IRequestAccountApi,
+  IRequestPricefeedApi,
+  ITokenIndex,
+  ITokenInput,
+  ITokenStable,
+  ITrade,
+  ITradeOpen,
+  LIMIT_LEVERAGE,
+  readableDate,
+  readableNumber,
+  STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, TAX_BASIS_POINTS,
+  timeSince,
+  TRADE_CONTRACT_MAPPING,
+  TradeStatus,
+  unixTimestampNow,
+  USD_PERCISION,
 } from "@gambitdao/gmx-middleware"
 
-import { map, mergeArray, multicast, scan, skipRepeats, switchLatest, empty, now, awaitPromises, snapshot, zip, combine, constant, filter, take, skipRepeatsWith, debounce } from "@most/core"
 import { colorAlpha, pallete, theme } from "@aelea/ui-components-theme"
-import { $ButtonToggle, $defaultTableContainer, $infoLabeledValue, $infoTooltip, $IntermediatePromise, $spinner, $Table, $txHashRef, invertColor } from "@gambitdao/ui-components"
-import { CandlestickData, LineStyle, Time } from "lightweight-charts"
-import { Stream } from "@most/types"
-import { connectTradeReader, getErc20Balance, IPositionGetter, latestPriceFromExchanges } from "../logic/contract/trade"
-import { $TradeBox, ITradeFocusMode, ITradeState, RequestTradeQuery } from "../components/trade/$TradeBox"
-import { $CandleSticks } from "../components/chart/$CandleSticks"
-import { getNativeTokenDescription, resolveAddress } from "../logic/utils"
-import { BrowserStore } from "../logic/store"
-import { getContractAddress } from "../logic/common"
-import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
-import { ERC20__factory } from "@gambitdao/gbc-contracts"
-import { $Dropdown } from "../components/form/$Dropdown"
-import { $ButtonSecondary } from "../components/form/$Button"
-import { $caretDown } from "../elements/$icons"
 import { CHAIN } from "@gambitdao/const"
-import { BrowserProvider, ContractTransactionResponse } from "ethers"
+import { $ButtonToggle, $defaultTableContainer, $infoLabeledValue, $infoTooltip, $IntermediatePromise, $spinner, $Table, $txHashRef, invertColor } from "@gambitdao/ui-components"
+import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
+import { awaitPromises, combine, constant, debounce, empty, filter, map, mergeArray, multicast, now, scan, skipRepeats, skipRepeatsWith, snapshot, switchLatest, take, zip } from "@most/core"
+import { Stream } from "@most/types"
+import { erc20Abi } from "abitype/test"
+import { CandlestickData, LineStyle, Time } from "lightweight-charts"
+import { $CandleSticks } from "../components/chart/$CandleSticks"
+import { $ButtonSecondary } from "../components/form/$Button"
+import { $Dropdown } from "../components/form/$Dropdown"
+import { $TradeBox, ITradeFocusMode, ITradeState, RequestTradeQuery } from "../components/trade/$TradeBox"
+import { $caretDown } from "../elements/$icons"
+import { connectContract, contractReader, getMappedValue, listenContract } from "../logic/common"
+import { connectTradeReader, getErc20Balance, IPositionGetter, latestPriceFromExchanges } from "../logic/contract/trade"
+import { BrowserStore } from "../logic/store"
+import { resolveAddress } from "../logic/utils"
+import { TransactionReceipt } from "viem"
 
 
 export interface ITradeComponent {
@@ -50,7 +89,7 @@ export interface ITradeComponent {
 
 
 type RequestTrade = {
-  ctx: ContractTransactionResponse
+  ctx: TransactionReceipt
   state: ITradeState
   acceptablePrice: bigint
 }
@@ -68,7 +107,7 @@ const timeFrameLablMap = {
 
 
 export const $Trade = (config: ITradeComponent) => component((
-  [selectTimeFrame, selectTimeFrameTether]: Behavior<intervalTimeMap, intervalTimeMap>,
+  [selectTimeFrame, selectTimeFrameTether]: Behavior<IntervalTime, IntervalTime>,
   [changeRoute, changeRouteTether]: Behavior<string, string>,
 
   [walletChange, walletChangeTether]: Behavior<IWalletName, IWalletName>,
@@ -98,9 +137,13 @@ export const $Trade = (config: ITradeComponent) => component((
 
 ) => {
 
+  const vaultConfig = connectContract(config.walletLink.client, getMappedValue(TRADE_CONTRACT_MAPPING, 'Vault', config.walletLink.client), abi.vault)
+  const vaultListener = listenContract(vaultConfig)
+  const vaultReader = contractReader(vaultConfig)
 
-  const tradeReader = connectTradeReader(config.walletLink.provider)
-  const globalTradeReader = connectTradeReader(config.walletLink.defaultProvider)
+
+  const tradeReader = connectTradeReader(config.walletLink.client)
+  const globalTradeReader = connectTradeReader(config.walletLink.defaultClient)
 
   const executionFee = replayLatest(multicast(tradeReader.executionFee))
 
@@ -171,26 +214,20 @@ export const $Trade = (config: ITradeComponent) => component((
   }, combineObject({ isLong, indexToken, collateralTokenReplay }))
 
 
-  const walletBalance = replayLatest(multicast(awaitPromises(combine(async (token, provider) => {
-    if (provider instanceof BrowserProvider) {
-      const balanceAmount = await getErc20Balance(token, provider)
-
-      return balanceAmount
-    }
-
-    return 0n
-  }, inputToken, config.walletLink.provider))))
+  const walletBalance = replayLatest(multicast(awaitPromises(map(params => {
+    return getErc20Balance(params.inputToken, params.wallet.account, params.client)
+  }, combineObject({ inputToken, wallet: config.walletLink.wallet, client: config.walletLink.client })))))
 
 
-  const inputTokenPrice = skipRepeats(tradeReader.getLatestPrice(inputToken))
+  const inputTokenPrice = skipRepeats(tradeReader.getLatestPrice(config.walletLink.network, inputToken))
   const indexTokenPrice = skipRepeats(multicast(switchLatest(map(token => {
     return observer.duringWindowActivity(latestPriceFromExchanges(token))
   }, indexToken))))
-  const collateralTokenPrice = skipRepeats(tradeReader.getLatestPrice(collateralToken))
+  const collateralTokenPrice = skipRepeats(tradeReader.getLatestPrice(config.walletLink.network, collateralToken))
 
 
   const account = map(signer => {
-    return signer ? signer.address : null
+    return signer ? signer.account.address : null
   }, config.walletLink.wallet)
 
 
@@ -228,13 +265,18 @@ export const $Trade = (config: ITradeComponent) => component((
     keeperCancelDecrease,
   ]))
 
-  const positionChange: Stream<IPositionGetter> = multicast(tradeReader.vaultReader.run(combine(async (pos, vault) => {
-    const positionAbstract = await vault.positions(pos.key)
-    const [size, collateral, averagePrice, entryFundingRate, reserveAmount, realisedPnl, lastIncreasedTime] = positionAbstract
+  const positions = vaultReader('positions', map(pos => pos.key, positionKey))
+
+  const positionChange: Stream<IPositionGetter> = multicast(map(params => {
+    const [size, collateral, averagePrice, entryFundingRate, reserveAmount, realisedPnl, lastIncreasedTime] = params.positions
     const lastIncreasedTimeBn = lastIncreasedTime
 
-    return {
-      ...pos,
+    const ret: IPositionGetter = {
+      account: params.positionKey.account,
+      isLong: params.positionKey.isLong,
+      key: params.positionKey.key,
+      indexToken: params.positionKey.indexToken,
+      collateralToken: params.positionKey.collateralToken,
       size: size,
       collateral: collateral,
       averagePrice: averagePrice,
@@ -243,13 +285,13 @@ export const $Trade = (config: ITradeComponent) => component((
       realisedPnl: realisedPnl,
       lastIncreasedTime: lastIncreasedTimeBn,
     }
-  }, positionKey)))
-
+    return ret
+  }, combineObject({ positionKey, positions })))
 
 
   const updatePostion = filterNull(snapshot(
     (pos, update) => {
-      if (pos.key !== update.key) {
+      if (pos.key !== update.args.key) {
         return null
       }
 
@@ -266,7 +308,7 @@ export const $Trade = (config: ITradeComponent) => component((
     updatePostion,
     filterNull(snapshot(
       (pos, update): IPositionGetter | null => {
-        if (pos.key !== update.key) {
+        if (pos.key !== update.args.key) {
           return null
         }
 
@@ -287,7 +329,7 @@ export const $Trade = (config: ITradeComponent) => component((
     ))
   ])))
 
-  const inputTokenWeight = tradeReader.getTokenWeight(inputToken)
+  const inputTokenWeight = vaultReader('tokenWeights', inputToken)
   const inputTokenDebtUsd = tradeReader.getTokenDebtUsd(inputToken)
 
   const inputTokenDescription = combineArray((chain, address) => address === AddressZero ? getNativeTokenDescription(chain) : getTokenDescription(address), config.walletLink.network, inputToken)
@@ -343,8 +385,8 @@ export const $Trade = (config: ITradeComponent) => component((
       params.totalTokenWeight
     )
     const feeBps1 = getFeeBasisPoints(
-      params.collateralTokenPoolInfo.usdgAmount,
-      params.collateralTokenPoolInfo.weight,
+      params.collateralTokenPoolInfo.usdgAmounts,
+      params.collateralTokenPoolInfo.tokenWeights,
       usdgAmount,
       swapFeeBasisPoints,
       taxBasisPoints,
@@ -445,20 +487,26 @@ export const $Trade = (config: ITradeComponent) => component((
         return false
       }
 
-      const c = ERC20__factory.connect(params.inputToken, await params.wallet.signer)
 
       if (params.inputToken === AddressZero || !params.isIncrease) {
         return true
       }
 
-      const contractAddress = getContractAddress(TRADE_CONTRACT_MAPPING, params.wallet.chain, 'Router')
+      const contractAddress = getMappedValue(TRADE_CONTRACT_MAPPING, 'Router', params.wallet.chain)
 
       if (contractAddress === null) {
         return false
       }
 
       try {
-        const allowedSpendAmount = await c.allowance(params.wallet.address, contractAddress)
+        const owner = params.wallet.account.address
+        const allowedSpendAmount = await params.wallet.readContract({
+          address: owner,
+          abi: erc20Abi,
+          functionName: 'allowance',
+          args: [owner, contractAddress]
+        })
+
         return allowedSpendAmount > collateralDeltaUsd
       } catch (err) {
         console.warn(err)
@@ -923,10 +971,10 @@ export const $Trade = (config: ITradeComponent) => component((
                         )
                       }
 
-
-                      const isIncrease = pos.state.isIncrease
                       const activePositionAdjustment = take(1, filter(ev => {
-                        return ev.key === pos.state.position.key
+                        const key = getPositionKey(ev.args.account, pos.state.isIncrease ? ev.args.path.slice(-1)[0] : ev.args.path[0], ev.args.indexToken, ev.args.isLong)
+
+                        return key === pos.state.position.key
                       }, adjustPosition))
 
                       return $row(layoutSheet.spacingSmall)(
@@ -938,12 +986,12 @@ export const $Trade = (config: ITradeComponent) => component((
                         switchLatest(mergeArray([
                           now($spinner),
                           map(req => {
-                            const isRejected = req.__event.event === 'CancelIncreasePosition' || req.__event.event === 'CancelDecreasePosition'
+                            const isRejected = req.eventName === 'CancelIncreasePosition' // || req.eventName === 'CancelDecreasePosition'
 
-                            const message = $text(`${isRejected ? `✖ ${formatReadableUSD(req.acceptablePrice)}` : `✔ ${formatReadableUSD(req.acceptablePrice)}`}`)
+                            const message = $text(`${isRejected ? `✖ ${formatReadableUSD(req.args.acceptablePrice)}` : `✔ ${formatReadableUSD(req.args.acceptablePrice)}`}`)
 
                             return $requestRow(
-                              $txHashRef(req.__event.transactionHash, w3p.chain, message),
+                              $txHashRef(req.transactionHash!, w3p.chain, message),
                               $infoTooltip('transaction was sent, keeper will execute the request, the request will either be executed or rejected'),
                             )
                           }, activePositionAdjustment),

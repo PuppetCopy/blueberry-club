@@ -18,6 +18,7 @@ import {
   formatToBasis,
   getAdjustedDelta,
   getDenominator,
+  getNativeTokenDescription,
   getPnL,
   getTokenAmount,
   getTokenDescription,
@@ -67,18 +68,16 @@ import {
   zip
 } from "@most/core"
 import { Stream } from "@most/types"
-import { ContractTransaction, ContractTransactionResponse, MaxUint256 } from "ethers"
 import { MouseEventParams } from "lightweight-charts"
 import { $Popover } from "../$Popover"
 import { $Slider } from "../$Slider"
 import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
 import { $card } from "../../elements/$common"
 import { $caretDown } from "../../elements/$icons"
-import { getContractAddress } from "../../logic/common"
+import { getMappedValue } from "../../logic/common"
 import { connectTradeReader, getErc20Balance, IPositionGetter, ITokenPoolInfo } from "../../logic/contract/trade"
-import { ERC20__factory } from "../../logic/gmx-contracts"
 import { BrowserStore } from "../../logic/store"
-import { getNativeTokenDescription, resolveAddress } from "../../logic/utils"
+import { resolveAddress } from "../../logic/utils"
 import { $Index } from "../../pages/competition/$Leaderboard"
 import { $ButtonPrimary, $ButtonPrimaryCtx, $ButtonSecondary, $defaultButtonPrimary, $defaultMiniButtonSecondary } from "../form/$Button"
 import { $defaultSelectContainer, $Dropdown } from "../form/$Dropdown"
@@ -214,7 +213,7 @@ export const $TradeBox = (config: ITradeBox) => component((
 
 ) => {
 
-  const tradeReader = connectTradeReader(config.walletLink.provider)
+  const tradeReader = connectTradeReader(config.walletLink.client)
 
   const { collateralDeltaUsd, collateralToken, focusMode, indexToken, inputToken, isIncrease, isLong, leverage, sizeDeltaUsd, slippage } = config.tradeConfig
   const {
@@ -268,7 +267,7 @@ export const $TradeBox = (config: ITradeBox) => component((
         const totalOut = collateralDelta + adjustedSizeDelta - fees
 
         const nextUsdgAmount = totalOut * getDenominator(USDG_DECIMALS) / USD_PERCISION
-        if (state.collateralTokenPoolInfo.usdgAmount + nextUsdgAmount > state.collateralTokenPoolInfo.maxUsdgAmount) {
+        if (state.collateralTokenPoolInfo.usdgAmounts + nextUsdgAmount > state.collateralTokenPoolInfo.maxUsdgAmounts) {
           return `${state.collateralTokenDescription.symbol} pool exceeded, you cannot receive ${state.inputTokenDescription.symbol}, switch to ${state.collateralTokenDescription.symbol} in the first input token switcher`
         }
       }
@@ -659,7 +658,7 @@ export const $TradeBox = (config: ITradeBox) => component((
               })({
                 select: changeInputTokenTether()
               })
-            }, config.walletLink.provider, config.walletLink.network)),
+            }, config.walletLink.client, config.walletLink.network)),
 
             switchMap(isIncrease => {
 
@@ -1037,7 +1036,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                   })({
                     select: changeCollateralTokenTether()
                   })
-                }, config.walletLink.provider, config.walletLink.network))
+                }, config.walletLink.client, config.walletLink.network))
 
               )
             }, config.tradeConfig.isLong, config.tradeConfig.indexToken)),
@@ -1103,8 +1102,8 @@ export const $TradeBox = (config: ITradeBox) => component((
           //   )
           // })({})),
           $$display: map(w3p => {
-            const routerContractAddress = getContractAddress(TRADE_CONTRACT_MAPPING, w3p.chain, 'Router')
-            const positionRouterAddress = getContractAddress(TRADE_CONTRACT_MAPPING, w3p.chain, 'PositionRouter')
+            const routerContractAddress = getMappedValue(TRADE_CONTRACT_MAPPING, w3p.chain, 'Router')
+            const positionRouterAddress = getMappedValue(TRADE_CONTRACT_MAPPING, w3p.chain, 'PositionRouter')
 
             return $column(style({ minHeight: '140px', flexDirection: screenUtils.isDesktopScreen ? 'column' : 'column-reverse' }))(
               $column(style({ padding: '16px', margin: 'auto 0', placeContent: 'space-between' }), styleInline(map(mode => ({ height: '140px', display: mode ? 'flex' : 'none' }), inTradeMode)))(

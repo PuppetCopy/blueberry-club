@@ -26,10 +26,10 @@
         "@most/scheduler": "1.3.0",
         "@most/types": "1.1.0",
         "@walletconnect/ethereum-provider": "^1.8.0",
-        "eip1193-provider": "1.0.1",
-        "ethers": "^6.3.0"
+        "abitype": "^0.8.2",
+        "viem": "^0.3.16"
     },
     "devDependencies": {
-        "@types/node": "18.15.11"
+        "@types/node": "18.16.3"
     }
 }

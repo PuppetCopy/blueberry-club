@@ -1,11 +1,10 @@
-import { GBC_ADDRESS } from "@gambitdao/gbc-middleware"
-import { GBCLab__factory, GBC__factory } from "@gambitdao/gbc-contracts"
-import { Closet__factory, Profile__factory } from "@gambitdao/gbc-contracts"
+import { GBC_ADDRESS, abi } from "@gambitdao/gbc-middleware"
 import { map } from "@most/core"
-import { readContractMapping } from "../common"
+import {  contractReader, getBerryFromItems, getMappedValue } from "../common"
 import { Stream } from "@most/types"
 import { CHAIN } from "@gambitdao/const"
-import { Provider } from "ethers"
+import { Address, PublicClient } from "viem"
+import { erc20Abi } from "abitype/test"
 
 
 export const GBC_CONTRACT_MAPPING = {
@@ -15,29 +14,21 @@ export const GBC_CONTRACT_MAPPING = {
 }
 
 
-export function connectLab(provider: Stream<Provider>) {
+export function connectLab(client: Stream<PublicClient>) {
 
-  const closet = readContractMapping(GBC_CONTRACT_MAPPING, Closet__factory, provider, 'CLOSET')
-  const lab = readContractMapping(GBC_CONTRACT_MAPPING, GBCLab__factory, provider, 'LAB')
-  const profile = readContractMapping(GBC_CONTRACT_MAPPING, Profile__factory, provider, 'PROFILE')
-  const gbc = readContractMapping(GBC_CONTRACT_MAPPING, GBC__factory, provider, 'GBC')
-
-
-  const main = (address: string) => profile.run(map(async (c) => {
-    return (await c.getDataOf(address)).tokenId
-  }))
-
-  const ownersListBalance = (owners: string[], idList: number[]) => {
-    return lab.run(map(async c => (await c.balanceOfBatch(owners, idList)).map(Number)))
-  }
+  const closetReader = contractReader({ address: getMappedValue(GBC_CONTRACT_MAPPING, 'CLOSET', client), abi: abi.closet, client })
+  const labReader = contractReader({ address: getMappedValue(GBC_CONTRACT_MAPPING, 'LAB', client), abi: abi.lab, client })
+  const profileReader = contractReader({ address: getMappedValue(GBC_CONTRACT_MAPPING, 'PROFILE', client), abi: abi.profile, client })
+  const erc721Reader = contractReader({ address: getMappedValue(GBC_CONTRACT_MAPPING, 'GBC', client), abi: abi.gbc, client })
 
 
-  const accountListBalance = (account: string, idList: number[]) => {
-    const balanceList = lab.run(map(async c => {
-      const orderedAccountList = [...idList].fill(account as any) as any as string[]
+  const main = (address: Address) => profileReader('getDataOf', address)
 
-      return (await c.balanceOfBatch(orderedAccountList, idList)).map(Number)
-    }))
+  const ownersListBalance = (owners: Address[], idList: bigint[]) => labReader('balanceOfBatch', owners, idList)
+
+  const accountListBalance = (account: Address, idList: bigint[]) => {
+    const accounts = [...idList].map(() => account)
+    const balanceList = labReader('balanceOfBatch', accounts, idList)
 
     return map(list => {
       return list.map((amount, idx) => ({ amount: Number(amount), id: idList[idx] }))
@@ -45,21 +36,14 @@ export function connectLab(provider: Stream<Provider>) {
   }
 
 
+  const tokenList = (account: Address) => erc721Reader('walletOfOwner', account)
 
-  const tokenList = (account: string) => gbc.run(map(async c => {
-    return (await c.walletOfOwner(account)).map(Number)
-  }))
 
-  // function getTokenSlots(token: BigNumberish) {
+  // const getTokenSlots = (token: bigint) => getBerryFromItems(closetReader('get', token, 0n, 2n))
+ 
+  // const getProfile = (account: Address) => profileReader('getDataOf', account)
 
-  //   return closet.run(map(async c => {
-  //     return getBerryFromItems(
-  //       (await c.contract.get(token, 0, 2)).map(bn => bn.toNumber())
-  //     ) as IBerryLabItems
-  //   }))
-  // }
-
-  // const getProfile = (account: string) => {
+  // const getProfile = (account: Address) => {
 
   //   const tokenId = profile.run(map(async (c) => {
   //     return (await c.contract.getDataOf(account)).tokenId.toBigInt()
@@ -74,7 +58,7 @@ export function connectLab(provider: Stream<Provider>) {
   // }
 
 
-  return { closet, ownersListBalance, accountListBalance, main, tokenList, lab, profile }
+  return { closet: closetReader, ownersListBalance, accountListBalance, main, tokenList, lab: labReader, profile: profileReader }
 }
 
 

@@ -2,15 +2,16 @@
     "name": "frontend",
     "version": "0.0.0",
     "license": "MIT",
-    "module": ".dist/esm/index.js",
     "private": true,
-    "type": "commonjs",
+    "type": "module",
     "files": [
         ".dist"
     ],
     "scripts": {
         "dev": "vite",
-        "build": "tsc && vite build"
+        "build": "tsc && vite build",
+        "wp:build": "webpack --mode=production --devtool=source-map",
+        "wp:dev": "webpack serve"
     },
     "sideEffects": false,
     "dependencies": {
@@ -20,7 +21,6 @@
         "@aelea/ui-components": "0.28.0",
         "@aelea/ui-components-theme": "0.10.0",
         "@gambitdao/const": "workspace:*",
-        "@gambitdao/gbc-contracts": "workspace:*",
         "@gambitdao/gbc-middleware": "workspace:*",
         "@gambitdao/gmx-middleware": "workspace:*",
         "@gambitdao/ui-components": "workspace:*",
@@ -31,38 +31,27 @@
         "@most/prelude": "1.8.0",
         "@most/scheduler": "1.3.0",
         "@most/types": "1.1.0",
-        "@urql/core": "^4.0.4",
-        "@walletconnect/auth-client": "2.0.7",
-        "@walletconnect/client": "^1.8.0",
-        "@walletconnect/encoding": "^1.0.2",
+        "@urql/core": "^4.0.7",
         "@walletconnect/ethereum-provider": "^1.8.0",
         "@walletconnect/qrcode-modal": "^1.8.0",
-        "@walletconnect/sign-client": "2.7.0",
-        "@widgetbot/crate": "^3.5.4",
+        "@walletconnect/sign-client": "2.7.2",
+        "abitype": "^0.8.2",
         "construct-style-sheets-polyfill": "3.1.0",
-        "eip1193-provider": "1.0.1",
-        "ethers": "^6.3.0",
-        "eventemitter3": "^5.0.0",
+        "eventemitter3": "^5.0.1",
         "graphql": "^16.6.0",
         "jazzicon": "^1.5.0",
-        "lightweight-charts": "^4.0.1"
+        "lightweight-charts": "^4.0.1",
+        "viem": "^0.3.16"
     },
     "devDependencies": {
-        "@types/dotenv-webpack": "^7.0.3",
-        "@types/node": "^18.15.11",
-        "@types/webpack": "^5.28.1",
-        "@types/webpack-dev-server": "^4.7.2",
-        "copy-webpack-plugin": "11.0.0",
+        "@evmts/core": "^0.0.3",
+        "@evmts/plugin": "^0.0.1",
+        "@types/node": "^18.16.3",
+        "@types/ws": "^8.5.4",
         "dotenv": "^16.0.3",
-        "fork-ts-checker-webpack-plugin": "8.0.0",
-        "html-webpack-plugin": "5.5.0",
         "ts-loader": "9.4.2",
-        "tsconfig-paths-webpack-plugin": "4.0.1",
         "typescript": "5.0.4",
-        "vite": "^4.2.1",
-        "webpack": "5.78.0",
-        "webpack-cli": "5.0.1",
-        "webpack-dev-server": "4.13.3"
+        "vite": "^4.3.3"
     },
     "engines": {
         "node": "16.15.0"
