@@ -1,6 +1,6 @@
 import { groupByKey, intervalTimeMap, unixTimestampNow } from "@gambitdao/gmx-middleware"
-import { parseEther } from "ethers"
 import { IAttributeMappings, LabItemSale, SaleType } from "./types.js"
+import { parseEther } from "viem"
 
 const date = new Date()
 const timeNow = unixTimestampNow()

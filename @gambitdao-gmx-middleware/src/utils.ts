@@ -8,7 +8,7 @@ import { Disposable, Scheduler, Sink, Stream } from "@most/types"
 import { ClientOptions, createClient } from "@urql/core"
 import { IntervalTime, intervalTimeMap, USD_DECIMALS } from "./constant.js"
 import { IRequestPagePositionApi, IRequestSortApi, IResponsePageApi } from "./types.js"
-import { Address, encodePacked } from "viem"
+import { Address, decodeAbiParameters, encodePacked, keccak256, toHex } from "viem"
 export * as GraphQL from '@urql/core'
 
 
@@ -228,7 +228,7 @@ export type TimelineTime = {
 }
 
 export interface IFillGap<T, R, RTime extends R & TimelineTime = R & TimelineTime> {
-  interval: IntervalTime
+  interval: number
   getTime: (t: T) => number
   seed: R & TimelineTime
   source: T[]
@@ -444,10 +444,10 @@ export const switchMap: ISwitchMapCurry2 = curry2(switchMapFn)
 
 
 export function getPositionKey(account: Address, collateralToken: Address, indexToken: Address, isLong: boolean) {
-  return encodePacked(
+  return keccak256(encodePacked(
     ["address", "address", "address", "bool"],
     [account, collateralToken, indexToken, isLong]
-  )
+  ))
 }
 
 

@@ -1264,11 +1264,10 @@ __metadata:
     "@urql/core": ^4.0.7
     abitype: ^0.8.2
     eip1193-provider: 1.0.1
-    ethers: ^6.3.0
     graphql: ^16.6.0
     typechain: ^8.1.1
     typescript: 5.0.4
-    viem: ^0.3.16
+    viem: ^0.3.17
   languageName: unknown
   linkType: soft
 
@@ -1290,7 +1289,7 @@ __metadata:
     abitype: ^0.8.2
     graphql: ^16.6.0
     isomorphic-fetch: ^3.0.0
-    viem: ^0.3.16
+    viem: ^0.3.17
   languageName: unknown
   linkType: soft
 
@@ -1315,7 +1314,7 @@ __metadata:
     "@types/node": 18.16.3
     abitype: ^0.8.2
     jazzicon: ^1.5.0
-    viem: ^0.3.16
+    viem: ^0.3.17
   languageName: unknown
   linkType: soft
 
@@ -1334,7 +1333,7 @@ __metadata:
     "@types/node": 18.16.3
     "@walletconnect/ethereum-provider": ^1.8.0
     abitype: ^0.8.2
-    viem: ^0.3.16
+    viem: ^0.3.17
   languageName: unknown
   linkType: soft
 
@@ -9053,8 +9052,8 @@ __metadata:
     lightweight-charts: ^4.0.1
     ts-loader: 9.4.2
     typescript: 5.0.4
-    viem: ^0.3.16
-    vite: ^4.3.3
+    viem: ^0.3.17
+    vite: ^4.3.4
   languageName: unknown
   linkType: soft
 
@@ -17348,9 +17347,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"viem@npm:^0.3.16":
-  version: 0.3.16
-  resolution: "viem@npm:0.3.16"
+"viem@npm:^0.3.17":
+  version: 0.3.17
+  resolution: "viem@npm:0.3.17"
   dependencies:
     "@adraffy/ens-normalize": 1.9.0
     "@noble/curves": 0.9.0
@@ -17361,13 +17360,13 @@ __metadata:
     abitype: 0.7.1
     isomorphic-ws: 5.0.0
     ws: 8.12.0
-  checksum: 3ba275b993f0522b5ac63f6178b7238438fb988ccb9ab7e52068d8e0aaa7b6df8f8daed499dd69f480f6fb33e212cede2ae9744f82b6f8c2b957b1d7645306f1
+  checksum: abb8a3a21f01cef11d9d3364770b31642c4552566194466fc54d7a027d6d0a5ce90602cf04c737f09c2001ea26aa5decb3a5f8408d390ecb8d1ee819fc7fb147
   languageName: node
   linkType: hard
 
-"vite@npm:^4.3.3":
-  version: 4.3.3
-  resolution: "vite@npm:4.3.3"
+"vite@npm:^4.3.4":
+  version: 4.3.4
+  resolution: "vite@npm:4.3.4"
   dependencies:
     esbuild: ^0.17.5
     fsevents: ~2.3.2
@@ -17398,7 +17397,7 @@ __metadata:
       optional: true
   bin:
     vite: bin/vite.js
-  checksum: 99970cb1fed3330458e60f8341ec73c4260c82d815e51c95295321ab496e4c8cb447bc942daf4d94f78bbc8b2bed36cbc237f43fdc1cede19250fac737e5a0fc
+  checksum: 90ce3923ef3e9a491851fb34effece43858d0ba915db17ea6ad0eb649bd77d81c69a71aafc55a6fbd11e4134b1a79eb7e2e3553f055d390d32ca0ff7c645acf6
   languageName: node
   linkType: hard
 

@@ -3,17 +3,16 @@ import { combineObject, replayLatest } from "@aelea/core"
 import { http, observer } from "@aelea/ui-components"
 import { CHAIN } from "@gambitdao/const"
 import {
-  AddressZero, IAbstractPositionIdentity, IAbstractPositionKey, ITokenIndex, ITokenInput, ITokenTrade, IVaultPosition, TOKEN_ADDRESS_TO_SYMBOL,
-  TOKEN_SYMBOL, TRADE_CONTRACT_MAPPING, div, filterNull, getChainName, getMappedValue, getSafeMappedValue, getTokenDescription, parseFixed, periodicRun, periodicSample, safeDiv, switchFailedSources
+  AddressZero, IAbstractPositionIdentity, IAbstractPositionKey, ITokenIndex,
+  ITokenTrade, IVaultPosition, TOKEN_ADDRESS_TO_SYMBOL, TOKEN_SYMBOL, TRADE_CONTRACT_MAPPING, abi,
+  div, filterNull, getChainName, getMappedValue, getSafeMappedValue, getTokenDescription, parseFixed, periodicRun, periodicSample, safeDiv, switchFailedSources
 } from "@gambitdao/gmx-middleware"
-import { empty, map, mergeArray, multicast, now, scan, skip, snapshot, switchLatest } from "@most/core"
+import { empty, fromPromise, map, mergeArray, multicast, now, scan, skip, snapshot, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
 import { erc20Abi } from "abitype/test"
-import { Account, Chain, PublicClient, Transport } from "viem"
-import { contractReader, listenContract, connectMappedContract, getMappedContractAddress } from "../common"
+import { Account, Address, Chain, PublicClient, Transport } from "viem"
+import { connectMappedContract, getMappedContractAddress } from "../common"
 import { resolveAddress } from "../utils"
-import { abi } from "@gambitdao/gmx-middleware"
-import { IWalletclient } from "@gambitdao/wallet-link"
 
 
 
@@ -117,8 +116,6 @@ export function latestPriceFromExchanges(indexToken: ITokenTrade): Stream<bigint
   ]))
 
   const avgPrice = skip(1, scan((prev, next) => {
-    console.log(next)
-
     return prev === 0 ? next : (prev + next) / 2
   }, 0, allSources))
 
@@ -131,21 +128,21 @@ export function latestPriceFromExchanges(indexToken: ITokenTrade): Stream<bigint
 }
 
 
-export async function getErc20Balance(token: ITokenTrade | typeof AddressZero, account: Account, client: PublicClient<Transport, Chain> | undefined): Promise<bigint> {
+export function getErc20Balance(token: ITokenTrade | typeof AddressZero, account: Account, client: PublicClient<Transport, Chain> | undefined): Stream<bigint> {
   if (!client) {
-    return 0n
+    return now(0n)
   }
 
 
   if (token === AddressZero) {
-    return await client.getBalance(account)
+    return fromPromise(client.getBalance(account))
   }
 
   const chainId = client.chain.id
   const contractMapping = getMappedValue(TRADE_CONTRACT_MAPPING, chainId)
 
   if (!contractMapping) {
-    return 0n
+    return now(0n)
   }
 
   const tokenAddress = resolveAddress(chainId, token)
@@ -157,45 +154,37 @@ export async function getErc20Balance(token: ITokenTrade | typeof AddressZero, a
     args: [account.address]
   })
 
-  return await erc20
+  return fromPromise(erc20)
 }
 
 
 
+
+
 export function connectTradeReader(client: Stream<PublicClient<Transport, Chain>>) {
-
-  const positionRouterContractConfig = connectMappedContract(TRADE_CONTRACT_MAPPING, 'PositionRouter', abi.positionRouter, client)
-  const vaultConfig = connectMappedContract(TRADE_CONTRACT_MAPPING, 'Vault', abi.vault, client)
-
-
-  const usdgReader = contractReader(connectMappedContract(TRADE_CONTRACT_MAPPING, 'USDG', erc20Abi, client))
-  const vaultReader = contractReader(vaultConfig)
-  const positionRouterReader = contractReader(positionRouterContractConfig)
-  const pricefeedReader = contractReader(connectMappedContract(TRADE_CONTRACT_MAPPING, 'VaultPriceFeed', abi.vaultPricefeed, client))
-  const routerReader = contractReader(connectMappedContract(TRADE_CONTRACT_MAPPING, 'Router', abi.routerfeed, client))
-
-  const positionRouterListener = listenContract(positionRouterContractConfig)
-  const vaultListener = listenContract(vaultConfig)
-
-  const executeIncreasePosition = positionRouterListener('ExecuteIncreasePosition')
-  const cancelIncreasePosition = positionRouterListener('CancelIncreasePosition')
-  const executeDecreasePosition = positionRouterListener('ExecuteDecreasePosition')
-  const cancelDecreasePosition = positionRouterListener('CancelDecreasePosition')
-
-  const executionFee = positionRouterReader('minExecutionFee')
-  const usdgSupply = usdgReader('totalSupply')
-  const totalTokenWeight = vaultReader('totalTokenWeights')
+  const positionRouter = connectMappedContract(TRADE_CONTRACT_MAPPING, 'PositionRouter', abi.positionRouter)(client)
+  const pricefeed = connectMappedContract(TRADE_CONTRACT_MAPPING, 'VaultPriceFeed', abi.vaultPricefeed)(client)
+  const router = connectMappedContract(TRADE_CONTRACT_MAPPING, 'Router', abi.routerfeed)(client)
+  const usdg = connectMappedContract(TRADE_CONTRACT_MAPPING, 'USDG', erc20Abi)(client)
+  const vault = connectMappedContract(TRADE_CONTRACT_MAPPING, 'Vault', abi.vault)(client)
 
 
-  const getIsPluginEnabled = (wallet: IWalletclient) => routerReader(
+  const executeIncreasePosition = positionRouter.listen('ExecuteIncreasePosition')
+  const cancelIncreasePosition = positionRouter.listen('CancelIncreasePosition')
+  const executeDecreasePosition = positionRouter.listen('ExecuteDecreasePosition')
+  const cancelDecreasePosition = positionRouter.listen('CancelDecreasePosition')
+
+
+
+  const getIsPluginEnabled = (address: Address) => router.read(
     'approvedPlugins',
-    now(wallet.account.address),
+    now(address),
     getMappedContractAddress(TRADE_CONTRACT_MAPPING, 'PositionRouter', client)
   )
 
   const getTokenFundingRate = (token: Stream<ITokenTrade>) => {
-    const reservedAmounts = vaultReader('reservedAmounts', token)
-    const poolAmounts = vaultReader('poolAmounts', token)
+    const reservedAmounts = vault.read('reservedAmounts', token)
+    const poolAmounts = vault.read('poolAmounts', token)
 
     return map(params => {
       return div(params.fundingRateFactor * params.reservedAmounts, params.poolAmounts)
@@ -203,8 +192,8 @@ export function connectTradeReader(client: Stream<PublicClient<Transport, Chain>
   }
 
   const getFundingRateFactor = (token: Stream<ITokenTrade>) => {
-    const stableFundingRateFactor = vaultReader('stableFundingRateFactor')
-    const fundingRateFactor = vaultReader('fundingRateFactor')
+    const stableFundingRateFactor = vault.read('stableFundingRateFactor')
+    const fundingRateFactor = vault.read('fundingRateFactor')
 
     return map((params) => {
       const tokenDescription = getTokenDescription(params.token)
@@ -218,12 +207,12 @@ export function connectTradeReader(client: Stream<PublicClient<Transport, Chain>
 
   const getTokenPoolInfo = (token: Stream<ITokenTrade>): Stream<ITokenPoolInfo> => {
     const rateFactor = getFundingRateFactor(token)
-    const cumulativeRate = vaultReader('cumulativeFundingRates', token)
-    const reservedAmount = vaultReader('reservedAmounts', token)
-    const poolAmounts = vaultReader('poolAmounts', token)
-    const usdgAmounts = vaultReader('usdgAmounts', token)
-    const maxUsdgAmounts = vaultReader('maxUsdgAmounts', token)
-    const tokenWeights = vaultReader('tokenWeights', token)
+    const cumulativeRate = vault.read('cumulativeFundingRates', token)
+    const reservedAmount = vault.read('reservedAmounts', token)
+    const poolAmounts = vault.read('poolAmounts', token)
+    const usdgAmounts = vault.read('usdgAmounts', token)
+    const maxUsdgAmounts = vault.read('maxUsdgAmounts', token)
+    const tokenWeights = vault.read('tokenWeights', token)
 
     const dataRead = combineObject({ rateFactor, maxUsdgAmounts, cumulativeRate, usdgAmounts, tokenWeights, reservedAmount, poolAmounts })
 
@@ -234,10 +223,10 @@ export function connectTradeReader(client: Stream<PublicClient<Transport, Chain>
   }
 
   const getAvailableLiquidityUsd = (indexToken: Stream<ITokenIndex>, collateralToken: Stream<ITokenTrade>) => {
-    const globalShortSizes = vaultReader('globalShortSizes', indexToken)
-    const guaranteedUsd = vaultReader('guaranteedUsd', indexToken)
-    const maxGlobalShortSizes = positionRouterReader('maxGlobalShortSizes', indexToken)
-    const maxGlobalLongSizes = positionRouterReader('maxGlobalLongSizes', indexToken)
+    const globalShortSizes = vault.read('globalShortSizes', indexToken)
+    const guaranteedUsd = vault.read('guaranteedUsd', indexToken)
+    const maxGlobalShortSizes = positionRouter.read('maxGlobalShortSizes', indexToken)
+    const maxGlobalLongSizes = positionRouter.read('maxGlobalLongSizes', indexToken)
 
     const state = combineObject({ collateralToken, maxGlobalShortSizes, maxGlobalLongSizes, indexToken, globalShortSizes, guaranteedUsd })
 
@@ -254,25 +243,20 @@ export function connectTradeReader(client: Stream<PublicClient<Transport, Chain>
 
 
 
-  const nativeTokenPrice = pricefeedReader('getPrimaryPrice', getMappedContractAddress(TRADE_CONTRACT_MAPPING, 'NATIVE_TOKEN', client), now(false))
+  const nativeTokenPrice = pricefeed.read('getPrimaryPrice', getMappedContractAddress(TRADE_CONTRACT_MAPPING, 'NATIVE_TOKEN', client), now(false))
 
 
-  const getTokenDebtUsd = (token: Stream<ITokenInput>) => vaultReader('usdgAmounts', token)
-  const getPrimaryPrice = (token: Stream<ITokenInput>, maximize = false) => pricefeedReader('getPrimaryPrice', token, now(maximize))
-
-
-
-  const positionIncreaseEvent = vaultListener('IncreasePosition')
-  const positionDecreaseEvent = vaultListener('DecreasePosition')
-  const positionCloseEvent = vaultListener('ClosePosition')
-  const positionLiquidateEvent = vaultListener('LiquidatePosition')
+  const positionIncreaseEvent = vault.listen('IncreasePosition')
+  const positionDecreaseEvent = vault.listen('DecreasePosition')
+  const positionCloseEvent = vault.listen('ClosePosition')
+  const positionLiquidateEvent = vault.listen('LiquidatePosition')
 
 
 
 
 
 
-  const positionUpdateEvent = vaultListener('UpdatePosition')
+  const positionUpdateEvent = vault.listen('UpdatePosition')
   // const positionUpdateEvent = switchLatest(vaultReader.read(map(async vault => {
   //   const chain = vault.chainId
 
@@ -333,7 +317,7 @@ export function connectTradeReader(client: Stream<PublicClient<Transport, Chain>
   }, keyEvent, mergeArray([positionLiquidateEvent, positionCloseEvent])))
 
   const getVaultPrimaryPrice = (token: Stream<ITokenTrade>) => {
-    const primaryPrice = getPrimaryPrice(token)
+    const primaryPrice = pricefeed.read('getPrimaryPrice', token, now(false))
 
     return observer.duringWindowActivity(periodicSample(primaryPrice, {
       recoverError: false,
@@ -341,11 +325,7 @@ export function connectTradeReader(client: Stream<PublicClient<Transport, Chain>
     }))
   }
 
-  const getPrice = (token: Stream<ITokenIndex>) => {
-    const maxPrice = vaultReader('getMaxPrice', token)
 
-    return periodicSample(maxPrice)
-  }
 
   function getLatestPrice(chainId: Stream<CHAIN>, token: Stream<ITokenTrade>) {
     const wsPrice = switchLatest(map(params => {
@@ -361,11 +341,13 @@ export function connectTradeReader(client: Stream<PublicClient<Transport, Chain>
   }
 
   return {
-    getIsPluginEnabled, routerReader, executionFee, getPrimaryPrice, nativeTokenPrice, getTokenPoolInfo,
-    executeIncreasePosition, getTokenDebtUsd, positionRouterReader,
+    vault, router, positionRouter, usdg, pricefeed,
+
+    getIsPluginEnabled, nativeTokenPrice, getTokenPoolInfo,
+    executeIncreasePosition,
     cancelIncreasePosition, executeDecreasePosition, cancelDecreasePosition,
     positionIncreaseEvent, positionDecreaseEvent, positionUpdateEvent, positionCloseEvent, positionLiquidateEvent,
-    getLatestPrice, positionSettled, vaultReader, getPrice, totalTokenWeight, usdgSupply,
+    getLatestPrice, positionSettled,
     getAvailableLiquidityUsd, getTokenFundingRate
   }
 }

@@ -24,7 +24,7 @@ import { $labItem, getBerryFromToken } from "../../logic/common"
 import { connectLab } from "../../logic/contract/gbc"
 import { fadeIn } from "../../transitions/enter"
 import { $seperator2 } from "../common"
-import { Address } from "viem"
+import { Address, TransactionReceipt } from "viem"
 
 
 interface IBerryComp {
@@ -77,18 +77,18 @@ export const $Wardrobe = (config: IBerryComp) => component((
   const connect = connectLab(config.walletLink.client)
   // const gbc = connectGbc(walletLink)
   // const closet = connectManager(config.walletLink)
-  const account = filterNull(map(w3p => w3p ? w3p.address : null, config.walletLink.wallet))
+  const account = filterNull(map(w3p => w3p ? w3p.account.address : null, config.walletLink.wallet))
 
   const owner = multicast(awaitPromises(switchLatest(map(w3p => {
     if (w3p === null) {
       return null
     }
-    return blueberrySubgraph.owner(now({ id: w3p.address }))
+    return blueberrySubgraph.owner(now({ id: w3p.account.address }))
   }, config.walletLink.wallet))))
 
   const tokenList = map(xz => xz ? xz.ownedTokens : [], owner)
 
-  const savedItemsTxSucceed: Stream<ContractTransactionResponse> = filter(res => res !== null, awaitPromises(map(async txc => {
+  const savedItemsTxSucceed: Stream<TransactionReceipt> = filter(res => res !== null, awaitPromises(map(async txc => {
     const res = await txc.catch(() => null)
 
     return res
@@ -108,8 +108,8 @@ export const $Wardrobe = (config: IBerryComp) => component((
     }
 
     const list = mergeArray([
-      connect.accountListBalance(w3p.address, saleDescriptionList.map(x => x.id)),
-      switchLatest(map(() => connect.accountListBalance(w3p.address, saleDescriptionList.map(x => x.id)), savedItemsTxSucceed))
+      connect.accountListBalance(w3p.account.address, saleDescriptionList.map(x => BigInt(x.id))),
+      switchLatest(map(() => connect.accountListBalance(w3p.account.address, saleDescriptionList.map(x => BigInt(x.id))), savedItemsTxSucceed))
     ])
     return list
   }, config.walletLink.wallet)
@@ -119,7 +119,7 @@ export const $Wardrobe = (config: IBerryComp) => component((
       return false
     }
 
-    return lab.contract.isApprovedForAll(w3p.address, GBC_ADDRESS.CLOSET)
+    return lab.contract.isApprovedForAll(w3p.account.address, GBC_ADDRESS.CLOSET)
   }, connect.lab.contract, config.walletLink.wallet))
 
   const isClosetApprovedState = mergeArray([isClosetApproved, switchLatest(awaitPromises(map(async tx => {

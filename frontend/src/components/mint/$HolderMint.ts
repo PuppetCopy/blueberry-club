@@ -144,11 +144,11 @@ export const $HolderMint = (config: MintCmp) => component((
                         args: [idList]
                       })
 
-                      const hash = params.wallet.writeContract<typeof params.saleConnect.abi, 'mint', Chain>(sim.request)
+                      const hash = w3p.writeContract<typeof params.saleConnect.abi, 'mint', Chain>(sim.request)
 
                       const newLocal = waitForTransactionReceipt(params.saleConnect.client, hash)
                       return newLocal
-                    }, combineObject({ chosenTokens, saleConnect, wallet: config.walletLink.wallet })),
+                    }, combineObject({ chosenTokens, saleConnect })),
                     // switchLatest
                   )
                 }),

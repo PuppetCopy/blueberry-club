@@ -27,7 +27,7 @@
         "@most/types": "1.1.0",
         "@walletconnect/ethereum-provider": "^1.8.0",
         "abitype": "^0.8.2",
-        "viem": "^0.3.16"
+        "viem": "^0.3.17"
     },
     "devDependencies": {
         "@types/node": "18.16.3"

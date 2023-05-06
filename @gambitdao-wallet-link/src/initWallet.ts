@@ -26,18 +26,18 @@ export type IPublicClient<
 > = PublicClient<TTransport, TChain>
 
 export interface IWalletLink<
-  TChain extends Chain = Chain,
   TChainMap extends ISupportedChainMap = ISupportedChainMap,
+  TChain extends Chain = Chain,
   TTransport extends Transport = Transport,
   TPublicClient extends PublicClient<TTransport, TChain> = PublicClient<TTransport, TChain>,
   TWalletClient extends IWalletclient<TTransport, TChain> = WalletClient<TTransport, TChain, Account>,
 > {
   chainMap: TChainMap,
-  network: Stream<number>
+  network: Stream<keyof TChainMap>
   client: Stream<TPublicClient>
   defaultClient: Stream<TPublicClient>
 
-  wallet: Stream<TWalletClient>
+  wallet: Stream<TWalletClient | null>
 }
 
 
@@ -54,18 +54,18 @@ export function initWalletLink<
   TPublicClient extends PublicClient<TTransport, TChain>,
   TWalletClient extends WalletClient<TTransport, TChain, Account>
 >(
-  clientMap: TChainMap,
+  chainMap: TChainMap,
   walletName: Stream<IWalletName>,
-  networkChange: Stream<number>,
-): IWalletLink<TChain, TChainMap, TTransport, TPublicClient, TWalletClient> {
-  const chainMapKeys = Object.keys(clientMap)
+  networkChange: Stream<keyof TChainMap>,
+): IWalletLink<TChainMap, TChain, TTransport, TPublicClient, TWalletClient> {
+  const chainMapKeys = Object.keys(chainMap)
 
   if (!chainMapKeys?.length) {
     throw new Error('chainMap is empty')
   }
 
   const defaultChain = chainMapKeys[0] as keyof TChainMap
-  const initialClient = clientMap[defaultChain]
+  const initialClient = chainMap[defaultChain]
 
 
   const wallet: Stream<TWalletClient | null> = replayLatest(multicast(switchLatest(awaitPromises(combineArray(async (metamask, name) => {
@@ -85,7 +85,7 @@ export function initWalletLink<
       return now(null)
     }
 
-    const newLocal: PublicClient<Transport, Chain>[] = Object.values(clientMap)
+    const newLocal: PublicClient<Transport, Chain>[] = Object.values(chainMap)
     const chain: Chain | undefined = newLocal.find(c => c.chain.id === chainId)?.chain
 
     const walletClient = createWalletClient({
@@ -95,12 +95,6 @@ export function initWalletLink<
       transport
     }) as unknown as TWalletClient
 
-
-
-    // publicClient.getChainId()
-
-
-    const state = walletClient
 
     // WalletConnet doesn't emit standart disconnect
     const disconnect = isWc
@@ -115,13 +109,18 @@ export function initWalletLink<
 
     const nullWallet = constant(null, disconnect)
 
-    const accountChange = map(([account]) => {
-      if (!account) {
+    const accountChange = map(([newAddress]) => {
+      if (!newAddress) {
         return null
       }
 
 
-      return walletClient
+      return createWalletClient({
+        name,
+        account: newAddress,
+        chain,
+        transport
+      })
     }, eip1193ProviderEventFn(wp, 'accountsChanged'))
 
     return mergeArray([now(walletClient), walletNetworkChange, accountChange, nullWallet])
@@ -129,7 +128,7 @@ export function initWalletLink<
 
 
   const defaultClient = replayLatest(multicast(map((chain): TPublicClient => {
-    const globalClient = clientMap[chain] || initialClient
+    const globalClient = chainMap[chain] || initialClient
     // const client: PublicClient<TTransport, Chain> = createPublicClient({
     // const client = createPublicClient({
     //   transport: globalClient.transport,
@@ -158,7 +157,7 @@ export function initWalletLink<
 
   const network: Stream<number> = replayLatest(multicast(map(p => p.chain.id!, client)))
 
-  return { network, wallet, client, defaultClient, chainMap: clientMap }
+  return { network, wallet, client, defaultClient, chainMap }
 }
 
 

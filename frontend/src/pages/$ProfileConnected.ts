@@ -26,7 +26,6 @@ import { connectTradeReader } from "../logic/contract/trade"
 import { $responsiveFlex } from "../elements/$common"
 import { $defaultBerry } from "../components/$DisplayBerry"
 import { CHAIN } from "@gambitdao/const"
-import { ContractTransactionResponse } from "ethers"
 
 
 export interface IAccount {
@@ -63,8 +62,8 @@ export const $ProfileConnected = (config: IAccount) => component((
     }
 
     return {
-      account: w3p.address,
-      chain: w3p.chain,
+      account: w3p.account.address,
+      chain: w3p.chain.id,
     }
   }, config.walletLink.wallet))
 
@@ -217,14 +216,14 @@ export const $ProfileConnected = (config: IAccount) => component((
 
 
               $IntermediatePromise({
-                query: blueberrySubgraph.owner(combineObject({ id: map(w3p => w3p?.address, config.walletLink.wallet) })),
+                query: blueberrySubgraph.owner(combineObject({ id: map(w3p => w3p!.account.address, config.walletLink.wallet) })),
                 $$done: map(owner => {
                   if (owner === null) {
                     return null
                   }
 
 
-                  const ownedItems = lab.accountListBalance(owner.id, saleDescriptionList.map(x => x.id))
+                  const ownedItems = lab.accountListBalance(owner.id, saleDescriptionList.map(x => BigInt(x.id)))
 
                   return $column(layoutSheet.spacingBig)(
 
@@ -259,7 +258,7 @@ export const $ProfileConnected = (config: IAccount) => component((
                             $text(style({ position: 'absolute', top: '1px', right: '4px', fontSize: '.75em', fontWeight: 'bold', color: pallete.background }))(
                               item.amount + 'x'
                             ),
-                            $labItem({ id: item.id })
+                            $labItem({ id: Number(item.id) })
                           )
                         })
                       )
@@ -383,8 +382,8 @@ export const $ProfileConnected = (config: IAccount) => component((
                     }
 
                     return {
-                      account: w3p.address,
-                      chain: w3p.chain,
+                      account: w3p.account.address,
+                      chain: w3p.chain.id,
                       offset: pageIndex * 20,
                       pageSize: 20,
                     }

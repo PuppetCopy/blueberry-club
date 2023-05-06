@@ -28,9 +28,8 @@
         "@urql/core": "^4.0.7",
         "abitype": "^0.8.2",
         "eip1193-provider": "1.0.1",
-        "ethers": "^6.3.0",
         "graphql": "^16.6.0",
-        "viem": "^0.3.16"
+        "viem": "^0.3.17"
     },
     "devDependencies": {
         "@types/node": "18.16.3",

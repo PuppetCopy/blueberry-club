@@ -19,6 +19,7 @@ import {
   getFeeBasisPoints,
   getFundingFee,
   getLiquidationPrice,
+  getMappedValue,
   getMarginFees,
   getNativeTokenDescription,
   getNextAveragePrice,
@@ -42,7 +43,7 @@ import {
   LIMIT_LEVERAGE,
   readableDate,
   readableNumber,
-  STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, TAX_BASIS_POINTS,
+  STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS, switchMap, TAX_BASIS_POINTS,
   timeSince,
   TRADE_CONTRACT_MAPPING,
   TradeStatus,
@@ -63,7 +64,7 @@ import { $ButtonSecondary } from "../components/form/$Button"
 import { $Dropdown } from "../components/form/$Dropdown"
 import { $TradeBox, ITradeFocusMode, ITradeState, RequestTradeQuery } from "../components/trade/$TradeBox"
 import { $caretDown } from "../elements/$icons"
-import { connectContract, contractReader, getMappedValue, listenContract } from "../logic/common"
+import { connectMappedContractConfig, contractReader, listenContract } from "../logic/common"
 import { connectTradeReader, getErc20Balance, IPositionGetter, latestPriceFromExchanges } from "../logic/contract/trade"
 import { BrowserStore } from "../logic/store"
 import { resolveAddress } from "../logic/utils"
@@ -137,7 +138,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
 ) => {
 
-  const vaultConfig = connectContract(config.walletLink.client, getMappedValue(TRADE_CONTRACT_MAPPING, 'Vault', config.walletLink.client), abi.vault)
+  const vaultConfig = connectMappedContractConfig(TRADE_CONTRACT_MAPPING, 'Vault', abi.vault, config.walletLink.client)
   const vaultListener = listenContract(vaultConfig)
   const vaultReader = contractReader(vaultConfig)
 
@@ -145,7 +146,7 @@ export const $Trade = (config: ITradeComponent) => component((
   const tradeReader = connectTradeReader(config.walletLink.client)
   const globalTradeReader = connectTradeReader(config.walletLink.defaultClient)
 
-  const executionFee = replayLatest(multicast(tradeReader.executionFee))
+  const executionFee = replayLatest(multicast(tradeReader.positionRouter.read('minExecutionFee')))
 
   const tradingStore = config.store.craete('trade', 'tradeBox')
 
@@ -214,9 +215,9 @@ export const $Trade = (config: ITradeComponent) => component((
   }, combineObject({ isLong, indexToken, collateralTokenReplay }))
 
 
-  const walletBalance = replayLatest(multicast(awaitPromises(map(params => {
-    return getErc20Balance(params.inputToken, params.wallet.account, params.client)
-  }, combineObject({ inputToken, wallet: config.walletLink.wallet, client: config.walletLink.client })))))
+  const walletBalance = replayLatest(multicast(switchMap(params => {
+    return params.wallet ? getErc20Balance(params.inputToken, params.wallet.account, params.client) : now(0n)
+  }, combineObject({ inputToken, wallet: config.walletLink.wallet, client: config.walletLink.client }))))
 
 
   const inputTokenPrice = skipRepeats(tradeReader.getLatestPrice(config.walletLink.network, inputToken))
@@ -330,7 +331,7 @@ export const $Trade = (config: ITradeComponent) => component((
   ])))
 
   const inputTokenWeight = vaultReader('tokenWeights', inputToken)
-  const inputTokenDebtUsd = tradeReader.getTokenDebtUsd(inputToken)
+  const inputTokenDebtUsd = tradeReader.vault.read('usdgAmounts', inputToken)
 
   const inputTokenDescription = combineArray((chain, address) => address === AddressZero ? getNativeTokenDescription(chain) : getTokenDescription(address), config.walletLink.network, inputToken)
   const indexTokenDescription = map((address) => getTokenDescription(address), indexToken)
@@ -401,7 +402,7 @@ export const $Trade = (config: ITradeComponent) => component((
     return addedSwapFee
   }, combineObject({
     collateralToken, inputToken, isIncrease, sizeDeltaUsd, isLong, collateralDeltaUsd, chain: config.walletLink.network,
-    collateralTokenPoolInfo, usdgSupply: tradeReader.usdgSupply, totalTokenWeight: tradeReader.totalTokenWeight,
+    collateralTokenPoolInfo, usdgSupply: tradeReader.usdg.read('totalSupply'), totalTokenWeight: tradeReader.vault.read('totalTokenWeights'),
     position, inputTokenDescription, inputTokenWeight, inputTokenDebtUsd, indexTokenDescription, indexTokenPrice
   })))))
 
@@ -492,7 +493,7 @@ export const $Trade = (config: ITradeComponent) => component((
         return true
       }
 
-      const contractAddress = getMappedValue(TRADE_CONTRACT_MAPPING, 'Router', params.wallet.chain)
+      const contractAddress = getMappedValue(TRADE_CONTRACT_MAPPING, params.wallet.chain.id,).Router
 
       if (contractAddress === null) {
         return false
@@ -500,7 +501,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
       try {
         const owner = params.wallet.account.address
-        const allowedSpendAmount = await params.wallet.readContract({
+        const allowedSpendAmount = await params.client.readContract({
           address: owner,
           abi: erc20Abi,
           functionName: 'allowance',
@@ -513,7 +514,7 @@ export const $Trade = (config: ITradeComponent) => component((
         return false
       }
 
-    }, collateralDeltaUsd, combineObject({ wallet: config.walletLink.wallet, inputToken, isIncrease }))),
+    }, collateralDeltaUsd, combineObject({ wallet: config.walletLink.wallet, client: config.walletLink.client, inputToken, isIncrease }))),
   ])))
 
 
@@ -543,13 +544,13 @@ export const $Trade = (config: ITradeComponent) => component((
   )
 
   const requestAccountOpenTradeList: Stream<IRequestAccountApi | null> = map(w3p => {
-    if (w3p === null || config.chainList.indexOf(w3p.chain) === -1) {
+    if (w3p === null || config.chainList.indexOf(w3p.chain.id) === -1) {
       return null
     }
 
     return {
-      account: w3p.address,
-      chain: w3p.chain,
+      account: w3p.account.address,
+      chain: w3p.chain.id,
     }
   }, config.walletLink.wallet)
 
@@ -900,7 +901,7 @@ export const $Trade = (config: ITradeComponent) => component((
               const w3p = params.w3p
               const nullchain = w3p === null
 
-              if (nullchain || config.chainList.indexOf(w3p.chain) === -1) {
+              if (nullchain || config.chainList.indexOf(w3p.chain.id) === -1) {
                 return $column(layoutSheet.spacingSmall, style({ flex: 1, alignItems: 'center', placeContent: 'center' }))(
                   $text(style({ fontSize: '1.5em' }))('Trade History'),
                   $text(style({ color: pallete.foreground }))(
@@ -967,7 +968,7 @@ export const $Trade = (config: ITradeComponent) => component((
                         const direction = pos.__typename === 'IncreasePosition' ? '↑' : '↓'
                         const txHash = pos.id.split(':').slice(-1)[0]
                         return $row(layoutSheet.spacingSmall)(
-                          $txHashRef(txHash, w3p.chain, $text(`${direction} ${formatReadableUSD(pos.price)}`))
+                          $txHashRef(txHash, w3p.chain.id, $text(`${direction} ${formatReadableUSD(pos.price)}`))
                         )
                       }
 
@@ -979,7 +980,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
                       return $row(layoutSheet.spacingSmall)(
                         $txHashRef(
-                          pos.ctx.hash, w3p.chain,
+                          pos.ctx.transactionHash, w3p.chain.id,
                           $text(`${isIncrease ? '↑' : '↓'} ${formatReadableUSD(pos.acceptablePrice)} ${isIncrease ? '<' : '>'}`)
                         ),
 
@@ -991,7 +992,7 @@ export const $Trade = (config: ITradeComponent) => component((
                             const message = $text(`${isRejected ? `✖ ${formatReadableUSD(req.args.acceptablePrice)}` : `✔ ${formatReadableUSD(req.args.acceptablePrice)}`}`)
 
                             return $requestRow(
-                              $txHashRef(req.transactionHash!, w3p.chain, message),
+                              $txHashRef(req.transactionHash!, w3p.chain.id, message),
                               $infoTooltip('transaction was sent, keeper will execute the request, the request will either be executed or rejected'),
                             )
                           }, activePositionAdjustment),

@@ -1,10 +1,9 @@
 import { GBC_ADDRESS, abi } from "@gambitdao/gbc-middleware"
 import { map } from "@most/core"
-import {  contractReader, getBerryFromItems, getMappedValue } from "../common"
+import { connectMappedContractConfig, contractReader } from "../common"
 import { Stream } from "@most/types"
 import { CHAIN } from "@gambitdao/const"
 import { Address, PublicClient } from "viem"
-import { erc20Abi } from "abitype/test"
 
 
 export const GBC_CONTRACT_MAPPING = {
@@ -16,10 +15,10 @@ export const GBC_CONTRACT_MAPPING = {
 
 export function connectLab(client: Stream<PublicClient>) {
 
-  const closetReader = contractReader({ address: getMappedValue(GBC_CONTRACT_MAPPING, 'CLOSET', client), abi: abi.closet, client })
-  const labReader = contractReader({ address: getMappedValue(GBC_CONTRACT_MAPPING, 'LAB', client), abi: abi.lab, client })
-  const profileReader = contractReader({ address: getMappedValue(GBC_CONTRACT_MAPPING, 'PROFILE', client), abi: abi.profile, client })
-  const erc721Reader = contractReader({ address: getMappedValue(GBC_CONTRACT_MAPPING, 'GBC', client), abi: abi.gbc, client })
+  const closetReader = contractReader(connectMappedContractConfig(GBC_CONTRACT_MAPPING, 'CLOSET', abi.closet, client))
+  const labReader = contractReader(connectMappedContractConfig(GBC_CONTRACT_MAPPING, 'LAB', abi.lab, client))
+  const profileReader = contractReader(connectMappedContractConfig(GBC_CONTRACT_MAPPING, 'PROFILE', abi.profile, client))
+  const erc721Reader = contractReader(connectMappedContractConfig(GBC_CONTRACT_MAPPING, 'GBC', abi.gbc, client))
 
 
   const main = (address: Address) => profileReader('getDataOf', address)
@@ -40,7 +39,7 @@ export function connectLab(client: Stream<PublicClient>) {
 
 
   // const getTokenSlots = (token: bigint) => getBerryFromItems(closetReader('get', token, 0n, 2n))
- 
+
   // const getProfile = (account: Address) => profileReader('getDataOf', account)
 
   // const getProfile = (account: Address) => {

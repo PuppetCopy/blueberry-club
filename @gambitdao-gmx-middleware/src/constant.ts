@@ -54,4 +54,4 @@ export const TRADE_CONTRACT_MAPPING = {
   [CHAIN.AVALANCHE]: AVALANCHE_ADDRESS
 } as const
 
-
+export type ContractChain = keyof typeof TRADE_CONTRACT_MAPPING

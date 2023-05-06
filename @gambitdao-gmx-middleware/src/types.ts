@@ -286,8 +286,8 @@ export type StreamInput<T> = {
 }
 
 export type ContractFunctionConfig<
-  TAbi extends Abi,
   TAddress,
+  TAbi extends Abi,
   TTransport extends Transport,
   TChain extends Chain,
   TIncludeActions extends boolean,
