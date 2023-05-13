@@ -144,7 +144,7 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
       gap: screenUtils.isDesktopScreen ? '85px' : '55px', overflowX: 'hidden', padding: screenUtils.isMobileScreen ? '0 15px' : '0 15px'
     }))(
 
-      $column(style({ gap: '25px' }))(
+      $column(style({ gap: '235px' }))(
         $column(
           $MainMenu({ walletLink, parentRoute: rootRoute, chainList: [CHAIN.ARBITRUM, CHAIN.AVALANCHE] })({
             routeChange: linkClickTether(),

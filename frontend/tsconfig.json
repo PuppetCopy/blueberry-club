@@ -24,7 +24,7 @@
   },
   "include": [
     "src"
-  ],
+, "../puppet.finance/src/particle.ts"  ],
   "references": [
     {
       "path": "../ui-components"

@@ -159,58 +159,6 @@ export const $IntermediateConnectButton = (config: IConnectWalletPopover) => com
 })
 
 
-export const $switchNetworkDropdown = (walletLink: IWalletLink, chainList: CHAIN[], $trigger: $Node) => component((
-  [changeNetwork, changeNetworkTether]: Behavior<any, CHAIN>,
-) => {
-
-  return [
-    $Dropdown({
-      value: {
-        value: walletLink.network,
-        $$option: map(chainId => {
-          if (chainId === null) {
-            return $text('?')
-          }
-
-          const chainName = NETWORK_METADATA[chainId].chainName
-
-          return $row(
-            changeNetworkTether(
-              nodeEvent('click'),
-              // constant(option)
-              snapshot(async (wallet) => {
-                if (wallet) {
-                  const switchRequest = wallet.switchChain({ id: chainId })
-
-                  await switchRequest.catch(error => {
-                    console.warn(error)
-                    return Promise.reject('unable to switch network')
-                  })
-                }
-
-                return null
-                // return option
-              }, walletLink.wallet),
-              awaitPromises,
-              filterNull
-            ),
-            style({ alignItems: 'center', width: '100%' })
-          )(
-            $element('img')(attr({ src: `/assets/chain/${chainId}.svg` }), style({ width: '32px', padding: '3px 6px' }))(),
-            $text(chainName)
-          )
-        }),
-        list: chainList,
-      },
-      $container: $column(style({ position: 'relative' })),
-      $selection: $trigger,
-    })({}),
-
-    {
-      changeNetwork
-    }
-  ]
-})
 
 
 export const $ConnectDropdown = ($trigger: $Node, clickOpenPopover: Stream<any>) => component((
