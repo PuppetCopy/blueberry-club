@@ -103,13 +103,11 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
     ...serverApi,
     // requestTrade: map(json => json ? fromJson.toTradeJson(json) : null, api.trade(requestTrade)),
     stake: gmxSubgraph.stake(requestStake),
-    pricefeed: gmxSubgraph.pricefeed(requestPricefeed),
-    tradePricefeed: gmxSubgraph.pricefeed(requestPricefeed),
     accountTradeList: gmxSubgraph.accountTradeList(requestAccountTradeList),
     accountOpenTradeList: gmxSubgraph.accountOpenTradeList(requestAccountOpenTradeList),
     latestPriceMap: gmxSubgraph.latestPriceMap(requestAccountTradeList),
 
-    competitionCumulative: blueberrySubgraph.competitionCumulative(requestCompetitionLadder),
+    competitionCumulative: blueberrySubgraph.competitionLeaderboard(requestCompetitionLadder),
     profilePickList: blueberrySubgraph.profilePickList(requestProfilePickList),
   }
 

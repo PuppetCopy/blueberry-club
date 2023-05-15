@@ -23,21 +23,15 @@ import {
   IStake,
   ITrade,
   ITradeOpen,
+  ITradeSettled,
   TradeStatus
 } from "./types.js"
 import {
-  cacheMap, createSubgraphClient, getChainName, getMappedValue, groupByKeyMap, pagingQuery, parseFixed,
+  createSubgraphClient, getChainName, getMappedValue, groupByKeyMap, pagingQuery, parseFixed,
   switchFailedSources, unixTimestampNow
 } from "./utils.js"
 
 
-const cache = cacheMap({})
-
-const cacheLifeMap = {
-  [intervalTimeMap.HR24]: intervalTimeMap.MIN5,
-  [intervalTimeMap.DAY7]: intervalTimeMap.MIN30,
-  [intervalTimeMap.MONTH]: intervalTimeMap.MIN60,
-}
 
 export const ensGraph = createSubgraphClient({
   fetch: fetch as any,
@@ -122,7 +116,7 @@ export const getEnsProfile = O(
   })
 )
 
-export async function getProfilePickList(idList: string[]): Promise<IEnsRegistration[]> {
+export async function getEnsProfileListPick(idList: string[]): Promise<IEnsRegistration[]> {
 
   if (idList.length === 0) {
     return []
@@ -168,11 +162,6 @@ export async function getProfilePickList(idList: string[]): Promise<IEnsRegistra
   return rawList
 }
 
-export const getEnsProfileListPick = O(
-  map(async (idList: string[]): Promise<IEnsRegistration[]> => {
-    return getProfilePickList(idList)
-  })
-)
 
 export const getGmxIoPricefeed = O(
   map(async (queryParams: IRequestPricefeedApi): Promise<IPricefeed[]> => {
@@ -274,7 +263,7 @@ export const accountTradeList = O(
 }
 `)
 
-    return pagingQuery(queryParams, res.trades.map(fromJson.tradeJson) as ITrade[])
+    return pagingQuery(queryParams, res.trades.map(fromJson.tradeJson) as ITradeSettled[])
   })
 )
 

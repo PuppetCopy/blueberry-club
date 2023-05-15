@@ -292,7 +292,7 @@ export const $MainMenu = ({ walletLink, parentRoute, chainList, showAccount = tr
       )
     ),
 
-    { routeChange: routeChangeMulticast, walletChange, changeNetwork }
+    { routeChange: routeChangeMulticast }
   ]
 })
 

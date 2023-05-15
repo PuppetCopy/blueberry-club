@@ -153,7 +153,6 @@ export const $IntermediateConnectButton = (config: IConnectWalletPopover) => com
     }, config.walletLink.wallet)),
 
     {
-      walletChange, changeNetwork
     }
   ]
 })

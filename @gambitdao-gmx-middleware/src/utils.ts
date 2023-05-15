@@ -23,7 +23,7 @@ export const VALID_FRACTIONAL_NUMBER_REGEXP = /^-?(0|[1-9]\d*)(\.\d+)?$/
 let zeros = "0"
 while (zeros.length < 256) { zeros += zeros }
 
-export function isAddress(address: string) {
+export function isAddress(address: any): address is Address {
   return ETH_ADDRESS_REGEXP.test(address)
 }
 
