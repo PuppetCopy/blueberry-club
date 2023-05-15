@@ -76,13 +76,13 @@ export const $CandleSticks = ({ chartConfig, series, containerOp = O() }: ICandl
       mode: CrosshairMode.Normal,
       horzLine: {
         labelBackgroundColor: pallete.foreground,
-        color: colorAlpha(pallete.foreground, .25),
+        color: colorAlpha(pallete.foreground, .20),
         width: 1,
         style: LineStyle.Solid
       },
       vertLine: {
         labelBackgroundColor: pallete.foreground,
-        color: colorAlpha(pallete.foreground, .25),
+        color: colorAlpha(pallete.foreground, .20),
         width: 1,
         style: LineStyle.Solid,
       }

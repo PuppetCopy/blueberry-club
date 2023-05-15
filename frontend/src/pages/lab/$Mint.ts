@@ -16,7 +16,7 @@ export const $Mint = (item: LabItemSale, rule: MintRule, walletLink: IWalletLink
   const mintCount = multicast(getMintCount(rule, walletLink, 15000))
 
   const supplyLeft = map(amount => {
-    const count = rule.supply - Number(amount)
+    const count = rule.supply - amount
     return unixTime > rule.finish ? `${amount} Sold` : `${count} left`
   }, mintCount)
 

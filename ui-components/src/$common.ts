@@ -6,8 +6,8 @@ import { CHAIN } from "@gambitdao/const"
 import { bnDiv, formatReadableUSD, getNextLiquidationPrice, getTxExplorerUrl, IAbstractPositionStake, ITrade, ITradeOpen, liquidationWeight, shortenTxAddress, ITokenDescription, getFundingFee, getPnL, getMarginFees } from "@gambitdao/gmx-middleware"
 import { now, map, empty, skipRepeats } from "@most/core"
 import { Stream } from "@most/types"
-import { $alertIcon, $caretDblDown, $info, $arrowRight, $tokenIconMap } from "./$icons"
-import { $defaultDropContainer, $Tooltip } from "./$Tooltip"
+import { $alertIcon, $caretDblDown, $info, $arrowRight, $tokenIconMap } from "./$icons.js"
+import { $defaultDropContainer, $Tooltip } from "./$Tooltip.js"
 
 
 export const $anchor = $element('a')(
@@ -22,13 +22,13 @@ export const $anchor = $element('a')(
   }),
 )
 
-const $alertContainer = $row(layoutSheet.spacingSmall, style({
-  alignSelf: 'flex-start', minWidth: 0, maxWidth: '100%',
+export const $alertContainer = $row(layoutSheet.spacingSmall, style({
+  minWidth: 0, maxWidth: '100%',
   borderRadius: '100px', alignItems: 'center', fontSize: '75%',
   border: `1px dashed ${pallete.negative}`, padding: '8px 10px',
 }))
 
-export const $alert = ($content: $Node) => $alertContainer(
+export const $alert = ($content: $Node) => $alertContainer(style({ alignSelf: 'flex-start' }))(
   $icon({ $content: $alertIcon, viewBox: '0 0 24 24', width: '18px', svgOps: style({ minWidth: '18px' }) }),
   $content,
 )
@@ -54,9 +54,7 @@ export const $infoLabel = (label: string | $Node) => {
 
 export const $infoLabeledValue = (label: string | $Node, value: string | $Node) => {
   return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
-    isStream(label)
-      ? label
-      : $text(style({ color: pallete.foreground }))(label),
+    $infoLabel(label),
     isStream(value) ? value : $text(value)
   )
 }

@@ -1,55 +1,65 @@
 import { O } from "@aelea/core"
-import { awaitPromises, map } from "@most/core"
-import { intervalTimeMap } from "./constant"
-import { getTokenDescription } from "./gmxUtils"
-import {
-  IRequestAccountApi, IChainParamApi, IRequestPagePositionApi,
-  IPricefeed, IRequestPricefeedApi, IPriceLatest, IRequestGraphEntityApi, IStake,
-  IRequestTimerangeApi, ITrade, TradeStatus, IRequestAccountTradeListApi, ITradeOpen, IEnsRegistration, IRequestPageApi
-} from "./types"
-import {
-  cacheMap, createSubgraphClient, getChainName, getMappedValue, groupByKeyMap, pagingQuery, parseFixed,
-  switchFailedSources, unixTimestampNow
-} from "./utils"
-import { gql } from "@urql/core"
-import * as fromJson from "./fromJson"
-import fetch from "isomorphic-fetch"
-import { TOKEN_SYMBOL } from "./address/symbol"
-import { Stream } from "@most/types"
 import { CHAIN } from "@gambitdao/const"
+import { awaitPromises, map } from "@most/core"
+import { Stream } from "@most/types"
+import { cacheExchange, fetchExchange, gql } from "@urql/core"
+import fetch from "isomorphic-fetch"
+import { TOKEN_SYMBOL } from "./address/symbol.js"
+import { intervalTimeMap } from "./constant.js"
+import * as fromJson from "./fromJson.js"
+import { getTokenDescription } from "./gmxUtils.js"
+import {
+  IChainParamApi,
+  IEnsRegistration,
+  IPriceLatest,
+  IPricefeed,
+  IRequestAccountApi,
+  IRequestAccountTradeListApi,
+  IRequestGraphEntityApi,
+  IRequestPageApi,
+  IRequestPagePositionApi,
+  IRequestPricefeedApi,
+  IRequestTimerangeApi,
+  IStake,
+  ITrade,
+  ITradeOpen,
+  ITradeSettled,
+  TradeStatus
+} from "./types.js"
+import {
+  createSubgraphClient, getChainName, getMappedValue, groupByKeyMap, pagingQuery, parseFixed,
+  switchFailedSources, unixTimestampNow
+} from "./utils.js"
 
 
-
-const cache = cacheMap({})
-
-const cacheLifeMap = {
-  [intervalTimeMap.HR24]: intervalTimeMap.MIN5,
-  [intervalTimeMap.DAY7]: intervalTimeMap.MIN30,
-  [intervalTimeMap.MONTH]: intervalTimeMap.MIN60,
-}
 
 export const ensGraph = createSubgraphClient({
   fetch: fetch as any,
-  url: 'https://api.thegraph.com/subgraphs/name/ensdomains/ens'
+  url: 'https://api.thegraph.com/subgraphs/name/ensdomains/ens',
+  exchanges: [cacheExchange, fetchExchange,],
 })
 
 export const arbitrumGraph = createSubgraphClient({
   fetch: fetch as any,
-  url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-arbitrum'
+  url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-arbitrum',
+  exchanges: [cacheExchange, fetchExchange,],
 })
 
 export const arbitrumGraphDev = createSubgraphClient({
   fetch: fetch as any,
-  url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-arbitrum-dev'
+  url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-arbitrum-dev',
+  exchanges: [cacheExchange, fetchExchange,],
 })
 export const avalancheGraphDev = createSubgraphClient({
   fetch: fetch as any,
-  url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-avalanche-dev'
+  url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-avalanche-dev',
+  exchanges: [cacheExchange, fetchExchange,],
 })
 
 export const avalancheGraph = createSubgraphClient({
   fetch: fetch as any,
-  url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-avalanche'
+  url: 'https://api.thegraph.com/subgraphs/name/nissoh/gmx-avalanche',
+  exchanges: [cacheExchange, fetchExchange,],
 })
 
 
@@ -106,7 +116,7 @@ export const getEnsProfile = O(
   })
 )
 
-export async function getProfilePickList(idList: string[]): Promise<IEnsRegistration[]> {
+export async function getEnsProfileListPick(idList: string[]): Promise<IEnsRegistration[]> {
 
   if (idList.length === 0) {
     return []
@@ -152,11 +162,6 @@ export async function getProfilePickList(idList: string[]): Promise<IEnsRegistra
   return rawList
 }
 
-export const getEnsProfileListPick = O(
-  map(async (idList: string[]): Promise<IEnsRegistration[]> => {
-    return getProfilePickList(idList)
-  })
-)
 
 export const getGmxIoPricefeed = O(
   map(async (queryParams: IRequestPricefeedApi): Promise<IPricefeed[]> => {
@@ -258,7 +263,7 @@ export const accountTradeList = O(
 }
 `)
 
-    return pagingQuery(queryParams, res.trades.map(fromJson.tradeJson) as ITrade[])
+    return pagingQuery(queryParams, res.trades.map(fromJson.tradeJson) as ITradeSettled[])
   })
 )
 
@@ -304,7 +309,7 @@ export const fetchTrades = async <T extends IRequestPagePositionApi & IChainPara
   return list
 }
 
-export const fetchHistoricTrades = async <T extends IRequestPagePositionApi & IChainParamApi & IRequestTimerangeApi, R>(params: T, getList: (res: T) => Promise<R[]>, splitSpan = intervalTimeMap.DAY7): Promise<R[]> => {
+export const fetchHistoricTrades = async <T extends IRequestPagePositionApi & IChainParamApi & IRequestTimerangeApi, R>(params: T, getList: (res: T) => Promise<R[]>, splitSpan: number = intervalTimeMap.DAY7): Promise<R[]> => {
   const deltaTime = params.to - params.from
 
   // splits the queries because the-graph's result limit of 5k items
@@ -375,7 +380,7 @@ export async function getPriceMap(time: number, queryParams: IChainParamApi): Pr
 
 
 export async function getCompetitionTrades(queryParams: IRequestPageApi & { referralCode: string }) {
-  const newLocal = intervalTimeMap.HR24 * 3
+  const interval = intervalTimeMap.HR24 * 3
   const competitionAccountListQuery = fetchHistoricTrades({ ...queryParams, offset: 0, pageSize: 1000 }, async (params) => {
     const res = await subgraphChainMap[queryParams.chain](gql(`
 
@@ -390,7 +395,7 @@ query {
 `), {})
 
     return res.trades as ITrade[]
-  }, newLocal)
+  }, interval)
 
 
   const historicTradeList = await competitionAccountListQuery

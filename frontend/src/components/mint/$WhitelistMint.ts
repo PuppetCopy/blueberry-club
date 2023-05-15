@@ -2,21 +2,19 @@ import { Behavior, combineArray, combineObject } from "@aelea/core"
 import { component, style, $text, attr, nodeEvent, styleInline, stylePseudo, INode } from "@aelea/dom"
 import { $column, layoutSheet, $row, $icon } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { ContractTransaction } from "@ethersproject/contracts"
-import { LabItemSale, MintPrivate, LAB_CHAIN } from "@gambitdao/gbc-middleware"
+import { LabItemSale, MintPrivate, LAB_CHAIN, abi } from "@gambitdao/gbc-middleware"
 import { formatFixed, filterNull } from "@gambitdao/gmx-middleware"
 import { $alert } from "@gambitdao/ui-components"
-import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
-import { switchLatest, multicast, startWith, snapshot, map, tap, merge, empty } from "@most/core"
+import { IWalletLink, IWalletName, IWalletclient } from "@gambitdao/wallet-link"
+import { switchLatest, multicast, startWith, snapshot, map, tap, merge, empty, mergeArray, now } from "@most/core"
 import { $caretDown } from "../../elements/$icons"
-import { readContract } from "../../logic/common"
 import { $ButtonPrimary } from "../form/$Button"
 import { $Dropdown, $defaultSelectContainer } from "../form/$Dropdown"
-import { $displayMintEvents } from "./mintUtils2"
 import { $IntermediateConnectButton } from "../$ConnectAccount"
-import { Whitelist__factory } from "@gambitdao/gbc-contracts"
 import { CHAIN } from "@gambitdao/const"
-
+import { PublicClient, SimulateContractReturnType, WalletClient } from "viem"
+import { $displayMintEvents } from "./mintUtils2"
+import { connectContract } from "../../logic/common"
 
 
 
@@ -27,25 +25,27 @@ interface MintCmp {
   walletLink: IWalletLink
 }
 
-
 export const $WhitelistMint = (config: MintCmp) => component((
-  [clickMintPublic, clickMintPublicTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
-  [customNftAmount, customNftAmountTether]: Behavior<INode, number>,
-  [selectMintAmount, selectMintAmountTether]: Behavior<number, number>,
+  [clickMintPublic, clickMintPublicTether]: Behavior<PointerEvent, Promise<Promise<WaitForTransactionReceiptReturnType<TChain>>>>,
+  [customNftAmount, customNftAmountTether]: Behavior<INode, bigint>,
+  [selectMintAmount, selectMintAmountTether]: Behavior<bigint, bigint>,
   [walletChange, walletChangeTether]: Behavior<IWalletName, IWalletName>,
 
 ) => {
 
-  const account = filterNull(map(signer => signer ? signer.address : null, config.walletLink.wallet))
+  const holderConnect = connectContract(config.walletLink.client, config.mintRule.contractAddress, abi.whitelist)
+
+  const account = filterNull(map(signer => signer ? signer.account.address : null, config.walletLink.wallet))
 
   const supportedNetwork = map(x => x !== LAB_CHAIN, config.walletLink.network)
-  const sale = readContract(Whitelist__factory, config.walletLink.provider, config.mintRule.contractAddress)
+  
   const accountChange = merge(account, supportedNetwork)
-  const selectedMintAmount = merge(customNftAmount, selectMintAmount)
+  const selectedMintAmount = mergeArray([customNftAmount, selectMintAmount, now(null)])
 
-  const isPrimaryDisabled = combineArray((selectedAmount) => {
-    return selectedAmount === null
-  }, selectedMintAmount)
+
+  function getIsEligible(mintRule: MintPrivate, w3p: IWalletclient) {
+    return mintRule.signatureList[config.mintRule.addressList.map(s => s.toLowerCase()).indexOf(w3p.account.address.toLowerCase())]
+  }
 
 
   return [
@@ -103,67 +103,69 @@ export const $WhitelistMint = (config: MintCmp) => component((
             $container: $defaultSelectContainer(style({})),
             value: startWith(null, customNftAmount),
             $$option: map(option => $text(String(option))),
-            list: [1, 2, 3, 5, 10, 20].filter(n => Number(config.mintRule.accountLimit) >= n),
+            list: [1n, 2n, 3n, 5n, 10n, 20n].filter(n => Number(config.mintRule.accountLimit) >= n),
           }
         })({
           select: selectMintAmountTether()
         }),
 
-        $column(layoutSheet.spacingBig)(
-          $IntermediateConnectButton({
-            chainList: config.chainList,
-            $$display: map((w3p) => {
-              const proof = config.mintRule.signatureList[config.mintRule.addressList.map(s => s.toLowerCase()).indexOf(w3p.address.toLowerCase())]
-              const isEligible = !!proof
+        $IntermediateConnectButton({
+          chainList: config.chainList,
+          $$display: map(w3p => {
+            const proof = config.mintRule.signatureList[config.mintRule.addressList.map(s => s.toLowerCase()).indexOf(w3p.account?.address.toLowerCase())]
+            const isEligible = !!getIsEligible(config.mintRule, w3p)
 
-              return $column(
-                $ButtonPrimary({
-                  disabled: startWith(true, isPrimaryDisabled),
-                  $content: switchLatest(
-                    map(selectedMintAmount => {
+            const isPrimaryDisabled = combineArray((selectedAmount) => {
+              return !proof || selectedAmount === null
+            }, selectedMintAmount)
 
-                      if (selectedMintAmount === null) {
-                        return $text('Select amount')
-                      }
-
-
-                      const priceFormated = formatFixed(config.mintRule.cost, 18)
-                      const total = selectedMintAmount * priceFormated
-
-                      return $text(`Mint ${selectedMintAmount} (${total > 0n ? total + 'ETH' : 'Free'})`)
-
-                    }, selectedMintAmount)
-                  ),
-                })({
-                  click: clickMintPublicTether(
-                    snapshot(async state => {
-                      const value = BigInt(state.selectedMintAmount) * config.mintRule.cost
-
-                      const { cost, start, accountLimit, finish, nonce, supply } = config.mintRule
+            return $column(
+              $ButtonPrimary({
+                disabled: startWith(true, isPrimaryDisabled),
+                $content: switchLatest(
+                  map(amount => {
+                    if (amount === null) {
+                      return $text('Select amount')
+                    }
 
 
-                      const contractAction = state.contract.mint(nonce, { cost, start, accountLimit, finish, supply }, proof, state.selectedMintAmount, { value })
+                    const priceFormated = formatFixed(config.mintRule.cost, 18)
+                    const total = Number(amount) * priceFormated
 
-                      return contractAction
+                    return $text(`Mint ${amount} (${total > 0n ? total + 'ETH' : 'Free'})`)
 
-                    }, combineObject({ selectedMintAmount, contract: sale })),
-                  )
-                }),
+                  }, selectedMintAmount)
+                ),
+              })({
+                click: clickMintPublicTether(
+                  snapshot(async params => {
+                    const value = params.selectedMintAmount! * config.mintRule.cost
 
-                isEligible ? empty() : $alert($text('Connected Account is not eligible'))
-              )
-            }),
-            walletLink: config.walletLink
-          })({
-            walletChange: walletChangeTether(),
-          })
-        )
+                    const { cost, start, accountLimit, finish, nonce, supply } = config.mintRule
 
+                    const request = await params.contract.simulateContract({
+                      value,
+                      abi: abi.whitelist,
+                      address: config.mintRule.contractAddress,
+                      functionName: 'mint',
+                      args: [nonce, { cost, start, accountLimit, finish, supply }, proof, params.selectedMintAmount!],
+                    })
 
+                    return request
+                  }, combineObject({ selectedMintAmount, contract: config.walletLink.client })),
+                )
+              }),
+
+              isEligible ? empty() : $alert($text('Connected Account is not eligible'))
+            )
+          }),
+          walletLink: config.walletLink
+        })({
+          walletChange: walletChangeTether(),
+        })
       ),
 
-
-      $displayMintEvents(sale, clickMintPublic)
+      $displayMintEvents(clickMintPublic)
     ),
 
 

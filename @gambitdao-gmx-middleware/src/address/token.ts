@@ -1,9 +1,9 @@
 import { CHAIN } from "@gambitdao/const"
-import { ITokenDescription } from "../types"
-import { groupByKey } from "../utils"
-import { ARBITRUM_ADDRESS } from "./arbitrum"
-import { AVALANCHE_ADDRESS } from "./avalanche"
-import { TOKEN_SYMBOL } from "./symbol"
+import { ITokenDescription } from "../types.js"
+import { groupByKey } from "../utils.js"
+import { ARBITRUM_ADDRESS } from "./arbitrum.js"
+import { AVALANCHE_ADDRESS } from "./avalanche.js"
+import { TOKEN_SYMBOL } from "./symbol.js"
 
 
 

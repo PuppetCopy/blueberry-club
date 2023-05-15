@@ -7,8 +7,6 @@ import { NFTStorage, File } from 'nft.storage'
 import { labItemSvg } from '../utils/image'
 import { promises } from 'fs'
 import { join } from 'path'
-import { map, runEffects } from "@most/core"
-import { newDefaultScheduler, } from "@most/scheduler"
 
 
 
@@ -56,39 +54,15 @@ export async function storeLabImageOnIpfs(item: LabItemSale) {
 }
 
 
-const scheduler = newDefaultScheduler()
-
 export async function storeGBCImage(tuple: IBerryDisplayTupleMap): Promise<sharp.Sharp> {
   if (!process.env.NFT_STORAGE) {
     throw new Error('nft.storage api key is required')
   }
 
   const svg = berrySvg(tuple)
+  const resvg = Buffer.from(svg)
 
-  return new Promise(resolve => {
-    const streamImg = map(async (svgstr) => {
-      const resvg = Buffer.from(svgstr)
-      const www = sharp(resvg)
-        .toFormat('webp')
+  return sharp(resvg).toFormat('webp')
 
-
-      return resolve(www)
-    }, svg)
-
-    runEffects(streamImg, scheduler)
-  })
-
-  // return new Promise(resolve => {
-
-  //   const streamImg = map(async (svgstr) => {
-  //     const resvg = new Resvg(svgstr)
-  //     const pngData = resvg.render()
-  //     const pngBuffer = pngData.asPng()
-
-  //     return resolve(pngBuffer)
-  //   }, svg)
-
-  //   runEffects(streamImg, scheduler)
-  // })
 }
 

@@ -1,4 +1,5 @@
-import { IAccountSummary, IChainParamApi, IEnsRegistration, intervalTimeMap, IResponsePageApi, IRequestPagePositionApi, IRequestSortApi, IRequestTimerangeApi } from "@gambitdao/gmx-middleware"
+import { IAccountSummary, IChainParamApi, IEnsRegistration, intervalTimeMap, IResponsePageApi, IRequestPagePositionApi, IRequestSortApi, IRequestTimerangeApi, IntervalTime } from "@gambitdao/gmx-middleware"
+import { Address } from "viem"
 
 export type IPrice = {
   priceUsd: bigint
@@ -74,7 +75,7 @@ export type ILabItemOwnership = {
 }
 
 export interface IOwner {
-  id: string
+  id: Address
   balance: bigint
 
   ownedTokens: IToken[]
@@ -284,7 +285,6 @@ export enum IAttributeClothes {
   NUDE = IAttributeMappings.Nude,
 
   // lab
-  BUILDER = IAttributeMappings.Builder,
   AVALANCHE_HOODIE = IAttributeMappings["Avalanche Hoodie"],
   GLP_SHIRT = IAttributeMappings["GLP Shirt"],
   SUMMER_BUOY = IAttributeMappings["Summer Buoy"],
@@ -466,14 +466,14 @@ export type SvgPartsMap = [
 ]
 
 export interface MintAccountRule {
-  supply: number // uint120
+  supply: bigint // uint120
   cost: bigint // uint208
-  accountLimit: number // uint120
-  start: number // uint64
-  finish: number // uint64
+  accountLimit: bigint // uint120
+  start: bigint // uint64
+  finish: bigint // uint64
 }
 
-export type TraitAppearanceValue = 'Background' | 'Clothes' | 'Body' | 'Expression' | 'Face Accessory' | 'Hat'
+export type TraitAppearanceValue = 'Background' | 'Clothes' | 'Body' | 'Expression' | 'Face Accessory' | 'Hat' | 'Badge'
 export type TraitType = {
   trait_type: TraitAppearanceValue | 'Slot',
   value: string
@@ -496,7 +496,7 @@ export interface LabItemSale {
 
 
 export interface MintRuleConfig extends MintAccountRule {
-  contractAddress: string
+  contractAddress: Address
 }
 
 
@@ -511,20 +511,20 @@ export interface MintHolder extends MintRuleConfig {
 export interface MintPrivate extends MintRuleConfig {
   type: SaleType.Whitelist
 
-  nonce: number // uint120
-  addressList: string[]
-  signatureList: string[][]
+  nonce: bigint // uint120
+  addressList: Address[]
+  signatureList: Address[][]
 }
 
 export type MintRule = MintPublic | MintHolder | MintPrivate
 
 
 export interface IRequestLeaderboardApi extends IRequestPagePositionApi, IChainParamApi, IRequestSortApi<keyof IBlueberryLadder> {
-  timeInterval: intervalTimeMap.HR24 | intervalTimeMap.DAY7 | intervalTimeMap.MONTH
+  timeInterval: typeof intervalTimeMap.HR24 | typeof intervalTimeMap.DAY7 | typeof intervalTimeMap.MONTH
 }
 export interface IRequestCompetitionLadderApi extends IChainParamApi, IRequestSortApi<IBlueberryLadder>, IRequestPagePositionApi, IRequestTimerangeApi {
   referralCode: string
   maxCollateral: bigint
-  account: string | null
+  account: Address | null
   metric: 'roi' | 'pnl'
 }

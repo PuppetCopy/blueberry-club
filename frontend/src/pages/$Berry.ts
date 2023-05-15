@@ -4,7 +4,6 @@ import { Route } from "@aelea/router"
 import { $column, $icon, $Popover, $row, $seperator, $TextField, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { LAB_CHAIN, GBC_ADDRESS, IAttributeMappings, attributeIndexToLabel, tokenIdAttributeTuple, blueberrySubgraph } from "@gambitdao/gbc-middleware"
-import { GBC__factory } from "@gambitdao/gbc-contracts"
 import { isAddress, readableDate, timeSince } from "@gambitdao/gmx-middleware"
 import { $anchor, $Link, $caretDblDown, $IntermediateTx } from "@gambitdao/ui-components"
 
@@ -18,6 +17,7 @@ import { IToken } from "@gambitdao/gbc-middleware"
 import { $berryByToken } from "../logic/common"
 import { $CardTable } from "../components/$common"
 import { IProfileActiveTab } from "./$Profile"
+import { Address } from "viem"
 
 
 
@@ -68,14 +68,14 @@ export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
             $row(layoutSheet.spacingBig, style({ alignItems: 'center' }))(
               switchLatest(map(w3p => {
 
-                if (w3p === null || token.owner.id.toLowerCase() !== w3p.address.toLowerCase()) {
+                if (w3p === null || token.owner.id.toLowerCase() !== w3p.account.address.toLowerCase()) {
                   return empty()
                 }
 
                 return $row(
                   $Popover({
                     $$popContent: map(() => {
-                      return $TrasnferOwnership(w3p.address, token, walletLink)({
+                      return $TrasnferOwnership(w3p.account.address, token, walletLink)({
                         // transfer: trasnferOwnershipTether()
                       })
                     }, trasnferPopup),
@@ -159,9 +159,9 @@ export const $BerryPage = ({ walletLink, parentRoute }: IBerry) => component((
 })
 
 
-const $TrasnferOwnership = (address: string, token: IToken, walletLink: IWalletLink) => component((
+const $TrasnferOwnership = (address: Address, token: IToken, walletLink: IWalletLink) => component((
   [submit, submitTether]: Behavior<any, any>,
-  [clipboardInput, clipboardInputTether]: Behavior<IBranch, string>,
+  [clipboardInput, clipboardInputTether]: Behavior<IBranch, Address>,
   [inputValueChange, inputValueChangeTether]: Behavior<string, string>,
 ) => {
 
@@ -170,7 +170,7 @@ const $TrasnferOwnership = (address: string, token: IToken, walletLink: IWalletL
       return null
     }
 
-    const contract = GBC__factory.connect(GBC_ADDRESS.GBC, w3p.provider.getSigner())
+    const contract = GBC__factory.connect(GBC_ADDRESS.GBC, w3p.provider)
 
     if (await contract.deployed()) {
       return contract

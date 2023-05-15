@@ -9,7 +9,7 @@ import { blueberrySubgraph, IAccountStakingStore, LAB_CHAIN, saleDescriptionList
 import { $ButtonPrimary, $ButtonSecondary, $defaultButtonSecondary } from "../components/form/$Button"
 import { $labItem } from "../logic/common"
 import { BrowserStore } from "../logic/store"
-import { filterNull, IRequestAccountApi, IRequestAccountTradeListApi, IRequestPageApi, IResponsePageApi, IStake, ITradeOpen, ITradeSettled, readableDate, switchMap, timeSince, unixTimestampNow } from "@gambitdao/gmx-middleware"
+import { filterNull, IRequestAccountApi, IRequestAccountTradeListApi, IResponsePageApi, IStake, ITradeOpen, ITradeSettled, readableDate, switchMap, timeSince, unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { IProfileActiveTab } from "./$Profile"
 import { Stream } from "@most/types"
 import { $Link, $anchor, $IntermediateTx, $ButtonToggle, $defaulButtonToggleContainer, $infoTooltipLabel, $IntermediatePromise, $openPositionPnlBreakdown, $PnlValue, $riskLiquidator, $sizeDisplay, $TradePnl } from "@gambitdao/ui-components"
@@ -17,7 +17,6 @@ import { $labLogo } from "../common/$icons"
 import { pallete } from "@aelea/ui-components-theme"
 import { $Popover } from "../components/$Popover"
 import { $discoverIdentityDisplay } from "../components/$AccountProfile"
-import { ContractTransaction } from "@ethersproject/contracts"
 import { connectLab } from "../logic/contract/gbc"
 import { $berryTileId, $CardTable } from "../components/$common"
 import { fadeIn } from "../transitions/enter"
@@ -49,13 +48,13 @@ export const $ProfileConnected = (config: IAccount) => component((
   [selectProfileMode, selectProfileModeTether]: Behavior<IProfileActiveTab, IProfileActiveTab>,
 
   [clickSetIdentityPopover, clickSetIdentityPopoverTether]: Behavior<any, any>,
-  [setMainBerry, setMainBerryTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
+  [setMainBerry, setMainBerryTether]: Behavior<PointerEvent, Promise<ContractTransactionResponse>>,
 
 ) => {
 
   const $title = $text(style({ fontWeight: 'bold', fontSize: '1.55em' }))
-  const tradeReader = connectTradeReader(config.walletLink.provider)
-  const lab = connectLab(config.walletLink.provider)
+  const tradeReader = connectTradeReader(config.walletLink.client)
+  const lab = connectLab(config.walletLink.client)
 
   const requestAccountOpenTradeList: Stream<IRequestAccountTradeListApi> = filterNull(map(w3p => {
     if (w3p === null) {
@@ -63,8 +62,8 @@ export const $ProfileConnected = (config: IAccount) => component((
     }
 
     return {
-      account: w3p.address,
-      chain: w3p.chain,
+      account: w3p.account.address,
+      chain: w3p.chain.id,
     }
   }, config.walletLink.wallet))
 
@@ -83,7 +82,7 @@ export const $ProfileConnected = (config: IAccount) => component((
           return $Popover({
             $target: $row(layoutSheet.spacing, style({ flex: 1, alignItems: 'center', placeContent: 'center', zIndex: 1 }))(
               $discoverIdentityDisplay({
-                address: w3p.address,
+                address: w3p.account.address,
                 $container: $defaultBerry(style({ minWidth: '125px' })),
                 labelSize: '1.5em'
               }),
@@ -102,7 +101,7 @@ export const $ProfileConnected = (config: IAccount) => component((
 
             ),
             $popContent: map(() => {
-              const connect = connectLab(config.walletLink.provider)
+              const connect = connectLab(config.walletLink.client)
 
 
               return $column(layoutSheet.spacingSmall, style({ width: '300px' }))(
@@ -217,14 +216,14 @@ export const $ProfileConnected = (config: IAccount) => component((
 
 
               $IntermediatePromise({
-                query: blueberrySubgraph.owner(combineObject({ id: map(w3p => w3p?.address, config.walletLink.wallet) })),
+                query: blueberrySubgraph.owner(combineObject({ id: map(w3p => w3p!.account.address, config.walletLink.wallet) })),
                 $$done: map(owner => {
                   if (owner === null) {
                     return null
                   }
 
 
-                  const ownedItems = lab.accountListBalance(owner.id, saleDescriptionList.map(x => x.id))
+                  const ownedItems = lab.accountListBalance(owner.id, saleDescriptionList.map(x => BigInt(x.id)))
 
                   return $column(layoutSheet.spacingBig)(
 
@@ -259,7 +258,7 @@ export const $ProfileConnected = (config: IAccount) => component((
                             $text(style({ position: 'absolute', top: '1px', right: '4px', fontSize: '.75em', fontWeight: 'bold', color: pallete.background }))(
                               item.amount + 'x'
                             ),
-                            $labItem({ id: item.id })
+                            $labItem({ id: Number(item.id) })
                           )
                         })
                       )
@@ -383,8 +382,8 @@ export const $ProfileConnected = (config: IAccount) => component((
                     }
 
                     return {
-                      account: w3p.address,
-                      chain: w3p.chain,
+                      account: w3p.account.address,
+                      chain: w3p.chain.id,
                       offset: pageIndex * 20,
                       pageSize: 20,
                     }

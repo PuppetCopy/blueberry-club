@@ -1,15 +1,3 @@
-// import { O } from "@aelea/dom"
-// import { $element, $text, attr, Behavior, component, style } from "@aelea/dom"
-// import { $column, $NumberTicker, $row, layoutSheet } from "@aelea/ui-components"
-// import { pallete, theme } from "@aelea/ui-components-theme"
-// import { TransactionReceipt } from "@ethersproject/providers"
-// import { filter } from "@most/core"
-// import { map, skipRepeats, startWith, switchLatest } from "@most/core"
-// import { getTxDetails } from "../api/contract"
-// import { $spinner } from "../common/$spinner"
-// import { $ButtonPrimary } from "./$Button"
-
-
 
 
 // const $status = $text(style({ color: pallete.foreground, fontStyle: 'italic', fontSize: '19px', padding: '3px 0' }))

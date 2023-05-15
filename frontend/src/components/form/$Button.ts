@@ -2,7 +2,6 @@ import { Behavior, combineArray, O } from "@aelea/core"
 import { $element, $text, component, style, stylePseudo } from "@aelea/dom"
 import { $column, $icon, $row, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { ContractTransaction } from "@ethersproject/contracts"
 import { $alertIcon, $Tooltip } from "@gambitdao/ui-components"
 import { constant, fromPromise, map, never, now, recoverWith, skipRepeats, startWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
@@ -70,7 +69,7 @@ export const $ButtonSecondary = (config: IButtonCore) => {
 
 
 export interface IButtonPrimaryCtx extends IButtonCore {
-  ctx: Stream<Promise<ContractTransaction>>
+  ctx: Stream<Promise<ContractTransactionResponse>>
   alert?: Stream<string | null>
 }
 

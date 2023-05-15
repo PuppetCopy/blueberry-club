@@ -1,9 +1,9 @@
-import { Behavior, combineArray } from "@aelea/core"
+import { Behavior, combineArray, replayLatest } from "@aelea/core"
 import { $Branch, $element, $node, $svg, $text, attr, component, eventElementTarget, INode, style, styleInline, stylePseudo } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, observer, screenUtils } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { getSafeMappedValue, gmxSubgraph, intervalTimeMap, TRADE_CONTRACT_MAPPING } from "@gambitdao/gmx-middleware"
+import { getClientNativeTokenUsd, getGmxPriceUsd, getSafeMappedValue, gmxSubgraph, intervalTimeMap, TRADE_CONTRACT_MAPPING } from "@gambitdao/gmx-middleware"
 import { IWalletLink, zipState } from "@gambitdao/wallet-link"
 import { $alert, $anchor, $gitbook, $IntermediatePromise, $Link } from "@gambitdao/ui-components"
 import { awaitPromises, map, multicast, now, snapshot, switchLatest, tap, zip } from "@most/core"
@@ -12,18 +12,19 @@ import { $card, $teamMember } from "../elements/$common"
 import {
   blueberrySubgraph,
   GBC_ADDRESS, IAttributeBody, IAttributeClothes, IAttributeExpression, IAttributeFaceAccessory,
-  IAttributeHat, IToken, ITreasuryStore, tokenIdAttributeTuple
+  IAttributeHat, IToken, ITreasuryStore, svgParts, tokenIdAttributeTuple
 } from "@gambitdao/gbc-middleware"
 import { $seperator2 } from "./common"
 import { $buttonAnchor, $ButtonSecondary } from "../components/form/$Button"
 import { $opensea } from "../elements/$icons"
 import { Stream } from "@most/types"
-import { $berry, svgParts } from "../components/$DisplayBerry"
+import { $berry } from "../components/$DisplayBerry"
 import { BrowserStore } from "../logic/store"
 import { $berryByLabItems, $berryByToken, getBerryFromItems } from "../logic/common"
 import { $StakingGraph } from "../components/$StakingGraph"
 import { connectGmxEarn } from "../logic/contract"
 import { CHAIN } from "@gambitdao/const"
+
 
 
 export interface ITreasury {
@@ -61,6 +62,9 @@ export const $Home = (config: ITreasury) => component((
 
   const windowMouseMove = multicast(eventElementTarget('pointermove', window))
 
+
+  const clientNativeTokenPrice = getClientNativeTokenUsd(config.walletLink.client)
+  const clientGmxPrice = replayLatest(multicast(getGmxPriceUsd(config.walletLink.client, clientNativeTokenPrice)))
 
   const $eyeBall = $row(style({ position: 'relative', backgroundColor: 'white', placeContent: 'center', border: '4px solid black', alignItems: 'flex-end', padding: '2px', borderRadius: '50%', width: '30px', height: '30px' }))
   const $eyeInner = $node(style({ borderRadius: '50%', width: '6px', height: '6px', display: 'block', background: 'black' }))
@@ -143,153 +147,152 @@ export const $Home = (config: ITreasury) => component((
     $column(style(screenUtils.isDesktopScreen ? { gap: '125px' } : { gap: '90px' }))(
 
 
-      $row(
-        screenUtils.isDesktopScreen
-          ? style({ width: '100vw', marginLeft: 'calc(-50vw + 50%)', height: '580px', alignItems: 'center', placeContent: 'center' })
-          : style({ height: '80vh', alignItems: 'center', placeContent: 'center' })
-      )(
-        switchLatest(map(parts => {
-          // const queryBerryDayId = blueberrySubgraph.token(now({ id: '4383' }))
-          const queryBerryDayId = blueberrySubgraph.token(now({ id: dailyRandom(Date.now() / (intervalTimeMap.HR24 * 1000)) + '' }))
+      // $row(
+      //   screenUtils.isDesktopScreen
+      //     ? style({ width: '100vw', marginLeft: 'calc(-50vw + 50%)', height: '580px', alignItems: 'center', placeContent: 'center' })
+      //     : style({ height: '80vh', alignItems: 'center', placeContent: 'center' })
+      // )(
+      //   (() => {
+      //     const queryBerryDayId = blueberrySubgraph.token(now({ id: dailyRandom(Date.now() / (intervalTimeMap.HR24 * 1000)) + '' }))
 
-          const berrySize = screenUtils.isDesktopScreen ? 100 : 70
+      //     const berrySize = screenUtils.isDesktopScreen ? 100 : 70
 
-          const berryWallRowCount = Math.floor((document.body.clientWidth + 20) / (berrySize + 20))
-          const headlineSize = screenUtils.isDesktopScreen ? 3 * 7 : 0
+      //     const berryWallRowCount = Math.floor((document.body.clientWidth + 20) / (berrySize + 20))
+      //     const headlineSize = screenUtils.isDesktopScreen ? 3 * 7 : 0
 
-          const aboutHalf = Math.floor((berryWallRowCount - 7) / 2)
+      //     const aboutHalf = Math.floor((berryWallRowCount - 7) / 2)
 
-          const wallCount = berryWallRowCount * 5 - headlineSize
-          const randomGBCList = randomIntList(wallCount, 0, 9999)
-
-
-          const $introHeadline = $column(layoutSheet.spacingBig, style({ maxWidth: '820px', alignSelf: 'center' }))(
-            $column(style({ fontSize: '1.5em' }))(
-              $text(style({ fontWeight: 'bold' }))(`GMX Blueberry Club`)
-            ),
-            $node(
-              $text(style({ lineHeight: '1.5em' }))(`10,000 Blueberries NFT Collection on Arbitrum, building community-driven `),
-              $anchor(style({ display: 'inline' }), attr({ href: `https://twitter.com/GMX_IO`, target: '_blank' }))(
-                $text('@GMX_io')
-              ),
-              $text(' products and having fun together')
-            ),
-            $seperator2,
-            $row(layoutSheet.spacingBig, style({}))(
-              $anchor(layoutSheet.spacingSmall, style({ alignItems: 'center', display: 'flex' }), attr({ href: `https://opensea.io/collection/blueberry-club` }))(
-                $icon({
-                  width: '40px',
-                  $content: $opensea,
-                  viewBox: '0 0 32 32'
-                }),
-                $text(style({ paddingBottom: '6px' }))(screenUtils.isDesktopScreen ? 'Trade On Opensea' : 'Trade')
-              ),
-              $anchor(layoutSheet.spacingSmall, style({ alignItems: 'center', display: 'flex' }), attr({ href: `https://docs.blueberry.club` }))(
-                $icon({
-                  width: '40px',
-                  $content: $gitbook,
-                  viewBox: '0 0 32 32'
-                }),
-                $text(style({ paddingBottom: '6px' }))('Documentation')
-              )
-            )
-          )
-
-          const queryBerryWallList = blueberrySubgraph.tokenListPick(now(randomGBCList))
-
-          const $mosaicItem = (token: IToken) => {
-
-            return $anchor(style({ position: 'relative' }), attr({ href: '/p/berry/' + token.id, target: '' }))(
-              style({ borderRadius: '10px' }, $berryByToken(token)),
-              $text(style({ textAlign: 'left', padding: screenUtils.isDesktopScreen ? '8px 0 0 8px' : '5px 0 0 5px', color: '#fff', textShadow: '#0000005e 0px 0px 5px', fontSize: screenUtils.isDesktopScreen ? '.6em' : '.6em', position: 'absolute', top: 0, fontWeight: 'bold' }))(String(token.id))
-            )
-          }
-
-          return $IntermediatePromise({
-            query: combineArray((a, b) => Promise.all([a, b]), queryBerryDayId, queryBerryWallList),
-            $$done: map(([token, berryWallList]) => {
-              const [background, clothes, body, expression, faceAccessory, hat] = tokenIdAttributeTuple[token.id - 1]
-
-              const display = getBerryFromItems(token.labItems.map(li => Number(li.id)))
+      //     const wallCount = berryWallRowCount * 5 - headlineSize
+      //     const randomGBCList = randomIntList(wallCount, 0, 9999)
 
 
-              const $mainBerry = tap(({ element }) => {
-                element.querySelectorAll('.wakka').forEach(el => el.remove())
-              }, $berryByLabItems(token.id, display.background, display.custom, display.badge, $column(style({ width: '340px', height: '340px' })), [background, clothes, undefined, IAttributeExpression.HAPPY, ' ' as any, ' ' as any]) as $Branch)
+      //     const $introHeadline = $column(layoutSheet.spacingBig, style({ maxWidth: '820px', alignSelf: 'center' }))(
+      //       $column(style({ fontSize: '1.5em' }))(
+      //         $text(style({ fontWeight: 'bold' }))(`GMX Blueberry Club`)
+      //       ),
+      //       $node(
+      //         $text(style({ lineHeight: '1.5em' }))(`10,000 Blueberries NFT Collection on Arbitrum, building community-driven `),
+      //         $anchor(style({ display: 'inline' }), attr({ href: `https://twitter.com/GMX_IO`, target: '_blank' }))(
+      //           $text('@GMX_io')
+      //         ),
+      //         $text(' products and having fun together')
+      //       ),
+      //       $seperator2,
+      //       $row(layoutSheet.spacingBig, style({}))(
+      //         $anchor(layoutSheet.spacingSmall, style({ alignItems: 'center', display: 'flex' }), attr({ href: `https://opensea.io/collection/blueberry-club` }))(
+      //           $icon({
+      //             width: '40px',
+      //             $content: $opensea,
+      //             viewBox: '0 0 32 32'
+      //           }),
+      //           $text(style({ paddingBottom: '6px' }))(screenUtils.isDesktopScreen ? 'Trade On Opensea' : 'Trade')
+      //         ),
+      //         $anchor(layoutSheet.spacingSmall, style({ alignItems: 'center', display: 'flex' }), attr({ href: `https://docs.blueberry.club` }))(
+      //           $icon({
+      //             width: '40px',
+      //             $content: $gitbook,
+      //             viewBox: '0 0 32 32'
+      //           }),
+      //           $text(style({ paddingBottom: '6px' }))('Documentation')
+      //         )
+      //       )
+      //     )
 
-              return screenUtils.isDesktopScreen
-                ? $node(style({ display: 'grid', width: '100%', gap: '20px', justifyContent: 'center', gridTemplateColumns: `repeat(auto-fit, ${berrySize}px)`, gridAutoRows: berrySize + 'px' }))(
-                  ...berryWallList.slice(0, berryWallRowCount + aboutHalf).map(id => {
-                    return $mosaicItem(id)
-                  }),
-                  $row(style({ gridRow: 'span 3 / auto', gridColumn: 'span 7 / auto', gap: '35px' }))(
-                    $Link({
-                      url: `/p/berry/${token.id}`,
-                      anchorOp: style({ minWidth: '340px' }),
-                      route: config.parentRoute.create({ fragment: 'fefe' }),
-                      $content: $row(style({ maxWidth: 340 + 'px', borderRadius: '30px', overflow: 'hidden', width: '100%', height: 340 + 'px', transformStyle: 'preserve-3d', perspective: '100px', position: 'relative', placeContent: 'center', alignItems: 'flex-end' }))(
-                        $row(style({ alignSelf: 'flex-end', zIndex: 10, color: `white!important`, fontWeight: 'bold', position: 'absolute', left: '20px', top: '16px' }))(
-                          $text(style({ fontSize: '38px', textShadow: '#0000005e 0px 0px 5px' }))(String(token.id))
-                        ),
-                        $mainBerry,
-                        $svg('svg')(
-                          attr({ xmlns: 'http://www.w3.org/2000/svg', fill: 'none', viewBox: `0 0 1500 1500` }),
-                          style({ width: 340 + 'px', height: 340 + 'px', position: 'absolute', zIndex: 1, })
-                        )(
-                          tap(async ({ element }) => {
-                            element.innerHTML = `
-                            ${parts[4][display.custom as IAttributeFaceAccessory || faceAccessory]}
-                            ${parts[5][hat]}
-                          `
-                          })
-                        )(),
-                        $row(style({ position: 'absolute', width: '95px', left: '158px', placeContent: 'space-between', top: '162px' }))(
-                          $eyeBall(leftEyeContainerPerspectiveTether(observer.resize()), eyeStylePosition(leftEyeContainerPerspective))(
-                            $eyeInner()
-                          ),
-                          $eyeBall(rightEyeContainerPerspectiveTether(observer.resize()), eyeStylePosition(rightEyeContainerPerspective))(
-                            $eyeInner()
-                          )
-                        ),
-                        $text(
-                          style({ zIndex: 1, color: pallete.background, backgroundColor: pallete.message, textAlign: 'center', padding: '9px 13px', fontWeight: 'bold', borderRadius: '15px', position: 'absolute', top: '17px', right: '20px' }),
-                          stylePseudo(':after', {
-                            border: '11px solid transparent',
-                            borderTop: `5px solid ${pallete.message}`,
-                            content: "''",
-                            position: 'absolute',
-                            top: '100%',
-                            left: '56%',
-                            width: 0,
-                            height: 0
-                          })
-                        )('gm anon')
-                      )
-                    })({
-                      click: linkClickTether()
-                    }),
+      //     const queryBerryWallList = blueberrySubgraph.tokenListPick(now(randomGBCList))
 
-                    $row(gutterSpacingStyle, style({ display: 'flex', gap: '36px', placeContent: 'center', alignItems: 'center' }))(
-                      $introHeadline
-                    )
-                  ),
-                  ...berryWallList.slice(berryWallRowCount + aboutHalf, wallCount).map(id => {
-                    return $mosaicItem(id)
-                  }),
-                )
-                : $row(style({ margin: '0px -15px', flexWrap: 'wrap', gap: '10px', placeContent: 'center', flex: 1 }))(
-                  ...berryWallList.slice(0, berryWallRowCount * 2).map(id => {
-                    return $mosaicItem(id)
-                  }),
-                  style({ padding: '25px' }, $introHeadline),
-                  ...berryWallList.slice(berryWallRowCount * 2, berryWallRowCount * 4).map(id => {
-                    return $mosaicItem(id)
-                  }),
-                )
-            })
-          })({})
-        }, svgParts))
-      ),
+      //     const $mosaicItem = (token: IToken) => {
+
+      //       return $anchor(style({ position: 'relative' }), attr({ href: '/p/berry/' + token.id, target: '' }))(
+      //         style({ borderRadius: '10px' }, $berryByToken(token)),
+      //         $text(style({ textAlign: 'left', padding: screenUtils.isDesktopScreen ? '8px 0 0 8px' : '5px 0 0 5px', color: '#fff', textShadow: '#0000005e 0px 0px 5px', fontSize: screenUtils.isDesktopScreen ? '.6em' : '.6em', position: 'absolute', top: 0, fontWeight: 'bold' }))(String(token.id))
+      //       )
+      //     }
+
+      //     return $IntermediatePromise({
+      //       query: combineArray((a, b) => Promise.all([a, b]), queryBerryDayId, queryBerryWallList),
+      //       $$done: map(([token, berryWallList]) => {
+      //         const [background, clothes, body, expression, faceAccessory, hat] = tokenIdAttributeTuple[token.id - 1]
+
+      //         const display = getBerryFromItems(token.labItems.map(li => Number(li.id)))
+
+
+      //         const $mainBerry = tap(({ element }) => {
+      //           element.querySelectorAll('.wakka').forEach(el => el.remove())
+      //         }, $berryByLabItems(token.id, display.background, display.custom, display.badge, $column(style({ width: '340px', height: '340px' })), [background, clothes, undefined, IAttributeExpression.HAPPY, ' ' as any, ' ' as any]) as $Branch)
+
+      //         return screenUtils.isDesktopScreen
+      //           ? $node(style({ display: 'grid', width: '100%', gap: '20px', justifyContent: 'center', gridTemplateColumns: `repeat(auto-fit, ${berrySize}px)`, gridAutoRows: berrySize + 'px' }))(
+      //             ...berryWallList.slice(0, berryWallRowCount + aboutHalf).map(id => {
+      //               return $mosaicItem(id)
+      //             }),
+      //             $row(style({ gridRow: 'span 3 / auto', gridColumn: 'span 7 / auto', gap: '35px' }))(
+      //               $Link({
+      //                 url: `/p/berry/${token.id}`,
+      //                 anchorOp: style({ minWidth: '340px' }),
+      //                 route: config.parentRoute.create({ fragment: 'fefe' }),
+      //                 $content: $row(style({ maxWidth: 340 + 'px', borderRadius: '30px', overflow: 'hidden', width: '100%', height: 340 + 'px', transformStyle: 'preserve-3d', perspective: '100px', position: 'relative', placeContent: 'center', alignItems: 'flex-end' }))(
+      //                   $row(style({ alignSelf: 'flex-end', zIndex: 10, color: `white!important`, fontWeight: 'bold', position: 'absolute', left: '20px', top: '16px' }))(
+      //                     $text(style({ fontSize: '38px', textShadow: '#0000005e 0px 0px 5px' }))(String(token.id))
+      //                   ),
+      //                   $mainBerry,
+      //                   $svg('svg')(
+      //                     attr({ xmlns: 'http://www.w3.org/2000/svg', fill: 'none', viewBox: `0 0 1500 1500` }),
+      //                     style({ width: 340 + 'px', height: 340 + 'px', position: 'absolute', zIndex: 1, })
+      //                   )(
+      //                     tap(async ({ element }) => {
+      //                       element.innerHTML = `
+      //                       ${svgParts[4][display.custom as IAttributeFaceAccessory || faceAccessory]}
+      //                       ${svgParts[5][hat]}
+      //                     `
+      //                     })
+      //                   )(),
+      //                   $row(style({ position: 'absolute', width: '95px', left: '158px', placeContent: 'space-between', top: '162px' }))(
+      //                     $eyeBall(leftEyeContainerPerspectiveTether(observer.resize()), eyeStylePosition(leftEyeContainerPerspective))(
+      //                       $eyeInner()
+      //                     ),
+      //                     $eyeBall(rightEyeContainerPerspectiveTether(observer.resize()), eyeStylePosition(rightEyeContainerPerspective))(
+      //                       $eyeInner()
+      //                     )
+      //                   ),
+      //                   $text(
+      //                     style({ zIndex: 1, color: pallete.background, backgroundColor: pallete.message, textAlign: 'center', padding: '9px 13px', fontWeight: 'bold', borderRadius: '15px', position: 'absolute', top: '17px', right: '20px' }),
+      //                     stylePseudo(':after', {
+      //                       border: '11px solid transparent',
+      //                       borderTop: `5px solid ${pallete.message}`,
+      //                       content: "''",
+      //                       position: 'absolute',
+      //                       top: '100%',
+      //                       left: '56%',
+      //                       width: 0,
+      //                       height: 0
+      //                     })
+      //                   )('gm anon')
+      //                 )
+      //               })({
+      //                 click: linkClickTether()
+      //               }),
+
+      //               $row(gutterSpacingStyle, style({ display: 'flex', gap: '36px', placeContent: 'center', alignItems: 'center' }))(
+      //                 $introHeadline
+      //               )
+      //             ),
+      //             ...berryWallList.slice(berryWallRowCount + aboutHalf, wallCount).map(id => {
+      //               return $mosaicItem(id)
+      //             }),
+      //           )
+      //           : $row(style({ margin: '0px -15px', flexWrap: 'wrap', gap: '10px', placeContent: 'center', flex: 1 }))(
+      //             ...berryWallList.slice(0, berryWallRowCount * 2).map(id => {
+      //               return $mosaicItem(id)
+      //             }),
+      //             style({ padding: '25px' }, $introHeadline),
+      //             ...berryWallList.slice(berryWallRowCount * 2, berryWallRowCount * 4).map(id => {
+      //               return $mosaicItem(id)
+      //             }),
+      //           )
+      //       })
+      //     })({})
+      //   })()
+      // ),
 
 
       $column(style({ alignItems: 'center', gap: '26px' }))(
@@ -313,8 +316,8 @@ export const $Home = (config: ITreasury) => component((
             const contractMapping = getSafeMappedValue(TRADE_CONTRACT_MAPPING, chain, CHAIN.ARBITRUM)
             const account = chain === CHAIN.AVALANCHE ? GBC_ADDRESS.TREASURY_AVALANCHE : GBC_ADDRESS.TREASURY_ARBITRUM
 
-            return connectGmxEarn(config.walletLink.provider, account, contractMapping).stakingRewards
-          }, config.walletLink.provider, config.walletLink.network)),
+            return connectGmxEarn(now(provider), account, clientGmxPrice, contractMapping).stakingRewards
+          }, config.walletLink.client, config.walletLink.network)),
           walletLink: config.walletLink,
         })({}),
 
@@ -434,7 +437,7 @@ export const $Home = (config: ITreasury) => component((
         $card(layoutSheet.spacingBig, style({ flexDirection: screenUtils.isDesktopScreen ? 'row' : 'column-reverse', alignItems: 'center', position: 'relative', padding: '40px' }))(
 
           $row(style({ width: screenUtils.isDesktopScreen ? '280px' : '' }))(
-            style({ margin: '-40px' }, $berry([undefined, IAttributeClothes.BUILDER, IAttributeBody.BLUEBERRY, IAttributeExpression.HAPPY, IAttributeFaceAccessory.RICH, IAttributeHat.BRAIN]))
+            style({ margin: '-40px' }, $berry([undefined, IAttributeClothes.BATHROBE_ORANGE, IAttributeBody.BLUEBERRY, IAttributeExpression.HAPPY, IAttributeFaceAccessory.RICH, IAttributeHat.BRAIN]))
           ),
 
           $column(layoutSheet.spacing)(
@@ -446,7 +449,7 @@ export const $Home = (config: ITreasury) => component((
         ),
       ),
 
-      $node(),
+      // $node(),
     ),
 
     {

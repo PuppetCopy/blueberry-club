@@ -1,32 +1,31 @@
-import { Behavior, O } from "@aelea/core"
-import { $Branch, $element, $Node, $text, attr, component, nodeEvent, style } from "@aelea/dom"
+import { Behavior, O, combineArray, replayLatest } from "@aelea/core"
+import { $Branch, $Node, $element, $text, attr, component, nodeEvent, style } from "@aelea/dom"
 import { $RouterAnchor, Route } from '@aelea/router'
 import { $column, $icon, $row, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { pallete, theme } from "@aelea/ui-components-theme"
-import { formatReadableUSD } from "@gambitdao/gmx-middleware"
-import { IWalletLink, IWalletName, walletConnect } from "@gambitdao/wallet-link"
-import { awaitPromises, constant, empty, map, multicast, now, switchLatest } from '@most/core'
-import { $bagOfCoins, $caretDown, $stackedCoins } from "../elements/$icons"
-import { $ButtonSecondary } from "./form/$Button"
-import { totalWalletHoldingsUsd } from "../logic/gbcTreasury"
-import { $Dropdown } from "./form/$Dropdown"
-import { $bagOfCoinsCircle, $fileCheckCircle, $logo, $logoFull, $labLogo, $gmxLogo } from "../common/$icons"
-import { $anchor, $discord, $gitbook, $github, $instagram, $Link, $moreDots, $twitter } from "@gambitdao/ui-components"
-import { $Picker } from "../components/$ThemePicker"
-import { dark, light } from "../common/theme"
-import { Stream } from "@most/types"
-import { $WalletDisplay } from "./$WalletDisplay"
-import { $Popover } from "./$Popover"
 import { CHAIN } from "@gambitdao/const"
-
-
+import { BI_18_PRECISION, GBC_ADDRESS, } from "@gambitdao/gbc-middleware"
+import { ARBITRUM_ADDRESS, AVALANCHE_ADDRESS, TOKEN_DESCRIPTION_MAP, formatReadableUSD, getArbitrumNetworkTokenUsd, getAvalancheNetworkTokenUsd, getClientNativeTokenUsd, getGmxPriceUsd, getTokenUsd, zipState } from "@gambitdao/gmx-middleware"
+import { $Link, $anchor, $discord, $gitbook, $github, $instagram, $moreDots, $twitter } from "@gambitdao/ui-components"
+import { IWalletLink, IWalletName, walletConnect } from "@gambitdao/wallet-link"
+import { awaitPromises, constant, empty, fromPromise, map, multicast, now, switchLatest } from '@most/core'
+import { Stream } from "@most/types"
+import { erc20Abi } from "abitype/test"
+import { $bagOfCoinsCircle, $fileCheckCircle, $gmxLogo, $labLogo, $logo, $logoFull } from "../common/$icons"
+import { dark, light } from "../common/theme"
+import { $Picker } from "../components/$ThemePicker"
+import { $bagOfCoins, $caretDown, $stackedCoins } from "../elements/$icons"
+import { IGmxContractInfo, connectGmxEarn } from "../logic/contract"
+import { $Popover } from "./$Popover"
+import { $WalletDisplay } from "./$WalletDisplay"
+import { $ButtonSecondary } from "./form/$Button"
+import { $Dropdown } from "./form/$Dropdown"
 
 
 interface MainMenu {
   chainList: CHAIN[]
   parentRoute: Route
   walletLink: IWalletLink
-
   showAccount?: boolean
 }
 
@@ -36,8 +35,68 @@ export const $MainMenu = ({ walletLink, parentRoute, chainList, showAccount = tr
 
   [clickPopoverClaim, clickPopoverClaimTether]: Behavior<any, any>,
   [changeNetwork, changeNetworkTether]: Behavior<CHAIN, CHAIN>,
-
 ) => {
+
+  const globalArbClient = walletLink.chainMap[CHAIN.ARBITRUM]
+  const globalAvaClient = walletLink.chainMap[CHAIN.AVALANCHE]
+
+  const clientNativeTokenPrice = getClientNativeTokenUsd(walletLink.client)
+  const clientGmxPrice = replayLatest(multicast(getGmxPriceUsd(walletLink.client, clientNativeTokenPrice)))
+
+  const arbitrumNativeTokenPrice = fromPromise(getArbitrumNetworkTokenUsd(globalArbClient))
+  const avalancheNativeTokenPrice = fromPromise(getAvalancheNetworkTokenUsd(globalAvaClient))
+
+  const arbEthBalance = fromPromise(globalArbClient.getBalance({ address: GBC_ADDRESS.TREASURY_ARBITRUM }))
+  const arbWethBalance = fromPromise(globalArbClient.readContract({
+    abi: erc20Abi,
+    address: ARBITRUM_ADDRESS.NATIVE_TOKEN,
+    functionName: 'balanceOf',
+    args: [GBC_ADDRESS.TREASURY_ARBITRUM]
+  }))
+
+  const avaAvaxBalance = fromPromise(globalAvaClient.getBalance({ address: GBC_ADDRESS.TREASURY_AVALANCHE }))
+  const avaWAvaxBalance = fromPromise(globalAvaClient.readContract({
+    abi: erc20Abi,
+    address: AVALANCHE_ADDRESS.NATIVE_TOKEN,
+    functionName: 'balanceOf',
+    args: [GBC_ADDRESS.TREASURY_AVALANCHE]
+  }))
+
+
+
+  const globalPriceMap = replayLatest(multicast(zipState({ clientGmxPrice, arbitrumNativeTokenPrice, avalancheNativeTokenPrice })))
+
+  const arbitrumContract: IGmxContractInfo = connectGmxEarn(now(globalArbClient), GBC_ADDRESS.TREASURY_ARBITRUM, clientGmxPrice, ARBITRUM_ADDRESS)
+  const avalancheContract: IGmxContractInfo = connectGmxEarn(now(globalAvaClient), GBC_ADDRESS.TREASURY_AVALANCHE, clientGmxPrice, AVALANCHE_ADDRESS)
+
+
+  const treasuryBalanceSource = zipState({ globalPriceMap, arbWethBalance, arbEthBalance, avaWAvaxBalance, avaAvaxBalance, totalStakingInUsd: getTotalStakingInUsd(arbitrumContract, avalancheContract) })
+
+  const totalWalletHoldingsUsd = map(params => {
+    const totalEth = params.arbWethBalance + params.arbEthBalance
+    const totalEthUsd = getTokenUsd(totalEth, params.globalPriceMap.arbitrumNativeTokenPrice, TOKEN_DESCRIPTION_MAP.ETH.decimals)
+
+
+    const totalAvax = params.avaWAvaxBalance + params.avaAvaxBalance
+    const totalAvaxUsd = getTokenUsd(totalAvax, params.globalPriceMap.avalancheNativeTokenPrice, TOKEN_DESCRIPTION_MAP.AVAX.decimals)
+
+    return totalAvaxUsd + totalEthUsd + params.totalStakingInUsd
+  }, treasuryBalanceSource)
+
+
+  function getTotalStakingInUsd(a: IGmxContractInfo, b: IGmxContractInfo) {
+    return combineArray((aStakingRewards, bStakingRewards, pmap) => {
+      const totalGmx = bStakingRewards.gmxInStakedGmx + bStakingRewards.esGmxInStakedGmx + aStakingRewards.gmxInStakedGmx + aStakingRewards.esGmxInStakedGmx
+      const gmxInStakedGmxUsd = totalGmx * pmap.clientGmxPrice / BI_18_PRECISION
+      const glpInStakedGlpUsd = aStakingRewards.glpPrice * aStakingRewards.glpBalance / BI_18_PRECISION + bStakingRewards.glpPrice * bStakingRewards.glpBalance / BI_18_PRECISION
+      const totalPendingRewardsUsd = bStakingRewards.totalRewardsUsd + aStakingRewards.totalRewardsUsd
+
+      return gmxInStakedGmxUsd + glpInStakedGlpUsd + totalPendingRewardsUsd
+    }, a.stakingRewards, b.stakingRewards, globalPriceMap)
+  }
+
+
+
 
   const routeChangeMulticast = multicast(routeChange)
 
@@ -146,8 +205,8 @@ export const $MainMenu = ({ walletLink, parentRoute, chainList, showAccount = tr
         }),
 
 
-        switchLatest(map(w3p => {
-          if (w3p === null) {
+        switchLatest(map(wallet => {
+          if (wallet === null) {
             return empty()
           }
 
@@ -156,13 +215,14 @@ export const $MainMenu = ({ walletLink, parentRoute, chainList, showAccount = tr
           })({
             click: walletChangeTether(
               map(async xx => {
-                const wp = w3p.provider.provider
+                const walletName = wallet.walletClient.name
 
                 // Check if connection is already established
-                if (wp === walletConnect) {
+                if (walletName === IWalletName.walletConnect) {
                   // create new session
                   await walletConnect.disconnect()
                 }
+
               }),
               awaitPromises,
               constant(IWalletName.none),
@@ -230,10 +290,9 @@ export const $MainMenu = ({ walletLink, parentRoute, chainList, showAccount = tr
           // ),
         ] : []
       )
-
     ),
 
-    { routeChange: routeChangeMulticast, walletChange, changeNetwork }
+    { routeChange: routeChangeMulticast }
   ]
 })
 

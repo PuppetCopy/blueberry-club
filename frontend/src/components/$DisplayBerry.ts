@@ -1,12 +1,9 @@
 import { $Node, $wrapNativeElement, style, NodeComposeFn, $svg, attr } from "@aelea/dom"
-import { combine } from "@most/core"
+import { tap } from "@most/core"
 import { IBerryDisplayTupleMap, berryPartsToSvg } from "@gambitdao/gbc-middleware"
 import { $column } from "@aelea/ui-components"
-import { importGlobal } from "@gambitdao/gmx-middleware"
 
 
-
-export const svgParts = importGlobal(import("@gambitdao/gbc-middleware/src/mappings/svgParts"))
 
 export function $svgContent(content: string): $Node[] {
   const parser = new DOMParser()
@@ -38,26 +35,12 @@ export const $berry = (
     $svg('svg')(
       attr({ xmlns: 'http://www.w3.org/2000/svg', preserveAspectRatio: "xMidYMin meet", fill: 'none', viewBox: `0 0 1500 1500` })
     )(
-      combine((parts, node) => {
-        node.element.innerHTML = berryPartsToSvg(parts, displayTuple)
+      tap((node) => {
+        node.element.innerHTML = berryPartsToSvg(displayTuple)
         return node
-      }, svgParts)
+      })
     )()
   )
 }
 
-// export const $loadBerry = (
-//   attributeTuple: Partial<IBerryDisplayTupleMap>,
-//   size: string | number = 250
-// ) => {
-
-//   const query = now(import("@gambitdao/gbc-middleware/src/mappings/svgParts").then(res => res.default))
-
-//   return $IntermediatePromise({
-//     query,
-//     $$done: map(svgBody => {
-//       return $berry(svgBody, attributeTuple, size)
-//     })
-//   })({})
-// }
 
