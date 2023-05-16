@@ -55,7 +55,7 @@ export const $Profile = (config: IProfile) => component((
     map(chain => {
       return {
         account: config.account,
-        chain: chain.chain!.id,
+        chain: chain.id,
       }
     }, walletLink.network)
   )
@@ -152,9 +152,7 @@ export const $Profile = (config: IProfile) => component((
             })({}),
             $title('Settled Positions'),
             $CardTable({
-              dataSource: awaitPromises(gmxSubgraph.accountTradeList(
-                map(network => ({ chain: network.chain!.id, account: config.account }), walletLink.network)
-              )),
+              dataSource: awaitPromises(gmxSubgraph.accountTradeList(requestAccountTradeList)),
               columns: [
                 {
                   $head: $text('Time'),
@@ -201,7 +199,7 @@ export const $Profile = (config: IProfile) => component((
                 combine((chain, pageIndex) => {
                   return {
                     account: config.account,
-                    chain: chain.chain!.id,
+                    chain: chain.id,
                     offset: pageIndex * 20,
                     pageSize: 20,
                   }

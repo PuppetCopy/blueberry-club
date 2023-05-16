@@ -1,11 +1,9 @@
-import { Behavior, O, combineArray, replayLatest } from "@aelea/core"
+import { Behavior, O } from "@aelea/core"
 import { $Branch, $Node, $element, $text, attr, component, nodeEvent, style } from "@aelea/dom"
 import { $RouterAnchor, Route } from '@aelea/router'
 import { $column, $icon, $row, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { pallete } from "@aelea/ui-components-theme"
 import { CHAIN } from "@gambitdao/const"
-import { BI_18_PRECISION, } from "@gambitdao/gbc-middleware"
-import { zipState } from "@gambitdao/gmx-middleware"
 import { $Link, $anchor, $discord, $gitbook, $github, $instagram, $moreDots, $twitter } from "@gambitdao/ui-components"
 import { IWalletName } from "@gambitdao/wallet-link"
 import { awaitPromises, constant, empty, map, multicast, switchLatest } from '@most/core'
@@ -14,7 +12,6 @@ import { $bagOfCoinsCircle, $fileCheckCircle, $gmxLogo, $puppetLogo } from "../c
 import { dark, light } from "../common/theme"
 import { $Picker } from "../components/$ThemePicker"
 import { $stackedCoins } from "../elements/$icons"
-import { IGmxContractInfo } from "../logic/contract"
 import { $Popover } from "./$Popover"
 import { $WalletDisplay } from "./$WalletDisplay"
 import { $ButtonSecondary } from "./form/$Button"
@@ -167,7 +164,7 @@ export const $MainMenu = ({ parentRoute, chainList, showAccount = true }: MainMe
 
   return [
 
-    $row(layoutSheet.spacingBig, style({ padding: '14px', flex: 1, alignItems: 'center', placeContent: 'space-between' }))(
+    $row(layoutSheet.spacingBig, style({ padding: '14px', height: '100px', alignItems: 'center', placeContent: 'space-between' }))(
       $row(layoutSheet.spacingBig, style({ alignItems: 'center', flex: 1 }))(
         $RouterAnchor({ url: '/', route: parentRoute, $anchor: $element('a')($icon({ $content: $puppetLogo, width: '45px', viewBox: '0 0 32 32' })) })({
           click: routeChangeTether()

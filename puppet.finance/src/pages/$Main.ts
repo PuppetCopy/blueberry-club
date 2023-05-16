@@ -22,6 +22,7 @@ import { $Profile } from "./$Profile"
 import { $ProfileConnected } from "./$ProfileConnected"
 import { $Trade } from "./$Trade"
 import { $Leaderboard } from "./competition/$Leaderboard"
+import { $IntermediateConnectButton } from "../components/$ConnectAccount"
 
 
 const popStateEvent = eventElementTarget('popstate', window)
@@ -154,43 +155,47 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
             ),
 
             router.match(tradeRoute)(
-              $Trade({
-                // pricefeed: clientApi.tradePricefeed,
-                referralCode: BLUEBERRY_REFFERAL_CODE,
-                chainList: [CHAIN.ARBITRUM, CHAIN.AVALANCHE],
-                tokenIndexMap: {
-                  [CHAIN.ARBITRUM]: [
-                    ARBITRUM_ADDRESS.NATIVE_TOKEN,
-                    ARBITRUM_ADDRESS.WBTC,
-                    ARBITRUM_ADDRESS.LINK,
-                    ARBITRUM_ADDRESS.UNI,
-                  ],
-                  [CHAIN.AVALANCHE]: [
-                    AVALANCHE_ADDRESS.NATIVE_TOKEN,
-                    AVALANCHE_ADDRESS.WETHE,
-                    AVALANCHE_ADDRESS.WBTCE,
-                    AVALANCHE_ADDRESS.BTCB,
-                  ]
-                },
-                tokenStableMap: {
-                  [CHAIN.ARBITRUM]: [
-                    ARBITRUM_ADDRESS.USDC,
-                    ARBITRUM_ADDRESS.USDT,
-                    ARBITRUM_ADDRESS.DAI,
-                    ARBITRUM_ADDRESS.FRAX,
-                    // ARBITRUM_ADDRESS.MIM,
-                  ],
-                  [CHAIN.AVALANCHE]: [
-                    AVALANCHE_ADDRESS.USDC,
-                    AVALANCHE_ADDRESS.USDCE,
-                    // AVALANCHE_ADDRESS.MIM,
-                  ]
-                },
-                parentRoute: tradeRoute,
-                store
-              })({
-                changeRoute: linkClickTether()
-              })
+              $IntermediateConnectButton({
+                $$display: map(wallet => {
+
+                  return $Trade({
+                    network: wallet.network,
+                    referralCode: BLUEBERRY_REFFERAL_CODE,
+                    tokenIndexMap: {
+                      [CHAIN.ARBITRUM]: [
+                        ARBITRUM_ADDRESS.NATIVE_TOKEN,
+                        ARBITRUM_ADDRESS.WBTC,
+                        ARBITRUM_ADDRESS.LINK,
+                        ARBITRUM_ADDRESS.UNI,
+                      ],
+                      [CHAIN.AVALANCHE]: [
+                        AVALANCHE_ADDRESS.NATIVE_TOKEN,
+                        AVALANCHE_ADDRESS.WETHE,
+                        AVALANCHE_ADDRESS.WBTCE,
+                        AVALANCHE_ADDRESS.BTCB,
+                      ]
+                    },
+                    tokenStableMap: {
+                      [CHAIN.ARBITRUM]: [
+                        ARBITRUM_ADDRESS.USDC,
+                        ARBITRUM_ADDRESS.USDT,
+                        ARBITRUM_ADDRESS.DAI,
+                        ARBITRUM_ADDRESS.FRAX,
+                        // ARBITRUM_ADDRESS.MIM,
+                      ],
+                      [CHAIN.AVALANCHE]: [
+                        AVALANCHE_ADDRESS.USDC,
+                        AVALANCHE_ADDRESS.USDCE,
+                        // AVALANCHE_ADDRESS.MIM,
+                      ]
+                    },
+                    parentRoute: tradeRoute,
+                    store
+                  })({
+                    changeRoute: linkClickTether()
+                  })
+                })
+              })({})
             ),
             router.match(tradeTermsAndConditions)(
               $column(layoutSheet.spacing, style({ maxWidth: '680px', alignSelf: 'center' }))(

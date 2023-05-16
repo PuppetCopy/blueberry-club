@@ -191,10 +191,13 @@ export const subgraphPricefeed = O(
 )
 
 export const pricefeed = O(
-  (src: Stream<IRequestPricefeedApi>) => switchFailedSources([
-    getGmxIoPricefeed(src),
-    subgraphPricefeed(src)
-  ])
+  (src: Stream<IRequestPricefeedApi>) => {
+
+    return switchFailedSources([
+      getGmxIoPricefeed(src),
+      subgraphPricefeed(src)
+    ])
+  }
 )
 
 

@@ -6,7 +6,7 @@ import { colorAlpha, pallete } from '@aelea/ui-components-theme'
 import { BLUEBERRY_REFFERAL_CODE, COMPETITION_METRIC_LIST, IBlueberryLadder, IRequestCompetitionLadderApi, TOURNAMENT_DURATION, TOURNAMENT_NEXT, TOURNAMENT_START, TOURNAMENT_TIME_ELAPSED, blueberrySubgraph } from '@gambitdao/gbc-middleware'
 import { formatReadableUSD, formatToBasis, readableNumber } from '@gambitdao/gmx-middleware'
 import { $Link, $anchor, $infoLabeledValue, $infoTooltipLabel, ISortBy, invertColor } from '@gambitdao/ui-components'
-import { empty, map, mergeArray, now, snapshot } from '@most/core'
+import { awaitPromises, empty, map, mergeArray, now, snapshot } from '@most/core'
 import { Stream } from '@most/types'
 import { IProfileActiveTab } from '../$Profile'
 import { $defaultProfileContainer } from '../../common/$avatar'
@@ -80,7 +80,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
   }, qparams
   )
 
-  const competitionLeaderboard = blueberrySubgraph.competitionLeaderboard(requestCompetitionLeaderboard)
+  const competitionLeaderboard = awaitPromises(blueberrySubgraph.competitionLeaderboard(requestCompetitionLeaderboard))
 
 
 

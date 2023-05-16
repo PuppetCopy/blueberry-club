@@ -1,18 +1,22 @@
 import { combineObject, fromCallback } from "@aelea/core"
 import { pallete } from "@aelea/ui-components-theme"
 import { map, mergeArray, now } from "@most/core"
-import { GetAccountResult, GetNetworkResult, InjectedConnector, configureChains, createConfig, createStorage, getAccount, getNetwork, getPublicClient, getWebSocketPublicClient, watchAccount, watchNetwork } from '@wagmi/core'
+import { Stream } from "@most/types"
+import { Address, GetAccountResult, GetNetworkResult, InjectedConnector, configureChains, createConfig, createStorage, getAccount, getNetwork, getPublicClient, getWebSocketPublicClient, watchAccount, watchNetwork } from '@wagmi/core'
 import { WalletConnectConnector } from '@wagmi/core/connectors/walletConnect'
 import { jsonRpcProvider } from '@wagmi/core/providers/jsonRpc'
 import { EthereumClient } from '@web3modal/ethereum'
 import { Web3Modal } from '@web3modal/html'
 import { arbitrum, avalanche } from "viem/chains"
 
-
-
 const chains = [arbitrum, avalanche]
 
-const supportedChains = chains.map(c => c.id)
+export interface IWalletConnected {
+  address: Address
+  network: typeof arbitrum | typeof avalanche
+}
+
+
 
 const projectId = 'c7cea9637dde679f833971689e9a3119'
 
@@ -88,7 +92,7 @@ const ethereumClient = new EthereumClient(walletConfig, chains)
 export const networkChange = fromCallback<GetNetworkResult>(watchNetwork)
 export const accountChange = fromCallback<GetAccountResult>(watchAccount)
 
-export const network = map(getNetworkResult => {
+export const network: Stream<IWalletConnected['network']> = map(getNetworkResult => {
   const chain = chains.find(chain => chain.id == getNetworkResult.chain?.id)
 
   return chain || null

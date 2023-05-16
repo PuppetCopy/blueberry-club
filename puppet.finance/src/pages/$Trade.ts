@@ -1,13 +1,12 @@
 import { Behavior, O, combineArray, combineObject, replayLatest } from "@aelea/core"
 import { $node, $text, component, style } from "@aelea/dom"
-import { Route } from "@aelea/router"
 import { $column, $icon, $row, layoutSheet, observer, screenUtils } from "@aelea/ui-components"
 import {
   ARBITRUM_ADDRESS_STABLE, AVALANCHE_ADDRESS_STABLE,
   AddressZero,
   BASIS_POINTS_DIVISOR, CHAIN_ADDRESS_MAP,
   IPositionDecrease, IPositionIncrease,
-  IRequestPricefeedApi, ITokenIndex, ITokenInput, ITokenStable, ITrade, ITradeOpen,
+  ITokenIndex, ITokenInput, ITokenStable, ITrade, ITradeOpen,
   IntervalTime,
   LIMIT_LEVERAGE,
   STABLE_SWAP_FEE_BASIS_POINTS, STABLE_TAX_BASIS_POINTS, SWAP_FEE_BASIS_POINTS,
@@ -16,7 +15,10 @@ import {
   TradeStatus,
   USD_PERCISION,
   abi, abs,
-  div, filterNull, formatFixed, formatReadableUSD, formatToBasis, getAdjustedDelta, getDenominator, getFeeBasisPoints, getFundingFee, getLiquidationPrice, getMappedValue, getMarginFees, getNativeTokenDescription, getNextAveragePrice, getNextLiquidationPrice, getPnL, getPositionKey, getSafeMappedValue, getTokenAmount, getTokenDescription, gmxSubgraph,
+  div, filterNull,
+  formatFixed,
+  formatReadableUSD, formatToBasis, getAdjustedDelta, getDenominator, getFeeBasisPoints, getFundingFee, getLiquidationPrice, getMappedValue, getMarginFees, getNativeTokenDescription, getNextAveragePrice, getNextLiquidationPrice, getPnL, getPositionKey,
+  getTokenAmount, getTokenDescription, gmxSubgraph,
   intervalTimeMap,
   readableDate, readableNumber,
   switchMap,
@@ -25,37 +27,30 @@ import {
 } from "@gambitdao/gmx-middleware"
 
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
-import { CHAIN } from "@gambitdao/const"
 import { $ButtonToggle, $IntermediatePromise, $infoLabel, $infoTooltip, $spinner, $txHashRef } from "@gambitdao/ui-components"
-import { IWalletName } from "@gambitdao/wallet-link"
-import { awaitPromises, combine, constant, debounce, empty, filter, map, mergeArray, multicast, now, scan, skipRepeats, skipRepeatsWith, snapshot, switchLatest, take, zip } from "@most/core"
+import { awaitPromises, combine, constant, debounce, empty, filter, fromPromise, map, mergeArray, multicast, now, scan, skipRepeats, skipRepeatsWith, snapshot, switchLatest, take, zip } from "@most/core"
 import { Stream } from "@most/types"
 import { readContract } from "@wagmi/core"
 import { erc20Abi } from "abitype/test"
 import { CandlestickData, LineStyle, Time } from "lightweight-charts"
-import { Hex, TransactionReceipt } from "viem"
+import { TransactionReceipt } from "viem"
 import { $IntermediateConnectButton } from "../components/$ConnectAccount"
 import { $CardTable } from "../components/$common"
 import { $CandleSticks } from "../components/chart/$CandleSticks"
 import { $ButtonSecondary } from "../components/form/$Button"
 import { $Dropdown } from "../components/form/$Dropdown"
-import { $TradeBox, ITradeFocusMode, ITradeState, RequestTradeQuery } from "../components/trade/$TradeBox"
+import { $TradeBox, ITradeBoxParams, ITradeFocusMode, ITradeState, RequestTradeQuery } from "../components/trade/$TradeBox"
 import { $card } from "../elements/$common"
 import { $caretDown } from "../elements/$icons"
-import { connectMappedContractConfig, contractReader, listenContract } from "../logic/common"
+import { combineState, connectMappedContractConfig, contractReader, listenContract } from "../logic/common"
 import * as tradeReader from "../logic/contract/trade"
-import { BrowserStore } from "../logic/store"
 import { resolveAddress } from "../logic/utils"
-import { account, wallet } from "../wallet/walletLink"
 import { walletLink } from "../wallet"
+import { account, wallet } from "../wallet/walletLink"
 
 
-export interface ITradeComponent {
-  referralCode: Hex
-  tokenIndexMap: Partial<Record<number, ITokenIndex[]>>
-  tokenStableMap: Partial<Record<number, ITokenStable[]>>
-  store: BrowserStore<"ROOT.v1", "v1">
-  parentRoute: Route
+export interface ITradeComponent extends ITradeBoxParams {
+
 }
 
 
@@ -142,48 +137,41 @@ export const $Trade = (config: ITradeComponent) => component((
 
   const slippage = slippageStore.storeReplay(changeSlippage)
 
+  const chainId = config.network.id
+
+  const nativeToken = CHAIN_ADDRESS_MAP[chainId].NATIVE_TOKEN
 
 
   const inputToken: Stream<ITokenInput> = inputTokenStore.storeReplay(
     changeInputToken,
-    combine((chain, token) => {
-      if (!chain.chain || chain.chain.unsupported || token === AddressZero) {
+    map(token => {
+      if (token === AddressZero) {
         return token
       }
-
-      const chainId = chain.chain.id
 
       const allTokens = [...config.tokenIndexMap[chainId] || [], ...config.tokenStableMap[chainId] || []]
       const matchedToken = allTokens?.find(t => t === token)
 
-      return matchedToken || getSafeMappedValue(CHAIN_ADDRESS_MAP, chain, CHAIN.ARBITRUM).NATIVE_TOKEN
-    }, walletLink.network)
+      return matchedToken || nativeToken
+    })
   )
 
   const indexToken: Stream<ITokenIndex> = indexTokenStore.storeReplay(
     mergeArray([map(t => t.indexToken, switchTrade), changeIndexToken]),
-    combine((network, token) => {
-      if (!network.chain || network.chain.unsupported) {
-        return AddressZero
-      }
+    map(token => {
+      const matchedToken = config.tokenIndexMap[chainId]?.find(t => t === token)
 
-      const matchedToken = config.tokenIndexMap[network.chain.id]?.find(t => t === token)
-
-      return matchedToken || getSafeMappedValue(CHAIN_ADDRESS_MAP, network, CHAIN.ARBITRUM).NATIVE_TOKEN
-    }, walletLink.network)
+      return matchedToken || nativeToken
+    })
   )
 
   const collateralTokenReplay: Stream<ITokenStable> = collateralTokenStore.storeReplay(
     mergeArray([map(t => t.collateralToken, switchTrade), changeCollateralToken]),
-    combine((network, token) => {
-      if (!network.chain || network.chain.unsupported) {
-        return AddressZero
-      }
+    map(token => {
+      const matchedToken = config.tokenStableMap[chainId]?.find(t => t === token)
 
-      const matchedToken = config.tokenStableMap[network.chain.id]?.find(t => t === token)
-
-      return matchedToken || getSafeMappedValue(CHAIN_ADDRESS_MAP, network, CHAIN.ARBITRUM).USDC
-    }, walletLink.network)
+      return matchedToken || CHAIN_ADDRESS_MAP[chainId].USDC
+    })
   )
 
   const collateralToken: Stream<ITokenStable | ITokenIndex> = map(params => {
@@ -192,11 +180,11 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
   const walletBalance = replayLatest(multicast(switchMap(params => {
-    if (!params.wallet.network.chain || params.wallet.network.chain?.unsupported || !params.wallet.account.address) {
+    if (!params.wallet.account.address) {
       return now(0n)
     }
 
-    return tradeReader.getErc20Balance(params.wallet.network.chain, params.inputToken, params.wallet.account.address)
+    return tradeReader.getErc20Balance(config.network, params.inputToken, params.wallet.account.address)
   }, combineObject({ inputToken, wallet }))))
 
 
@@ -310,8 +298,8 @@ export const $Trade = (config: ITradeComponent) => component((
   const inputTokenDebtUsd = tradeReader.vault.read('usdgAmounts', inputToken)
 
   const inputTokenDescription = combineArray((network, token) => {
-    if (network.chain!.unsupported || token === AddressZero) {
-      return getNativeTokenDescription(network.chain!.id)
+    if (network.id || token === AddressZero) {
+      return getNativeTokenDescription(network.id)
     }
 
     return getTokenDescription(token)
@@ -333,15 +321,11 @@ export const $Trade = (config: ITradeComponent) => component((
 
 
   const swapFee = replayLatest(multicast(skipRepeats(map((params) => {
-    if (!params.network.chain || params.network.chain.unsupported) {
-      return 0n
-    }
-
     const inputAndIndexStable = params.inputTokenDescription.isStable && params.indexTokenDescription.isStable
     const swapFeeBasisPoints = inputAndIndexStable ? STABLE_SWAP_FEE_BASIS_POINTS : SWAP_FEE_BASIS_POINTS
     const taxBasisPoints = inputAndIndexStable ? STABLE_TAX_BASIS_POINTS : TAX_BASIS_POINTS
 
-    const rsolvedInputAddress = resolveAddress(params.network.chain.id, params.inputToken)
+    const rsolvedInputAddress = resolveAddress(chainId, params.inputToken)
     if (rsolvedInputAddress === params.collateralToken) {
       return 0n
     }
@@ -458,9 +442,7 @@ export const $Trade = (config: ITradeComponent) => component((
   const isInputTokenApproved = replayLatest(multicast(mergeArray([
     changeInputTokenApproved,
     awaitPromises(snapshot(async (collateralDeltaUsd, params) => {
-      const chainId = params.wallet.network.chain?.id
-
-      if (!chainId || params.wallet === null) {
+      if (!params.wallet.account.address) {
         console.warn(new Error('No wallet connected'))
         return false
       }
@@ -498,13 +480,13 @@ export const $Trade = (config: ITradeComponent) => component((
 
   const accountOpenTradeList = gmxSubgraph.accountOpenTradeList(
     map(w3p => {
-      if (!w3p.account.address || !w3p.network.chain || w3p.network.chain.unsupported) {
-        return null
+      if (!w3p.account.address) {
+        throw new Error('No wallet connected')
       }
 
       return {
         account: w3p.account.address,
-        chain: w3p.network.chain.id,
+        chain: w3p.network.id,
       }
     }, wallet)
   )
@@ -545,10 +527,16 @@ export const $Trade = (config: ITradeComponent) => component((
     return { trade, positionId: pos }
   }, awaitPromises(openTradeListQuery), positionKey)
 
-  // const activeTradeUnique = skipRepeatsWith((prev, next) => {
-  //   return prev.positionId.key === next.positionId.key
-  // }, activeTrade)
-  // ipfs://bafyreihwgnhxonscmgxulqzqjo44fdvud3hzh6mphyvlqn2tuaqxxjaoty/metadata.json
+
+  const pricefeed = gmxSubgraph.pricefeed(map(params => {
+    const range = params.timeframe * 1000
+    const to = unixTimestampNow()
+    const from = to - range
+
+    return { chain: config.network.id, interval: params.timeframe, tokenAddress: params.indexToken, from, to }
+  }, combineObject({ timeframe, indexToken })))
+
+ 
 
   return [
     $node(
@@ -577,6 +565,7 @@ export const $Trade = (config: ITradeComponent) => component((
         $column(layoutSheet.spacingSmall)(
           $TradeBox({
             ...config,
+            pricefeed,
 
             trade: zip(async (list, pos) => {
               const trade = (await list).find(t => t.key === pos.key) || null
@@ -713,152 +702,145 @@ export const $Trade = (config: ITradeComponent) => component((
               ),
             ),
 
-            // $IntermediateConnectButton({
-            //   $$display: snapshot((params, w3p) => {
-            //     const range = params.timeframe * 1000
-            //     const to = unixTimestampNow()
-            //     const from = to - range
+            $IntermediatePromise({
+              query: pricefeed,
+              $$done: snapshot((params, data) => {
+                const tf = params.timeframe
 
-            //     const pricefeed = gmxSubgraph.pricefeed(now({
-            //       chain: w3p.chain, interval, tokenAddress: resolveAddress(w3p.chain, tokenAddress), from, to
-            //     }))
+                const fst = data[data.length - 1]
+                const initialTick = {
+                  open: formatFixed(fst.o, 30),
+                  high: formatFixed(fst.h, 30),
+                  low: formatFixed(fst.l, 30),
+                  close: formatFixed(fst.c, 30),
+                  time: fst.timestamp as Time
+                }
 
-            //     const fst = data[data.length - 1]
-            //     const initialTick = {
-            //       open: formatFixed(fst.o, 30),
-            //       high: formatFixed(fst.h, 30),
-            //       low: formatFixed(fst.l, 30),
-            //       close: formatFixed(fst.c, 30),
-            //       time: fst.timestamp as Time
-            //     }
+                return $CandleSticks({
+                  series: [
+                    {
+                      data: data.map(({ o, h, l, c, timestamp }) => {
+                        const open = formatFixed(o, 30)
+                        const high = formatFixed(h, 30)
+                        const low = formatFixed(l, 30)
+                        const close = formatFixed(c, 30)
 
+                        return { open, high, low, close, time: timestamp as Time }
+                      }),
+                      seriesConfig: {
+                        // priceFormat: {
+                        //   type: 'custom',
+                        //   formatter: (priceValue: BarPrice) => readableNumber(priceValue.valueOf())
+                        // },
+                        // lastValueVisible: false,
 
-            //     return $CandleSticks({
-            //       series: [
-            //         {
-            //           data: data.map(({ o, h, l, c, timestamp }) => {
-            //             const open = formatFixed(o, 30)
-            //             const high = formatFixed(h, 30)
-            //             const low = formatFixed(l, 30)
-            //             const close = formatFixed(c, 30)
+                        priceLineColor: pallete.foreground,
+                        baseLineStyle: LineStyle.SparseDotted,
 
-            //             return { open, high, low, close, time: timestamp as Time }
-            //           }),
-            //           seriesConfig: {
-            //             // priceFormat: {
-            //             //   type: 'custom',
-            //             //   formatter: (priceValue: BarPrice) => readableNumber(priceValue.valueOf())
-            //             // },
-            //             // lastValueVisible: false,
+                        upColor: pallete.middleground,
+                        borderUpColor: pallete.middleground,
+                        wickUpColor: pallete.middleground,
 
-            //             priceLineColor: pallete.foreground,
-            //             baseLineStyle: LineStyle.SparseDotted,
+                        downColor: 'transparent',
+                        borderDownColor: colorAlpha(pallete.middleground, .5),
+                        wickDownColor: colorAlpha(pallete.middleground, .5),
+                      },
+                      priceLines: [
+                        map(val => {
+                          if (val === 0n) {
+                            return null
+                          }
 
-            //             upColor: pallete.middleground,
-            //             borderUpColor: pallete.middleground,
-            //             wickUpColor: pallete.middleground,
+                          return {
+                            price: formatFixed(val, 30),
+                            color: pallete.middleground,
+                            lineVisible: true,
+                            // axisLabelColor: '#fff',
+                            // axisLabelTextColor: 'red',
+                            // axisLabelVisible: true,
+                            lineWidth: 1,
+                            title: `Entry`,
+                            lineStyle: LineStyle.SparseDotted,
+                          }
+                        }, averagePrice),
+                        map(val => {
+                          if (val === 0n) {
+                            return null
+                          }
 
-            //             downColor: 'transparent',
-            //             borderDownColor: colorAlpha(pallete.middleground, .5),
-            //             wickDownColor: colorAlpha(pallete.middleground, .5),
-            //           },
-            //           priceLines: [
-            //             map(val => {
-            //               if (val === 0n) {
-            //                 return null
-            //               }
+                          return {
+                            price: formatFixed(val, 30),
+                            color: pallete.indeterminate,
+                            lineVisible: true,
+                            // axisLabelColor: 'red',
+                            // axisLabelVisible: true,
+                            // axisLabelTextColor: 'red',
+                            lineWidth: 1,
+                            title: `Liquidation`,
+                            lineStyle: LineStyle.SparseDotted,
+                          }
+                        }, liquidationPrice)
 
-            //               return {
-            //                 price: formatFixed(val, 30),
-            //                 color: pallete.middleground,
-            //                 lineVisible: true,
-            //                 // axisLabelColor: '#fff',
-            //                 // axisLabelTextColor: 'red',
-            //                 // axisLabelVisible: true,
-            //                 lineWidth: 1,
-            //                 title: `Entry`,
-            //                 lineStyle: LineStyle.SparseDotted,
-            //               }
-            //             }, averagePrice),
-            //             map(val => {
-            //               if (val === 0n) {
-            //                 return null
-            //               }
+                      ],
+                      appendData: scan((prev: CandlestickData, next): CandlestickData => {
+                        const marketPrice = formatFixed(next.indexTokenPrice, 30)
+                        const timeNow = unixTimestampNow()
 
-            //               return {
-            //                 price: formatFixed(val, 30),
-            //                 color: pallete.indeterminate,
-            //                 lineVisible: true,
-            //                 // axisLabelColor: 'red',
-            //                 // axisLabelVisible: true,
-            //                 // axisLabelTextColor: 'red',
-            //                 lineWidth: 1,
-            //                 title: `Liquidation`,
-            //                 lineStyle: LineStyle.SparseDotted,
-            //               }
-            //             }, liquidationPrice)
+                        const prevTimeSlot = Math.floor(prev.time as number / tf)
+                        const nextTimeSlot = Math.floor(timeNow / tf)
+                        const time = nextTimeSlot * tf as Time
 
-            //           ],
-            //           appendData: scan((prev: CandlestickData, next): CandlestickData => {
-            //             const marketPrice = formatFixed(next.indexTokenPrice, 30)
-            //             const timeNow = unixTimestampNow()
+                        const isNext = nextTimeSlot > prevTimeSlot
 
-            //             const prevTimeSlot = Math.floor(prev.time as number / tf)
+                        document.title = `${next.indexTokenDescription.symbol} ${readableNumber(marketPrice)}`
 
-            //             const nextTimeSlot = Math.floor(timeNow / tf)
-            //             const time = nextTimeSlot * tf as Time
+                        if (isNext) {
+                          return {
+                            open: marketPrice,
+                            high: marketPrice,
+                            low: marketPrice,
+                            close: marketPrice,
+                            time
+                          }
+                        }
 
-            //             const isNext = nextTimeSlot > prevTimeSlot
+                        return {
+                          open: prev.open,
+                          high: marketPrice > prev.high ? marketPrice : prev.high,
+                          low: marketPrice < prev.low ? marketPrice : prev.low,
+                          close: marketPrice,
+                          time
+                        }
+                      }, initialTick, combineObject({ indexTokenPrice, indexTokenDescription })),
+                    }
+                  ],
+                  containerOp: style({ position: 'absolute', inset: 0, borderRadius: '20px', overflow: 'hidden' }),
+                  chartConfig: {
+                    rightPriceScale: {
+                      visible: true,
+                      autoScale: true,
+                      entireTextOnly: true,
+                      borderVisible: false,
+                      scaleMargins: {
+                        top: 0.15,
+                        bottom: 0.15
+                      }
+                    },
+                    timeScale: {
+                      timeVisible: true,
+                      secondsVisible: false,
+                      borderVisible: false,
+                      rightOffset: 13,
+                      shiftVisibleRangeOnNewBar: true,
+                    }
+                  },
+                })({
+                  // crosshairMove: sampleChartCrosshair(),
+                  // click: sampleClick()
+                })
 
-            //             document.title = `${next.indexTokenDescription.symbol} ${readableNumber(marketPrice)}`
-
-            //             if (isNext) {
-            //               return {
-            //                 open: marketPrice,
-            //                 high: marketPrice,
-            //                 low: marketPrice,
-            //                 close: marketPrice,
-            //                 time
-            //               }
-            //             }
-
-            //             return {
-            //               open: prev.open,
-            //               high: marketPrice > prev.high ? marketPrice : prev.high,
-            //               low: marketPrice < prev.low ? marketPrice : prev.low,
-            //               close: marketPrice,
-            //               time
-            //             }
-            //           }, initialTick, combineObject({ indexTokenPrice, indexTokenDescription })),
-            //         }
-            //       ],
-            //       containerOp: style({ position: 'absolute', inset: 0, borderRadius: '20px', overflow: 'hidden' }),
-            //       chartConfig: {
-            //         rightPriceScale: {
-            //           visible: true,
-            //           autoScale: true,
-            //           entireTextOnly: true,
-            //           borderVisible: false,
-            //           scaleMargins: {
-            //             top: 0.15,
-            //             bottom: 0.15
-            //           }
-            //         },
-            //         timeScale: {
-            //           timeVisible: true,
-            //           secondsVisible: false,
-            //           borderVisible: false,
-            //           rightOffset: 13,
-            //           shiftVisibleRangeOnNewBar: true,
-            //         }
-            //       },
-            //     })({
-            //       // crosshairMove: sampleChartCrosshair(),
-            //       // click: sampleClick()
-            //     })
-
-            //   }, combineObject({ pricefeed, timeframe, indexToken }))
-            // })({   })
+              }, combineObject({ timeframe, indexToken })),
+            })({})
 
 
           )
@@ -926,7 +908,7 @@ export const $Trade = (config: ITradeComponent) => component((
                         const direction = pos.__typename === 'IncreasePosition' ? '↑' : '↓'
                         const txHash = pos.id.split(':').slice(-1)[0]
                         return $row(layoutSheet.spacingSmall)(
-                          $txHashRef(txHash, w3p.chain.id, $text(`${direction} ${formatReadableUSD(pos.price)}`))
+                          $txHashRef(txHash, w3p.network.id, $text(`${direction} ${formatReadableUSD(pos.price)}`))
                         )
                       }
 
@@ -938,7 +920,7 @@ export const $Trade = (config: ITradeComponent) => component((
 
                       return $row(layoutSheet.spacingSmall)(
                         $txHashRef(
-                          pos.ctx.transactionHash, w3p.chain.id,
+                          pos.ctx.transactionHash, w3p.network.id,
                           $text(`${isIncrease ? '↑' : '↓'} ${formatReadableUSD(pos.acceptablePrice)} ${isIncrease ? '<' : '>'}`)
                         ),
 
@@ -950,7 +932,7 @@ export const $Trade = (config: ITradeComponent) => component((
                             const message = $text(`${isRejected ? `✖ ${formatReadableUSD(req.args.acceptablePrice)}` : `✔ ${formatReadableUSD(req.args.acceptablePrice)}`}`)
 
                             return $requestRow(
-                              $txHashRef(req.transactionHash!, w3p.chain.id, message),
+                              $txHashRef(req.transactionHash!, w3p.network.id, message),
                               $infoTooltip('transaction was sent, keeper will execute the request, the request will either be executed or rejected'),
                             )
                           }, activePositionAdjustment),

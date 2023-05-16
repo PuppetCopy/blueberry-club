@@ -325,7 +325,7 @@ export const getVaultPrimaryPrice = (token: Stream<ITokenTrade>) => {
 
 export function getLatestPrice( token: Stream<ITokenTrade>) {
   const wsPrice = switchLatest(map(params => {
-    const chainId = params.network.chain!.id
+    const chainId = params.network!.id
     const resolvedToken = resolveAddress(chainId, params.token)
 
     return exchangesWebsocketPriceSource(chainId, resolvedToken)

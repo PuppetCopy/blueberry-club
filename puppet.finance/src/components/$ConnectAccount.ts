@@ -3,17 +3,17 @@ import { $Node, $element, $text, attr, component, nodeEvent, style } from "@aele
 import { $icon, $row, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { CHAIN, NETWORK_METADATA } from "@gambitdao/const"
+import { $alertContainer, $alertIcon } from "@gambitdao/ui-components"
 import { IWalletName, parseError } from "@gambitdao/wallet-link"
 import { awaitPromises, empty, map, mergeArray, now, snapshot, switchLatest, tap } from "@most/core"
 import { Stream } from "@most/types"
+import { Address, Chain, getNetwork } from "@wagmi/core"
 import { EIP1193Provider } from "viem"
 import { $bagOfCoinsCircle, $walletConnectLogo } from "../common/$icons"
 import { $caretDown } from "../elements/$icons"
+import { IWalletConnected, network, wallet, web3Modal } from "../wallet/walletLink"
 import { $ButtonPrimary, $ButtonSecondary } from "./form/$Button"
 import { IButtonCore } from "./form/$ButtonCore"
-import { $alertContainer } from "@gambitdao/ui-components"
-import { network, wallet, web3Modal } from "../wallet/walletLink"
-import { Address, Chain } from "@wagmi/core"
 
 
 
@@ -61,10 +61,7 @@ export const $WalletLogoMap = {
   [IWalletName.none]: $icon({ viewBox: '0 0 32 32', width: '18px', fill: 'white', $content: $bagOfCoinsCircle, }),
 }
 
-export interface IWalletConnected {
-  address: Address
-  chain: Chain
-}
+
 
 export interface IConnectWalletPopover {
   $$display: Op<IWalletConnected, $Node>
@@ -82,7 +79,6 @@ export const $IntermediateConnectButton = (config: IConnectWalletPopover) => com
   return [
     switchLatest(map(w3p => {
       const address = w3p.account.address
-      const chain = w3p.network.chain
       // no wallet connected, show connection flow
       if (!address) {
         return $ConnectDropdown(
@@ -101,12 +97,11 @@ export const $IntermediateConnectButton = (config: IConnectWalletPopover) => com
       }
 
 
-      if (!chain || chain.unsupported) {
-
+      if (w3p.network === null) {
         return $SwitchNetworkDropdown(true)({})
       }
 
-      return switchLatest(config.$$display(now({ address, chain })))
+      return switchLatest(config.$$display(now({ address, network: w3p.network })))
 
 
     }, wallet)),
@@ -122,14 +117,28 @@ export const $SwitchNetworkDropdown = (showLabel = false) => component((
 ) => {
 
   return [
-    switchLatest(snapshot((_, chainResult) => {
+    switchLatest(snapshot((_, network) => {
 
-      if (chainResult === null) {
-        throw new Error('chainResult is null')
+      if (network === null) {
+        return $alertContainer(changeNetworkTether(
+          nodeEvent('click'),
+          tap(async () => {
+            await web3Modal.openModal({ route: 'SelectNetwork' })
+
+            return CHAIN.BSC
+          }),
+        ), style({ padding: '0 8px', cursor: 'pointer' }))(
+          $icon({
+            $content: $alertIcon, viewBox: '0 0 24 24', width: '26px',
+            svgOps: style({ fill: pallete.negative, padding: '3px', filter: 'drop-shadow(black 0px 0px 10px) drop-shadow(black 0px 0px 10px) drop-shadow(black 0px 0px 1px)' })
+          }),
+          showLabel ? $text(`${getNetwork().chain?.name} is not supported`) : empty()
+        )
       }
 
+      const $container = network === null ? $alertContainer : $row
 
-      return $alertContainer(changeNetworkTether(
+      return $container(changeNetworkTether(
         nodeEvent('click'),
         tap(async () => {
           await web3Modal.openModal({ route: 'SelectNetwork' })
@@ -137,8 +146,7 @@ export const $SwitchNetworkDropdown = (showLabel = false) => component((
           return CHAIN.BSC
         }),
       ), style({ padding: '0 8px', cursor: 'pointer' }))(
-        $element('img')(attr({ src: `/assets/chain/${chainResult.chain.id}.svg` }), style({ width: '26px' }))(),
-        showLabel ? $text(`${chainResult.chain.name} is not supported`) : empty()
+        $element('img')(attr({ src: `/assets/chain/${network.id}.svg` }), style({ width: '26px' }))(),
       )
 
       // return style({ zoom: 1.1 })($alertTooltip($text('www')))
@@ -174,7 +182,6 @@ export const $ConnectDropdown = ($trigger: $Node, clickOpenPopover: Stream<any>)
           // const connectResult = await connect({
           //   connector: walletConnectConnector,
           // })
-          debugger
 
           return 'connectResult'
           // walletConnect.request({ method: 'eth_requestAccounts' })

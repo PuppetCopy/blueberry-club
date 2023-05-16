@@ -256,7 +256,7 @@ export interface IRequestSortApi<T> {
 
 
 
-export type IRequestAccountTradeListApi = IChainParamApi & IRequestPagePositionApi & IRequestAccountApi & { status: TradeStatus }
+export type IRequestAccountTradeListApi = IChainParamApi & IRequestPagePositionApi & IRequestAccountApi & { status?: TradeStatus }
 export type IRequestPageApi = IRequestPagePositionApi & IChainParamApi & IRequestTimerangeApi
 
 
