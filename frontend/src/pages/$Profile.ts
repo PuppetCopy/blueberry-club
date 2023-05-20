@@ -1,14 +1,14 @@
-import { Behavior, combineArray, O } from "@aelea/core"
+import { Behavior, combineArray, O, replayLatest } from "@aelea/core"
 import { $Node, $text, component, style } from "@aelea/dom"
 import { Route } from "@aelea/router"
 import { $column, $row, layoutSheet } from "@aelea/ui-components"
 import { blueberrySubgraph, saleDescriptionList } from "@gambitdao/gbc-middleware"
-import { awaitPromises, combine, map, mergeArray, now, switchLatest } from "@most/core"
+import { awaitPromises, combine, map, mergeArray, multicast, now, switchLatest } from "@most/core"
 import { $infoTooltipLabel, $IntermediatePromise, $openPositionPnlBreakdown, $PnlValue, $riskLiquidator, $sizeDisplay, $TradePnl } from "@gambitdao/ui-components"
 import { $berryTileId, $CardTable } from "../components/$common"
 import {
   getSafeMappedValue, IRequestAccountTradeListApi, unixTimestampNow, TRADE_CONTRACT_MAPPING,
-  IResponsePageApi, IStake, ITradeOpen, ITradeSettled, readableDate, timeSince,
+  IResponsePageApi, IStake, ITradeOpen, ITradeSettled, readableDate, timeSince, getGmxPriceUsd, getClientNativeTokenUsd,
 } from "@gambitdao/gmx-middleware"
 import { Stream } from "@most/types"
 import { connectGmxEarn } from "../logic/contract"
@@ -22,6 +22,7 @@ import { $ButtonToggle, $defaulButtonToggleContainer } from "@gambitdao/ui-compo
 import * as router from '@aelea/router'
 import { fadeIn } from "../transitions/enter"
 import { CHAIN } from "@gambitdao/const"
+import { Address } from "viem"
 
 
 
@@ -34,7 +35,7 @@ export enum IProfileActiveTab {
 }
 
 export interface IProfile {
-  account: string
+  account: Address
   parentUrl: string
   parentRoute: Route
   stake: Stream<IStake[]>
@@ -64,7 +65,11 @@ export const $Profile = (config: IProfile) => component((
     }
   }, config.walletLink.network)
 
-  const tradeReader = connectTradeReader(config.walletLink.provider)
+  const clientNativeTokenPrice = getClientNativeTokenUsd(config.walletLink.client)
+  const clientGmxPrice = replayLatest(multicast(getGmxPriceUsd(config.walletLink.client, clientNativeTokenPrice)))
+
+
+  const tradeReader = connectTradeReader(config.walletLink.client)
 
   const arbitrumContract = switchLatest(combineArray((provider, chain) => {
 
@@ -74,10 +79,10 @@ export const $Profile = (config: IProfile) => component((
       return now(null)
     }
 
-    return connectGmxEarn(now(provider), config.account, contractMapping).stakingRewards
-  }, config.walletLink.provider, config.walletLink.network))
+    return connectGmxEarn(now(provider), config.account, clientGmxPrice, contractMapping).stakingRewards
+  }, config.walletLink.client, config.walletLink.network))
 
-  const lab = connectLab(config.walletLink.provider)
+  const lab = connectLab(config.walletLink.client)
   const ownedItems = lab.accountListBalance(config.account, saleDescriptionList.map(x => x.id))
 
 

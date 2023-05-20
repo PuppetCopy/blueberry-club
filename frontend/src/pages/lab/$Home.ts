@@ -11,17 +11,16 @@ import { $responsiveFlex } from "../../elements/$common"
 import { IAttributeHat, IAttributeFaceAccessory, IAttributeClothes, IAttributeExpression, blueberrySubgraph } from "@gambitdao/gbc-middleware"
 import { $seperator2 } from "../common"
 import { map, mergeArray, now } from "@most/core"
-import { ContractTransaction } from "@ethersproject/contracts"
 import { $profilePreview } from "../../components/$AccountProfile"
 
 
 
 const styleEl = document.createElement('style')
 
-const spinnerId = (Math.random() + 1).toString(36).substring(7)
+const spinnerId = 'anim' + (Math.random() + 1).toString(36).substring(7)
 
 const keyFrames = `
-@keyframes anim${spinnerId} {
+@keyframes ${spinnerId} {
   10% {
     background-color: rgb(173 173 173);
   }
@@ -66,7 +65,6 @@ interface IBerry {
 export const $LabHome = ({ walletLink, parentRoute }: IBerry) => component((
   [walletChange, walletChangeTether]: Behavior<IWalletName, IWalletName>,
   [changeRoute, changeRouteTether]: Behavior<string, string>,
-  [mintTestGbc, mintTestGbcTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
 ) => {
 
 

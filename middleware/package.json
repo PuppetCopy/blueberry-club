@@ -4,6 +4,7 @@
     "license": "MIT",
     "module": ".dist/esm/index.js",
     "main": ".dist/cjs/index.js",
+    "type": "module",
     "sideEffects": false,
     "files": [
         ".dist"
@@ -17,10 +18,6 @@
     },
     "dependencies": {
         "@aelea/core": "1.3.0",
-        "@ethersproject/abi": "^5.7.0",
-        "@ethersproject/bignumber": "^5.7.0",
-        "@ethersproject/contracts": "^5.7.0",
-        "@ethersproject/providers": "5.7.2",
         "@gambitdao/gmx-middleware": "workspace:*",
         "@most/core": "1.6.1",
         "@most/disposable": "1.3.0",
@@ -28,16 +25,15 @@
         "@most/scheduler": "1.3.0",
         "@most/types": "1.1.0",
         "@types/isomorphic-fetch": "^0.0.36",
-        "@urql/core": "^3.1.1",
+        "@urql/core": "^4.0.7",
+        "abitype": "^0.8.2",
         "eip1193-provider": "1.0.1",
-        "ethers": "^5.7.2",
-        "graphql": "^16.6.0"
+        "graphql": "^16.6.0",
+        "viem": "^0.3.19"
     },
     "devDependencies": {
-        "@ethersproject/bytes": "^5.7.0",
-        "@typechain/ethers-v5": "^10.2.0",
-        "@types/node": "18.11.18",
+        "@types/node": "18.16.3",
         "typechain": "^8.1.1",
-        "typescript": "4.9.5"
+        "typescript": "5.0.4"
     }
 }

@@ -31,6 +31,8 @@ import { $discoverIdentityDisplay } from "../components/$AccountProfile"
 import { pallete } from "@aelea/ui-components-theme"
 import { $CompetitionRoiDeprecated } from "./competition/$RoiDeprecated"
 import { CHAIN } from "@gambitdao/const"
+import { Address } from "viem"
+
 
 
 const popStateEvent = eventElementTarget('popstate', window)
@@ -101,13 +103,11 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
     ...serverApi,
     // requestTrade: map(json => json ? fromJson.toTradeJson(json) : null, api.trade(requestTrade)),
     stake: gmxSubgraph.stake(requestStake),
-    pricefeed: gmxSubgraph.pricefeed(requestPricefeed),
-    tradePricefeed: gmxSubgraph.pricefeed(requestPricefeed),
     accountTradeList: gmxSubgraph.accountTradeList(requestAccountTradeList),
     accountOpenTradeList: gmxSubgraph.accountOpenTradeList(requestAccountOpenTradeList),
     latestPriceMap: gmxSubgraph.latestPriceMap(requestAccountTradeList),
 
-    competitionCumulative: blueberrySubgraph.competitionCumulative(requestCompetitionLadder),
+    competitionCumulative: blueberrySubgraph.competitionLeaderboard(requestCompetitionLadder),
     profilePickList: blueberrySubgraph.profilePickList(requestProfilePickList),
   }
 
@@ -123,10 +123,7 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
 
 
   const walletLink = initWalletLink(
-    {
-      globalProviderMap,
-      defaultGlobalChain: CHAIN.ARBITRUM
-    },
+    globalProviderMap,
     walletStore.storeReplay(walletChange),
     chainStore.storeReplay(changeNetwork)
   )
@@ -145,7 +142,7 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
       gap: screenUtils.isDesktopScreen ? '85px' : '55px', overflowX: 'hidden', padding: screenUtils.isMobileScreen ? '0 15px' : '0 15px'
     }))(
 
-      $column(style({ gap: '25px' }))(
+      $column(style({ gap: '235px' }))(
         $column(
           $MainMenu({ walletLink, parentRoute: rootRoute, chainList: [CHAIN.ARBITRUM, CHAIN.AVALANCHE] })({
             routeChange: linkClickTether(),
@@ -202,7 +199,7 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
               {
                 run(sink, scheduler) {
                   const urlFragments = document.location.pathname.split('/')
-                  const account = urlFragments[urlFragments.length - 2].toLowerCase()
+                  const account = urlFragments[urlFragments.length - 2].toLowerCase() as Address
 
                   return $Profile({
                     $accountDisplay: $row(layoutSheet.spacing, style({ flex: 1, alignItems: 'center', placeContent: 'center', zIndex: 1 }))(

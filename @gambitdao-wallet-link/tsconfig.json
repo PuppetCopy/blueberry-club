@@ -3,11 +3,11 @@
   "compilerOptions": {
     "outDir": ".dist/esm",
     "rootDir": "src",
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "lib": [
       "DOM",
-      "es2020",
+      "ES2022",
     ],
     "declarationDir": ".dist/types"
   },

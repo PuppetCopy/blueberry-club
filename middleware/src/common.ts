@@ -1,9 +1,6 @@
-import { importGlobal, unixTimestampNow } from "@gambitdao/gmx-middleware"
-import { map } from "@most/core"
-import { IAttributeBackground, IAttributeClothes, IAttributeBody, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat, LabItemSale, MintRule, SvgPartsMap, IBerryDisplayTupleMap, IAttributeBadge } from "./types"
-
-const svgParts = importGlobal(import("@gambitdao/gbc-middleware/src/mappings/svgParts"))
-
+import { unixTimestampNow } from "@gambitdao/gmx-middleware"
+import { IAttributeBackground, IAttributeClothes, IAttributeBody, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat, LabItemSale, MintRule, SvgPartsMap, IBerryDisplayTupleMap, IAttributeBadge } from "./types.js"
+import { svgParts } from "./mappings/svgParts.js"
 export const labAttributeTuple = [IAttributeBackground, IAttributeClothes, IAttributeBody, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat, IAttributeBadge] as const
 
 export const getLabItemTupleIndex = (itemId: number) => {
@@ -22,8 +19,8 @@ export const getLabItemTupleIndex = (itemId: number) => {
   return labAttributeTuple.indexOf(attrMap)
 }
 
-export function saleMaxSupply(sale: LabItemSale): number {
-  return sale.mintRuleList.reduce((seed, next) => seed + next.supply, 0)
+export function saleMaxSupply(sale: LabItemSale): bigint {
+  return sale.mintRuleList.reduce((seed, next) => seed + next.supply, 0n)
 }
 
 export function isSaleWithinTimeRange(rule: MintRule): boolean {
@@ -56,12 +53,10 @@ export function getLatestSaleRule(sale: LabItemSale): MintRule {
 }
 
 export const berrySvg = (tuple: Partial<IBerryDisplayTupleMap>) => {
-  return map(parts => {
-    return `<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMin meet" fill="none" viewBox="0 0 1500 1500">${berryPartsToSvg(parts, tuple)}</svg>`
-  }, svgParts)
+  return `<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMin meet" fill="none" viewBox="0 0 1500 1500">${berryPartsToSvg(tuple)}</svg>`
 }
 
-export const berryPartsToSvg = (svgParts: SvgPartsMap, [background, clothes, body, expression, faceAccessory, hat, badge]: Partial<IBerryDisplayTupleMap>,) => {
+export const berryPartsToSvg = ([background, clothes, body, expression, faceAccessory, hat, badge]: Partial<IBerryDisplayTupleMap>,) => {
   return `
     ${background ? svgParts[0][background] : ''}
     ${svgParts[1][clothes ? clothes : IAttributeClothes.NUDE]}

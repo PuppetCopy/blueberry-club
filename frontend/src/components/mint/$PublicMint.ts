@@ -2,19 +2,16 @@ import { Behavior } from "@aelea/core"
 import { component, style, $text, attr, nodeEvent, styleInline, stylePseudo, INode } from "@aelea/dom"
 import { $column, layoutSheet, $row, $icon } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
-import { ContractTransaction } from "@ethersproject/contracts"
 import { LabItemSale, MintRule, LAB_CHAIN } from "@gambitdao/gbc-middleware"
-import { filterNull, formatFixed } from "@gambitdao/gmx-middleware"
+import { filterNull, formatFixed, takeUntilLast } from "@gambitdao/gmx-middleware"
 import { IWalletLink, IWalletName } from "@gambitdao/wallet-link"
 import { switchLatest, multicast, startWith, snapshot, map, tap, merge } from "@most/core"
 import { $caretDown } from "../../elements/$icons"
-import { takeUntilLast } from "../../logic/common"
 import { getMintCount } from "../../logic/contract/sale"
 import { $ButtonPrimary } from "../form/$Button"
 import { $Dropdown, $defaultSelectContainer } from "../form/$Dropdown"
 import { $displayMintEvents } from "./mintUtils2"
 import { $IntermediateConnectButton } from "../../components/$ConnectAccount"
-import { Public__factory } from "@gambitdao/gbc-contracts"
 import { connectLab } from "../../logic/contract/gbc"
 import { CHAIN } from "@gambitdao/const"
 
@@ -46,7 +43,7 @@ export const $PublicMint = (config: MintCmp) => component((
 
 
   
-  const labWallet = connectLab(config.walletLink.provider)
+  const labWallet = connectLab(config.walletLink.client)
 
   const accountChange = merge(account, supportedNetwork)
   const selectedMintAmount = merge(customNftAmount, selectMintAmount)

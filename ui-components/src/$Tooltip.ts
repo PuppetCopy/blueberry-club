@@ -3,8 +3,6 @@ import { $Node, component, eventElementTarget, INode, NodeComposeFn, nodeEvent, 
 import { $column, $row, observer } from "@aelea/ui-components"
 import { colorAlpha, pallete } from "@aelea/ui-components-theme"
 import { constant, switchLatest, empty, map, skipRepeats, startWith, skip, zip } from "@most/core"
-import { invertColor } from "./common"
-
 
 
 

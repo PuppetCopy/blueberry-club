@@ -4,7 +4,7 @@ import { $column, $icon, $row, designSheet, layoutSheet, screenUtils } from "@ae
 import { pallete } from "@aelea/ui-components-theme"
 import { constant, empty, map, now, snapshot, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
-import { $VirtualScroll, IScrollPagableReponse, QuantumScroll, ScrollRequest, ScrollResponse } from "./$VirtualScroll"
+import { $VirtualScroll, IScrollPagableReponse, QuantumScroll, ScrollRequest, ScrollResponse } from "./$VirtualScroll.js"
 
 
 

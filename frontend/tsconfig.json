@@ -1,15 +1,30 @@
 {
-  "extends": "../tsconfig",
   "compilerOptions": {
-    "outDir": ".dist/esm",
-    "rootDir": "src",
-    "target": "ES2020",
-    "declarationDir": ".dist/types",
+    "target": "ESNext",
     "lib": [
       "DOM",
+      "DOM.Iterable",
       "ESNext"
-    ]
+    ],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    /* Linting */
+    "strict": true,
+    // "noUnusedLocals": true,
+    // "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
   },
+  "include": [
+    "src"
+, "../puppet.finance/src/particle.ts"  ],
   "references": [
     {
       "path": "../ui-components"
@@ -22,6 +37,9 @@
     },
     {
       "path": "../@gambitdao-wallet-link"
+    },
+    {
+      "path": "./tsconfig.node.json"
     }
   ]
 }

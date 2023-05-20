@@ -2,6 +2,7 @@
     "name": "@gambitdao/gmx-middleware",
     "version": "0.7.0",
     "license": "MIT",
+    "type": "module",
     "module": ".dist/esm/index.js",
     "main": ".dist/cjs/index.js",
     "sideEffects": false,
@@ -18,13 +19,6 @@
     "dependencies": {
         "@aelea/core": "1.3.0",
         "@aelea/dom": "0.2.0",
-        "@ethersproject/abi": "5.7.0",
-        "@ethersproject/abstract-signer": "5.7.0",
-        "@ethersproject/bignumber": "^5.7.0",
-        "@ethersproject/bytes": "5.7.0",
-        "@ethersproject/contracts": "^5.7.0",
-        "@ethersproject/providers": "5.7.2",
-        "@ethersproject/solidity": "^5.7.0",
         "@gambitdao/const": "workspace:*",
         "@gambitdao/wallet-link": "workspace:*",
         "@most/core": "1.6.1",
@@ -33,11 +27,10 @@
         "@most/scheduler": "1.3.0",
         "@most/types": "1.1.0",
         "@types/isomorphic-fetch": "^0.0.36",
-        "@uniswap/sdk-core": "3.1.1",
-        "@uniswap/v3-core": "^1.0.1",
-        "@uniswap/v3-periphery": "^1.4.3",
-        "@uniswap/v3-sdk": "3.9.0",
-        "@urql/core": "3.1.1",
-        "isomorphic-fetch": "^3.0.0"
+        "@urql/core": "4.0.7",
+        "abitype": "^0.8.2",
+        "graphql": "^16.6.0",
+        "isomorphic-fetch": "^3.0.0",
+        "viem": "^0.3.19"
     }
 }

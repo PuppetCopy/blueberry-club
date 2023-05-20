@@ -23,9 +23,6 @@ export type ICOMMZ<T, Server, Client> = {
 }
 
 
-// export type TournamentList = Op<string, ITournament>
-// export type LeaderboardList = Op<LeaderboardApi, ITournament>
-
 
 export const comLinkIn = <TOPIC extends string>(topic: TOPIC) => O(
   filter((data: ICommunicationMessage<TOPIC, any>) => {
@@ -35,16 +32,4 @@ export const comLinkIn = <TOPIC extends string>(topic: TOPIC) => O(
   }),
   map(x => x.body)
 )
-
-
-
-// export const comLink = {
-//   tournamentList: ICommunication<'wakka', string, ITournament>
-// }
-
-// type StreamInputArray<T extends ICommunication<any, any, any>[]> = {
-//   [P in keyof T]: T[P]
-// }
-
-// export type CommunicationInterface<ComList extends ICommunication<any, any, any>[]> = StreamInputArray<ComList>
 

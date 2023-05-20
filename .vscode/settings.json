@@ -3,11 +3,12 @@
     "**/.yarn": true,
     "**/.pnp.*": true,
     "**/.dist": true,
-    "**/typechain-types": true,
+    "**/typechain-types": true
   },
   "typescript.tsdk": ".yarn/sdks/typescript/lib",
   "typescript.enablePromptUseWorkspaceTsdk": true,
   "eslint.nodePath": ".yarn/sdks",
   "git.ignoreLimitWarning": true,
-  "solidity.formatter": "forge"
+  "solidity.formatter": "forge",
+  "editor.wordWrap": "off"
 }

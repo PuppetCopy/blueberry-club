@@ -1,14 +1,28 @@
 import { O } from "@aelea/core"
-import { hexValue } from "@ethersproject/bytes"
 import {
-  IIdentifiableEntity, IRequestPagePositionApi, pagingQuery,
-  cacheMap, intervalTimeMap, gmxSubgraph, getMarginFees, BASIS_POINTS_DIVISOR, switchMap, groupByKey, getMappedValue, CHAIN_ADDRESS_MAP,
-  formatFixed, getTokenAmount, readableNumber, USD_PERCISION, toAccountSummaryList, div, min, IAccountSummary
+  BASIS_POINTS_DIVISOR,
+  CHAIN_ADDRESS_MAP,
+  IAccountSummary,
+  IIdentifiableEntity, IRequestPagePositionApi,
+  USD_PERCISION,
+  cacheMap,
+  div,
+  formatFixed,
+  getMappedValue,
+  getMarginFees,
+  getTokenAmount,
+  gmxSubgraph,
+  groupByKey,
+  intervalTimeMap,
+  pagingQuery,
+  readableNumber,
+  toAccountSummaryList
 } from "@gambitdao/gmx-middleware"
-import { awaitPromises, combine, map, now } from "@most/core"
-import { ClientOptions, createClient, gql, OperationContext, TypedDocumentNode } from "@urql/core"
-import { COMPETITION_METRIC_LIST, TOURNAMENT_DURATION, TOURNAMENT_TIME_ELAPSED } from "./config"
-import { ILabItem, ILabItemOwnership, IOwner, IBlueberryLadder, IProfileTradingResult, IToken, IRequestCompetitionLadderApi } from "./types"
+import { map } from "@most/core"
+import { ClientOptions, OperationContext, TypedDocumentNode, cacheExchange, createClient, fetchExchange, gql } from "@urql/core"
+import { numberToHex } from "viem"
+import { COMPETITION_METRIC_LIST, TOURNAMENT_DURATION, TOURNAMENT_TIME_ELAPSED } from "./config.js"
+import { IBlueberryLadder, ILabItem, ILabItemOwnership, IOwner, IRequestCompetitionLadderApi, IToken } from "./types.js"
 
 
 export const createSubgraphClient = (opts: ClientOptions) => {
@@ -32,6 +46,7 @@ export const createSubgraphClient = (opts: ClientOptions) => {
 export const blueberrySubgraph = createSubgraphClient({
   fetch: fetch,
   url: 'https://api.thegraph.com/subgraphs/name/nissoh/blueberry-club-arbitrum',
+  exchanges: [cacheExchange, fetchExchange,],
 })
 
 const cache = cacheMap({})
@@ -111,7 +126,7 @@ export const token = O(
 
     const res = await await querySubgraph(`
 {
-  token(id: "${hexValue(Number(queryParams.id))}") {
+  token(id: "${numberToHex(Number(queryParams.id))}") {
     id
     owner {
       id
@@ -160,13 +175,12 @@ export const token = O(
   })
 )
 
-export const tokenListPick = O(
-  map(async (tokenList: number[]) => {
+export async function getTokenListPick(tokenList: number[]) {
 
-    const newLocal = `
+  const newLocal = `
 {
   ${tokenList.map(id => `
-_${id}: token(id: "${hexValue(id)}") {
+_${id}: token(id: "${numberToHex(id)}") {
   id
   labItems {
     id
@@ -175,16 +189,12 @@ _${id}: token(id: "${hexValue(id)}") {
   `).join('')}
 }
 `
-    const res = await querySubgraph(newLocal)
-    const rawList: IToken[] = Object.values(res)
+  const res = await querySubgraph(newLocal)
+  const rawList: IToken[] = Object.values(res)
 
-    return rawList.map(token => tokenJson(token))
-  })
-)
+  return rawList.map(token => tokenJson(token))
+}
 
-export const profilePickList = O(
-  map(getProfilePickList)
-)
 
 
 const MIN_ROI_THRESHOLD = 50n
@@ -195,8 +205,8 @@ function isWinner(summary: IAccountSummary) {
   return summary.pnl > MIN_PNL_THRESHOLD && div(summary.pnl, summary.maxCollateral) > MIN_ROI_THRESHOLD
 }
 
-export const competitionCumulative = O(
-  map(async (queryParams: IRequestCompetitionLadderApi): Promise<IProfileTradingResult> => {
+export const competitionLeaderboard = O(
+  map(async (queryParams: IRequestCompetitionLadderApi) => {
 
     const queryCache = cache('cacheKey', intervalTimeMap.MIN5, async () => {
 
@@ -237,7 +247,7 @@ export const competitionCumulative = O(
         const score = queryParams.metric === 'roi'
           ? div(n.pnl, n.maxCollateral > averageMaxCollateral ? n.maxCollateral : averageMaxCollateral)
           : n[queryParams.metric]
-        
+
         return score > 0n ? s + score : s
       }, 0n)
 
@@ -341,29 +351,29 @@ export const competitionCumulative = O(
       list: pagingQuery(queryParams, res.sortedCompetitionList)
     }
   }),
-  awaitPromises,
-  switchMap(res => {
+  map(async query => {
+    const res = await query
     const accountList = res.list.page.map(a => a.account)
-    return combine((gbcList, ensList): IProfileTradingResult => {
-      const gbcListMap = groupByKey(gbcList.filter(x => x?.id), x => x.id)
-      const ensListMap = groupByKey(ensList, x => x.domain.resolvedAddress.id)
+    const [queryProfilePicklist, ensList] = await Promise.all([getProfilePickList(accountList), gmxSubgraph.getEnsProfileListPick(accountList)])
 
-      const page = res.list.page.map(summary => {
-        const profile = gbcListMap[summary.account]
-        const ens = ensListMap[summary.account]
+    const gbcListMap = groupByKey(queryProfilePicklist.filter(x => x?.id), x => x.id)
+    const ensListMap = groupByKey(ensList, x => x.domain.resolvedAddress.id)
 
-        return { ...summary, profile: profile ? { ...profile, ens } : null }
-      })
+    const page = res.list.page.map(summary => {
+      const profile = gbcListMap[summary.account]
+      const ens = ensListMap[summary.account]
+
+      return { ...summary, profile: profile ? { ...profile, ens } : null }
+    })
 
 
-      return {
-        ...res,
-        list: {
-          ...res.list,
-          page: page
-        }
+    return {
+      ...res,
+      list: {
+        ...res.list,
+        page: page
       }
-    }, awaitPromises(profilePickList(now(accountList))), awaitPromises(gmxSubgraph.getEnsProfileListPick(now(accountList))))
+    }
   })
 )
 
@@ -371,7 +381,7 @@ export const competitionCumulative = O(
 
 
 
-async function getProfilePickList(idList: string[]): Promise<IOwner[]> {
+export async function getProfilePickList(idList: string[]): Promise<IOwner[]> {
   if (idList.length === 0) {
     return []
   }

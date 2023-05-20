@@ -1,10 +1,12 @@
-import { TOKEN_ADDRESS_TO_SYMBOL, TOKEN_DESCRIPTION_MAP } from "./address/token"
-import { BASIS_POINTS_DIVISOR, FUNDING_RATE_PRECISION, LIQUIDATION_FEE, MARGIN_FEE_BASIS_POINTS, MAX_LEVERAGE } from "./constant"
+import { CHAIN_NATIVE_TO_SYMBOL, TOKEN_ADDRESS_TO_SYMBOL, TOKEN_DESCRIPTION_MAP } from "./address/token.js"
+import { CHAIN } from "@gambitdao/const"
+import { BASIS_POINTS_DIVISOR, FUNDING_RATE_PRECISION, LIQUIDATION_FEE, MARGIN_FEE_BASIS_POINTS, MAX_LEVERAGE } from "./constant.js"
 import {
   ITrade, ITradeSettled, ITradeClosed, ITradeLiquidated, ITradeOpen,
   TradeStatus, IAccountSummary as IAccountSummary, IPositionLiquidated, ITokenDescription
-} from "./types"
-import { easeInExpo, formatFixed, getDenominator, getSafeMappedValue, groupByMapMany } from "./utils"
+} from "./types.js"
+import { easeInExpo, formatFixed, getDenominator, getMappedValue, getSafeMappedValue, groupByMapMany } from "./utils.js"
+import { Address } from "viem"
 
 
 export function safeDiv(a: bigint, b: bigint): bigint {
@@ -197,7 +199,7 @@ export function getFundingFee(entryFundingRate: bigint, cumulativeFundingRate: b
 
 export function toAccountSummaryList(list: ITrade[], priceMap: { [k: string]: bigint }, minMaxCollateral: bigint, endDate: number): IAccountSummary[] {
   const tradeListMap = groupByMapMany(list, a => a.account)
-  const tradeListEntries = Object.entries(tradeListMap)
+  const tradeListEntries: [Address, ITrade[]][] = Object.entries(tradeListMap) as any
 
   const summaryList = tradeListEntries.map(([account, tradeList]) => {
 
@@ -333,4 +335,10 @@ export function validateIdentityName(name: string) {
 
 export function getTokenDescription(token: keyof typeof TOKEN_ADDRESS_TO_SYMBOL): ITokenDescription {
   return TOKEN_DESCRIPTION_MAP[getSafeMappedValue(TOKEN_ADDRESS_TO_SYMBOL, token, token)]
+}
+
+
+export function getNativeTokenDescription(chain: CHAIN): ITokenDescription {
+  const symbol = getMappedValue(CHAIN_NATIVE_TO_SYMBOL, chain)
+  return TOKEN_DESCRIPTION_MAP[symbol]
 }

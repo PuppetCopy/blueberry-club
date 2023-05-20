@@ -1,23 +1,20 @@
 import { replayLatest } from "@aelea/core"
-import { Mintable__factory } from "@gambitdao/gbc-contracts"
-import { MintRule } from "@gambitdao/gbc-middleware"
-import { filterNull, periodicRun } from "@gambitdao/gmx-middleware"
+import { MintRule, abi } from "@gambitdao/gbc-middleware"
+import { periodicSample, takeUntilLast } from "@gambitdao/gmx-middleware"
 import { IWalletLink } from "@gambitdao/wallet-link"
-import { combine, map, multicast, skipRepeats } from "@most/core"
-import { takeUntilLast } from "../common"
+import { skipRepeats } from "@most/core"
+import { connectContract, contractReader,  } from "../common"
 
 
 
-export function getMintCount(rule: MintRule, walletLink: IWalletLink, updateInterval = 1500) {
-  const contract = map(p => Mintable__factory.connect(rule.contractAddress, p), filterNull(walletLink.provider))
-  
-  const count = periodicRun({
-    interval: updateInterval,
-    actionOp: combine(async (c) => (await c.totalMinted()).toNumber(), contract),
-  })
+export function getMintCount(rule: MintRule, walletLink: IWalletLink, interval = 1500) {
+  const holderConnect = connectContract(walletLink.client, rule.contractAddress, abi.holder)
+  const readTotalMinted = contractReader(holderConnect)('totalMinted')
+
+  const count = periodicSample(readTotalMinted, { interval })
   const countUntil = takeUntilLast(c => rule.supply === c, count)
 
-  return skipRepeats(replayLatest(multicast(countUntil)))
+  return skipRepeats(replayLatest(countUntil))
 }
 
 

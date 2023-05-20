@@ -19,7 +19,7 @@ import { IRewardsStream } from "../logic/contract"
 import { IAsset } from "@gambitdao/gbc-middleware"
 import { $Chart } from "./chart/$Chart"
 import { getIntervalBasedOnTimeframe } from "@gambitdao/ui-components"
-import { getContractAddress } from "../logic/common"
+import { CHAIN } from "../../../const/src"
 
 export interface IValueInterval extends IAsset {
   price: bigint
@@ -299,9 +299,9 @@ export const $StakingGraph = (config: ITreasuryChart) => component((
                   },
                   squashMap: (prev, next) => {
 
-                    const token: ARBITRUM_ADDRESS = next.token.slice(1) as any
+                    const token: string = next.token.slice(1) as any
 
-                    if (token.toLowerCase() === getContractAddress(CHAIN_ADDRESS_MAP, chain, 'ES_GMX')) {
+                    if (token.toLowerCase() === CHAIN_ADDRESS_MAP[chain as CHAIN.ARBITRUM]['ES_GMX']) {
                       const desc = getTokenDescription(token as any)
                       const amountRatio = div(next.amount, getDenominator(desc.decimals)) / BASIS_POINTS_DIVISOR
                       const tokenPrice = div(next.amountUsd, amountRatio) / BASIS_POINTS_DIVISOR
