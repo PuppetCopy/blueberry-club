@@ -63,7 +63,7 @@ export const $Chart = <T extends SeriesType>({ chartConfig, realtimeSource, init
       background: {
         color: 'transparent'
       },
-      fontFamily: 'RelativePro',
+      fontFamily: 'Moderat',
       fontSize: 12
     },
     timeScale: {

@@ -151,7 +151,7 @@ export const web3Modal = new Web3Modal({
     '--w3m-notification-border-radius': '0px',
     '--w3m-icon-button-border-radius': '0px',
     '--w3m-button-hover-highlight-border-radius': '0px',
-    '--w3m-font-family': `'RelativePro', sans-serif`
+    '--w3m-font-family': `'Moderat', sans-serif`
   }
 }, ethereumClient)
 

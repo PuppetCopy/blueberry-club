@@ -62,7 +62,7 @@ export const $CandleSticks = ({ chartConfig, series, containerOp = O() }: ICandl
         color: 'transparent'
       },
       textColor: pallete.message,
-      fontFamily: 'RelativePro',
+      fontFamily: 'Moderat',
       fontSize: 12
     },
     timeScale: {

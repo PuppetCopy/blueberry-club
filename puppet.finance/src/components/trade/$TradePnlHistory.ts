@@ -227,7 +227,7 @@ export const $TradePnlHistory = (config: ITradePnlPreview) => component((
                   color: 'transparent'
                 },
                 textColor: pallete.foreground,
-                fontFamily: 'RelativePro',
+                fontFamily: 'Moderat',
                 fontSize: 10
               },
               leftPriceScale: {

@@ -112,8 +112,8 @@
 
 
 //       $column(
-//         $row(screenUtils.isDesktopScreen ? layoutSheet.spacingBig : layoutSheet.spacing, style({ placeContent: 'center', alignItems: 'center', fontFamily: 'RelativePro', padding: screenUtils.isDesktopScreen ? '25px 35px 0px' : '35px 35px 0px', zIndex: 11 }))(
-//           $row(style({ fontFamily: 'RelativeMono', alignItems: 'center', placeContent: 'space-evenly' }))(
+//         $row(screenUtils.isDesktopScreen ? layoutSheet.spacingBig : layoutSheet.spacing, style({ placeContent: 'center', alignItems: 'center', fontFamily: 'Moderat', padding: screenUtils.isDesktopScreen ? '25px 35px 0px' : '35px 35px 0px', zIndex: 11 }))(
+//           $row(style({ fontFamily: 'ModeratMono', alignItems: 'center', placeContent: 'space-evenly' }))(
 //             $row(layoutSheet.spacing, style({ alignItems: 'center' }))(
 //               $row(
 //                 style({ borderRadius: '2px', padding: '4px', backgroundColor: pallete.message, })(

@@ -31,8 +31,6 @@ export const $MainMenu = ({ parentRoute, chainList, showAccount = true }: MainMe
 ) => {
 
 
-
-
   const routeChangeMulticast = multicast(routeChange)
 
 

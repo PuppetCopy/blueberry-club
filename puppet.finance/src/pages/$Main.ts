@@ -1,7 +1,7 @@
 import { Behavior } from "@aelea/core"
 import { $element, $node, $text, component, eventElementTarget, style } from "@aelea/dom"
 import * as router from '@aelea/router'
-import { $column, $row, layoutSheet, screenUtils } from '@aelea/ui-components'
+import { $column, $row, designSheet, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { pallete } from "@aelea/ui-components-theme"
 import { CHAIN } from "@gambitdao/const"
 import { BLUEBERRY_REFFERAL_CODE, IAccountStakingStore, ITreasuryStore } from "@gambitdao/gbc-middleware"
@@ -83,24 +83,29 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
 
   return [
 
-    $column(style({
-      color: pallete.message,
-      fill: pallete.message,
-      // backgroundImage: `radial-gradient(570% 71% at 50% 15vh, ${pallete.background} 0px, ${pallete.horizon} 100%)`,
-      backgroundColor: pallete.horizon,
-      fontSize: '1.25em',
-      minHeight: '100vh',
-      fontWeight: 400,
-      gap: screenUtils.isDesktopScreen ? '85px' : '55px',
-      overflowX: 'hidden',
-      padding: screenUtils.isMobileScreen ? '0 15px' : '0 15px'
-    }))(
+    $column(
+      designSheet.main,
+      style({
+        scrollSnapType: 'y proximity',
+        color: pallete.message,
+        fill: pallete.message,
+        position: 'relative',
+        // backgroundImage: `radial-gradient(570% 71% at 50% 15vh, ${pallete.background} 0px, ${pallete.horizon} 100%)`,
+        backgroundColor: pallete.horizon,
+        fontSize: '1.25em',
+        minHeight: '100vh',
+        fontWeight: 400,
+        gap: screenUtils.isDesktopScreen ? '85px' : '55px',
+        overflowX: 'hidden',
+        padding: '0 15px'
+      })
+    )(
 
       $column(style({ gap: '36px' }))(
 
-        $MainMenu({ parentRoute: rootRoute, chainList: [CHAIN.ARBITRUM, CHAIN.AVALANCHE] })({
-          routeChange: linkClickTether(),
-        }),
+        // $MainMenu({ parentRoute: rootRoute, chainList: [CHAIN.ARBITRUM, CHAIN.AVALANCHE] })({
+        //   routeChange: linkClickTether(),
+        // }),
 
         router.match(rootRoute)(
           $column(layoutSheet.spacingBig, style({ margin: '0 auto', maxWidth: '1080px', gap: screenUtils.isDesktopScreen ? '85px' : '55px', width: '100%' }))(
