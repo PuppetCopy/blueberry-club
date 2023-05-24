@@ -7,9 +7,15 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract Distributor is Auth {
+contract Distributor is ReentrancyGuard, Auth {
 
-    mapping(uint256 => mapping(uint256 => bool)) public isTokenUsed;
+    using SafeERC20 for IERC20;
+
+    uint256[] public usedTokens;
+
+    mapping(address => address) public muxContainerOwner; // container => owner
+    mapping(uint256 => bool) public isTokenUsed; // tokenID => isUsed
+    mapping(address => uint256) public winnersReward; // winner => reward
 
     ERC721 public immutable token;
 
@@ -42,9 +48,12 @@ contract Distributor is Auth {
     function distribute(uint256 _newRewards, uint256[] memory _rewardsList, address[] memory _winnersList) external requiresAuth {
         if (_rewardsList.length != _winnersList.length) revert LengthMismatch();
 
-        for (uint256 i = 0; i < usedTokens.length; i++) {
-            isTokenUsed[usedTokens[i]] = false;
+        uint256[] memory _usedTokens = usedTokens;
+        for (uint256 i = 0; i < _usedTokens.length; i++) {
+            isTokenUsed[_usedTokens[i]] = false;
         }
+
+        delete usedTokens;
 
         for (uint256 i = 0; i < _rewardsList.length; i++) {
             address _winner = _winnersList[i];
@@ -91,4 +100,22 @@ contract Distributor is Auth {
     function _getMuxContainerOwner(address _container) internal view returns (address) {
         // TODO
     }
+
+    // ============================================================================================
+    // Events
+    // ============================================================================================
+
+    event Claim(address indexed sender, address indexed winner, address indexed receiver, uint256 reward);
+    event Distribute(uint256 unclaimedRewards, uint256 newRewards);
+    event SetClaimable(bool claimable);
+
+    // ============================================================================================
+    // Errors
+    // ============================================================================================
+
+    error NotClaimable();
+    error NotContainerOwner();
+    error NotOwnerOfToken();
+    error NotWinner();
+    error LengthMismatch();
 }
