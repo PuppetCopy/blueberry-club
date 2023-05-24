@@ -1,105 +1,94 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.17;
 
 import {Auth, Authority} from "@rari-capital/solmate/src/auth/Auth.sol";
 import {ERC721} from "@rari-capital/solmate/src/tokens/ERC721.sol";
-
-struct Epoch {
-    uint256 id;
-    uint256 rewardPerToken;
-    uint256 rest;
-}
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract Distributor is Auth {
 
-    // 1. contract will check if the account is eligible and has a GBC. 
-    // else check if the account is a Mux container and refer to its origin, check step 1.
-    // 2. user can buy/transfer a GBC anytime to claim on the account
-    // 3. they flag the GBC per monthly competition to prevent users buying 1 GBC 
-    // and claiming on multiple account (simple mapping)
-    // 4. WETH is unwapped so network ETH is received
-
-    uint256 private constant GBC_SUPPLY = 10000;
-
-    // event Deposit(address indexed depositor, uint256 amount);
-    // event Claim(
-    //     address indexed operator,
-    //     address indexed account,
-    //     address indexed receiver,
-    //     uint256 amount
-    // );
-
     mapping(uint256 => mapping(uint256 => bool)) public isTokenUsed;
 
-    // Epoch public epoch;
-
     ERC721 public immutable token;
+
+    // ============================================================================================
+    // Constructor
+    // ============================================================================================
 
     constructor(Authority authority, ERC721 _token) Auth(address(0), authority) {
         token = _token;
     }
 
+    // ============================================================================================
+    // External Functions
+    // ============================================================================================
+
+    function claim(uint256 _tokenID, address _receiver) external nonReentrant returns (uint256) {
+        return _claim(_tokenID, msg.sender, _receiver);
+    }
+
+    function muxClaim(uint256 _tokenID, address _container, address _receiver) external nonReentrant returns (uint256) {
+        if (muxContainerOwner[_container] != msg.sender) revert NotContainerOwner();
+
+        return _claim(_tokenID, _container, _receiver);
+    }
+
+    // ============================================================================================
+    // Owner Functions
+    // ============================================================================================
+
     function distribute(uint256 _newRewards, uint256[] memory _rewardsList, address[] memory _winnersList) external requiresAuth {
-        // TODO
-        // 1. check if claiming period is closed 
-        // 2. store data
-        // 3. start claiming period (should be open for 1 week)
-        // 4. pull _newRewards (WETH) from msg.sender
+        if (_rewardsList.length != _winnersList.length) revert LengthMismatch();
+
+        for (uint256 i = 0; i < usedTokens.length; i++) {
+            isTokenUsed[usedTokens[i]] = false;
+        }
+
+        for (uint256 i = 0; i < _rewardsList.length; i++) {
+            address _winner = _winnersList[i];
+            winnersReward[_winner] = _rewardsList[i];
+
+            address _muxContainerOwner = _getMuxContainerOwner(_winner);
+            if (_muxContainerOwner != address(0)) {
+                muxContainerOwner[_winner] = _muxContainerOwner;
+            }
+        }
+
+        uint256 _unclaimedRewards = IERC20(WETH).balanceOf(address(this));
+
+        IERC20(WETH).safeTransferFrom(msg.sender, address(this), _newRewards);
+
+        emit Distribute(_unclaimedRewards, _newRewards);
     }
 
-    function claim() external requiresAuth returns (uint256) {
-        // TODO
-        // 1. check if claiming period is open
-        // 2. check if msg.sender owns GBC && in winners list
-        // or if msg.origin has a MUX container that is in winners list
-        // 3. flag the GBC as used
+    function setClaimable(bool _claimable) external requiresAuth {
+        claimable = _claimable;
+
+        emit SetClaimable(_claimable);
     }
 
-    // --------------- IGNORE --------------- 
+    // ============================================================================================
+    // Internal Functions
+    // ============================================================================================
 
-    // function _deposit(uint256 amount) internal {
-    //     Epoch memory _epoch = epoch;
-    //     uint256 deposited = amount + _epoch.rest;
+    function _claim(uint256 _tokenID, address _winner, address _receiver) internal returns (uint256 _reward) {
+        if (!claimable) revert NotClaimable();
+        if (token.ownerOf(_tokenID) != msg.sender) revert NotOwnerOfToken();
 
-    //     _epoch.id++;
-    //     _epoch.rest = deposited;
-    //     _epoch.rewardPerToken = deposited / GBC_SUPPLY;
+        _reward = winnersReward[_winner];
+        if (_reward == 0) revert NotWinner();
 
-    //     epoch = _epoch;
+        isTokenUsed[_tokenID] = true;
+        usedTokens.push(_tokenID);
 
-    //     emit Deposit(msg.sender, amount);
-    // }
+        IERC20(WETH).safeTransfer(_receiver, _reward);
 
-    // function _claim(address holder, address payable receiver, uint256[] memory tokens) internal returns (uint256 reward) {
-    //     Epoch memory epoch_ = epoch;
+        emit Claim(msg.sender, _winner, _receiver, _reward);
+    }
 
-    //     uint256 id = epoch_.id;
-    //     uint256 rewardPerToken = epoch_.rewardPerToken;
-
-    //     for (uint256 i = 0; i < tokens.length; ) {
-    //         uint256 token_ = tokens[i];
-
-    //         if (token.ownerOf(token_) != holder) revert();
-    //         if (isTokenUsed[id][token_]) revert();
-
-    //         isTokenUsed[id][token_] = true;
-
-    //         reward += rewardPerToken;
-
-    //         unchecked {
-    //             i++;
-    //         }
-    //     }
-
-    //     // Can underflow but transaction will revert because not enough funds on contract
-    //     unchecked {
-    //         epoch_.rest -= reward;
-    //     }
-
-    //     epoch = epoch_;
-
-    //     receiver.transfer(reward);
-
-    //     emit Claim(msg.sender, holder, receiver, reward);
-    // }
+    function _getMuxContainerOwner(address _container) internal view returns (address) {
+        // TODO
+    }
 }
