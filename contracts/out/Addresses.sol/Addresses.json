@@ -1,0 +1,188 @@
+{
+  "abi": [
+    {
+      "inputs": [],
+      "name": "GBC",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": {
+    "object": "0x6080604052348015600f57600080fd5b5060998061001e6000396000f3fe6080604052348015600f57600080fd5b506004361060285760003560e01c8063e8a4352014602d575b600080fd5b60477317f4baa9d35ee54ffbcb2608e20786473c7aa49f81565b6040516001600160a01b03909116815260200160405180910390f3fea2646970667358221220928d5adcf45f415a9aba17176927df5a15217d43f2e78c52a5afc0f24832429364736f6c63430008110033",
+    "sourceMap": "61:104:32:-:0;;;;;;;;;;;;;;;;;;;",
+    "linkReferences": {}
+  },
+  "deployedBytecode": {
+    "object": "0x6080604052348015600f57600080fd5b506004361060285760003560e01c8063e8a4352014602d575b600080fd5b60477317f4baa9d35ee54ffbcb2608e20786473c7aa49f81565b6040516001600160a01b03909116815260200160405180910390f3fea2646970667358221220928d5adcf45f415a9aba17176927df5a15217d43f2e78c52a5afc0f24832429364736f6c63430008110033",
+    "sourceMap": "61:104:32:-:0;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;89:72;;119:42;89:72;;;;;-1:-1:-1;;;;;178:32:33;;;160:51;;148:2;133:18;89:72:32;;;;;;",
+    "linkReferences": {}
+  },
+  "methodIdentifiers": {
+    "GBC()": "e8a43520"
+  },
+  "rawMetadata": "{\"compiler\":{\"version\":\"0.8.17+commit.8df45f5f\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"name\":\"GBC\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"test/foundry/utils/Addresses.sol\":\"Addresses\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[\":@openzeppelin/=lib/openzeppelin-contracts/\",\":@rari-capital/=lib/\",\":ds-test/=lib/forge-std/lib/ds-test/src/\",\":forge-std/=lib/forge-std/src/\",\":solmate/=lib/solmate/src/\"]},\"sources\":{\"test/foundry/utils/Addresses.sol\":{\"keccak256\":\"0x95b990b78018fd4be2d1f4c066902b3c1c892cd9d0f9ff0ff7955fbe77757f5c\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://682434e8c067af42cbdc529686e24449802fa6bc39501e8c5c2d6a8ea6872c37\",\"dweb:/ipfs/QmNUpsrDkSBwqMjD2EvRjHFCb1aX8rWZzbzUtyVJprEuxq\"]}},\"version\":1}",
+  "metadata": {
+    "compiler": {
+      "version": "0.8.17+commit.8df45f5f"
+    },
+    "language": "Solidity",
+    "output": {
+      "abi": [
+        {
+          "inputs": [],
+          "stateMutability": "view",
+          "type": "function",
+          "name": "GBC",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ]
+        }
+      ],
+      "devdoc": {
+        "kind": "dev",
+        "methods": {},
+        "version": 1
+      },
+      "userdoc": {
+        "kind": "user",
+        "methods": {},
+        "version": 1
+      }
+    },
+    "settings": {
+      "remappings": [
+        ":@openzeppelin/=lib/openzeppelin-contracts/",
+        ":@rari-capital/=lib/",
+        ":ds-test/=lib/forge-std/lib/ds-test/src/",
+        ":forge-std/=lib/forge-std/src/",
+        ":solmate/=lib/solmate/src/"
+      ],
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "metadata": {
+        "bytecodeHash": "ipfs"
+      },
+      "compilationTarget": {
+        "test/foundry/utils/Addresses.sol": "Addresses"
+      },
+      "libraries": {}
+    },
+    "sources": {
+      "test/foundry/utils/Addresses.sol": {
+        "keccak256": "0x95b990b78018fd4be2d1f4c066902b3c1c892cd9d0f9ff0ff7955fbe77757f5c",
+        "urls": [
+          "bzz-raw://682434e8c067af42cbdc529686e24449802fa6bc39501e8c5c2d6a8ea6872c37",
+          "dweb:/ipfs/QmNUpsrDkSBwqMjD2EvRjHFCb1aX8rWZzbzUtyVJprEuxq"
+        ],
+        "license": "MIT"
+      }
+    },
+    "version": 1
+  },
+  "ast": {
+    "absolutePath": "test/foundry/utils/Addresses.sol",
+    "id": 32495,
+    "exportedSymbols": {
+      "Addresses": [
+        32494
+      ]
+    },
+    "nodeType": "SourceUnit",
+    "src": "33:132:32",
+    "nodes": [
+      {
+        "id": 32490,
+        "nodeType": "PragmaDirective",
+        "src": "33:24:32",
+        "nodes": [],
+        "literals": [
+          "solidity",
+          "^",
+          "0.8",
+          ".17"
+        ]
+      },
+      {
+        "id": 32494,
+        "nodeType": "ContractDefinition",
+        "src": "61:104:32",
+        "nodes": [
+          {
+            "id": 32493,
+            "nodeType": "VariableDeclaration",
+            "src": "89:72:32",
+            "nodes": [],
+            "constant": true,
+            "functionSelector": "e8a43520",
+            "mutability": "constant",
+            "name": "GBC",
+            "nameLocation": "113:3:32",
+            "scope": 32494,
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_address",
+              "typeString": "address"
+            },
+            "typeName": {
+              "id": 32491,
+              "name": "address",
+              "nodeType": "ElementaryTypeName",
+              "src": "89:7:32",
+              "stateMutability": "nonpayable",
+              "typeDescriptions": {
+                "typeIdentifier": "t_address",
+                "typeString": "address"
+              }
+            },
+            "value": {
+              "hexValue": "307831376634424161394433354565353466466243623236303865323037383634373363376161343966",
+              "id": 32492,
+              "isConstant": false,
+              "isLValue": false,
+              "isPure": true,
+              "kind": "number",
+              "lValueRequested": false,
+              "nodeType": "Literal",
+              "src": "119:42:32",
+              "typeDescriptions": {
+                "typeIdentifier": "t_address",
+                "typeString": "address"
+              },
+              "value": "0x17f4BAa9D35Ee54fFbCb2608e20786473c7aa49f"
+            },
+            "visibility": "public"
+          }
+        ],
+        "abstract": false,
+        "baseContracts": [],
+        "canonicalName": "Addresses",
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "fullyImplemented": true,
+        "linearizedBaseContracts": [
+          32494
+        ],
+        "name": "Addresses",
+        "nameLocation": "70:9:32",
+        "scope": 32495,
+        "usedErrors": []
+      }
+    ],
+    "license": "MIT"
+  },
+  "id": 32
+}

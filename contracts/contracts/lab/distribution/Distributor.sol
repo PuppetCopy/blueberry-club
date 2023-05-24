@@ -11,87 +11,95 @@ struct Epoch {
 }
 
 contract Distributor is Auth {
+
+    // 1. contract will check if the account is eligible and has a GBC. 
+    // else check if the account is a Mux container and refer to its origin, check step 1.
+    // 2. user can buy/transfer a GBC anytime to claim on the account
+    // 3. they flag the GBC per monthly competition to prevent users buying 1 GBC 
+    // and claiming on multiple account (simple mapping)
+    // 4. WETH is unwapped so network ETH is received
+
     uint256 private constant GBC_SUPPLY = 10000;
 
-    event Deposit(address indexed depositor, uint256 amount);
-    event Claim(
-        address indexed operator,
-        address indexed account,
-        address indexed receiver,
-        uint256 amount
-    );
+    // event Deposit(address indexed depositor, uint256 amount);
+    // event Claim(
+    //     address indexed operator,
+    //     address indexed account,
+    //     address indexed receiver,
+    //     uint256 amount
+    // );
 
     mapping(uint256 => mapping(uint256 => bool)) public isTokenUsed;
 
-    Epoch public epoch;
+    // Epoch public epoch;
 
     ERC721 public immutable token;
 
-    constructor(Authority authority, ERC721 token_)
-        Auth(address(0), authority)
-    {
-        token = token_;
+    constructor(Authority authority, ERC721 _token) Auth(address(0), authority) {
+        token = _token;
     }
 
-    function deposit() external payable requiresAuth {
-        _deposit(msg.value);
+    function distribute(uint256[] memory _rewardsList, address[] memory _winnersList) external requiresAuth {
+        // TODO
+        // 1. check if claiming period is closed 
+        // 2. store data
+        // 3. start claiming period (should be open for 1 week)
+        // 4. pull WETH from msg.sender
     }
 
-    function claim(address account, uint256[] memory tokens)
-        external
-        requiresAuth
-        returns (uint256)
-    {
-        return _claim(account, payable(msg.sender), tokens);
+    function claim() external requiresAuth returns (uint256) {
+        // TODO
+        // 1. check if claiming period is open
+        // 2. check if msg.sender owns GBC && in winners list
+        // or if msg.origin has a MUX container that is in winners list
+        // 3. flag the GBC as used
     }
 
-    function _deposit(uint256 amount) internal {
-        Epoch memory _epoch = epoch;
-        uint256 deposited = amount + _epoch.rest;
+    // --------------- IGNORE --------------- 
 
-        _epoch.id++;
-        _epoch.rest = deposited;
-        _epoch.rewardPerToken = deposited / GBC_SUPPLY;
+    // function _deposit(uint256 amount) internal {
+    //     Epoch memory _epoch = epoch;
+    //     uint256 deposited = amount + _epoch.rest;
 
-        epoch = _epoch;
+    //     _epoch.id++;
+    //     _epoch.rest = deposited;
+    //     _epoch.rewardPerToken = deposited / GBC_SUPPLY;
 
-        emit Deposit(msg.sender, amount);
-    }
+    //     epoch = _epoch;
 
-    function _claim(
-        address holder,
-        address payable receiver,
-        uint256[] memory tokens
-    ) internal returns (uint256 reward) {
-        Epoch memory epoch_ = epoch;
+    //     emit Deposit(msg.sender, amount);
+    // }
 
-        uint256 id = epoch_.id;
-        uint256 rewardPerToken = epoch_.rewardPerToken;
+    // function _claim(address holder, address payable receiver, uint256[] memory tokens) internal returns (uint256 reward) {
+    //     Epoch memory epoch_ = epoch;
 
-        for (uint256 i = 0; i < tokens.length; ) {
-            uint256 token_ = tokens[i];
+    //     uint256 id = epoch_.id;
+    //     uint256 rewardPerToken = epoch_.rewardPerToken;
 
-            if (token.ownerOf(token_) != holder) revert();
-            if (isTokenUsed[id][token_]) revert();
+    //     for (uint256 i = 0; i < tokens.length; ) {
+    //         uint256 token_ = tokens[i];
 
-            isTokenUsed[id][token_] = true;
+    //         if (token.ownerOf(token_) != holder) revert();
+    //         if (isTokenUsed[id][token_]) revert();
 
-            reward += rewardPerToken;
+    //         isTokenUsed[id][token_] = true;
 
-            unchecked {
-                i++;
-            }
-        }
+    //         reward += rewardPerToken;
 
-        // Can underflow but transaction will revert because not enough funds on contract
-        unchecked {
-            epoch_.rest -= reward;
-        }
+    //         unchecked {
+    //             i++;
+    //         }
+    //     }
 
-        epoch = epoch_;
+    //     // Can underflow but transaction will revert because not enough funds on contract
+    //     unchecked {
+    //         epoch_.rest -= reward;
+    //     }
 
-        receiver.transfer(reward);
+    //     epoch = epoch_;
 
-        emit Claim(msg.sender, holder, receiver, reward);
-    }
+    //     receiver.transfer(reward);
+
+    //     emit Claim(msg.sender, holder, receiver, reward);
+    // }
 }
