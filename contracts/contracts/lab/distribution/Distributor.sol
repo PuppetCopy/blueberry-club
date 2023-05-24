@@ -39,7 +39,7 @@ contract Distributor is Auth {
         token = _token;
     }
 
-    function distribute(uint256[] memory _rewardsList, address[] memory _winnersList) external requiresAuth {
+    function distribute(uint256 _newRewards, uint256[] memory _rewardsList, address[] memory _winnersList) external requiresAuth {
         // TODO
         // 1. check if claiming period is closed 
         // 2. store data
