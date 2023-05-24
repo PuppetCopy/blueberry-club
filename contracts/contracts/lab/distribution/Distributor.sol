@@ -1,15 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import {Auth, Authority} from "@rari-capital/solmate/src/auth/Auth.sol";
-import {ERC721} from "@rari-capital/solmate/src/tokens/ERC721.sol";
+import {Auth, Authority} from "@solmate/auth/Auth.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
-contract Distributor is ReentrancyGuard, Auth {
+import {IGLPAdapter, AccountState} from "src/interfaces/IGLPAdapter.sol";
+
+contract PrizePoolDistributor is ReentrancyGuard, Auth {
 
     using SafeERC20 for IERC20;
+
+    bool public claimable;
+
+    address private constant WETH = address(0x82aF49447D8a07e3bd95BD0d56f35241523fBab1);
 
     uint256[] public usedTokens;
 
@@ -17,14 +23,30 @@ contract Distributor is ReentrancyGuard, Auth {
     mapping(uint256 => bool) public isTokenUsed; // tokenID => isUsed
     mapping(address => uint256) public winnersReward; // winner => reward
 
-    ERC721 public immutable token;
+    IERC721 public immutable token;
 
     // ============================================================================================
     // Constructor
     // ============================================================================================
 
-    constructor(Authority authority, ERC721 _token) Auth(address(0), authority) {
+    constructor(Authority _authority, IERC721 _token, address _owner) Auth(_owner, _authority) {
         token = _token;
+    }
+
+    function getMuxContainerOwner(address _container) public view returns (address) {
+        if (isContract(_container)) {
+            return IGLPAdapter(_container).muxAccountState().account;
+        } else {
+            return address(0);
+        }
+    }
+
+    function isContract(address _addr) private view returns (bool){
+        uint32 size;
+        assembly {
+            size := extcodesize(_addr)
+        }
+        return (size > 0);
     }
 
     // ============================================================================================
@@ -59,7 +81,7 @@ contract Distributor is ReentrancyGuard, Auth {
             address _winner = _winnersList[i];
             winnersReward[_winner] = _rewardsList[i];
 
-            address _muxContainerOwner = _getMuxContainerOwner(_winner);
+            address _muxContainerOwner = getMuxContainerOwner(_winner);
             if (_muxContainerOwner != address(0)) {
                 muxContainerOwner[_winner] = _muxContainerOwner;
             }
@@ -67,9 +89,9 @@ contract Distributor is ReentrancyGuard, Auth {
 
         uint256 _unclaimedRewards = IERC20(WETH).balanceOf(address(this));
 
-        IERC20(WETH).safeTransferFrom(msg.sender, address(this), _newRewards);
-
         emit Distribute(_unclaimedRewards, _newRewards);
+
+        IERC20(WETH).safeTransferFrom(msg.sender, address(this), _newRewards);
     }
 
     function setClaimable(bool _claimable) external requiresAuth {
@@ -79,7 +101,7 @@ contract Distributor is ReentrancyGuard, Auth {
     }
 
     // ============================================================================================
-    // Internal Functions
+    // Internal Function
     // ============================================================================================
 
     function _claim(uint256 _tokenID, address _winner, address _receiver) internal returns (uint256 _reward) {
@@ -92,13 +114,9 @@ contract Distributor is ReentrancyGuard, Auth {
         isTokenUsed[_tokenID] = true;
         usedTokens.push(_tokenID);
 
-        IERC20(WETH).safeTransfer(_receiver, _reward);
-
         emit Claim(msg.sender, _winner, _receiver, _reward);
-    }
 
-    function _getMuxContainerOwner(address _container) internal view returns (address) {
-        // TODO
+        IERC20(WETH).safeTransfer(_receiver, _reward);
     }
 
     // ============================================================================================
