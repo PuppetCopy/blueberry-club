@@ -44,7 +44,7 @@ contract Distributor is Auth {
         // 1. check if claiming period is closed 
         // 2. store data
         // 3. start claiming period (should be open for 1 week)
-        // 4. pull WETH from msg.sender
+        // 4. pull _newRewards (WETH) from msg.sender
     }
 
     function claim() external requiresAuth returns (uint256) {
