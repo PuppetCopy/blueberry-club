@@ -226,7 +226,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
 
 
                 ),
-                'Prize Pool'
+                'Est. Prize Pool'
               )
             ),
             $text(style({
