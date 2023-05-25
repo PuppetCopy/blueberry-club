@@ -1,4 +1,5 @@
 import { IAccountSummary, IChainParamApi, IEnsRegistration, intervalTimeMap, IResponsePageApi, IRequestPagePositionApi, IRequestSortApi, IRequestTimerangeApi } from "@gambitdao/gmx-middleware"
+import { ICompetitionSchedule } from "./common"
 
 export type IPrice = {
   priceUsd: bigint
@@ -523,6 +524,7 @@ export interface IRequestLeaderboardApi extends IRequestPagePositionApi, IChainP
   timeInterval: intervalTimeMap.HR24 | intervalTimeMap.DAY7 | intervalTimeMap.MONTH
 }
 export interface IRequestCompetitionLadderApi extends IChainParamApi, IRequestSortApi<IBlueberryLadder>, IRequestPagePositionApi, IRequestTimerangeApi {
+  schedule: ICompetitionSchedule
   referralCode: string
   maxCollateral: bigint
   account: string | null

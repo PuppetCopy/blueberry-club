@@ -1,4 +1,4 @@
-import { importGlobal, unixTimestampNow } from "@gambitdao/gmx-middleware"
+import { importGlobal, intervalTimeMap, unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { map } from "@most/core"
 import { IAttributeBackground, IAttributeClothes, IAttributeBody, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat, LabItemSale, MintRule, SvgPartsMap, IBerryDisplayTupleMap, IAttributeBadge } from "./types"
 
@@ -72,3 +72,37 @@ export const berryPartsToSvg = (svgParts: SvgPartsMap, [background, clothes, bod
     ${badge ? svgParts[6][badge] : ''}
   `
 }
+
+export interface ICompetitionSchedule {
+  duration: number
+  start: number
+  end: number
+  elapsed: number
+}
+
+
+
+export function getCompetitionSchedule(unixTime = unixTimestampNow(), history = 0) {
+  const date = new Date(unixTime * 1000)
+  date.setMonth(date.getMonth() - history)
+  
+  const time = Math.floor(date.getTime() / 1000)
+  const start = Date.UTC(date.getUTCFullYear(), date.getUTCMonth()) / 1000
+  const duration = intervalTimeMap.HR24 * 25 + intervalTimeMap.MIN60 * 16
+  const end = start + duration
+
+  const elapsed = Math.min(time, end) - start
+
+  const ended = duration === elapsed
+
+
+  const previous = unixTime >= start
+    ? Date.UTC(date.getUTCFullYear(), date.getUTCMonth() - 1, 1, 16) / 1000
+    : start
+  const next = unixTime >= start
+    ? Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1, 16) / 1000
+    : start
+
+  return { date, duration, start, end, elapsed, ended, next, previous }
+}
+

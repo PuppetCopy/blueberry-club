@@ -3,20 +3,19 @@ import { $element, $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
 import { $card, $column, $row, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { colorAlpha, pallete } from '@aelea/ui-components-theme'
-import { continueWith, empty, map, mergeArray, never, now, snapshot, switchLatest } from '@most/core'
-import { Stream } from '@most/types'
-import { formatReadableUSD, IAccountSummary, formatToBasis, readableNumber, importGlobal } from '@gambitdao/gmx-middleware'
-import { $alertTooltip, countdown } from './$rules'
-import { IWalletLink } from '@gambitdao/wallet-link'
-import { $accountPreview, $profilePreview } from '../../components/$AccountProfile'
-import { BLUEBERRY_REFFERAL_CODE, IBlueberryLadder, IProfileTradingResult, TOURNAMENT_START, TOURNAMENT_DURATION, TOURNAMENT_NEXT, COMPETITION_METRIC_LIST, TOURNAMENT_TIME_ELAPSED, IRequestCompetitionLadderApi } from '@gambitdao/gbc-middleware'
+import { BLUEBERRY_REFFERAL_CODE, COMPETITION_METRIC_LIST, getCompetitionSchedule, IBlueberryLadder, IProfileTradingResult, IRequestCompetitionLadderApi } from '@gambitdao/gbc-middleware'
+import { formatReadableUSD, formatToBasis, IAccountSummary, importGlobal, readableNumber, unixTimestampNow } from '@gambitdao/gmx-middleware'
 import { $anchor, $infoLabel, $infoLabeledValue, $infoTooltipLabel, $Link, invertColor, ISortBy } from '@gambitdao/ui-components'
-import { $CardTable } from '../../components/$common'
+import { IWalletLink } from '@gambitdao/wallet-link'
+import { empty, map, mergeArray, now, snapshot, switchLatest } from '@most/core'
+import { Stream } from '@most/types'
 import { IProfileActiveTab } from '../$Profile'
-import { $addToCalendar, $responsiveFlex } from '../../elements/$common'
+import { $accountPreview, $profilePreview } from '../../components/$AccountProfile'
+import { $CardTable } from '../../components/$common'
 import { $defaultBerry } from '../../components/$DisplayBerry'
-import { $defaultProfileContainer } from '../../common/$avatar'
+import { $addToCalendar, $responsiveFlex } from '../../elements/$common'
 import { $seperator2 } from '../common'
+import { countdown } from './$rules'
 
 const MAX_COLLATERAL = 500000000000000000000000000000000n
 
@@ -40,12 +39,20 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
   [pageIndex, pageIndexTether]: Behavior<number, number>,
 ) => {
 
+  const historyParam = Number(new URLSearchParams(document.location.search).get('history') || 0)
+
+
+  const time = unixTimestampNow()
+  const competitionSchedule = getCompetitionSchedule(time, historyParam)
+
+
+
+
   const tableList = map(res => {
     return res.list
   }, config.competitionCumulative)
 
-  const ended = TOURNAMENT_DURATION === TOURNAMENT_TIME_ELAPSED
-  const currentMetric = COMPETITION_METRIC_LIST[new Date().getUTCMonth() % 2]
+  const currentMetric = COMPETITION_METRIC_LIST[competitionSchedule.date.getUTCMonth() % 2]
   const currentMetricLabel = METRIC_LABEL[currentMetric]
 
 
@@ -57,6 +64,22 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
 
   const crateLoadEvent = importGlobal(import('@widgetbot/crate'))
 
+  // const poolDistributorContract = new Contract()
+
+
+  const $description = currentMetric === COMPETITION_METRIC_LIST[1]
+    ? [
+      $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(map(res => {
+        return `ROI = (Total PnL / Max Collateral [Min ${formatReadableUSD(res.averageMaxCollateral)}]) * 100`
+      }, config.competitionCumulative)),
+      $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(map(res => {
+        return `The Minimum Max Collateral is the average for all winners, currently ${formatReadableUSD(res.averageMaxCollateral)}. Winners prizes are always calculated using a Max Collateral above the minimum.`
+      }, config.competitionCumulative))
+    ]
+    : []
+
+
+  const dateLabel = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(competitionSchedule.date)
 
   return [
     $column(style({ flex: 1 }), screenUtils.isDesktopScreen ? layoutSheet.spacingBig : layoutSheet.spacing)(
@@ -70,19 +93,14 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
             ),
             $infoTooltipLabel(
               $column(layoutSheet.spacingSmall, style({ width: '300px' }))(
+
+                $text(`Top Blueberry is a monthly competition rewarding the best GBC traders. The prize pool is 100% of the total trading referral fees collected during the competition period. The prize pool is distributed as follows:`),
+                $node(),
+
                 $text(`Participant prize formula:`),
                 $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Prize = Prize Pool * ${currentMetricLabel} of participant / sum ${currentMetricLabel} of all winners`),
-                currentMetric === COMPETITION_METRIC_LIST[1]
-                  ? $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(map(res => {
-                    return `ROI = (Total PnL / Max Collateral [Min ${formatReadableUSD(res.averageMaxCollateral)}]) * 100`
-                  }, config.competitionCumulative))
-                  : empty(),
-                $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Max Collateral represents the highest amount used for open positions at any point. Reinvesting profits or reusing collateral from closed trades won't affect Max Collateral.`),
-                currentMetric === COMPETITION_METRIC_LIST[1]
-                  ? $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(map(res => {
-                    return `The Minimum Max Collateral is the average for all winners, currently ${formatReadableUSD(res.averageMaxCollateral)}. Winners prizes are always calculated using a Max Collateral above the minimum.`
-                  }, config.competitionCumulative))
-                  : empty(),
+
+                ...$description,
 
                 // currentMetric === COMPETITION_METRIC_LIST[1]
                 //   ? $infoLabeledValue(
@@ -116,23 +134,29 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
             ),
           ),
         ),
-        ended
+        historyParam
           ? $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
-            $column(
-              $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
-                $text(style({ fontSize: '1.25em' }))('Next Cycle!'),
-                $text(style({ color: pallete.foreground }))('Starting in')
-              ),
-              $text(style({ fontSize: '1.25em' }))(countdown(TOURNAMENT_NEXT))
+            $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
+              $text(style({ fontSize: '1.25em' }))(dateLabel),
             )
           )
-          : $column(
-            $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
-              $text(style({ fontSize: '1.25em', color: pallete.indeterminate }))('LIVE!'),
-              $text(style({ color: pallete.foreground }))('Ending in')
-            ),
-            $text(style({ fontSize: '1.25em' }))(countdown(TOURNAMENT_START + TOURNAMENT_DURATION))
-          )
+          : competitionSchedule.ended
+            ? $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+              $column(
+                $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
+                  $text(style({ fontSize: '1.25em' }))('Next Cycle!'),
+                  $text(style({ color: pallete.foreground }))('Starting in')
+                ),
+                $text(style({ fontSize: '1.25em' }))(countdown(competitionSchedule.next))
+              )
+            )
+            : $column(
+              $row(layoutSheet.spacingSmall, style({ alignItems: 'baseline' }))(
+                $text(style({ fontSize: '1.25em', color: pallete.indeterminate }))('LIVE!'),
+                $text(style({ color: pallete.foreground }))('Ending in')
+              ),
+              $text(style({ fontSize: '1.25em' }))(countdown(competitionSchedule.end))
+            )
       ),
 
       $column(
@@ -222,63 +246,37 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
               columnOp: style({ minWidth: '120px', flex: 2, alignItems: 'center' }),
               $$body: snapshot((w3p, pos: IBlueberryLadder) => {
 
-                if (!pos.profile) {
-                  return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
-                    $alertTooltip($text(`This account requires GBC to receive the prize once competition ends`)),
-                    $Link({
-                      $content: $accountPreview({ address: pos.account, $container: $defaultProfileContainer(style({ minWidth: '50px' })) }),
-                      route: config.parentRoute.create({ fragment: 'fefwef' }),
-                      url: `/p/profile/${pos.account}/${IProfileActiveTab.TRADING.toLowerCase()}`
-                    })({ click: routeChangeTether() }),
-                    // $anchor(clickAccountBehaviour)(
-                    //   $accountPreview({ address: pos.account })
-                    // )
-                    // style({ zoom: '0.7' })(
-                    //   $alert($text('Unclaimed'))
-                    // )
-                  )
-                }
-
+                const profileSize = screenUtils.isDesktopScreen ? '65px' : '45px'
 
                 const $container = pos.rank < 4
                   ? $defaultBerry(style(
                     {
-                      width: '50px',
-                      minWidth: '50px',
+                      borderRadius: '50%',
+                      width: profileSize,
+                      minWidth: profileSize,
                       border: `1px solid ${pallete.message}`,
                       boxShadow: `${colorAlpha(pallete.positive, .4)} 0px 3px 20px 5px`
                     }
-                    // pos.rank === 1 ? {
-                    //   minWidth: '50px',
-                    //   width: '60px',
-                    //   border: `1px solid ${pallete.positive}`,
-                    //   boxShadow: `${colorAlpha(pallete.positive, .4)} 0px 3px 20px 5px`
-                    // }
-                    //   : pos.rank === 2 ? {
-                    //     minWidth: '50px',
-                    //     width: '60px',
-                    //     border: `1px solid ${pallete.indeterminate}`,
-                    //     boxShadow: `${colorAlpha(pallete.indeterminate, .4)} 0px 3px 20px 5px`
-                    //   }
-                    //     : {
-                    //       minWidth: '50px',
-                    //       width: '60px',
-                    //       border: `1px solid ${pallete.negative}`,
-                    //       boxShadow: `${colorAlpha(pallete.negative, .4)} 0px 3px 20px 5px`
-                    //     }
-
                   ))
-                  : $defaultBerry(style({ width: '50px', minWidth: '50px', }))
+                  : $defaultBerry(style({ width: profileSize, minWidth: profileSize, }))
 
-                return $row(layoutSheet.spacingSmall, w3p?.address === pos.account ? style({ background: invertColor(pallete.message), borderRadius: '15px', padding: '6px 12px' }) : style({}), style({ alignItems: 'center', minWidth: 0 }))(
-                  $row(style({ alignItems: 'baseline', zIndex: 5, textAlign: 'center', minWidth: '18px', placeContent: 'center' }))(
-                    $text(style({ fontSize: '.75em' }))(`${pos.rank}`),
-                  ),
-                  $Link({
+                const $profile = !pos.profile
+                  ? $Link({
+                    $content: $accountPreview({ address: pos.account, $container }),
+                    route: config.parentRoute.create({ fragment: 'fefwef' }),
+                    url: `/p/profile/${pos.account}/${IProfileActiveTab.TRADING.toLowerCase()}`
+                  })({ click: routeChangeTether() })
+                  : $Link({
                     $content: $profilePreview({ profile: pos.profile, $container }),
                     route: config.parentRoute.create({ fragment: 'fefwef' }),
                     url: `/p/profile/${pos.account}/${IProfileActiveTab.TRADING.toLowerCase()}`
-                  })({ click: routeChangeTether() }),
+                  })({ click: routeChangeTether() })
+
+
+
+                return $row(layoutSheet.spacingSmall, style({ padding: '0 12px', position: 'relative', alignItems: 'center', minWidth: 0 }), w3p?.address === pos.account ? style({ background: invertColor(pallete.message), borderRadius: '15px' }) : style({}))(
+                  $text(style({ left: '0', top: '50%', transform: 'translate(-10px, -50%)', backgroundColor: invertColor(pallete.message), borderRadius: '50%', zIndex: 1, width: '27px', height: '27px', lineHeight: '27px', textAlign: 'center', fontWeight: 'bold', fontSize: '.65em', position: 'absolute', }))(`${pos.rank}`),
+                  $profile,
                 )
               }, config.walletLink.wallet)
             },
@@ -360,30 +358,42 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
 
         $card(style({ position: 'fixed', placeContent: 'space-between', flexDirection: 'row', bottom: 0, background: pallete.horizon, padding: '20px', borderRadius: '20px 20px 0 0', zIndex: 10, width: '100%', maxWidth: '780px' }))(
           $column(
-            // style({ fontSize: '.75em' })(
-            //   $infoLabel('Previous competition results')
-            // ),
+            style({ fontSize: '.75em' })(
+              $infoLabel('Previous competition results')
+            ),
 
-            // $anchor(attr({
-            //   href: '/p/feb-roi-old'
-            // }))(
-            //   $text('Previous competition results')
-            // )
+            $anchor(attr({
+              href: '/p/leaderboard' + `?history=${historyParam + 1}`
+            }))(
+              $text(new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(competitionSchedule.previous * 1000) + ' results')
+            )
           ),
 
-          $row(layoutSheet.spacingSmall)(
-            $addToCalendar({
-              time: new Date(TOURNAMENT_NEXT * 1000),
-              title: 'Blueberry Trading Compeition',
-              description: `Monthly trading competitions will be held. These tournaments will offer cash prizes, unique lab items, and more as rewards for traders who compete and win.  \n\n${document.location.href}`
-            }),
+          historyParam ?
             $column(
               style({ fontSize: '.75em' })(
-                $infoLabel('Next Competition')
+                $infoLabel('Next competition results')
               ),
-              $text(METRIC_LABEL[COMPETITION_METRIC_LIST[new Date(TOURNAMENT_NEXT * 1000).getUTCMonth() % 2]])
-            ),
-          )
+
+              $anchor(attr({
+                href: '/p/leaderboard' + `?history=${historyParam - 1}`
+              }))(
+                $text(new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(competitionSchedule.next * 1000) + ' results')
+              )
+            )
+            : $row(layoutSheet.spacingSmall)(
+              $addToCalendar({
+                time: new Date(competitionSchedule.next * 1000),
+                title: 'Blueberry Trading Compeition',
+                description: `Monthly trading competitions will be held. These tournaments will offer cash prizes, unique lab items, and more as rewards for traders who compete and win.  \n\n${document.location.href}`
+              }),
+              $column(
+                style({ fontSize: '.75em' })(
+                  $infoLabel('Next Competition')
+                ),
+                $text(METRIC_LABEL[COMPETITION_METRIC_LIST[new Date(competitionSchedule.next * 1000).getUTCMonth() % 2]])
+              ),
+            )
         )
 
       )
@@ -392,11 +402,12 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
 
     {
       requestCompetitionLadder: map((params) => {
-        const from = TOURNAMENT_START
-        const to = from + TOURNAMENT_DURATION
+        const from = competitionSchedule.start
+        const to = from + competitionSchedule.duration
 
         const reqParams: IRequestCompetitionLadderApi = {
           ...params.sortBy,
+          schedule: competitionSchedule,
           chain: params.chain,
           account: params.w3p?.address || null,
           referralCode: BLUEBERRY_REFFERAL_CODE,

@@ -7,7 +7,7 @@ import {
 } from "@gambitdao/gmx-middleware"
 import { awaitPromises, combine, map, now } from "@most/core"
 import { ClientOptions, createClient, gql, OperationContext, TypedDocumentNode } from "@urql/core"
-import { COMPETITION_METRIC_LIST, TOURNAMENT_DURATION, TOURNAMENT_TIME_ELAPSED } from "./config"
+import { COMPETITION_METRIC_LIST } from "./config"
 import { ILabItem, ILabItemOwnership, IOwner, IBlueberryLadder, IProfileTradingResult, IToken, IRequestCompetitionLadderApi } from "./types"
 
 
@@ -228,10 +228,10 @@ export const competitionCumulative = O(
 
 
       const averageMaxCollateral = totalMaxCollateral / activeWinnerCount
-      const estSize = size * BigInt(TOURNAMENT_DURATION) / BigInt(TOURNAMENT_TIME_ELAPSED)
+      const estSize = size * BigInt(queryParams.schedule.duration) / BigInt(queryParams.schedule.elapsed)
 
       const prizePool = getMarginFees(size) * 1500n / BASIS_POINTS_DIVISOR
-      const estPrizePool = prizePool * BigInt(TOURNAMENT_DURATION) / BigInt(TOURNAMENT_TIME_ELAPSED)
+      const estPrizePool = prizePool * BigInt(queryParams.schedule.duration) / BigInt(queryParams.schedule.elapsed)
 
       const totalScore = summaryList.reduce((s, n) => {
         const score = queryParams.metric === 'roi'
@@ -277,7 +277,7 @@ export const competitionCumulative = O(
         })
 
 
-      if (TOURNAMENT_DURATION === TOURNAMENT_TIME_ELAPSED) {
+      if (queryParams.schedule.duration === queryParams.schedule.elapsed) {
         // log CSV file for airdrop
 
         const nativeToken = getMappedValue(CHAIN_ADDRESS_MAP, queryParams.chain).NATIVE_TOKEN

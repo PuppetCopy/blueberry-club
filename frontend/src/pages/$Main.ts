@@ -29,7 +29,6 @@ import { $Leaderboard } from "./competition/$Leaderboard"
 import { $Treasury } from "./$Treasury"
 import { $discoverIdentityDisplay } from "../components/$AccountProfile"
 import { pallete } from "@aelea/ui-components-theme"
-import { $CompetitionRoiDeprecated } from "./competition/$RoiDeprecated"
 import { CHAIN } from "@gambitdao/const"
 
 
@@ -78,7 +77,7 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
   const profileRoute = pagesRoute.create({ fragment: 'profile', title: 'Berry Account' }).create({ fragment: ETH_ADDRESS_REGEXP })
   const profileWalletRoute = pagesRoute.create({ fragment: 'wallet', title: 'Wallet Account' })
   const labRoute = pagesRoute.create({ fragment: 'lab', title: 'Blueberry Lab' })
-  const leaderboardRoute = pagesRoute.create({ fragment: 'leaderboard', title: 'Leaderboard' })
+  const leaderboardRoute = pagesRoute.create({ fragment: /leaderboard.*/, title: 'Leaderboard' })
   const leaderboardOldRoiRoute = pagesRoute.create({ fragment: 'feb-roi-old', title: 'Leaderboard' })
   const wardrobeRoute = pagesRoute.create({ fragment: 'wardrobe', title: 'Wardrobe' })
   const storeRoute = pagesRoute.create({ fragment: 'lab-store', title: 'Store' })
@@ -257,30 +256,7 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
                 requestCompetitionLadder: requestCompetitionLadderTether()
               }))
             ),
-            router.match(leaderboardOldRoiRoute)(
-              fadeIn(
-                O(
-                  layoutSheet.spacingBig,
-                  style({
-                    display: 'flex',
-                    fontFeatureSettings: '"tnum" on,"lnum" on',
-                    fontFamily: `-apple-system,BlinkMacSystemFont,Trebuchet MS,Roboto,Ubuntu,sans-serif`,
-                  }),
-                  screenUtils.isDesktopScreen
-                    ? style({ width: '780px', alignSelf: 'center' })
-                    : style({ width: '100%' })
-                )(
-                  $CompetitionRoiDeprecated({
-                    walletLink,
-                    competitionCumulative: clientApi.competitionCumulative,
-                    parentRoute: pagesRoute
-                  })({
-                    routeChange: linkClickTether(),
-                    requestCompetitionLadder: requestCompetitionLadderTether()
-                  })
-                )
-              )
-            ),
+            
             router.match(tradeRoute)(
               $Trade({
                 pricefeed: clientApi.tradePricefeed,
