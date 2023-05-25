@@ -17,11 +17,17 @@ contract PrizePoolDistributor is ReentrancyGuard, Auth {
 
     address private constant WETH = address(0x82aF49447D8a07e3bd95BD0d56f35241523fBab1);
 
-    uint256[] public usedTokens;
+    uint256 public epoch;
+
+    struct EpochData {
+        mapping(uint256 => bool) usedTokens; // tokenID => isUsed
+        mapping(address => bool) claimedWinners; // winner => hasClaimed
+        mapping(address => uint256) winnersReward; // winner => reward
+    }
+   
+    mapping(uint256 => EpochData) private epochData; // epoch => EpochData
 
     mapping(address => address) public muxContainerOwner; // container => owner
-    mapping(uint256 => bool) public isTokenUsed; // tokenID => isUsed
-    mapping(address => uint256) public winnersReward; // winner => reward
 
     IERC721 public immutable token;
 
@@ -31,6 +37,22 @@ contract PrizePoolDistributor is ReentrancyGuard, Auth {
 
     constructor(Authority _authority, IERC721 _token, address _owner) Auth(_owner, _authority) {
         token = _token;
+    }
+
+    // ============================================================================================
+    // View Functions
+    // ============================================================================================
+
+    function usedTokens(uint256 _tokenID) public view returns (bool) {
+        return epochData[epoch].usedTokens[_tokenID];
+    }
+
+    function hasClaimed(address _winner) public view returns (bool) {
+        return epochData[epoch].claimedWinners[_winner];
+    }
+
+    function getWinnerReward(address _winner) public view returns (uint256) {
+        return epochData[epoch].winnersReward[_winner];
     }
 
     function getMuxContainerOwner(address _container) public view returns (address) {
@@ -70,16 +92,12 @@ contract PrizePoolDistributor is ReentrancyGuard, Auth {
     function distribute(uint256 _newRewards, uint256[] memory _rewardsList, address[] memory _winnersList) external requiresAuth {
         if (_rewardsList.length != _winnersList.length) revert LengthMismatch();
 
-        uint256[] memory _usedTokens = usedTokens;
-        for (uint256 i = 0; i < _usedTokens.length; i++) {
-            isTokenUsed[_usedTokens[i]] = false;
-        }
+        epoch += 1;
 
-        delete usedTokens;
-
+        EpochData storage _epochData = epochData[epoch];
         for (uint256 i = 0; i < _rewardsList.length; i++) {
             address _winner = _winnersList[i];
-            winnersReward[_winner] = _rewardsList[i];
+            _epochData.winnersReward[_winner] = _rewardsList[i];
 
             address _muxContainerOwner = getMuxContainerOwner(_winner);
             if (_muxContainerOwner != address(0)) {
@@ -108,11 +126,15 @@ contract PrizePoolDistributor is ReentrancyGuard, Auth {
         if (!claimable) revert NotClaimable();
         if (token.ownerOf(_tokenID) != msg.sender) revert NotOwnerOfToken();
 
-        _reward = winnersReward[_winner];
+        EpochData storage _epochData = epochData[epoch];
+        if (_epochData.usedTokens[_tokenID]) revert TokenAlreadyUsed();
+        if (_epochData.claimedWinners[msg.sender]) revert AlreadyClaimed();
+
+        _reward = _epochData.winnersReward[_winner];
         if (_reward == 0) revert NotWinner();
 
-        isTokenUsed[_tokenID] = true;
-        usedTokens.push(_tokenID);
+        _epochData.usedTokens[_tokenID] = true;
+        _epochData.claimedWinners[msg.sender] = true;
 
         emit Claim(msg.sender, _winner, _receiver, _reward);
 
@@ -136,4 +158,6 @@ contract PrizePoolDistributor is ReentrancyGuard, Auth {
     error NotOwnerOfToken();
     error NotWinner();
     error LengthMismatch();
+    error AlreadyClaimed();
+    error TokenAlreadyUsed();
 }
