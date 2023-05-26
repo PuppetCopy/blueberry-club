@@ -43,24 +43,24 @@ contract PrizePoolDistributor is ReentrancyGuard, Auth {
     // View Functions
     // ============================================================================================
 
-    function usedTokens(uint256 _tokenID) public view returns (bool) {
-        return epochData[epoch].usedTokens[_tokenID];
-    }
-
-    function hasClaimed(address _winner) public view returns (bool) {
-        return epochData[epoch].claimedWinners[_winner];
-    }
-
-    function getWinnerReward(address _winner) public view returns (uint256) {
-        return epochData[epoch].winnersReward[_winner];
-    }
-
     function getMuxContainerOwner(address _container) public view returns (address) {
         if (isContract(_container)) {
             return IGLPAdapter(_container).muxAccountState().account;
         } else {
             return address(0);
         }
+    }
+
+    function isTokenClaimed(uint256 _tokenID) external view returns (bool) {
+        return epochData[epoch].usedTokens[_tokenID];
+    }
+
+    function winnerClaimed(address _winner) external view returns (bool) {
+        return epochData[epoch].claimedWinners[_winner];
+    }
+
+    function rewardForWinner(address _winner) external view returns (uint256) {
+        return epochData[epoch].winnersReward[_winner];
     }
 
     function isContract(address _addr) private view returns (bool){
@@ -72,7 +72,7 @@ contract PrizePoolDistributor is ReentrancyGuard, Auth {
     }
 
     // ============================================================================================
-    // External Functions
+    // Winner Functions
     // ============================================================================================
 
     function claim(uint256 _tokenID, address _receiver) external nonReentrant returns (uint256) {
@@ -86,10 +86,10 @@ contract PrizePoolDistributor is ReentrancyGuard, Auth {
     }
 
     // ============================================================================================
-    // Owner Functions
+    // Admin Functions
     // ============================================================================================
 
-    function distribute(uint256 _newRewards, uint256[] memory _rewardsList, address[] memory _winnersList) external requiresAuth {
+    function distribute(uint256 _newRewards, uint256[] memory _rewardsList, address[] memory _winnersList) external nonReentrant requiresAuth {
         if (_rewardsList.length != _winnersList.length) revert LengthMismatch();
 
         epoch += 1;
@@ -107,7 +107,7 @@ contract PrizePoolDistributor is ReentrancyGuard, Auth {
 
         uint256 _unclaimedRewards = IERC20(WETH).balanceOf(address(this));
 
-        emit Distribute(_unclaimedRewards, _newRewards);
+        emit Distribute(_unclaimedRewards, _newRewards, epoch);
 
         IERC20(WETH).safeTransferFrom(msg.sender, address(this), _newRewards);
     }
@@ -123,8 +123,9 @@ contract PrizePoolDistributor is ReentrancyGuard, Auth {
     // ============================================================================================
 
     function _claim(uint256 _tokenID, address _winner, address _receiver) internal returns (uint256 _reward) {
-        if (!claimable) revert NotClaimable();
+        if (_winner == address(0) || _receiver == address(0)) revert ZeroAddress();
         if (token.ownerOf(_tokenID) != msg.sender) revert NotOwnerOfToken();
+        if (!claimable) revert NotClaimable();
 
         EpochData storage _epochData = epochData[epoch];
         if (_epochData.usedTokens[_tokenID]) revert TokenAlreadyUsed();
@@ -146,7 +147,7 @@ contract PrizePoolDistributor is ReentrancyGuard, Auth {
     // ============================================================================================
 
     event Claim(address indexed sender, address indexed winner, address indexed receiver, uint256 reward);
-    event Distribute(uint256 unclaimedRewards, uint256 newRewards);
+    event Distribute(uint256 unclaimedRewards, uint256 newRewards, uint256 indexed epoch);
     event SetClaimable(bool claimable);
 
     // ============================================================================================
@@ -160,4 +161,5 @@ contract PrizePoolDistributor is ReentrancyGuard, Auth {
     error LengthMismatch();
     error AlreadyClaimed();
     error TokenAlreadyUsed();
+    error ZeroAddress();
 }
