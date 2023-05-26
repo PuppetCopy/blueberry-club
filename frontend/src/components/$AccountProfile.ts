@@ -36,17 +36,19 @@ export const $AccountLabel = (address: string, fontSize = '1em') => {
   )
 }
 
-export const $ProfileLabel = (ens: IEnsRegistration) => {
+const $profileLabel = $text(style({ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }))
+
+export const $ProfileLabel = (ens: IEnsRegistration, labelSize: string) => {
   const hasTwitter = ens.domain.resolver?.texts?.find(t => t === 'com.twitter')
 
   if (hasTwitter) {
     $row(
-      $text(style({ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }))(ens.labelName),
+      $profileLabel(style({ fontSize: labelSize }))(ens.labelName),
       // $text(style({ fontSize: '1em' }))(address.slice(address.length - 4, address.length))
     )
   }
 
-  return $text(style({ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }))(ens.labelName)
+  return $profileLabel(style({ fontSize: labelSize }))(ens.labelName)
 }
 
 
@@ -113,7 +115,7 @@ export const $profilePreview = ({
       }),
     showAddress
       ? profile?.ens?.labelName
-        ? $ProfileLabel(profile.ens!)
+        ? $ProfileLabel(profile.ens!, labelSize)
         : $AccountLabel(profile.id, labelSize)
       : empty()
   )

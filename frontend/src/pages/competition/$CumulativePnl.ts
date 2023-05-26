@@ -246,7 +246,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
               columnOp: style({ minWidth: '120px', flex: 2, alignItems: 'center' }),
               $$body: snapshot((w3p, pos: IBlueberryLadder) => {
 
-                const profileSize = screenUtils.isDesktopScreen ? '65px' : '45px'
+                const profileSize = screenUtils.isDesktopScreen ? '50px' : '45px'
 
                 const $container = pos.rank < 4
                   ? $defaultBerry(style(
@@ -262,12 +262,12 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
 
                 const $profile = !pos.profile
                   ? $Link({
-                    $content: $accountPreview({ address: pos.account, $container }),
+                    $content: $accountPreview({ address: pos.account, $container, labelSize: '16px' }),
                     route: config.parentRoute.create({ fragment: 'fefwef' }),
                     url: `/p/profile/${pos.account}/${IProfileActiveTab.TRADING.toLowerCase()}`
                   })({ click: routeChangeTether() })
                   : $Link({
-                    $content: $profilePreview({ profile: pos.profile, $container }),
+                    $content: $profilePreview({ profile: pos.profile, $container, labelSize: '16px' }),
                     route: config.parentRoute.create({ fragment: 'fefwef' }),
                     url: `/p/profile/${pos.account}/${IProfileActiveTab.TRADING.toLowerCase()}`
                   })({ click: routeChangeTether() })
@@ -275,7 +275,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
 
 
                 return $row(layoutSheet.spacingSmall, style({ padding: '0 12px', position: 'relative', alignItems: 'center', minWidth: 0 }), w3p?.address === pos.account ? style({ background: invertColor(pallete.message), borderRadius: '15px' }) : style({}))(
-                  $text(style({ left: '0', top: '50%', transform: 'translate(-10px, -50%)', backgroundColor: invertColor(pallete.message), borderRadius: '50%', zIndex: 1, width: '27px', height: '27px', lineHeight: '27px', textAlign: 'center', fontWeight: 'bold', fontSize: '.65em', position: 'absolute', }))(`${pos.rank}`),
+                  $text(style({ left: '0', top: '50%', transform: 'translate(-22px, -50%)', width: '27px', height: '27px', lineHeight: '27px', textAlign: 'right', fontWeight: 'bold', fontSize: '.55em', position: 'absolute', }))(`${pos.rank}`),
                   $profile,
                 )
               }, config.walletLink.wallet)
@@ -359,26 +359,26 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
         $card(style({ position: 'fixed', placeContent: 'space-between', flexDirection: 'row', bottom: 0, background: pallete.horizon, padding: '20px', borderRadius: '20px 20px 0 0', zIndex: 10, width: '100%', maxWidth: '780px' }))(
           $column(
             style({ fontSize: '.75em' })(
-              $infoLabel('Previous competition results')
+              $infoLabel('Previous results')
             ),
 
             $anchor(attr({
               href: '/p/leaderboard' + `?history=${historyParam + 1}`
             }))(
-              $text(new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(competitionSchedule.previous * 1000) + ' results')
+              $text(new Intl.DateTimeFormat('en-US', { month: 'long' }).format(competitionSchedule.previous * 1000) + ' results')
             )
           ),
 
           historyParam ?
             $column(
               style({ fontSize: '.75em' })(
-                $infoLabel('Next competition results')
+                $infoLabel('Next results')
               ),
 
               $anchor(attr({
                 href: '/p/leaderboard' + `?history=${historyParam - 1}`
               }))(
-                $text(new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(competitionSchedule.next * 1000) + ' results')
+                $text(new Intl.DateTimeFormat('en-US', { month: 'long' }).format(competitionSchedule.next * 1000) + ' results')
               )
             )
             : $row(layoutSheet.spacingSmall)(
