@@ -286,7 +286,7 @@ export const competitionCumulative = O(
           'token_type,token_address,receiver,amount,id\n' + sortedCompetitionList
             .filter(x => {
               const prize = prizePool * x.score / totalScore
-              return prize > USD_PERCISION * 5n
+              return prize > USD_PERCISION
             })
             .map((x, idx) => {
               const ethPrice = BigInt(priceMap['_' + nativeToken])

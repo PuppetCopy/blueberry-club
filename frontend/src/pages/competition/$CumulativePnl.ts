@@ -1,21 +1,25 @@
-import { Behavior, combineObject } from '@aelea/core'
+import { Behavior, combineObject, replayLatest } from '@aelea/core'
 import { $element, $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
 import { $card, $column, $row, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { colorAlpha, pallete } from '@aelea/ui-components-theme'
+import { Contract, ContractTransaction } from '@ethersproject/contracts'
 import { BLUEBERRY_REFFERAL_CODE, COMPETITION_METRIC_LIST, getCompetitionSchedule, IBlueberryLadder, IProfileTradingResult, IRequestCompetitionLadderApi } from '@gambitdao/gbc-middleware'
-import { formatReadableUSD, formatToBasis, IAccountSummary, importGlobal, readableNumber, unixTimestampNow } from '@gambitdao/gmx-middleware'
+import { formatReadableUSD, formatToBasis, IAccountSummary, importGlobal, readableNumber, switchMap, unixTimestampNow } from '@gambitdao/gmx-middleware'
 import { $anchor, $infoLabel, $infoLabeledValue, $infoTooltipLabel, $Link, invertColor, ISortBy } from '@gambitdao/ui-components'
-import { IWalletLink } from '@gambitdao/wallet-link'
-import { empty, map, mergeArray, now, snapshot, switchLatest } from '@most/core'
+import { IWalletLink, IWalletState } from '@gambitdao/wallet-link'
+import { combine, constant, empty, fromPromise, map, mergeArray, multicast, now, switchLatest } from '@most/core'
 import { Stream } from '@most/types'
+import { BigNumber } from 'ethers'
 import { IProfileActiveTab } from '../$Profile'
+import { } from '../../'
 import { $accountPreview, $profilePreview } from '../../components/$AccountProfile'
 import { $CardTable } from '../../components/$common'
 import { $defaultBerry } from '../../components/$DisplayBerry'
+import { $ButtonPrimaryCtx, $defaultMiniButtonSecondary } from '../../components/form/$Button'
 import { $addToCalendar, $responsiveFlex } from '../../elements/$common'
 import { $seperator2 } from '../common'
-import { countdown } from './$rules'
+import { $alertTooltip, countdown } from './$rules'
 
 const MAX_COLLATERAL = 500000000000000000000000000000000n
 
@@ -37,6 +41,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
   [routeChange, routeChangeTether]: Behavior<any, string>,
   [sortByChange, sortByChangeTether]: Behavior<ISortBy<IAccountSummary>, ISortBy<IAccountSummary>>,
   [pageIndex, pageIndexTether]: Behavior<number, number>,
+  [clickPoolDistributorClaim, clickPoolDistributorClaimTether]: Behavior<PointerEvent, Promise<ContractTransaction>>,
 ) => {
 
   const historyParam = Number(new URLSearchParams(document.location.search).get('history') || 0)
@@ -64,7 +69,6 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
 
   const crateLoadEvent = importGlobal(import('@widgetbot/crate'))
 
-  // const poolDistributorContract = new Contract()
 
 
   const $description = currentMetric === COMPETITION_METRIC_LIST[1]
@@ -77,6 +81,43 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
       }, config.competitionCumulative))
     ]
     : []
+
+  // const poolDistributorContract = filterNull(replayLatest(multicast(map((params) => {
+  //   if (params.w3p === null) {
+  //     return null
+  //   }
+
+  //   return new Contract('0xEd6265F1030186dd09cAEb1B827078aC0f6EE970', poolDistributorAbi, params.w3p.provider)
+  // }, combineObject({ w3p: config.walletLink.wallet })))))
+
+  const accountRewardInfo = (w3p: IWalletState) => {
+    const poolDistributor = new Contract('0xEd6265F1030186dd09cAEb1B827078aC0f6EE970', poolDistributorAbi, w3p.provider.getSigner())
+    const proxyFactoryContract = new Contract('0x2ff2f1D9826ae2410979ae19B88c361073Ab0918', proxyFactoryAbi, w3p.provider.getSigner())
+
+
+
+
+
+    const muxAccountProxyQuery = proxyFactoryContract.getProxiesOf(w3p.address).then(([containerAccount]: string[]) => containerAccount || null) as Promise<string | null>
+
+    const queryContract = fromPromise(Promise.all([
+      muxAccountProxyQuery,
+      poolDistributor.epoch().then((bn: BigNumber) => bn.toBigInt()) as Promise<bigint>,
+      poolDistributor.rewardForWinner(w3p.address).then((bn: BigNumber) => bn.toBigInt()) as Promise<bigint>,
+      muxAccountProxyQuery.then(containerAccount => {
+        if (!containerAccount) {
+          return 0n
+        }
+
+        return poolDistributor.rewardForWinner(w3p.address).then((bn: BigNumber) => bn.toBigInt())
+      }) as Promise<bigint>
+    ]))
+
+
+    return map(([containerAccount, lateBloomerRewardAmount, muxAccountRewardAmount, epoch]) => {
+      return { containerAccount, proxyFactoryContract, poolDistributor, lateBloomerRewardAmount, muxAccountRewardAmount, epoch }
+    }, queryContract)
+  }
 
 
   const dateLabel = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(competitionSchedule.date)
@@ -244,9 +285,9 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
             {
               $head: $text('Account'),
               columnOp: style({ minWidth: '120px', flex: 2, alignItems: 'center' }),
-              $$body: snapshot((w3p, pos: IBlueberryLadder) => {
-
+              $$body: combine((w3p, pos: IBlueberryLadder) => {
                 const profileSize = screenUtils.isDesktopScreen ? '50px' : '45px'
+                const isConnectedAccount = w3p?.address === pos.account
 
                 const $container = pos.rank < 4
                   ? $defaultBerry(style(
@@ -260,6 +301,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
                   ))
                   : $defaultBerry(style({ width: profileSize, minWidth: profileSize, }))
 
+
                 const $profile = !pos.profile
                   ? $Link({
                     $content: $accountPreview({ address: pos.account, $container, labelSize: '16px' }),
@@ -272,11 +314,64 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
                     url: `/p/profile/${pos.account}/${IProfileActiveTab.TRADING.toLowerCase()}`
                   })({ click: routeChangeTether() })
 
+                if (!isConnectedAccount) {
+                  return $row(layoutSheet.spacingSmall, style({ padding: '6px 12px', position: 'relative', alignItems: 'center', minWidth: 0 }))(
+                    $text(style({ right: '100%', top: '50%', transform: 'translate(3px, -50%)', fontWeight: 'bold', fontSize: '.55em', position: 'absolute', }))(`${pos.rank}`),
+                    $profile
+                  )
+                }
 
+                return $responsiveFlex(layoutSheet.spacingSmall)(
+                  $row(layoutSheet.spacingSmall, style({ padding: '6px 12px', position: 'relative', alignItems: 'center', minWidth: 0 }), isConnectedAccount ? style({ background: invertColor(pallete.message), borderRadius: '15px' }) : style({}))(
+                    $text(style({ right: '100%', top: '50%', transform: 'translate(3px, -50%)', fontWeight: 'bold', fontSize: '.55em', position: 'absolute', }))(`${pos.rank}`),
+                    $profile
+                  ),
 
-                return $row(layoutSheet.spacingSmall, style({ padding: '0 12px', position: 'relative', alignItems: 'center', minWidth: 0 }), w3p?.address === pos.account ? style({ background: invertColor(pallete.message), borderRadius: '15px' }) : style({}))(
-                  $text(style({ left: '0', top: '50%', transform: 'translate(-22px, -50%)', width: '27px', height: '27px', lineHeight: '27px', textAlign: 'right', fontWeight: 'bold', fontSize: '.55em', position: 'absolute', }))(`${pos.rank}`),
-                  $profile,
+                  switchLatest(map(params => {
+                    const isMuxContainer = params?.containerAccount?.toLowerCase() === pos.account
+                    const accountAsMux = isConnectedAccount && isMuxContainer
+                    const rewardAmount = params?.muxAccountRewardAmount || params?.lateBloomerRewardAmount || 0n
+
+                    return $row(style({ alignItems: 'center' }))(
+                      accountAsMux && rewardAmount === 0n
+                        ? $row(layoutSheet.spacingSmall)(
+
+                          params.lateBloomerRewardAmount > 0n ? $ButtonPrimaryCtx({
+                            ctx: clickPoolDistributorClaim,
+                            $content: $text('Claim'),
+                            disabled: constant(true, now(!pos.profile)),
+                            $container: $defaultMiniButtonSecondary
+                          })({
+                            click: clickPoolDistributorClaimTether(
+                              map((router) => {
+                                const profile = pos.profile!
+
+                                return params.poolDistributor.claim(profile.profile?.id, w3p.address)
+                              }),
+                              multicast
+                            )
+                          }) : empty(),
+                          params.muxAccountRewardAmount > 0n || accountAsMux ? $ButtonPrimaryCtx({
+                            ctx: clickPoolDistributorClaim,
+                            $content: $text('Mux Claim'),
+                            disabled: constant(true, now(!pos.profile)),
+                            $container: $defaultMiniButtonSecondary
+                          })({
+                            click: clickPoolDistributorClaimTether(
+                              map((router) => {
+                                const profile = pos.profile!
+
+                                return params.poolDistributor.muxClaim(profile.profile?.id, params.containerAccount, w3p.address)
+                              }),
+                              multicast
+                            )
+                          }) : empty()
+
+                        ) : empty(),
+
+                      params.epoch === 0n ? $alertTooltip($text('Rewards has not been distributed yet, awaiting multi-sig approval')) : !pos.profile ? $alertTooltip($text(`- To claim a reward, you must hold a GBC in your wallet`)) : empty(),
+                    )
+                  }, accountRewardInfo(w3p)))
                 )
               }, config.walletLink.wallet)
             },
@@ -434,4 +529,9 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
 })
 
 
+
+export const proxyFactoryAbi = [
+  { inputs: [{ internalType: "address", name: "account", type: "address" }], name: "getProxiesOf", outputs: [{ internalType: "address[]", name: "", type: "address[]" }], stateMutability: "view", type: "function" }
+] as const
+export const poolDistributorAbi = [{ inputs: [{ internalType: "contract Authority", name: "_authority", type: "address" }, { internalType: "contract IERC721", name: "_token", type: "address" }, { internalType: "address", name: "_owner", type: "address" }], stateMutability: "nonpayable", type: "constructor" }, { inputs: [], name: "AlreadyClaimed", type: "error" }, { inputs: [], name: "LengthMismatch", type: "error" }, { inputs: [], name: "NotClaimable", type: "error" }, { inputs: [], name: "NotContainerOwner", type: "error" }, { inputs: [], name: "NotOwnerOfToken", type: "error" }, { inputs: [], name: "NotWinner", type: "error" }, { inputs: [], name: "TokenAlreadyUsed", type: "error" }, { inputs: [], name: "ZeroAddress", type: "error" }, { anonymous: false, inputs: [{ indexed: true, internalType: "address", name: "user", type: "address" }, { indexed: true, internalType: "contract Authority", name: "newAuthority", type: "address" }], name: "AuthorityUpdated", type: "event" }, { anonymous: false, inputs: [{ indexed: true, internalType: "address", name: "sender", type: "address" }, { indexed: true, internalType: "address", name: "winner", type: "address" }, { indexed: true, internalType: "address", name: "receiver", type: "address" }, { indexed: false, internalType: "uint256", name: "reward", type: "uint256" }], name: "Claim", type: "event" }, { anonymous: false, inputs: [{ indexed: false, internalType: "uint256", name: "unclaimedRewards", type: "uint256" }, { indexed: false, internalType: "uint256", name: "newRewards", type: "uint256" }, { indexed: true, internalType: "uint256", name: "epoch", type: "uint256" }], name: "Distribute", type: "event" }, { anonymous: false, inputs: [{ indexed: true, internalType: "address", name: "user", type: "address" }, { indexed: true, internalType: "address", name: "newOwner", type: "address" }], name: "OwnershipTransferred", type: "event" }, { anonymous: false, inputs: [{ indexed: false, internalType: "bool", name: "claimable", type: "bool" }], name: "SetClaimable", type: "event" }, { inputs: [], name: "authority", outputs: [{ internalType: "contract Authority", name: "", type: "address" }], stateMutability: "view", type: "function" }, { inputs: [{ internalType: "uint256", name: "_tokenID", type: "uint256" }, { internalType: "address", name: "_receiver", type: "address" }], name: "claim", outputs: [{ internalType: "uint256", name: "", type: "uint256" }], stateMutability: "nonpayable", type: "function" }, { inputs: [], name: "claimable", outputs: [{ internalType: "bool", name: "", type: "bool" }], stateMutability: "view", type: "function" }, { inputs: [{ internalType: "uint256", name: "_newRewards", type: "uint256" }, { internalType: "uint256[]", name: "_rewardsList", type: "uint256[]" }, { internalType: "address[]", name: "_winnersList", type: "address[]" }], name: "distribute", outputs: [], stateMutability: "nonpayable", type: "function" }, { inputs: [], name: "epoch", outputs: [{ internalType: "uint256", name: "", type: "uint256" }], stateMutability: "view", type: "function" }, { inputs: [{ internalType: "address", name: "_container", type: "address" }], name: "getMuxContainerOwner", outputs: [{ internalType: "address", name: "", type: "address" }], stateMutability: "view", type: "function" }, { inputs: [{ internalType: "uint256", name: "_tokenID", type: "uint256" }], name: "isTokenClaimed", outputs: [{ internalType: "bool", name: "", type: "bool" }], stateMutability: "view", type: "function" }, { inputs: [{ internalType: "uint256", name: "_tokenID", type: "uint256" }, { internalType: "address", name: "_container", type: "address" }, { internalType: "address", name: "_receiver", type: "address" }], name: "muxClaim", outputs: [{ internalType: "uint256", name: "", type: "uint256" }], stateMutability: "nonpayable", type: "function" }, { inputs: [{ internalType: "address", name: "", type: "address" }], name: "muxContainerOwner", outputs: [{ internalType: "address", name: "", type: "address" }], stateMutability: "view", type: "function" }, { inputs: [], name: "owner", outputs: [{ internalType: "address", name: "", type: "address" }], stateMutability: "view", type: "function" }, { inputs: [{ internalType: "address", name: "_winner", type: "address" }], name: "rewardForWinner", outputs: [{ internalType: "uint256", name: "", type: "uint256" }], stateMutability: "view", type: "function" }, { inputs: [{ internalType: "contract Authority", name: "newAuthority", type: "address" }], name: "setAuthority", outputs: [], stateMutability: "nonpayable", type: "function" }, { inputs: [{ internalType: "bool", name: "_claimable", type: "bool" }], name: "setClaimable", outputs: [], stateMutability: "nonpayable", type: "function" }, { inputs: [], name: "token", outputs: [{ internalType: "contract IERC721", name: "", type: "address" }], stateMutability: "view", type: "function" }, { inputs: [{ internalType: "address", name: "newOwner", type: "address" }], name: "transferOwnership", outputs: [], stateMutability: "nonpayable", type: "function" }, { inputs: [{ internalType: "address", name: "_winner", type: "address" }], name: "winnerClaimed", outputs: [{ internalType: "bool", name: "", type: "bool" }], stateMutability: "view", type: "function" }] as const
 
