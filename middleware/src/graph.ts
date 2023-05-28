@@ -289,7 +289,10 @@ export const competitionCumulative = O(
           }
 
           if (queryParams.account === summary.account) {
-            connectedProfile = tempSummary
+            connectedProfile = {
+              ...connectedProfile,
+              ...tempSummary
+            }
           }
 
           return tempSummary
