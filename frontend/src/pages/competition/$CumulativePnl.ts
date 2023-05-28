@@ -1,14 +1,14 @@
-import { Behavior, combineObject, replayLatest } from '@aelea/core'
+import { Behavior, combineObject } from '@aelea/core'
 import { $element, $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
 import { $card, $column, $row, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { colorAlpha, pallete } from '@aelea/ui-components-theme'
 import { Contract, ContractTransaction } from '@ethersproject/contracts'
 import { BLUEBERRY_REFFERAL_CODE, COMPETITION_METRIC_LIST, getCompetitionSchedule, IBlueberryLadder, IProfileTradingResult, IRequestCompetitionLadderApi } from '@gambitdao/gbc-middleware'
-import { formatReadableUSD, formatToBasis, IAccountSummary, importGlobal, readableNumber, switchMap, unixTimestampNow } from '@gambitdao/gmx-middleware'
+import { formatReadableUSD, formatToBasis, IAccountSummary, importGlobal, readableNumber, unixTimestampNow } from '@gambitdao/gmx-middleware'
 import { $anchor, $infoLabel, $infoLabeledValue, $infoTooltipLabel, $Link, invertColor, ISortBy } from '@gambitdao/ui-components'
 import { IWalletLink, IWalletState } from '@gambitdao/wallet-link'
-import { combine, constant, empty, fromPromise, map, mergeArray, multicast, now, switchLatest } from '@most/core'
+import { combine, empty, fromPromise, map, mergeArray, multicast, now, switchLatest } from '@most/core'
 import { Stream } from '@most/types'
 import { BigNumber } from 'ethers'
 import { IProfileActiveTab } from '../$Profile'
@@ -102,15 +102,15 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
 
     const queryContract = fromPromise(Promise.all([
       muxAccountProxyQuery,
-      poolDistributor.epoch().then((bn: BigNumber) => bn.toBigInt()) as Promise<bigint>,
       poolDistributor.rewardForWinner(w3p.address).then((bn: BigNumber) => bn.toBigInt()) as Promise<bigint>,
       muxAccountProxyQuery.then(containerAccount => {
         if (!containerAccount) {
           return 0n
         }
 
-        return poolDistributor.rewardForWinner(w3p.address).then((bn: BigNumber) => bn.toBigInt())
-      }) as Promise<bigint>
+        return poolDistributor.rewardForWinner(containerAccount).then((bn: BigNumber) => bn.toBigInt())
+      }) as Promise<bigint>,
+      poolDistributor.epoch().then((bn: BigNumber) => bn.toBigInt()) as Promise<bigint>,
     ]))
 
 
@@ -332,14 +332,14 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
                     const accountAsMux = isConnectedAccount && isMuxContainer
                     const rewardAmount = params?.muxAccountRewardAmount || params?.lateBloomerRewardAmount || 0n
 
-                    return $row(style({ alignItems: 'center' }))(
-                      accountAsMux && rewardAmount === 0n
+                    return $row(layoutSheet.spacingSmall, style({ alignItems: 'center' }))(
+                      rewardAmount > 0n
                         ? $row(layoutSheet.spacingSmall)(
 
                           params.lateBloomerRewardAmount > 0n ? $ButtonPrimaryCtx({
                             ctx: clickPoolDistributorClaim,
                             $content: $text('Claim'),
-                            disabled: constant(true, now(!pos.profile)),
+                            disabled: now(!pos.profile),
                             $container: $defaultMiniButtonSecondary
                           })({
                             click: clickPoolDistributorClaimTether(
@@ -348,13 +348,13 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
 
                                 return params.poolDistributor.claim(profile.profile?.id, w3p.address)
                               }),
-                              multicast
+                              // multicast
                             )
                           }) : empty(),
                           params.muxAccountRewardAmount > 0n || accountAsMux ? $ButtonPrimaryCtx({
                             ctx: clickPoolDistributorClaim,
                             $content: $text('Mux Claim'),
-                            disabled: constant(true, now(!pos.profile)),
+                            disabled: now(!pos.profile),
                             $container: $defaultMiniButtonSecondary
                           })({
                             click: clickPoolDistributorClaimTether(
@@ -369,7 +369,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
 
                         ) : empty(),
 
-                      params.epoch === 0n ? $alertTooltip($text('Rewards has not been distributed yet, awaiting multi-sig approval')) : !pos.profile ? $alertTooltip($text(`- To claim a reward, you must hold a GBC in your wallet`)) : empty(),
+                      params.epoch === 0n ? $alertTooltip($text('Rewards has not been distributed yet, awaiting multi-sig approval')) : !pos.profile ? $alertTooltip($text(`To claim a reward, you must hold a GBC in your wallet`)) : empty(),
                     )
                   }, accountRewardInfo(w3p)))
                 )

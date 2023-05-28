@@ -4,7 +4,7 @@ import { $column, $icon, $row, layoutSheet } from "@aelea/ui-components"
 import { pallete } from "@aelea/ui-components-theme"
 import { ContractTransaction } from "@ethersproject/contracts"
 import { $alertIcon, $Tooltip } from "@gambitdao/ui-components"
-import { constant, fromPromise, map, never, now, recoverWith, skipRepeats, startWith, switchLatest } from "@most/core"
+import { combine, constant, fromPromise, map, never, now, recoverWith, skipRepeats, startWith, switchLatest } from "@most/core"
 import { Stream } from "@most/types"
 import { $ButtonCore, $defaultButtonCore, IButtonCore } from "./$ButtonCore"
 
@@ -89,14 +89,14 @@ export const $ButtonPrimaryCtx = (config: IButtonPrimaryCtx) => component((
   return [
     $row(style({ alignItems: 'center' }))(
       $ButtonCore({
-        $container: $defaultButtonPrimary(
+        $container: config.$container || $defaultButtonPrimary(
           style({ alignItems: 'center' }),
           stylePseudo(':hover', { backgroundColor: pallete.middleground })
         ),
-        disabled: combineArray((isDisabled, isCtxPending) => {
+        disabled: startWith(true, combine((isDisabled, isCtxPending) => {
           return isDisabled || isCtxPending
-        }, config.disabled || now(false), ctxPendingDisable),
-        ...config,
+        }, config.disabled || now(false), ctxPendingDisable)),
+        $content: config.$content
       })({
         click: clickTether()
       }),
