@@ -237,11 +237,30 @@ export const competitionCumulative = O(
         const score = queryParams.metric === 'roi'
           ? div(n.pnl, n.maxCollateral > averageMaxCollateral ? n.maxCollateral : averageMaxCollateral)
           : n[queryParams.metric]
-        
+
         return score > 0n ? s + score : s
       }, 0n)
 
-      let connectedProfile: null | IBlueberryLadder = null
+      let connectedProfile: null | IBlueberryLadder = queryParams.account ? {
+        account: queryParams.account,
+        avgCollateral: 0n,
+        avgLeverage: 0n,
+        avgSize: 0n,
+        cumCollateral: 0n,
+        cumSize: 0n,
+        maxCollateral: 0n,
+        cumulativeLeverage: 0n,
+        pnl: 0n,
+        profile: null,
+        rank: 0,
+        score: 0n,
+        prize: 0n,
+        openPnl: 0n,
+        realisedPnl: 0n,
+        fee: 0n,
+        lossCount: 0,
+        winCount: 0,
+      } : null
 
 
       const sortedCompetitionList: IBlueberryLadder[] = summaryList
