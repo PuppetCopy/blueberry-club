@@ -18,7 +18,7 @@ import { $accountPreview, $profilePreview } from '../../components/$AccountProfi
 import { $CardTable } from '../../components/$common'
 import { $defaultBerry } from '../../components/$DisplayBerry'
 import { $ButtonPrimaryCtx, $defaultMiniButtonSecondary } from '../../components/form/$Button'
-import { $addToCalendar, $responsiveFlex } from '../../elements/$common'
+import { $accountIconLink, $addToCalendar, $responsiveFlex } from '../../elements/$common'
 import { PriceFeed__factory, VaultPriceFeed__factory } from '../../logic/gmx-contracts'
 import { $seperator2 } from '../common'
 import { $alertTooltip, countdown } from './$rules'
@@ -47,7 +47,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
 ) => {
 
   const historyParam = Number(new URLSearchParams(document.location.search).get('history') || 0)
-  const poolDistributorFund = replayLatest(multicast(awaitPromises(map(async provider => {
+  const poolDistributor = replayLatest(multicast(awaitPromises(map(async provider => {
 
     const [balance, priceFeed] = await Promise.all([
       ERC20__factory.connect(ARBITRUM_ADDRESS.NATIVE_TOKEN, provider).balanceOf('0xEd6265F1030186dd09cAEb1B827078aC0f6EE970'),
@@ -248,7 +248,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
             style({ flexDirection: 'row-reverse' })(
               $infoTooltipLabel(
                 $column(layoutSheet.spacingSmall)(
-                  $text('The estimated amount distirbuted to all top traders by competition end results'),
+                  $text('A breakdown of the total prize pool'),
 
 
                   switchLatest(map(res => {
@@ -264,27 +264,30 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
                       ),
                     )
                   }, config.competitionCumulative)),
-
-
-                  $infoLabeledValue(
-                    'Unclaimed Fee Fund',
-                    $text(style({ color: pallete.positive }))(map(res => {
-                      return formatReadableUSD(res)
-                    }, poolDistributorFund))
-                  ),
-                  $infoLabeledValue(
-                    'Estimated Fee Pool',
-                    $text(style({ color: pallete.positive }))(map(res => {
-                      return formatReadableUSD(res.metrics.estFeePool)
-                    }, config.competitionCumulative))
+                                    
+                  $column(
+                    $infoLabeledValue(
+                      'Estimated Fee Pool',
+                      $text(style({ color: pallete.positive }))(map(res => {
+                        return formatReadableUSD(res.metrics.estFeePool)
+                      }, config.competitionCumulative))
+                    ),
+                    $column(
+                      $text('Estimated Fee Pool formula:'),
+                      $text(style({ fontSize: '.75em', fontStyle: 'italic' }))('Current Fee Pool * Competition Duration / Duration Elapsed'),
+                    )
                   ),
 
 
                   $column(
-                    $text('Estimated Fee Pool formula:'),
-                    $text(style({ fontSize: '.75em', fontStyle: 'italic' }))('Current Fee Pool * Competition Duration / Duration Elapsed'),
+                    $infoLabeledValue(
+                      'Unclaimed Fee Pool',
+                      $text(style({ color: pallete.positive }))(map(res => {
+                        return formatReadableUSD(res)
+                      }, poolDistributor))
+                    ),
+                    $text('Prizes that have not been claimed by non-holders on Arbitrum'), $accountIconLink('0xEd6265F1030186dd09cAEb1B827078aC0f6EE970')
                   ),
-
 
                 ),
                 'Est. Prize Pool'
@@ -294,7 +297,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
               color: pallete.positive,
               fontSize: '1.65em',
               textShadow: `${pallete.positive} 1px 1px 15px`
-            }))(map(params => '~' + formatReadableUSD((params.chain === CHAIN.ARBITRUM ? params.poolDistributorFund : 0n) + params.competitionCumulative.metrics.estFeePool), combineObject({ poolDistributorFund, competitionCumulative: config.competitionCumulative, chain: config.walletLink.network })))
+            }))(map(params => '~' + formatReadableUSD((params.chain === CHAIN.ARBITRUM ? params.poolDistributor : 0n) + params.competitionCumulative.metrics.estFeePool), combineObject({ poolDistributor, competitionCumulative: config.competitionCumulative, chain: config.walletLink.network })))
           ),
         ),
 
