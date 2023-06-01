@@ -48,7 +48,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
 
   const historyParam = Number(new URLSearchParams(document.location.search).get('history') || 0)
   const poolDistributor = replayLatest(multicast(awaitPromises(combineArray(async (provider, chain) => {
-    if (chain !== CHAIN.ARBITRUM) {
+    if (historyParam !== 0 || chain !== CHAIN.ARBITRUM) {
       return 0n
     }
 
@@ -66,7 +66,6 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
 
   const unixTime = unixTimestampNow()
   const competitionSchedule = getCompetitionSchedule(unixTime, historyParam)
-
 
   const tableList = map(res => {
     return res.list
@@ -394,7 +393,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
 
                         ) : empty(),
 
-                      historyParam === 0
+                      competitionSchedule.ended && historyParam === 0
                         ? $alertTooltip($text('Rewards has not been distributed yet, awaiting multi-sig approval'))
                         : !pos.profile ? $alertTooltip($text(`To claim a reward, you must hold a GBC in your wallet`)) : empty(),
                     )

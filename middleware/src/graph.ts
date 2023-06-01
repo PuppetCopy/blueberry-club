@@ -2,7 +2,7 @@ import { O } from "@aelea/core"
 import { hexValue } from "@ethersproject/bytes"
 import {
   cacheMap, CHAIN_ADDRESS_MAP, div, formatFixed, getMappedValue, getTokenAmount, gmxSubgraph, groupByKey,
-  IAccountSummary, IIdentifiableEntity, intervalTimeMap, IRequestPagePositionApi, pagingQuery, readableNumber, switchMap, toAccountSummaryList, USD_PERCISION
+  IIdentifiableEntity, intervalTimeMap, IRequestPagePositionApi, pagingQuery, readableNumber, switchMap, toAccountSummaryList, USD_PERCISION
 } from "@gambitdao/gmx-middleware"
 import { awaitPromises, combine, map, now } from "@most/core"
 import { ClientOptions, createClient, gql, OperationContext, TypedDocumentNode } from "@urql/core"
@@ -233,7 +233,7 @@ export const competitionCumulative = O(
         return score > 0n ? s + score : s
       }, 0n)
 
-      let connectedProfile: null | IBlueberryLadder = queryParams.account ? {
+      const connectedProfile: null | IBlueberryLadder = queryParams.account ? {
         account: queryParams.account,
         avgCollateral: 0n,
         avgLeverage: 0n,
@@ -274,18 +274,15 @@ export const competitionCumulative = O(
 
           }
 
-          if (queryParams.account === summary.account) {
-            connectedProfile = {
-              ...connectedProfile,
-              ...tempSummary
-            }
+          if (connectedProfile && queryParams.account === summary.account) {
+            return Object.assign(connectedProfile, tempSummary)
           }
 
           return tempSummary
         })
 
 
-      if (queryParams.schedule.duration === queryParams.schedule.elapsed) {
+      if (queryParams.schedule.ended) {
         // log CSV file for airdrop
         const nativeToken = getMappedValue(CHAIN_ADDRESS_MAP, queryParams.chain).NATIVE_TOKEN
 

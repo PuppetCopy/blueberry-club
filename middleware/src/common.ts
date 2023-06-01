@@ -79,9 +79,10 @@ export const competitionStartEpoch = 2023 + 6 // year + month
 
 export function getCompetitionSchedule(unixTime = unixTimestampNow(), history = 0): ICompetitionSchedule {
   const date = new Date(unixTime * 1000)
-  date.setMonth(date.getUTCMonth() - history)
 
-  const epoch = Math.abs((date.getUTCFullYear() + date.getUTCMonth()) - competitionStartEpoch)
+  const epoch = Math.abs((date.getUTCFullYear() + date.getUTCMonth() + history) - competitionStartEpoch)
+
+  date.setMonth(date.getUTCMonth() - history)
 
   const competitionYear = date.getUTCFullYear()
   const competitionMonth = date.getUTCMonth()
