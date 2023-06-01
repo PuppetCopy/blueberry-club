@@ -1,5 +1,4 @@
 import { IAccountSummary, IChainParamApi, IEnsRegistration, intervalTimeMap, IResponsePageApi, IRequestPagePositionApi, IRequestSortApi, IRequestTimerangeApi } from "@gambitdao/gmx-middleware"
-import { ICompetitionSchedule } from "./common"
 
 export type IPrice = {
   priceUsd: bigint
@@ -126,13 +125,39 @@ export interface IBlueberryLadder extends IAccountSummary {
   prize: bigint
 }
 
+export interface ICompetitionSchedule {
+  duration: number
+  start: number
+  end: number
+  elapsed: number
+}
+
+export interface ICompetitionSchedule {
+  date: Date
+  duration: number
+  start: number
+  end: number
+  elapsed: number
+  ended: boolean
+  next: number
+  previous: number
+  epoch: number
+}
+
+export interface ICompetitionPrize {
+  estSize: bigint
+  feePool: bigint
+  estFeePool: bigint
+  feeMultiplier: bigint
+}
+
+
 export interface ILadderSummary {
   size: bigint
-  estSize: bigint
-  prizePool: bigint
-  estPrizePool: bigint
   totalScore: bigint
   averageMaxCollateral: bigint
+
+  metrics: ICompetitionPrize
 }
 
 export interface IProfileTradingResult extends ILadderSummary {
@@ -188,6 +213,7 @@ export enum IAttributeMappings {
   "Degen Ape" = 226,
   "NFT Paris Bandana" = 227,
   "Blueberry Fly" = 228,
+  "Blueberry Saint" = 229,
 }
 
 
@@ -224,9 +250,6 @@ export enum IAttributeExpression {
 
   HIGH = IAttributeMappings.High,
 }
-
-
-
 
 
 
@@ -294,6 +317,7 @@ export enum IAttributeClothes {
   MARINE_SHIRT = IAttributeMappings["Marine Shirt"],
   GIVING_LOVE = IAttributeMappings["Giving Love"],
   ARBITRUM_SWAG = IAttributeMappings["Arbitrum Swag"],
+  BLUEBERRY_SAINT = IAttributeMappings["Blueberry Saint"],
 }
 
 

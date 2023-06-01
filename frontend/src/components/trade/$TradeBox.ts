@@ -1137,7 +1137,7 @@ export const $TradeBox = (config: ITradeBox) => component((
                             ),
                             $row(layoutSheet.spacingTiny)(
                               $text(style({ color: pallete.foreground }))('Your added contribution'),
-                              $text(style({ color: pallete.positive }))(map(params => formatReadableUSD(params.marginFee * 1500n / BASIS_POINTS_DIVISOR), combineObject({ marginFee })))
+                              $text(style({ color: pallete.positive }))(map(params => formatReadableUSD(params.marginFee * 2500n / BASIS_POINTS_DIVISOR), combineObject({ marginFee })))
                             ),
                           ),
                           'Payback'

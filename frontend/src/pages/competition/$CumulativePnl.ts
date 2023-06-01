@@ -1,23 +1,25 @@
-import { Behavior, combineObject } from '@aelea/core'
+import { Behavior, combineObject, replayLatest } from '@aelea/core'
 import { $element, $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
 import { $card, $column, $row, layoutSheet, screenUtils } from '@aelea/ui-components'
 import { colorAlpha, pallete } from '@aelea/ui-components-theme'
 import { Contract, ContractTransaction } from '@ethersproject/contracts'
+import { CHAIN } from '@gambitdao/const'
+import { ERC20__factory } from '@gambitdao/gbc-contracts'
 import { BLUEBERRY_REFFERAL_CODE, COMPETITION_METRIC_LIST, getCompetitionSchedule, IBlueberryLadder, IProfileTradingResult, IRequestCompetitionLadderApi } from '@gambitdao/gbc-middleware'
-import { formatReadableUSD, formatToBasis, IAccountSummary, importGlobal, readableNumber, unixTimestampNow } from '@gambitdao/gmx-middleware'
+import { ARBITRUM_ADDRESS, formatReadableUSD, formatToBasis, IAccountSummary, importGlobal, readableNumber, unixTimestampNow } from '@gambitdao/gmx-middleware'
 import { $anchor, $infoLabel, $infoLabeledValue, $infoTooltipLabel, $Link, invertColor, ISortBy } from '@gambitdao/ui-components'
 import { IWalletLink, IWalletState } from '@gambitdao/wallet-link'
-import { combine, empty, fromPromise, map, mergeArray, multicast, now, switchLatest } from '@most/core'
+import { awaitPromises, combine, empty, fromPromise, map, mergeArray, multicast, now, switchLatest } from '@most/core'
 import { Stream } from '@most/types'
 import { BigNumber } from 'ethers'
 import { IProfileActiveTab } from '../$Profile'
-import { } from '../../'
 import { $accountPreview, $profilePreview } from '../../components/$AccountProfile'
 import { $CardTable } from '../../components/$common'
 import { $defaultBerry } from '../../components/$DisplayBerry'
 import { $ButtonPrimaryCtx, $defaultMiniButtonSecondary } from '../../components/form/$Button'
 import { $addToCalendar, $responsiveFlex } from '../../elements/$common'
+import { PriceFeed__factory, VaultPriceFeed__factory } from '../../logic/gmx-contracts'
 import { $seperator2 } from '../common'
 import { $alertTooltip, countdown } from './$rules'
 
@@ -45,12 +47,22 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
 ) => {
 
   const historyParam = Number(new URLSearchParams(document.location.search).get('history') || 0)
+  const poolDistributorFund = replayLatest(multicast(awaitPromises(map(async provider => {
+
+    const [balance, priceFeed] = await Promise.all([
+      ERC20__factory.connect(ARBITRUM_ADDRESS.NATIVE_TOKEN, provider).balanceOf('0xEd6265F1030186dd09cAEb1B827078aC0f6EE970'),
+      VaultPriceFeed__factory.connect(ARBITRUM_ADDRESS.VaultPriceFeed, provider).getPrimaryPrice(ARBITRUM_ADDRESS.NATIVE_TOKEN, false)
+    ])
 
 
-  const time = unixTimestampNow()
-  const competitionSchedule = getCompetitionSchedule(time, historyParam)
+    const fundUsd = balance.toBigInt() * priceFeed.toBigInt() / 10n ** 18n
+
+    return fundUsd
+  }, config.walletLink.defaultProvider))))
 
 
+  const unixTime = unixTimestampNow()
+  const competitionSchedule = getCompetitionSchedule(unixTime, historyParam)
 
 
   const tableList = map(res => {
@@ -82,21 +94,11 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
     ]
     : []
 
-  // const poolDistributorContract = filterNull(replayLatest(multicast(map((params) => {
-  //   if (params.w3p === null) {
-  //     return null
-  //   }
 
-  //   return new Contract('0xEd6265F1030186dd09cAEb1B827078aC0f6EE970', poolDistributorAbi, params.w3p.provider)
-  // }, combineObject({ w3p: config.walletLink.wallet })))))
 
   const accountRewardInfo = (w3p: IWalletState) => {
     const poolDistributor = new Contract('0xEd6265F1030186dd09cAEb1B827078aC0f6EE970', poolDistributorAbi, w3p.provider.getSigner())
     const proxyFactoryContract = new Contract('0x2ff2f1D9826ae2410979ae19B88c361073Ab0918', proxyFactoryAbi, w3p.provider.getSigner())
-
-
-
-
 
     const muxAccountProxyQuery = proxyFactoryContract.getProxiesOf(w3p.address).then(([containerAccount]: string[]) => containerAccount || null) as Promise<string | null>
 
@@ -114,8 +116,8 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
     ]))
 
 
-    return map(([containerAccount, lateBloomerRewardAmount, muxAccountRewardAmount, epoch]) => {
-      return { containerAccount, proxyFactoryContract, poolDistributor, lateBloomerRewardAmount, muxAccountRewardAmount, epoch }
+    return map(([containerAccount, lateBloomerRewardAmount, muxAccountRewardAmount, poolEpoch]) => {
+      return { containerAccount, proxyFactoryContract, poolDistributor, lateBloomerRewardAmount, muxAccountRewardAmount, poolEpoch }
     }, queryContract)
   }
 
@@ -237,7 +239,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
                 )
               ), 'Traded Volume'),
               $text(map(res => {
-                return '~' + formatReadableUSD(res.estSize)
+                return '~' + formatReadableUSD(res.metrics.estSize)
               }, config.competitionCumulative))
             ),
           ),
@@ -248,21 +250,39 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
                 $column(layoutSheet.spacingSmall)(
                   $text('The estimated amount distirbuted to all top traders by competition end results'),
 
+
+                  switchLatest(map(res => {
+
+                    return $column(
+                      $infoLabeledValue(
+                        'Current Fee Pool',
+                        $text(style({ color: pallete.positive }))(formatReadableUSD(res.metrics.feePool))
+                      ),
+                      $column(
+                        $text('Current Prize Pool formula:'),
+                        $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Traded Volume * .001 (Margin Fee) * ${Number(res.metrics.feeMultiplier) / 10000} (BLUBERRY Referral)`),
+                      ),
+                    )
+                  }, config.competitionCumulative)),
+
+
                   $infoLabeledValue(
-                    'Current Prize Pool',
+                    'Unclaimed Fee Fund',
                     $text(style({ color: pallete.positive }))(map(res => {
-                      return formatReadableUSD(res.prizePool)
+                      return formatReadableUSD(res)
+                    }, poolDistributorFund))
+                  ),
+                  $infoLabeledValue(
+                    'Estimated Fee Pool',
+                    $text(style({ color: pallete.positive }))(map(res => {
+                      return formatReadableUSD(res.metrics.estFeePool)
                     }, config.competitionCumulative))
                   ),
 
-                  $column(
-                    $text('Current Prize Pool formula:'),
-                    $text(style({ fontSize: '.75em', fontStyle: 'italic' }))('Traded Volume * .001 (Margin Fee) * .15 (BLUBERRY Referral)'),
-                  ),
 
                   $column(
-                    $text('Estimated Prize Pool formula:'),
-                    $text(style({ fontSize: '.75em', fontStyle: 'italic' }))('Current Prize Pool * Competition Duration / Duration Elapsed'),
+                    $text('Estimated Fee Pool formula:'),
+                    $text(style({ fontSize: '.75em', fontStyle: 'italic' }))('Current Fee Pool * Competition Duration / Duration Elapsed'),
                   ),
 
 
@@ -274,7 +294,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
               color: pallete.positive,
               fontSize: '1.65em',
               textShadow: `${pallete.positive} 1px 1px 15px`
-            }))(map(params => '~' + formatReadableUSD(params.estPrizePool), config.competitionCumulative))
+            }))(map(params => '~' + formatReadableUSD((params.chain === CHAIN.ARBITRUM ? params.poolDistributorFund : 0n) + params.competitionCumulative.metrics.estFeePool), combineObject({ poolDistributorFund, competitionCumulative: config.competitionCumulative, chain: config.walletLink.network })))
           ),
         ),
 
@@ -369,7 +389,9 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
 
                         ) : empty(),
 
-                      params.epoch === 0n ? $alertTooltip($text('Rewards has not been distributed yet, awaiting multi-sig approval')) : !pos.profile ? $alertTooltip($text(`To claim a reward, you must hold a GBC in your wallet`)) : empty(),
+                      params.poolEpoch === BigInt(competitionSchedule.epoch)
+                        ? $alertTooltip($text('Rewards has not been distributed yet, awaiting multi-sig approval'))
+                        : !pos.profile ? $alertTooltip($text(`To claim a reward, you must hold a GBC in your wallet`)) : empty(),
                     )
                   }, accountRewardInfo(w3p)))
                 )

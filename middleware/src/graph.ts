@@ -1,14 +1,14 @@
 import { O } from "@aelea/core"
 import { hexValue } from "@ethersproject/bytes"
 import {
-  IIdentifiableEntity, IRequestPagePositionApi, pagingQuery,
-  cacheMap, intervalTimeMap, gmxSubgraph, getMarginFees, BASIS_POINTS_DIVISOR, switchMap, groupByKey, getMappedValue, CHAIN_ADDRESS_MAP,
-  formatFixed, getTokenAmount, readableNumber, USD_PERCISION, toAccountSummaryList, div, min, IAccountSummary
+  cacheMap, CHAIN_ADDRESS_MAP, div, formatFixed, getMappedValue, getTokenAmount, gmxSubgraph, groupByKey,
+  IAccountSummary, IIdentifiableEntity, intervalTimeMap, IRequestPagePositionApi, pagingQuery, readableNumber, switchMap, toAccountSummaryList, USD_PERCISION
 } from "@gambitdao/gmx-middleware"
 import { awaitPromises, combine, map, now } from "@most/core"
 import { ClientOptions, createClient, gql, OperationContext, TypedDocumentNode } from "@urql/core"
+import { getCompetitionMetrics } from "./common"
 import { COMPETITION_METRIC_LIST } from "./config"
-import { ILabItem, ILabItemOwnership, IOwner, IBlueberryLadder, IProfileTradingResult, IToken, IRequestCompetitionLadderApi } from "./types"
+import { IBlueberryLadder, ILabItem, ILabItemOwnership, IOwner, IProfileTradingResult, IRequestCompetitionLadderApi, IToken } from "./types"
 
 
 export const createSubgraphClient = (opts: ClientOptions) => {
@@ -202,7 +202,7 @@ export const competitionCumulative = O(
 
       const tradeList = await gmxSubgraph.getCompetitionTrades(queryParams)
       const priceMap = await gmxSubgraph.getPriceMap(queryParams.to, queryParams)
-
+      // const weth = ERC20__factory.connect(ARBITRUM_ADDRESS.NATIVE_TOKEN, w3p.provider).balanceOf('0xEd6265F1030186dd09cAEb1B827078aC0f6EE970').then(bn => bn.toBigInt())
       const summaryList = toAccountSummaryList(tradeList, priceMap, queryParams.maxCollateral, queryParams.to)
 
       const { size, activeWinnerCount, totalMaxCollateral } = summaryList.reduce((s, n) => {
@@ -227,11 +227,8 @@ export const competitionCumulative = O(
       }, { highestMaxCollateralBasedOnPnl: 0n, pnl: 0n, size: 0n, totalMaxCollateral: 0n, activeWinnerCount: 0n })
 
 
-      const averageMaxCollateral = totalMaxCollateral / activeWinnerCount
-      const estSize = size * BigInt(queryParams.schedule.duration) / BigInt(queryParams.schedule.elapsed)
-
-      const prizePool = getMarginFees(size) * 1500n / BASIS_POINTS_DIVISOR
-      const estPrizePool = prizePool * BigInt(queryParams.schedule.duration) / BigInt(queryParams.schedule.elapsed)
+      const averageMaxCollateral = totalMaxCollateral ? totalMaxCollateral / activeWinnerCount : 0n
+      const metrics = getCompetitionMetrics(size, queryParams.schedule)
 
       const totalScore = summaryList.reduce((s, n) => {
         const score = queryParams.metric === 'roi'
@@ -268,7 +265,7 @@ export const competitionCumulative = O(
           const maxCollateral = summary.maxCollateral > averageMaxCollateral ? summary.maxCollateral : averageMaxCollateral
           const score = queryParams.metric === 'roi' ? div(summary.pnl, maxCollateral) : summary[queryParams.metric]
 
-          const reward = estPrizePool * score / totalScore
+          const reward = metrics.estFeePool * score / totalScore
           const prize = isWinner(summary) ? reward : 0n
 
 
@@ -301,18 +298,17 @@ export const competitionCumulative = O(
 
       if (queryParams.schedule.duration === queryParams.schedule.elapsed) {
         // log CSV file for airdrop
-
         const nativeToken = getMappedValue(CHAIN_ADDRESS_MAP, queryParams.chain).NATIVE_TOKEN
 
         console.log(
           'token_type,token_address,receiver,amount,id\n' + sortedCompetitionList
             .filter(x => {
-              const prize = prizePool * x.score / totalScore
+              const prize = metrics.feePool * x.score / totalScore
               return prize > USD_PERCISION
             })
             .map((x, idx) => {
               const ethPrice = BigInt(priceMap['_' + nativeToken])
-              const prizeUsd = prizePool * x.score / totalScore
+              const prizeUsd = metrics.feePool * x.score / totalScore
               const tokenAmount = formatFixed(getTokenAmount(prizeUsd, ethPrice, 18), 18)
 
               return `erc20,${nativeToken},${x.account},${readableNumber(tokenAmount)},`
@@ -321,8 +317,8 @@ export const competitionCumulative = O(
       }
 
       return {
-        sortedCompetitionList, averageMaxCollateral, estSize, estPrizePool,
-        size, totalScore, prizePool, profile: connectedProfile as null | IBlueberryLadder
+        sortedCompetitionList, averageMaxCollateral, size, totalScore, metrics,
+        profile: connectedProfile as null | IBlueberryLadder
       }
     })
 

@@ -1,6 +1,6 @@
-import { importGlobal, intervalTimeMap, unixTimestampNow } from "@gambitdao/gmx-middleware"
+import { BASIS_POINTS_DIVISOR, getMarginFees, importGlobal, intervalTimeMap, unixTimestampNow } from "@gambitdao/gmx-middleware"
 import { map } from "@most/core"
-import { IAttributeBackground, IAttributeClothes, IAttributeBody, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat, LabItemSale, MintRule, SvgPartsMap, IBerryDisplayTupleMap, IAttributeBadge } from "./types"
+import { IAttributeBackground, IAttributeClothes, IAttributeBody, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat, LabItemSale, MintRule, SvgPartsMap, IBerryDisplayTupleMap, IAttributeBadge, ICompetitionSchedule, ICompetitionPrize } from "./types"
 
 const svgParts = importGlobal(import("@gambitdao/gbc-middleware/src/mappings/svgParts"))
 
@@ -73,36 +73,43 @@ export const berryPartsToSvg = (svgParts: SvgPartsMap, [background, clothes, bod
   `
 }
 
-export interface ICompetitionSchedule {
-  duration: number
-  start: number
-  end: number
-  elapsed: number
-}
+
+export const competitionStartEpoch = 2023 + 6 // year + month
 
 
-
-export function getCompetitionSchedule(unixTime = unixTimestampNow(), history = 0) {
+export function getCompetitionSchedule(unixTime = unixTimestampNow(), history = 0): ICompetitionSchedule {
   const date = new Date(unixTime * 1000)
-  date.setMonth(date.getMonth() - history)
-  
-  const time = Math.floor(date.getTime() / 1000)
-  const start = Date.UTC(date.getUTCFullYear(), date.getUTCMonth()) / 1000
+
+  const epoch = competitionStartEpoch - (date.getUTCFullYear() + date.getUTCMonth())
+
+  date.setMonth(date.getUTCMonth() - history)
+
+  const competitionYear = date.getUTCFullYear()
+  const competitionMonth = date.getUTCMonth()
+
+  const start = Date.UTC(competitionYear, competitionMonth) / 1000
   const duration = intervalTimeMap.HR24 * 25 + intervalTimeMap.MIN60 * 16
   const end = start + duration
 
-  const elapsed = Math.min(time, end) - start
-
+  const elapsed = Math.min(unixTime, end) - start
   const ended = duration === elapsed
 
-
   const previous = unixTime >= start
-    ? Date.UTC(date.getUTCFullYear(), date.getUTCMonth() - 1, 1, 16) / 1000
+    ? Date.UTC(competitionYear, competitionMonth - 1, 1, 16) / 1000
     : start
   const next = unixTime >= start
-    ? Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1, 16) / 1000
+    ? Date.UTC(competitionYear, competitionMonth + 1, 1, 16) / 1000
     : start
 
-  return { date, duration, start, end, elapsed, ended, next, previous }
+  return { date, duration, start, end, elapsed, ended, next, previous, epoch }
+}
+
+export function getCompetitionMetrics(size: bigint, competition: ICompetitionSchedule): ICompetitionPrize {
+  const estSize = size * BigInt(competition.duration) / BigInt(competition.elapsed)
+  const feeMultiplier = competition.epoch > 0 ? 2500n : 1500n
+  const feePool = getMarginFees(size) * feeMultiplier / BASIS_POINTS_DIVISOR
+  const estFeePool = feePool * BigInt(competition.duration) / BigInt(competition.elapsed)
+
+  return { estSize, feePool, estFeePool, feeMultiplier }
 }
 

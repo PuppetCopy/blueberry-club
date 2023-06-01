@@ -15,7 +15,6 @@ export const BLUEBERRY_REFFERAL_CODE = '0x424c5545424552525900000000000000000000
 
 export const COMPETITION_METRIC_LIST = ['pnl', 'roi'] as const
 
-export const CURRENT_COMPETITION_SCHEDULE = getCompetitionSchedule()
 
 export const GBC_DESCRIPTION = {
   NAME: 'Blueberry Club',
@@ -42,6 +41,40 @@ export const saleConfig = {
 }
 
 export const saleDescriptionList: LabItemSale[] = [
+  {
+    name: "Blueberry Saint",
+    description: `Amidst the chaos, whispers rise,
+The saints lend voice, the wise advise;
+With fervent passion to edify,
+They broaden minds, and truth imply.
+
+Builders bold, with vision bright,
+Craft tools for unison and light;
+Together, weaving the human tale,
+They navigate and thus unveil.
+
+The saints we follow, not with praise,
+But ears open wide in earnest trace;
+With hearts emboldened to fulfill,
+A future blooming as one shared will.`,
+    id: IAttributeMappings["Blueberry Saint"],
+    mintRuleList: [
+      {
+        supply: 20,
+        type: SaleType.Whitelist,
+        cost: 0n,
+        contractAddress: "0xcEbAf0C363e30e151Dd8dDa880286c6d9b17087a",
+        start: toTime(2023, 1, 24, 18),
+        finish: toTime(2023, 7, 1, 18),
+        accountLimit: 20,
+        addressList: [
+          '0xde2dbb7f1c893cc5e2f51cbfd2a73c8a016183a0',
+        ],
+        signatureList: [],
+        nonce: 0,
+      }
+    ]
+  },
   {
     name: "Holographic Badge",
     description: `In supersonic realms, a gift bestowed,
