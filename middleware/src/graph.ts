@@ -6,7 +6,7 @@ import {
 } from "@gambitdao/gmx-middleware"
 import { awaitPromises, combine, map, now } from "@most/core"
 import { ClientOptions, createClient, gql, OperationContext, TypedDocumentNode } from "@urql/core"
-import { getCompetitionMetrics } from "./common"
+import { getCompetitionMetrics, isWinner } from "./common"
 import { COMPETITION_METRIC_LIST } from "./config"
 import { IBlueberryLadder, ILabItem, ILabItemOwnership, IOwner, IProfileTradingResult, IRequestCompetitionLadderApi, IToken } from "./types"
 
@@ -187,13 +187,9 @@ export const profilePickList = O(
 )
 
 
-const MIN_ROI_THRESHOLD = 50n
-const MIN_PNL_THRESHOLD = USD_PERCISION * 5n
 
 
-function isWinner(summary: IAccountSummary) {
-  return summary.pnl > MIN_PNL_THRESHOLD && div(summary.pnl, summary.maxCollateral) > MIN_ROI_THRESHOLD
-}
+
 
 export const competitionCumulative = O(
   map(async (queryParams: IRequestCompetitionLadderApi): Promise<IProfileTradingResult> => {
@@ -206,7 +202,6 @@ export const competitionCumulative = O(
       const summaryList = toAccountSummaryList(tradeList, priceMap, queryParams.maxCollateral, queryParams.to)
 
       const { size, activeWinnerCount, totalMaxCollateral } = summaryList.reduce((s, n) => {
-
 
         if (isWinner(n)) {
           s.activeWinnerCount++
@@ -251,7 +246,6 @@ export const competitionCumulative = O(
         profile: null,
         rank: 0,
         score: 0n,
-        prize: 0n,
         openPnl: 0n,
         realisedPnl: 0n,
         fee: 0n,
@@ -265,23 +259,18 @@ export const competitionCumulative = O(
           const maxCollateral = summary.maxCollateral > averageMaxCollateral ? summary.maxCollateral : averageMaxCollateral
           const score = queryParams.metric === 'roi' ? div(summary.pnl, maxCollateral) : summary[queryParams.metric]
 
-          const reward = metrics.estFeePool * score / totalScore
-          const prize = isWinner(summary) ? reward : 0n
-
-
           return {
             summary,
-            prize,
             score
           }
         })
         .sort((a, b) => Number(b.score - a.score))
-        .map(({ prize, score, summary }, idx) => {
+        .map(({ score, summary }, idx) => {
           const tempSummary: IBlueberryLadder = {
             ...summary,
             profile: null,
             rank: idx + 1,
-            prize, score
+            score
 
           }
 

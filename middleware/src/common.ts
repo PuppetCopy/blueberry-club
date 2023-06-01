@@ -1,4 +1,4 @@
-import { BASIS_POINTS_DIVISOR, getMarginFees, importGlobal, intervalTimeMap, unixTimestampNow } from "@gambitdao/gmx-middleware"
+import { BASIS_POINTS_DIVISOR, div, getMarginFees, IAccountSummary, importGlobal, intervalTimeMap, unixTimestampNow, USD_PERCISION } from "@gambitdao/gmx-middleware"
 import { map } from "@most/core"
 import { IAttributeBackground, IAttributeClothes, IAttributeBody, IAttributeExpression, IAttributeFaceAccessory, IAttributeHat, LabItemSale, MintRule, SvgPartsMap, IBerryDisplayTupleMap, IAttributeBadge, ICompetitionSchedule, ICompetitionPrize } from "./types"
 
@@ -79,10 +79,9 @@ export const competitionStartEpoch = 2023 + 6 // year + month
 
 export function getCompetitionSchedule(unixTime = unixTimestampNow(), history = 0): ICompetitionSchedule {
   const date = new Date(unixTime * 1000)
-
-  const epoch = competitionStartEpoch - (date.getUTCFullYear() + date.getUTCMonth())
-
   date.setMonth(date.getUTCMonth() - history)
+
+  const epoch = Math.abs((date.getUTCFullYear() + date.getUTCMonth()) - competitionStartEpoch)
 
   const competitionYear = date.getUTCFullYear()
   const competitionMonth = date.getUTCMonth()
@@ -113,3 +112,10 @@ export function getCompetitionMetrics(size: bigint, competition: ICompetitionSch
   return { estSize, feePool, estFeePool, feeMultiplier }
 }
 
+
+const MIN_ROI_THRESHOLD = 50n
+const MIN_PNL_THRESHOLD = USD_PERCISION * 5n
+
+export function isWinner(summary: IAccountSummary) {
+  return summary.pnl > MIN_PNL_THRESHOLD && div(summary.pnl, summary.maxCollateral) > MIN_ROI_THRESHOLD
+}

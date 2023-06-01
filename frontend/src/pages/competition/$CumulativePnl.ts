@@ -1,4 +1,4 @@
-import { Behavior, combineObject, replayLatest } from '@aelea/core'
+import { Behavior, combineArray, combineObject, replayLatest } from '@aelea/core'
 import { $element, $node, $text, attr, component, style } from "@aelea/dom"
 import { Route } from '@aelea/router'
 import { $card, $column, $row, layoutSheet, screenUtils } from '@aelea/ui-components'
@@ -6,7 +6,7 @@ import { colorAlpha, pallete } from '@aelea/ui-components-theme'
 import { Contract, ContractTransaction } from '@ethersproject/contracts'
 import { CHAIN } from '@gambitdao/const'
 import { ERC20__factory } from '@gambitdao/gbc-contracts'
-import { BLUEBERRY_REFFERAL_CODE, COMPETITION_METRIC_LIST, getCompetitionSchedule, IBlueberryLadder, IProfileTradingResult, IRequestCompetitionLadderApi } from '@gambitdao/gbc-middleware'
+import { BLUEBERRY_REFFERAL_CODE, COMPETITION_METRIC_LIST, getCompetitionSchedule, IBlueberryLadder, IProfileTradingResult, IRequestCompetitionLadderApi, isWinner } from '@gambitdao/gbc-middleware'
 import { ARBITRUM_ADDRESS, formatReadableUSD, formatToBasis, IAccountSummary, importGlobal, readableNumber, unixTimestampNow } from '@gambitdao/gmx-middleware'
 import { $anchor, $infoLabel, $infoLabeledValue, $infoTooltipLabel, $Link, invertColor, ISortBy } from '@gambitdao/ui-components'
 import { IWalletLink, IWalletState } from '@gambitdao/wallet-link'
@@ -47,7 +47,10 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
 ) => {
 
   const historyParam = Number(new URLSearchParams(document.location.search).get('history') || 0)
-  const poolDistributor = replayLatest(multicast(awaitPromises(map(async provider => {
+  const poolDistributor = replayLatest(multicast(awaitPromises(combineArray(async (provider, chain) => {
+    if (chain !== CHAIN.ARBITRUM) {
+      return 0n
+    }
 
     const [balance, priceFeed] = await Promise.all([
       ERC20__factory.connect(ARBITRUM_ADDRESS.NATIVE_TOKEN, provider).balanceOf('0xEd6265F1030186dd09cAEb1B827078aC0f6EE970'),
@@ -58,7 +61,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
     const fundUsd = balance.toBigInt() * priceFeed.toBigInt() / 10n ** 18n
 
     return fundUsd
-  }, config.walletLink.defaultProvider))))
+  }, config.walletLink.defaultProvider, config.walletLink.network))))
 
 
   const unixTime = unixTimestampNow()
@@ -248,8 +251,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
             style({ flexDirection: 'row-reverse' })(
               $infoTooltipLabel(
                 $column(layoutSheet.spacingSmall)(
-                  $text('A breakdown of the total prize pool'),
-
+                  $text('A breakdown of the total estimated prize pool distributed to top traders'),
 
                   switchLatest(map(res => {
 
@@ -260,11 +262,11 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
                       ),
                       $column(
                         $text('Current Prize Pool formula:'),
-                        $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Traded Volume * .001 (Margin Fee) * ${Number(res.metrics.feeMultiplier) / 10000} (BLUBERRY Referral)`),
+                        $text(style({ fontSize: '.75em', fontStyle: 'italic' }))(`Traded Volume * 0.001 (Margin Fee) * ${Number(res.metrics.feeMultiplier) / 10000} (BLUBERRY Referral)`),
                       ),
                     )
                   }, config.competitionCumulative)),
-                                    
+
                   $column(
                     $infoLabeledValue(
                       'Estimated Fee Pool',
@@ -286,7 +288,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
                         return formatReadableUSD(res)
                       }, poolDistributor))
                     ),
-                    $text('Prizes that have not been claimed by non-holders on Arbitrum'), $accountIconLink('0xEd6265F1030186dd09cAEb1B827078aC0f6EE970')
+                    $text('Unclaimed Prize from previous competition, claimable for 26 days since competition end'), $accountIconLink('0xEd6265F1030186dd09cAEb1B827078aC0f6EE970'),
                   ),
 
                 ),
@@ -297,7 +299,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
               color: pallete.positive,
               fontSize: '1.65em',
               textShadow: `${pallete.positive} 1px 1px 15px`
-            }))(map(params => '~' + formatReadableUSD((params.chain === CHAIN.ARBITRUM ? params.poolDistributor : 0n) + params.competitionCumulative.metrics.estFeePool), combineObject({ poolDistributor, competitionCumulative: config.competitionCumulative, chain: config.walletLink.network })))
+            }))(map(params => '~' + formatReadableUSD(params.poolDistributor + params.competitionCumulative.metrics.estFeePool), combineObject({ poolDistributor, competitionCumulative: config.competitionCumulative })))
           ),
         ),
 
@@ -392,7 +394,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
 
                         ) : empty(),
 
-                      params.poolEpoch === BigInt(competitionSchedule.epoch)
+                      historyParam === 0
                         ? $alertTooltip($text('Rewards has not been distributed yet, awaiting multi-sig approval'))
                         : !pos.profile ? $alertTooltip($text(`To claim a reward, you must hold a GBC in your wallet`)) : empty(),
                     )
@@ -455,20 +457,24 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
               ),
               sortBy: 'score',
               columnOp: style({ minWidth: '90px', alignItems: 'center', placeContent: 'flex-end' }),
-              $$body: map(pos => {
-                const metricVal = pos.score
+              $$body: combine((params, pos) => {
+                const metrics = params.competitionCumulative.metrics
+                const prizePool = params.poolDistributor + metrics.estFeePool
 
-                const newLocal = readableNumber(formatToBasis(metricVal) * 100)
-                const pnl = currentMetric === 'pnl' ? formatReadableUSD(metricVal, false) : `${Number(newLocal)} %`
+                const reward = prizePool * pos.score / params.competitionCumulative.totalScore
+                const prize = isWinner(pos) ? reward : 0n
+
+                const newLocal = readableNumber(formatToBasis(pos.score) * 100)
+                const pnl = currentMetric === 'pnl' ? formatReadableUSD(pos.score, false) : `${Number(newLocal)} %`
 
                 return $column(layoutSheet.spacingTiny, style({ gap: '3px', textAlign: 'right' }))(
                   $text(style({ fontSize: '.75em' }))(pnl),
                   $seperator2,
-                  pos.prize > 0n
-                    ? $text(style({ color: pallete.positive }))(formatReadableUSD(pos.prize, false))
+                  prize > 0n
+                    ? $text(style({ color: pallete.positive }))(formatReadableUSD(prize, false))
                     : empty(),
                 )
-              }),
+              }, combineObject({ poolDistributor, competitionCumulative: config.competitionCumulative })),
             }
           ],
         })({

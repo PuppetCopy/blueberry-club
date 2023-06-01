@@ -122,7 +122,6 @@ export interface IBlueberryLadder extends IAccountSummary {
   profile: IOwner | null
   rank: number
   score: bigint
-  prize: bigint
 }
 
 export interface ICompetitionSchedule {
