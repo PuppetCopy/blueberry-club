@@ -189,7 +189,8 @@ export const profilePickList = O(
 
 
 
-const MIN_MAX_COLLATERAL = USD_PERCISION * 200n
+const MIN_MAX_COLLATERAL = USD_PERCISION * 200n // 200 USD
+const MIN_ROI = 150n // 1.5%
 
 export const competitionCumulative = O(
   map(async (queryParams: IRequestCompetitionLadderApi): Promise<IProfileTradingResult> => {
@@ -202,12 +203,12 @@ export const competitionCumulative = O(
       const summaryList = toAccountSummaryList(tradeList, priceMap, queryParams.to)
 
       const { size, activeWinnerCount, totalMaxCollateral } = summaryList.reduce((seed, next) => {
+        const roi = div(next.pnl, next.maxCollateral)
 
-        if (isWinner(next) && next.maxCollateral > MIN_MAX_COLLATERAL) {
+        // prevent spam of small trades to affect the average
+        if (isWinner(next) && next.maxCollateral > MIN_MAX_COLLATERAL && roi > MIN_ROI) {
           seed.activeWinnerCount++
-          // const newLocal = MIN_MAX_COLLATERAL > next.maxCollateral ? next.maxCollateral : MIN_MAX_COLLATERAL
-          // debugger
-          seed.totalMaxCollateral += MIN_MAX_COLLATERAL > next.maxCollateral ? MIN_MAX_COLLATERAL : next.maxCollateral
+          seed.totalMaxCollateral += next.maxCollateral
         }
 
         if (next.pnl > seed.pnl ? next.pnl : seed.pnl) {
