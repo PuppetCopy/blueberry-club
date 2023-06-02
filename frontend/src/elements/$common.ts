@@ -26,6 +26,9 @@ export const $card = $column(layoutSheet.spacing,
 export const $seperator = $text(style({ color: pallete.foreground, pointerEvents: 'none' }))('|')
 export const $responsiveFlex = screenUtils.isDesktopScreen ? $row : $column
 
+export const $circleButtonAnchor = $anchor(
+  style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, display: 'flex', borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' })
+)
 
 function convertMsToGoogleCalendarDate(ms: Date) {
   const date = new Date(ms)

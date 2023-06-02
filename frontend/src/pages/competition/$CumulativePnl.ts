@@ -7,7 +7,7 @@ import { Contract, ContractTransaction } from '@ethersproject/contracts'
 import { CHAIN } from '@gambitdao/const'
 import { ERC20__factory } from '@gambitdao/gbc-contracts'
 import { BLUEBERRY_REFFERAL_CODE, COMPETITION_METRIC_LIST, getCompetitionSchedule, IBlueberryLadder, IProfileTradingResult, IRequestCompetitionLadderApi, isWinner } from '@gambitdao/gbc-middleware'
-import { ARBITRUM_ADDRESS, formatReadableUSD, formatToBasis, IAccountSummary, importGlobal, readableNumber, unixTimestampNow } from '@gambitdao/gmx-middleware'
+import { ARBITRUM_ADDRESS, formatReadableUSD, formatToBasis, IAccountSummary, readableNumber, unixTimestampNow } from '@gambitdao/gmx-middleware'
 import { $anchor, $infoLabel, $infoLabeledValue, $infoTooltipLabel, $Link, invertColor, ISortBy } from '@gambitdao/ui-components'
 import { IWalletLink, IWalletState } from '@gambitdao/wallet-link'
 import { awaitPromises, combine, empty, fromPromise, map, mergeArray, multicast, now, switchLatest } from '@most/core'
@@ -19,7 +19,7 @@ import { $CardTable } from '../../components/$common'
 import { $defaultBerry } from '../../components/$DisplayBerry'
 import { $ButtonPrimaryCtx, $defaultMiniButtonSecondary } from '../../components/form/$Button'
 import { $accountIconLink, $addToCalendar, $responsiveFlex } from '../../elements/$common'
-import { PriceFeed__factory, VaultPriceFeed__factory } from '../../logic/gmx-contracts'
+import { VaultPriceFeed__factory } from '../../logic/gmx-contracts'
 import { $seperator2 } from '../common'
 import { $alertTooltip, countdown } from './$rules'
 
@@ -81,7 +81,6 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
   ])
 
 
-  const crateLoadEvent = importGlobal(import('@widgetbot/crate'))
 
 
 
@@ -202,21 +201,6 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
               ),
               $text(style({ fontSize: '1.25em' }))(countdown(competitionSchedule.end))
             )
-      ),
-
-      $column(
-        switchLatest(
-          map(Crate => {
-
-            const trollbox = new Crate({
-              server: '941356283234250772',
-              channel: '1068946527021695168',
-              // css: '"height": 100px; display: none;'
-            })
-
-            return empty()
-          }, crateLoadEvent)
-        )
       ),
 
 

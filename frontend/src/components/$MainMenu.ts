@@ -18,6 +18,7 @@ import { Stream } from "@most/types"
 import { $WalletDisplay } from "./$WalletDisplay"
 import { $Popover } from "./$Popover"
 import { CHAIN } from "@gambitdao/const"
+import { $circleButtonAnchor } from "../elements/$common"
 
 
 
@@ -89,9 +90,7 @@ export const $MainMenu = ({ walletLink, parentRoute, chainList, showAccount = tr
     ),
   ]
 
-  const $circleButtonAnchor = $anchor(
-    style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, display: 'flex', borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' })
-  )
+
 
   const $extraMenuPopover = $Popover({
     dismiss: routeChangeMulticast,

@@ -484,6 +484,9 @@ const tradeFields = `
   collateral
   averagePrice
 
+  entryReferralCode
+  entryReferrer
+
   realisedPnl
   realisedPnlPercentage
   settledTimestamp
