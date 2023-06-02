@@ -461,7 +461,6 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
                 const prizePool = params.poolDistributor + metrics.estFeePool
 
                 const reward = prizePool * pos.score / params.competitionCumulative.totalScore
-                const prize = isWinner(pos) ? reward : 0n
 
                 const newLocal = readableNumber(formatToBasis(pos.score) * 100)
                 const pnl = currentMetric === 'pnl' ? formatReadableUSD(pos.score, false) : `${Number(newLocal)} %`
@@ -469,8 +468,12 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
                 return $column(layoutSheet.spacingTiny, style({ gap: '3px', textAlign: 'right' }))(
                   $text(style({ fontSize: '.75em' }))(pnl),
                   $seperator2,
-                  prize > 0n
-                    ? $text(style({ color: pallete.positive }))(formatReadableUSD(prize, false))
+                  isWinner(pos)
+                    ? $text(
+                      pos.profile
+                        ? style({ color: pallete.positive })
+                        : style({ color: colorAlpha(pallete.positive, .5) })
+                    )(formatReadableUSD(reward, false))
                     : empty(),
                 )
               }, combineObject({ poolDistributor, competitionCumulative: config.competitionCumulative })),

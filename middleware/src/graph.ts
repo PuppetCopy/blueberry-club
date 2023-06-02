@@ -189,7 +189,7 @@ export const profilePickList = O(
 
 
 
-
+const MIN_MAX_COLLATERAL = USD_PERCISION * 200n
 
 export const competitionCumulative = O(
   map(async (queryParams: IRequestCompetitionLadderApi): Promise<IProfileTradingResult> => {
@@ -199,26 +199,25 @@ export const competitionCumulative = O(
       const tradeList = await gmxSubgraph.getCompetitionTrades(queryParams)
       const priceMap = await gmxSubgraph.getPriceMap(queryParams.to, queryParams)
       // const weth = ERC20__factory.connect(ARBITRUM_ADDRESS.NATIVE_TOKEN, w3p.provider).balanceOf('0xEd6265F1030186dd09cAEb1B827078aC0f6EE970').then(bn => bn.toBigInt())
-      const summaryList = toAccountSummaryList(tradeList, priceMap, queryParams.maxCollateral, queryParams.to)
+      const summaryList = toAccountSummaryList(tradeList, priceMap, queryParams.to)
 
-      const { size, activeWinnerCount, totalMaxCollateral } = summaryList.reduce((s, n) => {
+      const { size, activeWinnerCount, totalMaxCollateral } = summaryList.reduce((seed, next) => {
 
-        if (isWinner(n)) {
-          s.activeWinnerCount++
-          s.totalMaxCollateral += n.maxCollateral
+        if (isWinner(next) && next.maxCollateral > MIN_MAX_COLLATERAL) {
+          seed.activeWinnerCount++
+          // const newLocal = MIN_MAX_COLLATERAL > next.maxCollateral ? next.maxCollateral : MIN_MAX_COLLATERAL
+          // debugger
+          seed.totalMaxCollateral += MIN_MAX_COLLATERAL > next.maxCollateral ? MIN_MAX_COLLATERAL : next.maxCollateral
         }
 
-        if (n.pnl > s.pnl ? n.pnl : s.pnl) {
-          s.pnl = n.pnl
-          s.highestMaxCollateralBasedOnPnl = n.maxCollateral
+        if (next.pnl > seed.pnl ? next.pnl : seed.pnl) {
+          seed.pnl = next.pnl
+          seed.highestMaxCollateralBasedOnPnl = next.maxCollateral
         }
 
+        seed.size += next.cumSize
 
-
-        s.size += n.cumSize
-
-
-        return s
+        return seed
       }, { highestMaxCollateralBasedOnPnl: 0n, pnl: 0n, size: 0n, totalMaxCollateral: 0n, activeWinnerCount: 0n })
 
 

@@ -195,7 +195,7 @@ export function getFundingFee(entryFundingRate: bigint, cumulativeFundingRate: b
 }
 
 
-export function toAccountSummaryList(list: ITrade[], priceMap: { [k: string]: bigint }, minMaxCollateral: bigint, endDate: number): IAccountSummary[] {
+export function toAccountSummaryList(list: ITrade[], priceMap: { [k: string]: bigint }, endDate: number): IAccountSummary[] {
   const tradeListMap = groupByMapMany(list, a => a.account)
   const tradeListEntries = Object.entries(tradeListMap)
 

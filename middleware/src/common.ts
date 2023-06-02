@@ -113,10 +113,8 @@ export function getCompetitionMetrics(size: bigint, competition: ICompetitionSch
   return { estSize, feePool, estFeePool, feeMultiplier }
 }
 
-
-const MIN_ROI_THRESHOLD = 50n
-const MIN_PNL_THRESHOLD = USD_PERCISION * 5n
+const MIN_PNL_THRESHOLD = USD_PERCISION * 1n
 
 export function isWinner(summary: IAccountSummary) {
-  return summary.pnl > MIN_PNL_THRESHOLD && div(summary.pnl, summary.maxCollateral) > MIN_ROI_THRESHOLD
+  return summary.pnl > MIN_PNL_THRESHOLD
 }
