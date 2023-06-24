@@ -52,13 +52,12 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
       return 0n
     }
 
-    const [balance, priceFeed] = await Promise.all([
-      ERC20__factory.connect(ARBITRUM_ADDRESS.NATIVE_TOKEN, provider).balanceOf('0xEd6265F1030186dd09cAEb1B827078aC0f6EE970'),
+    const [priceFeed] = await Promise.all([
       VaultPriceFeed__factory.connect(ARBITRUM_ADDRESS.VaultPriceFeed, provider).getPrimaryPrice(ARBITRUM_ADDRESS.NATIVE_TOKEN, false)
     ])
 
 
-    const fundUsd = balance.toBigInt() * priceFeed.toBigInt() / 10n ** 18n
+    const fundUsd = 43800000000000000000n * priceFeed.toBigInt() / 10n ** 18n
 
     return fundUsd
   }, config.walletLink.defaultProvider, config.walletLink.network))))
@@ -266,12 +265,12 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
 
                   $column(
                     $infoLabeledValue(
-                      'Unclaimed Fee Pool',
+                      'Bonus Fee Pool',
                       $text(style({ color: pallete.positive }))(map(res => {
                         return formatReadableUSD(res)
                       }, poolDistributor))
                     ),
-                    $text('Unclaimed Prize from previous competition, claimable for 26 days since competition end'), $accountIconLink('0xEd6265F1030186dd09cAEb1B827078aC0f6EE970'),
+                    $text('Unclaimed Prize from previous competition'), $accountIconLink('0xEd6265F1030186dd09cAEb1B827078aC0f6EE970'),
                   ),
 
                 ),
