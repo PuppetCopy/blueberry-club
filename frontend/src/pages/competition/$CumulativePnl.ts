@@ -47,8 +47,13 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
 ) => {
 
   const historyParam = Number(new URLSearchParams(document.location.search).get('history') || 0)
+
+  const unixTime = unixTimestampNow()
+  const competitionSchedule = getCompetitionSchedule(unixTime, historyParam)
+
+
   const poolDistributor = replayLatest(multicast(awaitPromises(combineArray(async (provider, chain) => {
-    if (historyParam !== 0 || chain !== CHAIN.ARBITRUM) {
+    if (chain !== CHAIN.ARBITRUM) {
       return 0n
     }
 
@@ -56,15 +61,12 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
       VaultPriceFeed__factory.connect(ARBITRUM_ADDRESS.VaultPriceFeed, provider).getPrimaryPrice(ARBITRUM_ADDRESS.NATIVE_TOKEN, false)
     ])
 
+    if (competitionSchedule.epoch === 1) {
+      return 43800000000000000000n * priceFeed.toBigInt() / 10n ** 18n
+    }
 
-    const fundUsd = 43800000000000000000n * priceFeed.toBigInt() / 10n ** 18n
-
-    return fundUsd
+    return 0n
   }, config.walletLink.defaultProvider, config.walletLink.network))))
-
-
-  const unixTime = unixTimestampNow()
-  const competitionSchedule = getCompetitionSchedule(unixTime, historyParam)
 
   const tableList = map(res => {
     return res.list
