@@ -52,22 +52,6 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
   const competitionSchedule = getCompetitionSchedule(unixTime, historyParam)
 
 
-  const poolDistributor = replayLatest(multicast(awaitPromises(combineArray(async (provider, chain) => {
-    if (chain !== CHAIN.ARBITRUM) {
-      return 0n
-    }
-
-    const [priceFeed] = await Promise.all([
-      VaultPriceFeed__factory.connect(ARBITRUM_ADDRESS.VaultPriceFeed, provider).getPrimaryPrice(ARBITRUM_ADDRESS.NATIVE_TOKEN, false)
-    ])
-
-    if (competitionSchedule.epoch === 1) {
-      return 43800000000000000000n * priceFeed.toBigInt() / 10n ** 18n
-    }
-
-    return 0n
-  }, config.walletLink.defaultProvider, config.walletLink.network))))
-
   const tableList = map(res => {
     return res.list
   }, config.competitionCumulative)
@@ -265,16 +249,6 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
                   ),
 
 
-                  $column(
-                    $infoLabeledValue(
-                      'Bonus Fee Pool',
-                      $text(style({ color: pallete.positive }))(map(res => {
-                        return formatReadableUSD(res)
-                      }, poolDistributor))
-                    ),
-                    $text('Unclaimed Prize from previous competition'), $accountIconLink('0xEd6265F1030186dd09cAEb1B827078aC0f6EE970'),
-                  ),
-
                 ),
                 'Est. Prize Pool'
               )
@@ -283,7 +257,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
               color: pallete.positive,
               fontSize: '1.65em',
               textShadow: `${pallete.positive} 1px 1px 15px`
-            }))(map(params => '~' + formatReadableUSD(params.poolDistributor + params.competitionCumulative.metrics.estFeePool), combineObject({ poolDistributor, competitionCumulative: config.competitionCumulative })))
+            }))(map(params => '~' + formatReadableUSD(params.competitionCumulative.metrics.estFeePool), combineObject({ competitionCumulative: config.competitionCumulative })))
           ),
         ),
 
@@ -443,9 +417,8 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
               columnOp: style({ minWidth: '90px', alignItems: 'center', placeContent: 'flex-end' }),
               $$body: combine((params, pos) => {
                 const metrics = params.competitionCumulative.metrics
-                const prizePool = params.poolDistributor + metrics.estFeePool
 
-                const reward = prizePool * pos.score / params.competitionCumulative.totalScore
+                const reward = metrics.estFeePool * pos.score / params.competitionCumulative.totalScore
 
                 const newLocal = readableNumber(formatToBasis(pos.score) * 100)
                 const pnl = currentMetric === 'pnl' ? formatReadableUSD(pos.score, false) : `${Number(newLocal)} %`
@@ -461,7 +434,7 @@ export const $CumulativePnl = (config: ICompetitonCumulativeRoi) => component((
                     )(formatReadableUSD(reward, false))
                     : empty(),
                 )
-              }, combineObject({ poolDistributor, competitionCumulative: config.competitionCumulative })),
+              }, combineObject({ competitionCumulative: config.competitionCumulative })),
             }
           ],
         })({
