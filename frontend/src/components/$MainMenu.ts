@@ -79,71 +79,6 @@ export const $MainMenu = ({ walletLink, parentRoute, chainList, showAccount = tr
     }),
   ]
 
-  const $extraMenuPopover = $Popover({
-    dismiss: routeChangeMulticast,
-    $target: $circleButtonAnchor(
-      $icon({
-        svgOps: O(
-          clickPopoverClaimTether(nodeEvent('click')),
-          style({
-            padding: '6px',
-            cursor: 'pointer',
-            alignSelf: 'center',
-            transform: 'rotate(90deg)',
-          })
-        ),
-        width: '32px',
-        $content: $moreDots,
-        viewBox: '0 0 32 32'
-      }),
-    ),
-    $popContent: map((_) => {
-      return $column(layoutSheet.spacingBig, style({ marginTop: screenUtils.isMobileScreen ? '-40px' : '' }))(
-        ...screenUtils.isMobileScreen
-          ? [
-            ...$menuItemList          ]
-          : [],
-
-        // ...screenUtils.isMobileScreen ? $menuItemList : [],
-
-        $ButtonSecondary({
-          $content: $Picker([light, dark])({})
-        })({
-
-        }),
-
-
-        switchLatest(map(w3p => {
-          if (w3p === null) {
-            return empty()
-          }
-
-          return $ButtonSecondary({
-            $content: $text('Disconnect Wallet')
-          })({
-            click: walletChangeTether(
-              map(async xx => {
-                const wp = w3p.provider.provider
-
-                // Check if connection is already established
-                if (wp === walletConnect) {
-                  // create new session
-                  await walletConnect.disconnect()
-                }
-              }),
-              awaitPromises,
-              constant(IWalletName.none),
-            )
-          })
-        }, walletLink.wallet)),
-
-      )
-    }, clickPopoverClaim),
-  })({
-    // overlayClick: clickPopoverClaimTether()
-  })
-
-
   return [
     $row(layoutSheet.spacingBig, style({ alignItems: 'center', placeContent: 'center', flex: 1, width: '100%', padding: '30px 0', zIndex: 1000, borderRadius: '12px' }))(
       $row(layoutSheet.spacingBig, style({ flex: 1, alignItems: 'center' }))(
@@ -166,11 +101,12 @@ export const $MainMenu = ({ walletLink, parentRoute, chainList, showAccount = tr
       ),
 
       $row(layoutSheet.spacingBig, style({ flex: 1, placeContent: 'flex-end' }))(
-        $extraMenuPopover,
-
-        ...screenUtils.isDesktopScreen ? [] : []
+        ...screenUtils.isDesktopScreen ? [
+          $ButtonSecondary({
+            $content: $Picker([light, dark])({})
+          })({})
+        ] : []
       )
-
     ),
 
     { routeChange: routeChangeMulticast, walletChange, changeNetwork }
