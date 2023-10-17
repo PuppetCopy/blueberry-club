@@ -72,13 +72,11 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
 
   const rootRoute = router.create({ fragment: baseRoute, title: 'GMX Blueberry Club', fragmentsChange })
   const pagesRoute = rootRoute.create({ fragment: 'p', title: '' })
-  const treasuryRoute = pagesRoute.create({ fragment: 'treasury', title: 'Treasury' })
   const berryRoute = pagesRoute.create({ fragment: 'berry' }).create({ fragment: /\d+/, title: 'Berry' })
   const profileRoute = pagesRoute.create({ fragment: 'profile', title: 'Berry Account' }).create({ fragment: ETH_ADDRESS_REGEXP })
   const profileWalletRoute = pagesRoute.create({ fragment: 'wallet', title: 'Wallet Account' })
   const labRoute = pagesRoute.create({ fragment: 'lab', title: 'Blueberry Lab' })
   const leaderboardRoute = pagesRoute.create({ fragment: /leaderboard.*/, title: 'Leaderboard' })
-  const leaderboardOldRoiRoute = pagesRoute.create({ fragment: 'feb-roi-old', title: 'Leaderboard' })
   const wardrobeRoute = pagesRoute.create({ fragment: 'wardrobe', title: 'Wardrobe' })
   const storeRoute = pagesRoute.create({ fragment: 'lab-store', title: 'Store' })
   const itemRoute = pagesRoute.create({ fragment: 'item' }).create({ fragment: /\d+/, title: 'Lab Item' })
@@ -158,11 +156,14 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
 
         router.match(rootRoute)(
           $column(layoutSheet.spacingBig, style({ margin: '0 auto', maxWidth: '1080px', gap: screenUtils.isDesktopScreen ? '85px' : '55px', width: '100%' }))(
-            $Home({
+            $Leaderboard({
               walletLink,
-              parentRoute: pagesRoute,
-              treasuryStore,
-            })({ routeChanges: linkClickTether() })
+              competitionCumulative: clientApi.competitionCumulative,
+              parentRoute: pagesRoute
+            })({
+              routeChange: linkClickTether(),
+              requestCompetitionLadder: requestCompetitionLadderTether()
+            })
           )
         ),
 
@@ -326,9 +327,6 @@ export const $Main = ({ baseRoute = '' }: Website) => component((
 
               ),
 
-            ),
-            router.match(treasuryRoute)(
-              $Treasury({ walletLink, parentRoute: treasuryRoute, treasuryStore })({})
             ),
 
             $node(),

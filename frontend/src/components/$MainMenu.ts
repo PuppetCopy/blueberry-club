@@ -79,19 +79,6 @@ export const $MainMenu = ({ walletLink, parentRoute, chainList, showAccount = tr
     }),
   ]
 
-
-
-  const $treasuryLinks = [
-    $Link({ $content: $govItem('Treasury', $bagOfCoinsCircle, 'GBC Community-Led Portfolio'), url: '/p/treasury', route: parentRoute })({
-      click: routeChangeTether()
-    }),
-    $anchor(style({ textDecoration: 'none' }), attr({ href: 'https://snapshot.org/#/gbc-nft.eth' }))(
-      $govItem('Governance', $fileCheckCircle, 'Treasury Governance, 1 GBC = 1 Voting Power')
-    ),
-  ]
-
-
-
   const $extraMenuPopover = $Popover({
     dismiss: routeChangeMulticast,
     $target: $circleButtonAnchor(
@@ -114,29 +101,10 @@ export const $MainMenu = ({ walletLink, parentRoute, chainList, showAccount = tr
       return $column(layoutSheet.spacingBig, style({ marginTop: screenUtils.isMobileScreen ? '-40px' : '' }))(
         ...screenUtils.isMobileScreen
           ? [
-            ...$menuItemList,
-            ...$treasuryLinks
-          ]
+            ...$menuItemList          ]
           : [],
 
         // ...screenUtils.isMobileScreen ? $menuItemList : [],
-        $row(layoutSheet.spacingBig, style({ flexWrap: 'wrap', width: '210px' }))(
-          $anchor(layoutSheet.displayFlex, style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://docs.blueberry.club/' }))(
-            $icon({ $content: $gitbook, width: '22px', viewBox: `0 0 32 32` })
-          ),
-          $anchor(layoutSheet.displayFlex, style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://discord.com/invite/7ZMmeU3z9j' }))(
-            $icon({ $content: $discord, width: '22px', viewBox: `0 0 32 32` })
-          ),
-          $anchor(layoutSheet.displayFlex, style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://twitter.com/GBlueberryClub' }))(
-            $icon({ $content: $twitter, width: '22px', viewBox: `0 0 24 24` })
-          ),
-          $anchor(layoutSheet.displayFlex, style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://www.instagram.com/blueberryclub.eth' }))(
-            $icon({ $content: $instagram, width: '18px', viewBox: `0 0 32 32` })
-          ),
-          $anchor(layoutSheet.displayFlex, style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://github.com/nissoh/blueberry-club' }))(
-            $icon({ $content: $github, width: '22px', viewBox: `0 0 32 32` })
-          ),
-        ),
 
         $ButtonSecondary({
           $content: $Picker([light, dark])({})
@@ -179,20 +147,9 @@ export const $MainMenu = ({ walletLink, parentRoute, chainList, showAccount = tr
   return [
     $row(layoutSheet.spacingBig, style({ alignItems: 'center', placeContent: 'center', flex: 1, width: '100%', padding: '30px 0', zIndex: 1000, borderRadius: '12px' }))(
       $row(layoutSheet.spacingBig, style({ flex: 1, alignItems: 'center' }))(
-        $RouterAnchor({ url: '/', route: parentRoute, $anchor: $element('a')($icon({ $content: theme.name === 'dark' ? $logo : $logoFull, width: '55px', viewBox: '0 0 32 32' })) })({
-          click: routeChangeTether()
-        }),
-
-        screenUtils.isDesktopScreen
-          ? $Dropdown({
-            $selection: $treasuryStatus,
-            value: {
-              value: now(null),
-              $$option: map(option => option),
-              list: $treasuryLinks,
-            }
-          })({})
-          : empty(),
+        $anchor(attr({ href: 'https://www.findgbc.com' }))(
+          $icon({ $content: theme.name === 'dark' ? $logo : $logoFull, width: '55px', viewBox: '0 0 32 32' })
+        ),
       ),
 
       $row(screenUtils.isDesktopScreen ? layoutSheet.spacingBig : layoutSheet.spacing, style({ flex: 1, alignItems: 'center', placeContent: 'center' }))(
@@ -211,23 +168,7 @@ export const $MainMenu = ({ walletLink, parentRoute, chainList, showAccount = tr
       $row(layoutSheet.spacingBig, style({ flex: 1, placeContent: 'flex-end' }))(
         $extraMenuPopover,
 
-        ...screenUtils.isDesktopScreen ? [
-          $circleButtonAnchor(attr({ href: 'https://docs.blueberry.club/' }))(
-            $icon({ $content: $gitbook, width: '22px', viewBox: `0 0 32 32` })
-          ),
-          $circleButtonAnchor(attr({ href: 'https://discord.com/invite/7ZMmeU3z9j' }))(
-            $icon({ $content: $discord, width: '22px', viewBox: `0 0 32 32` })
-          ),
-          $circleButtonAnchor(attr({ href: 'https://twitter.com/GBlueberryClub' }))(
-            $icon({ $content: $twitter, width: '22px', viewBox: `0 0 24 24` })
-          ),
-          // $anchor(layoutSheet.displayFlex, style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://www.instagram.com/blueberryclub.eth' }))(
-          //   $icon({ $content: $instagram, width: '18px', viewBox: `0 0 32 32` })
-          // ),
-          // $anchor(layoutSheet.displayFlex, style({ padding: '0 4px', border: `2px solid ${pallete.horizon}`, borderRadius: '50%', alignItems: 'center', placeContent: 'center', height: '42px', width: '42px' }), attr({ href: 'https://github.com/nissoh/blueberry-club' }))(
-          //   $icon({ $content: $github, width: '22px', viewBox: `0 0 32 32` })
-          // ),
-        ] : []
+        ...screenUtils.isDesktopScreen ? [] : []
       )
 
     ),
