@@ -1,0 +1,21 @@
+{
+  "abi": [],
+  "bytecode": {
+    "object": "0x",
+    "linkReferences": {}
+  },
+  "deployedBytecode": {
+    "object": "0x",
+    "linkReferences": {}
+  },
+  "ast": {
+    "absolutePath": "contracts/lab/services/RandomUintProvider.sol",
+    "id": 5277,
+    "exportedSymbols": {},
+    "nodeType": "SourceUnit",
+    "src": "4682:0:19",
+    "nodes": [],
+    "license": "MIT"
+  },
+  "id": 19
+}
